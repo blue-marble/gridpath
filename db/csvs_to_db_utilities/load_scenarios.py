@@ -96,10 +96,10 @@ def load_scenarios(io, c, data_input):
                 "project_local_capacity_zone_scenario_id"],
             project_local_capacity_chars_scenario_id=
             scenarios["project_local_capacity_chars_scenario_id"],
-            project_existing_capacity_scenario_id=
-            scenarios["project_existing_capacity_scenario_id"],
-            project_existing_fixed_cost_scenario_id=
-            scenarios["project_existing_fixed_cost_scenario_id"],
+            project_specified_capacity_scenario_id=
+            scenarios["project_specified_capacity_scenario_id"],
+            project_specified_fixed_cost_scenario_id=
+            scenarios["project_specified_fixed_cost_scenario_id"],
             fuel_price_scenario_id=scenarios["fuel_price_scenario_id"],
             project_new_cost_scenario_id=scenarios["project_new_cost_scenario_id"],
             project_new_potential_scenario_id=
@@ -110,8 +110,8 @@ def load_scenarios(io, c, data_input):
             scenarios["transmission_portfolio_scenario_id"],
             transmission_load_zone_scenario_id=
             scenarios["transmission_load_zone_scenario_id"],
-            transmission_existing_capacity_scenario_id=
-            scenarios["transmission_existing_capacity_scenario_id"],
+            transmission_specified_capacity_scenario_id=
+            scenarios["transmission_specified_capacity_scenario_id"],
             transmission_operational_chars_scenario_id=
             scenarios["transmission_operational_chars_scenario_id"],
             transmission_hurdle_rate_scenario_id=

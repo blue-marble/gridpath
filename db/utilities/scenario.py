@@ -60,15 +60,15 @@ def create_scenario_all_args(
         prm_energy_only_scenario_id,
         project_local_capacity_zone_scenario_id,
         project_local_capacity_chars_scenario_id,
-        project_existing_capacity_scenario_id,
-        project_existing_fixed_cost_scenario_id,
+        project_specified_capacity_scenario_id,
+        project_specified_fixed_cost_scenario_id,
         fuel_price_scenario_id,
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
-        transmission_existing_capacity_scenario_id,
+        transmission_specified_capacity_scenario_id,
         transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,
@@ -145,15 +145,15 @@ def create_scenario_all_args(
     :param prm_energy_only_scenario_id:
     :param project_local_capacity_zone_scenario_id:
     :param project_local_capacity_chars_scenario_id
-    :param project_existing_capacity_scenario_id:
-    :param project_existing_fixed_cost_scenario_id:
+    :param project_specified_capacity_scenario_id:
+    :param project_specified_fixed_cost_scenario_id:
     :param fuel_price_scenario_id:
     :param project_new_cost_scenario_id:
     :param project_new_potential_scenario_id:
     :param project_new_binary_build_size_scenario_id:
     :param transmission_portfolio_scenario_id:
     :param transmission_load_zone_scenario_id:
-    :param transmission_existing_capacity_scenario_id:
+    :param transmission_specified_capacity_scenario_id:
     :param transmission_new_cost_scenario_id:
     :param transmission_operational_chars_scenario_id:
     :param transmission_hurdle_rate_scenario_id:
@@ -226,15 +226,15 @@ def create_scenario_all_args(
         prm_energy_only_scenario_id,
         project_local_capacity_zone_scenario_id,
         project_local_capacity_chars_scenario_id,
-        project_existing_capacity_scenario_id,
-        project_existing_fixed_cost_scenario_id,
+        project_specified_capacity_scenario_id,
+        project_specified_fixed_cost_scenario_id,
         fuel_price_scenario_id,
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
-        transmission_existing_capacity_scenario_id,
+        transmission_specified_capacity_scenario_id,
         transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,
@@ -306,15 +306,15 @@ def create_scenario_all_args(
         prm_energy_only_scenario_id,
         project_local_capacity_zone_scenario_id,
         project_local_capacity_chars_scenario_id,
-        project_existing_capacity_scenario_id,
-        project_existing_fixed_cost_scenario_id,
+        project_specified_capacity_scenario_id,
+        project_specified_fixed_cost_scenario_id,
         fuel_price_scenario_id,
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
-        transmission_existing_capacity_scenario_id,
+        transmission_specified_capacity_scenario_id,
         transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,

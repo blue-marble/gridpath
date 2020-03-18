@@ -143,8 +143,8 @@ def get_module_specific_inputs_from_database(
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT transmission_line, period, min_mw, max_mw
-        FROM inputs_transmission_existing_capacity
-        WHERE transmission_existing_capacity_scenario_id = {} ) as capacity
+        FROM inputs_transmission_specified_capacity
+        WHERE transmission_specified_capacity_scenario_id = {} ) as capacity
         USING (transmission_line, period)
         WHERE transmission_portfolio_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,

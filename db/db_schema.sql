@@ -547,7 +547,7 @@ DROP TABLE IF EXISTS inputs_project_portfolios;
 CREATE TABLE inputs_project_portfolios (
 project_portfolio_scenario_id INTEGER,
 project VARCHAR(64),
-existing INTEGER,
+specified INTEGER,
 new_build INTEGER,
 capacity_type VARCHAR(32),
 PRIMARY KEY (project_portfolio_scenario_id, project),
@@ -557,47 +557,47 @@ FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types (capacity_type)
 );
 
 -- Existing project capacity and fixed costs
--- The capacity and fixed costs of 'existing' projects, i.e. exogenously
+-- The capacity and fixed costs of 'specified' projects, i.e. exogenously
 -- specified capacity that is not a variable in the model
 -- Retirement can be allowed, in which case the fixed cost will determine
 -- whether the economics of retirement are favorable
-DROP TABLE IF EXISTS subscenarios_project_existing_capacity;
-CREATE TABLE subscenarios_project_existing_capacity (
-project_existing_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_project_specified_capacity;
+CREATE TABLE subscenarios_project_specified_capacity (
+project_specified_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_existing_capacity;
-CREATE TABLE inputs_project_existing_capacity (
-project_existing_capacity_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_project_specified_capacity;
+CREATE TABLE inputs_project_specified_capacity (
+project_specified_capacity_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-existing_capacity_mw FLOAT,
-existing_capacity_mwh FLOAT,
-PRIMARY KEY (project_existing_capacity_scenario_id, project, period),
-FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
-subscenarios_project_existing_capacity (project_existing_capacity_scenario_id)
+specified_capacity_mw FLOAT,
+specified_capacity_mwh FLOAT,
+PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
+FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
+subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_existing_fixed_cost;
-CREATE TABLE subscenarios_project_existing_fixed_cost (
-project_existing_fixed_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_project_specified_fixed_cost;
+CREATE TABLE subscenarios_project_specified_fixed_cost (
+project_specified_fixed_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_existing_fixed_cost;
-CREATE TABLE inputs_project_existing_fixed_cost (
-project_existing_fixed_cost_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_project_specified_fixed_cost;
+CREATE TABLE inputs_project_specified_fixed_cost (
+project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 annual_fixed_cost_per_kw_year FLOAT,
 annual_fixed_cost_per_kwh_year FLOAT,
-PRIMARY KEY (project_existing_fixed_cost_scenario_id, project, period),
-FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
-subscenarios_project_existing_fixed_cost
-(project_existing_fixed_cost_scenario_id)
+PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
+FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
+subscenarios_project_specified_fixed_cost
+(project_specified_fixed_cost_scenario_id)
 );
 
 -- New project capital costs and potential
@@ -1361,25 +1361,25 @@ FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
 );
 
 -- Existing transmission capacity
-DROP TABLE IF EXISTS subscenarios_transmission_existing_capacity;
-CREATE TABLE subscenarios_transmission_existing_capacity (
-transmission_existing_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_transmission_specified_capacity;
+CREATE TABLE subscenarios_transmission_specified_capacity (
+transmission_specified_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_transmission_existing_capacity;
-CREATE TABLE inputs_transmission_existing_capacity (
-transmission_existing_capacity_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_transmission_specified_capacity;
+CREATE TABLE inputs_transmission_specified_capacity (
+transmission_specified_capacity_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 period INTEGER,
 min_mw FLOAT,
 max_mw FLOAT,
-PRIMARY KEY (transmission_existing_capacity_scenario_id, transmission_line,
+PRIMARY KEY (transmission_specified_capacity_scenario_id, transmission_line,
 period),
-FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
-subscenarios_transmission_existing_capacity
-(transmission_existing_capacity_scenario_id)
+FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
+subscenarios_transmission_specified_capacity
+(transmission_specified_capacity_scenario_id)
 );
 
 -- New transmission cost
@@ -1861,15 +1861,15 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
-project_existing_capacity_scenario_id INTEGER,
-project_existing_fixed_cost_scenario_id INTEGER,
+project_specified_capacity_scenario_id INTEGER,
+project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
 project_new_binary_build_size_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
-transmission_existing_capacity_scenario_id INTEGER,
+transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
@@ -1966,12 +1966,12 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
-FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
-    subscenarios_project_existing_capacity
-        (project_existing_capacity_scenario_id),
-FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
-    subscenarios_project_existing_fixed_cost
-        (project_existing_fixed_cost_scenario_id),
+FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
+    subscenarios_project_specified_capacity
+        (project_specified_capacity_scenario_id),
+FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
+    subscenarios_project_specified_fixed_cost
+        (project_specified_fixed_cost_scenario_id),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
     subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
@@ -1984,9 +1984,9 @@ FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 FOREIGN KEY (transmission_load_zone_scenario_id)
     REFERENCES subscenarios_transmission_load_zones
         (transmission_load_zone_scenario_id),
-FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
-    subscenarios_transmission_existing_capacity
-        (transmission_existing_capacity_scenario_id),
+FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
+    subscenarios_transmission_specified_capacity
+        (transmission_specified_capacity_scenario_id),
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
     subscenarios_transmission_new_cost
         (transmission_new_cost_scenario_id),
@@ -2943,15 +2943,15 @@ subscenarios_project_elcc_chars.name AS project_elcc_chars,
 subscenarios_project_prm_energy_only.name AS project_prm_energy_only,
 subscenarios_project_local_capacity_zones.name AS project_local_capacity_areas,
 subscenarios_project_local_capacity_chars.name AS project_local_capacity_chars,
-subscenarios_project_existing_capacity.name AS project_existing_capacity,
-subscenarios_project_existing_fixed_cost.name AS project_existing_fixed_cost,
+subscenarios_project_specified_capacity.name AS project_specified_capacity,
+subscenarios_project_specified_fixed_cost.name AS project_specified_fixed_cost,
 subscenarios_project_new_cost.name AS project_new_cost,
 subscenarios_project_new_potential.name AS project_new_potential,
 subscenarios_project_new_binary_build_size.name AS project_new_binary_build_size,
 subscenarios_transmission_portfolios.name AS transmission_portfolio,
 subscenarios_transmission_load_zones.name AS transmission_load_zones,
-subscenarios_transmission_existing_capacity.name
-    AS transmission_existing_capacity,
+subscenarios_transmission_specified_capacity.name
+    AS transmission_specified_capacity,
 subscenarios_transmission_new_cost.name
     AS transmission_new_cost,
 subscenarios_transmission_operational_chars.name
@@ -3037,10 +3037,10 @@ LEFT JOIN subscenarios_project_local_capacity_zones
     USING (project_local_capacity_zone_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_chars
     USING (project_local_capacity_chars_scenario_id)
-LEFT JOIN subscenarios_project_existing_capacity
-    USING (project_existing_capacity_scenario_id)
-LEFT JOIN subscenarios_project_existing_fixed_cost
-    USING (project_existing_fixed_cost_scenario_id)
+LEFT JOIN subscenarios_project_specified_capacity
+    USING (project_specified_capacity_scenario_id)
+LEFT JOIN subscenarios_project_specified_fixed_cost
+    USING (project_specified_fixed_cost_scenario_id)
 LEFT JOIN subscenarios_project_new_cost USING (project_new_cost_scenario_id)
 LEFT JOIN subscenarios_project_new_potential
     USING (project_new_potential_scenario_id)
@@ -3050,8 +3050,8 @@ LEFT JOIN subscenarios_transmission_portfolios
     USING (transmission_portfolio_scenario_id)
 LEFT JOIN subscenarios_transmission_load_zones
     USING (transmission_load_zone_scenario_id)
-LEFT JOIN subscenarios_transmission_existing_capacity
-    USING (transmission_existing_capacity_scenario_id)
+LEFT JOIN subscenarios_transmission_specified_capacity
+    USING (transmission_specified_capacity_scenario_id)
 LEFT JOIN subscenarios_transmission_new_cost
     USING (transmission_new_cost_scenario_id)
 LEFT JOIN subscenarios_transmission_operational_chars

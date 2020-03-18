@@ -162,13 +162,13 @@ def load_module_specific_data(
         gen_spec_fixed_cost_per_mw_yr_dict = dict()
         df = pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage, "inputs",
-                         "existing_generation_period_params.tab"),
+                         "specified_generation_period_params.tab"),
             sep="\t"
         )
 
         for row in zip(df["project"],
                        df["period"],
-                       df["existing_capacity_mw"],
+                       df["specified_capacity_mw"],
                        df["fixed_cost_per_mw_yr"]):
             if row[0] in generators_list:
                 generator_period_list.append((row[0], row[1]))
@@ -209,7 +209,7 @@ def get_module_specific_inputs_from_database(
     c = conn.cursor()
     # Select generators of 'gen_spec' capacity type only
     ep_capacities = c.execute(
-        """SELECT project, period, existing_capacity_mw,
+        """SELECT project, period, specified_capacity_mw,
         annual_fixed_cost_per_mw_year
         FROM inputs_project_portfolios
         CROSS JOIN
@@ -217,16 +217,16 @@ def get_module_specific_inputs_from_database(
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
-        (SELECT project, period, existing_capacity_mw
-        FROM inputs_project_existing_capacity
-        WHERE project_existing_capacity_scenario_id = {}
-        AND existing_capacity_mw > 0) as capacity
+        (SELECT project, period, specified_capacity_mw
+        FROM inputs_project_specified_capacity
+        WHERE project_specified_capacity_scenario_id = {}
+        AND specified_capacity_mw > 0) as capacity
         USING (project, period)
         LEFT OUTER JOIN
         (SELECT project, period, 
         annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year
-        FROM inputs_project_existing_fixed_cost
-        WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
+        FROM inputs_project_specified_fixed_cost
+        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'gen_spec';""".format(
@@ -244,7 +244,7 @@ def write_module_specific_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    existing_generation_period_params.tab file
+    specified_generation_period_params.tab file
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -256,30 +256,30 @@ def write_module_specific_model_inputs(
     ep_capacities = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # If existing_generation_period_params.tab file already exists, append
+    # If specified_generation_period_params.tab file already exists, append
     # rows to it
     if os.path.isfile(os.path.join(inputs_directory,
-                                   "existing_generation_period_params.tab")
+                                   "specified_generation_period_params.tab")
                       ):
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"),
+                               "specified_generation_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
             for row in ep_capacities:
                 writer.writerow(row)
-    # If existing_generation_period_params.tab file does not exist,
+    # If specified_generation_period_params.tab file does not exist,
     # write header first, then add input data
     else:
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"),
+                               "specified_generation_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
-                ["project", "period", "existing_capacity_mw",
+                ["project", "period", "specified_capacity_mw",
                  "fixed_cost_per_mw_yr"]
             )
 
