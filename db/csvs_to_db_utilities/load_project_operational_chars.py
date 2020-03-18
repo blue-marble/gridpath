@@ -72,6 +72,7 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
                     project_char=operational_chars_dict
                 )
 
+
 def load_project_variable_profiles(io, c, subscenario_input, data_input):
     """
     Data dictionary is {project:{scenario_id:{stage_id:{timepoint: cap_factor}}}}
@@ -117,6 +118,7 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
         proj_profile_names=project_tmp_profiles_scenarios,
         proj_tmp_profiles=project_tmp_profiles
     )
+
 
 def load_project_hydro_opchar(io, c, subscenario_input, data_input):
     """
@@ -177,37 +179,22 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
     :param data_input:
     :return:
     """
+    project_hr_scenarios = [
+        tuple(x) for x in subscenario_input.to_records(index=False)
+    ]
 
-    project_hr_chars = OrderedDict()
-    project_hr_scenarios = OrderedDict()
+    # Change the order of the columns before creating the list of tuples
+    cols = data_input.columns.tolist()
+    cols = [cols[2], cols[3], cols[0], cols[1]]
+    data_input = data_input[cols]
 
-    for i in subscenario_input.index:
-        sc_id = int(subscenario_input['id'][i])
-        sc_name = subscenario_input['name'][i]
-        sc_description = subscenario_input['description'][i]
-
-        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
-
-        for prj in data_input_subscenario['project'].unique():
-            project_hr_scenarios[(prj, sc_id)] = (sc_name, sc_description)
-
-            project_hr_chars[(prj, sc_id)] = dict()
-            project_hr_chars_by_project = data_input_subscenario.loc[data_input_subscenario['project'] == prj]
-
-            for hr_curve_point in project_hr_chars_by_project['hr_curve_point'].to_list():
-                project_hr_chars[(prj, sc_id)][hr_curve_point] = (float(
-                    project_hr_chars_by_project.loc[
-                        project_hr_chars_by_project[
-                            'hr_curve_point'] == hr_curve_point,
-                        'load_point_mw'].iloc[0]),
-                    float(project_hr_chars_by_project.loc[
-                        project_hr_chars_by_project[
-                            'hr_curve_point'] == hr_curve_point,
-                        'average_heat_rate_mmbtu_per_mwh'].iloc[0]))
+    project_hr_chars = [
+        tuple(x) for x in data_input.to_records(index=False)
+    ]
 
     project_operational_chars.update_project_hr_curves(
         io=io, c=c,
-        proj_opchar_names=project_hr_scenarios,
+        subs_data=project_hr_scenarios,
         proj_hr_chars=project_hr_chars
     )
 

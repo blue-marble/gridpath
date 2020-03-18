@@ -248,29 +248,22 @@ def update_project_hydro_opchar(
 
 def update_project_hr_curves(
         io, c,
-        proj_opchar_names,
+        subs_data,
         proj_hr_chars
 ):
     """
 
     :param io:
     :param c:
-    :param proj_opchar_names: nested dictionary; top level key is the
-    project, second key is the heat_rate_curves_scenario_id, the value is a
-    tuple with the name and description of heat rate curve scenario
-    :param proj_hr_chars: nested dictionary; top level key is the project,
-    second-level key is the heat_rate_curves_scenario_id, the third-level
-    key is the heat rate curve point and the value is a tuple with the load
-    point and average heat rate at that load point
+    :param subs_data: list of tuples with (project,
+        heat_rate_curve_scenario_id, name, description) for each
+        project-subscenario
+    :param proj_hr_chars: list of tuples with (project,
+        heat_rate_curves_scenario_id, hr_curve_point, load_point_mw,
+        average_heat_rate_mmbtu_per_mwh)
     :return:
     """
     # Subscenarios
-    subs_data = []
-    for prj, scenario_id in proj_opchar_names.keys():
-        subs_data.append(
-            (prj, scenario_id, proj_opchar_names[(prj, scenario_id)][0],
-             proj_opchar_names[(prj, scenario_id)][1])
-        )
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, name, description)
@@ -279,21 +272,13 @@ def update_project_hr_curves(
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
-    inputs_data = []
-    for prj, scenario_id in list(proj_hr_chars.keys()):
-        for hr_curve_point in list(proj_hr_chars[(prj, scenario_id)].keys()):
-            inputs_data.append(
-                (prj, scenario_id,
-                 proj_hr_chars[(prj, scenario_id)][hr_curve_point][0],
-                 proj_hr_chars[(prj, scenario_id)][hr_curve_point][1])
-            )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=proj_hr_chars)
 
 
 def update_project_startup_chars(
