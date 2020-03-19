@@ -1,4 +1,4 @@
-project,existing,new_build,capacity_type
+project,specified,new_build,capacity_type
 Coal,,,gen_spec
 Gas_CCGT,,,gen_spec
 Gas_CT,,,gen_spec

@@ -86,7 +86,7 @@ class TestCapacity(unittest.TestCase):
         # We're expecting the capacity_type modules to have added sets to be
         # joined for the final PROJECT_OPERATIONAL_PERIODS
         # The capacity_type modules use the
-        # existing_generation_period_params.tab,
+        # specified_generation_period_params.tab,
         # new_build_generator_vintage_costs.tab,
         # storage_specified_capacities.tab,
         # new_build_storage_vintage_costs.tab,
@@ -98,7 +98,7 @@ class TestCapacity(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "existing_generation_period_params.tab"
+                    "specified_generation_period_params.tab"
                 ),
                 usecols=['project', 'period'],
                 sep="\t"

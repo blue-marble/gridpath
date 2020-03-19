@@ -20,7 +20,7 @@ def get_project_operational_timepoints(project_list):
         pd.read_csv(
             os.path.join(
                 TEST_DATA_DIRECTORY, "inputs",
-                "existing_generation_period_params.tab"
+                "specified_generation_period_params.tab"
             ),
             usecols=['project', 'period'],
             sep="\t"

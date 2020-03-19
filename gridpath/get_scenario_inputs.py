@@ -340,9 +340,9 @@ def write_scenario_description(
         writer.writerow(["project_local_capacity_chars_scenario_id",
                          subscenarios.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID]
                         )
-        writer.writerow(["project_existing_capacity_scenario_id",
+        writer.writerow(["project_specified_capacity_scenario_id",
                          subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID])
-        writer.writerow(["project_existing_fixed_cost_scenario_id",
+        writer.writerow(["project_specified_fixed_cost_scenario_id",
                          subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID])
         writer.writerow(["project_operational_chars_scenario_id",
                          subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID])
@@ -362,7 +362,7 @@ def write_scenario_description(
                          subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID])
         writer.writerow(["transmission_load_zone_scenario_id",
                          subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID])
-        writer.writerow(["transmission_existing_capacity_scenario_id",
+        writer.writerow(["transmission_specified_capacity_scenario_id",
                          subscenarios.
                         TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID])
         writer.writerow(["transmission_operational_chars_scenario_id",

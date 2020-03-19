@@ -10,7 +10,7 @@ from db.common_functions import spin_on_database_lock
 
 def insert_transmission_capacities(
         io, c,
-        transmission_existing_capacity_scenario_id,
+        transmission_specified_capacity_scenario_id,
         scenario_name,
         scenario_description,
         tx_line_period_capacities
@@ -19,7 +19,7 @@ def insert_transmission_capacities(
 
     :param io: 
     :param c: 
-    :param transmission_existing_capacity_scenario_id: 
+    :param transmission_specified_capacity_scenario_id:
     :param scenario_name: 
     :param scenario_description: 
     :param tx_line_period_capacities: 
@@ -30,11 +30,11 @@ def insert_transmission_capacities(
     """
 
     # Subscenarios
-    subs_data = [(transmission_existing_capacity_scenario_id,
+    subs_data = [(transmission_specified_capacity_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT OR IGNORE INTO subscenarios_transmission_existing_capacity
-        (transmission_existing_capacity_scenario_id, name,
+        INSERT OR IGNORE INTO subscenarios_transmission_specified_capacity
+        (transmission_specified_capacity_scenario_id, name,
         description)
         VALUES (?, ?, ?);
         """
@@ -45,14 +45,14 @@ def insert_transmission_capacities(
     for tx_line in list(tx_line_period_capacities.keys()):
         for period in list(tx_line_period_capacities[tx_line].keys()):
             inputs_data.append(
-                (transmission_existing_capacity_scenario_id,
+                (transmission_specified_capacity_scenario_id,
                  tx_line, period,
                  tx_line_period_capacities[tx_line][period][0],
                  tx_line_period_capacities[tx_line][period][1])
             )
     inputs_sql = """
-        INSERT OR IGNORE INTO inputs_transmission_existing_capacity
-        (transmission_existing_capacity_scenario_id,
+        INSERT OR IGNORE INTO inputs_transmission_specified_capacity
+        (transmission_specified_capacity_scenario_id,
         transmission_line, period, min_mw, max_mw)
         VALUES (?, ?, ?, ?, ?);
         """

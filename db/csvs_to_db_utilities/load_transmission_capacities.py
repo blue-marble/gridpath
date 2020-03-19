@@ -42,7 +42,7 @@ def load_transmission_capacities(io, c, subscenario_input, data_input):
 
         transmission_capacities.insert_transmission_capacities(
             io=io, c=c,
-            transmission_existing_capacity_scenario_id=sc_id,
+            transmission_specified_capacity_scenario_id=sc_id,
             scenario_name=sc_name,
             scenario_description=sc_description,
             tx_line_period_capacities=tx_line_period_capacities

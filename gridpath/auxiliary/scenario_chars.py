@@ -394,7 +394,7 @@ class SubScenarios(object):
             "NULL" if p_lc_char_sid is None else p_lc_char_sid
 
         p_ecap_sid = cursor.execute(
-            """SELECT project_existing_capacity_scenario_id
+            """SELECT project_specified_capacity_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
@@ -402,7 +402,7 @@ class SubScenarios(object):
             "NULL" if p_ecap_sid is None else p_ecap_sid
 
         p_efc_sid = cursor.execute(
-            """SELECT project_existing_fixed_cost_scenario_id
+            """SELECT project_specified_fixed_cost_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
@@ -490,7 +490,7 @@ class SubScenarios(object):
             "NULL" if tx_lz_sid is None else tx_lz_sid
 
         tx_ecap_sid = cursor.execute(
-            """SELECT transmission_existing_capacity_scenario_id
+            """SELECT transmission_specified_capacity_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

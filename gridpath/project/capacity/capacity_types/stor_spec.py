@@ -194,8 +194,8 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
     stor_capacities = c.execute(
-        """SELECT project, period, existing_capacity_mw,
-        existing_capacity_mwh,
+        """SELECT project, period, specified_capacity_mw,
+        specified_capacity_mwh,
         annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
         FROM inputs_project_portfolios
         CROSS JOIN
@@ -203,18 +203,18 @@ def get_module_specific_inputs_from_database(
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
-        (SELECT project, period, existing_capacity_mw,
-        existing_capacity_mwh
-        FROM inputs_project_existing_capacity
-        WHERE project_existing_capacity_scenario_id = {}
-        AND existing_capacity_mw > 0) as capacity
+        (SELECT project, period, specified_capacity_mw,
+        specified_capacity_mwh
+        FROM inputs_project_specified_capacity
+        WHERE project_specified_capacity_scenario_id = {}
+        AND specified_capacity_mw > 0) as capacity
         USING (project, period)
         LEFT OUTER JOIN
         (SELECT project, period,
         annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year,
         annual_fixed_cost_per_kwh_year * 1000 AS annual_fixed_cost_per_mwh_year
-        FROM inputs_project_existing_fixed_cost
-        WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
+        FROM inputs_project_specified_fixed_cost
+        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 
