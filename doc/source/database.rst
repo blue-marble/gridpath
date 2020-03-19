@@ -651,9 +651,10 @@ Not all operational types have all the characteristics in
 the :code:`inputs_project_operational_chars`. GridPath's validation suite
 does check whether certain required characteristic for an operational type are
 populated and warns the user if some characteristics that have been filled
-are actually not used by the respective operational type. We will list
-required and optional characteristics for each operational type in this
-section soon.
+are actually not used by the respective operational type. See the matrix below
+for the required and optional characteristics for each operational type.
+
+.. image:: ../graphics/optype_opchar_matrix.png
 
 Several types of operational characteristics vary by dimensions are other
 than project, so they are input in separate tables and linked to the
