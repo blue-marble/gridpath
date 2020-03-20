@@ -562,8 +562,7 @@ def write_module_specific_model_inputs(
                  "unavailable_hours_per_event_min",
                  "unavailable_hours_per_event_max",
                  "available_hours_between_events_min",
-                 "available_hours_between_events_max"
-                 ]
+                 "available_hours_between_events_max"]
             )
 
     with open(availability_file, "a", newline="") as f:
@@ -585,12 +584,11 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     if not quiet:
-        print("project availability")
-    if not quiet:
-        print("project availability binary")
+        print("project availability continuous")
 
     insert_availability_results(
         db=db, c=c, results_directory=results_directory,
