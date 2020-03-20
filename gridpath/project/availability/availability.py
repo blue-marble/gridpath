@@ -3,7 +3,7 @@
 
 from pyomo.environ import Expression
 
-
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import load_subtype_modules
 from gridpath.auxiliary.dynamic_components import required_availability_modules
 
@@ -137,6 +137,8 @@ def import_results_into_database(
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -144,7 +146,17 @@ def import_results_into_database(
     :return:
     """
 
-    # Load in the required capacity type modules
+    # Delete prior results for endogenous types
+    del_sql = """
+        DELETE FROM results_project_availability_endogenous 
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(scenario_id, subproblem, stage), many=False)
+
+    # Load in the required availability type modules
     required_availability_type_modules = \
         get_required_availability_type_modules(scenario_id, c)
     imported_availability_modules = \
