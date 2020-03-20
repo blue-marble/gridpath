@@ -456,8 +456,8 @@ def export_module_specific_results(
     """
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "project_availability_endogenous.csv"),
-              "a", newline="") as f:
+                           "project_availability_endogenous_continuous.csv"),
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
@@ -597,7 +597,7 @@ def import_module_specific_results_into_database(
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "project_availability_endogenous.csv"),
+                           "project_availability_endogenous_continuous.csv"),
               "r") as dispatch_file:
         reader = csv.reader(dispatch_file)
 
