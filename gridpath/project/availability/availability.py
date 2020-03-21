@@ -236,6 +236,12 @@ def get_required_availability_type_modules(scenario_id, c):
     will also be stored in the DynamicComponents class object.
     """
 
+    project_portfolio_scenario_id = c.execute(
+        """SELECT project_portfolio_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(scenario_id)
+    ).fetchone()[0]
+
     project_availability_scenario_id = c.execute(
         """SELECT project_availability_scenario_id 
         FROM scenarios 
@@ -245,8 +251,15 @@ def get_required_availability_type_modules(scenario_id, c):
     required_availability_type_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT availability_type 
+            FROM 
+            (SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, availability_type
             FROM inputs_project_availability_types
-            WHERE project_availability_scenario_id = {}""".format(
+            WHERE project_availability_scenario_id = {}) as av_type_tbl
+            USING (project)""".format(
+                project_portfolio_scenario_id,
                 project_availability_scenario_id
             )
         ).fetchall()
