@@ -236,12 +236,12 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     # Add to list of sets we'll join to get the final
-    # PROJECT_OPERATIONAL_PERIODS set
+    # PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
         "DR_NEW_OPR_PRDS",
     )
     # Add to list of sets we'll join to get the final
-    # STORAGE_OPERATIONAL_PERIODS set
+    # STOR_OPR_PRDS set
     # We'll include shiftable load with storage
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
         "DR_NEW_OPR_PRDS",

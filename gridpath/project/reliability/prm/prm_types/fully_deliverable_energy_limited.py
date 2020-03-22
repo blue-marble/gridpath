@@ -31,13 +31,13 @@ def add_module_specific_components(m, d):
 
     # Will limit this to storage project operational periods in addition to
     # PRM project operational periods
-    m.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS = Set(
+    m.FDDL_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
-        within=m.PRM_PROJECT_OPERATIONAL_PERIODS &
-        m.STORAGE_OPERATIONAL_PERIODS,
+        within=m.PRM_PRJ_OPR_PRDS &
+        m.STOR_OPR_PRDS,
         initialize=lambda mod: [
             (project, period)
-            for (project, period) in mod.PRM_PROJECT_OPERATIONAL_PERIODS
+            for (project, period) in mod.PRM_PRJ_OPR_PRDS
             if project in mod.FDDL_PRM_PROJECTS
         ]
     )
@@ -48,7 +48,7 @@ def add_module_specific_components(m, d):
     ) 
     
     m.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW = Var(
-        m.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS, 
+        m.FDDL_PRM_PRJ_OPR_PRDS, 
         within=NonNegativeReals
     )
 
@@ -64,7 +64,7 @@ def add_module_specific_components(m, d):
             <= mod.Capacity_MW[g, p]
 
     m.Max_FDDL_Project_Capacity_Credit_Constraint = Constraint(
-        m.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS,
+        m.FDDL_PRM_PRJ_OPR_PRDS,
         rule=eligible_capacity_is_less_than_total_capacity_rule
     )
 
@@ -81,7 +81,7 @@ def add_module_specific_components(m, d):
             / mod.min_duration_for_full_capacity_credit[g]
 
     m.FDDL_Project_Capacity_Credit_Duration_Derate_Constraint = Constraint(
-        m.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS,
+        m.FDDL_PRM_PRJ_OPR_PRDS,
         rule=eligible_capacity_duration_derate_rule
     )
     

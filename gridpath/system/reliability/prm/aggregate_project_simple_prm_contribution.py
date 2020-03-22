@@ -37,7 +37,7 @@ def add_model_components(m, d):
         """
         return sum(mod.PRM_Simple_Contribution_MW[g, p]
                    for g in mod.PRM_PROJECTS_BY_PRM_ZONE[z]
-                   if (g, p) in mod.PRM_PROJECT_OPERATIONAL_PERIODS)
+                   if (g, p) in mod.PRM_PRJ_OPR_PRDS)
 
     m.Total_PRM_Simple_Contribution_MW = Expression(
         m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,

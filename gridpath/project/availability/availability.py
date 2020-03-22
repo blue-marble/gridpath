@@ -42,7 +42,7 @@ def add_model_components(m, d):
             availability_derate_rule(mod, g, tmp)
 
     m.Availability_Derate = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=availability_derate_rule
+        m.PRJ_OPR_TMPS, rule=availability_derate_rule
     )
 
 

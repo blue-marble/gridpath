@@ -36,7 +36,7 @@ def generic_add_model_components(
             Set(m.TMPS,
                 initialize=lambda mod, tmp:
                 getattr(mod, reserve_generator_set) &
-                    mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]))
+                    mod.OPR_PRJS_IN_TMP[tmp]))
 
     # Reserve provision
     def total_reserve_rule(mod, ba, tmp):

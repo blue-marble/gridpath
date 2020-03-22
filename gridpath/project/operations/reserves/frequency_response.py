@@ -38,8 +38,8 @@ RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME = \
 RESERVE_BALANCING_AREA_PARAM_NAME = "frequency_response_ba"
 RESERVE_PROJECTS_SET_NAME = "FREQUENCY_RESPONSE_PROJECTS"
 RESERVE_BALANCING_AREAS_SET_NAME = "FREQUENCY_RESPONSE_BAS"
-RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
-    "FREQUENCY_RESPONSE_PROJECT_OPERATIONAL_TIMEPOINTS"
+RESERVE_PRJ_OPR_TMPS_SET_NAME = \
+    "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -85,7 +85,7 @@ def add_model_components(m, d):
         reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
         reserve_balancing_areas_set=RESERVE_BALANCING_AREAS_SET_NAME,
         reserve_project_operational_timepoints_set=
-        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
         reserve_to_energy_adjustment_param=
         RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME
@@ -96,12 +96,12 @@ def add_model_components(m, d):
     m.FREQUENCY_RESPONSE_PARTIAL_PROJECTS = Set(
         within=m.FREQUENCY_RESPONSE_PROJECTS)
 
-    # m.FREQUENCY_RESPONSE_PARTIAL_PROJECT_OPERATIONAL_TIMEPOINTS = \
+    # m.FREQUENCY_RESPONSE_PARTIAL_PRJ_OPR_TMPS = \
     #     Set(dimen=2,
     #         rule=lambda mod:
-    #         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+    #         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
     #             if g in m.FREQUENCY_RESPONSE_PARTIAL_PROJECTS),
-    #         within=m.FREQUENCY_RESPONSE_PROJECT_OPERATIONAL_TIMEPOINTS)
+    #         within=m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -184,7 +184,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "reserve_provision_mw", "partial"])
-        for (p, tmp) in m.FREQUENCY_RESPONSE_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

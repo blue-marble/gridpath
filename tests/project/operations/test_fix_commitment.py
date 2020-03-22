@@ -94,7 +94,7 @@ class TestFixCommitment(unittest.TestCase):
         ])
         self.assertListEqual(expected_final_projects, actual_final_projects)
 
-        # Set: FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: FINAL_COMMITMENT_PRJ_OPR_TMPS
         # Note: this should be getting the timepoints from the
         # scenario-horizon-stage inputs directory, not the timepoints from the
         # root scenario director (so 2030 and horizon 202002 shouldn't be here)
@@ -222,7 +222,7 @@ class TestFixCommitment(unittest.TestCase):
         ])
         actual_final_prj_op_tmps = sorted([
             (prj, tmp) for (prj, tmp)
-            in instance.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS
+            in instance.FINAL_COMMITMENT_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_final_prj_op_tmps,
                              actual_final_prj_op_tmps)
@@ -237,7 +237,7 @@ class TestFixCommitment(unittest.TestCase):
         self.assertListEqual(expected_fixed_projects,
                              actual_fixed_projects)
         
-        # Set: FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: FIXED_COMMITMENT_PRJ_OPR_TMPS
         expected_fixed_prj_op_tmps = sorted([
             ("Coal", 20200101), ("Coal", 20200102),
             ("Coal", 20200103), ("Coal", 20200104),
@@ -266,7 +266,7 @@ class TestFixCommitment(unittest.TestCase):
         ])
         actual_fixed_prj_op_tmps = sorted([
             (prj, tmp) for (prj, tmp) 
-            in instance.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS
+            in instance.FIXED_COMMITMENT_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_fixed_prj_op_tmps,
                              actual_fixed_prj_op_tmps)
@@ -301,7 +301,7 @@ class TestFixCommitment(unittest.TestCase):
         )
         actual_fixed_commitment = OrderedDict(sorted({
             (prj, tmp): instance.fixed_commitment[prj, tmp] for (prj, tmp)
-            in instance.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS}.items()
+            in instance.FIXED_COMMITMENT_PRJ_OPR_TMPS}.items()
                                                      )
                                               )
         self.assertDictEqual(expected_fixed_commitment,

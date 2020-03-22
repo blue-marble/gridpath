@@ -38,10 +38,10 @@ def add_model_components(m, d):
             initialize=determine_rps_generators_by_rps_zone)
 
     # Get operational RPS projects - timepoints combinations
-    m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
-        within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.RPS_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in
-                          mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                          mod.PRJ_OPR_TMPS
                           if p in mod.RPS_PROJECTS]
     )
     # Import needed operational modules
@@ -62,7 +62,7 @@ def add_model_components(m, d):
             rec_provision_rule(mod, g, tmp)
 
     m.Scheduled_RPS_Energy_MW = Expression(
-        m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS, 
+        m.RPS_PRJ_OPR_TMPS, 
         rule=scheduled_recs_rule
     )
 
@@ -82,7 +82,7 @@ def add_model_components(m, d):
             scheduled_curtailment_rule(mod, g, tmp)
 
     m.Scheduled_Curtailment_MW = Expression(
-        m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS, rule=scheduled_curtailment_rule
+        m.RPS_PRJ_OPR_TMPS, rule=scheduled_curtailment_rule
     )
 
     def subhourly_curtailment_rule(mod, g, tmp):
@@ -100,7 +100,7 @@ def add_model_components(m, d):
             subhourly_curtailment_rule(mod, g, tmp)
 
     m.Subhourly_Curtailment_MW = Expression(
-        m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS, rule=subhourly_curtailment_rule
+        m.RPS_PRJ_OPR_TMPS, rule=subhourly_curtailment_rule
     )
 
     def subhourly_recs_delivered_rule(mod, g, tmp):
@@ -118,7 +118,7 @@ def add_model_components(m, d):
             subhourly_energy_delivered_rule(mod, g, tmp)
 
     m.Subhourly_RPS_Energy_Delivered_MW = Expression(
-        m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.RPS_PRJ_OPR_TMPS,
         rule=subhourly_recs_delivered_rule
     )
 
@@ -166,7 +166,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "scheduled_curtailment_mw",
                          "subhourly_rps_energy_delivered_mw",
                          "subhourly_curtailment_mw"])
-        for (p, tmp) in m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.RPS_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.load_zone[p],

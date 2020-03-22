@@ -164,18 +164,18 @@ def add_module_specific_components(m, d):
     m.AVL_BIN = Set(within=m.PROJECTS)
 
     m.AVL_BIN_OPR_PRDS = Set(
-        dimen=2, within=m.PROJECT_OPERATIONAL_PERIODS,
+        dimen=2, within=m.PRJ_OPR_PRDS,
         rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_PERIODS
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
             if g in mod.AVL_BIN)
     )
 
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
     m.AVL_BIN_OPR_TMPS = Set(
-        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        dimen=2, within=m.PRJ_OPR_TMPS,
         rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.AVL_BIN)
     )
 

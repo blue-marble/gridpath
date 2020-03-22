@@ -26,8 +26,8 @@ RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME = \
 RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME = \
     "spinning_reserves_ramp_rate_limit"
 RESERVE_PROJECTS_SET_NAME = "SPINNING_RESERVES_PROJECTS"
-RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
-    "SPINNING_RESERVES_PROJECT_OPERATIONAL_TIMEPOINTS"
+RESERVE_PRJ_OPR_TMPS_SET_NAME = \
+    "SPINNING_RESERVES_PRJ_OPR_TMPS"
 
 
 def add_model_components(m, d):
@@ -43,7 +43,7 @@ def add_model_components(m, d):
         d=d,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_project_operational_timepoints_set=
-        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
         reserve_provision_ramp_rate_limit_param
         =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,

@@ -56,7 +56,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Power_Provision_MW = Expression(m.PRJ_OPR_TMPS,
                                       rule=power_provision_rule)
 
 
@@ -82,7 +82,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "operational_type", "balancing_type",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "load_zone", "technology", "power_mw"])
-        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

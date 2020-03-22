@@ -76,7 +76,7 @@ def add_model_components(m, d):
         """
         return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
 
-    m.Variable_OM_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Variable_OM_Cost = Expression(m.PRJ_OPR_TMPS,
                                     rule=variable_om_cost_rule)
 
     # From here, the operational modules determine how the model components are
@@ -98,7 +98,7 @@ def add_model_components(m, d):
             mod.fuel_price_per_mmbtu[
                 mod.fuel[g], mod.period[tmp], mod.month[tmp]]
 
-    m.Fuel_Cost = Expression(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Fuel_Cost = Expression(m.FUEL_PRJ_OPR_TMPS,
                              rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
@@ -112,7 +112,7 @@ def add_model_components(m, d):
         return imported_operational_modules[gen_op_type].\
             startup_cost_rule(mod, g, tmp)
 
-    m.Startup_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Startup_Cost = Expression(m.PRJ_OPR_TMPS,
                                 rule=startup_cost_rule)
 
     def shutdown_cost_rule(mod, g, tmp):
@@ -125,7 +125,7 @@ def add_model_components(m, d):
         return imported_operational_modules[gen_op_type].\
             shutdown_cost_rule(mod, g, tmp)
 
-    m.Shutdown_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Shutdown_Cost = Expression(m.PRJ_OPR_TMPS,
                                  rule=shutdown_cost_rule)
 
 
@@ -152,7 +152,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "number_of_hours_in_timepoint", "load_zone", "technology",
              "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost"]
         )
-        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

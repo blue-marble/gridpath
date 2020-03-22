@@ -118,14 +118,14 @@ class TestRECs(unittest.TestCase):
                                          )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
-        # Set: RPS_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: RPS_PRJ_OPR_TMPS
         expected_rps_prj_op_tmp = sorted(
             get_project_operational_timepoints(expected_rps_projects)
         )
 
         actual_rps_prj_op_tmp = sorted([
             (prj, tmp) for (prj, tmp)
-            in instance.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
+            in instance.RPS_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_rps_prj_op_tmp, actual_rps_prj_op_tmp)
 

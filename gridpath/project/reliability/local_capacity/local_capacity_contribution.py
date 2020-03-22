@@ -40,7 +40,7 @@ def add_model_components(m, d):
             * mod.local_capacity_fraction[g]
 
     m.Local_Capacity_Contribution_MW = Expression(
-        m.LOCAL_CAPACITY_PROJECT_OPERATIONAL_PERIODS, rule=local_capacity_rule
+        m.LOCAL_CAPACITY_PRJ_OPR_PRDS, rule=local_capacity_rule
     )
 
 
@@ -83,7 +83,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "capacity_mw",
                          "local_capacity_fraction",
                          "local_capacity_contribution_mw"])
-        for (prj, period) in m.LOCAL_CAPACITY_PROJECT_OPERATIONAL_PERIODS:
+        for (prj, period) in m.LOCAL_CAPACITY_PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
                 period,

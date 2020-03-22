@@ -36,25 +36,25 @@ def add_model_components(m, d):
     # is the final commitment stage
     m.FINAL_COMMITMENT_PROJECTS = Set()
 
-    m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
+    m.FINAL_COMMITMENT_PRJ_OPR_TMPS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                 if g in mod.FINAL_COMMITMENT_PROJECTS))
 
     # The generators that have already had their commitment fixed in a prior
     # commitment stage
     m.FIXED_COMMITMENT_PROJECTS = Set()
 
-    m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
+    m.FIXED_COMMITMENT_PRJ_OPR_TMPS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                 if g in mod.FIXED_COMMITMENT_PROJECTS))
 
     # Params
     m.fixed_commitment = Param(
-        m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.FIXED_COMMITMENT_PRJ_OPR_TMPS,
         within=NonNegativeReals)
 
     # Expressions
@@ -69,7 +69,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             commitment_rule(mod, g, tmp)
-    m.Commitment = Expression(m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.Commitment = Expression(m.FINAL_COMMITMENT_PRJ_OPR_TMPS,
                               rule=commitment_rule)
 
 
@@ -169,7 +169,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             None: fixed_commitment_projects
         }
         data_portal.data()[
-            "FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS"
+            "FIXED_COMMITMENT_PRJ_OPR_TMPS"
         ] = {None: projects_timepoints}
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
     else:
@@ -202,7 +202,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
             "pass_through_inputs", "fixed_commitment.tab"), "a") \
             as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t", lineterminator="\n")
-        for (g, tmp) in m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (g, tmp) in m.FINAL_COMMITMENT_PRJ_OPR_TMPS:
             fixed_commitment_writer.writerow(
                 [g, tmp, stage, final_commitment_stage_dict[g],
                  m.Commitment[g, tmp].expr.value]

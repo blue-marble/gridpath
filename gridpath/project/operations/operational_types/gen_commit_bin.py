@@ -509,9 +509,9 @@ def add_module_specific_components(m, d):
     )
 
     m.GEN_COMMIT_BIN_OPR_TMPS = Set(
-        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        dimen=2, within=m.PRJ_OPR_TMPS,
         rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_COMMIT_BIN)
     )
 
@@ -536,7 +536,7 @@ def add_module_specific_components(m, d):
     m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, s in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
             if g == _g)
     )

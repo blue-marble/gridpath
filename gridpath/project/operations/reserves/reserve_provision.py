@@ -207,7 +207,7 @@ def generic_add_model_components(m, d,
     setattr(m, reserve_project_operational_timepoints_set,
             Set(dimen=2,
                 rule=lambda mod:
-                set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                     if g in getattr(mod, reserve_projects_set))
                 )
             )

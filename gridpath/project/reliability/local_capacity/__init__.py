@@ -32,10 +32,10 @@ def add_model_components(m, d):
              if mod.local_capacity_zone[p] == local_capacity_z])
 
     # Get operational local capacity projects - timepoints combinations
-    m.LOCAL_CAPACITY_PROJECT_OPERATIONAL_PERIODS = Set(
-        within=m.PROJECT_OPERATIONAL_PERIODS,
+    m.LOCAL_CAPACITY_PRJ_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
         rule=lambda mod: [(prj, p) for (prj, p) in
-                          mod.PROJECT_OPERATIONAL_PERIODS
+                          mod.PRJ_OPR_PRDS
                           if prj in mod.LOCAL_CAPACITY_PROJECTS]
     )
 

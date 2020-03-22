@@ -34,8 +34,8 @@ RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME = \
 RESERVE_BALANCING_AREA_PARAM_NAME = "lf_reserves_up_zone"
 RESERVE_PROJECTS_SET_NAME = "LF_RESERVES_UP_PROJECTS"
 RESERVE_BALANCING_AREAS_SET_NAME = "LF_RESERVES_UP_ZONES"
-RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
-    "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS"
+RESERVE_PRJ_OPR_TMPS_SET_NAME = \
+    "LF_RESERVES_UP_PRJ_OPR_TMPS"
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -81,7 +81,7 @@ def add_model_components(m, d):
         reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
         reserve_balancing_areas_set=RESERVE_BALANCING_AREAS_SET_NAME,
         reserve_project_operational_timepoints_set=
-        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
         reserve_to_energy_adjustment_param=
         RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME
@@ -138,7 +138,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         stage=stage,
         module_name=MODULE_NAME,
         reserve_project_operational_timepoints_set=
-        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
         reserve_ba_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
     )

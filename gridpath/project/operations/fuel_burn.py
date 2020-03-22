@@ -63,12 +63,12 @@ def add_model_components(m, d):
 
     # TODO: remove lambda mod, seems redundant (see e.g. startup fuel burn)?
     m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=lambda mod, g, tmp: fuel_burn_rule(mod, g, tmp)
     )
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.PRJ_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
 
@@ -84,7 +84,7 @@ def add_model_components(m, d):
             + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
 
     m.Total_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
 
@@ -111,7 +111,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
-        for (p, tmp) in m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

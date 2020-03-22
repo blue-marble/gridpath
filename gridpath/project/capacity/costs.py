@@ -53,7 +53,7 @@ def add_model_components(m, d):
         return imported_capacity_modules[mod.capacity_type[g]].\
             capacity_cost_rule(mod, g, p)
     m.Capacity_Cost_in_Period = \
-        Expression(m.PROJECT_OPERATIONAL_PERIODS,
+        Expression(m.PRJ_OPR_PRDS,
                    rule=capacity_cost_rule)
 
 
@@ -74,7 +74,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ["project", "period", "technology", "load_zone",
              "annualized_capacity_cost"]
         )
-        for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
+        for (prj, p) in m.PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
                 p,

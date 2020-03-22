@@ -40,7 +40,7 @@ def add_model_components(m, d):
             * mod.elcc_simple_fraction[g]
 
     m.PRM_Simple_Contribution_MW = Expression(
-        m.PRM_PROJECT_OPERATIONAL_PERIODS, rule=elcc_simple_rule
+        m.PRM_PRJ_OPR_PRDS, rule=elcc_simple_rule
     )
 
 
@@ -84,7 +84,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "elcc_eligible_capacity_mw",
                          "elcc_simple_fraction",
                          "elcc_mw"])
-        for (prj, period) in m.PRM_PROJECT_OPERATIONAL_PERIODS:
+        for (prj, period) in m.PRM_PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
                 period,

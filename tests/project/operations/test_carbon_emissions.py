@@ -146,14 +146,14 @@ class TestCarbonEmissions(unittest.TestCase):
                                          )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
-        # Set: CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: CARBONACEOUS_PRJ_OPR_TMPS
         expected_carb_prj_op_tmp = sorted(
             get_project_operational_timepoints(expected_carbonaceous_projects)
         )
 
         actual_carb_prj_op_tmp = sorted([
             (prj, tmp) for (prj, tmp)
-            in instance.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS
+            in instance.CARBONACEOUS_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_carb_prj_op_tmp, actual_carb_prj_op_tmp)
 

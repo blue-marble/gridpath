@@ -95,7 +95,7 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         ])
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Set: FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
+        # Set: FDDL_PRM_PRJ_OPR_PRDS
         expected_proj_period_set = sorted([
             ("Battery", 2020), ("Battery", 2030),
             ("Battery_Binary", 2020), ("Battery_Binary", 2030),
@@ -103,7 +103,7 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
-            in instance.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
+            in instance.FDDL_PRM_PRJ_OPR_PRDS
         ])
 
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)

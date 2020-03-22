@@ -94,17 +94,17 @@ def add_model_components(m, d):
         dimen=2
     )
 
-    m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+    m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.FUEL_PRJS)
     )
 
     m.FUEL_PRJ_SGMS_OPR_TMPS = Set(
         dimen=3,
         rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, s in mod.FUEL_PRJ_SGMS
             if g in mod.FUEL_PRJS and g == _g)
     )

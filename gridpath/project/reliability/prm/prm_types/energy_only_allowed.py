@@ -39,12 +39,12 @@ def add_module_specific_components(m, d):
          "energy_only_allowed"]
     )
 
-    m.EOA_PRM_PROJECT_OPERATIONAL_PERIODS = Set(
+    m.EOA_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
-        within=m.PRM_PROJECT_OPERATIONAL_PERIODS,
+        within=m.PRM_PRJ_OPR_PRDS,
         initialize=lambda mod: [
             (project, period)
-            for (project, period) in mod.PRM_PROJECT_OPERATIONAL_PERIODS
+            for (project, period) in mod.PRM_PRJ_OPR_PRDS
             if project in mod.EOA_PRM_PROJECTS
         ]
     )
@@ -53,10 +53,10 @@ def add_module_specific_components(m, d):
     # total capacity since in some cases full deliverability may require
     # additional costs to be incurred (e.g. for transmission, etc.)
     m.Deliverable_Capacity_MW = Var(
-        m.EOA_PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
+        m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals
     )
     m.Energy_Only_Capacity_MW = Var(
-        m.EOA_PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
+        m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals
     )
 
     def max_deliverable_capacity_constraint(mod, g, p):
@@ -72,7 +72,7 @@ def add_module_specific_components(m, d):
             == mod.Capacity_MW[g, p]
 
     m.Max_Deliverable_Capacity_Constraint = Constraint(
-        m.EOA_PRM_PROJECT_OPERATIONAL_PERIODS,
+        m.EOA_PRM_PRJ_OPR_PRDS,
         rule=max_deliverable_capacity_constraint
     )
 
@@ -129,7 +129,7 @@ def add_module_specific_components(m, d):
         return sum(mod.Capacity_MW[prj, p]
                    for prj
                    in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.EOA_PRM_PROJECT_OPERATIONAL_PERIODS
+                   if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
                    )
 
     m.Deliverability_Group_Total_Capacity_MW = Expression(
@@ -148,7 +148,7 @@ def add_module_specific_components(m, d):
         return sum(mod.Deliverable_Capacity_MW[prj, p]
                    for prj
                    in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.EOA_PRM_PROJECT_OPERATIONAL_PERIODS
+                   if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
                    )
 
     m.Deliverability_Group_Deliverable_Capacity_MW = Expression(
@@ -167,7 +167,7 @@ def add_module_specific_components(m, d):
         return sum(mod.Energy_Only_Capacity_MW[prj, p]
                    for prj
                    in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.PROJECT_OPERATIONAL_PERIODS
+                   if (prj, p) in mod.PRJ_OPR_PRDS
                    )
 
     m.Deliverability_Group_Energy_Only_Capacity_MW = Expression(
@@ -312,7 +312,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
             "total_capacity_mw",
             "deliverable_capacity_mw",
             "energy_only_capacity"])
-        for (prj, p) in m.EOA_PRM_PROJECT_OPERATIONAL_PERIODS:
+        for (prj, p) in m.EOA_PRM_PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
                 p,
