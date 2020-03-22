@@ -56,14 +56,14 @@ def add_module_specific_components(m, d):
     | | :code:`GEN_ALWAYS_ON_FUEL_PRJ_OPR_TMPS`                               |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_always_on`        |
-    | operational type who are also in :code:`FUEL_PRJS`, and their       |
+    | operational type who are also in :code:`FUEL_PRJS`, and their           |
     | operational timepoints.                                                 |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_ALWAYS_ON_OPR_TMPS_FUEL_SEG`                               |
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_always_on`      |
     | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PRJS`).                  |
+    | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
 
     |

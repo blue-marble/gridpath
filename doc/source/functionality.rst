@@ -312,7 +312,7 @@ Binary New-Build Storage (*stor_new_bin*)
 
 Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new
 
 .. _project-availability-type-section-ref:
 
