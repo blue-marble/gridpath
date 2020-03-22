@@ -20,10 +20,10 @@ def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
     solver_options_input_data = []
     for i in solver_options_input.index:
         solver_options_input_data.append(
-            (int(solver_options_input['solver_options_id'][i]),
+            (solver_options_input['solver_options_id'][i],
              solver_options_input['solver'][i],
              solver_options_input['solver_option_name'][i],
-             int(solver_options_input['solver_option_value'][i]))
+             solver_options_input['solver_option_value'][i])
         )
 
         inputs_sql = """
