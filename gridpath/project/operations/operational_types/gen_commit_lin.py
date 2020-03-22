@@ -72,7 +72,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_lin`     |
     | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PRJS`).                  |
+    | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`                             |
     |                                                                         |

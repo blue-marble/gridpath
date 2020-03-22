@@ -74,7 +74,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_cap`     |
     | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PRJS`).                  |
+    | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
 
     |
