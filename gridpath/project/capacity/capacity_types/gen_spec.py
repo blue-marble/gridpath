@@ -37,9 +37,8 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set of project-period combinations that describes the   |
     | project capacity available in a given period. This set is added to the  |
-    | list of sets to join to get the final                                   |
-    | :code:`PRJ_OPR_PRDS` set defined in                      |
-    | **gridpath.project.capacity.capacity**.                                 |
+    | list of sets to join to get the final :code:`PRJ_OPR_PRDS` set defined  |
+    | in **gridpath.project.capacity.capacity**.                              |
     +-------------------------------------------------------------------------+
 
     |

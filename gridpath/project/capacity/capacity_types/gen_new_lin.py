@@ -126,9 +126,8 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set that includes the periods when project capacity of  |
     | any vintage *could* be operational if built. This set is added to the   |
-    | list of sets to join to get the final                                   |
-    | :code:`PRJ_OPR_PRDS` set defined in                      |
-    | **gridpath.project.capacity.capacity**.                                 |
+    | list of sets to join to get the final :code:`PRJ_OPR_PRDS` set defined  |
+    | in **gridpath.project.capacity.capacity**.                              |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_NEW_LIN_VNTS_OPR_IN_PERIOD`                                |
     | | *Defined over*: :code:`PERIODS`                                       |
