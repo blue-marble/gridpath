@@ -143,7 +143,15 @@ def load_csv_data(conn, csv_path, quiet):
     csv_data_master = pd.read_csv(os.path.join(folder_path, 'csv_data_master.csv'))
 
     #### LOAD TEMPORAL DATA ####
-    temporal_directory = os.path.join(folder_path, "temporal")
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'temporal', 'include'
+    ].iloc[0] != 1:
+        print("ERROR: inputs_temporal table is required")
+        sys.exit()
+    else:
+        temporal_directory = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'temporal', 'path'].iloc[
+            0])
     # Get list of subdirectories (which are the names of our subscenarios)
     # Each temporal subscenario is a directory, with the scenario ID,
     # underscore, and the scenario name as the name of the directory (already
