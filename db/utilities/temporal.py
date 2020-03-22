@@ -165,8 +165,8 @@ def load_from_csvs(conn, subscenario_directory):
     # The subscenario description must be in the description.txt file under
     # the subscenario directory
     directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_")[0])
-    subscenario_name = directory_basename.split("_")[1]
+    subscenario_id = int(directory_basename.split("_", 1)[0])
+    subscenario_name = directory_basename.split("_", 1)[1]
     with open(description_file, "r") as f:
         subscenario_description = f.read()
 
