@@ -229,9 +229,9 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
         sc_id_type.append(("PROJECT_NEW_COST_SCENARIO_ID",
                            "New Build"))
     if bool(req_cap_types & existing_build_types):
-        sc_id_type.append(("PROJECT_EXISTING_CAPACITY_SCENARIO_ID",
+        sc_id_type.append(("PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID",
                            "Existing"))
-        sc_id_type.append(("PROJECT_EXISTING_FIXED_COST_SCENARIO_ID",
+        sc_id_type.append(("PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID",
                            "Existing"))
     if bool(req_cap_types & dr_types):
         sc_id_type.append(("PROJECT_NEW_POTENTIAL_SCENARIO_ID",

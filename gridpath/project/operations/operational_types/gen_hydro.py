@@ -757,7 +757,7 @@ def get_module_specific_inputs_from_database(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
