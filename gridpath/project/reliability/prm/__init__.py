@@ -74,17 +74,33 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_zones = c.execute(
         """SELECT project, prm_zone, prm_type
         FROM 
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
         WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
+        USING (project)
         LEFT OUTER JOIN
         (SELECT project, prm_type
         FROM inputs_project_elcc_chars
         WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
         USING (project)
+        -- Filter out projects whose PRM zone is not one included in our 
+        -- prm_zone_sceenario_id
+        WHERE prm_zone in (
+                SELECT prm_zone
+                    FROM inputs_geography_prm_zones
+                    WHERE prm_zone_scenario_id = {}
+        );
         """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+            subscenarios.PRM_ZONE_SCENARIO_ID
         )
     )
 
