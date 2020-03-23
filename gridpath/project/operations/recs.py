@@ -193,7 +193,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([p, m.rps_zone[p]])
 
 
-
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -203,11 +202,35 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     c = conn.cursor()
+
+    # Get the RPS zones for project in our portfolio and with zones in our
+    # RPS zone
     project_zones = c.execute(
         """SELECT project, rps_zone
-        FROM inputs_project_rps_zones
-            WHERE project_rps_zone_scenario_id = {}""".format(
-            subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN 
+        -- Get rps zones for those projects
+        (SELECT project, rps_zone
+            FROM inputs_project_rps_zones
+            WHERE project_rps_zone_scenario_id = {}
+        ) as prj_rps_zone_tbl
+        USING (project)
+        -- Filter out projects whose RPS zone is not one included in our 
+        -- rps_zone_scenario_id
+        WHERE rps_zone in (
+                SELECT rps_zone
+                    FROM inputs_geography_rps_zones
+                    WHERE rps_zone_scenario_id = {}
+        );
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID,
+            subscenarios.RPS_ZONE_SCENARIO_ID
         )
     )
 
