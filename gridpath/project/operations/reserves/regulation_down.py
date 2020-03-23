@@ -153,7 +153,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
 
     # Get project BA
-    project_bas = generic_get_inputs_from_database(
+    project_bas, prj_derates = generic_get_inputs_from_database(
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -163,16 +163,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         subscenarios.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID,
         ba_subscenario_id=subscenarios.REGULATION_DOWN_BA_SCENARIO_ID
 
-    )
-
-    # Get regulation_down footroom derate
-    c2 = conn.cursor()
-    prj_derates = c2.execute(
-        """SELECT project, regulation_down_derate
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {};""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
-        )
     )
 
     return project_bas, prj_derates

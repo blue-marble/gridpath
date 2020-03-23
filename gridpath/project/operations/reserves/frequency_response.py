@@ -209,7 +209,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     # Get project BA
-    project_bas = generic_get_inputs_from_database(
+    project_bas, prj_derates = generic_get_inputs_from_database(
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -219,16 +219,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID,
         ba_subscenario_id=subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID
 
-    )
-
-    c2 = conn.cursor()
-    # Get frequency_response footroom derate
-    prj_derates = c2.execute(
-        """SELECT project, frequency_response_derate
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {};""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
-        )
     )
 
     return project_bas, prj_derates

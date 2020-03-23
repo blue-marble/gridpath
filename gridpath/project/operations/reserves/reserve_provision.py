@@ -411,17 +411,34 @@ def generic_get_inputs_from_database(
         )
     )
 
-    # Get lf_reserves_up footroom derate
+    # Get headroom/footroom derate
+    # TODO: add validation to catch projects that have a derate but don't
+    #  have a reserve BA specified
     c2 = conn.cursor()
-    prj_derates = c2.execute(
-        """SELECT project, lf_reserves_up_derate
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {};""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
+    project_derates = c2.execute("""
+        SELECT project, {}_derate
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN 
+        -- Get derates for those projects
+        (SELECT project, {}_derate
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {}
+        ) as prj_derate_tbl
+        USING (project);
+        """.format(
+            reserve_type,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            reserve_type,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
     )
 
-    return project_bas
+    return project_bas, project_derates
 
 
 
