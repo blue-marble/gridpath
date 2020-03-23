@@ -118,9 +118,7 @@ def insert_project_availability_endogenous(
     :param project_avail: {project: {scenario_id: (
         unavailable_hours_per_period,
         unavailable_hours_per_event_min,
-        unavailable_hours_per_event_max,
-        available_hours_between_events_min,
-        available_hours_between_events_max)}}
+        available_hours_between_events_min)}}
     """
 
     # "Subscenario"
@@ -148,9 +146,7 @@ def insert_project_availability_endogenous(
                  subscenario_id,
                  project_avail[prj][subscenario_id][0],
                  project_avail[prj][subscenario_id][1],
-                 project_avail[prj][subscenario_id][2],
-                 project_avail[prj][subscenario_id][3],
-                 project_avail[prj][subscenario_id][4])
+                 project_avail[prj][subscenario_id][2])
             )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_availability_endogenous
@@ -158,9 +154,7 @@ def insert_project_availability_endogenous(
         endogenous_availability_scenario_id, 
         unavailable_hours_per_period,
         unavailable_hours_per_event_min,
-        unavailable_hours_per_event_max,
-        available_hours_between_events_min,
-        available_hours_between_events_max)
-        VALUES (?, ?, ?, ?, ?, ?, ?);
+        available_hours_between_events_min)
+        VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

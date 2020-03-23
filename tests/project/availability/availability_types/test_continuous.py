@@ -135,19 +135,6 @@ class TestContinuousAvailabilityType(unittest.TestCase):
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)
 
-        # Param: avl_cont_max_unavl_hrs_per_event
-        expected_unavailable_hours_per_event = get_endogenous_params(
-            test_data_directory=TEST_DATA_DIRECTORY,
-            param="unavailable_hours_per_event_max",
-            project_subset=actual_project_subset
-        )
-        actual_unavailable_hours_per_event = {
-            prj: instance.avl_cont_max_unavl_hrs_per_event[prj]
-            for prj in instance.AVL_CONT
-        }
-        self.assertDictEqual(expected_unavailable_hours_per_event,
-                             actual_unavailable_hours_per_event)
-
         # Param: avl_cont_min_avl_hrs_between_events
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
@@ -156,19 +143,6 @@ class TestContinuousAvailabilityType(unittest.TestCase):
         )
         actual_unavailable_hours_per_event = {
             prj: instance.avl_cont_min_avl_hrs_between_events[prj]
-            for prj in instance.AVL_CONT
-        }
-        self.assertDictEqual(expected_unavailable_hours_per_event,
-                             actual_unavailable_hours_per_event)
-
-        # Param: avl_cont_max_avl_hrs_between_events
-        expected_unavailable_hours_per_event = get_endogenous_params(
-            test_data_directory=TEST_DATA_DIRECTORY,
-            param="available_hours_between_events_max",
-            project_subset=actual_project_subset
-        )
-        actual_unavailable_hours_per_event = {
-            prj: instance.avl_cont_max_avl_hrs_between_events[prj]
             for prj in instance.AVL_CONT
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,

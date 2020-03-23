@@ -64,24 +64,11 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The minimum number of hours an unavailability event should last for.    |
     +-------------------------------------------------------------------------+
-    | | :code:`avl_bin_max_unavl_hrs_per_event`                               |
-    | | *Defined over*: :code:`AVL_BIN`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The maximum number of hours an unavailability event can last for.       |
-    +-------------------------------------------------------------------------+
     | | :code:`avl_bin_min_avl_hrs_between_events`                            |
     | | *Defined over*: :code:`AVL_BIN`                                       |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The minimum number of hours a project should be available between       |
-    | unavailability events.                                                  |
-    +-------------------------------------------------------------------------+
-    | | :code:`avl_bin_max_avl_hrs_between_events`                            |
-    | | *Defined over*: :code:`AVL_BIN`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The maximum number of hours a project can be available between          |
     | unavailability events.                                                  |
     +-------------------------------------------------------------------------+
 
@@ -137,23 +124,11 @@ def add_module_specific_components(m, d):
     | The duration of each unavailability event should be larger than or      |
     | equal to :code:`avl_bin_min_unavl_hrs_per_event` hours.                 |
     +-------------------------------------------------------------------------+
-    | | :code:`AvlBin_Max_Event_Duration_Constraint`                          |
-    | | *Defined over*: :code:`AVL_BIN_OPR_TMPS`                              |
-    |                                                                         |
-    | The duration of each unavailability event should be smaller than or     |
-    | equal to :code:`avl_bin_max_unavl_hrs_per_event` hours.                 |
-    +-------------------------------------------------------------------------+
     | | :code:`AvlBin_Min_Time_Between_Events_Constraint`                     |
     | | *Defined over*: :code:`AVL_BIN_OPR_TMPS`                              |
     |                                                                         |
     | The time between unavailability events should be larger than or equal   |
     | to :code:`avl_bin_min_avl_hrs_between_events` hours.                    |
-    +-------------------------------------------------------------------------+
-    | | :code:`AvlBin_Max_Time_Between_Events_Constraint`                     |
-    | | *Defined over*: :code:`AVL_BIN_OPR_TMPS`                              |
-    |                                                                         |
-    | The time between unavailability events should be smaller than or equal  |
-    | to :code:`avl_bin_max_avl_hrs_between_events` hours.                    |
     +-------------------------------------------------------------------------+
 
     """
@@ -190,17 +165,10 @@ def add_module_specific_components(m, d):
         m.AVL_BIN, within=NonNegativeReals
     )
 
-    m.avl_bin_max_unavl_hrs_per_event = Param(
-        m.AVL_BIN, within=NonNegativeReals
-    )
-
     m.avl_bin_min_avl_hrs_between_events = Param(
         m.AVL_BIN, within=NonNegativeReals
     )
 
-    m.avl_bin_max_avl_hrs_between_events = Param(
-        m.AVL_BIN, within=NonNegativeReals
-    )
 
     # Variables
     ###########################################################################
@@ -238,19 +206,9 @@ def add_module_specific_components(m, d):
         rule=event_min_duration_rule
     )
 
-    m.AvlBin_Max_Event_Duration_Constraint = Constraint(
-        m.AVL_BIN_OPR_TMPS,
-        rule=event_max_duration_rule
-    )
-
     m.AvlBin_Min_Time_Between_Events_Constraint = Constraint(
         m.AVL_BIN_OPR_TMPS,
         rule=min_time_between_events_rule
-    )
-
-    m.AvlBin_Max_Time_Between_Events_Constraint = Constraint(
-        m.AVL_BIN_OPR_TMPS,
-        rule=max_time_between_events_rule
     )
 
 
@@ -318,27 +276,6 @@ def event_min_duration_rule(mod, g, tmp):
     ) <= mod.AvlBin_Unavailable[g, tmp]
 
 
-def event_max_duration_rule(mod, g, tmp):
-    """
-    **Constraint Name**: AvlBin_Max_Event_Duration_Constraint
-    **Enforced Over**: AVL_BIN_OPR_TMPS
-
-    If a project became unavailable within avl_bin_max_unavl_hrs_per_event
-    from the current timepoint, it must have also been brought back to
-    availability during that time.
-    """
-    relevant_tmps = determine_relevant_timepoints(
-        mod, g, tmp, mod.avl_bin_max_unavl_hrs_per_event[g]
-    )
-    if relevant_tmps == [tmp]:
-        return Constraint.Skip
-    return sum(
-        (mod.AvlBin_Start_Unavailability[g, tp]
-         - mod.AvlBin_Stop_Unavailability[g, tp])
-        for tp in relevant_tmps
-    ) <= 0
-
-
 def min_time_between_events_rule(mod, g, tmp):
     """
     **Constraint Name**: AvlBin_Min_Time_Between_Events_Constraint
@@ -357,27 +294,6 @@ def min_time_between_events_rule(mod, g, tmp):
         mod.AvlBin_Stop_Unavailability[g, tp]
         for tp in relevant_tmps
     ) <= 1 - mod.AvlBin_Unavailable[g, tmp]
-
-
-def max_time_between_events_rule(mod, g, tmp):
-    """
-    **Constraint Name**: AvlBin_Max_Time_Between_Events_Constraint
-    **Enforced Over**: AVL_BIN_OPR_TMPS
-
-    If a project became available within avl_bin_max_avl_hrs_between_events
-    from the current timepoint, it must have also been made unavailable
-    again during that time.
-    """
-    relevant_tmps = determine_relevant_timepoints(
-        mod, g, tmp, mod.avl_bin_max_avl_hrs_between_events[g]
-    )
-    if relevant_tmps == [tmp]:
-        return Constraint.Skip
-    return sum(
-        (mod.AvlBin_Stop_Unavailability[g, tp] -
-         mod.AvlBin_Start_Unavailability[g, tp])
-        for tp in relevant_tmps
-    ) <= 0
 
 
 # Availability Type Methods
@@ -414,9 +330,7 @@ def load_module_specific_data(
 
     avl_bin_unavl_hrs_per_prd_dict = {}
     avl_bin_min_unavl_hrs_per_event_dict = {}
-    avl_bin_max_unavl_hrs_per_event_dict = {}
     avl_bin_min_avl_hrs_between_events_dict = {}
-    avl_bin_max_avl_hrs_between_events_dict = {}
 
     with open(os.path.join(scenario_directory, subproblem, stage,
                            "inputs", "project_availability_endogenous.tab"),
@@ -428,20 +342,14 @@ def load_module_specific_data(
             if row[0] in project_subset:
                 avl_bin_unavl_hrs_per_prd_dict[row[0]] = float(row[1])
                 avl_bin_min_unavl_hrs_per_event_dict[row[0]] = float(row[2])
-                avl_bin_max_unavl_hrs_per_event_dict[row[0]] = float(row[3])
-                avl_bin_min_avl_hrs_between_events_dict[row[0]] = float(row[4])
-                avl_bin_max_avl_hrs_between_events_dict[row[0]] = float(row[5])
+                avl_bin_min_avl_hrs_between_events_dict[row[0]] = float(row[3])
 
     data_portal.data()["avl_bin_unavl_hrs_per_prd"] = \
         avl_bin_unavl_hrs_per_prd_dict
     data_portal.data()["avl_bin_min_unavl_hrs_per_event"] = \
         avl_bin_min_unavl_hrs_per_event_dict
-    data_portal.data()["avl_bin_max_unavl_hrs_per_event"] = \
-        avl_bin_max_unavl_hrs_per_event_dict
     data_portal.data()["avl_bin_min_avl_hrs_between_events"] = \
         avl_bin_min_avl_hrs_between_events_dict
-    data_portal.data()["avl_bin_max_avl_hrs_between_events"] = \
-        avl_bin_max_avl_hrs_between_events_dict
 
 
 def export_module_specific_results(
@@ -501,9 +409,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     availability_params = c.execute("""
             SELECT project, unavailable_hours_per_period, 
-            unavailable_hours_per_event_min, unavailable_hours_per_event_max,
-            available_hours_between_events_min, 
-            available_hours_between_events_max
+            unavailable_hours_per_event_min,
+            available_hours_between_events_min
             FROM (
             SELECT project
             FROM inputs_project_portfolios
@@ -561,9 +468,7 @@ def write_module_specific_model_inputs(
                 ["project",
                  "unavailable_hours_per_period",
                  "unavailable_hours_per_event_min",
-                 "unavailable_hours_per_event_max",
-                 "available_hours_between_events_min",
-                 "available_hours_between_events_max"]
+                 "available_hours_between_events_min"]
             )
 
     with open(availability_file, "a", newline="") as f:
