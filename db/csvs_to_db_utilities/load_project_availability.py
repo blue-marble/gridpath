@@ -145,9 +145,7 @@ def load_project_availability_endogenous(io, c, subscenario_input, data_input):
         key_cols = ["project", "id"]
         value_cols = ["unavailable_hours_per_period",
                       "unavailable_hours_per_event_min",
-                      "unavailable_hours_per_event_max",
-                      "available_hours_between_events_min",
-                      "available_hours_between_events_max"]
+                      "available_hours_between_events_min"]
 
         df = data_input_subscenario.groupby(key_cols)[value_cols].apply(
             lambda x: x.values.tolist()[0]).to_frame().reset_index()
