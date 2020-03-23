@@ -127,9 +127,30 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, carbon_cap_zone
-        FROM inputs_project_carbon_cap_zones
-            WHERE project_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN 
+        -- Get carbon cap zones for those projects
+        (SELECT project, carbon_cap_zone
+            FROM inputs_project_carbon_cap_zones
+            WHERE project_carbon_cap_zone_scenario_id = {}
+        ) as prj_cc_zone_tbl
+        USING (project)
+        -- Filter out projects whose carbon cap zone is not one included in 
+        -- our carbon_cap_zone_scenario_id
+        WHERE carbon_cap_zone in (
+                SELECT carbon_cap_zone
+                    FROM inputs_geography_carbon_cap_zones
+                    WHERE carbon_cap_zone_scenario_id = {}
+        );
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID,
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
         )
     )
 

@@ -14,7 +14,7 @@ import os.path
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database
+    generic_import_results_into_database, generic_get_inputs_from_database
 
 # Reserve-module variables
 MODULE_NAME = "regulation_up"
@@ -157,23 +157,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
 
     # Get project BA
-    c1 = conn.cursor()
-    project_bas = c1.execute(
-        """SELECT project, regulation_up_ba
-        FROM inputs_project_regulation_up_bas
-            WHERE project_regulation_up_ba_scenario_id = {}""".format(
-            subscenarios.PROJECT_REGULATION_UP_BA_SCENARIO_ID
-        )
-    )
+    project_bas, prj_derates = generic_get_inputs_from_database(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="regulation_up",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_REGULATION_UP_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.REGULATION_UP_BA_SCENARIO_ID
 
-    # Get regulation_up footroom derate
-    c2 = conn.cursor()
-    prj_derates = c2.execute(
-        """SELECT project, regulation_up_derate
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {};""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
-        )
     )
 
     return project_bas, prj_derates
