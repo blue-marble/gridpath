@@ -14,7 +14,7 @@ import os.path
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database
+    generic_import_results_into_database, generic_get_inputs_from_database
 
 
 # Reserve-module variables
@@ -152,14 +152,17 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    c1 = conn.cursor()
     # Get project BA
-    project_bas = c1.execute(
-        """SELECT project, lf_reserves_down_ba
-        FROM inputs_project_lf_reserves_down_bas
-            WHERE project_lf_reserves_down_ba_scenario_id = {}""".format(
-            subscenarios.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID
-        )
+    project_bas = generic_get_inputs_from_database(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="lf_reserves_down",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID
+
     )
 
     c2 = conn.cursor()

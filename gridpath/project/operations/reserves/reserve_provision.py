@@ -357,6 +357,74 @@ def generic_export_module_specific_results(
             ])
 
 
+def generic_get_inputs_from_database(
+        subscenarios, subproblem, stage, conn,
+        reserve_type, project_ba_subscenario_id, ba_subscenario_id
+        ):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param reserve_type:
+    :param project_ba_subscenario_id:
+    :param ba_subscenario_id:
+    :return:
+    """
+    # Get project BA
+    c1 = conn.cursor()
+    project_bas = c1.execute("""
+        SELECT project, {}_ba
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN 
+        -- Get BAs for those projects
+        (SELECT project, {}_ba
+            FROM inputs_project_{}_bas
+            WHERE project_{}_ba_scenario_id = {}
+        ) as prj_ba_tbl
+        USING (project)
+        -- Filter out projects whose BA is not one included in our 
+        -- reserve_ba_scenario_id
+        WHERE {}_ba in (
+                SELECT {}_ba
+                    FROM inputs_geography_{}_bas
+                    WHERE {}_ba_scenario_id = {}
+        );
+        """.format(
+            reserve_type,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            reserve_type,
+            reserve_type,
+            reserve_type,
+            project_ba_subscenario_id,
+            reserve_type,
+            reserve_type,
+            reserve_type,
+            reserve_type,
+            ba_subscenario_id,
+        )
+    )
+
+    # Get lf_reserves_up footroom derate
+    c2 = conn.cursor()
+    prj_derates = c2.execute(
+        """SELECT project, lf_reserves_up_derate
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {};""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
+        )
+    )
+
+    return project_bas
+
+
+
 def generic_import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, reserve_type
 ):

@@ -14,7 +14,7 @@ import os.path
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database
+    generic_import_results_into_database, generic_get_inputs_from_database
 
 
 # Reserve-module variables
@@ -153,14 +153,17 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # Get project BA
-    c1 = conn.cursor()
-    project_bas = c1.execute(
-        """SELECT project, lf_reserves_up_ba
-        FROM inputs_project_lf_reserves_up_bas
-            WHERE project_lf_reserves_up_ba_scenario_id = {}""".format(
-            subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID
-        )
+    # Get project BAs
+    project_bas = generic_get_inputs_from_database(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="lf_reserves_up",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID
+
     )
 
     # Get lf_reserves_up footroom derate
