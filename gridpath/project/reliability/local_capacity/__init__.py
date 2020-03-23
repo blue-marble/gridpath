@@ -73,9 +73,28 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, local_capacity_zone
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        LEFT OUTER JOIN
+        (SELECT project, local_capacity_zone
         FROM inputs_project_local_capacity_zones
-        WHERE project_local_capacity_zone_scenario_id = {};""".format(
-            subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID
+        WHERE project_local_capacity_zone_scenario_id = {}) as lc_zone_tbl
+        USING (project)
+        -- Filter out projects whose LC zone is not one included in our 
+        -- local_capacity_zone_sceenario_id
+        WHERE local_capacity_zone in (
+                SELECT local_capacity_zone
+                    FROM inputs_geography_local_capacity_zones
+                    WHERE local_capacity_zone_scenario_id = {}
+        );
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID,
+            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID
         )
     )
 
