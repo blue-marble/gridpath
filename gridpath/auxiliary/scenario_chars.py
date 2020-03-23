@@ -398,7 +398,7 @@ class SubScenarios(object):
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.PROJECT_EXISTING_CAPACITY_SCENARIO_ID = \
+        self.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID = \
             "NULL" if p_ecap_sid is None else p_ecap_sid
 
         p_efc_sid = cursor.execute(
@@ -406,7 +406,7 @@ class SubScenarios(object):
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID = \
+        self.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID = \
             "NULL" if p_efc_sid is None else p_efc_sid
 
         p_ncost_sid = cursor.execute(
@@ -494,7 +494,7 @@ class SubScenarios(object):
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID = \
+        self.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID = \
             "NULL" if tx_ecap_sid is None else tx_ecap_sid
 
         tx_ncost_sid = cursor.execute(

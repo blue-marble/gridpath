@@ -148,7 +148,7 @@ def get_module_specific_inputs_from_database(
         USING (transmission_line, period)
         WHERE transmission_portfolio_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID,
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
         )
     )

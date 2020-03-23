@@ -431,8 +431,8 @@ def get_module_specific_inputs_from_database(
         AND capacity_type = 
         'gen_ret_lin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
