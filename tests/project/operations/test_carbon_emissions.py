@@ -87,7 +87,7 @@ class TestCarbonEmissions(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: CARBONACEOUS_PROJECTS
+        # Set: CRBN_PRJS
         expected_carbonaceous_projects = sorted(
             ["Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
              "Gas_CCGT_New_Binary", "Gas_CT_New",
@@ -95,7 +95,7 @@ class TestCarbonEmissions(unittest.TestCase):
              "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen",
              "Clunky_Old_Gen2"])
         actual_carbonaceous_projects = \
-            sorted([p for p in instance.CARBONACEOUS_PROJECTS])
+            sorted([p for p in instance.CRBN_PRJS])
         self.assertListEqual(expected_carbonaceous_projects,
                              actual_carbonaceous_projects)
 
@@ -119,12 +119,12 @@ class TestCarbonEmissions(unittest.TestCase):
         )
         actual_cc_zone_by_prj = OrderedDict(sorted({
             p: instance.carbon_cap_zone[p] for p in
-            instance.CARBONACEOUS_PROJECTS}.items()
+            instance.CRBN_PRJS}.items()
                                                     )
                                              )
         self.assertDictEqual(expected_cc_zone_by_prj, actual_cc_zone_by_prj)
 
-        # Set: CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE
+        # Set: CRBN_PRJS_BY_CARBON_CAP_ZONE
         expected_prj_by_zone = OrderedDict(sorted({
             "Carbon_Cap_Zone1": sorted([
                 "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
@@ -138,7 +138,7 @@ class TestCarbonEmissions(unittest.TestCase):
                                            )
         actual_prj_by_zone = OrderedDict(sorted({
             z: sorted([p for p in
-                       instance.CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE[z]
+                       instance.CRBN_PRJS_BY_CARBON_CAP_ZONE[z]
                 ])
             for z in instance.CARBON_CAP_ZONES
                                                 }.items()
@@ -146,14 +146,14 @@ class TestCarbonEmissions(unittest.TestCase):
                                          )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
-        # Set: CARBONACEOUS_PRJ_OPR_TMPS
+        # Set: CRBN_PRJ_OPR_TMPS
         expected_carb_prj_op_tmp = sorted(
             get_project_operational_timepoints(expected_carbonaceous_projects)
         )
 
         actual_carb_prj_op_tmp = sorted([
             (prj, tmp) for (prj, tmp)
-            in instance.CARBONACEOUS_PRJ_OPR_TMPS
+            in instance.CRBN_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_carb_prj_op_tmp, actual_carb_prj_op_tmp)
 
