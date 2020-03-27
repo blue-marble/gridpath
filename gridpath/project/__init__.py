@@ -50,33 +50,33 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     'footroom_variables' dictionary.
     """
 
-    project_dynamic_data_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
-                         "projects.tab"),
-            sep="\t"
-        )
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "projects.tab"),
+        sep="\t"
+    )
 
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
     setattr(d, required_capacity_modules,
-            project_dynamic_data_df.capacity_type.unique()
+            project_df.capacity_type.unique()
             )
 
     # Required availability types
     setattr(d, required_availability_modules,
-            project_dynamic_data_df.availability_type.unique()
+            project_df.availability_type.unique()
             )
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
     # (in projects.tab)
     setattr(d, required_operational_modules,
-            project_dynamic_data_df.operational_type.unique()
+            project_df.operational_type.unique()
             )
 
     # From here on, the dynamic components will be further populated by the
     # modules
+
     # Reserve variables
     # Will be determined based on whether the user has specified the
     # respective reserve module AND based on whether a reserve zone is
@@ -84,92 +84,139 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     # We need to make the dictionaries first; it is the lists for each key
     # that are populated by the modules
     setattr(d, headroom_variables,
-            {r: [] for r in project_dynamic_data_df.project}
+            {r: [] for r in project_df.project}
             )
     setattr(d, footroom_variables,
-            {r: [] for r in project_dynamic_data_df.project}
+            {r: [] for r in project_df.project}
             )
 
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the dynamic inputs class object; not used here
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`PROJECTS`                                                      |
+    |                                                                         |
+    | The list of all projects considered in the optimization problem.        |
+    +-------------------------------------------------------------------------+
 
-    Here, we describe all projects to be included in the optimization,
-    what load zone they are located in, and their 'types,' both their
-    'capacity type' and their 'operational type.' We will designate the
-    *PROJECTS* set with :math:`R` and the projects index will be :math:`r`.
+    |
 
-    The project load zone parameter (:math:`load\_zone_r\in Z`) determines
-    which load zone's load-balance constraint the project contributes to.
+    +-------------------------------------------------------------------------+
+    | Input Params                                                            |
+    +=========================================================================+
+    | | :code:`load_zone`                                                     |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`LOAD_ZONES`                                          |
+    |                                                                         |
+    | This param describes which load zone's load-balance constraint each     |
+    | project contributes to.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`capacity_type`                                                 |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    |                                                                         |
+    | This param describes each project's capacity type, which determines how |
+    | the available capacity of the project is defined (depending on the      |
+    | type, it could be a fixed for each period or a decision variable).      |
+    +-------------------------------------------------------------------------+
+    | | :code:`operational_type`                                              |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    |                                                                         |
+    | This param describes each project's operational type, which determines  |
+    | how the project operates, e.g. whether it is fuel-based dispatchable    |
+    | generator, a baseload project, a variable generation project, a storage |
+    | project, etc.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`availability_type`                                             |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    |                                                                         |
+    | This param describes each project's availability type, which determines |
+    | how the project availability is determined (exogenously or              |
+    | endogenously).                                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`balancing_type_project`                                        |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`BLN_TYPES`                                           |
+    |                                                                         |
+    | This param describes each project's balancing type, which determines    |
+    | how timepoints are grouped in horizons for that project. See            |
+    | :code:`horizons` module for more info.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`variable_om_cost_per_mwh`                                      |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`technology`                                                    |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Default*: :code:`unspecified`                                        |
+    |                                                                         |
+    | The technology for each project, which is only used for aggregation     |
+    | purposes in the results.                                                |
+    +-------------------------------------------------------------------------+
 
-    The operational type of a project is given by the
-    *operational_type*\ :sub:`r`\  param and determines things like whether the
-    project is a fuel-based dispatchable generator (e.g. a CCGT) or a
-    baseload project (e.g. nuclear), is it an intermittent plant, is it a
-    storage project, etc. The available 'operational types' are implemented
-    in distinct modules and are described below. Each project must have an
-    *operational_type*.
-
-    The module also adds a parameter for variable O&M cost per MWh of energy
-    production for all projects: *variable_om_cost_per_mwh*\ :sub:`r`\.
-
+    TODO: all projects have VOM for now; is that what makes the most sense?
+    TODO: considering technology is only used on the results side, should we
+     keep it here?
     """
+
+    # Sets
+    ###########################################################################
+
     m.PROJECTS = Set()
+
+    # Input Params
+    ###########################################################################
+
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
-    m.availability_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
+    m.availability_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
-
-    # Variable O&M cost
-    # TODO: all projects have this for now; is that what makes the most sense?
     m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
-
-    # Technology
-    # This is only used for aggregation purposes in results
-    # TODO: considering this is only used on the results side, should we
-    #  keep it here
     m.technology = Param(m.PROJECTS, default="unspecified")
 
 
+# Input-Output
+###############################################################################
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
-    
-    :param m: 
-    :param d: 
-    :param data_portal: 
-    :param scenario_directory: 
-    :param stage:
-    :param stage: 
-    :return: 
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem,
-                                           stage, "inputs", "projects.tab"),
-                     index=m.PROJECTS,
-                     select=("project", "load_zone", "capacity_type",
-                             "availability_type", "operational_type",
-                             "variable_om_cost_per_mwh",
-                             "balancing_type_project"),
-                     param=(m.load_zone, m.capacity_type, m.availability_type,
-                            m.operational_type, m.variable_om_cost_per_mwh,
-                            m.balancing_type_project)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "projects.tab"),
+        index=m.PROJECTS,
+        select=("project", "load_zone", "capacity_type",
+                "availability_type", "operational_type",
+                "variable_om_cost_per_mwh",
+                "balancing_type_project"),
+        param=(m.load_zone, m.capacity_type, m.availability_type,
+               m.operational_type, m.variable_om_cost_per_mwh,
+               m.balancing_type_project)
+    )
 
     # Technology column is optional (default param value is 'unspecified')
-    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                      "inputs", "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     if "technology" in header:
-        data_portal.load(filename=os.path.join(
-                            scenario_directory, subproblem, stage, "inputs",
-                            "projects.tab"),
-                         select=("project", "technology"),
-                         param=m.technology
-                         )
+        data_portal.load(
+            filename=os.path.join(scenario_directory, subproblem, stage,
+                                  "inputs", "projects.tab"),
+            select=("project", "technology"),
+            param=m.technology
+        )
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -246,6 +293,68 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     return projects
 
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and write out the model input
+    projects.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+
+    # TODO: decide how to deal with projects.tab -- currently, a large table
+    #  is created with NULL values for projects that don't have certain
+    #  params, so we can just get it all here without having to iterate
+    #  through the modules that actually need these params
+    #  This file could also potentially be split up into smaller files with
+    #  just a subset of the params, which would mean that the submodules
+    #  won't have to parse the large file
+
+    # TODO: make get_inputs_from_database return dataframe and simplify writing
+    #   of the tab files. If going this route, would need to make sure database
+    #   columns and tab file column names are the same everywhere
+    #   projects.fillna(".", inplace=True)
+    #   filename = os.path.join(inputs_directory, "projects.tab")
+    #   projects.to_csv(filename, sep="\t", mode="w", newline="")
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+              newline="") as projects_tab_file:
+        writer = csv.writer(projects_tab_file,
+                            delimiter="\t",
+                            lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            ["project", "capacity_type", "availability_type",
+             "operational_type", "balancing_type_project", "technology",
+             "load_zone", "fuel", "variable_om_cost_per_mwh",
+             "min_stable_level_fraction", "unit_size_mw",
+             "startup_cost_per_mw", "shutdown_cost_per_mw",
+             "startup_fuel_mmbtu_per_mw",
+             "startup_plus_ramp_up_rate",
+             "shutdown_plus_ramp_down_rate",
+             "ramp_up_when_on_rate",
+             "ramp_down_when_on_rate",
+             "min_up_time_hours", "min_down_time_hours",
+             "charging_efficiency", "discharging_efficiency",
+             "minimum_duration_hours",
+             "last_commitment_stage"
+             ]
+        )
+
+        for row in projects:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+
+# Validation
+###############################################################################
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
     """
@@ -327,7 +436,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  )
             )
 
-    # Check that we're not combining incompatible capacity and operational types
+    # Check that we're not combining incompatible cap-types and op-types
     invalid_combos = c.execute(
         """SELECT capacity_type, operational_type 
         FROM mod_capacity_and_operational_type_invalid_combos"""
@@ -434,60 +543,3 @@ def validate_op_cap_combos(df, invalid_combos):
             )
 
     return results
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and write out the model input
-    projects.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
-
-    # TODO: decide how to deal with projects.tab -- currently, a large table
-    #  is created with NULL values for projects that don't have certain
-    #  params, so we can just get it all here without having to iterate
-    #  through the modules that actually need these params
-    #  This file could also potentially be split up into smaller files with
-    #  just a subset of the params, which would mean that the submodules
-    #  won't have to parse the large file
-
-    # TODO: make get_inputs_from_database return dataframe and simplify writing
-    #   of the tab files. If going this route, would need to make sure database
-    #   columns and tab file column names are the same everywhere
-    #   projects.fillna(".", inplace=True)
-    #   filename = os.path.join(inputs_directory, "projects.tab")
-    #   projects.to_csv(filename, sep="\t", mode="w", newline="")
-
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
-            projects_tab_file:
-        writer = csv.writer(projects_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["project", "capacity_type", "availability_type",
-             "operational_type", "balancing_type_project", "technology",
-             "load_zone", "fuel", "variable_om_cost_per_mwh",
-             "min_stable_level_fraction", "unit_size_mw",
-             "startup_cost_per_mw", "shutdown_cost_per_mw",
-             "startup_fuel_mmbtu_per_mw",
-             "startup_plus_ramp_up_rate",
-             "shutdown_plus_ramp_down_rate",
-             "ramp_up_when_on_rate",
-             "ramp_down_when_on_rate",
-             "min_up_time_hours", "min_down_time_hours",
-             "charging_efficiency", "discharging_efficiency",
-             "minimum_duration_hours",
-             "last_commitment_stage"
-             ]
-        )
-
-        for row in projects:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
