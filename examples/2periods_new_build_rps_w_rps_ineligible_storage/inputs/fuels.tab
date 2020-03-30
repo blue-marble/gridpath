@@ -1,4 +1,5 @@
 FUELS	co2_intensity_tons_per_mmbtu
+	
 Coal	0.09552000000000001
 Gas	0.05306
 Uranium	0.0

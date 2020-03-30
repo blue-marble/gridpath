@@ -914,6 +914,25 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_no_fuels(self):
+        """
+        Check objective function value of "test_no_fuels"
+        example
+        :return:
+        """
+        actual_objective = \
+            run_end_to_end.main([
+                "--database", "../db/test_examples.db",
+                "--scenario", "test_no_fuels",
+                "--scenario_location", EXAMPLES_DIRECTORY,
+                "--quiet", "--mute_solver_output", "--testing"
+            ])
+
+        expected_objective = 866666717.3333334
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
     @classmethod
     def tearDownClass(cls):
         os.remove("../db/test_examples.db")

@@ -1,6 +1,5 @@
 scenario_id,40
 scenario_name,multi_stage_prod_cost_w_hydro
-of_fuels,1
 of_multi_stage,1
 of_transmission,
 of_transmission_hurdle_rates,

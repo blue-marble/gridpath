@@ -1,6 +1,5 @@
 scenario_id,3
 scenario_name,test_w_hydro
-of_fuels,1
 of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,
