@@ -21,41 +21,116 @@ from gridpath.auxiliary.dynamic_components import required_operational_modules
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`RPS_PRJS`                                                      |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of all RPS-eligible projects.                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`RPS_PRJ_OPR_TMPS`                                              |
+    |                                                                         |
+    | Two-dimensional set that defines all project-timepoint combinations     |
+    | when an RPS-elgible project can be operational.                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`RPS_PRJS_BY_RPS_ZONE`                                          |
+    | | *Defined over*: :code:`RPS_ZONES`                                     |
+    | | *Within*: :code:`RPS_PRJS`                                            |
+    |                                                                         |
+    | Indexed set that describes the RPS projects for each RPS zone.          |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Input Params                                                            |
+    +=========================================================================+
+    | | :code:`rps_zone`                                                      |
+    | | *Defined over*: :code:`RPS_PRJS`                                      |
+    | | *Within*: :code:`RPS_ZONES`                                           |
+    |                                                                         |
+    | This param describes the RPS zone for each RPS project.                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Scheduled_RPS_Energy_MW`                                       |
+    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    |                                                                         |
+    | Describes how many RECs (in MW) are scheduled for each RPS-eligible     |
+    | project in each timepoint.                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`Scheduled_Curtailment_MW`                                      |
+    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    |                                                                         |
+    | Describes the amount of scheduled curtailment (in MW) for each          |
+    | RPS-eligible project in each timepoint.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`Subhourly_RPS_Energy_MW`                                       |
+    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    |                                                                         |
+    | Describes how many RECs (in MW) are delivered subhourly for each        |
+    | RPS-eligible project in each timepoint. Subhourly RPS energy delivery   |
+    | can occur due to sub-hourly upward reserve dispatch (e.g. reg-up).      |
+    +-------------------------------------------------------------------------+
+    | | :code:`Subhourly_Curtailment_MW`                                      |
+    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    |                                                                         |
+    | Describes the amount of subhourly curtailment (in MW) for each          |
+    | RPS-eligible project in each timepoint. Subhourly curtailment can       |
+    | occur due to sub-hourly downward reserve dispatch (e.g. reg-down).      |
+    +-------------------------------------------------------------------------+
+
     """
-    # First figure out which projects are RPS-eligible
-    m.RPS_PROJECTS = Set(within=m.PROJECTS)
-    m.rps_zone = Param(m.RPS_PROJECTS, within=m.RPS_ZONES)
 
-    def determine_rps_generators_by_rps_zone(mod, rps_z):
-        return [p for p in mod.RPS_PROJECTS if mod.rps_zone[p] == rps_z]
+    # Dynamic Components
+    ###########################################################################
 
-    m.RPS_PROJECTS_BY_RPS_ZONE = \
-        Set(m.RPS_ZONES, within=m.RPS_PROJECTS,
-            initialize=determine_rps_generators_by_rps_zone)
+    imported_operational_modules = load_operational_type_modules(
+        getattr(d, required_operational_modules)
+    )
 
-    # Get operational RPS projects - timepoints combinations
+    # Sets
+    ###########################################################################
+
+    m.RPS_PRJS = Set(within=m.PROJECTS)
+
     m.RPS_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in
-                          mod.PRJ_OPR_TMPS
-                          if p in mod.RPS_PROJECTS]
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.RPS_PRJS]
     )
-    # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+
+    # Input Params
+    ###########################################################################
+
+    m.rps_zone = Param(
+        m.RPS_PRJS,
+        within=m.RPS_ZONES
+    )
+
+    # Derived Sets (requires input params)
+    ###########################################################################
+
+    m.RPS_PRJS_BY_RPS_ZONE = Set(
+        m.RPS_ZONES,
+        within=m.RPS_PRJS,
+        initialize=determine_rps_generators_by_rps_zone
+    )
+
+    # Expressions
+    ###########################################################################
 
     def scheduled_recs_rule(mod, g, tmp):
         """
         This how many RECs are scheduled to be delivered at the timepoint
-        (hourly) schedule
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        (hourly) schedule.
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
@@ -66,62 +141,60 @@ def add_model_components(m, d):
         rule=scheduled_recs_rule
     )
 
-    # Keep track of curtailment
     def scheduled_curtailment_rule(mod, g, tmp):
         """
         Keep track of curtailment to make it easier to calculate total
         curtailed RPS energy for example -- this is the scheduled
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        curtailment component.
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             scheduled_curtailment_rule(mod, g, tmp)
 
     m.Scheduled_Curtailment_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS, rule=scheduled_curtailment_rule
+        m.RPS_PRJ_OPR_TMPS,
+        rule=scheduled_curtailment_rule
+    )
+
+    def subhourly_recs_delivered_rule(mod, g, tmp):
+        """
+        This how many RECs are scheduled to be delivered through sub-hourly
+        dispatch (upward reserve dispatch).
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            subhourly_energy_delivered_rule(mod, g, tmp)
+
+    m.Subhourly_RPS_Energy_MW = Expression(
+        m.RPS_PRJ_OPR_TMPS,
+        rule=subhourly_recs_delivered_rule
     )
 
     def subhourly_curtailment_rule(mod, g, tmp):
         """
         Keep track of curtailment to make it easier to calculate total
         curtailed RPS energy for example -- this is the subhourly
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        curtailment component (downward reserve dispatch).
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             subhourly_curtailment_rule(mod, g, tmp)
 
     m.Subhourly_Curtailment_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS, rule=subhourly_curtailment_rule
-    )
-
-    def subhourly_recs_delivered_rule(mod, g, tmp):
-        """
-        Keep track of curtailment to make it easier to calculate total
-        curtailed RPS energy for example -- this is the subhourly
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            subhourly_energy_delivered_rule(mod, g, tmp)
-
-    m.Subhourly_RPS_Energy_Delivered_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,
-        rule=subhourly_recs_delivered_rule
+        rule=subhourly_curtailment_rule
     )
 
+
+# Set Rules
+###############################################################################
+
+def determine_rps_generators_by_rps_zone(mod, rps_z):
+    return [p for p in mod.RPS_PRJS if mod.rps_zone[p] == rps_z]
+
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -134,14 +207,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "projects.tab"),
-                     select=("project", "rps_zone"),
-                     param=(m.rps_zone,)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "projects.tab"),
+        select=("project", "rps_zone"),
+        param=(m.rps_zone,)
+    )
 
-    data_portal.data()['RPS_PROJECTS'] = {
+    data_portal.data()['RPS_PRJS'] = {
         None: list(data_portal.data()['rps_zone'].keys())
     }
 
@@ -157,7 +230,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "rps_by_project.csv"), "w", newline="") as rps_results_file:
+                           "rps_by_project.csv"),
+              "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["project", "load_zone", "rps_zone",
                          "timepoint", "period", "horizon", "timepoint_weight",
@@ -179,19 +253,22 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[p],
                 value(m.Scheduled_RPS_Energy_MW[p, tmp]),
                 value(m.Scheduled_Curtailment_MW[p, tmp]),
-                value(m.Subhourly_RPS_Energy_Delivered_MW[p, tmp]),
+                value(m.Subhourly_RPS_Energy_MW[p, tmp]),
                 value(m.Subhourly_Curtailment_MW[p, tmp])
             ])
 
     # Export list of RPS projects and their zones for later use
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "rps_project_zones.csv"), "w", newline="") as \
-            rps_project_zones_file:
+                           "rps_project_zones.csv"),
+              "w", newline="") as rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)
         writer.writerow(["project", "rps_zone"])
-        for p in m.RPS_PROJECTS:
+        for p in m.RPS_PRJS:
             writer.writerow([p, m.rps_zone[p]])
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -237,23 +314,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
+                       conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -274,7 +336,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
+        reader = csv.reader(projects_file_in, delimiter="\t",
+                            lineterminator="\n")
 
         new_rows = list()
 
@@ -294,9 +357,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+              newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
+        writer = csv.writer(projects_file_out, delimiter="\t",
+                            lineterminator="\n")
         writer.writerows(new_rows)
 
 
@@ -304,7 +369,7 @@ def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
-    
+
     :param scenario_id:
     :param c:
     :param db:
@@ -324,9 +389,8 @@ def import_results_into_database(
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "rps_by_project.csv"), "r") as \
-            rps_file:
+    with open(os.path.join(results_directory, "rps_by_project.csv"),
+              "r") as rps_file:
         reader = csv.reader(rps_file)
 
         next(reader)  # skip header
@@ -344,13 +408,13 @@ def import_results_into_database(
             scheduled_curtailment = row[10]
             subhourly_energy = row[11]
             subhourly_curtailment = row[12]
-            
+
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight, hours_in_tmp,
-                    load_zone, rps_zone, technology,
-                    scheduled_energy, scheduled_curtailment,
-                    subhourly_energy, subhourly_curtailment)
+                 horizon, timepoint, timepoint_weight, hours_in_tmp,
+                 load_zone, rps_zone, technology,
+                 scheduled_energy, scheduled_curtailment,
+                 subhourly_energy, subhourly_curtailment)
             )
 
     insert_temp_sql = """
@@ -389,12 +453,12 @@ def import_results_into_database(
 
 def process_results(db, c, subscenarios, quiet):
     """
-    
-    :param db: 
-    :param c: 
+
+    :param db:
+    :param c:
     :param subscenarios:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("update rps zones")
@@ -438,3 +502,22 @@ def process_results(db, c, subscenarios, quiet):
             AND project = ?;
             """.format(tbl)
         spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # project_zones = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # do stuff here to validate inputs

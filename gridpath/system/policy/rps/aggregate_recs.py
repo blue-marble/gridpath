@@ -31,11 +31,11 @@ def add_model_components(m, d):
         return \
             sum((mod.Scheduled_RPS_Energy_MW[g, tmp]
                  - mod.Subhourly_Curtailment_MW[g, tmp]
-                 + mod.Subhourly_RPS_Energy_Delivered_MW[g,tmp])
+                 + mod.Subhourly_RPS_Energy_MW[g,tmp])
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
                 for (g, tmp) in mod.RPS_PRJ_OPR_TMPS
-                if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
+                if g in mod.RPS_PRJS_BY_RPS_ZONE[z]
                 and tmp in mod.TMPS_IN_PRD[p]
                 )
 
@@ -54,11 +54,11 @@ def add_model_components(m, d):
         """
         return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
                     mod.Subhourly_Curtailment_MW[g, tmp] -
-                    mod.Subhourly_RPS_Energy_Delivered_MW[g, tmp])
+                    mod.Subhourly_RPS_Energy_MW[g, tmp])
                    * mod.hrs_in_tmp[tmp]
                    * mod.tmp_weight[tmp]
                    for (g, tmp) in mod.RPS_PRJ_OPR_TMPS
-                   if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
+                   if g in mod.RPS_PRJS_BY_RPS_ZONE[z]
                    and tmp in mod.TMPS_IN_PRD[p]
                    )
     # TODO: is this only needed for export and, if so, should it be created on
