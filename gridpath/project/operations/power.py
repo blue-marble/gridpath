@@ -25,40 +25,57 @@ from gridpath.auxiliary.dynamic_components import required_operational_modules
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding components to
-    :param d: the DynamicComponents class object we will get components from
+    The following Pyomo model components are defined in this module:
 
-    The Pyomo expression *Power_Provision_MW*\ :sub:`r,tmp`\ (:math:`(r,
-    tmp)\in RT`) defines the power a project is producing in each of its
-    operational timepoints. The exact formulation of the expression depends
-    on the project's *operational_type*. For each project, we call its
-    *capacity_type* module's *power_provision_rule* method in order to
-    formulate the expression. E.g. a project of the  *gen_must_run*
-    operational_type will be producing power equal to its capacity while a
-    dispatchable project will have a variable in its power provision
-    expression. This expression will then be used by other modules.
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Power_Provision_MW`                                            |
+    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    |                                                                         |
+    | Defines the power a project is producing in each of its operational     |
+    | timepoints. The exact formulation of the expression depends             |
+    | on the project's *operational_type*. For each project, we call its      |
+    | *capacity_type* module's *power_provision_rule* method in order to      |
+    | formulate the expression. E.g. a project of the  *gen_must_run*         |
+    | operational_type will be producing power equal to its capacity while a  |
+    | dispatchable project will have a variable in its power provision        |
+    | expression. This expression will then be used by other modules.         |
+    +-------------------------------------------------------------------------+
+
     """
-    # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
 
-    # Get dispatch for all generators from the generator's operational module
+    # Dynamic Components
+    ###########################################################################
+
+    imported_operational_modules = load_operational_type_modules(
+        getattr(d, required_operational_modules)
+    )
+
+    # Expressions
+    ###########################################################################
+
     def power_provision_rule(mod, g, tmp):
         """
+        **Expression Name**: Power_Provision_MW
+        **Defined Over**: PRJ_OPR_TMPS
+
         Power provision is a variable for some generators, but not others; get
         the appropriate expression for each generator based on its operational
         type.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision_MW = Expression(m.PRJ_OPR_TMPS,
-                                      rule=power_provision_rule)
 
+    m.Power_Provision_MW = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=power_provision_rule
+    )
+
+
+# Input-Output
+###############################################################################
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -123,21 +140,21 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # zone, technology, and period
 
     # Get the results CSV as dataframe
-    operational_results_df = \
-        pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                 "results", "dispatch_all.csv")
-                    )
+    operational_results_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "results", "dispatch_all.csv")
+    )
 
     operational_results_df["weighted_power_mwh"] = \
-        operational_results_df["power_mw"] * \
-        operational_results_df["timepoint_weight"]
+        operational_results_df["power_mw"] \
+        * operational_results_df["timepoint_weight"]
 
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
-        operational_results_df.groupby(by=["load_zone", "period",
-                                           "technology",],
-                                       as_index=True
-                                       ).sum()["weighted_power_mwh"]
+        operational_results_df.groupby(
+            by=["load_zone", "period", "technology"],
+            as_index=True
+        ).sum()["weighted_power_mwh"]
     )
 
     operational_results_agg_df.columns = ["weighted_power_mwh"]
@@ -146,9 +163,10 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # to find the percentage of total power by technology (for each load
     # zone and period)
     lz_period_power_df = pd.DataFrame(
-        operational_results_df.groupby(by=["load_zone", "period"],
-                                       as_index=True
-                                       ).sum()["weighted_power_mwh"]
+        operational_results_df.groupby(
+            by=["load_zone", "period"],
+            as_index=True
+        ).sum()["weighted_power_mwh"]
     )
 
     # Name the power column
@@ -164,8 +182,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
         if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
             pct = 0
         else:
-            pct = \
-                operational_results_agg_df.weighted_power_mwh[indx] \
+            pct = operational_results_agg_df.weighted_power_mwh[indx] \
                 / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
                 * 100.0
         operational_results_agg_df.percent_total_power[indx] = pct
@@ -179,6 +196,9 @@ def summarize_results(d, scenario_directory, subproblem, stage):
         operational_results_agg_df.to_string(outfile)
         outfile.write("\n")
 
+
+# Database
+###############################################################################
 
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
