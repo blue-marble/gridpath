@@ -1,6 +1,5 @@
 scenario_id,4
 scenario_name,test_new_solar
-of_fuels,1
 of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,

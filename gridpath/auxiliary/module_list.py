@@ -155,8 +155,6 @@ def optional_modules_list():
     one feature.
     """
     optional_modules = {
-        "fuels":
-            ["project.fuels", "project.operations.fuel_burn"],
         "multi_stage":
             ["project.operations.fix_commitment"],
         "transmission":

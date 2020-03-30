@@ -1,6 +1,5 @@
 scenario_id,10
 scenario_name,test_no_reserves
-of_fuels,1
 of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,

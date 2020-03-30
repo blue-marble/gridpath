@@ -1,5 +1,4 @@
 ﻿ui_table,ui_table_row,include,ui_row_caption,ui_row_db_scenarios_view_column,ui_row_db_subscenario_table,﻿ui_row_db_subscenario_table_id_column,﻿ui_row_db_input_table
-features,fuels,1,Fuels,feature_fuels,,of_fuels,
 features,transmission,1,Transmission,feature_transmission,,of_transmission,
 features,transmission_hurdle_rates,1,Transmission: Hurdle Rates,feature_transmission_hurdle_rates,,of_transmission_hurdle_rates,
 features,transmission_sim_flow,1,Transmission: Simultaneous Flow Limits,feature_simultaneous_flow_limits,,of_simultaneous_flow_limits,

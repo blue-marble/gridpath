@@ -17,12 +17,6 @@ class OptionalFeatures(object):
 
         self.SCENARIO_ID = scenario_id
 
-        self.OPTIONAL_FEATURE_FUELS = cursor.execute(
-            """SELECT of_fuels
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
         self.OPTIONAL_FEATURE_MULTI_STAGE = cursor.execute(
             """SELECT of_multi_stage
                FROM scenarios
@@ -132,8 +126,6 @@ class OptionalFeatures(object):
         """
         feature_list = list()
 
-        if self.OPTIONAL_FEATURE_FUELS:
-            feature_list.append("fuels")
         if self.OPTIONAL_FEATURE_MULTI_STAGE:
             feature_list.append("multi_stage")
         if self.OPTIONAL_FEATURE_TRANSMISSION:

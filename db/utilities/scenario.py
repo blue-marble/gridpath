@@ -12,7 +12,6 @@ from db.common_functions import spin_on_database_lock
 def create_scenario_all_args(
         io, c,
         scenario_name,
-        of_fuels,
         of_multi_stage,
         of_transmission,
         of_transmission_hurdle_rates,
@@ -97,7 +96,6 @@ def create_scenario_all_args(
     :param io:
     :param c:
     :param scenario_name:
-    :param of_fuels:
     :param of_multi_stage:
     :param of_transmission:
     :param of_transmission_hurdle_rates:
@@ -178,7 +176,6 @@ def create_scenario_all_args(
     """
     sc_data = (
         scenario_name,
-        of_fuels,
         of_multi_stage,
         of_transmission,
         of_transmission_hurdle_rates,
@@ -258,7 +255,6 @@ def create_scenario_all_args(
     sc_sql = """
         INSERT OR IGNORE INTO scenarios (
         scenario_name,
-        of_fuels,
         of_multi_stage,
         of_transmission,
         of_transmission_hurdle_rates,
@@ -336,7 +332,6 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id
         ) VALUES (
-        ?,
         ?,
         ?,
         ?,
