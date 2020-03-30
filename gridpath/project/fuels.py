@@ -23,8 +23,10 @@ def add_model_components(m, d):
     m.FUELS = Set()
     m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=NonNegativeReals)
 
-    m.fuel_price_per_mmbtu = Param(m.FUELS, m.PERIODS, m.MONTHS,
-                                   within=NonNegativeReals)
+    m.fuel_price_per_mmbtu = Param(
+        m.FUELS, m.PERIODS, m.MONTHS,
+        within=NonNegativeReals
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -38,20 +40,36 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "fuels.tab"),
-                     index=m.FUELS,
-                     select=("FUELS",
-                             "co2_intensity_tons_per_mmbtu"),
-                     param=m.co2_intensity_tons_per_mmbtu
-                     )
+    # Load fuel chars only if there are data
+    # There will be no data in this file if the database is used and there
+    # are no projects with fuels in the scenario
+    fuels_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs", "fuels.tab"
+    )
+    fuels_df = pd.read_csv(fuels_file)
+    if fuels_df.empty:
+        pass
+    else:
+        data_portal.load(
+            filename=fuels_file,
+            index=m.FUELS,
+            param=m.co2_intensity_tons_per_mmbtu
+        )
 
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "fuel_prices.tab"),
-                     select=("fuel", "period", "month",
-                             "fuel_price_per_mmbtu"),
-                     param=m.fuel_price_per_mmbtu
-                     )
+    # Load fuel prices only if there are data
+    # There will be no data in this file if the database is used and there
+    # are no projects with fuels in the scenario
+    fuels_prices_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs", "fuel_prices.tab"
+    )
+    fuel_prices_df = pd.read_csv(fuels_prices_file)
+    if fuels_df.empty:
+        pass
+    else:
+        data_portal.load(
+            filename=fuels_prices_file,
+            param=m.fuel_price_per_mmbtu
+        )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
