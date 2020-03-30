@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Keep track of fuel burn
+This module keeps track of fuel burn for each project. Fuel burn consists of
+both operational fuel burn for power production, and startup fuel burn (if
+applicable).
 """
 
 from __future__ import print_function
@@ -24,25 +26,51 @@ from gridpath.project.common_functions import \
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Operations_Fuel_Burn_MMBtu`                                    |
+    | | *Within*: :code:`FUEL_PRJ_OPR_TMPS`                                   |
+    |                                                                         |
+    | This expression describes each project's operational fuel consumption   |
+    | (in MMBtu) in all operational timepoints. We obtain it by calling the   |
+    | *fuel_burn_rule* method in the relevant *operational_type*. This does   |
+    | not include fuel burn for startups, which has a separate expression.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`Startup_Fuel_Burn_MMBtu`                                       |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | This expression describes each project's startup fuel consumption       |
+    | (in MMBtu) in all operational timepoints. We obtain it by calling the   |
+    | *startup_fuel_burn_rule* method in the relevant *operational_type*.     |
+    | Only operational types with commitment variables can have startup fuel  |
+    | burn (for others it will always return zero).                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`Total_Fuel_Burn_MMBtu`                                         |
+    | | *Within*: :code:`FUEL_PRJ_OPR_TMPS`                                   |
+    |                                                                         |
+    | Total fuel burn is the sum of operational fuel burn for power           |
+    | production and startup fuel burn.                                       |
+    +-------------------------------------------------------------------------+
+
     """
 
-    # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    # Dynamic Components
+    ###########################################################################
 
-    # Get fuel burn from operations for each project
+    imported_operational_modules = load_operational_type_modules(
+        getattr(d, required_operational_modules)
+    )
+
+    # Expressions
+    ###########################################################################
+
     def fuel_burn_rule(mod, g, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel)
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
@@ -50,6 +78,11 @@ def add_model_components(m, d):
                                         "not be labeled carbonaceous: "
                                         "replace its carbon_cap_zone with "
                                         "'.' in projects.tab.".format(g))
+
+    m.Operations_Fuel_Burn_MMBtu = Expression(
+        m.FUEL_PRJ_OPR_TMPS,
+        rule=fuel_burn_rule
+    )
 
     def startup_fuel_burn_rule(mod, g, tmp):
         """
@@ -61,33 +94,34 @@ def add_model_components(m, d):
         return imported_operational_modules[gen_op_type].\
             startup_fuel_burn_rule(mod, g, tmp)
 
-    # TODO: remove lambda mod, seems redundant (see e.g. startup fuel burn)?
-    m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
-        rule=lambda mod, g, tmp: fuel_burn_rule(mod, g, tmp)
-    )
-
     m.Startup_Fuel_Burn_MMBtu = Expression(
         m.PRJ_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
-
-    def total_fuel_burn_rule(mod, g, tmp):
-        """
-        Fuel for power production + fuel for startups
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
-            + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
 
     m.Total_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
 
+
+# Expression Rules
+###############################################################################
+
+def total_fuel_burn_rule(mod, g, tmp):
+    """
+    *Expression Name*: :code:`Total_Fuel_Burn_MMBtu`
+    *Defined Over*: :code:`FUEL_PRJ_OPR_TMPS`
+
+    Total fuel burn is the sum of operational fuel burn (power production)
+    and startup fuel burn.
+    """
+    return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
+        + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
+
+
+# Input-Output
+###############################################################################
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -128,6 +162,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
+# Database
+###############################################################################
+
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
@@ -152,9 +189,8 @@ def import_results_into_database(
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "fuel_burn.csv"), "r") as \
-            fuel_burn_file:
+    with open(os.path.join(results_directory, "fuel_burn.csv"),
+              "r") as fuel_burn_file:
         reader = csv.reader(fuel_burn_file)
 
         next(reader)  # skip header
