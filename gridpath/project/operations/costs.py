@@ -26,82 +26,65 @@ from gridpath.project.common_functions import \
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding components to
-    :param d: the DynamicComponents class object we will get components from
+    The following Pyomo model components are defined in this module:
 
-    Three types of project costs are included here: variable O&M cost,
-    fuel cost, and startup and shutdown costs.
-
-    The Pyomo expression *Variable_OM_Cost*\ :sub:`r,tmp`\ (:math:`(r,
-    tmp)\in RT`) defines the variable cost of a project in all of its
-    operational timepoints, and is simply equal to the project's power
-    output times its variable cost.
-
-    The Pyomo expression *Fuel_Cost*\ :sub:`r,tmp`\ (:math:`(r,
-    tmp)\in RT`) defines the fuel cost of a project in all of its
-    operational timepoints, and is simply equal to the project's fuel burn
-    in that timepoint times the fuel price (fuel price is currently defined
-    by period and month). The fuel burn expression is formulated in the
-    gridpath.project.operations.fuel_burn module by calling the *fuel_burn*
-    method of a project's *capacity_type* module.
-
-    The variables *Startup_Cost*\ :sub:`r,tmp`\ and
-    *Shutdown_Cost*\ :sub:`r,tmp`\ (:math:`(r, tmp)\in RT`) define the
-    startup and shutdown cost of a project in all of its operational
-    timepoints, and are formulated by first calling the
-    *startup_shutdown_rule* method of a project's *capacity_type* module,
-    which calculates the number of units that were started up or shut down,
-    i.e. the *Startup_Shutdown_Expressiont*\ :sub:`r,tmp`\.
-    These variables are defined to be non-negative and further constrained
-    as follows:
-
-    .. todo: figure out how to deal with the fuel/startup/shutdown project
-        subsets and update indices and docs in general accordingly
-
-    :math:`Startup\_Cost_{r, tmp} \geq Startup\_Shutdown\_Expression_{r,
-    tmp} \\times startup\_cost\_per\_mw_r`
-
-    :math:`Shutdown\_Cost_{r, tmp} \geq -Startup\_Shutdown\_Expression_{r,
-    tmp} \\times startup\_cost\_per\_mw_r`
-
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Variable_OM_Cost`                                              |
+    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    |                                                                         |
+    | This expression defines the variable cost of a project in all of its    |
+    | operational timepoints, and is simply equal to the project's power      |
+    | output times its variable cost.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Cost`                                                     |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
+    |                                                                         |
+    | This expression defines the fuel cost of a project in all of its        |
+    | operational timepoints, and is simply equal to the project's fuel burn  |
+    | in that timepoint times the fuel price (fuel price is currently defined |
+    | by period and month). The fuel burn expression is formulated in the     |
+    | gridpath.project.operations.fuel_burn module by calling the *fuel_burn* |
+    | method of a project's *operational_type* module.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Startup_Cost`                                                  |
+    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    |                                                                         |
+    | This expression defines the startup cost of a project in all of its     |
+    | operational timepoints. We obtain the expression by calling the         |
+    | *startup_cost_rule* method of a project's *operational_type* module.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`Shutdown_Cost`                                                 |
+    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    |                                                                         |
+    | This expression defines the shutdown cost of a project in all of its    |
+    | operational timepoints. We obtain the expression by calling the         |
+    | *shutdown_cost_rule* method of a project's *operational_type* module.   |
+    +-------------------------------------------------------------------------+
 
     """
-    def variable_om_cost_rule(m, g, tmp):
-        """
 
-        :param m:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
+    # Dynamic Components
+    ###########################################################################
 
-    m.Variable_OM_Cost = Expression(m.PRJ_OPR_TMPS,
-                                    rule=variable_om_cost_rule)
+    imported_operational_modules = load_operational_type_modules(
+        getattr(d, required_operational_modules)
+    )
 
-    # From here, the operational modules determine how the model components are
-    # formulated
-    # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    # Expressions
+    ###########################################################################
 
-    # ### Fuel cost ### #
-    def fuel_cost_rule(mod, g, tmp):
-        """
+    m.Variable_OM_Cost = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=variable_om_cost_rule
+    )
 
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Total_Fuel_Burn_MMBtu[g, tmp] * \
-            mod.fuel_price_per_mmbtu[
-                mod.fuel[g], mod.period[tmp], mod.month[tmp]]
+    m.Fuel_Cost = Expression(
+        m.FUEL_PRJ_OPR_TMPS,
+        rule=fuel_cost_rule
+    )
 
-    m.Fuel_Cost = Expression(m.FUEL_PRJ_OPR_TMPS,
-                             rule=fuel_cost_rule)
-
-    # ### Startup and shutdown costs ### #
     def startup_cost_rule(mod, g, tmp):
         """
         Startup costs are defined for some operational types while they are
@@ -112,8 +95,10 @@ def add_model_components(m, d):
         return imported_operational_modules[gen_op_type].\
             startup_cost_rule(mod, g, tmp)
 
-    m.Startup_Cost = Expression(m.PRJ_OPR_TMPS,
-                                rule=startup_cost_rule)
+    m.Startup_Cost = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=startup_cost_rule
+    )
 
     def shutdown_cost_rule(mod, g, tmp):
         """
@@ -125,9 +110,34 @@ def add_model_components(m, d):
         return imported_operational_modules[gen_op_type].\
             shutdown_cost_rule(mod, g, tmp)
 
-    m.Shutdown_Cost = Expression(m.PRJ_OPR_TMPS,
-                                 rule=shutdown_cost_rule)
+    m.Shutdown_Cost = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=shutdown_cost_rule
+    )
 
+
+# Expression Rules
+###############################################################################
+
+def variable_om_cost_rule(m, g, tmp):
+    """
+    **Expression Name**: Variable_OM_Cost
+    **Defined Over**: PRJ_OPR_TMPS
+    """
+    return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    **Expression Name**: Fuel_Cost
+    **Defined Over**: FUEL_PRJ_OPR_TMPS
+    """
+    return mod.Total_Fuel_Burn_MMBtu[g, tmp] * mod.fuel_price_per_mmbtu[
+        mod.fuel[g], mod.period[tmp], mod.month[tmp]]
+
+
+# Input-Output
+###############################################################################
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -168,6 +178,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Shutdown_Cost[p, tmp])
             ])
 
+
+# Database
+###############################################################################
 
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
