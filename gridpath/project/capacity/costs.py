@@ -24,38 +24,47 @@ from gridpath.auxiliary.auxiliary import \
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding components to
-    :param d: the DynamicComponents class object we will get components from
+    The following Pyomo model components are defined in this module:
 
-    For each project and operational period, determine its capacity-related
-    cost in the period based on its *capacity_type*. For the purpose,
-    call the *capacity_cost_rule* method from the respective capacity-type
-    module. The expression component added to the model is
-    :math:`Capacity\_Cost\_in\_Period_{r, p}`. This expression will then be
-    used by other model components. See formulation in the *capacity_type*
-    modules.
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Capacity_Cost_in_Period`                                       |
+    | | *Defined Over*: :code:`PRJ_OPR_PRDS`                                  |
+    |                                                                         |
+    | This expression describe each project's capacity-related costs for each |
+    | operational period, based on its capacity_type. For the purpose, call   |
+    | the *capacity_cost_rule* method from the respective capacity-type       |
+    | module.                                                                 |
+    +-------------------------------------------------------------------------+
+
     """
 
-    # Import needed capacity type modules
-    imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(
-            getattr(d, required_capacity_modules)
-        )
+    # Dynamic Components
+    ###########################################################################
+
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+        getattr(d, required_capacity_modules)
+    )
+
+    # Expressions
+    ###########################################################################
 
     def capacity_cost_rule(mod, g, p):
         """
-        Get capacity cost for each generator's respective capacity module
-        :param mod:
-        :param g:
-        :param p:
-        :return:
+        Get capacity cost for each generator's respective capacity module.
         """
         return imported_capacity_modules[mod.capacity_type[g]].\
             capacity_cost_rule(mod, g, p)
-    m.Capacity_Cost_in_Period = \
-        Expression(m.PRJ_OPR_PRDS,
-                   rule=capacity_cost_rule)
 
+    m.Capacity_Cost_in_Period = Expression(
+        m.PRJ_OPR_PRDS,
+        rule=capacity_cost_rule
+    )
+
+
+# Input-Output
+###############################################################################
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -68,7 +77,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_capacity_all_projects.csv"), "w", newline="") as f:
+                           "costs_capacity_all_projects.csv"),
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "technology", "load_zone",
@@ -83,6 +93,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Capacity_Cost_in_Period[prj, p])
             ])
 
+
+# Database
+###############################################################################
 
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
@@ -107,8 +120,8 @@ def import_results_into_database(
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "costs_capacity_all_projects.csv"), "r") as \
-            capacity_costs_file:
+                           "costs_capacity_all_projects.csv"),
+              "r") as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
         next(reader)  # skip header
