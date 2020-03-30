@@ -158,6 +158,8 @@ def load_csv_data(conn, csv_path, quiet):
     # passed here).
     temporal_subscenarios = sorted(next(os.walk(temporal_directory))[1])
     for temporal_subscenario in temporal_subscenarios:
+        if not quiet:
+            print(temporal_subscenario)
         if not temporal_subscenario.split("_")[0].isdigit():
             warnings.warn(
                 "Temporal subfolder `{}` does not start with an integer to "

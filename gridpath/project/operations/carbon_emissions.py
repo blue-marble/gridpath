@@ -19,48 +19,121 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`CRBN_PRJS`                                                     |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | Two set of carbonaceous projects we need to track for the carbon cap.   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`carbon_cap_zone`                                               |
+    | | *Defined over*: :code:`CRBN_PRJS`                                     |
+    | | *Within*: :code:`CARBON_CAP_ZONES`                                    |
+    |                                                                         |
+    | This param describes the carbon cap zone for each carbonaceous project. |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`CRBN_PRJS_BY_CARBON_CAP_ZONE`                                  |
+    | | *Defined over*: :code:`CARBON_CAP_ZONES`                              |
+    | | *Within*: :code:`CRBN_PRJS`                                           |
+    |                                                                         |
+    | Indexed set that describes the list of carbonaceous projects for each   |
+    | carbon cap zone.                                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`CRBN_PRJ_OPR_TMPS`                                             |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | Two-dimensional set that defines all project-timepoint combinations     |
+    | when a carbonaceous project can be operational.                         |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Carbon_Emissions_Tons`                                         |
+    | | *Defined over*: :code:`CRBN_PRJ_OPR_TMPS`                             |
+    |                                                                         |
+    | The project's carbon emissions in metric tonnes for each timepoint in   |
+    | which the project could be operational.                                 |
+    +-------------------------------------------------------------------------+
+
     """
-    # First figure out which projects we need to track for the carbon cap
-    m.CARBONACEOUS_PROJECTS = Set(within=m.PROJECTS)
-    m.carbon_cap_zone = Param(m.CARBONACEOUS_PROJECTS,
-                              within=m.CARBON_CAP_ZONES)
 
-    m.CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE = \
-        Set(m.CARBON_CAP_ZONES, within=m.CARBONACEOUS_PROJECTS,
-            initialize=lambda mod, co2_z:
-            [p for p in mod.CARBONACEOUS_PROJECTS
-             if mod.carbon_cap_zone[p] == co2_z])
+    # Sets
+    ###########################################################################
 
-    # Get operational carbon cap projects - timepoints combinations
-    m.CARBONACEOUS_PRJ_OPR_TMPS = Set(
-        within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in
-                          mod.PRJ_OPR_TMPS
-                          if p in mod.CARBONACEOUS_PROJECTS]
+    m.CRBN_PRJS = Set(
+        within=m.PROJECTS
     )
 
-    # Get emissions for each carbon cap project
-    def carbon_emissions_rule(mod, g, tmp):
-        """
-        Emissions from each project based on operational type 
-        (and whether a project burns fuel)
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Total_Fuel_Burn_MMBtu[g, tmp] \
-            * mod.co2_intensity_tons_per_mmbtu[mod.fuel[g]]
+    # Input Params
+    ###########################################################################
+
+    m.carbon_cap_zone = Param(
+        m.CRBN_PRJS,
+        within=m.CARBON_CAP_ZONES
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.CRBN_PRJS_BY_CARBON_CAP_ZONE = Set(
+        m.CARBON_CAP_ZONES,
+        within=m.CRBN_PRJS,
+        initialize=lambda mod, co2_z:
+        [p for p in mod.CRBN_PRJS
+         if mod.carbon_cap_zone[p] == co2_z]
+    )
+
+    m.CRBN_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod:
+        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+         if p in mod.CRBN_PRJS]
+    )
+
+    # Expressions
+    ###########################################################################
 
     m.Carbon_Emissions_Tons = Expression(
-        m.CARBONACEOUS_PRJ_OPR_TMPS,
+        m.CRBN_PRJ_OPR_TMPS,
         rule=carbon_emissions_rule
     )
 
+
+# Expression Rules
+###############################################################################
+
+def carbon_emissions_rule(mod, g, tmp):
+    """
+    **Expression Name**: Carbon_Emissions_Tons
+    **Defined Over**: CRBN_PRJ_OPR_TMPS
+
+    Emissions from each project based on operational type
+    (and whether a project burns fuel)
+    """
+    return mod.Total_Fuel_Burn_MMBtu[g, tmp] \
+        * mod.co2_intensity_tons_per_mmbtu[mod.fuel[g]]
+
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -73,14 +146,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "projects.tab"),
-                     select=("project", "carbon_cap_zone"),
-                     param=(m.carbon_cap_zone,)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "projects.tab"),
+        select=("project", "carbon_cap_zone"),
+        param=(m.carbon_cap_zone,)
+    )
 
-    data_portal.data()['CARBONACEOUS_PROJECTS'] = {
+    data_portal.data()['CRBN_PRJS'] = {
         None: list(data_portal.data()['carbon_cap_zone'].keys())
     }
 
@@ -96,14 +169,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "carbon_emissions_by_project.csv"), "w", newline="") as \
-            carbon_emissions_results_file:
+                           "carbon_emissions_by_project.csv"),
+              "w", newline="") as carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight",
                          "number_of_hours_in_timepoint", "load_zone",
                          "carbon_emissions_tons"])
-        for (p, tmp) in m.CARBONACEOUS_PRJ_OPR_TMPS:
+        for (p, tmp) in m.CRBN_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -115,6 +188,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Carbon_Emissions_Tons[p, tmp])
             ])
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -157,23 +233,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
+                       conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -194,7 +255,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
+        reader = csv.reader(projects_file_in, delimiter="\t",
+                            lineterminator="\n")
 
         new_rows = list()
 
@@ -214,9 +276,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+              newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
+        writer = csv.writer(projects_file_out, delimiter="\t",
+                            lineterminator="\n")
         writer.writerows(new_rows)
 
 
@@ -246,8 +310,8 @@ def import_results_into_database(
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "carbon_emissions_by_project.csv"), "r") as \
-            emissions_file:
+                           "carbon_emissions_by_project.csv"),
+              "r") as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -260,12 +324,12 @@ def import_results_into_database(
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             carbon_emissions_tons = row[7]
-            
+
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, carbon_emissions_tons)
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, carbon_emissions_tons)
             )
 
     insert_temp_sql = """
@@ -299,11 +363,11 @@ def import_results_into_database(
 def process_results(db, c, subscenarios, quiet):
     """
 
-    :param db: 
-    :param c: 
+    :param db:
+    :param c:
     :param subscenarios:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("update carbon cap zones")
@@ -359,3 +423,22 @@ def process_results(db, c, subscenarios, quiet):
         spin_on_database_lock(conn=db, cursor=c, sql=no_cc_sql,
                               data=(subscenarios.SCENARIO_ID,),
                               many=False)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # project_zones = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # do stuff here to validate inputs

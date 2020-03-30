@@ -778,8 +778,7 @@ def ramp_up_constraint_rule(mod, g, tmp):
             - (mod.GenCommitCap_Provide_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                - mod.GenCommitCap_Downwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               ) \
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
             <= \
             mod.Ramp_Up_Startup_MW[g, tmp] \
             + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -806,14 +805,13 @@ def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return mod.Ramp_Down_Shutdown_MW[g, tmp] \
-               >= \
-               (mod.Commit_Capacity_MW[g, tmp]
-                - mod.Commit_Capacity_MW[
-                    g, mod.prev_tmp[
-                        tmp, mod.balancing_type_project[g]]]) \
-               * mod.gen_commit_cap_shutdown_plus_ramp_down_rate[g] * 60 \
-               * mod.hrs_in_tmp[
-                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+           >= \
+           (mod.Commit_Capacity_MW[g, tmp]
+            - mod.Commit_Capacity_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
+           * mod.gen_commit_cap_shutdown_plus_ramp_down_rate[g] * 60 \
+           * mod.hrs_in_tmp[
+               mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
@@ -831,12 +829,11 @@ def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return mod.Ramp_Down_When_On_MW[g, tmp] \
-               >= \
-               mod.Commit_Capacity_MW[g, tmp] \
-               * (-mod.gen_commit_cap_ramp_down_when_on_rate[g]) * 60 \
-               * mod.hrs_in_tmp[
-                   mod.prev_tmp[
-                       tmp, mod.balancing_type_project[g]]]
+            >= \
+            mod.Commit_Capacity_MW[g, tmp] \
+            * (-mod.gen_commit_cap_ramp_down_when_on_rate[g]) * 60 \
+            * mod.hrs_in_tmp[
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
@@ -857,10 +854,10 @@ def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return -mod.Ramp_Down_When_On_MW[g, tmp] \
-               <= \
-               mod.Commit_Capacity_MW[g, tmp] \
-               - (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-                  - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp])
+            <= \
+            mod.Commit_Capacity_MW[g, tmp] \
+            - (mod.GenCommitCap_Provide_Power_MW[g, tmp]
+               - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp])
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -903,16 +900,13 @@ def ramp_down_constraint_rule(mod, g, tmp):
     else:
         return (mod.GenCommitCap_Provide_Power_MW[g, tmp]
                 - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp]) \
-               - (mod.GenCommitCap_Provide_Power_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]
-                  + mod.GenCommitCap_Upwards_Reserves_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]
-                  ) \
-               >= \
-               mod.Ramp_Down_Shutdown_MW[g, tmp] \
-               + mod.Ramp_Down_When_On_MW[g, tmp]
+            - (mod.GenCommitCap_Provide_Power_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+               + mod.GenCommitCap_Upwards_Reserves_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
+            >= \
+            mod.Ramp_Down_Shutdown_MW[g, tmp] \
+            + mod.Ramp_Down_When_On_MW[g, tmp]
 
 
 def startup_constraint_rule(mod, g, tmp):
@@ -929,10 +923,9 @@ def startup_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return mod.GenCommitCap_Startup_MW[g, tmp] \
-               >= mod.Commit_Capacity_MW[g, tmp] \
-               - mod.Commit_Capacity_MW[
-                   g, mod.prev_tmp[
-                       tmp, mod.balancing_type_project[g]]]
+            >= mod.Commit_Capacity_MW[g, tmp] \
+            - mod.Commit_Capacity_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def shutdown_constraint_rule(mod, g, tmp):
@@ -949,10 +942,9 @@ def shutdown_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return mod.GenCommitCap_Shutdown_MW[g, tmp] \
-               >= mod.Commit_Capacity_MW[
-                   g, mod.prev_tmp[
-                       tmp, mod.balancing_type_project[g]]] \
-               - mod.Commit_Capacity_MW[g, tmp]
+            >= mod.Commit_Capacity_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
+            - mod.Commit_Capacity_MW[g, tmp]
 
 
 def min_up_time_constraint_rule(mod, g, tmp):
@@ -988,11 +980,10 @@ def min_up_time_constraint_rule(mod, g, tmp):
     # started up in the relevant timepoints
     else:
         capacity_turned_on_min_up_time_or_less_hours_ago = \
-            sum(mod.GenCommitCap_Startup_MW[g, tp]
-                for tp in relevant_tmps)
+            sum(mod.GenCommitCap_Startup_MW[g, tp] for tp in relevant_tmps)
 
         return mod.Commit_Capacity_MW[g, tmp] \
-               >= capacity_turned_on_min_up_time_or_less_hours_ago
+            >= capacity_turned_on_min_up_time_or_less_hours_ago
 
 
 def min_down_time_constraint_rule(mod, g, tmp):
@@ -1019,8 +1010,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     )
 
     capacity_turned_off_min_down_time_or_less_hours_ago = \
-        sum(mod.GenCommitCap_Shutdown_MW[g, tp]
-            for tp in relevant_tmps)
+        sum(mod.GenCommitCap_Shutdown_MW[g, tp] for tp in relevant_tmps)
 
     # If only the current timepoint is determined to be relevant,
     # this constraint is redundant (it will simplify to
@@ -1159,10 +1149,9 @@ def power_delta_rule(mod, g, tmp):
     ):
         pass
     else:
-        return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \
-               mod.GenCommitCap_Provide_Power_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-               ]
+        return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
+            - mod.GenCommitCap_Provide_Power_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def fix_commitment(mod, g, tmp):
@@ -1215,7 +1204,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "operational_type", "unit_size_mw",
                      "min_stable_level_fraction"] + used_columns
@@ -1245,8 +1235,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_startup_plus_ramp_up_rate"] = \
+        data_portal.data()["gen_commit_cap_startup_plus_ramp_up_rate"] = \
             startup_plus_ramp_up_rate
 
     if "shutdown_plus_ramp_down_rate" in used_columns:
@@ -1258,8 +1247,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_shutdown_plus_ramp_down_rate"] = \
+        data_portal.data()["gen_commit_cap_shutdown_plus_ramp_down_rate"] = \
             shutdown_plus_ramp_down_rate
 
     if "ramp_up_when_on_rate" in used_columns:
@@ -1271,8 +1259,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_ramp_up_when_on_rate"] = \
+        data_portal.data()["gen_commit_cap_ramp_up_when_on_rate"] = \
             ramp_up_when_on_rate
 
     if "ramp_down_when_on_rate" in used_columns:
@@ -1284,37 +1271,32 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_ramp_down_when_on_rate"] = \
+        data_portal.data()[ "gen_commit_cap_ramp_down_when_on_rate"] = \
             ramp_down_when_on_rate
 
     # Up and down time limits are optional, will default to 1 if not specified
     if "min_up_time_hours" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "min_up_time_hours"]
+                       dynamic_components["min_up_time_hours"]
                        ):
             if row[1] == "gen_commit_cap" and row[2] != ".":
                 min_up_time[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_min_up_time_hours"] = \
+        data_portal.data()["gen_commit_cap_min_up_time_hours"] = \
             min_up_time
 
     if "min_down_time_hours" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "min_down_time_hours"]
+                       dynamic_components["min_down_time_hours"]
                        ):
             if row[1] == "gen_commit_cap" and row[2] != ".":
                 min_down_time[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "gen_commit_cap_min_down_time_hours"] = \
+        data_portal.data()["gen_commit_cap_min_down_time_hours"] = \
             min_down_time
 
     # Startup/shutdown costs are optional, will default to 0 if not specified
@@ -1355,7 +1337,9 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
             startup_fuel
 
 
-def export_module_specific_results(mod, d, scenario_directory, subproblem, stage):
+def export_module_specific_results(
+        mod, d, scenario_directory, subproblem, stage
+):
     """
 
     :param scenario_directory:
@@ -1366,7 +1350,8 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_capacity_commit.csv"), "w", newline="") as f:
+                           "dispatch_capacity_commit.csv"),
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
@@ -1420,6 +1405,7 @@ def import_module_specific_results_to_database(
         results_file="dispatch_capacity_commit.csv"
     )
 
+
 # Validation
 ###############################################################################
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
@@ -1469,7 +1455,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "unit_size_mw"
     ]
     validation_errors = check_req_prj_columns(df, req_columns, True,
-                                          "gen_commit_cap")
+                                              "gen_commit_cap")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -1490,7 +1476,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "minimum_duration_hours"
     ]
     validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                          "gen_commit_cap")
+                                              "gen_commit_cap")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
