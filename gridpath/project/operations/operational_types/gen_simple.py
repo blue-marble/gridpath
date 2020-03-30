@@ -357,7 +357,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 # TODO: add data check that there is indeed only 1 segment for must-run
 #   generators (and therefore there is no intercept)
-def fuel_burn_rule(mod, g, tmp, error_message):
+def fuel_burn_rule(mod, g, tmp):
     """
     Fuel burn is the product of the fuel burn slope and the power output. For
     simple generators we assume only one average heat rate is specified in
@@ -368,7 +368,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
             * mod.GenSimple_Provide_Power_MW[g, tmp]
     else:
-        raise ValueError(error_message)
+        return 0
 
 
 def startup_cost_rule(mod, g, tmp):

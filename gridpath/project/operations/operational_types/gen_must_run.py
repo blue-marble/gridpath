@@ -190,7 +190,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-def fuel_burn_rule(mod, g, tmp, error_message):
+def fuel_burn_rule(mod, g, tmp):
     """
     Output doesn't vary, so this is a constant.
 
@@ -202,7 +202,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
             * mod.Power_Provision_MW[g, tmp]
     else:
-        raise ValueError(error_message)
+        return 0
 
 
 def startup_cost_rule(mod, g, tmp):

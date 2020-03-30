@@ -442,3 +442,5 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
+
+    # TODO: need validation that projects with carbon cap zones also have fuels

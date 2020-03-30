@@ -225,13 +225,12 @@ def fuel_burn_rule(mod, p, tmp, error_message):
     """
     if p in mod.FUEL_PRJS:
         raise ValueError(
-
             "ERROR! Shiftable load projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(p) + "\n" +
             "and change its fuel to '.' (no value)."
         )
     else:
-        raise ValueError(error_message)
+        return 0
 
 
 def startup_cost_rule(mod, g, tmp):

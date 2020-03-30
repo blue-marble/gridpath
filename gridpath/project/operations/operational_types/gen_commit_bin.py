@@ -1659,13 +1659,13 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-def fuel_burn_rule(mod, g, tmp, error_message):
+def fuel_burn_rule(mod, g, tmp):
     """
     """
     if g in mod.FUEL_PRJS:
         return mod.GenCommitBin_Fuel_Burn_MMBTU[g, tmp]
     else:
-        raise ValueError(error_message)
+        return 0
 
 
 def startup_cost_rule(mod, g, tmp):
