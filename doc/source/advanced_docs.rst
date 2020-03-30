@@ -154,6 +154,11 @@ gridpath.project.operations.costs
 .. automodule:: gridpath.project.operations.costs
     :members: add_model_components
 
+gridpath.project.operations.tuning_costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.tuning_costs
+    :members: add_model_components
+
 gridpath.project.capacity.operational_types.gen_simple
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_simple.add_module_specific_components
