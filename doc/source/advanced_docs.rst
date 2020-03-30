@@ -262,6 +262,8 @@ by selecting optional features.
 Multi-Stage
 ============
 .. automodule:: gridpath.project.operations.fix_commitment
+    :members: add_model_components, fix_variables, export_pass_through_inputs
+
 
 Transmission
 ============

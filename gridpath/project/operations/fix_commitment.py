@@ -3,7 +3,8 @@
 
 """
 This module exports the commitment variables that must be fixed in the next
-stage and imports the variables that were fixed in the previous stage.
+stage and imports the commitment variables that were fixed in the previous
+stage.
 """
 
 from builtins import zip
@@ -18,80 +19,144 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`FNL_COMMIT_PRJS`                                               |
+    |                                                                         |
+    | The set of generators for which the current stage or any of the         |
+    | previous stages is the final commitment stage.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`FXD_COMMIT_PRJS`                                               |
+    |                                                                         |
+    | The set of generators that have already had their commitment fixed in a |
+    | prior commitment stage.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`FNL_COMMIT_PRJS_OPR_TMPS`                                      |
+    |                                                                         |
+    | Two-dimensional set of all final commitment projects and their          |
+    | operational timepoints.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`FXD_COMMIT_PRJS_OPR_TMPS`                                      |
+    |                                                                         |
+    | Two-dimensional set of all fixed commitment projects and their          |
+    | operational timepoints.                                                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Input Params                                                            |
+    +=========================================================================+
+    | | :code:`fixed_commitment`                                              |
+    | | *Defined over*: :code:`FXD_COMMIT_PRJ_OPR_TMPS`                       |
+    |                                                                         |
+    | This param describes the fixed commitment from the prior commitment     |
+    | stage for each fixed commitment project and their operational           |
+    | timepoints.                                                             |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Commitment`                                                    |
+    | | *Defined over*: :code:`FNL_COMMIT_PRJ_OPR_TMPS`                       |
+    |                                                                         |
+    | Describes the commitment for all final commitment projects and their    |
+    | operational timepoints. For the :code:`gen_commit_cap` operational      |
+    | type, it describes the committed capacity in MW whereas for the         |
+    | :code:`gen_commit_lin` and :code:`gen_commit_bin` operational types it  |
+    | describes the binary commitment variable. This expression will be       |
+    | exported so that the next stage's optimization can read it in through   |
+    | the :code:`fixed_commitment` param and fix the commitment to this value.|
+    +-------------------------------------------------------------------------+
+
+    """
+
+    # Dynamic Components
+    imported_operational_modules = load_operational_type_modules(
+        getattr(d, required_operational_modules)
+    )
+
+    # Sets
+    ###########################################################################
+
+    m.FNL_COMMIT_PRJS = Set()
+
+    m.FXD_COMMIT_PRJS = Set()
+
+    m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+            if g in mod.FNL_COMMIT_PRJS)
+    )
+
+    m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+            if g in mod.FXD_COMMIT_PRJS)
+    )
+
+    # Input Params
+    ###########################################################################
+
+    m.fixed_commitment = Param(
+        m.FXD_COMMIT_PRJ_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    # Expressions
+    ###########################################################################
+
+    def commitment_rule(mod, g, tmp):
+        """
+        **Expression Name**: Commitment
+        **Defined Over**: FNL_COMMIT_PRJ_OPR_TMPS
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].\
+            commitment_rule(mod, g, tmp)
+
+    m.Commitment = Expression(
+        m.FNL_COMMIT_PRJ_OPR_TMPS,
+        rule=commitment_rule
+    )
+
+
+# Commitment Functions
+###############################################################################
+
+def fix_variables(m, d):
+    """
+    This function fixes the commitment of all fixed commitment projects by
+    running the :code:`fix_commitment` function in the appropriate operational
+    module.
 
     :param m:
     :param d:
     :return:
     """
 
-    # Import needed operational modules
-    # TODO: import only
-    imported_operational_modules = \
-        load_operational_type_modules(
-            getattr(d, required_operational_modules)
-        )
-
-    # Sets
-    # The generators for which the current stage or any of the previous stages
-    # is the final commitment stage
-    m.FINAL_COMMITMENT_PROJECTS = Set()
-
-    m.FINAL_COMMITMENT_PRJ_OPR_TMPS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.FINAL_COMMITMENT_PROJECTS))
-
-    # The generators that have already had their commitment fixed in a prior
-    # commitment stage
-    m.FIXED_COMMITMENT_PROJECTS = Set()
-
-    m.FIXED_COMMITMENT_PRJ_OPR_TMPS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.FIXED_COMMITMENT_PROJECTS))
-
-    # Params
-    m.fixed_commitment = Param(
-        m.FIXED_COMMITMENT_PRJ_OPR_TMPS,
-        within=NonNegativeReals)
-
-    # Expressions
-    def commitment_rule(mod, g, tmp):
-        """
-
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            commitment_rule(mod, g, tmp)
-    m.Commitment = Expression(m.FINAL_COMMITMENT_PRJ_OPR_TMPS,
-                              rule=commitment_rule)
-
-
-def fix_variables(m, d):
-    """
-
-    :param m:
-    :return:
-    """
-
-    # Import needed operational modules
     imported_operational_modules = load_operational_type_modules(
-        d.required_operational_modules)
+        d.required_operational_modules
+    )
 
-    # Fix commitment if there are any fixed commitment projects
-    for g in m.FIXED_COMMITMENT_PROJECTS:
+    for g in m.FXD_COMMIT_PRJS:
         op_m = m.operational_type[g]
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "fix_commitment"):
             for tmp in m.TMPS:
                 imp_op_m.fix_commitment(m, g, tmp)
 
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -117,16 +182,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         dtype={"stage": str}
     )
 
-    # fixed_commitment_df["stage"] = fixed_commitment_df["stage"].astype(str)
-
-    # FINAL_COMMITMENT_GENERATORS
-    def determine_final_commitment_projects():
+    # FNL_COMMIT_PRJS
+    def get_fnl_commit_prjs():
         """
         Get the list of generators for which the current stage is the final
         commitment stage or for which any of the previous stages was the
         final commitment stage.
         """
-        final_commitment_projects = list()
+        fnl_commit_prjs = list()
         df = read_csv(
             os.path.join(scenario_directory, subproblem, stage,
                          "inputs", "projects.tab"),
@@ -134,25 +197,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             usecols=["project", "last_commitment_stage"],
             dtype={"last_commitment_stage": str}
         )
-        # df["last_commitment_stage"] = df["last_commitment_stage"].astype(str)
+
         for prj, s in zip(df["project"], df["last_commitment_stage"]):
             if s == ".":
                 pass
             elif s == stage or stages.index(s) < stages.index(stage):
-                final_commitment_projects.append(prj)
+                fnl_commit_prjs.append(prj)
             else:
                 pass
-        return final_commitment_projects
+        return fnl_commit_prjs
 
-    data_portal.data()["FINAL_COMMITMENT_PROJECTS"] = {
-        None: determine_final_commitment_projects()
-    }
+    data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
 
-    # FIXED_COMMITMENT_GENERATORS
-    fixed_commitment_projects = set(fixed_commitment_df["project"].tolist())
+    # FXD_COMMIT_PRJS
+    fxd_commit_prjs = set(fixed_commitment_df["project"].tolist())
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
-    if len(fixed_commitment_projects) > 0:
+    if len(fxd_commit_prjs) > 0:
         # For projects whose final commitment was in a prior stage, get the
         # fixed commitment of the previous stage (by project and timepoint)
         fixed_commitment_df["stage_index"] = fixed_commitment_df.apply(
@@ -165,12 +226,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         fixed_commitment_dict = dict(zip(projects_timepoints,
                                          relevant_commitment_df["commitment"]))
 
-        data_portal.data()["FIXED_COMMITMENT_PROJECTS"] = {
-            None: fixed_commitment_projects
-        }
-        data_portal.data()[
-            "FIXED_COMMITMENT_PRJ_OPR_TMPS"
-        ] = {None: projects_timepoints}
+        data_portal.data()["FXD_COMMIT_PRJS"] = {None: fxd_commit_prjs}
+        data_portal.data()["FXD_COMMIT_PRJ_OPR_TMPS"] = \
+            {None: projects_timepoints}
         data_portal.data()["fixed_commitment"] = fixed_commitment_dict
     else:
         pass
@@ -178,6 +236,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
 def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
     """
+    This function exports the commitment for all final commitment projects,
+    i.e. projects for which the current stage or any of the previous stages
+    is the final commitment stage.
 
     :param scenario_directory:
     :param subproblem:
@@ -193,16 +254,18 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
         sep="\t",
         usecols=["project", "last_commitment_stage"]
     )
+
     final_commitment_stage_dict = dict(
         zip(df["project"], df["last_commitment_stage"])
     )
 
-    with open(os.path.join(
-            scenario_directory, subproblem,
-            "pass_through_inputs", "fixed_commitment.tab"), "a") \
-            as fixed_commitment_file:
-        fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t", lineterminator="\n")
-        for (g, tmp) in m.FINAL_COMMITMENT_PRJ_OPR_TMPS:
+    with open(os.path.join(scenario_directory, subproblem,
+                           "pass_through_inputs", "fixed_commitment.tab"),
+              "a") as fixed_commitment_file:
+        fixed_commitment_writer = writer(fixed_commitment_file,
+                                         delimiter="\t",
+                                         lineterminator="\n")
+        for (g, tmp) in m.FNL_COMMIT_PRJ_OPR_TMPS:
             fixed_commitment_writer.writerow(
                 [g, tmp, stage, final_commitment_stage_dict[g],
                  m.Commitment[g, tmp].expr.value]
