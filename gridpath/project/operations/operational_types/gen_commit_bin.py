@@ -949,6 +949,7 @@ def active_startup_rule(mod, g, tmp):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Commitment
 def binary_logic_constraint_rule(mod, g, tmp):
     """
@@ -972,10 +973,11 @@ def binary_logic_constraint_rule(mod, g, tmp):
     ):
         return Constraint.Skip
     else:
-       return mod.GenCommitBin_Commit[g, tmp] \
+        return mod.GenCommitBin_Commit[g, tmp] \
               - mod.GenCommitBin_Commit[
                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-              == mod.GenCommitBin_Startup[g, tmp] - mod.GenCommitBin_Shutdown[g, tmp]
+              == mod.GenCommitBin_Startup[g, tmp] \
+              - mod.GenCommitBin_Shutdown[g, tmp]
 
 
 def synced_constraint_rule(mod, g, tmp):
@@ -1021,8 +1023,8 @@ def min_power_constraint_rule(mod, g, tmp):
     don't look at downward reserves. In that case, enforcing
     provide_power_above_pmin to be within NonNegativeReals is sufficient.
     """
-    return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] - \
-        mod.GenCommitBin_Downwards_Reserves_MW[g, tmp] \
+    return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
+        - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp] \
         >= 0
 
 
@@ -1381,17 +1383,11 @@ def ramp_during_startup_constraint_rule(mod, g, tmp, s):
         return Constraint.Skip
     else:
         return \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] - \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g,
-                          mod.prev_tmp[tmp,
-                                                 mod
-                                                 .balancing_type_project[g]
-                                                 ], s
-                          ] \
+            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] \
+            - mod.GenCommitBin_Provide_Power_Startup_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s] \
             <= mod.GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp,
-                                          mod.balancing_type_project[g]], s
-            ]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
 
 
 def increasing_startup_power_constraint_rule(mod, g, tmp, s):
@@ -1413,13 +1409,9 @@ def increasing_startup_power_constraint_rule(mod, g, tmp, s):
         return Constraint.Skip
     else:
         return \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] - \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g,
-                          mod.prev_tmp[tmp,
-                                                 mod
-                                                 .balancing_type_project[g]
-                                                 ], s
-                          ] \
+            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] \
+            - mod.GenCommitBin_Provide_Power_Startup_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s] \
             >= - mod.GenCommitBin_Startup_Type[g, tmp, s] \
             * mod.GenCommitBin_Pmin_MW[g, tmp]
 
@@ -1468,9 +1460,7 @@ def power_during_startup_constraint_rule(mod, g, tmp, s):
             * mod.GenCommitBin_Pmax_MW[g, tmp] \
             + mod.GenCommitBin_Startup[g, tmp] \
             * mod.GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp,
-                                          mod.balancing_type_project[g]], s
-            ]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
 
 
 # Shutdown Power
@@ -1511,9 +1501,7 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
             tmp, mod.balancing_type_project[g]]] \
             - mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] \
             <= mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp,
-                                          mod.balancing_type_project[g]]
-            ]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
@@ -1535,21 +1523,13 @@ def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return \
-            mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] - \
-            mod.GenCommitBin_Provide_Power_Shutdown_MW[g,
-                          mod.next_tmp[tmp,
-                                             mod
-                                             .balancing_type_project[g]
-                                             ]
-                          ] \
+            mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] \
+            - mod.GenCommitBin_Provide_Power_Shutdown_MW[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
             >= \
-            - mod.GenCommitBin_Shutdown[g,
-                              mod.next_tmp[tmp,
-                                                 mod
-                                                 .balancing_type_project[g]
-                                                 ]
-                              ] * \
-            mod.GenCommitBin_Pmin_MW[g, tmp]
+            - mod.GenCommitBin_Shutdown[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
+            * mod.GenCommitBin_Pmin_MW[g, tmp]
 
 
 def power_during_shutdown_constraint_rule(mod, g, tmp):
@@ -1585,8 +1565,7 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
     else:
         return (mod.GenCommitBin_Commit[g, tmp]
                 * mod.GenCommitBin_Pmin_MW[g, tmp]
-                + mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g,
-                                                                   tmp]) \
+                + mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]) \
             + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp] \
             - mod.GenCommitBin_Provide_Power_Shutdown_MW[g, mod.next_tmp[
                 tmp, mod.balancing_type_project[g]]] \
@@ -1950,8 +1929,8 @@ def export_module_specific_results(mod, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_binary_commit.csv"), "w", newline="") \
-            as f:
+                           "dispatch_binary_commit.csv"),
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
