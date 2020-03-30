@@ -64,24 +64,75 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c1 = conn.cursor()
     fuels = c1.execute(
-        """SELECT fuel, co2_intensity_tons_per_mmbtu
+        """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu
+        FROM (
+        -- Select the projects in the relevant portfolios
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {} 
+        ) as prj_portfolio_tbl
+        LEFT OUTER JOIN (
+        -- Get the fuels for those projects
+        SELECT project, fuel
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        -- Filter out the NULLs (projects with no fuels)
+        AND fuel NOT NULL
+        ) AS opchar_tbl
+        USING (project)
+        LEFT OUTER JOIN (
+        -- Get the fuel chars for the relevant fuels
+        SELECT fuel, co2_intensity_tons_per_mmbtu
         FROM inputs_project_fuels
-        WHERE fuel_scenario_id = {}""".format(
+        WHERE fuel_scenario_id = {}
+        ) AS fuels_tbl
+        USING (fuel)
+        ;
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.FUEL_SCENARIO_ID
         )
     )
 
     c2 = conn.cursor()
     fuel_prices = c2.execute(
-        """SELECT fuel, period, month, fuel_price_per_mmbtu
+        """SELECT DISTINCT fuel, period, month, fuel_price_per_mmbtu
+        FROM (
+        -- Select the projects in the relevant portfolios
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        ) as prj_portfolio_tbl
+        LEFT OUTER JOIN (
+        -- Get the fuels for those projects
+        SELECT project, fuel
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        -- Filter out the NULLs (projects with no fuels)
+        AND fuel NOT NULL
+        ) AS opchar_tbl
+        USING (project)
+        LEFT OUTER JOIN (
+        -- Get the fuel chars for the relevant fuels
+        SELECT fuel, period, month, fuel_price_per_mmbtu
         FROM inputs_project_fuel_prices
-        INNER JOIN
-        (SELECT period from inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
+        WHERE fuel_price_scenario_id = {}
+        ) AS fuels_tbl
+        USING (fuel)
+        -- Only get periods in the relevant temporal_scenario_id
+        INNER JOIN (
+        SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}
+        ) as periods_tbl
         USING (period)
-        WHERE fuel_price_scenario_id = {}""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.FUEL_PRICE_SCENARIO_ID
+        ;
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.FUEL_PRICE_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID
         )
     )
 
