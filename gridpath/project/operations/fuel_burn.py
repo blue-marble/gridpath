@@ -81,6 +81,11 @@ def add_model_components(m, d):
         rule=fuel_burn_rule
     )
 
+    m.Operations_Fuel_Burn_MMBtu = Expression(
+        m.FUEL_PRJ_OPR_TMPS,
+        rule=fuel_burn_rule
+    )
+
     def startup_fuel_burn_rule(mod, g, tmp):
         """
         Startup fuel burn is defined for some operational types while
