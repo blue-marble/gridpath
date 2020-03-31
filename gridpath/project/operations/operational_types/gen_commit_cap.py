@@ -1045,8 +1045,8 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         >= \
         mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
         * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
-        * (mod.Commit_Capacity_MW[g, tmp] / mod.gen_commit_cap_unit_size_mw[g])
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, s] \
+        * mod.Commit_Capacity_MW[g, tmp]
 
 
 # Operational Type Methods

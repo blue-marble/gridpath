@@ -484,7 +484,7 @@ def check_constant_heat_rate(df, op_type):
     Check whether the projects in the DataFrame have a constant heat rate
     based on the number of load points per project in the DAtaFrame
     :param df: DataFrame for which to check constant heat rate. Must have
-        "project", "load_point_mw" columns
+        "project", "load_point_fraction" columns
     :param op_type: Operational type (used in error message)
     :return:
     """

@@ -259,7 +259,7 @@ def update_project_hr_curves(
         heat_rate_curve_scenario_id, name, description) for each
         project-subscenario
     :param proj_hr_chars: list of tuples with (project,
-        heat_rate_curves_scenario_id, hr_curve_point, load_point_mw,
+        heat_rate_curves_scenario_id, hr_curve_point, load_point_fraction,
         average_heat_rate_mmbtu_per_mwh)
     :return:
     """
@@ -274,7 +274,7 @@ def update_project_hr_curves(
     # Insert data
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_heat_rate_curves
-        (project, heat_rate_curves_scenario_id, load_point_mw, 
+        (project, heat_rate_curves_scenario_id, load_point_fraction, 
         average_heat_rate_mmbtu_per_mwh)
         VALUES (?, ?, ?, ?);
         """

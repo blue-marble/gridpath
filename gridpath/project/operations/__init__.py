@@ -25,6 +25,8 @@ from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
 #   can we create operations.py like we have capacity.py and put it there?
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
+
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
@@ -62,19 +64,22 @@ def add_model_components(m, d):
     |                                                                         |
     | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
-    | | :code:`fuel_burn_intercept_mmbtu_per_hr`                              |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
-    | | *Within*: :code:`Reals`                                               |
-    |                                                                         |
-    | This param describes the intercept of the piecewise linear fuel burn    |
-    | for each project's heat rate segment.                                   |
-    +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_slope_mmbtu_per_mwh`                                 |
     | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment.                                       |
+    | each project's heat rate segment. The units are MMBtu of fuel burn per  |
+    | MWh of electricity generation.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
+    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear fuel burn    |
+    | for each project's heat rate segment. The units are MMBtu of fuel burn  |
+    | per MW of operational capacity per hour (multiply by operational        |
+    | capacity and timepoint duration to get fuel burn in MMBtu).             |
     +-------------------------------------------------------------------------+
 
     """
@@ -117,14 +122,14 @@ def add_model_components(m, d):
         within=m.FUELS
     )
 
-    m.fuel_burn_intercept_mmbtu_per_hr = Param(
-        m.FUEL_PRJ_SGMS,
-        within=Reals
-    )
-
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
         m.FUEL_PRJ_SGMS,
         within=PositiveReals
+    )
+
+    m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
+        m.FUEL_PRJ_SGMS,
+        within=Reals
     )
 
 
@@ -166,8 +171,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         for project in fuels_dict.keys():
             # read in the power setpoints and average heat rates
             hr_slice = hr_df[hr_df["project"] == project]
-            hr_slice = hr_slice.sort_values(by=["load_point_mw"])
-            load_points = hr_slice["load_point_mw"].values
+            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
+            load_points = hr_slice["load_point_fraction"].values
             heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
             slopes, intercepts = calculate_heat_rate_slope_intercept(
@@ -188,18 +193,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["FUEL_PRJ_SGMS"] = {None: fuel_project_segments}
         data_portal.data()["fuel"] = fuels_dict
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
-        data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = intercept_dict
+        data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
+            intercept_dict
 
 
 def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
     """
     Calculates slope and intercept for a set of load points and corresponding
-    average heat rates.
+    average heat rates. Note that the intercept will be normalized to the
+    operational capacity (Pmax) and the timepoint duration.
     :param project: the project name
-    :param load_points: NumPy array with the loading points in MW
-    :param heat_rates: NumPy array with the corresponding heat rates in MMBtu
-    per MWh
-    :return:
+    :param load_points: NumPy array with the loading points in fraction of Pmax
+    :param heat_rates: NumPy array with the corresponding *average* heat rates
+    in MMBtu per MWh
+    :return: (slope_dict, intercept_dict): Tuple with dictionary containing
+    resp. the slope and intercepts, with (project, segement_ID) as the key.
     """
 
     n_points = len(load_points)
@@ -286,7 +294,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     heat_rates = c.execute(
         """
         SELECT project, fuel, heat_rate_curves_scenario_id, 
-        load_point_mw, average_heat_rate_mmbtu_per_mwh
+        load_point_fraction, average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, fuel, heat_rate_curves_scenario_id
@@ -325,7 +333,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in heat_rates.description]
     )
     fuel_mask = pd.notna(hr_df["fuel"])
-    columns = ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+    columns = ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
     heat_rates = hr_df[columns][fuel_mask].values
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
@@ -334,7 +342,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(heat_rate_tab_file, delimiter="\t",
                             lineterminator="\n")
 
-        writer.writerow(["project", "load_point_mw",
+        writer.writerow(["project", "load_point_fraction",
                          "average_heat_rate_mmbtu_per_mwh"])
 
         for row in heat_rates:
@@ -369,7 +377,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check data types heat_rates:
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     sub_hr_df = hr_df[hr_curve_mask][
-        ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+        ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
     ]
 
     expected_dtypes = get_expected_dtypes(
@@ -498,7 +506,7 @@ def validate_heat_rate_curves(hr_df):
 
     fuel_mask = pd.notna(hr_df["fuel"])
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    load_point_mask = pd.notna(hr_df["load_point_mw"])
+    load_point_mask = pd.notna(hr_df["load_point_fraction"])
 
     # Check for missing inputs in heat rates curves table
     invalids = hr_curve_mask & ~load_point_mask
@@ -515,8 +523,8 @@ def validate_heat_rate_curves(hr_df):
     for project in pd.unique(hr_df["project"][relevant_mask]):
         # read in the power setpoints and average heat rates
         hr_slice = hr_df[hr_df["project"] == project]
-        hr_slice = hr_slice.sort_values(by=["load_point_mw"])
-        load_points = hr_slice["load_point_mw"].values
+        hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
+        load_points = hr_slice["load_point_fraction"].values
         heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
         if len(load_points) > 1:
