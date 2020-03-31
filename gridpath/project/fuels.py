@@ -94,8 +94,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         SELECT project, fuel
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        -- Filter out the NULLs (projects with no fuels)
-        AND fuel NOT NULL
         ) AS opchar_tbl
         USING (project)
         LEFT OUTER JOIN (
@@ -105,6 +103,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE fuel_scenario_id = {}
         ) AS fuels_tbl
         USING (fuel)
+        -- Filter out the NULLs (from projects with no fuels)
+        WHERE fuel NOT NULL
         ;
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
@@ -127,8 +127,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         SELECT project, fuel
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        -- Filter out the NULLs (projects with no fuels)
-        AND fuel NOT NULL
         ) AS opchar_tbl
         USING (project)
         LEFT OUTER JOIN (
@@ -145,6 +143,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE temporal_scenario_id = {}
         ) as periods_tbl
         USING (period)
+        -- Filter out the NULLs (from projects with no fuels)
+        WHERE fuel NOT NULL
         ;
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
