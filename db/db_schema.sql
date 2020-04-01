@@ -219,7 +219,8 @@ spinup_or_lookahead INTEGER,
 month INTEGER,
 hour_of_day FLOAT,  -- FLOAT to accommodate subhourly timepoints
 timestamp DATETIME,
-PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
+PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
+spinup_or_lookahead, timepoint),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure subproblem/stage exist in this temporal_scenario_id

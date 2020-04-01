@@ -98,7 +98,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             WHERE scenario_id = ?
             AND stage_id = ?
             AND load_zone = ?
-            AND spinup_or_lookahead is NULL
+            AND spinup_or_lookahead = 0
             group by period, project) 
             
             AS energy_table

@@ -82,7 +82,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         WHERE scenario_id = ?
         AND load_zone = ?
         AND stage_id = ?
-        AND spinup_or_lookahead is NULL
+        AND spinup_or_lookahead = 0
         GROUP BY period, technology"""
 
     df = pd.read_sql(
