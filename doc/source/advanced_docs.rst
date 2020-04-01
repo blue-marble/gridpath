@@ -159,6 +159,11 @@ gridpath.project.operations.fuel_burn
 .. automodule:: gridpath.project.operations.fuel_burn
     :members: add_model_components
 
+gridpath.project.operations.recs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.recs
+    :members: add_model_components
+
 gridpath.project.operations.tuning_costs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.tuning_costs

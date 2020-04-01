@@ -87,9 +87,9 @@ class TestRECs(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RPS_PROJECTS
+        # Set: RPS_PRJS
         expected_rps_projects = sorted(["Wind", "Wind_z2"])
-        actual_rps_projects = sorted([p for p in instance.RPS_PROJECTS])
+        actual_rps_projects = sorted([p for p in instance.RPS_PRJS])
         self.assertListEqual(expected_rps_projects, actual_rps_projects)
 
         # Param: rps_zone
@@ -99,19 +99,19 @@ class TestRECs(unittest.TestCase):
                                                       )
                                                )
         actual_rps_zone_by_prj = OrderedDict(sorted({
-            p: instance.rps_zone[p] for p in instance.RPS_PROJECTS}.items()
+            p: instance.rps_zone[p] for p in instance.RPS_PRJS}.items()
                                                     )
                                              )
         self.assertDictEqual(expected_rps_zone_by_prj, actual_rps_zone_by_prj)
 
-        # Set: RPS_PROJECTS_BY_RPS_ZONE
+        # Set: RPS_PRJS_BY_RPS_ZONE
         expected_prj_by_zone = OrderedDict(sorted({
             "RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]
                                                   }.items()
                                                   )
                                            )
         actual_prj_by_zone = OrderedDict(sorted({
-            z: [p for p in instance.RPS_PROJECTS_BY_RPS_ZONE[z]]
+            z: [p for p in instance.RPS_PRJS_BY_RPS_ZONE[z]]
             for z in instance.RPS_ZONES
                                                 }.items()
                                                 )
