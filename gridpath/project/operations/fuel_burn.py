@@ -74,10 +74,7 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            fuel_burn_rule(mod, g, tmp, "Project {} has no fuel, so should "
-                                        "not be labeled carbonaceous: "
-                                        "replace its carbon_cap_zone with "
-                                        "'.' in projects.tab.".format(g))
+            fuel_burn_rule(mod, g, tmp)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PRJ_OPR_TMPS,

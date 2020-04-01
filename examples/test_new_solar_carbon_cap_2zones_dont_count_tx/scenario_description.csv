@@ -1,6 +1,5 @@
 scenario_id,36
 scenario_name,test_new_solar_carbon_cap_2zones_dont_count_tx
-of_fuels,1
 of_multi_stage,
 of_transmission,1
 of_transmission_hurdle_rates,

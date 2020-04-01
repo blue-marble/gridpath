@@ -844,8 +844,6 @@ Relevant tables:
 +--------------------------------+-----------------------------------+
 |:code:`scenarios` table column  |:code:`fuel_scenario_id`           |
 +--------------------------------+-----------------------------------+
-|:code:`scenarios` table feature |:code:`of_fuels`                   |
-+--------------------------------+-----------------------------------+
 |:code:`subscenario_` table      |:code:`subscenarios_project_fuels` |
 +--------------------------------+-----------------------------------+
 |:code:`input_` tables           |:code:`inputs_project_fuels`       |
@@ -859,8 +857,6 @@ Relevant tables:
 
 +--------------------------------+-----------------------------------------+
 |:code:`scenarios` table column  |:code:`fuel_price_scenario_id`           |
-+--------------------------------+-----------------------------------------+
-|:code:`scenarios` table feature |:code:`of_fuels`                         |
 +--------------------------------+-----------------------------------------+
 |:code:`subscenario_` table      |:code:`subscenarios_project_fuel_prices` |
 +--------------------------------+-----------------------------------------+

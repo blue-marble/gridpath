@@ -1,6 +1,5 @@
 scenario_id,14
 scenario_name,test_ramp_up_and_down_constraints
-of_fuels,1
 of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,

@@ -27,7 +27,6 @@ def load_scenarios(io, c, data_input):
         scenario.create_scenario_all_args(
             io=io, c=c,
             scenario_name=sc,
-            of_fuels=scenarios["of_fuels"],
             of_multi_stage=scenarios["of_multi_stage"],
             of_transmission=scenarios["of_transmission"],
             of_transmission_hurdle_rates=scenarios["of_transmission_hurdle_rates"],

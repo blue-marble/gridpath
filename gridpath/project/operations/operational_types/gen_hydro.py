@@ -495,7 +495,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-def fuel_burn_rule(mod, g, tmp, error_message):
+def fuel_burn_rule(mod, g, tmp):
     """
     """
     if g in mod.FUEL_PRJS:
@@ -505,7 +505,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
             "and change its fuel to '.' (no value)."
         )
     else:
-        raise ValueError(error_message)
+        return 0
 
 
 def startup_cost_rule(mod, g, tmp):
