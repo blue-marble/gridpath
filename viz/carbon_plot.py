@@ -58,6 +58,9 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     Get the carbon results by period for a given
     scenario/carbon_cap_zone/subproblem/stage.
 
+    Note: Emissions in spinup and lookahead timepoints are included
+    since the emissions in those timepoints will still count towards the cap.
+
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
 

@@ -70,19 +70,27 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)/1000000
         as energy_twh
         FROM results_project_dispatch_by_technology
+        
+        -- add temporal scenario id so we can join timepoints table
         INNER JOIN
+        
         (SELECT temporal_scenario_id, scenario_id
         FROM scenarios)
         USING (scenario_id)
+        
+        -- filter out spinup_or_lookahead timepoints
         INNER JOIN
+        
         (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
         spinup_or_lookahead
         FROM inputs_temporal_timepoints)
         USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+        
         WHERE scenario_id = ?
         AND load_zone = ?
         AND stage_id = ?
         AND spinup_or_lookahead is NULL
+        
         GROUP BY period, technology"""
 
     df = pd.read_sql(

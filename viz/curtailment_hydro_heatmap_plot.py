@@ -79,14 +79,33 @@ def get_plotting_data(conn, scenario_id, load_zone, period, stage, **kwargs):
     :return:
     """
 
-    # Curtailment by period and timepoint
+    # Curtailment by month and hour of day
+    # Spinup/lookahead timepoints are ignored by adding the resp. column tag
+    # through inner joins and adding a conditional to ignore those timepoints
     sql = """SELECT month, hour_of_day, 
         SUM(scheduled_curtailment_mw) AS scheduled_curtailment_mwh
         FROM results_project_curtailment_hydro
+        
+        -- add temporal scenario id so we can join timepoints table
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
+        USING (scenario_id)
+        
+        -- filter out spinup_or_lookahead timepoints
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
+        spinup_or_lookahead
+        FROM inputs_temporal_timepoints)
+        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+        
         WHERE scenario_id = ?
         AND load_zone = ?
         AND period = ?
-        AND stage_id = ?       
+        AND stage_id = ? 
+        AND spinup_or_lookahead is NULL
+      
         GROUP BY month, hour_of_day
         ORDER BY month, hour_of_day
         ;"""
