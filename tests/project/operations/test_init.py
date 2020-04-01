@@ -231,28 +231,28 @@ class TestOperationsInit(unittest.TestCase):
                                    actual_fuel_burn_slope,
                                    places=5)
 
-        # Param: fuel_burn_intercept_mmbtu_per_hour
+        # Param: fuel_burn_intercept_mmbtu_per_mw_hour
         expected_fuel_burn_intercept = OrderedDict(sorted({
             ("Nuclear", 0): 0,
-            ("Gas_CCGT", 0): 1500,
-            ("Coal", 0): 2976,
-            ("Gas_CT", 0): 480.8,
-            ("Gas_CCGT_New", 0): 1500,
-            ("Gas_CCGT_New_Binary", 0): 1500,
+            ("Gas_CCGT", 0): 250,
+            ("Coal", 0): 496,
+            ("Gas_CT", 0): 80.13333,
+            ("Gas_CCGT_New", 0): 250,
+            ("Gas_CCGT_New_Binary", 0): 250,
             ("Nuclear_z2", 0): 0,
-            ("Gas_CCGT_z2", 0): 1500,
-            ("Coal_z2", 0): 2976,
-            ("Gas_CT_z2", 0): 480.8,
-            ("Gas_CT_New", 0): 480.8,
-            ("Disp_Binary_Commit", 0): 480.8,
-            ("Disp_Cont_Commit", 0): 480.8,
+            ("Gas_CCGT_z2", 0): 250,
+            ("Coal_z2", 0): 496,
+            ("Gas_CT_z2", 0): 80.13333,
+            ("Gas_CT_New", 0): 80.13333,
+            ("Disp_Binary_Commit", 0): 80.13333,
+            ("Disp_Cont_Commit", 0): 80.13333,
             ("Disp_No_Commit", 0): 0,
-            ("Clunky_Old_Gen", 0): 4964,
-            ("Clunky_Old_Gen2", 0): 4964,
+            ("Clunky_Old_Gen", 0): 827.33333,
+            ("Clunky_Old_Gen2", 0): 827.33333,
             ("Nuclear_Flexible", 0): 0
         }.items()))
         actual_fuel_burn_intercept = OrderedDict(sorted(
-            {(prj, s): instance.fuel_burn_intercept_mmbtu_per_hr[(prj, s)]
+            {(prj, s): instance.fuel_burn_intercept_mmbtu_per_mw_hr[(prj, s)]
              for (prj, s) in instance.FUEL_PRJ_SGMS}.items()
             )
         )
@@ -299,7 +299,7 @@ class TestOperationsInit(unittest.TestCase):
 
     def test_heat_rate_validations(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
-                      "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+                      "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"hr_df": pd.DataFrame(

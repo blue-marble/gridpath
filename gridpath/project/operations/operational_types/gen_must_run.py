@@ -288,7 +288,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     c2 = conn.cursor()
     heat_rates = c2.execute(
         """
-        SELECT project, load_point_mw
+        SELECT project, load_point_fraction
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type, heat_rate_curves_scenario_id
@@ -297,7 +297,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         AND operational_type = '{}') AS op_char
         USING(project)
         INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id, load_point_mw
+        (SELECT project, heat_rate_curves_scenario_id, load_point_fraction
         FROM inputs_project_heat_rate_curves) as heat_rates
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}

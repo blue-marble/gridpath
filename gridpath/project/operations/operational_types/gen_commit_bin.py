@@ -1598,8 +1598,8 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         >= \
         mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
         * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
-        * mod.Availability_Derate[g, tmp] \
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, s] \
+        * mod.GenCommitBin_Pmax_MW[g, tmp] \
         * mod.GenCommitBin_Synced[g, tmp]
 
 

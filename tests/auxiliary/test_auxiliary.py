@@ -243,7 +243,7 @@ class TestAuxiliary(unittest.TestCase):
 
         :return:
         """
-        df_columns = ["project", "load_point_mw",
+        df_columns = ["project", "load_point_fraction",
                       "average_heat_rate_mmbtu_per_mwh"]
         test_cases = {
             # Make sure correct inputs don't throw error
@@ -253,7 +253,7 @@ class TestAuxiliary(unittest.TestCase):
                       ["gas_ct", 20, 9],
                       ["coal_plant", 100, 10]
                       ]),
-                "columns": ["load_point_mw", "average_heat_rate_mmbtu_per_mwh"],
+                "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
                 "result": []
                 },
             # Sign errors are flagged; Errors are grouped by column. If >1 error
@@ -264,8 +264,8 @@ class TestAuxiliary(unittest.TestCase):
                           ["gas_ct", -20, 9],
                           ["coal_plant", -100, 10]
                           ]),
-                "columns": ["load_point_mw", "average_heat_rate_mmbtu_per_mwh"],
-                "result": ["Project(s) 'gas_ct, coal_plant': Expected 'load_point_mw' >= 0",
+                "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
+                "result": ["Project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
                            "Project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
                 }
         }
@@ -371,7 +371,7 @@ class TestAuxiliary(unittest.TestCase):
         :return:
         """
 
-        df_columns = ["project", "load_point_mw"]
+        df_columns = ["project", "load_point_fraction"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(

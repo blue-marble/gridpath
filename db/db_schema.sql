@@ -771,9 +771,9 @@ DROP TABLE IF EXISTS inputs_project_heat_rate_curves;
 CREATE TABLE inputs_project_heat_rate_curves (
 project VARCHAR(64),
 heat_rate_curves_scenario_id INTEGER,
-load_point_mw FLOAT,
+load_point_fraction FLOAT,
 average_heat_rate_mmbtu_per_mwh FLOAT,
-PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_mw),
+PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_fraction),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
 );

@@ -417,10 +417,9 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
     return mod.GenAlwaysOn_Fuel_Burn_MMBTU[g, tmp] \
         >= mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
         * mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, s] \
         * mod.Availability_Derate[g, tmp] \
-        * (mod.Capacity_MW[g, mod.period[tmp]]
-           / mod.gen_always_on_unit_size_mw[g])
+        * mod.Capacity_MW[g, mod.period[tmp]]
 
 
 # Operational Type Methods
