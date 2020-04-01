@@ -1,0 +1,69 @@
+feature,subscenario_id,table,required,include,path,notes
+core,,scenarios,1,1,scenarios,
+core,solver_options_id,solver,1,1,solver,requires both solver options and description csvs
+core,temporal_scenario_id,temporal,1,1,temporal,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
+core,project_portfolio_scenario_id,project_portfolios,1,1,project/portfolios,
+core,project_operational_chars_scenario_id,project_operational_chars,1,1,project/opchar,
+core,load_scenario_id,system_load,1,1,system_load/load_profiles,
+core,load_zone_scenario_id,geography_load_zones,1,1,system_load/zones,
+core,project_load_zone_scenario_id,project_load_zones,1,1,system_load/project_zones,
+data_dependent,project_specified_capacity_scenario_id,project_specified_capacity,0,0,,
+data_dependent,project_specified_fixed_cost_scenario_id,project_specified_fixed_cost,0,0,,
+data_dependent,project_new_cost_scenario_id,project_new_cost,0,0,,
+data_dependent,project_new_potential_scenario_id,project_new_potential,0,0,,
+data_dependent,project_new_binary_build_size_scenario_id,project_new_binary_build_size,0,0,,
+data_dependent,heat_rate_curves_scenario_id,project_heat_rate_curves,0,1,project/opchar/heat_rates,Selected in inputs_project_operational_chars table
+data_dependent,startup_chars_scenario_id,project_startup_chars,0,0,,Selected in inputs_project_operational_chars table
+data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,0,0,,Selected in inputs_project_operational_chars table
+data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,0,0,,Selected in inputs_project_operational_chars table
+data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,0,0,,not implemented yet in csvs import; selected via inputs_project_new_costs table
+data_dependent,project_availability_scenario_id,project_availability_types,0,0,,
+data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,0,0,,Selected in inputs_project_availability_types table
+data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,0,0,,Selected in inputs_project_availability_types table
+fuels,fuel_scenario_id,project_fuels,0,0,,
+fuels,fuel_price_scenario_id,project_fuel_prices,0,0,,
+transmission,transmission_portfolio_scenario_id,transmission_portfolios,0,0,,
+transmission,transmission_load_zone_scenario_id,transmission_load_zones,0,0,,
+transmission,transmission_specified_capacity_scenario_id,transmission_specified_capacity,0,0,,
+transmission,transmission_operational_chars_scenario_id,transmission_operational_chars,0,0,,
+transmission,transmission_new_cost_scenario_id,transmission_new_cost,0,0,,
+transmission_hurdle_rates,transmission_hurdle_rate_scenario_id,transmission_hurdle_rates,0,0,,
+simultaneous_flow_limits,transmission_simultaneous_flow_limit_scenario_id,transmission_simultaneous_flow_limits,0,0,,not implemented yet in csvs import
+simultaneous_flow_limits,transmission_simultaneous_flow_limit_line_group_scenario_id,transmission_simultaneous_flow_limit_line_groups,0,0,,not implemented yet in csvs import
+lf_reserves_up,lf_reserves_up_ba_scenario_id,geography_lf_reserves_up_bas,0,0,,
+lf_reserves_up,project_lf_reserves_up_ba_scenario_id,project_lf_reserves_up_bas,0,0,,
+lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up,0,0,,
+lf_reserves_down,lf_reserves_down_ba_scenario_id,geography_lf_reserves_down_bas,0,0,,
+lf_reserves_down,project_lf_reserves_down_ba_scenario_id,project_lf_reserves_down_bas,0,0,,
+lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down,0,0,,
+regulation_up,regulation_up_ba_scenario_id,geography_regulation_up_bas,0,0,,
+regulation_up,project_regulation_up_ba_scenario_id,project_regulation_up_bas,0,0,,
+regulation_up,regulation_up_scenario_id,system_regulation_up,0,0,,
+regulation_down,regulation_down_ba_scenario_id,geography_regulation_down_bas,0,0,,
+regulation_down,project_regulation_down_ba_scenario_id,project_regulation_down_bas,0,0,,
+regulation_down,regulation_down_scenario_id,system_regulation_down,0,0,,
+frequency_response,frequency_response_ba_scenario_id,geography_frequency_response_bas,0,0,,
+frequency_response,project_frequency_response_ba_scenario_id,project_frequency_response_bas,0,0,,
+frequency_response,frequency_response_scenario_id,system_frequency_response,0,0,,
+spinning_reserves,spinning_reserves_ba_scenario_id,geography_spinning_reserves_bas,0,0,,
+spinning_reserves,project_spinning_reserves_ba_scenario_id,project_spinning_reserves_bas,0,0,,
+spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves,0,0,,
+rps,rps_zone_scenario_id,geography_rps_zones,0,0,,
+rps,project_rps_zone_scenario_id,project_rps_zones,0,0,,
+rps,rps_target_scenario_id,system_rps_targets,0,0,,
+carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,0,0,,
+carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,0,0,,
+carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,0,0,,
+track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,0,0,,
+prm,prm_zone_scenario_id,geography_prm_zones,0,0,,
+prm,project__prm_zone_scenario_id,project_prm_zones,0,0,,
+prm,project_elcc_chars_scenario_id,project_elcc_chars,0,0,,
+prm,prm_energy_only_scenario_id,project_prm_energy_only,0,0,,not implemented yet in csvs import
+prm,prm_requirement_scenario_id,system_prm_requirement,0,0,,
+prm,elcc_surface_scenario_id,system_prm_zone_elcc_surface,0,0,,not implemented yet in csvs import
+elcc_surface,,project_elcc_surface,0,0,,not implemented yet in csvs import
+local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,0,0,,
+local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,0,0,,
+local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,0,0,,
+local_capacity,local_capacity_requirement_scenario_id,system_local_capacity_requirement,0,0,,
+tuning,tuning_scenario_id,tuning,0,0,,
