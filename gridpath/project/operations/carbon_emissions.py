@@ -125,8 +125,12 @@ def carbon_emissions_rule(mod, g, tmp):
     **Expression Name**: Carbon_Emissions_Tons
     **Defined Over**: CRBN_PRJ_OPR_TMPS
 
-    Emissions from each project based on operational type
-    (and whether a project burns fuel)
+    Emissions (in metric tonnes CO2) from each project (with a carbon cap zone
+    assigned to it) for each operational timepoint. Includes emissions from
+    startup fuel burn as well (assuming startup uses the same fuel as
+    operations). Note: if a project has no carbon cap zone assigned, it will
+    not be included here, even though emissions will be reported in the fuel
+    burn table.
     """
     return mod.Total_Fuel_Burn_MMBtu[g, tmp] \
         * mod.co2_intensity_tons_per_mmbtu[mod.fuel[g]]
@@ -158,6 +162,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
+# TODO: remove carbon emissions table since duplicate of data in fuel burn?
+#  (only difference is that fuel burn includes ALL projects whereas this table
+#  only includes carbon emissions from from projects with a carbon cap zone).
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
@@ -284,6 +291,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
         writer.writerows(new_rows)
 
 
+# TODO: remove carbon emissions table since duplicate of data in fuel burn?
+#  (only difference is that fuel burn includes ALL projects whereas this table
+#  only includes carbon emissions from from projects with a carbon cap zone).
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):

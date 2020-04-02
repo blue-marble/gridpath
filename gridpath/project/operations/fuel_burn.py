@@ -139,8 +139,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology", "fuel",
-             "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
-             "total_fuel_burn_mmbtu"]
+             "operations_fuel_burn_mmbtu", "startup_fuel_burn_mmbtu",
+             "total_fuel_burn_mmbtu", "operations_carbon_emissions_tonnes",
+             "startup_carbon_emissions_tonnes",
+             "total_carbon_emissions_tonnes"]
         )
         for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow([
@@ -155,12 +157,19 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.fuel[p],
                 value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
                 value(m.Startup_Fuel_Burn_MMBtu[p, tmp]),
-                value(m.Total_Fuel_Burn_MMBtu[p, tmp])
+                value(m.Total_Fuel_Burn_MMBtu[p, tmp]),
+                value(m.Operations_Fuel_Burn_MMBtu[p, tmp]
+                      * m.co2_intensity_tons_per_mmbtu[m.fuel[p]]),
+                value(m.Startup_Fuel_Burn_MMBtu[p, tmp]
+                      * m.co2_intensity_tons_per_mmbtu[m.fuel[p]]),
+                value(m.Total_Fuel_Burn_MMBtu[p, tmp]
+                      * m.co2_intensity_tons_per_mmbtu[m.fuel[p]])
             ])
 
 
 # Database
 ###############################################################################
+
 
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
@@ -201,13 +210,20 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             fuel = row[8]
-            fuel_burn_tons = row[9]
+            operations_fuel_burn = row[9]
+            startup_fuel_burn = row[10]
+            total_fuel_burn = row[11]
+            operations_emissions = row[12]
+            startup_emissions = row[13]
+            total_emissions = row[14]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, fuel, fuel_burn_tons)
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, fuel,
+                 operations_fuel_burn, startup_fuel_burn, total_fuel_burn,
+                 operations_emissions, startup_emissions, total_emissions)
             )
 
     insert_temp_sql = """
@@ -216,8 +232,11 @@ def import_results_into_database(
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight,
          number_of_hours_in_timepoint,
-         load_zone, technology, fuel, fuel_burn_mmbtu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         load_zone, technology, fuel, operations_fuel_burn_mmbtu,
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu,
+         operations_carbon_emissions_tonnes, startup_carbon_emissions_tonnes,
+         total_carbon_emissions_tonnes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -226,11 +245,17 @@ def import_results_into_database(
         INSERT INTO results_project_fuel_burn
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu)
+        load_zone, technology, fuel, operations_fuel_burn_mmbtu,
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, 
+         operations_carbon_emissions_tonnes, startup_carbon_emissions_tonnes,
+         total_carbon_emissions_tonnes)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu
+        load_zone, technology, fuel, operations_fuel_burn_mmbtu,
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, 
+         operations_carbon_emissions_tonnes, startup_carbon_emissions_tonnes,
+         total_carbon_emissions_tonnes
         FROM temp_results_project_fuel_burn{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)

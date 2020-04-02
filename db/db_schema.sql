@@ -2458,11 +2458,17 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
-fuel_burn_mmbtu FLOAT,
+operations_fuel_burn_mmbtu FLOAT,
+startup_fuel_burn_mmbtu FLOAT,
+total_fuel_burn_mmbtu FLOAT,
+operations_carbon_emissions_tonnes FLOAT,
+startup_carbon_emissions_tonnes FLOAT,
+total_carbon_emissions_tonnes FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 
+-- TODO: could drop this since duplicate of data in fuel burn?
 DROP TABLE IF EXISTS results_project_carbon_emissions;
 CREATE TABLE results_project_carbon_emissions (
 scenario_id INTEGER,
