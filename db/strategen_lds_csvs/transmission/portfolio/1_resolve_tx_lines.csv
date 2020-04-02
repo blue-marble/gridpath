@@ -1,0 +1,15 @@
+transmission_line,capacity_type
+SW_to_CAISO,tx_spec
+NW_to_CAISO,tx_spec
+LDWP_to_CAISO,tx_spec
+NW_to_LDWP,tx_spec
+SW_to_LDWP,tx_spec
+NW_to_SW,tx_spec
+IID_to_CAISO,tx_spec
+BANC_to_CAISO,tx_spec
+IID_to_LDWP,tx_spec
+SW_to_IID,tx_spec
+IID_to_BANC,tx_spec
+NW_to_BANC,tx_spec
+SW_to_BANC,tx_spec
+NW_to_CAISO_Unspecified,tx_spec
