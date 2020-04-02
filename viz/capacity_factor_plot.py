@@ -82,12 +82,14 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             sum(timepoint_weight * number_of_hours_in_timepoint) 
             AS period_weight
             FROM results_project_dispatch
-            
+
+            -- add temporal scenario id so we can join timepoints table
             INNER JOIN
             
             (SELECT temporal_scenario_id, scenario_id FROM scenarios)
             USING (scenario_id)
             
+            -- filter out spinup_or_lookahead timepoints
             INNER JOIN
             
             (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
@@ -99,6 +101,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             AND stage_id = ?
             AND load_zone = ?
             AND spinup_or_lookahead is NULL
+            
             group by period, project) 
             
             AS energy_table

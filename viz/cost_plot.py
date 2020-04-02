@@ -76,6 +76,8 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     #  cost.
 
     # System costs by scenario and period -- by source and total
+    # Spinup/lookahead timepoints are ignored by adding the resp. column tag
+    # through inner joins and adding a conditional to ignore those timepoints
     sql = """SELECT period,
         capacity_cost/1000000 as Capacity,
         fuel_cost/1000000 as Fuel,
@@ -104,9 +106,26 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         sum(startup_cost * timepoint_weight) AS startup_cost,
         sum(shutdown_cost * timepoint_weight) AS shutdown_cost
         FROM results_project_costs_operations
+        
+        -- add temporal scenario id so we can join timepoints table
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
+        USING (scenario_id)
+        
+        -- filter out spinup_or_lookahead timepoints
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
+        spinup_or_lookahead
+        FROM inputs_temporal_timepoints)
+        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+        
         WHERE scenario_id = ?
         AND stage_id = ?
         AND load_zone = ?
+        AND spinup_or_lookahead is NULL
+        
         GROUP BY scenario_id, period) AS operational_costs
         USING (scenario_id, period)
 
@@ -117,9 +136,26 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         timepoint_weight * number_of_hours_in_timepoint) AS hurdle_cost
         FROM
         results_transmission_hurdle_costs
+        
+        -- add temporal scenario id so we can join timepoints table
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
+        USING (scenario_id)
+        
+        -- filter out spinup_or_lookahead timepoints
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
+        spinup_or_lookahead
+        FROM inputs_temporal_timepoints)
+        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+        
         WHERE scenario_id = ?
         AND stage_id = ?
         AND load_zone_to = ?
+        AND spinup_or_lookahead is NULL
+        
         GROUP BY scenario_id, period) AS hurdle_costs
         USING (scenario_id, period)
         ;"""

@@ -138,6 +138,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     # Next, our goal is to get a summary table of power production by load
     # zone, technology, and period
+    # Note: this includes power from spinup_or_lookahead timepoints as well!
 
     # Get the results CSV as dataframe
     operational_results_df = pd.read_csv(

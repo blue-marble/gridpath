@@ -61,6 +61,9 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     """
     Get the RPS results by period for a given scenario/rps_zone/subproblem/stage
 
+    Note: RPS energy in spinup and lookahead timepoints is included since the
+    RPS energy in those timepoints will still count towards the target.
+
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
 
