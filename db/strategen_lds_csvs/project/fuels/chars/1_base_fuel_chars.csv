@@ -1,0 +1,8 @@
+fuel,co2_intensity_tons_per_mmbtu
+CA_Natural_Gas,0.053
+NW_Natural_Gas,0.053
+SW_Natural_Gas,0.053
+CA_Coal,0.094
+Coal,0.094
+Uranium,0
+Conventional_DR,0

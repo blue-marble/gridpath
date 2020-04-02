@@ -20,8 +20,8 @@ data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,0,0,
 data_dependent,project_availability_scenario_id,project_availability_types,0,1,project/availability,
 data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,0,0,,Selected in inputs_project_availability_types table
 data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,0,0,,Selected in inputs_project_availability_types table
-fuels,fuel_scenario_id,project_fuels,0,0,,
-fuels,fuel_price_scenario_id,project_fuel_prices,0,0,,
+fuels,fuel_scenario_id,project_fuels,0,1,project/fuels/chars,
+fuels,fuel_price_scenario_id,project_fuel_prices,0,1,project/fuels/prices,
 transmission,transmission_portfolio_scenario_id,transmission_portfolios,0,1,transmission/portfolio,
 transmission,transmission_load_zone_scenario_id,transmission_load_zones,0,1,system_load/tx_zones,
 transmission,transmission_specified_capacity_scenario_id,transmission_specified_capacity,0,1,transmission/cap_spec,

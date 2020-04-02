@@ -1,0 +1,673 @@
+﻿fuel,period,month,fuel_price_per_mmbtu
+CA_Natural_Gas,2020,1,        5.680 
+CA_Natural_Gas,2020,2,        5.758 
+CA_Natural_Gas,2020,3,        5.335 
+CA_Natural_Gas,2020,4,        5.328 
+CA_Natural_Gas,2020,5,        5.509 
+CA_Natural_Gas,2020,6,        5.298 
+CA_Natural_Gas,2020,7,        5.316 
+CA_Natural_Gas,2020,8,        5.325 
+CA_Natural_Gas,2020,9,        4.997 
+CA_Natural_Gas,2020,10,        5.012 
+CA_Natural_Gas,2020,11,        4.937 
+CA_Natural_Gas,2020,12,        5.248 
+CA_Natural_Gas,2021,1,        5.732 
+CA_Natural_Gas,2021,2,        5.810 
+CA_Natural_Gas,2021,3,        5.386 
+CA_Natural_Gas,2021,4,        5.379 
+CA_Natural_Gas,2021,5,        5.560 
+CA_Natural_Gas,2021,6,        5.349 
+CA_Natural_Gas,2021,7,        5.366 
+CA_Natural_Gas,2021,8,        5.376 
+CA_Natural_Gas,2021,9,        5.047 
+CA_Natural_Gas,2021,10,        5.062 
+CA_Natural_Gas,2021,11,        4.987 
+CA_Natural_Gas,2021,12,        5.299 
+CA_Natural_Gas,2022,1,        5.776 
+CA_Natural_Gas,2022,2,        5.854 
+CA_Natural_Gas,2022,3,        5.430 
+CA_Natural_Gas,2022,4,        5.423 
+CA_Natural_Gas,2022,5,        5.604 
+CA_Natural_Gas,2022,6,        5.393 
+CA_Natural_Gas,2022,7,        5.411 
+CA_Natural_Gas,2022,8,        5.420 
+CA_Natural_Gas,2022,9,        5.092 
+CA_Natural_Gas,2022,10,        5.106 
+CA_Natural_Gas,2022,11,        5.031 
+CA_Natural_Gas,2022,12,        5.343 
+CA_Natural_Gas,2023,1,        5.825 
+CA_Natural_Gas,2023,2,        5.903 
+CA_Natural_Gas,2023,3,        5.479 
+CA_Natural_Gas,2023,4,        5.472 
+CA_Natural_Gas,2023,5,        5.653 
+CA_Natural_Gas,2023,6,        5.442 
+CA_Natural_Gas,2023,7,        5.460 
+CA_Natural_Gas,2023,8,        5.469 
+CA_Natural_Gas,2023,9,        5.141 
+CA_Natural_Gas,2023,10,        5.155 
+CA_Natural_Gas,2023,11,        5.080 
+CA_Natural_Gas,2023,12,        5.392 
+CA_Natural_Gas,2024,1,        5.880 
+CA_Natural_Gas,2024,2,        5.958 
+CA_Natural_Gas,2024,3,        5.534 
+CA_Natural_Gas,2024,4,        5.527 
+CA_Natural_Gas,2024,5,        5.708 
+CA_Natural_Gas,2024,6,        5.497 
+CA_Natural_Gas,2024,7,        5.514 
+CA_Natural_Gas,2024,8,        5.523 
+CA_Natural_Gas,2024,9,        5.195 
+CA_Natural_Gas,2024,10,        5.209 
+CA_Natural_Gas,2024,11,        5.134 
+CA_Natural_Gas,2024,12,        5.446 
+CA_Natural_Gas,2026,1,        6.007 
+CA_Natural_Gas,2026,2,        6.085 
+CA_Natural_Gas,2026,3,        5.659 
+CA_Natural_Gas,2026,4,        5.652 
+CA_Natural_Gas,2026,5,        5.834 
+CA_Natural_Gas,2026,6,        5.622 
+CA_Natural_Gas,2026,7,        5.639 
+CA_Natural_Gas,2026,8,        5.648 
+CA_Natural_Gas,2026,9,        5.318 
+CA_Natural_Gas,2026,10,        5.333 
+CA_Natural_Gas,2026,11,        5.257 
+CA_Natural_Gas,2026,12,        5.571 
+CA_Natural_Gas,2030,1,        6.275 
+CA_Natural_Gas,2030,2,        6.354 
+CA_Natural_Gas,2030,3,        5.925 
+CA_Natural_Gas,2030,4,        5.918 
+CA_Natural_Gas,2030,5,        6.101 
+CA_Natural_Gas,2030,6,        5.888 
+CA_Natural_Gas,2030,7,        5.906 
+CA_Natural_Gas,2030,8,        5.915 
+CA_Natural_Gas,2030,9,        5.583 
+CA_Natural_Gas,2030,10,        5.598 
+CA_Natural_Gas,2030,11,        5.522 
+CA_Natural_Gas,2030,12,        5.837 
+CA_Natural_Gas,2045,1,        8.045 
+CA_Natural_Gas,2045,2,        8.127 
+CA_Natural_Gas,2045,3,        7.678 
+CA_Natural_Gas,2045,4,        7.670 
+CA_Natural_Gas,2045,5,        7.862 
+CA_Natural_Gas,2045,6,        7.638 
+CA_Natural_Gas,2045,7,        7.657 
+CA_Natural_Gas,2045,8,        7.667 
+CA_Natural_Gas,2045,9,        7.319 
+CA_Natural_Gas,2045,10,        7.334 
+CA_Natural_Gas,2045,11,        7.255 
+CA_Natural_Gas,2045,12,        7.585 
+NW_Natural_Gas,2020,1,        4.935 
+NW_Natural_Gas,2020,2,        5.013 
+NW_Natural_Gas,2020,3,        4.585 
+NW_Natural_Gas,2020,4,        4.578 
+NW_Natural_Gas,2020,5,        4.761 
+NW_Natural_Gas,2020,6,        4.548 
+NW_Natural_Gas,2020,7,        4.565 
+NW_Natural_Gas,2020,8,        4.575 
+NW_Natural_Gas,2020,9,        4.243 
+NW_Natural_Gas,2020,10,        4.258 
+NW_Natural_Gas,2020,11,        4.182 
+NW_Natural_Gas,2020,12,        4.497 
+NW_Natural_Gas,2021,1,        4.939 
+NW_Natural_Gas,2021,2,        5.017 
+NW_Natural_Gas,2021,3,        4.589 
+NW_Natural_Gas,2021,4,        4.582 
+NW_Natural_Gas,2021,5,        4.765 
+NW_Natural_Gas,2021,6,        4.551 
+NW_Natural_Gas,2021,7,        4.569 
+NW_Natural_Gas,2021,8,        4.578 
+NW_Natural_Gas,2021,9,        4.246 
+NW_Natural_Gas,2021,10,        4.261 
+NW_Natural_Gas,2021,11,        4.185 
+NW_Natural_Gas,2021,12,        4.501 
+NW_Natural_Gas,2022,1,        4.945 
+NW_Natural_Gas,2022,2,        5.023 
+NW_Natural_Gas,2022,3,        4.594 
+NW_Natural_Gas,2022,4,        4.587 
+NW_Natural_Gas,2022,5,        4.771 
+NW_Natural_Gas,2022,6,        4.557 
+NW_Natural_Gas,2022,7,        4.575 
+NW_Natural_Gas,2022,8,        4.584 
+NW_Natural_Gas,2022,9,        4.252 
+NW_Natural_Gas,2022,10,        4.267 
+NW_Natural_Gas,2022,11,        4.190 
+NW_Natural_Gas,2022,12,        4.506 
+NW_Natural_Gas,2023,1,        4.953 
+NW_Natural_Gas,2023,2,        5.032 
+NW_Natural_Gas,2023,3,        4.602 
+NW_Natural_Gas,2023,4,        4.595 
+NW_Natural_Gas,2023,5,        4.778 
+NW_Natural_Gas,2023,6,        4.564 
+NW_Natural_Gas,2023,7,        4.582 
+NW_Natural_Gas,2023,8,        4.591 
+NW_Natural_Gas,2023,9,        4.259 
+NW_Natural_Gas,2023,10,        4.274 
+NW_Natural_Gas,2023,11,        4.197 
+NW_Natural_Gas,2023,12,        4.513 
+NW_Natural_Gas,2024,1,        4.959 
+NW_Natural_Gas,2024,2,        5.038 
+NW_Natural_Gas,2024,3,        4.608 
+NW_Natural_Gas,2024,4,        4.601 
+NW_Natural_Gas,2024,5,        4.785 
+NW_Natural_Gas,2024,6,        4.570 
+NW_Natural_Gas,2024,7,        4.588 
+NW_Natural_Gas,2024,8,        4.598 
+NW_Natural_Gas,2024,9,        4.264 
+NW_Natural_Gas,2024,10,        4.279 
+NW_Natural_Gas,2024,11,        4.203 
+NW_Natural_Gas,2024,12,        4.519 
+NW_Natural_Gas,2026,1,        4.976 
+NW_Natural_Gas,2026,2,        5.055 
+NW_Natural_Gas,2026,3,        4.624 
+NW_Natural_Gas,2026,4,        4.616 
+NW_Natural_Gas,2026,5,        4.801 
+NW_Natural_Gas,2026,6,        4.586 
+NW_Natural_Gas,2026,7,        4.604 
+NW_Natural_Gas,2026,8,        4.613 
+NW_Natural_Gas,2026,9,        4.279 
+NW_Natural_Gas,2026,10,        4.294 
+NW_Natural_Gas,2026,11,        4.217 
+NW_Natural_Gas,2026,12,        4.535 
+NW_Natural_Gas,2030,1,        5.003 
+NW_Natural_Gas,2030,2,        5.083 
+NW_Natural_Gas,2030,3,        4.649 
+NW_Natural_Gas,2030,4,        4.642 
+NW_Natural_Gas,2030,5,        4.827 
+NW_Natural_Gas,2030,6,        4.611 
+NW_Natural_Gas,2030,7,        4.629 
+NW_Natural_Gas,2030,8,        4.638 
+NW_Natural_Gas,2030,9,        4.302 
+NW_Natural_Gas,2030,10,        4.317 
+NW_Natural_Gas,2030,11,        4.240 
+NW_Natural_Gas,2030,12,        4.559 
+NW_Natural_Gas,2045,1,        5.066 
+NW_Natural_Gas,2045,2,        5.147 
+NW_Natural_Gas,2045,3,        4.707 
+NW_Natural_Gas,2045,4,        4.700 
+NW_Natural_Gas,2045,5,        4.888 
+NW_Natural_Gas,2045,6,        4.669 
+NW_Natural_Gas,2045,7,        4.687 
+NW_Natural_Gas,2045,8,        4.696 
+NW_Natural_Gas,2045,9,        4.356 
+NW_Natural_Gas,2045,10,        4.371 
+NW_Natural_Gas,2045,11,        4.293 
+NW_Natural_Gas,2045,12,        4.617 
+SW_Natural_Gas,2020,1,        3.507 
+SW_Natural_Gas,2020,2,        3.563 
+SW_Natural_Gas,2020,3,        3.259 
+SW_Natural_Gas,2020,4,        3.254 
+SW_Natural_Gas,2020,5,        3.384 
+SW_Natural_Gas,2020,6,        3.232 
+SW_Natural_Gas,2020,7,        3.245 
+SW_Natural_Gas,2020,8,        3.252 
+SW_Natural_Gas,2020,9,        3.016 
+SW_Natural_Gas,2020,10,        3.026 
+SW_Natural_Gas,2020,11,        2.972 
+SW_Natural_Gas,2020,12,        3.196 
+SW_Natural_Gas,2021,1,        3.523 
+SW_Natural_Gas,2021,2,        3.579 
+SW_Natural_Gas,2021,3,        3.274 
+SW_Natural_Gas,2021,4,        3.269 
+SW_Natural_Gas,2021,5,        3.399 
+SW_Natural_Gas,2021,6,        3.247 
+SW_Natural_Gas,2021,7,        3.259 
+SW_Natural_Gas,2021,8,        3.266 
+SW_Natural_Gas,2021,9,        3.029 
+SW_Natural_Gas,2021,10,        3.040 
+SW_Natural_Gas,2021,11,        2.986 
+SW_Natural_Gas,2021,12,        3.211 
+SW_Natural_Gas,2022,1,        3.534 
+SW_Natural_Gas,2022,2,        3.590 
+SW_Natural_Gas,2022,3,        3.283 
+SW_Natural_Gas,2022,4,        3.278 
+SW_Natural_Gas,2022,5,        3.409 
+SW_Natural_Gas,2022,6,        3.256 
+SW_Natural_Gas,2022,7,        3.269 
+SW_Natural_Gas,2022,8,        3.276 
+SW_Natural_Gas,2022,9,        3.038 
+SW_Natural_Gas,2022,10,        3.049 
+SW_Natural_Gas,2022,11,        2.995 
+SW_Natural_Gas,2022,12,        3.220 
+SW_Natural_Gas,2023,1,        3.539 
+SW_Natural_Gas,2023,2,        3.595 
+SW_Natural_Gas,2023,3,        3.288 
+SW_Natural_Gas,2023,4,        3.283 
+SW_Natural_Gas,2023,5,        3.414 
+SW_Natural_Gas,2023,6,        3.261 
+SW_Natural_Gas,2023,7,        3.274 
+SW_Natural_Gas,2023,8,        3.280 
+SW_Natural_Gas,2023,9,        3.043 
+SW_Natural_Gas,2023,10,        3.053 
+SW_Natural_Gas,2023,11,        2.999 
+SW_Natural_Gas,2023,12,        3.225 
+SW_Natural_Gas,2024,1,        3.541 
+SW_Natural_Gas,2024,2,        3.598 
+SW_Natural_Gas,2024,3,        3.290 
+SW_Natural_Gas,2024,4,        3.285 
+SW_Natural_Gas,2024,5,        3.417 
+SW_Natural_Gas,2024,6,        3.264 
+SW_Natural_Gas,2024,7,        3.276 
+SW_Natural_Gas,2024,8,        3.283 
+SW_Natural_Gas,2024,9,        3.045 
+SW_Natural_Gas,2024,10,        3.056 
+SW_Natural_Gas,2024,11,        3.001 
+SW_Natural_Gas,2024,12,        3.227 
+SW_Natural_Gas,2026,1,        3.565 
+SW_Natural_Gas,2026,2,        3.622 
+SW_Natural_Gas,2026,3,        3.313 
+SW_Natural_Gas,2026,4,        3.308 
+SW_Natural_Gas,2026,5,        3.440 
+SW_Natural_Gas,2026,6,        3.286 
+SW_Natural_Gas,2026,7,        3.298 
+SW_Natural_Gas,2026,8,        3.305 
+SW_Natural_Gas,2026,9,        3.066 
+SW_Natural_Gas,2026,10,        3.076 
+SW_Natural_Gas,2026,11,        3.021 
+SW_Natural_Gas,2026,12,        3.249 
+SW_Natural_Gas,2030,1,        3.605 
+SW_Natural_Gas,2030,2,        3.662 
+SW_Natural_Gas,2030,3,        3.349 
+SW_Natural_Gas,2030,4,        3.344 
+SW_Natural_Gas,2030,5,        3.478 
+SW_Natural_Gas,2030,6,        3.322 
+SW_Natural_Gas,2030,7,        3.335 
+SW_Natural_Gas,2030,8,        3.342 
+SW_Natural_Gas,2030,9,        3.099 
+SW_Natural_Gas,2030,10,        3.110 
+SW_Natural_Gas,2030,11,        3.055 
+SW_Natural_Gas,2030,12,        3.285 
+SW_Natural_Gas,2045,1,        4.183 
+SW_Natural_Gas,2045,2,        4.250 
+SW_Natural_Gas,2045,3,        3.887 
+SW_Natural_Gas,2045,4,        3.881 
+SW_Natural_Gas,2045,5,        4.036 
+SW_Natural_Gas,2045,6,        3.855 
+SW_Natural_Gas,2045,7,        3.870 
+SW_Natural_Gas,2045,8,        3.878 
+SW_Natural_Gas,2045,9,        3.597 
+SW_Natural_Gas,2045,10,        3.610 
+SW_Natural_Gas,2045,11,        3.545 
+SW_Natural_Gas,2045,12,        3.812 
+CA_Coal,2020,1,        3.433 
+CA_Coal,2020,2,        3.433 
+CA_Coal,2020,3,        3.433 
+CA_Coal,2020,4,        3.433 
+CA_Coal,2020,5,        3.433 
+CA_Coal,2020,6,        3.433 
+CA_Coal,2020,7,        3.433 
+CA_Coal,2020,8,        3.433 
+CA_Coal,2020,9,        3.433 
+CA_Coal,2020,10,        3.433 
+CA_Coal,2020,11,        3.433 
+CA_Coal,2020,12,        3.433 
+CA_Coal,2021,1,        3.504 
+CA_Coal,2021,2,        3.504 
+CA_Coal,2021,3,        3.504 
+CA_Coal,2021,4,        3.504 
+CA_Coal,2021,5,        3.504 
+CA_Coal,2021,6,        3.504 
+CA_Coal,2021,7,        3.504 
+CA_Coal,2021,8,        3.504 
+CA_Coal,2021,9,        3.504 
+CA_Coal,2021,10,        3.504 
+CA_Coal,2021,11,        3.504 
+CA_Coal,2021,12,        3.504 
+CA_Coal,2022,1,        3.583 
+CA_Coal,2022,2,        3.583 
+CA_Coal,2022,3,        3.583 
+CA_Coal,2022,4,        3.583 
+CA_Coal,2022,5,        3.583 
+CA_Coal,2022,6,        3.583 
+CA_Coal,2022,7,        3.583 
+CA_Coal,2022,8,        3.583 
+CA_Coal,2022,9,        3.583 
+CA_Coal,2022,10,        3.583 
+CA_Coal,2022,11,        3.583 
+CA_Coal,2022,12,        3.583 
+CA_Coal,2023,1,        3.664 
+CA_Coal,2023,2,        3.664 
+CA_Coal,2023,3,        3.664 
+CA_Coal,2023,4,        3.664 
+CA_Coal,2023,5,        3.664 
+CA_Coal,2023,6,        3.664 
+CA_Coal,2023,7,        3.664 
+CA_Coal,2023,8,        3.664 
+CA_Coal,2023,9,        3.664 
+CA_Coal,2023,10,        3.664 
+CA_Coal,2023,11,        3.664 
+CA_Coal,2023,12,        3.664 
+CA_Coal,2024,1,        3.751 
+CA_Coal,2024,2,        3.751 
+CA_Coal,2024,3,        3.751 
+CA_Coal,2024,4,        3.751 
+CA_Coal,2024,5,        3.751 
+CA_Coal,2024,6,        3.751 
+CA_Coal,2024,7,        3.751 
+CA_Coal,2024,8,        3.751 
+CA_Coal,2024,9,        3.751 
+CA_Coal,2024,10,        3.751 
+CA_Coal,2024,11,        3.751 
+CA_Coal,2024,12,        3.751 
+CA_Coal,2026,1,        3.936 
+CA_Coal,2026,2,        3.936 
+CA_Coal,2026,3,        3.936 
+CA_Coal,2026,4,        3.936 
+CA_Coal,2026,5,        3.936 
+CA_Coal,2026,6,        3.936 
+CA_Coal,2026,7,        3.936 
+CA_Coal,2026,8,        3.936 
+CA_Coal,2026,9,        3.936 
+CA_Coal,2026,10,        3.936 
+CA_Coal,2026,11,        3.936 
+CA_Coal,2026,12,        3.936 
+CA_Coal,2030,1,        4.373 
+CA_Coal,2030,2,        4.373 
+CA_Coal,2030,3,        4.373 
+CA_Coal,2030,4,        4.373 
+CA_Coal,2030,5,        4.373 
+CA_Coal,2030,6,        4.373 
+CA_Coal,2030,7,        4.373 
+CA_Coal,2030,8,        4.373 
+CA_Coal,2030,9,        4.373 
+CA_Coal,2030,10,        4.373 
+CA_Coal,2030,11,        4.373 
+CA_Coal,2030,12,        4.373 
+CA_Coal,2045,1,        7.084 
+CA_Coal,2045,2,        7.084 
+CA_Coal,2045,3,        7.084 
+CA_Coal,2045,4,        7.084 
+CA_Coal,2045,5,        7.084 
+CA_Coal,2045,6,        7.084 
+CA_Coal,2045,7,        7.084 
+CA_Coal,2045,8,        7.084 
+CA_Coal,2045,9,        7.084 
+CA_Coal,2045,10,        7.084 
+CA_Coal,2045,11,        7.084 
+CA_Coal,2045,12,        7.084 
+Coal,2020,1,        2.000 
+Coal,2020,2,        2.000 
+Coal,2020,3,        2.000 
+Coal,2020,4,        2.000 
+Coal,2020,5,        2.000 
+Coal,2020,6,        2.000 
+Coal,2020,7,        2.000 
+Coal,2020,8,        2.000 
+Coal,2020,9,        2.000 
+Coal,2020,10,        2.000 
+Coal,2020,11,        2.000 
+Coal,2020,12,        2.000 
+Coal,2021,1,        2.000 
+Coal,2021,2,        2.000 
+Coal,2021,3,        2.000 
+Coal,2021,4,        2.000 
+Coal,2021,5,        2.000 
+Coal,2021,6,        2.000 
+Coal,2021,7,        2.000 
+Coal,2021,8,        2.000 
+Coal,2021,9,        2.000 
+Coal,2021,10,        2.000 
+Coal,2021,11,        2.000 
+Coal,2021,12,        2.000 
+Coal,2022,1,        2.000 
+Coal,2022,2,        2.000 
+Coal,2022,3,        2.000 
+Coal,2022,4,        2.000 
+Coal,2022,5,        2.000 
+Coal,2022,6,        2.000 
+Coal,2022,7,        2.000 
+Coal,2022,8,        2.000 
+Coal,2022,9,        2.000 
+Coal,2022,10,        2.000 
+Coal,2022,11,        2.000 
+Coal,2022,12,        2.000 
+Coal,2023,1,        2.000 
+Coal,2023,2,        2.000 
+Coal,2023,3,        2.000 
+Coal,2023,4,        2.000 
+Coal,2023,5,        2.000 
+Coal,2023,6,        2.000 
+Coal,2023,7,        2.000 
+Coal,2023,8,        2.000 
+Coal,2023,9,        2.000 
+Coal,2023,10,        2.000 
+Coal,2023,11,        2.000 
+Coal,2023,12,        2.000 
+Coal,2024,1,        2.000 
+Coal,2024,2,        2.000 
+Coal,2024,3,        2.000 
+Coal,2024,4,        2.000 
+Coal,2024,5,        2.000 
+Coal,2024,6,        2.000 
+Coal,2024,7,        2.000 
+Coal,2024,8,        2.000 
+Coal,2024,9,        2.000 
+Coal,2024,10,        2.000 
+Coal,2024,11,        2.000 
+Coal,2024,12,        2.000 
+Coal,2026,1,        2.000 
+Coal,2026,2,        2.000 
+Coal,2026,3,        2.000 
+Coal,2026,4,        2.000 
+Coal,2026,5,        2.000 
+Coal,2026,6,        2.000 
+Coal,2026,7,        2.000 
+Coal,2026,8,        2.000 
+Coal,2026,9,        2.000 
+Coal,2026,10,        2.000 
+Coal,2026,11,        2.000 
+Coal,2026,12,        2.000 
+Coal,2030,1,        2.000 
+Coal,2030,2,        2.000 
+Coal,2030,3,        2.000 
+Coal,2030,4,        2.000 
+Coal,2030,5,        2.000 
+Coal,2030,6,        2.000 
+Coal,2030,7,        2.000 
+Coal,2030,8,        2.000 
+Coal,2030,9,        2.000 
+Coal,2030,10,        2.000 
+Coal,2030,11,        2.000 
+Coal,2030,12,        2.000 
+Coal,2045,1,        2.000 
+Coal,2045,2,        2.000 
+Coal,2045,3,        2.000 
+Coal,2045,4,        2.000 
+Coal,2045,5,        2.000 
+Coal,2045,6,        2.000 
+Coal,2045,7,        2.000 
+Coal,2045,8,        2.000 
+Coal,2045,9,        2.000 
+Coal,2045,10,        2.000 
+Coal,2045,11,        2.000 
+Coal,2045,12,        2.000 
+Uranium,2020,1,        0.700 
+Uranium,2020,2,        0.700 
+Uranium,2020,3,        0.700 
+Uranium,2020,4,        0.700 
+Uranium,2020,5,        0.700 
+Uranium,2020,6,        0.700 
+Uranium,2020,7,        0.700 
+Uranium,2020,8,        0.700 
+Uranium,2020,9,        0.700 
+Uranium,2020,10,        0.700 
+Uranium,2020,11,        0.700 
+Uranium,2020,12,        0.700 
+Uranium,2021,1,        0.700 
+Uranium,2021,2,        0.700 
+Uranium,2021,3,        0.700 
+Uranium,2021,4,        0.700 
+Uranium,2021,5,        0.700 
+Uranium,2021,6,        0.700 
+Uranium,2021,7,        0.700 
+Uranium,2021,8,        0.700 
+Uranium,2021,9,        0.700 
+Uranium,2021,10,        0.700 
+Uranium,2021,11,        0.700 
+Uranium,2021,12,        0.700 
+Uranium,2022,1,        0.700 
+Uranium,2022,2,        0.700 
+Uranium,2022,3,        0.700 
+Uranium,2022,4,        0.700 
+Uranium,2022,5,        0.700 
+Uranium,2022,6,        0.700 
+Uranium,2022,7,        0.700 
+Uranium,2022,8,        0.700 
+Uranium,2022,9,        0.700 
+Uranium,2022,10,        0.700 
+Uranium,2022,11,        0.700 
+Uranium,2022,12,        0.700 
+Uranium,2023,1,        0.700 
+Uranium,2023,2,        0.700 
+Uranium,2023,3,        0.700 
+Uranium,2023,4,        0.700 
+Uranium,2023,5,        0.700 
+Uranium,2023,6,        0.700 
+Uranium,2023,7,        0.700 
+Uranium,2023,8,        0.700 
+Uranium,2023,9,        0.700 
+Uranium,2023,10,        0.700 
+Uranium,2023,11,        0.700 
+Uranium,2023,12,        0.700 
+Uranium,2024,1,        0.700 
+Uranium,2024,2,        0.700 
+Uranium,2024,3,        0.700 
+Uranium,2024,4,        0.700 
+Uranium,2024,5,        0.700 
+Uranium,2024,6,        0.700 
+Uranium,2024,7,        0.700 
+Uranium,2024,8,        0.700 
+Uranium,2024,9,        0.700 
+Uranium,2024,10,        0.700 
+Uranium,2024,11,        0.700 
+Uranium,2024,12,        0.700 
+Uranium,2026,1,        0.700 
+Uranium,2026,2,        0.700 
+Uranium,2026,3,        0.700 
+Uranium,2026,4,        0.700 
+Uranium,2026,5,        0.700 
+Uranium,2026,6,        0.700 
+Uranium,2026,7,        0.700 
+Uranium,2026,8,        0.700 
+Uranium,2026,9,        0.700 
+Uranium,2026,10,        0.700 
+Uranium,2026,11,        0.700 
+Uranium,2026,12,        0.700 
+Uranium,2030,1,        0.700 
+Uranium,2030,2,        0.700 
+Uranium,2030,3,        0.700 
+Uranium,2030,4,        0.700 
+Uranium,2030,5,        0.700 
+Uranium,2030,6,        0.700 
+Uranium,2030,7,        0.700 
+Uranium,2030,8,        0.700 
+Uranium,2030,9,        0.700 
+Uranium,2030,10,        0.700 
+Uranium,2030,11,        0.700 
+Uranium,2030,12,        0.700 
+Uranium,2045,1,        0.700 
+Uranium,2045,2,        0.700 
+Uranium,2045,3,        0.700 
+Uranium,2045,4,        0.700 
+Uranium,2045,5,        0.700 
+Uranium,2045,6,        0.700 
+Uranium,2045,7,        0.700 
+Uranium,2045,8,        0.700 
+Uranium,2045,9,        0.700 
+Uranium,2045,10,        0.700 
+Uranium,2045,11,        0.700 
+Uranium,2045,12,        0.700 
+Conventional_DR,2020,1,0
+Conventional_DR,2020,2,0
+Conventional_DR,2020,3,0
+Conventional_DR,2020,4,0
+Conventional_DR,2020,5,0
+Conventional_DR,2020,6,0
+Conventional_DR,2020,7,0
+Conventional_DR,2020,8,0
+Conventional_DR,2020,9,0
+Conventional_DR,2020,10,0
+Conventional_DR,2020,11,0
+Conventional_DR,2020,12,0
+Conventional_DR,2021,1,0
+Conventional_DR,2021,2,0
+Conventional_DR,2021,3,0
+Conventional_DR,2021,4,0
+Conventional_DR,2021,5,0
+Conventional_DR,2021,6,0
+Conventional_DR,2021,7,0
+Conventional_DR,2021,8,0
+Conventional_DR,2021,9,0
+Conventional_DR,2021,10,0
+Conventional_DR,2021,11,0
+Conventional_DR,2021,12,0
+Conventional_DR,2022,1,0
+Conventional_DR,2022,2,0
+Conventional_DR,2022,3,0
+Conventional_DR,2022,4,0
+Conventional_DR,2022,5,0
+Conventional_DR,2022,6,0
+Conventional_DR,2022,7,0
+Conventional_DR,2022,8,0
+Conventional_DR,2022,9,0
+Conventional_DR,2022,10,0
+Conventional_DR,2022,11,0
+Conventional_DR,2022,12,0
+Conventional_DR,2023,1,0
+Conventional_DR,2023,2,0
+Conventional_DR,2023,3,0
+Conventional_DR,2023,4,0
+Conventional_DR,2023,5,0
+Conventional_DR,2023,6,0
+Conventional_DR,2023,7,0
+Conventional_DR,2023,8,0
+Conventional_DR,2023,9,0
+Conventional_DR,2023,10,0
+Conventional_DR,2023,11,0
+Conventional_DR,2023,12,0
+Conventional_DR,2024,1,0
+Conventional_DR,2024,2,0
+Conventional_DR,2024,3,0
+Conventional_DR,2024,4,0
+Conventional_DR,2024,5,0
+Conventional_DR,2024,6,0
+Conventional_DR,2024,7,0
+Conventional_DR,2024,8,0
+Conventional_DR,2024,9,0
+Conventional_DR,2024,10,0
+Conventional_DR,2024,11,0
+Conventional_DR,2024,12,0
+Conventional_DR,2026,1,0
+Conventional_DR,2026,2,0
+Conventional_DR,2026,3,0
+Conventional_DR,2026,4,0
+Conventional_DR,2026,5,0
+Conventional_DR,2026,6,0
+Conventional_DR,2026,7,0
+Conventional_DR,2026,8,0
+Conventional_DR,2026,9,0
+Conventional_DR,2026,10,0
+Conventional_DR,2026,11,0
+Conventional_DR,2026,12,0
+Conventional_DR,2030,1,0
+Conventional_DR,2030,2,0
+Conventional_DR,2030,3,0
+Conventional_DR,2030,4,0
+Conventional_DR,2030,5,0
+Conventional_DR,2030,6,0
+Conventional_DR,2030,7,0
+Conventional_DR,2030,8,0
+Conventional_DR,2030,9,0
+Conventional_DR,2030,10,0
+Conventional_DR,2030,11,0
+Conventional_DR,2030,12,0
+Conventional_DR,2045,1,0
+Conventional_DR,2045,2,0
+Conventional_DR,2045,3,0
+Conventional_DR,2045,4,0
+Conventional_DR,2045,5,0
+Conventional_DR,2045,6,0
+Conventional_DR,2045,7,0
+Conventional_DR,2045,8,0
+Conventional_DR,2045,9,0
+Conventional_DR,2045,10,0
+Conventional_DR,2045,11,0
+Conventional_DR,2045,12,0
