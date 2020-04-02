@@ -1,4 +1,4 @@
-balancing_type,horizon,period,avg,min,max
+balancing_type_project,horizon,period,avg,min,max
 day,202001,2020,0.3836,0.3129,0.5359
 day,202002,2020,0.1431,0.0582,0.35
 day,202003,2020,0.276,0.1564,0.4804

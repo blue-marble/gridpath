@@ -18,7 +18,8 @@ def create_gp_chars(resolve_chars, project):
 
     # Make dataframe for the GridPath profile with headers
     gp_chars_df = pd.DataFrame(
-        columns=["balancing_type", "horizon", "period", "avg", "min", "max"]
+        columns=["balancing_type_project", "horizon", "period", "avg", "min",
+                 "max"]
     )
 
     row = 0

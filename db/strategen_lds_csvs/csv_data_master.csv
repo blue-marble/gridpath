@@ -1,6 +1,6 @@
 feature,subscenario_id,table,required,include,path,notes
 core,,scenarios,1,1,scenarios,
-core,solver_options_id,solver,1,1,solver,requires both solver options and description csvs
+core,solver_options_id,solver,1,1,scenarios/solver,requires both solver options and description csvs
 core,temporal_scenario_id,temporal,1,1,temporal,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,project_portfolio_scenario_id,project_portfolios,1,1,project/portfolios,
 core,project_operational_chars_scenario_id,project_operational_chars,1,1,project/opchar,
@@ -14,8 +14,8 @@ data_dependent,project_new_potential_scenario_id,project_new_potential,0,1,proje
 data_dependent,project_new_binary_build_size_scenario_id,project_new_binary_build_size,0,0,,
 data_dependent,heat_rate_curves_scenario_id,project_heat_rate_curves,0,1,project/opchar/heat_rates,Selected in inputs_project_operational_chars table
 data_dependent,startup_chars_scenario_id,project_startup_chars,0,0,,Selected in inputs_project_operational_chars table
-data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,0,1,project/opchar/var_profiles,Selected in inputs_project_operational_chars table
-data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,0,1,project/opchar/hydro_chars,Selected in inputs_project_operational_chars table
+data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,0,1,project/opchar/hydro_chars,Selected in inputs_project_operational_chars table
+data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,0,1,project/opchar/var_profiles,Selected in inputs_project_operational_chars table
 data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,0,0,,not implemented yet in csvs import; selected via inputs_project_new_costs table
 data_dependent,project_availability_scenario_id,project_availability_types,0,1,project/availability,
 data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,0,0,,Selected in inputs_project_availability_types table
@@ -25,7 +25,7 @@ fuels,fuel_price_scenario_id,project_fuel_prices,0,0,,
 transmission,transmission_portfolio_scenario_id,transmission_portfolios,0,1,transmission/portfolio,
 transmission,transmission_load_zone_scenario_id,transmission_load_zones,0,1,system_load/tx_zones,
 transmission,transmission_specified_capacity_scenario_id,transmission_specified_capacity,0,1,transmission/cap_spec,
-transmission,transmission_operational_chars_scenario_id,transmission_operational_chars,0,0,transmission/opchar,
+transmission,transmission_operational_chars_scenario_id,transmission_operational_chars,0,1,transmission/opchar,
 transmission,transmission_new_cost_scenario_id,transmission_new_cost,0,0,,
 transmission_hurdle_rates,transmission_hurdle_rate_scenario_id,transmission_hurdle_rates,0,0,,
 simultaneous_flow_limits,transmission_simultaneous_flow_limit_scenario_id,transmission_simultaneous_flow_limits,0,0,,not implemented yet in csvs import
