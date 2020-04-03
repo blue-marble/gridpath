@@ -75,14 +75,21 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    m.Variable_OM_Cost = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=variable_om_cost_rule
-    )
-
     m.Fuel_Cost = Expression(
         m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_cost_rule
+    )
+
+    def variable_om_cost_rule(mod, g, tmp):
+        """
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].\
+            variable_om_cost_rule(mod, g, tmp)
+
+    m.Variable_OM_Cost = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=variable_om_cost_rule
     )
 
     def startup_cost_rule(mod, g, tmp):
@@ -118,13 +125,6 @@ def add_model_components(m, d):
 
 # Expression Rules
 ###############################################################################
-
-def variable_om_cost_rule(m, g, tmp):
-    """
-    **Expression Name**: Variable_OM_Cost
-    **Defined Over**: PRJ_OPR_TMPS
-    """
-    return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
 
 
 def fuel_cost_rule(mod, g, tmp):

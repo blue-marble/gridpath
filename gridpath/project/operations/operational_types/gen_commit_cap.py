@@ -1111,6 +1111,13 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity

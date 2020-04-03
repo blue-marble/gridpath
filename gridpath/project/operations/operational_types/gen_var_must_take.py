@@ -228,6 +228,15 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.gen_var_must_take_cap_factor[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.

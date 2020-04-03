@@ -41,7 +41,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Binary, PercentFraction, Expression, value
+    Binary, PercentFraction, Expression, value, Reals, PositiveReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
     check_req_prj_columns, write_validation_to_database,\
@@ -53,6 +53,8 @@ from gridpath.project.operations.operational_types.common_functions import \
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint,\
     check_if_linear_horizon_last_timepoint
+from gridpath.project.operations.__init__ import \
+    calculate_heat_rate_slope_intercept
 
 
 def add_module_specific_components(m, d):
@@ -547,6 +549,20 @@ def add_module_specific_components(m, d):
         ordered=True
     )
 
+    m.GEN_COMMIT_BIN_VOM_PRJS_SGMS = Set(
+        dimen=2,
+        ordered=True
+    )
+
+    m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, s in mod.GEN_COMMIT_BIN_VOM_PRJS_SGMS
+            if g == _g)
+    )
+
+
     # Required Params
     ###########################################################################
     m.gen_commit_bin_min_stable_level_fraction = Param(
@@ -604,6 +620,30 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
+    # m.gen_commit_bin_vom_cost_per_mwh = Param(
+    #     m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
+    #     within=NonNegativeReals,
+    #     default=0
+    # )
+    #
+    # m.gen_commit_bin_load_point_fraction = Param(
+    #     m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
+    #     within=NonNegativeReals
+    # )
+
+    m.gen_commit_bin_vom_slope_cost_per_mwh = Param(
+        m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
+        within=PositiveReals
+    )
+
+    m.gen_commit_bin_vom_intercept_cost_per_mw_hr = Param(
+        m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
+        within=Reals
+    )
+
+    # TODO: need to derive slope and intercept from load point fraction
+    #  and cost!
+
     # Variables
     ###########################################################################
 
@@ -648,6 +688,12 @@ def add_module_specific_components(m, d):
     )
 
     m.GenCommitBin_Fuel_Burn_MMBTU = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    # TODO: add docs for this var + all sets/params
+    m.GenCommitBin_Variable_OM_Cost = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -814,6 +860,12 @@ def add_module_specific_components(m, d):
     m.GenCommitBin_Fuel_Burn_Constraint = Constraint(
         m.GEN_COMMIT_BIN_OPR_TMPS_FUEL_SEG,
         rule=fuel_burn_constraint_rule
+    )
+
+    # Variable O&M
+    m.GenCommitBin_Variable_OM_Constraint = Constraint(
+        m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS,
+        rule=vom_constraint_rule
     )
 
 
@@ -1603,6 +1655,29 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         * mod.GenCommitBin_Synced[g, tmp]
 
 
+def vom_constraint_rule(mod, g, tmp, s):
+    """
+    **Constraint Name**: GenCommitBin_Variable_OM_Constraint
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+    Variable O&M cost is set by piecewise linear representation of input/output
+    curve.
+
+    Note: we assume that when projects are derated for availability, the
+    input/output curve is derated by the same amount. The implicit
+    assumption is that when a generator is de-rated, some of its units
+    are out rather than it being forced to run below minimum stable level
+    at very costly operating points.
+    """
+    return mod.GenCommitBin_Variable_OM_Cost[g, tmp] \
+        >= \
+        mod.gen_commit_bin_vom_slope_cost_per_mwh[g, s] \
+        * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
+        + mod.gen_commit_bin_vom_intercept_cost_per_mw_hr[g, s] \
+        * mod.GenCommitBin_Pmax_MW[g, tmp] \
+        * mod.GenCommitBin_Synced[g, tmp]
+
+
 # Operational Type Methods
 ###############################################################################
 
@@ -1666,6 +1741,16 @@ def fuel_burn_rule(mod, g, tmp):
         return mod.GenCommitBin_Fuel_Burn_MMBTU[g, tmp]
     else:
         return 0
+
+
+# TODO: add input validation or another check to make sure that we don't
+#  double count VOM (both the fixed VOM and the VOM by loading level)
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.GenCommitBin_Provide_Power_MW[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g] \
+        + mod.GenCommitBin_Variable_OM_Cost[g, tmp]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -1917,6 +2002,38 @@ def load_module_specific_data(mod, data_portal,
         data_portal.data()["gen_commit_bin_startup_cost_per_mw"] = \
             startup_cost_dict
 
+    # Variable OM curves
+    vom_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "variable_om_curves.tab"),
+        sep="\t"
+    )
+
+    slope_dict = {}
+    intercept_dict = {}
+    for project in vom_df["project"].unique():
+        # read in the power setpoints and average heat rates
+        vom_slice = vom_df[vom_df["project"] == project]
+        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
+        load_points = vom_slice["load_point_fraction"].values
+        vom = vom_slice["average_variable_om_cost_per_mwh"].values
+
+        slopes, intercepts = calculate_heat_rate_slope_intercept(
+            project, load_points, vom
+        )
+
+        slope_dict.update(slopes)
+        intercept_dict.update(intercepts)
+
+    vom_project_segments = list(slope_dict.keys())
+
+    data_portal.data()["GEN_COMMIT_BIN_VOM_PRJS_SGMS"] = \
+        {None: vom_project_segments}
+    data_portal.data()["gen_commit_bin_vom_slope_cost_per_mwh"] = \
+        slope_dict
+    data_portal.data()["gen_commit_bin_vom_intercept_cost_per_mw_hr"] = \
+        intercept_dict
+
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -2022,7 +2139,28 @@ def get_module_specific_inputs_from_database(
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return startup_chars
+    c2 = conn.cursor()
+    variable_om_curves = c2.excecute(
+        """
+        SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND variable_om_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   "gen_commit_bin",
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return variable_om_curves
 
 
 def write_module_specific_model_inputs(
@@ -2030,7 +2168,7 @@ def write_module_specific_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    startup_chars.tab file.
+    startup_chars.tab and variable_om_curves files.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -2038,7 +2176,7 @@ def write_module_specific_model_inputs(
     :param conn: database connection
     :return:
     """
-    startup_chars = get_module_specific_inputs_from_database(
+    startup_chars, vom = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # If startup_chars.tab file already exists, append rows to it
@@ -2066,6 +2204,21 @@ def write_module_specific_model_inputs(
             for row in startup_chars:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
+
+    vom_file = os.path.join(inputs_directory, "variable_om_curves.tab")
+    file_exists = os.path.isfile(vom_file)
+    write_mode = "a" if file_exists else "w"
+    with open(vom_file, write_mode) as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+        # Write header first if file does not exist
+        if not file_exists:
+            writer.writerow(["project",
+                             "load_point_fraction",
+                             "average_variable_om_cost_per_mwh",
+                             ])
+        for row in vom:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 # Validation

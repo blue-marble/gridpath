@@ -524,6 +524,14 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Storage shouldn't have variable O&M because the power provision can be
+    negative, which could be abused.
+    """
+    return 0
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.
