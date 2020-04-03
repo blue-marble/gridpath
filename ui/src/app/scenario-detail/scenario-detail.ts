@@ -30,7 +30,6 @@ export class StartingValues {
   scenario_id: number;
   scenario_name: string;
   scenario_description: string;
-  features$fuels: boolean;
   features$transmission: boolean;
   features$transmission_hurdle_rates: boolean;
   features$transmission_sim_flow: boolean;

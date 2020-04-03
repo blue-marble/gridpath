@@ -51,7 +51,6 @@ export class ScenarioNewComponent implements OnInit {
   newScenarioForm = new FormGroup({
     scenarioName: new FormControl(),
     scenarioDescription: new FormControl(),
-    features$fuels: new FormControl(),
     features$transmission: new FormControl(),
     features$transmission_hurdle_rates: new FormControl(),
     features$transmission_sim_flow: new FormControl(),
