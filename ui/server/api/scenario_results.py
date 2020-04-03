@@ -44,9 +44,9 @@ class ScenarioResultsOptions(Resource):
         options_api["rpsZoneOptions"] = ['Select RPS Area'] + rps_zone_options
 
         carbon_cap_zone_options = [z[0] for z in c.execute(
-            """SELECT rps_zone FROM inputs_geography_rps_zones
-            WHERE rps_zone_scenario_id = (
-            SELECT rps_zone_scenario_id
+            """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = (
+            SELECT carbon_cap_zone_scenario_id
             FROM scenarios
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
