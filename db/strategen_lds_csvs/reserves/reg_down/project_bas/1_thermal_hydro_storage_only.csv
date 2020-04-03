@@ -1,0 +1,14 @@
+project,regulation_down_ba
+CAISO_CCGT1,CAISO
+CAISO_CCGT2,CAISO
+CAISO_Advanced_CCGT,CAISO
+CAISO_ST,CAISO
+CAISO_Existing_Pumped_Storage,CAISO
+CAISO_New_Pumped_Storage,CAISO
+CAISO_New_Flow_Battery,CAISO
+CAISO_New_Flow_Battery_2,CAISO
+CAISO_New_Flow_Battery_3,CAISO
+CAISO_New_Li_Battery,CAISO
+CAISO_New_Li_Battery_2,CAISO
+CAISO_New_Li_Battery_3,CAISO
+CAISO_Hydro,CAISO
