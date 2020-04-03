@@ -53,8 +53,6 @@ from gridpath.project.operations.operational_types.common_functions import \
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint,\
     check_if_linear_horizon_last_timepoint
-from gridpath.project.operations.__init__ import \
-    calculate_heat_rate_slope_intercept
 
 
 def add_module_specific_components(m, d):
@@ -93,6 +91,12 @@ def add_module_specific_components(m, d):
     | operational type, their operational timepoints, and their fuel          |
     | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS`                         |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the timepoints in which the project could be     |
+    | operational. The variable O&M cost constraint is applied over this set. |
+    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`                             |
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
@@ -104,19 +108,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Indexed set that describes the startup types for each project of the    |
     | :code:`gen_commit_bin`operational type.                                 |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_VOM_PRJS_SGMS`                                  |
-    |                                                                         |
-    | Two-dimensional set describing projects and their variable O&M cost     |
-    | curve segment IDs. Unless the project's variable O&M is constant,       |
-    | the variable O&M cost can be defined by multiple piecewise linear       |
-    | segments.                                                               |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS`                         |
-    |                                                                         |
-    | Three-dimensional set describing projects, their variable O&M cost      |
-    | curve segment IDs, and the timepoints in which the project could be     |
-    | operational. The variable O&M cost constraint is applied over this set. |
     +-------------------------------------------------------------------------+
 
     |
@@ -224,23 +215,6 @@ def add_module_specific_components(m, d):
     | over 8 hours. The cutoff for the hottest start must match the unit's    |
     | minimum down time. If the unit is fast-start without a minimum down     |
     | time, the user should input zero (rather than NULL)                     |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_vom_slope_cost_per_mwh`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_VOM_PRJS_SGMS`                  |
-    | | *Within*: :code:`PositiveReals`                                       |
-    |                                                                         |
-    | This param describes the slope of the piecewise linear variable O&M     |
-    | cost for each project's variable O&M cost segment. The units are cost   |
-    | of variable O&M per MWh of electricity generation.                      |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_vom_intercept_cost_per_mw_hr`                   |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_VOM_PRJS_SGMS`                  |
-    | | *Within*: :code:`Reals`                                               |
-    |                                                                         |
-    | This param describes the intercept of the piecewise linear variable O&M |
-    | cost for each project's variable O&M cost segment. The units are cost   |
-    | of variable O&M per MW of operational capacity per hour (multiply by    |
-    | operational capacity and timepoint duration to get actual cost).        |
     +-------------------------------------------------------------------------+
 
     |
@@ -576,6 +550,15 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_COMMIT_BIN)
     )
 
+    m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        within=m.VOM_PRJS_OPR_TMPS_SGMS,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp, s)
+            in mod.VOM_PRJS_OPR_TMPS_SGMS
+            if g in mod.GEN_COMMIT_BIN)
+    )
+
     m.GEN_COMMIT_BIN_STR_RMP_PRJS = Set(
         within=m.GEN_COMMIT_BIN
     )
@@ -597,19 +580,6 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_BIN,
         initialize=get_startup_types_by_project,
         ordered=True
-    )
-
-    m.GEN_COMMIT_BIN_VOM_PRJS_SGMS = Set(
-        dimen=2,
-        ordered=True
-    )
-
-    m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS = Set(
-        dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.GEN_COMMIT_BIN_VOM_PRJS_SGMS
-            if g == _g)
     )
 
     # Required Params
@@ -667,16 +637,6 @@ def add_module_specific_components(m, d):
     m.gen_commit_bin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
         within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_vom_slope_cost_per_mwh = Param(
-        m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
-        within=PositiveReals
-    )
-
-    m.gen_commit_bin_vom_intercept_cost_per_mw_hr = Param(
-        m.GEN_COMMIT_BIN_VOM_PRJS_SGMS,
-        within=Reals
     )
 
     # Variables
@@ -1705,9 +1665,9 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     """
     return mod.GenCommitBin_Variable_OM_Cost[g, tmp] \
         >= \
-        mod.gen_commit_bin_vom_slope_cost_per_mwh[g, s] \
+        mod.vom_slope_cost_per_mwh[g, s] \
         * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.gen_commit_bin_vom_intercept_cost_per_mw_hr[g, s] \
+        + mod.vom_intercept_cost_per_mw_hr[g, s] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
         * mod.GenCommitBin_Synced[g, tmp]
 
@@ -2046,44 +2006,6 @@ def load_module_specific_data(mod, data_portal,
         data_portal.data()["gen_commit_bin_startup_cost_per_mw"] = \
             startup_cost_dict
 
-    # Variable OM curves
-    vom_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "variable_om_curves.tab"),
-        sep="\t"
-    )
-
-    slope_dict = {}
-    intercept_dict = {}
-    for project in vom_df["project"].unique():
-        # TODO: set project to index for easier slicing (if df.loc[project,
-        #  "operational_type"] == "gen_commit_bin")
-        #  could also rename dynamic_components to df
-        if dynamic_components[dynamic_components["project"] == project][
-                "operational_type"].values[0] != "gen_commit_bin":
-            continue
-        # read in the power setpoints and average heat rates
-        vom_slice = vom_df[vom_df["project"] == project]
-        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
-        load_points = vom_slice["load_point_fraction"].values
-        vom = vom_slice["average_variable_om_cost_per_mwh"].values
-
-        slopes, intercepts = calculate_heat_rate_slope_intercept(
-            project, load_points, vom
-        )
-
-        slope_dict.update(slopes)
-        intercept_dict.update(intercepts)
-
-    vom_project_segments = list(slope_dict.keys())
-
-    data_portal.data()["GEN_COMMIT_BIN_VOM_PRJS_SGMS"] = \
-        {None: vom_project_segments}
-    data_portal.data()["gen_commit_bin_vom_slope_cost_per_mwh"] = \
-        slope_dict
-    data_portal.data()["gen_commit_bin_vom_intercept_cost_per_mw_hr"] = \
-        intercept_dict
-
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -2188,29 +2110,6 @@ def get_module_specific_inputs_from_database(
                    "gen_commit_bin",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
-
-    c2 = conn.cursor()
-    variable_om_curves = c2.excecute(
-        """
-        SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, variable_om_curves_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
-        USING(project)
-        INNER JOIN
-        inputs_project_variable_om_curves
-        USING(project, variable_om_curves_scenario_id)
-        WHERE project_portfolio_scenario_id = {}
-        AND variable_om_scenario_id is not Null
-        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "gen_commit_bin",
-                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
-    )
-
-    return variable_om_curves
 
 
 def write_module_specific_model_inputs(

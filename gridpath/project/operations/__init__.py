@@ -52,6 +52,19 @@ def add_model_components(m, d):
     | segment IDs, and the timepoints in which the project could be           |
     | operational. The fuel burn constraint is applied over this set.         |
     +-------------------------------------------------------------------------+
+    | | :code:`VOM_PRJS_SGMS`                                                 |
+    |                                                                         |
+    | Two-dimensional set describing projects and their variable O&M cost     |
+    | curve segment IDs. Unless the project's variable O&M is constant,       |
+    | the variable O&M cost can be defined by multiple piecewise linear       |
+    | segments.                                                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`VOM_PRJS_OPR_TMPS_SGMS`                                        |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the timepoints in which the project could be     |
+    | operational. The variable O&M cost constraint is applied over this set. |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -80,6 +93,23 @@ def add_model_components(m, d):
     | for each project's heat rate segment. The units are MMBtu of fuel burn  |
     | per MW of operational capacity per hour (multiply by operational        |
     | capacity and timepoint duration to get fuel burn in MMBtu).             |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_slope_cost_per_mwh`                                        |
+    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear variable O&M     |
+    | cost for each project's variable O&M cost segment. The units are cost   |
+    | of variable O&M per MWh of electricity generation.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_intercept_cost_per_mw_hr`                                  |
+    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear variable O&M |
+    | cost for each project's variable O&M cost segment. The units are cost   |
+    | of variable O&M per MW of operational capacity per hour (multiply by    |
+    | operational capacity and timepoint duration to get actual cost).        |
     +-------------------------------------------------------------------------+
 
     """
@@ -114,6 +144,19 @@ def add_model_components(m, d):
             if g in mod.FUEL_PRJS and g == _g)
     )
 
+    m.VOM_PRJS_SGMS = Set(
+        dimen=2,
+        ordered=True
+    )
+
+    m.VOM_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, s in mod.VOM_PRJS_SGMS
+            if g == _g)
+    )
+
     # Input Params
     ###########################################################################
 
@@ -129,6 +172,16 @@ def add_model_components(m, d):
 
     m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
         m.FUEL_PRJ_SGMS,
+        within=Reals
+    )
+
+    m.vom_slope_cost_per_mwh = Param(
+        m.VOM_PRJS_SGMS,
+        within=PositiveReals
+    )
+
+    m.vom_intercept_cost_per_mw_hr = Param(
+        m.VOM_PRJS_SGMS,
         within=Reals
     )
 
@@ -195,6 +248,35 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
             intercept_dict
+
+    # Variable OM curves
+    vom_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "variable_om_curves.tab"),
+        sep="\t"
+    )
+
+    slope_dict = {}
+    intercept_dict = {}
+    for project in vom_df["project"].unique():
+        # read in the power setpoints and average heat rates
+        vom_slice = vom_df[vom_df["project"] == project]
+        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
+        load_points = vom_slice["load_point_fraction"].values
+        vom = vom_slice["average_variable_om_cost_per_mwh"].values
+
+        slopes, intercepts = calculate_heat_rate_slope_intercept(
+            project, load_points, vom
+        )
+
+        slope_dict.update(slopes)
+        intercept_dict.update(intercepts)
+
+    vom_project_segments = list(slope_dict.keys())
+
+    data_portal.data()["VOM_PRJS_SGMS"] = {None: vom_project_segments}
+    data_portal.data()["vom_slope_cost_per_mwh"] = slope_dict
+    data_portal.data()["vom_intercept_cost_per_mw_hr"] = intercept_dict
 
 
 def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
@@ -309,7 +391,28 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return heat_rates
+    c2 = conn.cursor()
+    variable_om = c2.excecute(
+        """
+        SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND variable_om_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   "gen_commit_bin",
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return heat_rates, variable_om
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -323,7 +426,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    heat_rates = get_inputs_from_database(
+    heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert heat rates to dataframes and pre-process data
