@@ -1,0 +1,6 @@
+transmission_line,carbon_cap_zone,import_direction,tx_co2_intensity_tons_per_mwh
+SW_to_CAISO,CAISO,positive,0.428
+LDWP_to_CAISO,CAISO,positive,0.428
+IID_to_CAISO,CAISO,positive,0.428
+BANC_to_CAISO,CAISO,positive,0.428
+NW_to_CAISO_Unspecified,CAISO,positive,0.428
