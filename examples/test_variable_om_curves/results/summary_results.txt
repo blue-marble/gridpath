@@ -1,0 +1,13 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_variable_om_curves* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                          4             14
+                 Gas                          13             44
+                 Nuclear                      12             39
+                 Wind                          1              3
