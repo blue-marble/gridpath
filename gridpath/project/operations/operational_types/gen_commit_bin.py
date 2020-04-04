@@ -2119,7 +2119,7 @@ def write_module_specific_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    startup_chars.tab and variable_om_curves files.
+    startup_chars.tab files.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
