@@ -707,6 +707,7 @@ balancing_type_project VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
+variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
 startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
@@ -747,6 +748,9 @@ inputs_temporal_subproblems_stages (stage_id),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
 (project, heat_rate_curves_scenario_id),
+FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
+subscenarios_project_variable_om_curves
+(project, variable_om_curves_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -777,6 +781,29 @@ average_heat_rate_mmbtu_per_mwh FLOAT,
 PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_fraction),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
+);
+
+-- Variable O&M curves
+-- TODO: see comments variable profiles
+DROP TABLE IF EXISTS subscenarios_project_variable_om_curves;
+CREATE TABLE subscenarios_project_variable_om_curves (
+project VARCHAR(32),
+variable_om_curves_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, variable_om_curves_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_om_curves;
+CREATE TABLE inputs_project_variable_om_curves (
+project VARCHAR(64),
+variable_om_curves_scenario_id INTEGER,
+load_point_fraction FLOAT,
+average_variable_om_cost_per_mwh FLOAT,
+PRIMARY KEY (project, variable_om_curves_scenario_id, load_point_fraction),
+FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
+subscenarios_project_variable_om_curves (project,
+variable_om_curves_scenario_id)
 );
 
 -- Startup characteristics
