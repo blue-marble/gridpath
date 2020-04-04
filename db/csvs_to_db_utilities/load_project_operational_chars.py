@@ -223,10 +223,10 @@ def load_project_vom_curves(io, c, subscenario_input, data_input):
         tuple(x) for x in data_input.to_records(index=False)
     ]
 
-    project_operational_chars.update_project_hr_curves(
+    project_operational_chars.update_project_vom_curves(
         io=io, c=c,
         subs_data=project_vom_scenarios,
-        proj_hr_chars=project_vom_chars
+        proj_vom_chars=project_vom_chars
     )
 
 

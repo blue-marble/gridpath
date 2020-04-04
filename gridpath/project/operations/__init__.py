@@ -395,7 +395,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     )
 
     c2 = conn.cursor()
-    variable_om = c2.excecute(
+    variable_om = c2.execute(
         """
         SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
@@ -409,7 +409,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         inputs_project_variable_om_curves
         USING(project, variable_om_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
-        AND variable_om_scenario_id is not Null
+        AND variable_om_curves_scenario_id is not Null
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                    "gen_commit_bin",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
@@ -456,7 +456,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "variable_om_curves.tab"),
               "w", newline="") as variable_om_tab_file:
-        writer = csv.writer(heat_rate_tab_file, delimiter="\t",
+        writer = csv.writer(variable_om_tab_file, delimiter="\t",
                             lineterminator="\n")
 
         writer.writerow(["project", "load_point_fraction",

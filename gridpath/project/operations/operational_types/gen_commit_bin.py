@@ -2111,6 +2111,8 @@ def get_module_specific_inputs_from_database(
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
+    return startup_chars
+
 
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
@@ -2125,7 +2127,7 @@ def write_module_specific_model_inputs(
     :param conn: database connection
     :return:
     """
-    startup_chars, vom = get_module_specific_inputs_from_database(
+    startup_chars = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # If startup_chars.tab file already exists, append rows to it
@@ -2153,21 +2155,6 @@ def write_module_specific_model_inputs(
             for row in startup_chars:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
-
-    vom_file = os.path.join(inputs_directory, "variable_om_curves.tab")
-    file_exists = os.path.isfile(vom_file)
-    write_mode = "a" if file_exists else "w"
-    with open(vom_file, write_mode) as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-        # Write header first if file does not exist
-        if not file_exists:
-            writer.writerow(["project",
-                             "load_point_fraction",
-                             "average_variable_om_cost_per_mwh",
-                             ])
-        for row in vom:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
 
 
 # Validation

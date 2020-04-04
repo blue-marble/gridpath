@@ -291,7 +291,7 @@ def update_project_vom_curves(
     :param io:
     :param c:
     :param subs_data: list of tuples with (project,
-        heat_rate_curve_scenario_id, name, description) for each
+        variable_om_curve_scenario_id, name, description) for each
         project-subscenario
     :param proj_vom_chars: list of tuples with (project,
         variable_om_curves_scenario_id, load_point_fraction,
