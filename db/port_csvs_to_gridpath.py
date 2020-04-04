@@ -357,6 +357,25 @@ def load_csv_data(conn, csv_path, quiet):
             conn, c2, csv_subscenario_input, csv_data_input
         )
 
+    #### LOAD PROJECT VARIALE OM DATA ####
+
+    ## PROJECT VARIABLE OM ##
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'project_variable_om_curves', 'include'
+    ].iloc[0] == 1:
+        data_folder_path = os.path.join(
+            folder_path,
+            csv_data_master.loc[
+                csv_data_master['table'] == 'project_variable_om_curves',
+                'path'
+            ].iloc[0]
+        )
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(data_folder_path, quiet)
+        load_project_operational_chars.load_project_vom_curves(
+            conn, c2, csv_subscenario_input, csv_data_input
+        )
+
     #### LOAD PROJECT STARTUP CHARS DATA ####
 
     ## PROJECT STARTUP CHARS ##

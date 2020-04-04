@@ -281,6 +281,42 @@ def update_project_hr_curves(
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=proj_hr_chars)
 
 
+def update_project_vom_curves(
+        io, c,
+        subs_data,
+        proj_vom_chars
+):
+    """
+
+    :param io:
+    :param c:
+    :param subs_data: list of tuples with (project,
+        heat_rate_curve_scenario_id, name, description) for each
+        project-subscenario
+    :param proj_vom_chars: list of tuples with (project,
+        variable_om_curves_scenario_id, load_point_fraction,
+        average_variable_om_cost_per_mwh)
+    :return:
+    """
+    # Subscenarios
+    subs_sql = """
+        INSERT OR IGNORE INTO subscenarios_project_variable_om_curves
+        (project, variable_om_curves_scenario_id, name, description)
+        VALUES (?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+
+    # Insert data
+    inputs_sql = """
+        INSERT OR IGNORE INTO inputs_project_variable_om_curves
+        (project, variable_om_curves_scenario_id, load_point_fraction, 
+        average_variable_om_cost_per_mwh)
+        VALUES (?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql,
+                          data=proj_vom_chars)
+
+
 def update_project_startup_chars(
         io, c,
         subscenario_data,
