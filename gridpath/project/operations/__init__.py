@@ -228,7 +228,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             load_points = hr_slice["load_point_fraction"].values
             heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
-            slopes, intercepts = calculate_heat_rate_slope_intercept(
+            slopes, intercepts = calculate_slope_intercept(
                 project, load_points, heat_rates
             )
 
@@ -265,7 +265,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         load_points = vom_slice["load_point_fraction"].values
         vom = vom_slice["average_variable_om_cost_per_mwh"].values
 
-        slopes, intercepts = calculate_heat_rate_slope_intercept(
+        slopes, intercepts = calculate_slope_intercept(
             project, load_points, vom
         )
 
@@ -279,15 +279,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["vom_intercept_cost_per_mw_hr"] = intercept_dict
 
 
-def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
+def calculate_slope_intercept(project, load_points, heat_rates):
     """
     Calculates slope and intercept for a set of load points and corresponding
-    average heat rates. Note that the intercept will be normalized to the
+    average heat rates or variable O&M rates.
+    Note that the intercept will be normalized to the
     operational capacity (Pmax) and the timepoint duration.
     :param project: the project name
     :param load_points: NumPy array with the loading points in fraction of Pmax
     :param heat_rates: NumPy array with the corresponding *average* heat rates
-    in MMBtu per MWh
+    in MMBtu per MWh or variable O&M in cost/MWh
     :return: (slope_dict, intercept_dict): Tuple with dictionary containing
     resp. the slope and intercepts, with (project, segement_ID) as the key.
     """
@@ -330,24 +331,26 @@ def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
         if np.any(incr_loads <= 0):
             raise ValueError(
                 """
-                Load points in heat rate curve should be strictly
-                increasing. Check heat rate curve inputs for project '{}'.
+                Load points in curve should be strictly
+                increasing. Check curve inputs for project '{}'.
                 """.format(project)
             )
         if np.any(incr_fuel_burn <= 0):
             raise ValueError(
                 """
-                Total fuel burn should be strictly increasing between
-                load points. Check heat rate curve inputs for project '{}'.
+                Total fuel burn or variable O&M cost should be strictly 
+                increasing between load points. Check heat rate curve inputs
+                for project '{}'.
                 """.format(project)
             )
         if np.any(np.diff(slopes) <= 0):
             raise ValueError(
                 """
-                The fuel burn as a function of power output should be
-                a convex function, i.e. the incremental heat rate should
-                be positive and strictly increasing. Check heat rate
-                curve inputs for project '{}'.
+                The fuel burn or variable O&M cost as a function of power 
+                output should be a convex function, i.e. the incremental 
+                heat rate or variable O&M rate should
+                be positive and strictly increasing. Check curve inputs for 
+                project '{}'.
                 """.format(project)
             )
 
@@ -418,7 +421,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
-    heat_rate_curves.tab files
+    heat_rate_curves.tab and variable_om_curves.tab files
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -451,6 +454,17 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         for row in heat_rates:
             writer.writerow(row)
 
+    with open(os.path.join(inputs_directory, "variable_om_curves.tab"),
+              "w", newline="") as variable_om_tab_file:
+        writer = csv.writer(heat_rate_tab_file, delimiter="\t",
+                            lineterminator="\n")
+
+        writer.writerow(["project", "load_point_fraction",
+                         "average_variable_om_cost_per_mwh"])
+
+        for row in variable_om:
+            writer.writerow(row)
+
 
 # Validation
 ###############################################################################
@@ -468,7 +482,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Get the project input data
-    heat_rates = get_inputs_from_database(
+    heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
@@ -476,16 +490,25 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
+    vom_df = pd.DataFrame(
+        data=variable_om.fetchall(),
+        columns=[s[0] for s in variable_om.description]
+    )
 
-    # Check data types heat_rates:
+    # Check data types heat_rates and variable_om:
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     sub_hr_df = hr_df[hr_curve_mask][
         ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
     ]
+    vom_curve_mask = pd.notna(hr_df["variable_om_curves_scenario_id"])
+    sub_vom_df = vom_df[vom_curve_mask][
+        ["project", "load_point_fraction", "average_variable_om_cost_per_mwh"]
+    ]
 
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_portfolios", "inputs_project_operational_chars",
-               "inputs_project_heat_rate_curves"]
+               "inputs_project_heat_rate_curves",
+               "inputs_project_variable_om_curves"]
     )
     dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
     for error in dtype_errors:
@@ -496,6 +519,20 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
+             "Invalid data type",
+             error
+             )
+        )
+    dtype_errors, error_columns = check_dtypes(sub_vom_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
              "High",
              "Invalid data type",
              error
@@ -515,6 +552,25 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
+             "Invalid numeric sign",
+             error
+             )
+        )
+
+    # Check valid numeric columns in variable OM are non-negative
+    numeric_columns = [c for c in sub_vom_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    sign_errors = check_column_sign_positive(sub_vom_df, valid_numeric_columns)
+    for error in sign_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
              "High",
              "Invalid numeric sign",
              error
@@ -552,6 +608,23 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              "inputs_project_heat_rate_curves",
              "High",
              "Invalid/Missing heat rate curves inputs",
+             error
+             )
+        )
+
+    # Check that specified vom scenarios actually have inputs in the vom table
+    # and check that specified vom curves inputs are valid:
+    validation_errors = validate_vom_curves(vom_df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
+             "High",
+             "Invalid/Missing variable O&M curves inputs",
              error
              )
         )
@@ -661,3 +734,68 @@ def validate_heat_rate_curves(hr_df):
 
     return results
 
+
+def validate_vom_curves(vom_df):
+    """
+    1. Check that specified variable O&M scenarios actually have inputs in the
+       variable O&M curves table
+    2. Check that specified variable O&M curves inputs are valid:
+        - strictly increasing load points
+        - increasing total variable O&M cost
+        - convex variable O&M curve
+    :param vom_df:
+    :return:
+    """
+    results = []
+
+    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
+    load_point_mask = pd.notna(vom_df["load_point_fraction"])
+
+    # Check for missing inputs in heat rates curves table
+    invalids = vom_curve_mask & ~load_point_mask
+    if invalids.any():
+        bad_projects = vom_df["project"][invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Expected at least one load point"
+            .format(print_bad_projects)
+        )
+
+    # Check that each project has convex variable O&M rates etc.
+    for project in pd.unique(vom_df["project"][load_point_mask]):
+        # read in the power setpoints and average variable O&M
+        vom_slice = vom_df[vom_df["project"] == project]
+        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
+        load_points = vom_slice["load_point_fraction"].values
+        vom = vom_slice["average_variable_om_cost_per_mwh"].values
+
+        if len(load_points) > 1:
+            incr_loads = np.diff(load_points)
+
+            if np.any(incr_loads == 0):
+                # note: primary key should already prohibit this
+                results.append(
+                    "Project(s) '{}': load points can not be identical"
+                    .format(project)
+                )
+
+            else:
+                vom_cost = load_points * vom
+                incr_vom_cost = np.diff(vom_cost)
+                slopes = incr_vom_cost / incr_loads
+
+                if np.any(incr_vom_cost <= 0):
+                    results.append(
+                        "Project(s) '{}': Total variable O&M cost should "
+                        "increase with increasing load"
+                        .format(project)
+                    )
+                if np.any(np.diff(slopes) <= 0):
+                    results.append(
+                        "Project(s) '{}': Variable O&M cost should be convex, "
+                        "i.e. variable O&M rate should increase with "
+                        "increasing load"
+                        .format(project)
+                    )
+
+    return results
