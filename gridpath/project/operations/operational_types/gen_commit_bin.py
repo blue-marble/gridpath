@@ -1652,7 +1652,7 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
 def variable_om_cost_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitBin_Variable_OM_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Enforced Over**: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
 
     Variable O&M cost is set by piecewise linear representation of the
     input/output curve (variable O&M cost vs. loading level).
