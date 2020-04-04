@@ -233,6 +233,12 @@ def fuel_burn_rule(mod, p, tmp, error_message):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.
