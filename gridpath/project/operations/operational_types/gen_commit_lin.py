@@ -1564,7 +1564,7 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
 def fuel_burn_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitLin_Fuel_Burn_Constraint
-    **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS
+    **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG
 
     Fuel burn is set by piecewise linear representation of input/output
     curve.
