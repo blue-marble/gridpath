@@ -1,2 +1,2 @@
 lf_reserves_down_ba,allow_violation,violation_penalty_per_mw,reserve_to_energy_adjustment
-CAISO,1,10000,
+CAISO,1,10000,0.2
