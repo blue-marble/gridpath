@@ -1,0 +1,17 @@
+transmission_simultaneous_flow_limit,transmission_line,simultaneous_flow_direction
+NW_to_CA,NW_to_CAISO,positive
+NW_to_CA,NW_to_LDWP,positive
+NW_to_CA,NW_to_BANC,positive
+CAISO_Import_Limit,SW_to_CAISO,positive
+CAISO_Import_Limit,NW_to_CAISO,positive
+CAISO_Import_Limit,LDWP_to_CAISO,positive
+CAISO_Import_Limit,IID_to_CAISO,positive
+CAISO_Import_Limit,BANC_to_CAISO,positive
+CA_to_NW,NW_to_CAISO,negative
+CA_to_NW,NW_to_LDWP,negative
+CA_to_NW,NW_to_BANC,negative
+CAISO_Export_Limit,SW_to_CAISO,negative
+CAISO_Export_Limit,NW_to_CAISO,negative
+CAISO_Export_Limit,LDWP_to_CAISO,negative
+CAISO_Export_Limit,IID_to_CAISO,negative
+CAISO_Export_Limit,BANC_to_CAISO,negative

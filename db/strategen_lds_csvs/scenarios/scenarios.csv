@@ -38,8 +38,8 @@ transmission_operational_chars_scenario_id,1,1,1,1,1
 transmission_hurdle_rate_scenario_id,,,1,1,1
 transmission_new_cost_scenario_id,,,,,
 transmission_carbon_cap_zone_scenario_id,,1,1,1,1
-transmission_simultaneous_flow_limit_scenario_id,,,,,
-transmission_simultaneous_flow_limit_line_group_scenario_id,,,,,
+transmission_simultaneous_flow_limit_scenario_id,,,,,1
+transmission_simultaneous_flow_limit_line_group_scenario_id,,,,,1
 lf_reserves_up_scenario_id,,,,,1
 lf_reserves_up_ba_scenario_id,,,,,1
 project_lf_reserves_up_ba_scenario_id,,,,,1
