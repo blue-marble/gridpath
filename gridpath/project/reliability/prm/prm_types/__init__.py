@@ -136,15 +136,19 @@ def get_required_prm_type_modules(subscenarios, c):
         p[0] for p in c.execute(
             """SELECT DISTINCT(prm_type)
             FROM 
+            (SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+            LEFT OUTER JOIN 
             (SELECT project
             FROM inputs_project_prm_zones
-            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
+            WHERE project_prm_zone_scenario_id = {}) as prm_proj_tbl
             LEFT OUTER JOIN 
             (SELECT project, prm_type
             FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}
-            AND prm_type IS NOT NULL) as prm_type_tbl
-            USING (project);""".format(
+            WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
+            USING (project)
+            WHERE prm_type IS NOT NULL;""".format(
+                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
             )
