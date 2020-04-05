@@ -682,8 +682,7 @@ def get_module_specific_inputs_from_database(
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {})
         USING (period)
-        WHERE project_specified_capacity_scenario_id = {}
-        AND specified_capacity_mw > 0) as existing
+        WHERE project_specified_capacity_scenario_id = {}) as existing
         UNION
         SELECT project, period
         FROM inputs_project_new_cost
