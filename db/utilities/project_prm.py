@@ -5,10 +5,11 @@
 ELCC characteristics of projects
 """
 
-from db.common_functions import spin_on_database_lock
-
-
+import os.path
+import pandas as pd
 import warnings
+
+from db.common_functions import spin_on_database_lock
 
 
 def project_elcc_chars(
@@ -250,67 +251,106 @@ def deliverability_groups(
 
 
 def elcc_surface(
-    io, c,
-    elcc_surface_scenario_id,
-    scenario_name,
-    scenario_description,
-    zone_period_facet_intercepts,
-    proj_period_facet_coeff
+    conn,
+    subscenario_data,
+    zone_data,
+    projects_data
 ):
     """
 
-    :param io:
-    :param c:
-    :param elcc_surface_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zone_period_facet_intercepts:
-    :param proj_period_facet_coeff:
-    :return:
+    :param conn:
+    :param subscenario_data: list of tuples
+        (elcc_surface_scenario_id, name, description)
+    :param zone_data: list of tuples
+        (elcc_surface_scenario_id, prm_zone, period, facet,
+        elcc_surface_intercept)
+    :param projects_data: list of tuples
+        (elcc_surface_scenario_id, project, period, facet,
+        elcc_surface_coefficient)
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(elcc_surface_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_system_elcc_surface
         (elcc_surface_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # ELCC surface intercepts (by PRM zone)
-    ints_data = []
-    for zone in list(zone_period_facet_intercepts.keys()):
-        for period in list(zone_period_facet_intercepts[zone].keys()):
-            for facet in list(
-                    zone_period_facet_intercepts[zone][period].keys()
-            ):
-                ints_data.append(
-                    (elcc_surface_scenario_id,
-                     zone, period, facet,
-                     zone_period_facet_intercepts[zone][period][facet])
-                )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_system_prm_zone_elcc_surface
         (elcc_surface_scenario_id, prm_zone,
          period, facet, elcc_surface_intercept)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=ints_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=zone_data)
 
     # ELCC coefficients (by project)
-    coef_data = []
-    for proj in list(proj_period_facet_coeff.keys()):
-        for period in list(proj_period_facet_coeff[proj].keys()):
-            for facet in list(proj_period_facet_coeff[proj][period].keys()):
-                coef_data.append(
-                    (elcc_surface_scenario_id, proj, period, facet,
-                     proj_period_facet_coeff[proj][period][facet])
-                )
     coef_sql = """
         INSERT OR IGNORE INTO inputs_project_elcc_surface 
         (elcc_surface_scenario_id, 
         project, period, facet, elcc_surface_coefficient)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=coef_sql, data=coef_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=coef_sql,
+                          data=projects_data)
+
+
+def elcc_surface_load_from_csvs(conn, subscenario_directory):
+    """
+    :param conn:
+    :param subscenario_directory: string, path to the directory containing
+        the data for this elcc_surface_scenario_id
+
+    Each ELCC surface subscenario is a directory, with the subscenario ID,
+    underscore, and the subscenario name as the name of the directory (already
+    passed here), so we get this to import from the subscenario_directory path.
+
+    Within each subscenario directory there are three required files:
+    description.txt, zone.csv, and projects.csv.
+    """
+
+    # Required input files
+    description_file = os.path.join(subscenario_directory, "description.txt")
+    zone_file = os.path.join(subscenario_directory, "zone.csv")
+    projects_file = os.path.join(subscenario_directory, "projects.csv")
+
+    # TODO: this is the same as for the temporal scenarios, so could be
+    #  factored out
+    # Get subscenario ID, name, and description
+    # The subscenario directory must start with an integer for the
+    # subscenario_id followed by "_" and then the subscenario name
+    # The subscenario description must be in the description.txt file under
+    # the subscenario directory
+    directory_basename = os.path.basename(subscenario_directory)
+    subscenario_id = int(directory_basename.split("_", 1)[0])
+    subscenario_name = directory_basename.split("_", 1)[1]
+    with open(description_file, "r") as f:
+        subscenario_description = f.read()
+    subscenario_data = [
+        (subscenario_id, subscenario_name, subscenario_description)
+    ]
+
+    # Get the ELCC surface intercepts (by zone)
+    zone_df = pd.read_csv(zone_file, delimiter=",")
+    zone_tuples_list = [
+        (subscenario_id, ) + tuple(x) for x in zone_df.to_records(index=False)
+    ]
+
+    # Get the ELCC surface coefficients (by project)
+    projects_df = pd.read_csv(projects_file, delimiter=",")
+    projects_tuples_list = [
+        (subscenario_id, ) +
+        tuple(x) for x in projects_df.to_records(index=False)
+    ]
+
+    elcc_surface(
+        conn=conn,
+        subscenario_data=subscenario_data,
+        zone_data=zone_tuples_list,
+        projects_data=projects_tuples_list
+    )

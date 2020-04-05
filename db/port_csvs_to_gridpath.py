@@ -45,7 +45,8 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
-from db.utilities import temporal, simultaneous_flows, simultaneous_flow_groups
+from db.utilities import temporal, simultaneous_flows, \
+    simultaneous_flow_groups, project_prm
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
@@ -550,6 +551,40 @@ def load_csv_data(conn, csv_path, quiet):
         conn, c2, sflg_subscenario, sflg_inputs
     )
 
+    # TODO: organize all PRM-related data in one place
+    # TODO: refactor this to consolidate with temporal inputs loading and
+    #  any other subscenarios that are based on a directory
+    ## LOAD ELCC SURFACE DATA ##
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'system_prm_zone_elcc_surface',
+        'include'
+    ].iloc[0] == 1:
+        elcc_surface_directory = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'system_prm_zone_elcc_surface',
+            'path'
+        ].iloc[0])
+        # Get list of subdirectories (which are the names of our subscenarios)
+        # Each temporal subscenario is a directory, with the scenario ID,
+        # underscore, and the scenario name as the name of the directory (
+        # already passed here).
+        elcc_surface_subscenarios = \
+            sorted(next(os.walk(elcc_surface_directory))[1])
+        for subscenario in elcc_surface_subscenarios:
+            if not quiet:
+                print(subscenario)
+            if not subscenario.split("_")[0].isdigit():
+                warnings.warn(
+                    "ELCC surface subfolder `{}` does not start with an "
+                    "integer to indicate the subscenario ID and CSV import "
+                    "script will fail. Please follow the required folder "
+                    "naming structure <subscenarioID_subscenarioName>, e.g. "
+                    "'1_default'.".format(subscenario)
+                )
+            subscenario_directory = os.path.join(
+                elcc_surface_directory, subscenario)
+            project_prm.elcc_surface_load_from_csvs(
+                conn=conn, subscenario_directory=subscenario_directory
+            )
 
     #### LOAD SCENARIOS DATA ####
     if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:
