@@ -45,7 +45,8 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
-from db.utilities import temporal
+from db.utilities import temporal, simultaneous_flows, simultaneous_flow_groups
+
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
     load_project_new_potentials, load_project_local_capacity_chars, \
@@ -528,6 +529,28 @@ def load_csv_data(conn, csv_path, quiet):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
         load_transmission_hurdle_rates.load_transmission_hurdle_rates(conn, c2, csv_subscenario_input, csv_data_input)
 
+    ## LOAD TRANSMISSION SIMULTANEOUS FLOW LIMITS ##
+    sfl_subscenario, sfl_inputs = read_data_for_insertion_into_db(
+        csv_data_master=csv_data_master,
+        folder_path=folder_path,
+        quiet=quiet,
+        table="transmission_simultaneous_flow_limits"
+    )
+    simultaneous_flows.insert_into_database(
+        conn, c2, sfl_subscenario, sfl_inputs
+    )
+
+    sflg_subscenario, sflg_inputs = read_data_for_insertion_into_db(
+        csv_data_master=csv_data_master,
+        folder_path=folder_path,
+        quiet=quiet,
+        table="transmission_simultaneous_flow_limit_line_groups"
+    )
+    simultaneous_flow_groups.insert_into_database(
+        conn, c2, sflg_subscenario, sflg_inputs
+    )
+
+
     #### LOAD SCENARIOS DATA ####
     if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:
         print("ERROR: scenarios table is required")
@@ -569,6 +592,39 @@ def load_csv_data(conn, csv_path, quiet):
     #### Code to debug
     # subscenario_input = csv_subscenario_input
     # data_input = csv_data_input
+
+
+def read_data_for_insertion_into_db(
+        csv_data_master, folder_path, quiet, table
+):
+    """
+    :param csv_data_master:
+    :param folder_path:
+    :param quiet:
+    :param table:
+    :return:
+
+    Read data and convert to tuples for insertion into database.
+    """
+    if csv_data_master.loc[
+        csv_data_master['table'] == table,
+        'include'
+    ].iloc[0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == table,
+            'path'
+        ].iloc[0])
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_data(data_folder_path, quiet)
+        subscenario_tuples = \
+            [tuple(x) for x in csv_subscenario_input.to_records(index=False)]
+        inputs_tuples = \
+            [tuple(x) for x in csv_data_input.to_records(index=False)]
+
+        return subscenario_tuples, inputs_tuples
+    # Return empty lists if we're not including this table
+    else:
+        return [], []
 
 
 def main(args=None):
