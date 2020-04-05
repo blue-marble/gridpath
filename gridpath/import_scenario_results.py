@@ -15,6 +15,7 @@ from __future__ import print_function
 from builtins import str
 from argparse import ArgumentParser
 import os.path
+import pandas as pd
 import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
@@ -141,11 +142,13 @@ def main(args=None):
     )
 
     # Check that the saved scenario_id matches
-    with open(os.path.join(scenario_directory, "scenario_id.txt")) as \
-            scenario_id_file:
-        scenario_id_saved = int(scenario_id_file.read())
-        if scenario_id_saved != scenario_id:
-            raise AssertionError("ERROR: saved scenario_id does not match")
+    sc_df = pd.read_csv(
+        os.path.join(scenario_directory, "scenario_description.csv"),
+        header=None, index_col=0
+    )
+    scenario_id_saved = int(sc_df.loc["scenario_id", 1])
+    if scenario_id_saved != scenario_id:
+        raise AssertionError("ERROR: saved scenario_id does not match")
 
     # Go through modules
     modules_to_use = determine_modules(scenario_directory=scenario_directory)
