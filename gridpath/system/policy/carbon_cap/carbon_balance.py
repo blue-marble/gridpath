@@ -56,7 +56,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_Carbon_Emissions_from_All_Sources_Expression[z, p] \
-            - mod.Carbon_Cap_Overage_MMt_Expression[z, p] \
+            - mod.Carbon_Cap_Overage_MMt_Expression[z, p] * 10**6 \
             <= mod.carbon_cap_target_mmt[z, p] * 10**6  # convert to tons
 
     m.Carbon_Cap_Constraint = Constraint(
