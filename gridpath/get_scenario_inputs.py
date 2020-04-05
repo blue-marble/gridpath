@@ -108,8 +108,7 @@ def delete_prior_aux_files(scenario_directory):
     :return:
     """
     prior_aux_files = [
-        "features.csv", "scenario_description.csv", "scenario_id.txt",
-        "solver_options.csv"
+        "features.csv", "scenario_description.csv", "solver_options.csv"
     ]
 
     for f in prior_aux_files:
@@ -189,18 +188,6 @@ def write_features_csv(scenario_directory, feature_list):
 
         for feature in feature_list:
             writer.writerow([feature])
-
-
-def save_scenario_id(scenario_directory, scenario_id):
-    """
-    Save the scenario ID to file
-    :param scenario_directory:
-    :param scenario_id:
-    :return:
-    """
-    with open(os.path.join(scenario_directory, "scenario_id.txt"), "w", newline="") as \
-            scenario_id_file:
-        scenario_id_file.write(str(scenario_id))
 
 
 def write_scenario_description(
