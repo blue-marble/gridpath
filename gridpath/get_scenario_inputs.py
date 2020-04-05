@@ -471,11 +471,6 @@ def main(args=None):
         scenario_directory=scenario_directory,
         feature_list=feature_list
     )
-    # Save the scenario ID to a file
-    save_scenario_id(
-        scenario_directory=scenario_directory,
-        scenario_id=scenario_id
-    )
     # Write full scenario description
     write_scenario_description(
         scenario_directory=scenario_directory,

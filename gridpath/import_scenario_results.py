@@ -144,10 +144,9 @@ def main(args=None):
     # Check that the saved scenario_id matches
     sc_df = pd.read_csv(
         os.path.join(scenario_directory, "scenario_description.csv"),
-        index_col=0
+        header=None, index_col=0
     )
-    print(sc_df)
-    scenario_id_saved = int(sc_df.loc["scenario_id", 0])
+    scenario_id_saved = int(sc_df.loc["scenario_id", 1])
     if scenario_id_saved != scenario_id:
         raise AssertionError("ERROR: saved scenario_id does not match")
 
