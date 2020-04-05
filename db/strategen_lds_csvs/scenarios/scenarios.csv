@@ -2,7 +2,7 @@ optional_feature_or_subscenarios,RESOLVE_PD_basic,RESOLVE_PD_w_carbon_cap,RESOLV
 of_multi_stage,,,,,
 of_transmission,1,1,1,1,1
 of_transmission_hurdle_rates,,,1,1,1
-of_simultaneous_flow_limits,,,,,
+of_simultaneous_flow_limits,,,,,1
 of_lf_reserves_up,,,,,1
 of_lf_reserves_down,,,,,1
 of_regulation_up,,,,,1
