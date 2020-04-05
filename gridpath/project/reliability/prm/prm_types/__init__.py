@@ -120,15 +120,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
-def get_required_prm_type_modules(subscenarios, c):
+def get_required_prm_type_modules(
+    c, project_portfolio_scenario_id, project_prm_zone_scenario_id,
+    project_elcc_chars_scenario_id
+):
     """
+    :param c:
+    :param project_portfolio_scenario_id:
+    :param project_prm_zone_scenario_id:
+    :param project_elcc_chars_scenario_id:
+    :return:
+
     Get the required prm  type submodules based on the user-specified database
     inputs.
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param c: database cursor
-    :return:
     """
-
     # Required modules are the unique set of generator PRM types in
     # the scenario's portfolio
     # This list will be used to know which PRM type modules to load
@@ -148,9 +153,9 @@ def get_required_prm_type_modules(subscenarios, c):
             WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
             USING (project)
             WHERE prm_type IS NOT NULL;""".format(
-                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+                project_portfolio_scenario_id,
+                project_prm_zone_scenario_id,
+                project_elcc_chars_scenario_id
             )
         ).fetchall()
     ]
@@ -170,7 +175,14 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Load in the required prm type modules
     c = conn.cursor()
-    required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
+    required_prm_type_modules = get_required_prm_type_modules(
+        c=c,
+        project_portfolio_scenario_id
+        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+        project_elcc_chars_scenario_id
+        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+    )
     imported_prm_modules = \
         load_prm_type_modules(required_prm_type_modules)
 
@@ -197,7 +209,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     # Load in the required prm type modules
-    required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
+    required_prm_type_modules = get_required_prm_type_modules(
+        c=c,
+        project_portfolio_scenario_id
+        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+        project_elcc_chars_scenario_id
+        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+    )
     imported_prm_modules = \
         load_prm_type_modules(required_prm_type_modules)
 
@@ -225,8 +244,10 @@ def import_results_into_database(
     :return:
     """
 
-    (project_prm_zone_scenario_id, project_elcc_chars_scenario_id) = c.execute(
-        """SELECT project_prm_zone_scenario_id, project_elcc_chars_scenario_id
+    (project_portfolio_scenario_id, project_prm_zone_scenario_id,
+     project_elcc_chars_scenario_id) = c.execute("""
+        SELECT project_portfolio_scenario_id, project_prm_zone_scenario_id, 
+        project_elcc_chars_scenario_id
         FROM scenarios
         WHERE scenario_id = {}
         """.format(scenario_id)
@@ -235,24 +256,12 @@ def import_results_into_database(
     # Required modules are the unique set of generator PRM types in
     # the scenario's portfolio
     # This list will be used to know which PRM type modules to load
-    required_prm_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT(prm_type)
-            FROM 
-            (SELECT project
-            FROM inputs_project_prm_zones
-            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
-            LEFT OUTER JOIN 
-            (SELECT project, prm_type
-            FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}
-            AND prm_type IS NOT NULL) as prm_type_tbl
-            USING (project);""".format(
-                project_prm_zone_scenario_id,
-                project_elcc_chars_scenario_id
-            )
-        ).fetchall()
-    ]
+    required_prm_type_modules = get_required_prm_type_modules(
+        c=c,
+        project_portfolio_scenario_id=project_portfolio_scenario_id,
+        project_prm_zone_scenario_id=project_prm_zone_scenario_id,
+        project_elcc_chars_scenario_id=project_elcc_chars_scenario_id
+    )
 
     # Import module-specific results
     # Load in the required operational modules
@@ -282,24 +291,14 @@ def process_results(db, c, subscenarios, quiet):
     # Required modules are the unique set of generator PRM types in
     # the scenario's portfolio
     # This list will be used to know which PRM type modules to load
-    required_prm_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT(prm_type)
-            FROM 
-            (SELECT project
-            FROM inputs_project_prm_zones
-            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
-            LEFT OUTER JOIN 
-            (SELECT project, prm_type
-            FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}
-            AND prm_type IS NOT NULL) as prm_type_tbl
-            USING (project);""".format(
-                subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
-            )
-        ).fetchall()
-    ]
+    required_prm_type_modules = get_required_prm_type_modules(
+        c=c,
+        project_portfolio_scenario_id
+        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+        project_elcc_chars_scenario_id
+        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+    )
 
     # Import module-specific results
     # Load in the required operational modules
