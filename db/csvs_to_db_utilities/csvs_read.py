@@ -77,8 +77,13 @@ def csv_read_data(folder_path, quiet):
         # Add the subscenario ID to the dataframe
         subscenario_data_df["id"] = subscenario_id
 
+        # Make the "id" the first column
+        cols = subscenario_data_df.columns.tolist()
+        cols = cols[-1:] + cols[:-1]
+        subscenario_data_df = subscenario_data_df[cols]
+
         # Append data to the all-scenarios dataframe
-        data_df = data_df.append(subscenario_data_df, sort=True)
+        data_df = data_df.append(subscenario_data_df, sort=False)
 
         # Increment the row for the subscenario_df
         row_number += 1
