@@ -55,13 +55,12 @@ carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,0,1,policy/car
 carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,0,1,policy/carbon_cap/project_zones,
 carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,0,1,policy/carbon_cap/target,
 track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,0,1,policy/carbon_cap/tx_zones,
-prm,prm_zone_scenario_id,geography_prm_zones,0,0,,
-prm,project__prm_zone_scenario_id,project_prm_zones,0,0,,
-prm,project_elcc_chars_scenario_id,project_elcc_chars,0,0,,
+prm,prm_zone_scenario_id,geography_prm_zones,0,1,reliability/prm/zones,
+prm,project__prm_zone_scenario_id,project_prm_zones,0,1,reliability/prm/project_zones,
+prm,project_elcc_chars_scenario_id,project_elcc_chars,0,1,reliability/prm/project_chars,
 prm,prm_energy_only_scenario_id,project_prm_energy_only,0,0,,not implemented yet in csvs import
-prm,prm_requirement_scenario_id,system_prm_requirement,0,0,,
-prm,elcc_surface_scenario_id,system_prm_zone_elcc_surface,0,0,,not implemented yet in csvs import
-elcc_surface,,project_elcc_surface,0,0,,not implemented yet in csvs import
+prm,prm_requirement_scenario_id,system_prm_requirement,0,1,reliability/prm/req,
+elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,0,1,reliability/prm/elcc_surface,Tables include project_elcc_surface and system_prm_zone_elcc_surface
 local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,0,0,,
 local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,0,0,,
 local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,0,0,,
