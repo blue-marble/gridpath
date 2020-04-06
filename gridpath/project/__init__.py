@@ -441,7 +441,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         """SELECT capacity_type, operational_type 
         FROM mod_capacity_and_operational_type_invalid_combos"""
     ).fetchall()
-    validation_errors = validate_op_cap_combos(df, invalid_combos)
+    combo_names = ("capacity_type", "operational_type")
+    validation_errors = validate_combos(df, invalid_combos, combo_names)
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -452,6 +453,50 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              "inputs_project_operational_chars, inputs_project_portfolios",
              "High",
              "Invalid combination of capacity type and operational type",
+             error
+             )
+        )
+
+    # Check that we're not combining incompatible avl-types and op-types
+    invalid_combos = c.execute(
+        """SELECT availability_type, operational_type 
+        FROM mod_availability_and_operational_type_invalid_combos"""
+    ).fetchall()
+    combo_names = ("availability_type", "operational_type")
+    validation_errors = validate_combos(df, invalid_combos, combo_names)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS, PROJECT_AVAILABILITY",
+             "inputs_project_operational_chars, "
+             "inputs_project_availability_types",
+             "High",
+             "Invalid combination of availability type and operational type",
+             error
+             )
+        )
+
+    # Check that we're not combining incompatible avl-types and cap-types
+    invalid_combos = c.execute(
+        """SELECT availability_type, capacity_type 
+        FROM mod_availability_and_capacity_type_invalid_combos"""
+    ).fetchall()
+    combo_names = ("availability_type", "capacity_type")
+    validation_errors = validate_combos(df, invalid_combos, combo_names)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_PORTFOLIO, PROJECT_AVAILABILITY",
+             "inputs_project_portfolios, "
+             "inputs_project_availability_types",
+             "High",
+             "Invalid combination of availability type and capacity type",
              error
              )
         )
@@ -523,17 +568,18 @@ def validate_min_stable_level(df):
     return results
 
 
-def validate_op_cap_combos(df, invalid_combos):
+def validate_combos(df, invalid_combos, combo_names):
     """
-    Check that there's no mixing of incompatible capacity and operational types
+    Check that there's no mixing of incompatible types
     :param df:
-    :param invalid_combos:
+    :param invalid_combos: list of tuples with the invalid combos
+    :param combo_names: tuple with the 2 column headers to check
     :return:
     """
     results = []
     for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
+        bad_combos = ((df[combo_names[0]] == combo[0]) &
+                      (df[combo_names[1]] == combo[1]))
         if bad_combos.any():
             bad_projects = df['project'][bad_combos].values
             print_bad_projects = ", ".join(bad_projects)
@@ -543,3 +589,4 @@ def validate_op_cap_combos(df, invalid_combos):
             )
 
     return results
+

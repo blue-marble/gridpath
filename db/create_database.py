@@ -111,6 +111,8 @@ def load_data(db, omit_data):
         load_mod_tx_operational_types(db=db, c=c)
         load_mod_prm_types(db=db, c=c)
         load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
+        load_mod_availability_and_operational_type_invalid_combos(db=db, c=c)
+        load_mod_availability_and_capacity_type_invalid_combos(db=db, c=c)
         load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db=db, c=c)
         load_mod_horizon_boundary_types(db=db, c=c)
         load_mod_run_status_types(db=db, c=c)
@@ -210,6 +212,30 @@ def load_mod_capacity_and_operational_type_invalid_combos(db, c):
     load_aux_data(conn=db, cursor=c, 
                   filename=
                   "mod_capacity_and_operational_type_invalid_combos.csv", 
+                  sql=sql)
+
+
+def load_mod_availability_and_operational_type_invalid_combos(db, c):
+    sql = """
+        INSERT INTO 
+        mod_availability_and_operational_type_invalid_combos
+        (availability_type, operational_type)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c,
+                  filename=
+                  "mod_availability_and_operational_type_invalid_combos.csv",
+                  sql=sql)
+
+
+def load_mod_availability_and_capacity_type_invalid_combos(db, c):
+    sql = """
+        INSERT INTO 
+        mod_availability_and_capacity_type_invalid_combos
+        (availability_type, capacity_type)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c,
+                  filename=
+                  "mod_availability_and_capacity_type_invalid_combos.csv",
                   sql=sql)
 
 

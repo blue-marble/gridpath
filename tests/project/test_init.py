@@ -258,6 +258,7 @@ class TestProjectInit(unittest.TestCase):
     def test_project_validations(self):
         cols = ["project", "capacity_type", "operational_type",
                 "min_stable_level"]
+        combo_names = ("capacity_type", "operational_type")
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
@@ -289,9 +290,10 @@ class TestProjectInit(unittest.TestCase):
             self.assertListEqual(expected_list, actual_list)
 
             expected_list = test_cases[test_case]["combo_error"]
-            actual_list = MODULE_BEING_TESTED.validate_op_cap_combos(
+            actual_list = MODULE_BEING_TESTED.validate_combos(
                 df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
+                invalid_combos=test_cases[test_case]["invalid_combos"],
+                combo_names=combo_names
             )
             self.assertListEqual(expected_list, actual_list)
 

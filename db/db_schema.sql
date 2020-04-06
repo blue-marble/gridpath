@@ -80,6 +80,30 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
 
+-- Invalid combinations of availability type and operational type
+DROP TABLE IF EXISTS mod_availability_and_operational_type_invalid_combos;
+CREATE TABLE mod_availability_and_operational_type_invalid_combos (
+availability_type VARCHAR (32),
+operational_type VARCHAR (32),
+PRIMARY KEY (availability_type, operational_type),
+FOREIGN KEY (availability_type) REFERENCES mod_availability_types
+(availability_type),
+FOREIGN KEY (operational_type) REFERENCES mod_operational_types
+(operational_type)
+);
+
+-- Invalid combinations of availability type and capacity type
+DROP TABLE IF EXISTS mod_availability_and_capacity_type_invalid_combos;
+CREATE TABLE mod_availability_and_capacity_type_invalid_combos (
+availability_type VARCHAR (32),
+capacity_type VARCHAR (32),
+PRIMARY KEY (availability_type, capacity_type),
+FOREIGN KEY (availability_type) REFERENCES mod_availability_types
+(availability_type),
+FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types
+(capacity_type)
+);
+
 -- Invalid combinations of tx capacity type and tx operational type
 DROP TABLE IF EXISTS mod_tx_capacity_and_tx_operational_type_invalid_combos;
 CREATE TABLE mod_tx_capacity_and_tx_operational_type_invalid_combos (
