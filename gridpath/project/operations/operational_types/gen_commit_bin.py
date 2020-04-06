@@ -41,7 +41,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Binary, PercentFraction, Expression, value, Reals, PositiveReals
+    Binary, PercentFraction, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
     check_req_prj_columns, write_validation_to_database,\
@@ -292,7 +292,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Fuel burn in MMBTU by this project in each operational timepoint.       |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Variable_OM_Cost`                                 |
+    | | :code:`GenCommitBin_Variable_OM_Cost_By_LL`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
@@ -687,7 +687,7 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.GenCommitBin_Variable_OM_Cost = Var(
+    m.GenCommitBin_Variable_OM_Cost_By_LL = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -1654,8 +1654,9 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     **Constraint Name**: GenCommitBin_Variable_OM_Constraint
     **Enforced Over**: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
 
-    Variable O&M cost is set by piecewise linear representation of the
-    input/output curve (variable O&M cost vs. loading level).
+    Variable O&M cost by loading level is set by piecewise linear
+    representation of the input/output curve (variable O&M cost vs. loading
+    level).
 
     Note: we assume that when projects are derated for availability, the
     input/output curve is derated by the same amount. The implicit
@@ -1663,7 +1664,7 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     are out rather than it being forced to run below minimum stable level
     at very costly operating points.
     """
-    return mod.GenCommitBin_Variable_OM_Cost[g, tmp] \
+    return mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp] \
         >= \
         mod.vom_slope_cost_per_mwh[g, s] \
         * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
@@ -1745,8 +1746,8 @@ def variable_om_cost_rule(mod, g, tmp):
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
-       :code:`GenCommitBin_Variable_OM_Cost` decision variable. If no variable
-       O&M curve inputs are provided, this component will be zero.
+       :code:`GenCommitBin_Variable_OM_Cost_By_LL` decision variable. If no
+       variable O&M curve inputs are provided, this component will be zero.
 
     Most users will only use the first component, which is specified in the
     operational characteristics table.  Only operational types with
@@ -1754,7 +1755,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     return mod.GenCommitBin_Provide_Power_MW[g, tmp] \
         * mod.variable_om_cost_per_mwh[g] \
-        + mod.GenCommitBin_Variable_OM_Cost[g, tmp]
+        + mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp]
 
 
 def startup_cost_rule(mod, g, tmp):

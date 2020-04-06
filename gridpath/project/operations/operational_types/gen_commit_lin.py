@@ -275,7 +275,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Fuel burn in MMBTU by this project in each operational timepoint.       |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Variable_OM_Cost`                                 |
+    | | :code:`GenCommitLin_Variable_OM_Cost_By_LL`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
@@ -670,7 +670,7 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.GenCommitLin_Variable_OM_Cost = Var(
+    m.GenCommitLin_Variable_OM_Cost_By_LL = Var(
         m.GEN_COMMIT_LIN_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -1637,8 +1637,9 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     **Constraint Name**: GenCommitLin_Variable_OM_Constraint
     **Enforced Over**: GEN_COMMIT_LIN_VOM_PRJS_OPR_TMPS_SGMS
 
-    Variable O&M cost is set by piecewise linear representation of the
-    input/output curve (variable O&M cost vs. loading level).
+    Variable O&M cost by loading level is set by piecewise linear
+    representation of the input/output curve (variable O&M cost vs. loading
+    level).
 
     Note: we assume that when projects are derated for availability, the
     input/output curve is derated by the same amount. The implicit
@@ -1646,7 +1647,7 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     are out rather than it being forced to run below minimum stable level
     at very costly operating points.
     """
-    return mod.GenCommitLin_Variable_OM_Cost[g, tmp] \
+    return mod.GenCommitLin_Variable_OM_Cost_By_LL[g, tmp] \
         >= \
         mod.vom_slope_cost_per_mwh[g, s] \
         * mod.GenCommitLin_Provide_Power_MW[g, tmp] \
@@ -1728,8 +1729,8 @@ def variable_om_cost_rule(mod, g, tmp):
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
-       :code:`GenCommitLin_Variable_OM_Cost` decision variable. If no variable
-       O&M curve inputs are provided, this component will be zero.
+       :code:`GenCommitLin_Variable_OM_Cost_By_LL` decision variable. If no
+       variable O&M curve inputs are provided, this component will be zero.
 
     Most users will only use the first component, which is specified in the
     operational characteristics table.  Only operational types with
@@ -1737,7 +1738,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     return mod.GenCommitLin_Provide_Power_MW[g, tmp] \
         * mod.variable_om_cost_per_mwh[g] \
-        + mod.GenCommitLin_Variable_OM_Cost[g, tmp]
+        + mod.GenCommitLin_Variable_OM_Cost_By_LL[g, tmp]
 
 
 def startup_cost_rule(mod, g, tmp):
