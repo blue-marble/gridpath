@@ -205,8 +205,7 @@ def get_module_specific_inputs_from_database(
         (SELECT project, period, specified_capacity_mw,
         specified_capacity_mwh
         FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}
-        AND specified_capacity_mw > 0) as capacity
+        WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
         LEFT OUTER JOIN
         (SELECT project, period,
