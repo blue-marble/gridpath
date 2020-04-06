@@ -466,7 +466,6 @@ def load_module_specific_data(mod, data_portal,
             pass
 
     # Determine subset of project-timepoints in variable profiles file
-    project_timepoints = list()
     cap_factor = dict()
 
     prj_tmp_cf_df = pd.read_csv(
@@ -479,7 +478,6 @@ def load_module_specific_data(mod, data_portal,
                    prj_tmp_cf_df["timepoint"],
                    prj_tmp_cf_df["cap_factor"]):
         if row[0] in projects:
-            project_timepoints.append((row[0], row[1]))
             cap_factor[(row[0], row[1])] = float(row[2])
         # Profile could be for a 'gen_var' project, in which case ignore
         elif row[0] in var_must_take_prjs:
@@ -494,7 +492,6 @@ def load_module_specific_data(mod, data_portal,
             )
 
     # Load data
-    data_portal.data()["GEN_VAR_OPR_TMPS"] = {None: project_timepoints}
     data_portal.data()["gen_var_cap_factor"] = cap_factor
 
 
