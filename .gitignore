@@ -102,6 +102,9 @@ examples/*/*/*/results/*.csv
 # Don't track pass-through inputs directory in multi-stage runs
 examples/*/*/pass_through_inputs/
 
+# Don't track inputs or outputs in the scenarios folder
+scenarios/
+
 # Ignore node_modules in the UI folder
 ui/node_modules
 
