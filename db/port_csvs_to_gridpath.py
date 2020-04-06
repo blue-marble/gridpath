@@ -291,6 +291,18 @@ def load_csv_data(conn, csv_path, quiet):
         load_project_prm.load_project_prm(
             conn, c2, csv_subscenario_input, csv_data_input)
 
+    ## DELIVERABILITY GROUPS ##
+    dg_subscenario, dg_inputs = read_data_for_insertion_into_db(
+        csv_data_master=csv_data_master,
+        folder_path=folder_path,
+        quiet=quiet,
+        table="project_prm_energy_only"
+    )
+
+    project_prm.deliverability_groups(
+        conn, c2, dg_subscenario, dg_inputs
+    )
+
     ## PROJECT LOCAL CAPACITY CHARS ##
     if csv_data_master.loc[csv_data_master['table'] ==
                            'project_local_capacity_chars', 'include'].iloc[

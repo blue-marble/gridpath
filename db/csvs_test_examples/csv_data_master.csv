@@ -58,7 +58,7 @@ track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbo
 prm,prm_zone_scenario_id,geography_prm_zones,0,1,reliability/prm/geography_prm_zones,
 prm,project__prm_zone_scenario_id,project_prm_zones,0,1,reliability/prm/project_prm_zones,
 prm,project_elcc_chars_scenario_id,project_elcc_chars,0,1,reliability/prm/project_elcc_chars,
-prm,prm_energy_only_scenario_id,project_prm_energy_only,0,0,reliability/prm/project_prm_energy_only,not implemented yet in csvs import
+prm,prm_energy_only_scenario_id,project_prm_energy_only,0,1,reliability/prm/project_prm_energy_only,
 prm,prm_requirement_scenario_id,system_prm_requirement,0,1,reliability/prm/system_prm_requirement,
 elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,0,1,reliability/prm/elcc_surface,Tables include inputs_system_prm_zone_elcc_surface and inputs_project_elcc_surface
 local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,0,1,reliability/local_capacity/geography_local_capacity_zones,

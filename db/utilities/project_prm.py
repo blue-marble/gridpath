@@ -202,42 +202,25 @@ def project_elcc_chars(
 
 def deliverability_groups(
     io, c,
-    prm_energy_only_scenario_id,
-    scenario_name,
-    scenario_description,
-    deliv_group_params
+    subscenario_data, inputs_data
 ):
     """
 
     :param io:
     :param c:
-    :param prm_energy_only_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param deliv_group_params:
-    Dictionary with groups as keys and params in a tuple (no_cost_cap,
-    deliv_cost, energy_only_limit)
-    :return:
+    :param subscenario_data:
+    :param inputs_data:
     """
     # Subscenarios
-    subs_data = [(prm_energy_only_scenario_id, scenario_name,
-                  scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_prm_energy_only
         (prm_energy_only_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for group in list(deliv_group_params.keys()):
-        inputs_data.append(
-            (prm_energy_only_scenario_id, group,
-             deliv_group_params[group][0],
-             deliv_group_params[group][1],
-             deliv_group_params[group][2])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_prm_energy_only
         (prm_energy_only_scenario_id,
