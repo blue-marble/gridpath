@@ -676,12 +676,14 @@ def load_module_specific_data(
 
         return stor_new_lin_projects, stor_min_duration, stor_max_duration
 
+    stor_new_lin_set, stor_new_lin_min_duration_hrs, \
+        stor_new_lin_max_duration_hrs = get_data()
     data_portal.data()["STOR_NEW_LIN"] = \
-        {None: get_data()[0]}
+        {None: stor_new_lin_set}
     data_portal.data()["stor_new_lin_min_duration_hrs"] = \
-        get_data()[1]
+        stor_new_lin_min_duration_hrs
     data_portal.data()["stor_new_lin_max_duration_hrs"] = \
-        get_data()[2]
+        stor_new_lin_max_duration_hrs
 
     # TODO: throw an error when a project of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
