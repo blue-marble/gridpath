@@ -123,6 +123,17 @@ class TestStor(unittest.TestCase):
         self.assertDictEqual(expected_discharging_efficiency,
                              actual_discharging_efficiency)
 
+        # Param: stor_charging_efficiency
+        expected_charging_efficiency = {
+            "Battery": 0.8, "Battery_Binary": 0.8, "Battery_Specified": 0.8
+        }
+        actual_charging_efficiency = {
+            prj: instance.stor_charging_efficiency[prj]
+            for prj in instance.STOR
+        }
+        self.assertDictEqual(expected_charging_efficiency,
+                             actual_charging_efficiency)
+
 
 if __name__ == "__main__":
     unittest.main()

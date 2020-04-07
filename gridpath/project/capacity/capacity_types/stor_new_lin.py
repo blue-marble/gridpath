@@ -87,7 +87,14 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's minimum duration, i.e. ratio of MWh of energy capacity    |
-    | by MW of powre capacity, in hours.                                      |
+    | by MW of power capacity, in hours.                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_max_duration_hrs`                                 |
+    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's maximum duration, i.e. ratio of MWh of energy capacity    |
+    | by MW of power capacity, in hours.                                      |
     +-------------------------------------------------------------------------+
     | | :code:`stor_new_lin_lifetime_yrs`                                     |
     | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
@@ -235,6 +242,14 @@ def add_module_specific_components(m, d):
     | | :code:`StorNewLin_Min_Duration_Constraint`                            |
     | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
     |                                                                         |
+    | Ensures that the storage duration is above a pre-specified requirement  |
+    | when building the project, preventing situations when energy capacity   |
+    | is built first with power capacity only following in a subsequent       |
+    | vintage.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Min_Duration_Constraint`                            |
+    | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
+    |                                                                         |
     | Ensures that the storage duration in each operational period is above   |
     | a pre-specified requirement.                                            |
     +-------------------------------------------------------------------------+
@@ -294,6 +309,11 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     m.stor_new_lin_min_duration_hrs = Param(
+        m.STOR_NEW_LIN,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_max_duration_hrs = Param(
         m.STOR_NEW_LIN,
         within=NonNegativeReals
     )
@@ -386,6 +406,11 @@ def add_module_specific_components(m, d):
     m.StorNewLin_Min_Duration_Constraint = Constraint(
         m.STOR_NEW_LIN_OPR_PRDS,
         rule=min_duration_rule
+    )
+
+    m.StorNewLin_Max_Duration_Constraint = Constraint(
+        m.STOR_NEW_LIN_OPR_PRDS,
+        rule=max_duration_rule
     )
 
     m.StorNewLin_Min_Cum_Build_Capacity_Constraint = Constraint(
@@ -513,6 +538,19 @@ def min_duration_rule(mod, g, p):
         * mod.stor_new_lin_min_duration_hrs[g]
 
 
+def max_duration_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Min_Duration_Constraint
+    **Enforced Over**: STOR_NEW_LIN_OPR_PRDS
+
+    Storage duration must be below a pre-specified requirement in each
+    operational period.
+    """
+    return mod.StorNewLin_Energy_Capacity_MWh[g, p] \
+        <= mod.StorNewLin_Power_Capacity_MW[g, p] \
+        * mod.stor_new_lin_max_duration_hrs[g]
+
+
 def min_cum_build_capacity_rule(mod, g, p):
     """
     **Constraint Name**: StorNewLin_Min_Cum_Build_Capacity_Constraint
@@ -613,31 +651,37 @@ def load_module_specific_data(
     :param stage:
     :return:
     """
-    def determine_min_duration():
+    def get_data():
         stor_new_lin_projects = list()
         stor_min_duration = dict()
+        stor_max_duration = dict()
 
         _df = pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage,
                          "inputs", "projects.tab"),
             sep="\t",
-            usecols=["project", "capacity_type", "minimum_duration_hours"]
+            usecols=["project", "capacity_type",
+                     "minimum_duration_hours", "maximum_duration_hours"]
         )
         for r in zip(_df["project"],
                      _df["capacity_type"],
-                     _df["minimum_duration_hours"]):
+                     _df["minimum_duration_hours"],
+                     _df["maximum_duration_hours"]):
             if r[1] == "stor_new_lin":
                 stor_new_lin_projects.append(r[0])
                 stor_min_duration[r[0]] = float(r[2])
+                stor_max_duration[r[0]] = float(r[3])
             else:
                 pass
 
-        return stor_new_lin_projects, stor_min_duration
+        return stor_new_lin_projects, stor_min_duration, stor_max_duration
 
     data_portal.data()["STOR_NEW_LIN"] = \
-        {None: determine_min_duration()[0]}
+        {None: get_data()[0]}
     data_portal.data()["stor_new_lin_min_duration_hrs"] = \
-        determine_min_duration()[1]
+        get_data()[1]
+    data_portal.data()["stor_new_lin_max_duration_hrs"] = \
+        get_data()[2]
 
     # TODO: throw an error when a project of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
