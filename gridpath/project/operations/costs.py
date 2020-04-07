@@ -75,6 +75,14 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
+    def fuel_cost_rule(mod, g, tmp):
+        """
+        **Expression Name**: Fuel_Cost
+        **Defined Over**: FUEL_PRJ_OPR_TMPS
+        """
+        return mod.Total_Fuel_Burn_MMBtu[g, tmp] * mod.fuel_price_per_mmbtu[
+            mod.fuel[g], mod.period[tmp], mod.month[tmp]]
+
     m.Fuel_Cost = Expression(
         m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_cost_rule
@@ -121,19 +129,6 @@ def add_model_components(m, d):
         m.PRJ_OPR_TMPS,
         rule=shutdown_cost_rule
     )
-
-
-# Expression Rules
-###############################################################################
-
-
-def fuel_cost_rule(mod, g, tmp):
-    """
-    **Expression Name**: Fuel_Cost
-    **Defined Over**: FUEL_PRJ_OPR_TMPS
-    """
-    return mod.Total_Fuel_Burn_MMBtu[g, tmp] * mod.fuel_price_per_mmbtu[
-        mod.fuel[g], mod.period[tmp], mod.month[tmp]]
 
 
 # Input-Output

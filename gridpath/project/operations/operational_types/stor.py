@@ -526,10 +526,10 @@ def fuel_burn_rule(mod, g, tmp):
 
 def variable_om_cost_rule(mod, g, tmp):
     """
-    Storage shouldn't have variable O&M because the power provision can be
-    negative, which could be abused.
+    Variable O&M costs are applied only to the storage discharge, i.e. when the
+    project is providing power to the system.
     """
-    return 0
+    return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):

@@ -394,24 +394,28 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
+    # Get heat rate curves;
+    # Select only variable OM curves of projects in the portfolio
     c2 = conn.cursor()
     variable_om = c2.execute(
         """
         SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
         INNER JOIN
         (SELECT project, variable_om_curves_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
+        ) AS op_char
         USING(project)
+        -- only select variable OM curves inputs with matching project and 
+        -- vom_curves_scenario_id
         INNER JOIN
         inputs_project_variable_om_curves
         USING(project, variable_om_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
         AND variable_om_curves_scenario_id is not Null
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "gen_commit_bin",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
