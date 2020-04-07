@@ -247,7 +247,7 @@ def add_module_specific_components(m, d):
     | is built first with power capacity only following in a subsequent       |
     | vintage.                                                                |
     +-------------------------------------------------------------------------+
-    | | :code:`StorNewLin_Min_Duration_Constraint`                            |
+    | | :code:`StorNewLin_Max_Duration_Constraint`                            |
     | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
     |                                                                         |
     | Ensures that the storage duration in each operational period is above   |
@@ -540,7 +540,7 @@ def min_duration_rule(mod, g, p):
 
 def max_duration_rule(mod, g, p):
     """
-    **Constraint Name**: StorNewLin_Min_Duration_Constraint
+    **Constraint Name**: StorNewLin_Max_Duration_Constraint
     **Enforced Over**: STOR_NEW_LIN_OPR_PRDS
 
     Storage duration must be below a pre-specified requirement in each
