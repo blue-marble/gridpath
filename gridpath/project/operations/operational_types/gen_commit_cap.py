@@ -1425,7 +1425,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         """SELECT project, operational_type,
         min_stable_level, unit_size_mw,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours
+        minimum_duration_hours, maximum_duration_hours, maximum_duration_hours
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type,
@@ -1473,7 +1473,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that there are no unexpected operational inputs
     expected_na_columns = [
         "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours"
+        "minimum_duration_hours", "maximum_duration_hours"
     ]
     validation_errors = check_req_prj_columns(df, expected_na_columns, False,
                                               "gen_commit_cap")

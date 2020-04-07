@@ -493,7 +493,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         ramp_down_when_on_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours
+        minimum_duration_hours, maximum_duration_hours
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type,
@@ -506,7 +506,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         ramp_down_when_on_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours
+        minimum_duration_hours, maximum_duration_hours
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
@@ -560,7 +560,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "shutdown_plus_ramp_down_rate",
         "min_up_time_hours", "min_down_time_hours",
         "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours"
+        "minimum_duration_hours", "maximum_duration_hours"
     ]
     validation_errors = check_req_prj_columns(df, expected_na_columns, False,
                                               "gen_simple")

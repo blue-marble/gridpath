@@ -102,6 +102,18 @@ class TestStorNewLin(unittest.TestCase):
         )
         self.assertDictEqual(expected_min_duration, actual_min_duration)
 
+        # Param: stor_new_lin_max_duration_hrs
+        expected_max_duration = OrderedDict(
+            sorted({"Battery": 99}.items())
+        )
+        actual_max_duration = OrderedDict(
+            sorted(
+                {prj: instance.stor_new_lin_max_duration_hrs[prj]
+                 for prj in instance.STOR_NEW_LIN}.items()
+            )
+        )
+        self.assertDictEqual(expected_max_duration, actual_max_duration)
+
         # Set: STOR_NEW_LIN_VNTS
         expected_storage_vintage_set = sorted([
             ("Battery", 2020), ("Battery", 2030)

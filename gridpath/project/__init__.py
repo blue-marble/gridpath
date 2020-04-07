@@ -247,7 +247,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         ramp_down_when_on_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours,
+        minimum_duration_hours, maximum_duration_hours,
         last_commitment_stage
         FROM inputs_project_portfolios
         LEFT OUTER JOIN
@@ -272,7 +272,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         ramp_down_when_on_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours,
+        minimum_duration_hours, maximum_duration_hours,
         last_commitment_stage
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
@@ -343,7 +343,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
              "ramp_down_when_on_rate",
              "min_up_time_hours", "min_down_time_hours",
              "charging_efficiency", "discharging_efficiency",
-             "minimum_duration_hours",
+             "minimum_duration_hours", "maximum_duration_hours",
              "last_commitment_stage"
              ]
         )
