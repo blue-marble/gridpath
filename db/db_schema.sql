@@ -2458,7 +2458,9 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
-fuel_burn_mmbtu FLOAT,
+operations_fuel_burn_mmbtu FLOAT,
+startup_fuel_burn_mmbtu FLOAT,
+total_fuel_burn_mmbtu FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
