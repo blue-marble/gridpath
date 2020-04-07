@@ -1,1 +1,4 @@
-project_regulation_up_ba_scenario_id,project,regulation_up_ba5,Coal,Zone15,Gas_CCGT,Zone15,Gas_CCGT_new,Zone1
+project,regulation_up_ba
+Coal,Zone1
+Gas_CCGT,Zone1
+Gas_CCGT_new,Zone1

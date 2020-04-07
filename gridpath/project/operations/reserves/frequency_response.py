@@ -209,7 +209,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     # Get project BA
-    project_bas, prj_derates = generic_get_inputs_from_database(
+    _, prj_derates = generic_get_inputs_from_database(
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -219,6 +219,36 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID,
         ba_subscenario_id=subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID
 
+    )
+
+    c = conn.cursor()
+    project_bas = c.execute("""
+            SELECT project, frequency_response_ba, contribute_to_partial
+            FROM
+            -- Get projects from portfolio only
+            (SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {}
+            ) as prj_tbl
+            LEFT OUTER JOIN 
+            -- Get BAs for those projects
+            (SELECT project, frequency_response_ba, contribute_to_partial
+                FROM inputs_project_frequency_response_bas
+                WHERE project_frequency_response_ba_scenario_id = {}
+            ) as prj_ba_tbl
+            USING (project)
+            -- Filter out projects whose BA is not one included in our 
+            -- reserve_ba_scenario_id
+            WHERE frequency_response_ba in (
+                    SELECT frequency_response_ba
+                        FROM inputs_geography_frequency_response_bas
+                        WHERE frequency_response_ba_scenario_id = {}
+            );
+            """.format(
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID,
+        subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID
+    )
     )
 
     return project_bas, prj_derates

@@ -76,33 +76,31 @@ def project_load_zones(
 def project_reserve_bas(
         io, c,
         reserve_type,
-        project_reserve_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_bas,
+        subscenario_data,
+        input_data
 ):
     # Subscenarios
-    subs_data = [(project_reserve_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_{}_bas
         (project_{}_ba_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subscenario_data)
 
     # Insert projects with BAs
-    inputs_data = []
-    for project in list(project_bas.keys()):
-        inputs_data.append(
-            (project_reserve_scenario_id, project, project_bas[project])
-        )
-    inputs_sql = """
-        INSERT OR IGNORE INTO inputs_project_{}_bas
-        (project_{}_ba_scenario_id, project, {}_ba)
-        VALUES (?, ?, ?);
-        """.format(reserve_type, reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    if reserve_type == "frequency_response":
+        inputs_sql = """
+            INSERT OR IGNORE INTO inputs_project_{}_bas
+            (project_{}_ba_scenario_id, project, {}_ba, contribute_to_partial)
+            VALUES (?, ?, ?, ?);
+            """.format(reserve_type, reserve_type, reserve_type)
+    else:
+        inputs_sql = """
+            INSERT OR IGNORE INTO inputs_project_{}_bas
+            (project_{}_ba_scenario_id, project, {}_ba)
+            VALUES (?, ?, ?);
+            """.format(reserve_type, reserve_type, reserve_type)
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=input_data)
 
 
 def project_policy_zones(

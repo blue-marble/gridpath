@@ -46,7 +46,7 @@ from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
 from db.utilities import temporal, simultaneous_flows, \
-    simultaneous_flow_groups, project_prm
+    simultaneous_flow_groups, project_prm, system_reserves, project_zones
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
@@ -472,19 +472,28 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT RESERVES BAS ##
     for reserve_type in reserves_list:
-        if csv_data_master.loc[csv_data_master['table'] == 'project_' + reserve_type + '_bas', 'include'].iloc[0] == 1:
-            data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-                csv_data_master['table'] == 'project_' + reserve_type + '_bas', 'path'].iloc[0])
-            (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
-            load_project_zones.load_project_reserve_bas(conn, c2, csv_subscenario_input, csv_data_input, reserve_type)
+        subscenario, inputs = read_data_for_insertion_into_db(
+            csv_data_master=csv_data_master,
+            folder_path=folder_path,
+            quiet=quiet,
+            table="project_{}_bas".format(reserve_type)
+        )
+
+        project_zones.project_reserve_bas(
+            conn, c2, reserve_type, subscenario, inputs
+        )
 
     ## SYSTEM RESERVES ##
     for reserve_type in reserves_list:
-        if csv_data_master.loc[csv_data_master['table'] == 'system_' + reserve_type, 'include'].iloc[0] == 1:
-            data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-                csv_data_master['table'] == 'system_' + reserve_type, 'path'].iloc[0])
-            (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
-            load_system_reserves.load_system_reserves(conn, c2, csv_subscenario_input, csv_data_input, reserve_type)
+        subscenario, inputs = read_data_for_insertion_into_db(
+            csv_data_master=csv_data_master,
+            folder_path=folder_path,
+            quiet=quiet,
+            table="system_{}".format(reserve_type)
+        )
+        system_reserves.insert_system_reserves(
+            conn, c2, subscenario, inputs, reserve_type
+        )
 
     #### LOAD TRANSMISSION DATA ####
 
