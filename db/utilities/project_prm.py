@@ -236,20 +236,27 @@ def deliverability_groups(
 def elcc_surface(
     conn,
     subscenario_data,
-    zone_data,
-    projects_data
+    zone_intercepts_data,
+    zone_load_data,
+    project_coefficients_data,
+    project_cap_factors_data
 ):
     """
 
     :param conn:
     :param subscenario_data: list of tuples
         (elcc_surface_scenario_id, name, description)
-    :param zone_data: list of tuples
+    :param zone_intercepts_data: list of tuples
         (elcc_surface_scenario_id, prm_zone, period, facet,
         elcc_surface_intercept)
-    :param projects_data: list of tuples
+    :param zone_load_data: list of tuples
+        (elcc_surface_scenario_id, prm_zone, period, prm_peak_load_mw,
+        prm_annual_load_mwh)
+    :param project_coefficients_data: list of tuples
         (elcc_surface_scenario_id, project, period, facet,
         elcc_surface_coefficient)
+    :param project_cap_factors_data: list of tuples
+        (elcc_surface_scenario_id, project, elcc_surface_cap_factor)
     """
 
     c = conn.cursor()
@@ -263,16 +270,27 @@ def elcc_surface(
     spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
                           data=subscenario_data)
 
-    # ELCC surface intercepts (by PRM zone)
-    inputs_sql = """
+    # ELCC surface intercepts (by PRM zone, period, facet)
+    intercepts_sql = """
         INSERT OR IGNORE INTO inputs_system_prm_zone_elcc_surface
         (elcc_surface_scenario_id, prm_zone,
          period, facet, elcc_surface_intercept)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=zone_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=intercepts_sql,
+                          data=zone_intercepts_data)
 
-    # ELCC coefficients (by project)
+    # PRM loads for the ELCC surface
+    prm_loads_sql = """
+        INSERT OR IGNORE INTO inputs_system_prm_zone_elcc_surface_prm_load
+        (elcc_surface_scenario_id, prm_zone,
+         period, prm_peak_load_mw, prm_annual_load_mwh)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=prm_loads_sql,
+                          data=zone_load_data)
+
+    # ELCC coefficients (by project, period, facet)
     coef_sql = """
         INSERT OR IGNORE INTO inputs_project_elcc_surface 
         (elcc_surface_scenario_id, 
@@ -280,7 +298,16 @@ def elcc_surface(
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=coef_sql,
-                          data=projects_data)
+                          data=project_coefficients_data)
+
+    # Cap factors for the ELCC surface (by project)
+    capfac_sql = """
+        INSERT OR IGNORE INTO inputs_project_elcc_surface_cap_factors 
+        (elcc_surface_scenario_id, project, elcc_surface_cap_factor)
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=capfac_sql,
+                          data=project_cap_factors_data)
 
 
 def elcc_surface_load_from_csvs(conn, subscenario_directory):
@@ -299,8 +326,18 @@ def elcc_surface_load_from_csvs(conn, subscenario_directory):
 
     # Required input files
     description_file = os.path.join(subscenario_directory, "description.txt")
-    zone_file = os.path.join(subscenario_directory, "zone.csv")
-    projects_file = os.path.join(subscenario_directory, "projects.csv")
+    zone_intercepts_file = os.path.join(
+        subscenario_directory, "zone_intercepts.csv"
+    )
+    zone_load_file = os.path.join(
+        subscenario_directory, "zone_peak_and_annual_load.csv"
+    )
+    project_coefficients_file = os.path.join(
+        subscenario_directory, "project_coefficients.csv"
+    )
+    project_cap_factors_file = os.path.join(
+        subscenario_directory, "project_cap_factors.csv"
+    )
 
     # TODO: this is the same as for the temporal scenarios, so could be
     #  factored out
@@ -318,22 +355,39 @@ def elcc_surface_load_from_csvs(conn, subscenario_directory):
         (subscenario_id, subscenario_name, subscenario_description)
     ]
 
-    # Get the ELCC surface intercepts (by zone)
-    zone_df = pd.read_csv(zone_file, delimiter=",")
-    zone_tuples_list = [
-        (subscenario_id, ) + tuple(x) for x in zone_df.to_records(index=False)
+    # Get the ELCC surface intercepts (by zone, period, facet)
+    zone_intercepts_df = pd.read_csv(zone_intercepts_file, delimiter=",")
+    zone_intercepts_tuples_list = [
+        (subscenario_id, )
+        + tuple(x) for x in zone_intercepts_df.to_records(index=False)
     ]
 
-    # Get the ELCC surface coefficients (by project)
-    projects_df = pd.read_csv(projects_file, delimiter=",")
-    projects_tuples_list = [
+    # Get the peak and annual loads for the ELCC surface (by zone and period)
+    zone_loads_df = pd.read_csv(zone_load_file, delimiter=",")
+    zone_loads_tuples_list = [
+        (subscenario_id, )
+        + tuple(x) for x in zone_loads_df.to_records(index=False)
+    ]
+
+    # Get the ELCC surface coefficients (by project, period, facet)
+    project_coeffs_df = pd.read_csv(project_coefficients_file, delimiter=",")
+    project_coeffs_tuples_list = [
         (subscenario_id, ) +
-        tuple(x) for x in projects_df.to_records(index=False)
+        tuple(x) for x in project_coeffs_df.to_records(index=False)
+    ]
+
+    # Get the cap factors for the ELCC surface (by project)
+    project_capfacs_df = pd.read_csv(project_cap_factors_file, delimiter=",")
+    project_capfacs_df_tuples_list = [
+        (subscenario_id, ) +
+        tuple(x) for x in project_capfacs_df.to_records(index=False)
     ]
 
     elcc_surface(
         conn=conn,
         subscenario_data=subscenario_data,
-        zone_data=zone_tuples_list,
-        projects_data=projects_tuples_list
+        zone_intercepts_data=zone_intercepts_tuples_list,
+        zone_load_data=zone_loads_tuples_list,
+        project_coefficients_data=project_coeffs_tuples_list,
+        project_cap_factors_data=project_capfacs_df_tuples_list
     )
