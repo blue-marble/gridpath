@@ -933,6 +933,25 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_variable_om_curves(self):
+        """
+        Check objective function value of "test_variable_om_curves"
+        example
+        :return:
+        """
+        actual_objective = \
+            run_end_to_end.main([
+                "--database", "../db/test_examples.db",
+                "--scenario", "test_variable_om_curves",
+                "--scenario_location", EXAMPLES_DIRECTORY,
+                "--quiet", "--mute_solver_output", "--testing"
+            ])
+
+        expected_objective = 866737258.8866034
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
     @classmethod
     def tearDownClass(cls):
         os.remove("../db/test_examples.db")

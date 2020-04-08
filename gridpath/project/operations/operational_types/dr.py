@@ -233,6 +233,14 @@ def fuel_burn_rule(mod, p, tmp, error_message):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable O&M costs are applied only to the down-shift, i.e. when the
+    project is "providing power" to the system.
+    """
+    return mod.DR_Shift_Down_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.

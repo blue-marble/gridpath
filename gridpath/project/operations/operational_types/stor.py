@@ -524,6 +524,14 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable O&M costs are applied only to the storage discharge, i.e. when the
+    project is providing power to the system.
+    """
+    return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.

@@ -385,6 +385,13 @@ def shutdown_cost_rule(mod, g, tmp):
     return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.GenSimple_Provide_Power_MW[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_fuel_burn_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.

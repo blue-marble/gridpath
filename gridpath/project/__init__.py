@@ -171,6 +171,8 @@ def add_model_components(m, d):
     # Input Params
     ###########################################################################
 
+    # TODO: move variable_om to operations.init instead so it's in same place
+    #  as the variable O&M curves?
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)

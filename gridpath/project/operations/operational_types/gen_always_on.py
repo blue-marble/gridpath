@@ -65,6 +65,12 @@ def add_module_specific_components(m, d):
     | operational type, their operational timepoints, and their fuel          |
     | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS`                          |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the timepoints in which the project could be     |
+    | operational. The variable O&M cost constraint is applied over this set. |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -128,6 +134,18 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Fuel burn in MMBTU by this project in each operational timepoint.       |
     +-------------------------------------------------------------------------+
+    | | :code:`GenAlwaysOn_Variable_OM_Cost_By_LL`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
+    |                                                                         |
+    | Variable O&M cost for this project in each operational timepoint. Note: |
+    | This is only the piecewise linear component of the variable O&M cost,   |
+    | determined by the variable O&M cost curve inputs. Most projects won't   |
+    | use this and instead simply have a :code:`variable_om_cost_per_mwh`     |
+    | rate specified that is constant for all loading points. Both components |
+    | are additive so users could use both if needed. See                     |
+    | :code:`variable_om_cost_rule` for more info.                            |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -169,6 +187,14 @@ def add_module_specific_components(m, d):
     | Determines fuel burn from the project in each timepoint based on its    |
     | heat rate curve.                                                        |
     +-------------------------------------------------------------------------+
+    | Variable O&M                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenAlwaysOn_Variable_OM_Constraint`                            |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS`          |
+    |                                                                         |
+    | Determines variable O&M cost from the project in each timepoint based   |
+    | on its variable O&M cost curve.                                         |
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -199,6 +225,15 @@ def add_module_specific_components(m, d):
             set((g, tmp, s) for (g, tmp, s)
                 in mod.FUEL_PRJ_SGMS_OPR_TMPS
                 if g in mod.GEN_ALWAYS_ON)
+    )
+
+    m.GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        within=m.VOM_PRJS_OPR_TMPS_SGMS,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp, s)
+            in mod.VOM_PRJS_OPR_TMPS_SGMS
+            if g in mod.GEN_ALWAYS_ON)
     )
 
     # Required Params
@@ -234,6 +269,11 @@ def add_module_specific_components(m, d):
 
     m.GenAlwaysOn_Fuel_Burn_MMBTU = Var(
         m.GEN_ALWAYS_ON_FUEL_PRJ_OPR_TMPS, within=NonNegativeReals
+    )
+
+    m.GenAlwaysOn_Variable_OM_Cost_By_LL = Var(
+        m.GEN_ALWAYS_ON_OPR_TMPS,
+        within=NonNegativeReals
     )
 
     # Expressions
@@ -280,6 +320,12 @@ def add_module_specific_components(m, d):
     m.GenAlwaysOn_Fuel_Burn_Constraint = Constraint(
         m.GEN_ALWAYS_ON_OPR_TMPS_FUEL_SEG,
         rule=fuel_burn_constraint_rule
+    )
+
+    # Variable O&M
+    m.GenAlwaysOn_Variable_OM_Constraint = Constraint(
+        m.GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS,
+        rule=variable_om_cost_constraint_rule
     )
 
 
@@ -422,6 +468,29 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         * mod.Capacity_MW[g, mod.period[tmp]]
 
 
+def variable_om_cost_constraint_rule(mod, g, tmp, s):
+    """
+    **Constraint Name**: GenAlwaysOn_Variable_OM_Constraint
+    **Enforced Over**: GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS
+
+    Variable O&M cost by loading level is set by piecewise linear
+    representation of the input/output curve (variable O&M cost vs. loading
+    level).
+
+    Note: we assume that when projects are derated for availability, the
+    input/output curve is derated by the same amount. The implicit
+    assumption is that when a generator is de-rated, some of its units
+    are out rather than it being forced to run below minimum stable level
+    at very costly operating points.
+    """
+    return mod.GenAlwaysOn_Variable_OM_Cost_By_LL[g, tmp] \
+        >= mod.vom_slope_cost_per_mwh[g, s] \
+        * mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+        + mod.vom_intercept_cost_per_mw_hr[g, s] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.Capacity_MW[g, mod.period[tmp]]
+
+
 # Operational Type Methods
 ###############################################################################
 
@@ -476,6 +545,26 @@ def fuel_burn_rule(mod, g, tmp):
         return mod.GenAlwaysOn_Fuel_Burn_MMBTU[g, tmp]
     else:
         return 0
+
+
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable O&M cost has two components which are additive:
+    1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
+       levels: :code:`variable_om_cost_per_mwh`.
+    2. A variable variable O&M rate that changes with the loading level,
+       similar to the heat rates. The idea is to represent higher variable cost
+       rates at lower loading levels. This is captured in the
+       :code:`GenAlwaysOn_Variable_OM_Cost_By_LL` decision variable. If no
+       variable O&M curve inputs are provided, this component will be zero.
+
+    Most users will only use the first component, which is specified in the
+    operational characteristics table.  Only operational types with
+    commitment decisions can have the second component.
+    """
+    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g] \
+        + mod.GenAlwaysOn_Variable_OM_Cost_By_LL[g, tmp]
 
 
 def startup_cost_rule(mod, g, tmp):
