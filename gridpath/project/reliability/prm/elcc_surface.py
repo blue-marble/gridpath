@@ -292,11 +292,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Append correct values
         # TODO: check if this logic still holds
         for row in reader:
-            # If project specified, check if BA specified or not
-            if row[0] in list(prj_contr_cf_dict.keys()):
+            prj = row[0]
+            # If project specified add the values
+            if prj in list(prj_contr_cf_dict.keys()):
+                print(prj, prj_contr_cf_dict[prj])
                 for v in [
-                    prj_contr_cf_dict[row[0]][0],
-                    prj_contr_cf_dict[row[1]][1]
+                    prj_contr_cf_dict[prj][0],
+                    prj_contr_cf_dict[prj][1]
                 ]:
                     row.append(v)
                 new_rows.append(row)
