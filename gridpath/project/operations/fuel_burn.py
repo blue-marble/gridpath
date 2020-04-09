@@ -201,13 +201,16 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             fuel = row[8]
-            fuel_burn_tons = row[9]
+            opr_fuel_burn_tons = row[9]
+            startup_fuel_burn_tons = row[10]
+            total_fuel_burn = row[11]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
-                    load_zone, technology, fuel, fuel_burn_tons)
+                    load_zone, technology, fuel, opr_fuel_burn_tons,
+                    startup_fuel_burn_tons, total_fuel_burn)
             )
 
     insert_temp_sql = """
@@ -216,8 +219,9 @@ def import_results_into_database(
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight,
          number_of_hours_in_timepoint,
-         load_zone, technology, fuel, fuel_burn_mmbtu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -226,11 +230,13 @@ def import_results_into_database(
         INSERT INTO results_project_fuel_burn
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu)
+        load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu
+        load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu
         FROM temp_results_project_fuel_burn{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)
