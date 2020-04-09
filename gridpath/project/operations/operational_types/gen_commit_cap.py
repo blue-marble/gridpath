@@ -50,7 +50,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    get_optype_inputs_as_df, load_param
+    get_optype_inputs_as_df, load_param, get_optype_param_requirements
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 
@@ -1267,14 +1267,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :return:
     """
 
-    required_columns = ["min_stable_level_fraction", "unit_size_mw"]
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
-                        "ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate",
-                        "min_up_time_hours", "min_down_time_hours",
-                        "startup_cost_per_mw", "shutdown_cost_per_mw",
-                        "startup_fuel_mmbtu_per_mw"]
+    required_columns, optional_columns = \
+        get_optype_param_requirements(op_type="gen_commit_cap")
 
     op_type_df = get_optype_inputs_as_df(
         scenario_directory=scenario_directory, subproblem=subproblem,

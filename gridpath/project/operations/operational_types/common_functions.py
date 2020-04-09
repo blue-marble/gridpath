@@ -230,3 +230,23 @@ def load_param(df, column_name, cast_as_type):
             pass
 
     return param_dict
+
+
+def get_optype_param_requirements(op_type):
+    """
+    :param op_type:
+    :return:
+    """
+
+    df = pd.read_csv(
+        os.path.join(os.path.dirname(__file__),
+                     "opchar_param_requirements.csv"),
+        sep=","
+    )
+
+    required_columns = \
+        df.loc[df[op_type] == "required"]["char"].tolist()
+    optional_columns = \
+        df.loc[df[op_type] == "optional"]["char"].tolist()
+
+    return required_columns, optional_columns
