@@ -114,8 +114,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                         "projects.tab"),
                      select=("project", "contributes_to_elcc_surface",
                              "elcc_surface_cap_factor"),
-                     param=(m.contributes_to_elcc_surface,
-                            m.elcc_surface_cap_factor)
+                     param=(m.contributes_to_elcc_surface, m.elcc_surface_cap_factor,
+                            )
                      )
 
     # Project-period-facet
@@ -285,8 +285,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Append column header
         header = next(reader)
-        for h in ["contributes_to_elcc_surface", "elcc_surface_cap_factor"]:
-            header.append(h)
+        # for h in ["contributes_to_elcc_surface", "elcc_surface_cap_factor"]:
+        header.append("contributes_to_elcc_surface")
+        header.append("elcc_surface_cap_factor")
         new_rows.append(header)
 
         # Append correct values
@@ -295,17 +296,19 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             prj = row[0]
             # If project specified add the values
             if prj in list(prj_contr_cf_dict.keys()):
-                print(prj, prj_contr_cf_dict[prj])
-                for v in [
-                    prj_contr_cf_dict[prj][0],
-                    prj_contr_cf_dict[prj][1]
-                ]:
-                    row.append(v)
+                # for v in [
+                #     prj_contr_cf_dict[prj][0],
+                #     prj_contr_cf_dict[prj][1]
+                # ]:
+                row.append(prj_contr_cf_dict[prj][0])
+                row.append(prj_contr_cf_dict[prj][1] if prj_contr_cf_dict[
+                    prj][1] is not None else ".")
                 new_rows.append(row)
             # If project not specified, specify no chars
             else:
-                for v in [".", "."]:
-                    row.append(v)
+                # for v in [".", "."]:
+                row.append(".")
+                row.append(".")
                 new_rows.append(row)
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
