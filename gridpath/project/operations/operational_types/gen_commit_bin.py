@@ -565,10 +565,10 @@ def add_module_specific_components(m, d):
 
     m.GEN_COMMIT_BIN_OPR_TMPS_FUEL_SEG = Set(
         dimen=3,
-        within=m.FUEL_PRJ_SGMS_OPR_TMPS,
+        within=m.FUEL_PRJ_PRD_SGMS_OPR_TMPS,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp, s)
-            in mod.FUEL_PRJ_SGMS_OPR_TMPS
+            in mod.FUEL_PRJ_PRD_SGMS_OPR_TMPS
             if g in mod.GEN_COMMIT_BIN)
     )
 

@@ -180,7 +180,7 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_tmps_by_fuel_project,
                              actual_tmps_by_fuel_project)
 
-        # Set: FUEL_PRJ_SGMS
+        # Set: FUEL_PRJ_PRD_SGMS
 
         expected_fuel_project_segments = sorted([
             ("Nuclear", 0),
@@ -202,12 +202,12 @@ class TestOperationsInit(unittest.TestCase):
             ("Nuclear_Flexible", 0)
         ])
         actual_fuel_project_segments = sorted([
-            (prj, s) for (prj, s) in instance.FUEL_PRJ_SGMS
+            (prj, s) for (prj, s) in instance.FUEL_PRJ_PRD_SGMS
             ])
         self.assertListEqual(expected_fuel_project_segments,
                              actual_fuel_project_segments)
 
-        # Set: FUEL_PRJ_SGMS_OPR_TMPS
+        # Set: FUEL_PRJ_PRD_SGMS_OPR_TMPS
         expected_fuel_project_segments_operational_timepoints = sorted([
             (g, tmp, s) for (g, tmp) in expected_tmps_by_fuel_project
             for _g, s in expected_fuel_project_segments
@@ -215,7 +215,7 @@ class TestOperationsInit(unittest.TestCase):
         ])
         actual_fuel_project_segments_operational_timepoints = sorted([
             (prj, tmp, s) for (prj, tmp, s) in
-            instance.FUEL_PRJ_SGMS_OPR_TMPS
+            instance.FUEL_PRJ_PRD_SGMS_OPR_TMPS
         ])
 
         self.assertListEqual(
@@ -223,12 +223,12 @@ class TestOperationsInit(unittest.TestCase):
             actual_fuel_project_segments_operational_timepoints
         )
 
-        # Set: VOM_PRJS_SGMS
+        # Set: VOM_PRJS_PRDS_SGMS
         expected_vom_project_segments = sorted([
             ("Disp_Binary_Commit", 0),
         ])
         actual_vom_project_segments = sorted([
-            (prj, s) for (prj, s) in instance.VOM_PRJS_SGMS
+            (prj, s) for (prj, s) in instance.VOM_PRJS_PRDS_SGMS
             ])
         self.assertListEqual(expected_vom_project_segments,
                              actual_vom_project_segments)
@@ -272,7 +272,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_fuel_burn_slope = OrderedDict(sorted(
             {(prj, s): instance.fuel_burn_slope_mmbtu_per_mwh[(prj, s)]
-             for (prj, s) in instance.FUEL_PRJ_SGMS}.items()
+             for (prj, s) in instance.FUEL_PRJ_PRD_SGMS}.items()
             )
         )
 
@@ -302,7 +302,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_fuel_burn_intercept = OrderedDict(sorted(
             {(prj, s): instance.fuel_burn_intercept_mmbtu_per_mw_hr[(prj, s)]
-             for (prj, s) in instance.FUEL_PRJ_SGMS}.items()
+             for (prj, s) in instance.FUEL_PRJ_PRD_SGMS}.items()
             )
         )
 
@@ -317,7 +317,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_vom_slope = OrderedDict(sorted(
             {(prj, s): instance.vom_slope_cost_per_mwh[(prj, s)]
-             for (prj, s) in instance.VOM_PRJS_SGMS}.items()
+             for (prj, s) in instance.VOM_PRJS_PRDS_SGMS}.items()
             )
         )
 
@@ -331,7 +331,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_vom_intercept = OrderedDict(sorted(
             {(prj, s): instance.vom_intercept_cost_per_mw_hr[(prj, s)]
-             for (prj, s) in instance.VOM_PRJS_SGMS}.items()
+             for (prj, s) in instance.VOM_PRJS_PRDS_SGMS}.items()
             )
         )
 

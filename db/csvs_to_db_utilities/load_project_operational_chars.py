@@ -185,8 +185,9 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
     ]
 
     # Change the order of the columns before creating the list of tuples
+    # (move subscenario_id and project to the front)
     cols = data_input.columns.tolist()
-    cols = [cols[2], cols[3], cols[0], cols[1]]
+    cols = [cols[3], cols[4], cols[0], cols[1], cols[2]]
     data_input = data_input[cols]
 
     project_hr_chars = [
@@ -215,8 +216,9 @@ def load_project_vom_curves(io, c, subscenario_input, data_input):
     ]
 
     # Change the order of the columns before creating the list of tuples
+    # (move subscenario_id and project to the front)
     cols = data_input.columns.tolist()
-    cols = [cols[2], cols[3], cols[0], cols[1]]
+    cols = [cols[3], cols[4], cols[0], cols[1], cols[2]]
     data_input = data_input[cols]
 
     project_vom_chars = [

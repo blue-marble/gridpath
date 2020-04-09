@@ -36,7 +36,7 @@ def add_model_components(m, d):
     |                                                                         |
     | The list projects that consume fuel.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_PRJ_SGMS`                                                 |
+    | | :code:`FUEL_PRJ_PRD_SGMS`                                                 |
     |                                                                         |
     | Two-dimensional set describing fuel projects and their heat rate curve  |
     | segment IDs. Unless the project's heat rate is constant, the heat rate  |
@@ -47,13 +47,13 @@ def add_model_components(m, d):
     | Two-dimensional set describing fuel projects, and the timepoints in     |
     | which the project could be operational.                                 |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_PRJ_SGMS_OPR_TMPS`                                        |
+    | | :code:`FUEL_PRJ_PRD_SGMS_OPR_TMPS`                                        |
     |                                                                         |
     | Three-dimensional set describing fuel projects, their heat rate curve   |
     | segment IDs, and the timepoints in which the project could be           |
     | operational. The fuel burn constraint is applied over this set.         |
     +-------------------------------------------------------------------------+
-    | | :code:`VOM_PRJS_SGMS`                                                 |
+    | | :code:`VOM_PRJS_PRDS_SGMS`                                                 |
     |                                                                         |
     | Two-dimensional set describing projects and their variable O&M cost     |
     | curve segment IDs. Unless the project's variable O&M is constant,       |
@@ -86,7 +86,7 @@ def add_model_components(m, d):
     | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_slope_mmbtu_per_mwh`                                 |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                                 |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
@@ -94,7 +94,7 @@ def add_model_components(m, d):
     | MWh of electricity generation.                                          |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                                 |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear fuel burn    |
@@ -103,7 +103,7 @@ def add_model_components(m, d):
     | capacity and timepoint duration to get fuel burn in MMBtu).             |
     +-------------------------------------------------------------------------+
     | | :code:`vom_slope_cost_per_mwh`                                        |
-    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                                 |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear variable O&M     |
@@ -111,7 +111,7 @@ def add_model_components(m, d):
     | of variable O&M per MWh of electricity generation.                      |
     +-------------------------------------------------------------------------+
     | | :code:`vom_intercept_cost_per_mw_hr`                                  |
-    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                                 |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear variable O&M |
@@ -133,8 +133,8 @@ def add_model_components(m, d):
         within=m.PROJECTS
     )
 
-    m.FUEL_PRJ_SGMS = Set(
-        dimen=2
+    m.FUEL_PRJ_PRD_SGMS = Set(
+        dimen=3
     )
 
     m.FUEL_PRJ_OPR_TMPS = Set(
@@ -144,16 +144,16 @@ def add_model_components(m, d):
             if g in mod.FUEL_PRJS)
     )
 
-    m.FUEL_PRJ_SGMS_OPR_TMPS = Set(
+    m.FUEL_PRJ_PRD_SGMS_OPR_TMPS = Set(
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.FUEL_PRJ_SGMS
-            if g in mod.FUEL_PRJS and g == _g)
+            for _g, p, s in mod.FUEL_PRJ_PRD_SGMS
+            if g in mod.FUEL_PRJS and g == _g and mod.period[tmp] == p)
     )
 
-    m.VOM_PRJS_SGMS = Set(
-        dimen=2,
+    m.VOM_PRJS_PRDS_SGMS = Set(
+        dimen=3,
         ordered=True
     )
 
@@ -161,8 +161,8 @@ def add_model_components(m, d):
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.VOM_PRJS_SGMS
-            if g == _g)
+            for _g, p, s in mod.VOM_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
     )
 
     # Input Params
@@ -176,22 +176,22 @@ def add_model_components(m, d):
     )
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
         within=PositiveReals
     )
 
     m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
         within=Reals
     )
 
     m.vom_slope_cost_per_mwh = Param(
-        m.VOM_PRJS_SGMS,
+        m.VOM_PRJS_PRDS_SGMS,
         within=PositiveReals
     )
 
     m.vom_intercept_cost_per_mw_hr = Param(
-        m.VOM_PRJS_SGMS,
+        m.VOM_PRJS_PRDS_SGMS,
         within=Reals
     )
 
@@ -240,22 +240,35 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
         pr_df = pr_df[pr_df["fuel"] != "."]
 
+        # TODO: deal with periods == null situation
+        #  --> will need to add all periods, which means you have to figure
+        #      out which periods are even operational
+
         fuels_dict = dict(zip(pr_df["project"], pr_df["fuel"]))
         slope_dict = {}
         intercept_dict = {}
         for project in fuels_dict.keys():
             # read in the power setpoints and average heat rates
             hr_slice = hr_df[hr_df["project"] == project]
-            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-            load_points = hr_slice["load_point_fraction"].values
-            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+            for period in hr_slice["period"].values:
+                hr_slice_p = hr_slice[hr_slice["period"] == period]
+                hr_slice_p = hr_slice_p.sort_values(by=["load_point_fraction"])
+                load_points = hr_slice_p["load_point_fraction"].values
+                heat_rates = hr_slice_p[
+                    "average_heat_rate_mmbtu_per_mwh"].values
 
-            slopes, intercepts = calculate_slope_intercept(
-                project, load_points, heat_rates
-            )
+                slopes, intercepts = calculate_slope_intercept(
+                    project, load_points, heat_rates
+                )
 
-            slope_dict.update(slopes)
-            intercept_dict.update(intercepts)
+                # add period to the dict keys
+                slopes = dict((k + period, v) for (k, v) in slopes.items())
+                intercepts = dict(
+                    (k + period, v) for (k, v) in intercepts.items()
+                )
+
+                slope_dict.update(slopes)
+                intercept_dict.update(intercepts)
 
         return fuels_dict, slope_dict, intercept_dict
 
@@ -265,7 +278,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         fuel_project_segments = list(slope_dict.keys())
 
         data_portal.data()["FUEL_PRJS"] = {None: fuel_projects}
-        data_portal.data()["FUEL_PRJ_SGMS"] = {None: fuel_project_segments}
+        data_portal.data()["FUEL_PRJ_PRD_SGMS"] = {None: fuel_project_segments}
         data_portal.data()["fuel"] = fuels_dict
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
@@ -296,7 +309,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     vom_project_segments = list(slope_dict.keys())
 
-    data_portal.data()["VOM_PRJS_SGMS"] = {None: vom_project_segments}
+    data_portal.data()["VOM_PRJS_PRDS_SGMS"] = {None: vom_project_segments}
     data_portal.data()["vom_slope_cost_per_mwh"] = slope_dict
     data_portal.data()["vom_intercept_cost_per_mw_hr"] = intercept_dict
 

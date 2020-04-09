@@ -778,9 +778,11 @@ DROP TABLE IF EXISTS inputs_project_heat_rate_curves;
 CREATE TABLE inputs_project_heat_rate_curves (
 project VARCHAR(64),
 heat_rate_curves_scenario_id INTEGER,
+period INTEGER,
 load_point_fraction FLOAT,
 average_heat_rate_mmbtu_per_mwh FLOAT,
-PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_fraction),
+PRIMARY KEY (project, heat_rate_curves_scenario_id, period,
+load_point_fraction),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
 );
@@ -800,9 +802,11 @@ DROP TABLE IF EXISTS inputs_project_variable_om_curves;
 CREATE TABLE inputs_project_variable_om_curves (
 project VARCHAR(64),
 variable_om_curves_scenario_id INTEGER,
+period INTEGER,
 load_point_fraction FLOAT,
 average_variable_om_cost_per_mwh FLOAT,
-PRIMARY KEY (project, variable_om_curves_scenario_id, load_point_fraction),
+PRIMARY KEY (project, variable_om_curves_scenario_id, period
+load_point_fraction),
 FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
 subscenarios_project_variable_om_curves (project,
 variable_om_curves_scenario_id)
