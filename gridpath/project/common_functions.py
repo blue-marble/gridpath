@@ -81,9 +81,17 @@ def get_column_row_value(header, column_name, row):
     return row_column_value
 
 
-def append_to_projects_input_file(
-        inputs_directory, query_results, new_columns
+def append_to_input_file(
+        inputs_directory, input_file, query_results, new_columns
 ):
+    """
+
+    :param inputs_directory:
+    :param input_file:
+    :param query_results:
+    :param new_columns:
+    :return:
+    """
 
     # Make a dictionary by project for easy access
     dict_by_project = dict()
@@ -95,7 +103,7 @@ def append_to_projects_input_file(
         dict_by_project[prj] = ["." if x is None else x for x in prj_char]
 
     # Open the projects file
-    with open(os.path.join(inputs_directory, "projects.tab"),"r") as f_in:
+    with open(os.path.join(inputs_directory, input_file), "r") as f_in:
         # Read in the file
         reader = csv.reader(f_in, delimiter="\t", lineterminator="\n")
 
@@ -131,7 +139,7 @@ def append_to_projects_input_file(
 
     # Now that we have updated all our rows, overwrite the previous
     # projects.tab file
-    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+    with open(os.path.join(inputs_directory, input_file), "w",
               newline="") as f_out:
         writer = csv.writer(f_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

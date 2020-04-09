@@ -19,7 +19,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
     write_validation_to_database, load_operational_type_modules
-from gridpath.project.common_functions import append_to_projects_input_file
+from gridpath.project.common_functions import append_to_input_file
 
 
 # TODO: should we take this out of __init__.py
@@ -499,8 +499,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         "minimum_duration_hours", "maximum_duration_hours",
         "last_commitment_stage"
     ]
-    append_to_projects_input_file(
+    append_to_input_file(
         inputs_directory=inputs_directory,
+        input_file="projects.tab",
         query_results=proj_opchar,
         new_columns=new_columns
     )
