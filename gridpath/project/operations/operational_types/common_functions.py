@@ -183,6 +183,20 @@ def get_optype_inputs_as_df(
         scenario_directory, subproblem, stage, op_type,
         required_columns, optional_columns
 ):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param required_columns:
+    :param optional_columns:
+    :return: the project dataframe filtered for the operational type and
+        with the appropriate columns for the operational type
+
+    Create a dataframe for the operational type from the projects.tab file.
+    This dataframe takes only the rows with projects of this operational
+    type and only the columns required or optional for the operational type.
+    """
 
     # Figure out which headers we have
     header = pd.read_csv(
@@ -192,8 +206,11 @@ def get_optype_inputs_as_df(
         sep="\t", header=None, nrows=1
     ).values[0]
 
+    # Get the columns for the optional params (it's OK if they don't exist)
     used_columns = [c for c in optional_columns if c in header]
 
+    # Read in the appropriate columns for the operational type from
+    # projects.tab
     df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
                      "inputs", "projects.tab"),
@@ -203,21 +220,23 @@ def get_optype_inputs_as_df(
 
     )
 
+    # Filter for the operational type
     optype_df = df.loc[df["operational_type"] == op_type]
 
     return optype_df
 
 
-def load_param(df, column_name, cast_as_type):
+def get_param_dict(df, column_name, cast_as_type):
     """
-    :param df:
-    :param column_name:
-    :param cast_as_type:
-    :return:
+    :param df: the project-params dataframe
+    :param column_name: string, column name of the parameter to look for
+    :param cast_as_type: the type for the parameter
+    :return: dictionary, {project: param_value}
 
-    Should get the dataframe already filtered by operational type
+    Create a dictionary for the parameter to load into Pyomo.
     """
     param_dict = dict()
+
     for row in zip(df["project"],
                    df[column_name]):
         [prj, param_val] = row
@@ -234,8 +253,13 @@ def load_param(df, column_name, cast_as_type):
 
 def get_optype_param_requirements(op_type):
     """
-    :param op_type:
-    :return:
+    :param op_type: string
+    :return: two dictionaries of the required and optional projects.tab
+        columns for the operational type with their types as values
+
+    Read in the required and optional columns for an operational type. Make
+    a dictionary for each with the types for each as values. We need the
+    types to cast when loading into Pyomo.
     """
 
     df = pd.read_csv(
@@ -243,10 +267,27 @@ def get_optype_param_requirements(op_type):
                      "opchar_param_requirements.csv"),
         sep=","
     )
-
+    # df.set_index('ID').T.to_dict('list')
     required_columns = \
-        df.loc[df[op_type] == "required"]["char"].tolist()
+        df.loc[df[op_type] == "required"][["char", "type"]]
+    required_columns_dict = dict(
+        zip(required_columns["char"], required_columns["type"])
+    )
     optional_columns = \
-        df.loc[df[op_type] == "optional"]["char"].tolist()
+        df.loc[df[op_type] == "optional"][["char", "type"]]
+    optional_columns_dict = dict(
+        zip(optional_columns["char"], optional_columns["type"])
+    )
 
-    return required_columns, optional_columns
+    return required_columns_dict, optional_columns_dict
+
+
+def get_types_dict():
+    """
+    :return: type name read in as string to type method mapping
+    """
+    return {
+        "str": str,
+        "float": float,
+        "int": int
+    }
