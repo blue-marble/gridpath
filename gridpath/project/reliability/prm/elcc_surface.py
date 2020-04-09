@@ -83,11 +83,11 @@ def add_model_components(m, d):
         """
         if (prj, p) in mod.PRJ_OPR_PRDS:
             return mod.elcc_surface_coefficient[prj, p, f] \
-                   * m.prm_peak_load_mw[m.prm_zone[prj], p] \
+                   * mod.prm_peak_load_mw[mod.prm_zone[prj], p] \
                    * mod.ELCC_Eligible_Capacity_MW[prj, p]\
                    * 8760\
-                   * m.elcc_surface_cap_factor[p] \
-                   / m.prm_annual_load_mwh[m.prm_zone[prj], p]
+                   * mod.elcc_surface_cap_factor[p] \
+                   / mod.prm_annual_load_mwh[mod.prm_zone[prj], p]
         else:
             return 0
 

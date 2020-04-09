@@ -61,7 +61,7 @@ def add_model_components(m, d):
                 if period in mod.OPR_PRDS_BY_PRJ[prj]
                 ) \
             + mod.elcc_surface_intercept[prm_zone, period, facet] \
-            * m.prm_peak_load_mw[prm_zone, period]
+            * mod.prm_peak_load_mw[prm_zone, period]
 
     # Dynamic ELCC piecewise constraint
     m.Dynamic_ELCC_Constraint = Constraint(
