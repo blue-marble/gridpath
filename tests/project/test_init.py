@@ -163,8 +163,7 @@ class TestProjectInit(unittest.TestCase):
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
                 sep="\t", usecols=[
                     'project', 'load_zone', "capacity_type",
-                    "availability_type", "operational_type",
-                    "variable_om_cost_per_mwh"
+                    "availability_type", "operational_type"
                 ]
             )
 
@@ -239,21 +238,6 @@ class TestProjectInit(unittest.TestCase):
         )
 
         self.assertDictEqual(expected_op_type, actual_op_type)
-
-        # Params: variable_om_cost_per_mwh
-        expected_var_om_cost = OrderedDict(
-            sorted(
-                projects_df.set_index('project').to_dict()[
-                    'variable_om_cost_per_mwh'].items()
-            )
-        )
-        actual_var_om_cost = OrderedDict(
-            sorted(
-                {prj: instance.variable_om_cost_per_mwh[prj] for prj in
-                 instance.PROJECTS}.items()
-            )
-        )
-        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
 
     def test_project_validations(self):
         cols = ["project", "capacity_type", "operational_type",

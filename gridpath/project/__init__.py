@@ -143,13 +143,6 @@ def add_model_components(m, d):
     | how timepoints are grouped in horizons for that project. See            |
     | :code:`horizons` module for more info.                                  |
     +-------------------------------------------------------------------------+
-    | | :code:`variable_om_cost_per_mwh`                                      |
-    | | *Defined over*: :code:`PROJECTS`                                      |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`technology`                                                    |
     | | *Defined over*: :code:`PROJECTS`                                      |
     | | *Default*: :code:`unspecified`                                        |
@@ -171,14 +164,11 @@ def add_model_components(m, d):
     # Input Params
     ###########################################################################
 
-    # TODO: move variable_om to operations.init instead so it's in same place
-    #  as the variable O&M curves?
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
     m.availability_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
-    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
     m.technology = Param(m.PROJECTS, default="unspecified")
 
 
@@ -194,11 +184,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         index=m.PROJECTS,
         select=("project", "load_zone", "capacity_type",
                 "availability_type", "operational_type",
-                "variable_om_cost_per_mwh",
                 "balancing_type_project"),
         param=(m.load_zone, m.capacity_type, m.availability_type,
-               m.operational_type, m.variable_om_cost_per_mwh,
-               m.balancing_type_project)
+               m.operational_type, m.balancing_type_project)
     )
 
     # Technology column is optional (default param value is 'unspecified')
@@ -230,68 +218,44 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
 
-    # TODO: for now, will require project_availability_scenario_id to be
-    #  defined; however, we should break down this query and have the
-    #  subtype modules write to projects.tab instead of getting everything
-    #  in one go here; this will help in a situation when, for example,
-    #  we don't have startup costs, so we don't need to have the associated
-    #  columns in projects.tab
     projects = c.execute(
         """SELECT project, capacity_type, availability_type, operational_type, 
-        balancing_type_project, technology,
-        load_zone, fuel, variable_cost_per_mwh,
-        min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours,
-        last_commitment_stage
+        balancing_type_project, technology, load_zone
+        FROM
+        -- Get only the subset of projects in the portfolio with their 
+        -- capacity types based on the project_portfolio_scenario_id 
+        (SELECT project, capacity_type
         FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+        -- Get the load_zones for these projects depending on the
+        -- project_load_zone_scenario_id
         LEFT OUTER JOIN
         (SELECT project, load_zone
         FROM inputs_project_load_zones
         WHERE project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
+        -- Get the availability types for these projects depending on the
+        -- project_availability_scenario_id
         (SELECT project, availability_type
         FROM inputs_project_availability_types
         WHERE project_availability_scenario_id = {}) as prj_av_types
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, operational_type, balancing_type_project, technology,
-        fuel, variable_cost_per_mwh,
-        min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours,
-        last_commitment_stage
+        -- Get the operational type, balancing_type, technology, 
+        -- and variable cost for these projects depending ont the 
+        -- project_operational_chars_scenario_id
+        (SELECT project, operational_type, balancing_type_project, technology
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
-        WHERE project_portfolio_scenario_id = {}""".format(
+        ;""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
     )
-
-    # TODO: change all these queries to return dataframes directly using pandas
-    #   functions. Then we can also write out the results easier using pandas
-    #   to.csv functionality
-    # projects_df = pd.read_sql_query(query, conn)
-    # return projects_df
 
     return projects
 
@@ -310,14 +274,6 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    # TODO: decide how to deal with projects.tab -- currently, a large table
-    #  is created with NULL values for projects that don't have certain
-    #  params, so we can just get it all here without having to iterate
-    #  through the modules that actually need these params
-    #  This file could also potentially be split up into smaller files with
-    #  just a subset of the params, which would mean that the submodules
-    #  won't have to parse the large file
-
     # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
     #   columns and tab file column names are the same everywhere
@@ -335,19 +291,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer.writerow(
             ["project", "capacity_type", "availability_type",
              "operational_type", "balancing_type_project", "technology",
-             "load_zone", "fuel", "variable_om_cost_per_mwh",
-             "min_stable_level_fraction", "unit_size_mw",
-             "startup_cost_per_mw", "shutdown_cost_per_mw",
-             "startup_fuel_mmbtu_per_mw",
-             "startup_plus_ramp_up_rate",
-             "shutdown_plus_ramp_down_rate",
-             "ramp_up_when_on_rate",
-             "ramp_down_when_on_rate",
-             "min_up_time_hours", "min_down_time_hours",
-             "charging_efficiency", "discharging_efficiency",
-             "minimum_duration_hours", "maximum_duration_hours",
-             "last_commitment_stage"
-             ]
+             "load_zone"]
         )
 
         for row in projects:

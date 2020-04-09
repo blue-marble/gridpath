@@ -105,6 +105,28 @@ class TestOperationsInit(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Params: variable_om_cost_per_mwh
+        projects_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
+                sep="\t", usecols=[
+                    'project', "variable_om_cost_per_mwh"
+                ]
+            )
+        expected_var_om_cost = OrderedDict(
+            sorted(
+                projects_df.set_index('project').to_dict()[
+                    'variable_om_cost_per_mwh'].items()
+            )
+        )
+        actual_var_om_cost = OrderedDict(
+            sorted(
+                {prj: instance.variable_om_cost_per_mwh[prj] for prj in
+                 instance.PROJECTS}.items()
+            )
+        )
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Set: FUEL_COST_PROJECTS
         expected_fuel_projects = sorted([
             "Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
