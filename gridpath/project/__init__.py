@@ -171,16 +171,11 @@ def add_model_components(m, d):
     # Input Params
     ###########################################################################
 
-    # TODO: move variable_om to operations.init instead so it's in same place
-    #  as the variable O&M curves?
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
     m.availability_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
-
-    # TODO: move variable_om cost to be defined in operations
-    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
     m.technology = Param(m.PROJECTS, default="unspecified")
 
 
@@ -196,11 +191,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         index=m.PROJECTS,
         select=("project", "load_zone", "capacity_type",
                 "availability_type", "operational_type",
-                "variable_om_cost_per_mwh",
                 "balancing_type_project"),
         param=(m.load_zone, m.capacity_type, m.availability_type,
-               m.operational_type, m.variable_om_cost_per_mwh,
-               m.balancing_type_project)
+               m.operational_type, m.balancing_type_project)
     )
 
     # Technology column is optional (default param value is 'unspecified')
@@ -234,7 +227,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     projects = c.execute(
         """SELECT project, capacity_type, availability_type, operational_type, 
-        balancing_type_project, technology, load_zone, variable_cost_per_mwh
+        balancing_type_project, technology, load_zone
         FROM
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
@@ -259,8 +252,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         -- Get the operational type, balancing_type, technology, 
         -- and variable cost for these projects depending ont the 
         -- project_operational_chars_scenario_id
-        (SELECT project, operational_type, balancing_type_project, technology,
-        variable_cost_per_mwh
+        (SELECT project, operational_type, balancing_type_project, technology
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
@@ -306,7 +298,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer.writerow(
             ["project", "capacity_type", "availability_type",
              "operational_type", "balancing_type_project", "technology",
-             "load_zone", "variable_om_cost_per_mwh"]
+             "load_zone"]
         )
 
         for row in projects:
