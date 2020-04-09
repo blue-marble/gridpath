@@ -160,8 +160,9 @@ def max_shift_up_rule(mod, p, tmp):
     Limits the added load to the available power capacity.
     """
     return mod.DR_Shift_Up_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]]
-    
+        mod.Capacity_MW[p, mod.period[tmp]] \
+        * mod.Availability_Derate[p, tmp]
+
 
 def max_shift_down_rule(mod, p, tmp):
     """
@@ -171,7 +172,8 @@ def max_shift_down_rule(mod, p, tmp):
     Limits the removed load to the available power capacity.
     """
     return mod.DR_Shift_Down_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]]
+        mod.Capacity_MW[p, mod.period[tmp]] \
+        * mod.Availability_Derate[p, tmp]
 
 
 def energy_balance_rule(mod, p, h):
