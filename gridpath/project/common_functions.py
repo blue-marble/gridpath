@@ -82,25 +82,26 @@ def get_column_row_value(header, column_name, row):
 
 
 def append_to_input_file(
-        inputs_directory, input_file, query_results, new_columns
+        inputs_directory, input_file, query_results, index_n_columns,
+        new_column_names
 ):
     """
 
     :param inputs_directory:
     :param input_file:
     :param query_results:
-    :param new_columns:
+    :param new_column_names:
     :return:
     """
 
     # Make a dictionary by project for easy access
     dict_by_project = dict()
     for row in query_results:
-        prj = str(row[0])
-        prj_char = row[1:]
+        indx = tuple(row[:index_n_columns])
+        indx_char = row[index_n_columns:]
         # Assign values for each project key
         # Replace None values with "." to feed into Pyomo
-        dict_by_project[prj] = ["." if x is None else x for x in prj_char]
+        dict_by_project[indx] = ["." if x is None else x for x in indx_char]
 
     # Open the projects file
     with open(os.path.join(inputs_directory, input_file), "r") as f_in:
@@ -114,26 +115,26 @@ def append_to_input_file(
         # First, add the new items to the header and append the updated
         # header to the new_rows list
         header = next(reader)
-        for h in new_columns:
+        for h in new_column_names:
             header.append(h)
         new_rows.append(header)
 
         # Next, append the new values to the row for each project and add
         # the updated row to the new_rows list
         for row in reader:
-            prj = row[0]
+            indx = tuple(row[:index_n_columns])
             # If the project is in the dictionary keys, add the values from
             # the dictionary to the project row and append the updated row
             # to the new_rows list
-            if prj in list(dict_by_project.keys()):
-                for char in dict_by_project[prj]:
+            if indx in list(dict_by_project.keys()):
+                for char in dict_by_project[indx]:
                     row.append(char)
                 new_rows.append(row)
             # If project is not in the dictionary keys, fill the row with
             # "." to feed empty values into Pyomo and append the updated row
             # to the new_rows list
             else:
-                for h in new_columns:
+                for h in new_column_names:
                     row.append(".")
                 new_rows.append(row)
 

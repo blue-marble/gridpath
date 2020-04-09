@@ -503,7 +503,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         inputs_directory=inputs_directory,
         input_file="projects.tab",
         query_results=proj_opchar,
-        new_columns=new_columns
+        index_n_columns=1,
+        new_column_names=new_columns
     )
 
     # Convert heat rates to dataframes and pre-process data
