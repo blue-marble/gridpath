@@ -19,6 +19,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
     write_validation_to_database, load_operational_type_modules
+from gridpath.project.common_functions import append_to_projects_input_file
 
 
 # TODO: should we take this out of __init__.py
@@ -372,11 +373,42 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    c = conn.cursor()
+    proj_opchar = c.execute("""
+        SELECT project, fuel,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        ramp_up_when_on_rate,
+        ramp_down_when_on_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours, maximum_duration_hours,
+        last_commitment_stage
+        -- Get only the subset of projects in the portfolio with their 
+        -- capacity types based on the project_portfolio_scenario_id 
+        FROM (SELECT project, capacity_type
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+        LEFT OUTER JOIN
+        -- Select the operational characteristics based on the 
+        -- project_operational_chars_scenario_id
+        inputs_project_operational_chars
+        USING (project)
+        WHERE project_operational_chars_scenario_id = {}
+        ;
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        )
+    )
 
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
-    c = conn.cursor()
-    heat_rates = c.execute(
+    c1 = conn.cursor()
+    heat_rates = c1.execute(
         """
         SELECT project, fuel, heat_rate_curves_scenario_id, 
         load_point_fraction, average_heat_rate_mmbtu_per_mwh
@@ -396,8 +428,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     # Get heat rate curves;
     # Select only variable OM curves of projects in the portfolio
-    c2 = conn.cursor()
-    variable_om = c2.execute(
+    c3 = conn.cursor()
+    variable_om = c3.execute(
         """
         SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
@@ -419,7 +451,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return heat_rates, variable_om
+    return proj_opchar, heat_rates, variable_om
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -433,8 +465,28 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    heat_rates, variable_om = get_inputs_from_database(
+    proj_opchar, heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
+
+    # Update the projects.tab file
+    new_columns = [
+        "fuel", "min_stable_level_fraction", "unit_size_mw",
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate",
+        "shutdown_plus_ramp_down_rate",
+        "ramp_up_when_on_rate",
+        "ramp_down_when_on_rate",
+        "min_up_time_hours", "min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours", "maximum_duration_hours",
+        "last_commitment_stage"
+    ]
+    append_to_projects_input_file(
+        inputs_directory=inputs_directory,
+        query_results=proj_opchar,
+        new_columns=new_columns
+    )
 
     # Convert heat rates to dataframes and pre-process data
     # (filter out only projects with fuel; select columns)
