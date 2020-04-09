@@ -49,7 +49,8 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, update_dispatch_results_table
+    determine_relevant_timepoints, update_dispatch_results_table, \
+    get_optype_inputs_as_df, load_param
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 
@@ -1266,8 +1267,31 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :return:
     """
 
-    unit_size_mw = dict()
-    min_stable_fraction = dict()
+    required_columns = ["min_stable_level_fraction", "unit_size_mw"]
+    optional_columns = ["startup_plus_ramp_up_rate",
+                        "shutdown_plus_ramp_down_rate",
+                        "ramp_up_when_on_rate",
+                        "ramp_down_when_on_rate",
+                        "min_up_time_hours", "min_down_time_hours",
+                        "startup_cost_per_mw", "shutdown_cost_per_mw",
+                        "startup_fuel_mmbtu_per_mw"]
+
+    op_type_df = get_optype_inputs_as_df(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_cap",
+        required_columns=required_columns,
+        optional_columns=optional_columns
+    )
+
+    data_portal.data()["gen_commit_cap_unit_size_mw"] = load_param(
+        df=op_type_df, column_name="unit_size_mw", cast_as_type=float
+    )
+    data_portal.data()["gen_commit_cap_min_stable_level_fraction"] = \
+        load_param(
+            df=op_type_df, column_name="min_stable_level_fraction",
+            cast_as_type=float
+        )
+
     startup_plus_ramp_up_rate = dict()
     shutdown_plus_ramp_down_rate = dict()
     ramp_up_when_on_rate = dict()
@@ -1282,13 +1306,6 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                                       "inputs", "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
-                        "ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate",
-                        "min_up_time_hours", "min_down_time_hours",
-                        "startup_cost_per_mw", "shutdown_cost_per_mw",
-                        "startup_fuel_mmbtu_per_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
     dynamic_components = \
@@ -1300,21 +1317,9 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                      "min_stable_level_fraction"] + used_columns
             )
 
-    for row in zip(dynamic_components["project"],
-                   dynamic_components["operational_type"],
-                   dynamic_components["unit_size_mw"],
-                   dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "gen_commit_cap":
-            unit_size_mw[row[0]] = float(row[2])
-            min_stable_fraction[row[0]] = float(row[3])
-        else:
-            pass
-
-    data_portal.data()["gen_commit_cap_unit_size_mw"] = unit_size_mw
-    data_portal.data()["gen_commit_cap_min_stable_level_fraction"] = \
-        min_stable_fraction
-
     # Ramp rate limits are optional; will default to 1 if not specified
+    # This can be done by either not providing the column in projects.tab at
+    # all, or by having empty values in projects.tab
     if "startup_plus_ramp_up_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],

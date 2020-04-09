@@ -3,6 +3,7 @@
 
 import csv
 import os.path
+import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
@@ -176,3 +177,56 @@ def update_dispatch_results_table(
         """
 
     spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+
+
+def get_optype_inputs_as_df(
+        scenario_directory, subproblem, stage, op_type,
+        required_columns, optional_columns
+):
+
+    # Figure out which headers we have
+    header = pd.read_csv(
+        os.path.join(
+            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+        ),
+        sep="\t", header=None, nrows=1
+    ).values[0]
+
+    used_columns = [c for c in optional_columns if c in header]
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+            + required_columns + used_columns
+
+    )
+
+    optype_df = df.loc[df["operational_type"] == op_type]
+
+    return optype_df
+
+
+def load_param(df, column_name, cast_as_type):
+    """
+    :param df:
+    :param column_name:
+    :param cast_as_type:
+    :return:
+
+    Should get the dataframe already filtered by operational type
+    """
+    param_dict = dict()
+    for row in zip(df["project"],
+                   df[column_name]):
+        [prj, param_val] = row
+        # Add to the param dictionary if a value is specified
+        # Otherwise, we'll use the default value (or Pyomo will throw an
+        # error if no default value)
+        if param_val != ".":
+            param_dict[prj] = cast_as_type(row[1])
+        else:
+            pass
+
+    return param_dict
