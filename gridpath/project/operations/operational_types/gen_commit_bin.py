@@ -1839,6 +1839,8 @@ def load_module_specific_data(mod, data_portal,
         stage=stage, op_type="gen_commit_bin"
     )
 
+    # TODO: refactor to consolidate loading of startup chars with
+    #  gen_commit_lin; the code is the same
     # Startup characteristics
     df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,

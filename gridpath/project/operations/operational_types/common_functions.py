@@ -337,7 +337,6 @@ def load_optype_module_specific_data(
     # Load optional param data into the Pyomo DataPortal
     # Ignore if relevant columns are not found in the dataframe
     for opt in optional_columns_types.keys():
-        print(opt)
         type_method = types_dict[optional_columns_types[opt]]
         try:
             data_portal.data()["{}_{}".format(op_type, opt)] = \
