@@ -573,6 +573,7 @@ def load_module_specific_data(m, data_portal,
         stage=stage, op_type="gen_hydro"
     )
 
+    # TODO: refactor to consolidate with gen_hydro_must_take
     # Load hydro operational data from hydro-specific input files
     # Determine subset of project-horizons in hydro budgets file
     project_horizons = list()
