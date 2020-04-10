@@ -1283,6 +1283,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     )
 
     # Load required param data into the Pyomo DataPortal
+    # This requires that the param name consist of the operational type
+    # name, an underscore, and the column name
     for req in required_columns_types.keys():
         type_method = types_dict[required_columns_types[req]]
         data_portal.data()["gen_commit_cap_{}".format(req)] = get_param_dict(
