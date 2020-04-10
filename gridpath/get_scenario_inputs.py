@@ -206,7 +206,8 @@ def write_scenario_description(
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w", newline="") as \
             scenario_description_file:
-        writer = csv.writer(scenario_description_file, delimiter=",")
+        writer = csv.writer(scenario_description_file, delimiter=",",
+                            lineterminator="\n")
 
         # Scenario ID and scenario name
         writer.writerow(
