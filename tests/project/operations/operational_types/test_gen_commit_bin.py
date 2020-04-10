@@ -211,20 +211,20 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
-        # Param: gen_commit_bin_min_up_time_hrs
+        # Param: gen_commit_bin_min_up_time_hours
         expected_min_up_time = {"Disp_Binary_Commit": 3}
         actual_min_up_time = {
-            prj: instance.gen_commit_bin_min_up_time_hrs[prj]
+            prj: instance.gen_commit_bin_min_up_time_hours[prj]
             for prj in instance.GEN_COMMIT_BIN
         }
 
         self.assertDictEqual(expected_min_up_time,
                              actual_min_up_time)
 
-        # Param: gen_commit_bin_min_down_time_hrs
+        # Param: gen_commit_bin_min_down_time_hours
         expected_min_down_time = {"Disp_Binary_Commit": 7}
         actual_min_down_time = {
-            prj: instance.gen_commit_bin_min_down_time_hrs[prj]
+            prj: instance.gen_commit_bin_min_down_time_hours[prj]
             for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_min_down_time,
