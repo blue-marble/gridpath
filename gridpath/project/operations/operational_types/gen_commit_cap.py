@@ -49,7 +49,9 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, update_dispatch_results_table
+    determine_relevant_timepoints, update_dispatch_results_table, \
+    get_optype_inputs_as_df, get_param_dict, get_optype_param_requirements, \
+    get_types_dict
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 
@@ -1265,165 +1267,42 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :param stage:
     :return:
     """
+    # String to method dicionary for types
+    types_dict = get_types_dict()
 
-    unit_size_mw = dict()
-    min_stable_fraction = dict()
-    startup_plus_ramp_up_rate = dict()
-    shutdown_plus_ramp_down_rate = dict()
-    ramp_up_when_on_rate = dict()
-    ramp_down_when_on_rate = dict()
-    min_up_time = dict()
-    min_down_time = dict()
-    startup_cost = dict()
-    shutdown_cost = dict()
-    startup_fuel = dict()
+    # Get the required and optional columns with their types
+    required_columns_types, optional_columns_types = \
+        get_optype_param_requirements(op_type="gen_commit_cap")
 
-    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                      "inputs", "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    # Load in the inputs dataframe for the op type module
+    op_type_df = get_optype_inputs_as_df(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_cap",
+        required_columns=[r for r in required_columns_types.keys()],
+        optional_columns=[o for o in optional_columns_types.keys()]
+    )
 
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
-                        "ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate",
-                        "min_up_time_hours", "min_down_time_hours",
-                        "startup_cost_per_mw", "shutdown_cost_per_mw",
-                        "startup_fuel_mmbtu_per_mw"]
-    used_columns = [c for c in optional_columns if c in header]
+    # Load required param data into the Pyomo DataPortal
+    # This requires that the param name consist of the operational type
+    # name, an underscore, and the column name
+    for req in required_columns_types.keys():
+        type_method = types_dict[required_columns_types[req]]
+        data_portal.data()["gen_commit_cap_{}".format(req)] = get_param_dict(
+            df=op_type_df, column_name=req, cast_as_type=type_method
+        )
 
-    dynamic_components = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type", "unit_size_mw",
-                     "min_stable_level_fraction"] + used_columns
-            )
-
-    for row in zip(dynamic_components["project"],
-                   dynamic_components["operational_type"],
-                   dynamic_components["unit_size_mw"],
-                   dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "gen_commit_cap":
-            unit_size_mw[row[0]] = float(row[2])
-            min_stable_fraction[row[0]] = float(row[3])
-        else:
+    # Load optional param data into the Pyomo DataPortal
+    # Ignore if relevant columns are not found in the dataframe
+    for req in optional_columns_types.keys():
+        type_method = types_dict[optional_columns_types[req]]
+        try:
+            data_portal.data()["gen_commit_cap_{}".format(req)] = \
+                get_param_dict(
+                    df=op_type_df, column_name=req, cast_as_type=type_method
+                )
+        # These columns are optional, so it's OK if we don't find them
+        except KeyError:
             pass
-
-    data_portal.data()["gen_commit_cap_unit_size_mw"] = unit_size_mw
-    data_portal.data()["gen_commit_cap_min_stable_level_fraction"] = \
-        min_stable_fraction
-
-    # Ramp rate limits are optional; will default to 1 if not specified
-    if "startup_plus_ramp_up_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_plus_ramp_up_rate"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                startup_plus_ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_startup_plus_ramp_up_rate"] = \
-            startup_plus_ramp_up_rate
-
-    if "shutdown_plus_ramp_down_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["shutdown_plus_ramp_down_rate"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_shutdown_plus_ramp_down_rate"] = \
-            shutdown_plus_ramp_down_rate
-
-    if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                ramp_up_when_on_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_ramp_up_when_on_rate"] = \
-            ramp_up_when_on_rate
-
-    if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                ramp_down_when_on_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()[ "gen_commit_cap_ramp_down_when_on_rate"] = \
-            ramp_down_when_on_rate
-
-    # Up and down time limits are optional, will default to 1 if not specified
-    if "min_up_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_up_time_hours"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                min_up_time[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_min_up_time_hours"] = \
-            min_up_time
-
-    if "min_down_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_down_time_hours"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                min_down_time[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_min_down_time_hours"] = \
-            min_down_time
-
-    # Startup/shutdown costs are optional, will default to 0 if not specified
-    if "startup_cost_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_cost_per_mw"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                startup_cost[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_startup_cost_per_mw"] = startup_cost
-
-    if "shutdown_cost_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["shutdown_cost_per_mw"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                shutdown_cost[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_shutdown_cost_per_mw"] = \
-            shutdown_cost
-
-    # Startup fuel is optional, will default to 0 if not specified
-    if "startup_fuel_mmbtu_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_fuel_mmbtu_per_mw"]
-                       ):
-            if row[1] == "gen_commit_cap" and row[2] != ".":
-                startup_fuel[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_cap_startup_fuel_mmbtu_per_mw"] = \
-            startup_fuel
 
 
 def export_module_specific_results(
