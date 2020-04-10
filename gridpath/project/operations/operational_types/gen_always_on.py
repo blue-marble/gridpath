@@ -35,6 +35,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
+from gridpath.project.operations.operational_types.common_functions import \
+    load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -99,7 +101,7 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_always_on_ramp_up_rate`                                    |
+    | | :code:`gen_always_on_ramp_up_when_on_rate`                            |
     | | *Defined over*: :code:`GEN_ALWAYS_ON`                                 |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -107,7 +109,7 @@ def add_module_specific_components(m, d):
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_always_on_ramp_down_rate`                                  |
+    | | :code:`gen_always_on_ramp_down_when_on_rate`                          |
     | | *Defined over*: :code:`GEN_ALWAYS_ON`                                 |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -171,13 +173,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_always_on_ramp_up_rate`.                                     |
+    | :code:`gen_always_on_ramp_up_when_on_rate`.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`GenAlwaysOn_Ramp_Down_Constraint`                              |
     | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_always_on_ramp_down_rate`.                                   |
+    | :code:`gen_always_on_ramp_down_when_on_rate`.                                   |
     +-------------------------------------------------------------------------+
     | Fuel Burn                                                               |
     +-------------------------------------------------------------------------+
@@ -250,12 +252,12 @@ def add_module_specific_components(m, d):
     # Optional Params
     ###########################################################################
 
-    m.gen_always_on_ramp_up_rate = Param(
+    m.gen_always_on_ramp_up_when_on_rate = Param(
         m.GEN_ALWAYS_ON, within=PercentFraction,
         default=1
     )
 
-    m.gen_always_on_ramp_down_rate = Param(
+    m.gen_always_on_ramp_down_when_on_rate = Param(
         m.GEN_ALWAYS_ON, within=PercentFraction,
         default=1
     )
@@ -382,7 +384,7 @@ def ramp_up_rule(mod, g, tmp):
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp up the full operable range between timepoints, constraint won't
     # bind, so skip
-    elif (mod.gen_always_on_ramp_up_rate[g] * 60
+    elif (mod.gen_always_on_ramp_up_when_on_rate[g] * 60
           * mod.hrs_in_tmp[mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
@@ -396,7 +398,7 @@ def ramp_up_rule(mod, g, tmp):
                    g, mod.prev_tmp[tmp, mod.balancing_type_project[
                        g]]]) \
             <= \
-            mod.gen_always_on_ramp_up_rate[g] * 60 \
+            mod.gen_always_on_ramp_up_when_on_rate[g] * 60 \
             * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
@@ -424,7 +426,7 @@ def ramp_down_rule(mod, g, tmp):
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp down the full operable range between timepoints, constraint
     # won't bind, so skip
-    elif (mod.gen_always_on_ramp_down_rate[g] * 60
+    elif (mod.gen_always_on_ramp_down_when_on_rate[g] * 60
           * mod.hrs_in_tmp[
               mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
@@ -438,7 +440,7 @@ def ramp_down_rule(mod, g, tmp):
                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                ) \
             >= \
-            - mod.gen_always_on_ramp_down_rate[g] * 60 \
+            - mod.gen_always_on_ramp_down_when_on_rate[g] * 60 \
             * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
@@ -518,7 +520,7 @@ def rec_provision_rule(mod, g, tmp):
 
 
 # TODO: ignore curtailment for now, but might need to revisit if for example
-#  RPS-eligible technologies are modeled as always-on (e.g. geothermal) -- 
+#  RPS-eligible technologies are modeled as always-on (e.g. geothermal) --
 #  it may make more sense to model them as 'gen_var' with constant cap factor
 def scheduled_curtailment_rule(mod, g, tmp):
     """
@@ -616,66 +618,11 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-
-    unit_size_mw = dict()
-    min_stable_fraction = dict()
-    ramp_up_rate = dict()
-    ramp_down_rate = dict()
-    header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t", header=None, nrows=1
-    ).values[0]
-
-    optional_columns = ["ramp_up_when_on_rate", "ramp_down_when_on_rate"]
-    used_columns = [c for c in optional_columns if c in header]
-
-    dynamic_components = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type", "unit_size_mw",
-                 "min_stable_level_fraction"] + used_columns
+    load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_always_on"
     )
-
-    # Get unit size and minimum stable level
-    for row in zip(dynamic_components["project"],
-                   dynamic_components["operational_type"],
-                   dynamic_components["unit_size_mw"],
-                   dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "gen_always_on":
-            unit_size_mw[row[0]] = float(row[2])
-            min_stable_fraction[row[0]] = float(row[3])
-        else:
-            pass
-
-    data_portal.data()["gen_always_on_unit_size_mw"] = unit_size_mw
-    data_portal.data()["gen_always_on_min_stable_level_fraction"] = \
-        min_stable_fraction
-    
-    # Ramp rate limits are optional; will default to 1 if not specified
-    if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]
-                       ):
-            if row[1] == "gen_always_on" and row[2] != ".":
-                ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_always_on_ramp_up_rate"] = ramp_up_rate
-
-    if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]
-                       ):
-            if row[1] == "gen_always_on" and row[2] != ".":
-                ramp_down_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_always_on_ramp_down_rate"] = ramp_down_rate
-
 
 # Validation
 ###############################################################################
