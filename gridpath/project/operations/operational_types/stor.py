@@ -33,6 +33,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
+from gridpath.project.operations.operational_types.common_functions import \
+    load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -583,35 +585,11 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-    def determine_efficiencies():
-        stor_charging_efficiency = dict()
-        stor_discharging_efficiency = dict()
-
-        dynamic_components = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type",
-                     "charging_efficiency", "discharging_efficiency"]
-        )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["charging_efficiency"],
-                       dynamic_components["discharging_efficiency"]):
-            if row[1] == "stor":
-                stor_charging_efficiency[row[0]] \
-                    = float(row[2])
-                stor_discharging_efficiency[row[0]] \
-                    = float(row[3])
-            else:
-                pass
-
-        return stor_charging_efficiency, stor_discharging_efficiency
-
-    data_portal.data()["stor_charging_efficiency"] = \
-        determine_efficiencies()[0]
-    data_portal.data()["stor_discharging_efficiency"] = \
-        determine_efficiencies()[1]
+    load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="stor"
+    )
 
 
 def export_module_specific_results(mod, d,
