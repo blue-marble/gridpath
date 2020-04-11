@@ -1841,6 +1841,11 @@ def load_module_specific_data(mod, data_portal,
 
     # TODO: refactor to consolidate loading of startup chars with
     #  gen_commit_lin; the code is the same
+    # TODO: change the name of the startup_cost_per_mw,
+    #  gen_commit_bin_startup_plus_ramp_up_rate, and
+    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
+    #  like that, and re-add these same params for a simple treatment to
+    #  gen_commit_bin and gen_commit_lin
     # Startup characteristics
     df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
