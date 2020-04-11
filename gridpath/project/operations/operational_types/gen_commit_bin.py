@@ -421,13 +421,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | Requires that when the project is started, it stays on for at least     |
-    | :code:`gen_commit_bin_min_up_time_hours`.                                 |
+    | :code:`gen_commit_bin_min_up_time_hours`.                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Min_Down_Time_Constraint`                         |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | Requires that when the project is shut down, it stays off for at least  |
-    | :code:`gen_commit_bin_min_up_time_hours`.                                 |
+    | :code:`gen_commit_bin_min_up_time_hours`.                               |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
