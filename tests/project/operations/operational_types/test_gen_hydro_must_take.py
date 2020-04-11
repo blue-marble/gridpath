@@ -160,26 +160,26 @@ class TestGenHydroMustTake(unittest.TestCase):
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
-        # Param: gen_hydro_must_take_ramp_up_rate
+        # Param: gen_hydro_must_take_ramp_up_when_on_rate
         expected_ramp_up = OrderedDict(
             sorted({"Hydro_NonCurtailable": 0.5}.items())
         )
         actual_ramp_up = OrderedDict(
             sorted(
-                {prj: instance.gen_hydro_must_take_ramp_up_rate[prj]
+                {prj: instance.gen_hydro_must_take_ramp_up_when_on_rate[prj]
                  for prj in instance.GEN_HYDRO_MUST_TAKE
                  }.items()
             )
         )
         self.assertDictEqual(expected_ramp_up, actual_ramp_up)
 
-        # Param: gen_hydro_must_take_ramp_down_rate
+        # Param: gen_hydro_must_take_ramp_down_when_on_rate
         expected_ramp_down = OrderedDict(
             sorted({"Hydro_NonCurtailable": 0.5}.items())
         )
         actual_ramp_down = OrderedDict(
             sorted(
-                {prj: instance.gen_hydro_must_take_ramp_down_rate[prj]
+                {prj: instance.gen_hydro_must_take_ramp_down_when_on_rate[prj]
                  for prj in instance.GEN_HYDRO_MUST_TAKE
                  }.items()
             )

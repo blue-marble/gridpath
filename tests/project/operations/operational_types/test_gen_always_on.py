@@ -129,12 +129,12 @@ class TestGenAlwaysOn(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
-        # Param: gen_always_on_ramp_up_rate
+        # Param: gen_always_on_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.gen_always_on_ramp_up_rate[
+            prj: instance.gen_always_on_ramp_up_when_on_rate[
                 prj]
             for prj in instance.GEN_ALWAYS_ON
         }
@@ -142,12 +142,12 @@ class TestGenAlwaysOn(unittest.TestCase):
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: gen_always_on_ramp_down_rate
+        # Param: gen_always_on_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.gen_always_on_ramp_down_rate[
+            prj: instance.gen_always_on_ramp_down_when_on_rate[
                 prj]
             for prj in instance.GEN_ALWAYS_ON
         }

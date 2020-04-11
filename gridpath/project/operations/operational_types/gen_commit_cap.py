@@ -50,8 +50,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    get_optype_inputs_as_df, get_param_dict, get_optype_param_requirements, \
-    get_types_dict
+    load_optype_module_specific_data
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 
@@ -1267,42 +1266,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :param stage:
     :return:
     """
-    # String to method dicionary for types
-    types_dict = get_types_dict()
-
-    # Get the required and optional columns with their types
-    required_columns_types, optional_columns_types = \
-        get_optype_param_requirements(op_type="gen_commit_cap")
-
-    # Load in the inputs dataframe for the op type module
-    op_type_df = get_optype_inputs_as_df(
+    load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_cap",
-        required_columns=[r for r in required_columns_types.keys()],
-        optional_columns=[o for o in optional_columns_types.keys()]
+        stage=stage, op_type="gen_commit_cap"
     )
-
-    # Load required param data into the Pyomo DataPortal
-    # This requires that the param name consist of the operational type
-    # name, an underscore, and the column name
-    for req in required_columns_types.keys():
-        type_method = types_dict[required_columns_types[req]]
-        data_portal.data()["gen_commit_cap_{}".format(req)] = get_param_dict(
-            df=op_type_df, column_name=req, cast_as_type=type_method
-        )
-
-    # Load optional param data into the Pyomo DataPortal
-    # Ignore if relevant columns are not found in the dataframe
-    for req in optional_columns_types.keys():
-        type_method = types_dict[optional_columns_types[req]]
-        try:
-            data_portal.data()["gen_commit_cap_{}".format(req)] = \
-                get_param_dict(
-                    df=op_type_df, column_name=req, cast_as_type=type_method
-                )
-        # These columns are optional, so it's OK if we don't find them
-        except KeyError:
-            pass
 
 
 def export_module_specific_results(

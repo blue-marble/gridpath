@@ -32,7 +32,8 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, update_dispatch_results_table
+    determine_relevant_timepoints, update_dispatch_results_table, \
+    load_optype_module_specific_data
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint, \
     check_if_linear_horizon_last_timepoint
@@ -148,14 +149,14 @@ def add_module_specific_components(m, d):
     | duration, this is smaller than the minimum stable level, the project    |
     | will have a shutdown trajectory across multiple timepoitns.             |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_min_up_time_hrs`                                |
+    | | :code:`gen_commit_lin_min_up_time_hours`                              |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The project's minimum up time in hours.                                 |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_min_down_time_hrs`                              |
+    | | :code:`gen_commit_lin_min_down_time_hours`                            |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
@@ -403,13 +404,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | Requires that when the project is started, it stays on for at least     |
-    | :code:`gen_commit_lin_min_up_time_hrs`.                                 |
+    | :code:`gen_commit_lin_min_up_time_hours`.                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitLin_Min_Down_Time_Constraint`                         |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | Requires that when the project is shut down, it stays off for at least  |
-    | :code:`gen_commit_lin_min_up_time_hrs`.                                 |
+    | :code:`gen_commit_lin_min_up_time_hours`.                               |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
@@ -592,11 +593,11 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
 
-    m.gen_commit_lin_min_up_time_hrs = Param(
+    m.gen_commit_lin_min_up_time_hours = Param(
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
     )
-    m.gen_commit_lin_min_down_time_hrs = Param(
+    m.gen_commit_lin_min_down_time_hours = Param(
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
     )
@@ -1064,7 +1065,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
     **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS
 
     When units are started, they have to stay on for a minimum number
-    of hours described by the gen_commit_lin_min_up_time_hrs parameter.
+    of hours described by the gen_commit_lin_min_up_time_hours parameter.
     The constraint is enforced by ensuring that the linear commitment
     is at least as large as the number of unit starts within min up time
     hours.
@@ -1072,7 +1073,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
     We ensure a unit turned on less than the minimum up time ago is
     still on in the current timepoint *tmp* by checking how much units
     were turned on in each 'relevant' timepoint (i.e. a timepoint that
-    begins more than or equal to gen_commit_lin_min_up_time_hrs ago
+    begins more than or equal to gen_commit_lin_min_up_time_hours ago
     relative to the start of timepoint *tmp*) and then summing those
     starts.
 
@@ -1108,7 +1109,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
     """
 
     relevant_tmps = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_lin_min_up_time_hrs[g]
+        mod, g, tmp, mod.gen_commit_lin_min_up_time_hours[g]
     )
 
     number_of_starts_min_up_time_or_less_hours_ago = \
@@ -1132,7 +1133,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
             ]
             and
             sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-            < mod.gen_commit_lin_min_up_time_hrs[g]
+            < mod.gen_commit_lin_min_up_time_hours[g]
             and
             tmp != mod.last_hrz_tmp[
                 mod.balancing_type_project[g],
@@ -1152,7 +1153,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS
 
     When units are shut down, they have to stay off for a minimum number
-    of hours described by the gen_commit_lin_min_down_time_hrs parameter.
+    of hours described by the gen_commit_lin_min_down_time_hours parameter.
     The constraint is enforced by ensuring that (1-linear commitment)
     is at least as large as the number of unit shutdowns within min down
     time hours.
@@ -1160,7 +1161,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     We ensure a unit shut down less than the minimum up time ago is
     still off in the current timepoint *tmp* by checking how much units
     were shut down in each 'relevant' timepoint (i.e. a timepoint that
-    begins more than or equal to gen_commit_lin_min_down_time_hrs ago
+    begins more than or equal to gen_commit_lin_min_down_time_hours ago
     relative to the start of timepoint *tmp*) and then summing those
     shutdowns.
 
@@ -1174,7 +1175,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     """
 
     relevant_tmps = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_lin_min_down_time_hrs[g]
+        mod, g, tmp, mod.gen_commit_lin_min_down_time_hours[g]
     )
 
     number_of_stops_min_down_time_or_less_hours_ago = \
@@ -1198,7 +1199,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
             ]
             and
             sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-            < mod.gen_commit_lin_min_down_time_hrs[g]
+            < mod.gen_commit_lin_min_down_time_hours[g]
             and
             tmp != mod.last_hrz_tmp[
                 mod.balancing_type_project[g],
@@ -1814,131 +1815,12 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
-    min_stable_fraction = dict()
-    shutdown_plus_ramp_down_rate = dict()
-    ramp_up_when_on_rate = dict()
-    ramp_down_when_on_rate = dict()
-    min_up_time = dict()
-    min_down_time = dict()
-    shutdown_cost = dict()
-    startup_fuel = dict()
-
-    header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t", header=None, nrows=1
-    ).values[0]
-
-    optional_columns = ["shutdown_plus_ramp_down_rate",
-                        "ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate",
-                        "min_up_time_hours",
-                        "min_down_time_hours",
-                        "shutdown_cost_per_mw",
-                        "startup_fuel_mmbtu_per_mw"]
-    used_columns = [c for c in optional_columns if c in header]
-
-    dynamic_components = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type",
-                 "min_stable_level_fraction"] + used_columns
-
+    # Load data from projects.tab and get the list of projects of this type
+    gen_commit_lin_projects = load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_lin"
     )
-    for row in zip(dynamic_components["project"],
-                   dynamic_components["operational_type"],
-                   dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "gen_commit_lin":
-            min_stable_fraction[row[0]] = float(row[2])
-        else:
-            pass
-    data_portal.data()["gen_commit_lin_min_stable_level_fraction"] = \
-        min_stable_fraction
-    gen_commit_lin_projects = min_stable_fraction.keys()
-
-    # Ramp rate limits are optional, will default to 1 if not specified
-    # (startup plus ramp up rate is read in separately because different
-    #  startup types, e.g. hot/cold).
-    if "shutdown_plus_ramp_down_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["shutdown_plus_ramp_down_rate"]):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_shutdown_plus_ramp_down_rate"] = \
-            shutdown_plus_ramp_down_rate
-
-    if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                ramp_up_when_on_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_ramp_up_when_on_rate"] = \
-            ramp_up_when_on_rate
-
-    if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                ramp_down_when_on_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_ramp_down_when_on_rate"] = \
-            ramp_down_when_on_rate
-
-    # Up and down time limits are optional, will default to 1 if not specified
-    if "min_up_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_up_time_hours"]):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                min_up_time[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_min_up_time_hrs"] = min_up_time
-
-    if "min_down_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_down_time_hours"]):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                min_down_time[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_min_down_time_hrs"] = min_down_time
-
-    # Shutdown costs are optional, will default to 0 if not specified
-    if "shutdown_cost_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["shutdown_cost_per_mw"]
-                       ):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                shutdown_cost[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_shutdown_cost_per_mw"] = \
-            shutdown_cost
-
-    # Startup fuel is optional, will default to 0 if not specified
-    if "startup_fuel_mmbtu_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_fuel_mmbtu_per_mw"]
-                       ):
-            if row[1] == "gen_commit_lin" and row[2] != ".":
-                startup_fuel[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_lin_startup_fuel_mmbtu_per_mw"] = \
-            startup_fuel
 
     # Startup characteristics
     df = pd.read_csv(

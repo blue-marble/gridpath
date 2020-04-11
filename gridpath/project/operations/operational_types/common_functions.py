@@ -291,3 +291,60 @@ def get_types_dict():
         "float": float,
         "int": int
     }
+
+
+def load_optype_module_specific_data(
+        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :return:
+    """
+    # String to method dicionary for types
+    types_dict = get_types_dict()
+
+    # Get the required and optional columns with their types
+    required_columns_types, optional_columns_types = \
+        get_optype_param_requirements(op_type=op_type)
+
+    # Load in the inputs dataframe for the op type module
+    op_type_df = get_optype_inputs_as_df(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type=op_type,
+        required_columns=[r for r in required_columns_types.keys()],
+        optional_columns=[o for o in optional_columns_types.keys()]
+    )
+
+    # Get the list of projects of this operational type
+    # We'll return this at the end, as some operational types use the list
+    # after calling this function
+    op_type_projects = op_type_df["project"].to_list()
+
+    # Load required param data into the Pyomo DataPortal
+    # This requires that the param name consist of the operational type
+    # name, an underscore, and the column name
+    for req in required_columns_types.keys():
+        type_method = types_dict[required_columns_types[req]]
+        data_portal.data()["{}_{}".format(op_type, req)] = get_param_dict(
+            df=op_type_df, column_name=req, cast_as_type=type_method
+        )
+
+    # Load optional param data into the Pyomo DataPortal
+    # Ignore if relevant columns are not found in the dataframe
+    for opt in optional_columns_types.keys():
+        type_method = types_dict[optional_columns_types[opt]]
+        try:
+            data_portal.data()["{}_{}".format(op_type, opt)] = \
+                get_param_dict(
+                    df=op_type_df, column_name=opt, cast_as_type=type_method
+                )
+        # These columns are optional, so it's OK if we don't find them
+        except KeyError:
+            pass
+
+    return op_type_projects

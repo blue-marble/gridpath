@@ -26,6 +26,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
+from gridpath.project.operations.operational_types.common_functions import \
+    load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -84,7 +86,7 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_hydro_must_take_ramp_up_rate`                              |
+    | | :code:`gen_hydro_must_take_ramp_up_when_on_rate`                      |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -92,7 +94,7 @@ def add_module_specific_components(m, d):
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_hydro_must_take_ramp_down_rate`                            |
+    | | :code:`gen_hydro_must_take_ramp_down_when_on_rate`                    |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -148,13 +150,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_hydro_must_take_ramp_up_rate`.                               |
+    | :code:`gen_hydro_must_take_ramp_up_when_on_rate`.                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Ramp_Down_Constraint`                         |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_hydro_must_take_ramp_down_rate`.                             |
+    | :code:`gen_hydro_must_take_ramp_down_when_on_rate`.                     |
     +-------------------------------------------------------------------------+
 
     """
@@ -196,12 +198,12 @@ def add_module_specific_components(m, d):
     # Optional Params
     ###########################################################################
 
-    m.gen_hydro_must_take_ramp_up_rate = Param(
+    m.gen_hydro_must_take_ramp_up_when_on_rate = Param(
         m.GEN_HYDRO_MUST_TAKE,
         within=PercentFraction, default=1
     )
 
-    m.gen_hydro_must_take_ramp_down_rate = Param(
+    m.gen_hydro_must_take_ramp_down_when_on_rate = Param(
         m.GEN_HYDRO_MUST_TAKE,
         within=PercentFraction, default=1
     )
@@ -369,7 +371,7 @@ def ramp_up_rule(mod, g, tmp):
         return Constraint.Skip
     # If you can ramp up the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_must_take_ramp_up_rate[g] * 60 \
+    elif mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
             * mod.hrs_in_tmp[
         mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
@@ -384,7 +386,7 @@ def ramp_up_rule(mod, g, tmp):
                       g, mod.prev_tmp[
                           tmp, mod.balancing_type_project[g]]]) \
                <= \
-               mod.gen_hydro_must_take_ramp_up_rate[g] * 60 \
+               mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
                * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]]\
                * mod.Capacity_MW[g, mod.period[tmp]] \
@@ -411,7 +413,7 @@ def ramp_down_rule(mod, g, tmp):
         return Constraint.Skip
     # If you can ramp down the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_must_take_ramp_down_rate[g] * 60 \
+    elif mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
             * mod.hrs_in_tmp[
         mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
@@ -426,7 +428,7 @@ def ramp_down_rule(mod, g, tmp):
                       g, mod.prev_tmp[
                           tmp, mod.balancing_type_project[g]]]) \
                >= \
-               - mod.gen_hydro_must_take_ramp_down_rate[g] * 60 \
+               - mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
                * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]]\
                * mod.Capacity_MW[g, mod.period[tmp]] \
@@ -545,23 +547,15 @@ def load_module_specific_data(m, data_portal,
     :param stage:
     :return:
     """
-    # Determine list of projects
-    projects = list()
-
-    prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"]
+    # Determine list of projects load params from projects.tab (optional
+    # ramp rates)
+    projects = load_optype_module_specific_data(
+        mod=m, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_hydro_must_take"
     )
 
-    for row in zip(prj_op_type_df["project"],
-                   prj_op_type_df["operational_type"]):
-        if row[1] == 'gen_hydro_must_take':
-            projects.append(row[0])
-        else:
-            pass
-
+    # Load hydro operational data from hydro-specific input files
     # Determine subset of project-horizons in hydro budgets file
     project_horizons = list()
     avg = dict()
@@ -594,48 +588,6 @@ def load_module_specific_data(m, data_portal,
     data_portal.data()["gen_hydro_must_take_average_power_fraction"] = avg
     data_portal.data()["gen_hydro_must_take_min_power_fraction"] = min
     data_portal.data()["gen_hydro_must_take_max_power_fraction"] = max
-
-    # Ramp rate limits are optional; will default to 1 if not specified
-    ramp_up_rate = dict()
-    ramp_down_rate = dict()
-    header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t", header=None, nrows=1
-    ).values[0]
-
-    optional_columns = ["ramp_up_when_on_rate", "ramp_down_when_on_rate"]
-    used_columns = [c for c in optional_columns if c in header]
-
-    dynamic_components = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"] + used_columns
-    )
-
-    if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]
-                       ):
-            if row[1] == "gen_hydro_must_take" and row[2] != ".":
-                ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_hydro_must_take_ramp_up_rate"] = ramp_up_rate
-
-    if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]
-                       ):
-            if row[1] == "gen_hydro_must_take" and row[2] != ".":
-                ramp_down_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_hydro_must_take_ramp_down_rate"] = \
-            ramp_down_rate
 
 
 # Database
