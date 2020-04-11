@@ -173,13 +173,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_always_on_ramp_up_when_on_rate`.                                     |
+    | :code:`gen_always_on_ramp_up_when_on_rate`.                             |
     +-------------------------------------------------------------------------+
     | | :code:`GenAlwaysOn_Ramp_Down_Constraint`                              |
     | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_always_on_ramp_down_when_on_rate`.                                   |
+    | :code:`gen_always_on_ramp_down_when_on_rate`.                           |
     +-------------------------------------------------------------------------+
     | Fuel Burn                                                               |
     +-------------------------------------------------------------------------+

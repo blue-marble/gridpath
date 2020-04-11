@@ -150,13 +150,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_hydro_must_take_ramp_up_when_on_rate`.                               |
+    | :code:`gen_hydro_must_take_ramp_up_when_on_rate`.                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydroMustTake_Ramp_Down_Constraint`                         |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_hydro_must_take_ramp_down_when_on_rate`.                             |
+    | :code:`gen_hydro_must_take_ramp_down_when_on_rate`.                     |
     +-------------------------------------------------------------------------+
 
     """
