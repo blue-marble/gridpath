@@ -956,7 +956,6 @@ class TestExamples(unittest.TestCase):
         """
         Check objective function value of "test_aux_cons" example
 
-
         Note: the objective function value is lower than that for the "test"
         example because the auxiliary consumption results in less
         overgeneration and therefore lower overgeneration penalty.
