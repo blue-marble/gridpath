@@ -2146,7 +2146,7 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-power_mw FLOAT,
+power_mw FLOAT,  -- net power in case there's auxiliary consumption
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,
@@ -2157,6 +2157,8 @@ started_units INTEGER,
 stopped_units INTEGER,
 synced_units INTEGER,
 active_startup_type INTEGER,
+auxiliary_consumption_mw FLOAT,
+gross_power_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

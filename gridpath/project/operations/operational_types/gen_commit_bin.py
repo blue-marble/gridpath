@@ -1965,8 +1965,10 @@ def export_module_specific_results(mod, d,
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "power_mw", "committed_mw",
-                         "committed_units", "started_units", "stopped_units",
+                         "load_zone", "gross_power_mw",
+                         "auxiliary_consumption_mw", "net_power_mw",
+                         "committed_mw", "committed_units",
+                         "started_units", "stopped_units",
                          "synced_units", "active_startup_type"
                          ])
 
@@ -1982,6 +1984,9 @@ def export_module_specific_results(mod, d,
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenCommitBin_Provide_Power_MW[p, tmp]),
+                value(mod.GenCommitBin_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.GenCommitBin_Provide_Power_MW[p, tmp]) -
+                value(mod.GenCommitBin_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.GenCommitBin_Pmax_MW[p, tmp])
                 * value(mod.GenCommitBin_Commit[p, tmp]),
                 value(mod.GenCommitBin_Commit[p, tmp]),

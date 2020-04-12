@@ -1349,7 +1349,9 @@ def export_module_specific_results(
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
-                         "power_mw", "committed_mw", "committed_units"
+                         "gross_power_mw",
+                         "auxiliary_consumption_mw", "net_power_mw",
+                         "committed_mw", "committed_units"
                          ])
 
         for (p, tmp) \
@@ -1366,6 +1368,9 @@ def export_module_specific_results(
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
+                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.GenCommitCap_Provide_Power_MW[p, tmp]) -
+                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]) /
                 mod.gen_commit_cap_unit_size_mw[p]
