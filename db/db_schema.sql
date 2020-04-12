@@ -724,6 +724,8 @@ charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
+aux_consumption_frac_capacity FLOAT,
+aux_consumption_frac_power FLOAT,
 last_commitment_stage INTEGER,
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max

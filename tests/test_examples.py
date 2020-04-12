@@ -952,6 +952,28 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_aux_cons(self):
+        """
+        Check objective function value of "test_aux_cons" example
+
+
+        Note: the objective function value is lower than that for the "test"
+        example because the auxiliary consumption results in less
+        overgeneration and therefore lower overgeneration penalty.
+        """
+        actual_objective = \
+            run_end_to_end.main([
+                "--database", "../db/test_examples.db",
+                "--scenario", "test_aux_cons",
+                "--scenario_location", EXAMPLES_DIRECTORY,
+                "--quiet", "--mute_solver_output", "--testing"
+            ])
+
+        expected_objective = 836737625.8990427
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
     @classmethod
     def tearDownClass(cls):
         os.remove("../db/test_examples.db")
