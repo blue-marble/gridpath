@@ -342,7 +342,8 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's total power output (in MW) in each operational timepoint, |
-    | including power from a startup or shutdown trajectory.                  |
+    | including power from a startup or shutdown trajectory. If modeling      |
+    | auxiliary consumption, this is the gross power output.                  |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp`                          |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |

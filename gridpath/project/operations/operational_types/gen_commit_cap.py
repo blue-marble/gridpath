@@ -205,6 +205,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
+    | If modeling auxiliary consumption, this is the gross power output.      |
     +-------------------------------------------------------------------------+
     | | :code:`Commit_Capacity_MW`                                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
