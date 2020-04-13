@@ -6,7 +6,7 @@ import logging
 import os
 import unittest
 
-from gridpath import run_end_to_end
+from gridpath import run_end_to_end, validate_inputs
 from db import create_database, port_csvs_to_gridpath
 
 
@@ -67,9 +67,10 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test(self):
         """
-        Check objective function value of "test" example
+        Check objective function value and input validation of "test" example
         :return:
         """
+        # Check objective function
         actual_objective = \
             run_end_to_end.main(["--database", "../db/test_examples.db",
                                  "--scenario", "test",
@@ -81,6 +82,11 @@ class TestExamples(unittest.TestCase):
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
+
+        # Check that validate_inputs doesn't throw errors
+        validate_inputs.main(["--database", "../db/test_examples.db",
+                              "--scenario", "test",
+                              "--quiet"])
 
     def test_example_test_no_overgen_allowed(self):
         """
