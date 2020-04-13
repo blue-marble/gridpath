@@ -163,6 +163,20 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's minimum down time in hours.                               |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_aux_consumption_frac_capacity`                  |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of committed capacity.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_aux_consumption_frac_power`                     |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_startup_cost_per_mw`                            |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -311,7 +325,8 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's total power output (in MW) in each operational timepoint, |
-    | including power from a startup or shutdown trajectory.                  |
+    | including power from a startup or shutdown trajectory. If modeling      |
+    | auxiliary consumption, this is the gross power output.                  |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp`                          |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
@@ -361,6 +376,12 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's total downward reserves offered (in MW) in each timepoint.|
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Auxiliary_Consumption_MW`                         |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -601,6 +622,18 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
     )
+    
+    m.gen_commit_lin_aux_consumption_frac_capacity = Param(
+        m.GEN_COMMIT_LIN,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_commit_lin_aux_consumption_frac_power = Param(
+        m.GEN_COMMIT_LIN,
+        within=PercentFraction,
+        default=0
+    )
 
     m.gen_commit_lin_startup_cost_per_mw = Param(
         m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
@@ -733,6 +766,11 @@ def add_module_specific_components(m, d):
     m.GenCommitLin_Downwards_Reserves_MW = Expression(
         m.GEN_COMMIT_LIN_OPR_TMPS,
         rule=downwards_reserve_rule
+    )
+
+    m.GenCommitLin_Auxiliary_Consumption_MW = Expression(
+        m.GEN_COMMIT_LIN_OPR_TMPS,
+        rule=auxiliary_consumption_rule
     )
 
     # Constraints
@@ -893,6 +931,19 @@ def provide_power_rule(mod, g, tmp):
         + sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
               for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]) \
         + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
+
+
+def auxiliary_consumption_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenCommitLin_Auxiliary_Consumption_MW
+    **Defined Over**: GEN_COMMIT_LIN_OPR_TMPS
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.GenCommitLin_Commit[g, tmp] \
+        * mod.gen_commit_lin_aux_consumption_frac_capacity[g] \
+        + mod.GenCommitLin_Provide_Power_MW[g, tmp] * \
+        mod.gen_commit_lin_aux_consumption_frac_power[g]
 
 
 def ramp_up_rate_rule(mod, g, tmp):
@@ -1666,14 +1717,16 @@ def power_provision_rule(mod, g, tmp):
     constrained to be between the generator's minimum stable level and its
     capacity if the generator is committed and 0 otherwise.
     """
-    return mod.GenCommitLin_Provide_Power_MW[g, tmp]
+    return mod.GenCommitLin_Provide_Power_MW[g, tmp] - \
+        mod.GenCommitLin_Auxiliary_Consumption_MW[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision of dispatchable generators is an endogenous variable.
     """
-    return mod.GenCommitLin_Provide_Power_MW[g, tmp]
+    return mod.GenCommitLin_Provide_Power_MW[g, tmp] - \
+        mod.GenCommitLin_Auxiliary_Consumption_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -1889,8 +1942,10 @@ def export_module_specific_results(mod, d,
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "power_mw", "committed_mw",
-                         "committed_units", "started_units", "stopped_units",
+                         "load_zone", "gross_power_mw",
+                         "auxiliary_consumption_mw", "net_power_mw",
+                         "committed_mw", "committed_units",
+                         "started_units", "stopped_units",
                          "synced_units", "active_startup_type"
                          ])
 
@@ -1906,6 +1961,9 @@ def export_module_specific_results(mod, d,
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenCommitLin_Provide_Power_MW[p, tmp]),
+                value(mod.GenCommitLin_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.GenCommitLin_Provide_Power_MW[p, tmp]) -
+                value(mod.GenCommitLin_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.GenCommitLin_Pmax_MW[p, tmp])
                 * value(mod.GenCommitLin_Commit[p, tmp]),
                 value(mod.GenCommitLin_Commit[p, tmp]),

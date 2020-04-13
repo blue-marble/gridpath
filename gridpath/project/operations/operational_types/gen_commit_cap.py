@@ -179,6 +179,20 @@ def add_module_specific_components(m, d):
     | The project's startup fuel burn in MMBtu per MW of capacity that is     |
     | started up.                                                             |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_cap_aux_consumption_frac_capacity`                  |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of committed capacity.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_cap_aux_consumption_frac_power`                     |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -191,6 +205,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
+    | If modeling auxiliary consumption, this is the gross power output.      |
     +-------------------------------------------------------------------------+
     | | :code:`Commit_Capacity_MW`                                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -255,6 +270,16 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
 
     |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenCommitCap_Auxiliary_Consumption_MW`                         |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
@@ -463,6 +488,18 @@ def add_module_specific_components(m, d):
         default=0
     )
 
+    m.gen_commit_cap_aux_consumption_frac_capacity = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_commit_cap_aux_consumption_frac_power = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction,
+        default=0
+    )
+
     # Variables
     ###########################################################################
     m.GenCommitCap_Provide_Power_MW = Var(
@@ -545,6 +582,11 @@ def add_module_specific_components(m, d):
     m.GenCommitCap_Downwards_Reserves_MW = Expression(
         m.GEN_COMMIT_CAP_OPR_TMPS,
         rule=downwards_reserve_rule
+    )
+
+    m.GenCommitCap_Auxiliary_Consumption_MW = Expression(
+        m.GEN_COMMIT_CAP_OPR_TMPS,
+        rule=auxiliary_consumption_rule
     )
 
     # Constraints
@@ -639,6 +681,19 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_CAP_VOM_PRJS_OPR_TMPS_SGMS,
         rule=variable_om_cost_constraint_rule
     )
+
+
+# Expression Rules
+###############################################################################
+def auxiliary_consumption_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+    """
+    return mod.Commit_Capacity_MW[g, tmp] \
+        * mod.gen_commit_cap_aux_consumption_frac_capacity[g] \
+        + mod.GenCommitCap_Provide_Power_MW[g, tmp] * \
+        mod.gen_commit_cap_aux_consumption_frac_power[g]
 
 
 # Constraint Formulation Rules
@@ -1127,14 +1182,16 @@ def power_provision_rule(mod, g, tmp):
     variable constrained to be between the minimum stable level (defined as
     a fraction of committed capacity) and the committed capacity.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp]
+    return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \
+        mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision from dispatchable generators is an endogenous variable.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp]
+    return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \
+        mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -1293,7 +1350,9 @@ def export_module_specific_results(
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
-                         "power_mw", "committed_mw", "committed_units"
+                         "gross_power_mw",
+                         "auxiliary_consumption_mw", "net_power_mw",
+                         "committed_mw", "committed_units"
                          ])
 
         for (p, tmp) \
@@ -1310,6 +1369,9 @@ def export_module_specific_results(
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
+                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.GenCommitCap_Provide_Power_MW[p, tmp]) -
+                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]) /
                 mod.gen_commit_cap_unit_size_mw[p]

@@ -147,12 +147,16 @@ def update_dispatch_results_table(
             started_units = get_column_row_value(header, "started_units", row)
             stopped_units = get_column_row_value(header, "stopped_units", row)
             synced_units = get_column_row_value(header, "synced_units", row)
+            auxiliary_consumption = get_column_row_value(
+                header, "auxiliary_consumption_mw", row)
+            gross_power = get_column_row_value(header, "gross_power_mw", row)
 
             results.append(
                 (scheduled_curtailment_mw, subhourly_curtailment_mw,
                  subhourly_energy_delivered_mw, total_curtailment_mw,
                  committed_mw, committed_units, started_units,
-                 stopped_units, synced_units,
+                 stopped_units, synced_units, auxiliary_consumption,
+                 gross_power,
                  scenario_id, project, period, subproblem, stage, timepoint)
             )
 
@@ -167,7 +171,9 @@ def update_dispatch_results_table(
         committed_units = ?,
         started_units = ?,
         stopped_units = ?,
-        synced_units = ?
+        synced_units = ?,
+        auxiliary_consumption_mw = ?,
+        gross_power_mw = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?

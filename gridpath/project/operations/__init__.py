@@ -407,6 +407,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
         minimum_duration_hours, maximum_duration_hours,
+        aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
@@ -504,6 +505,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         "min_up_time_hours", "min_down_time_hours",
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours", "maximum_duration_hours",
+        "aux_consumption_frac_capacity", "aux_consumption_frac_power",
         "last_commitment_stage"
     ]
     append_to_input_file(
