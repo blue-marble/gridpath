@@ -485,15 +485,12 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
-    # TODO: remove "as annualized_real_cost_per_kw_yr" statement
-    #  once database columns and tab file columns are aligned
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
         """
         SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000 as annualized_real_cost_per_kw_yr,
-        annualized_real_cost_per_kwh_yr * 1000 as 
-        annualized_real_cost_per_kwh_yr
+        annualized_real_cost_per_mw_yr,
+        annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
@@ -503,7 +500,7 @@ def get_module_specific_inputs_from_database(
         
         INNER JOIN
             (SELECT project, period, lifetime_yrs,
-            annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
+            annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)

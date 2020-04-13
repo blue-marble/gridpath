@@ -222,7 +222,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         LEFT OUTER JOIN
         (SELECT project, period, 
-        annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year
+        annual_fixed_cost_per_mw_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)

@@ -592,8 +592,8 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-annual_fixed_cost_per_kw_year FLOAT,
-annual_fixed_cost_per_kwh_year FLOAT,
+annual_fixed_cost_per_mw_year FLOAT,
+annual_fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
@@ -618,8 +618,8 @@ project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 lifetime_yrs INTEGER,
-annualized_real_cost_per_kw_yr FLOAT,
-annualized_real_cost_per_kwh_yr FLOAT,
+annualized_real_cost_per_mw_yr FLOAT,
+annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, period),

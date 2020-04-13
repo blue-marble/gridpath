@@ -184,7 +184,7 @@ class TestGenNewBin(unittest.TestCase):
 
     def test_input_validations(self):
         cost_df_columns = ["project", "period", "lifetime_yrs",
-            "annualized_real_cost_per_kw_yr"]
+                           "annualized_real_cost_per_mw_yr"]
         bld_size_df_columns = ["project", "gen_new_bin_build_size_mw"]
         test_cases = {
             # Make sure correct inputs don't throw error

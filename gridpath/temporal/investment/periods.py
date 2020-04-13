@@ -126,7 +126,7 @@ def add_model_components(m, d):
 
     # TODO: think numbers_years_represent through and figure out appropriate
     #  documentation wording; can we have periods that are smaller than an
-    #  year, considering how costs are defined ($/kW-yr)?
+    #  year, considering how costs are defined ($/MW-yr)?
 
     m.period = Param(
         m.TMPS,

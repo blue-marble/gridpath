@@ -43,8 +43,8 @@ def update_project_new_costs(
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_new_cost
         (project_new_cost_scenario_id, project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr,
-        annualized_real_cost_per_kwh_yr)
+        annualized_real_cost_per_mw_yr,
+        annualized_real_cost_per_mwh_yr)
         VALUES (?, ?, ?, ?, ?, ?);
         """
 
