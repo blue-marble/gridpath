@@ -1,31 +1,31 @@
-project	load_point_fraction	average_heat_rate_mmbtu_per_mwh
-Coal	0.4	1250
-Coal	1	506
-Gas_CCGT	0.5	506
-Gas_CCGT	1	256
-Gas_CT	0.4	208.33333
-Gas_CT	1	88.13333
-Nuclear	1	1666.67
-Gas_CCGT_New	0.5	506
-Gas_CCGT_New	1	256
-Gas_CCGT_New_Binary	0.5	506
-Gas_CCGT_New_Binary	1	256
-Gas_CT_New	0.4	208.33333
-Gas_CT_New	1	88.13333
-Coal_z2	0.4	1250
-Coal_z2	1	506
-Gas_CCGT_z2	0.5	506
-Gas_CCGT_z2	1	256
-Gas_CT_z2	0.4	208.33333
-Gas_CT_z2	1	88.13333
-Nuclear_z2	1	1666.67
-Disp_Binary_Commit	0.4	208.33333
-Disp_Binary_Commit	1	88.13333
-Disp_Cont_Commit	0.4	208.33333
-Disp_Cont_Commit	1	88.13333
-Disp_No_Commit	1	8
-Clunky_Old_Gen	0.4	2083.33333
-Clunky_Old_Gen	1	842.33333
-Clunky_Old_Gen2	0.4	2083.33333
-Clunky_Old_Gen2	1	842.33333
-Nuclear_Flexible	1	10
+project	period	load_point_fraction	average_heat_rate_mmbtu_per_mwh
+Coal	0	0.4	1250
+Coal	0	1	506
+Gas_CCGT	0	0.5	506
+Gas_CCGT	0	1	256
+Gas_CT	0	0.4	208.33333
+Gas_CT	0	1	88.13333
+Nuclear	0	1	1666.67
+Gas_CCGT_New	0	0.5	506
+Gas_CCGT_New	0	1	256
+Gas_CCGT_New_Binary	0	0.5	506
+Gas_CCGT_New_Binary	0	1	256
+Gas_CT_New	0	0.4	208.33333
+Gas_CT_New	0	1	88.13333
+Coal_z2	0	0.4	1250
+Coal_z2	0	1	506
+Gas_CCGT_z2	0	0.5	506
+Gas_CCGT_z2	0	1	256
+Gas_CT_z2	0	0.4	208.33333
+Gas_CT_z2	0	1	88.13333
+Nuclear_z2	0	1	1666.67
+Disp_Binary_Commit	0	0.4	208.33333
+Disp_Binary_Commit	0	1	88.13333
+Disp_Cont_Commit	0	0.4	208.33333
+Disp_Cont_Commit	0	1	88.13333
+Disp_No_Commit	0	1	8
+Clunky_Old_Gen	0	0.4	2083.33333
+Clunky_Old_Gen	0	1	842.33333
+Clunky_Old_Gen2	0	0.4	2083.33333
+Clunky_Old_Gen2	0	1	842.33333
+Nuclear_Flexible	0	1	10
