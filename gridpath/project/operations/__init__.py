@@ -585,7 +585,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     )
 
     # Convert heat rates to dataframe and pre-process data
-    # (filter out only projects with fuel; select columns)
+    # (filter out only projects with fuel; select columns, convert periods
+    # type to integer)
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
@@ -593,7 +594,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     fuel_mask = pd.notna(hr_df["fuel"])
     columns = ["project", "period", "load_point_fraction",
                "average_heat_rate_mmbtu_per_mwh"]
-    heat_rates = hr_df[columns][fuel_mask].values
+    hr_df = hr_df[columns][fuel_mask].astype({"period": int})
+    heat_rates = hr_df.values
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
               "w", newline="") as \
