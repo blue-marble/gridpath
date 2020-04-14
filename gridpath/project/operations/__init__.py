@@ -430,6 +430,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
+    # Use left outer join so we include all projects, even those without a
+    # heat rate scenario_id match (for input validation)
     c1 = conn.cursor()
     heat_rates = c1.execute(
         """
@@ -449,12 +451,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    # Get heat rate curves;
+    # Get variable O&M curves;
     # Select only variable OM curves of projects in the portfolio
+    # Use left outer join so we include all projects, even those without a
+    # variable O&M scenario_id match (for input validation)
     c3 = conn.cursor()
     variable_om = c3.execute(
         """
-        SELECT project, load_point_fraction, average_variable_om_cost_per_mwh
+        SELECT project, variable_om_curves_scenario_id, load_point_fraction, 
+        average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN
@@ -463,9 +468,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE project_operational_chars_scenario_id = {}
         ) AS op_char
         USING(project)
-        -- only select variable OM curves inputs with matching project and 
-        -- vom_curves_scenario_id
-        INNER JOIN
+        -- only select variable OM curves inputs with matching projects
+        -- (will return all projects in portfolio with Nulls if no scenario_id 
+        -- match)
+        LEFT OUTER JOIN
         inputs_project_variable_om_curves
         USING(project, variable_om_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
@@ -516,7 +522,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         new_column_names=new_columns
     )
 
-    # Convert heat rates to dataframes and pre-process data
+    # Convert heat rates to dataframe and pre-process data
     # (filter out only projects with fuel; select columns)
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
@@ -537,6 +543,16 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         for row in heat_rates:
             writer.writerow(row)
+
+    # Convert variable O&M curves to dataframe and pre-process data
+    # (remove the variable O&M scenario ID column)
+    vom_df = pd.DataFrame(
+        data=variable_om.fetchall(),
+        columns=[s[0] for s in variable_om.description]
+    )
+    columns = ["project", "load_point_fraction",
+               "average_variable_om_cost_per_mwh"]
+    variable_om = vom_df[columns].values
 
     with open(os.path.join(inputs_directory, "variable_om_curves.tab"),
               "w", newline="") as variable_om_tab_file:
@@ -566,10 +582,14 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Get the project input data
-    heat_rates, variable_om = get_inputs_from_database(
+    proj_opchar, heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
+    prj_df = pd.DataFrame(
+        data=proj_opchar.fetchall(),
+        columns=[s[0] for s in proj_opchar.description]
+    )
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
@@ -579,12 +599,68 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in variable_om.description]
     )
 
+    # Check data types:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_operational_chars"]
+    )
+
+    dtype_errors, error_columns = check_dtypes(prj_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "High",
+             "Invalid data type",
+             error
+             )
+        )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in prj_df.columns if expected_dtypes[c] ==
+                       "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    sign_errors = check_column_sign_positive(prj_df, valid_numeric_columns)
+    for error in sign_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "High",
+             "Invalid numeric sign",
+             error
+             )
+        )
+
+    # Check 0 < min stable fraction <= 1
+    if "min_stable_level" not in error_columns:
+        validation_errors = validate_min_stable_level(prj_df)
+        for error in validation_errors:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 subproblem,
+                 stage,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "High",
+                 "Invalid min_stable_level",
+                 error
+                 )
+            )
+
     # Check data types heat_rates and variable_om:
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     sub_hr_df = hr_df[hr_curve_mask][
         ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
     ]
-    vom_curve_mask = pd.notna(hr_df["variable_om_curves_scenario_id"])
+    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
     sub_vom_df = vom_df[vom_curve_mask][
         ["project", "load_point_fraction", "average_variable_om_cost_per_mwh"]
     ]
@@ -715,6 +791,27 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
+
+
+def validate_min_stable_level(df):
+    """
+    Check 0 < min stable fraction <= 1
+    :param df:
+    :return:
+    """
+    results = []
+
+    invalids = ((df["min_stable_level"] <= 0) |
+                (df["min_stable_level"] > 1))
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': expected 0 < min_stable_level <= 1"
+            .format(print_bad_projects)
+        )
+
+    return results
 
 
 def validate_fuel_vs_heat_rates(hr_df):

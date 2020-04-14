@@ -1423,13 +1423,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         """SELECT project, operational_type,
         min_stable_level, unit_size_mw,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours, maximum_duration_hours
+        minimum_duration_hours, maximum_duration_hours
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type,
         min_stable_level, unit_size_mw,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours
+        minimum_duration_hours, maximum_duration_hours
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
