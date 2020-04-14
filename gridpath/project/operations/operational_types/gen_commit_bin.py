@@ -1694,9 +1694,9 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
     return \
         mod.GenCommitBin_Fuel_Burn_MMBTU[g, tmp] \
         >= \
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
+        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
         * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, s] \
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
         * mod.GenCommitBin_Synced[g, tmp]
 
@@ -1718,9 +1718,9 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     """
     return mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp] \
         >= \
-        mod.vom_slope_cost_per_mwh[g, s] \
+        mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
         * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, s] \
+        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
         * mod.GenCommitBin_Synced[g, tmp]
 

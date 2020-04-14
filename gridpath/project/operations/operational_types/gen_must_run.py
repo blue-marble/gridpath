@@ -199,7 +199,7 @@ def fuel_burn_rule(mod, g, tmp):
     place.
     """
     if g in mod.FUEL_PRJS:
-        return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
+        return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
             * mod.Power_Provision_MW[g, tmp]
     else:
         return 0

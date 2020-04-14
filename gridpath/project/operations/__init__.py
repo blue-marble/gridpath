@@ -36,11 +36,12 @@ def add_model_components(m, d):
     |                                                                         |
     | The list projects that consume fuel.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_PRJ_SGMS`                                                 |
+    | | :code:`FUEL_PRJ_PRD_SGMS`                                             |
     |                                                                         |
-    | Two-dimensional set describing fuel projects and their heat rate curve  |
-    | segment IDs. Unless the project's heat rate is constant, the heat rate  |
-    | can be defined by multiple piecewise linear segments.                   |
+    | Three-dimensional set describing fuel projects and their heat rate      |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | heat rate is constant, the heat rate can be defined by multiple         |
+    | piecewise linear segments.                                              |
     +-------------------------------------------------------------------------+
     | | :code:`FUEL_PRJ_OPR_TMPS`                                             |
     |                                                                         |
@@ -53,12 +54,12 @@ def add_model_components(m, d):
     | segment IDs, and the timepoints in which the project could be           |
     | operational. The fuel burn constraint is applied over this set.         |
     +-------------------------------------------------------------------------+
-    | | :code:`VOM_PRJS_SGMS`                                                 |
+    | | :code:`VOM_PRJS_PRDS_SGMS`                                            |
     |                                                                         |
-    | Two-dimensional set describing projects and their variable O&M cost     |
-    | curve segment IDs. Unless the project's variable O&M is constant,       |
-    | the variable O&M cost can be defined by multiple piecewise linear       |
-    | segments.                                                               |
+    | Three-dimensional set describing projects and their variable O&M cost   |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | variable O&M is constant, the variable O&M cost can be defined by       |
+    | multiple piecewise linear segments.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`VOM_PRJS_OPR_TMPS_SGMS`                                        |
     |                                                                         |
@@ -86,38 +87,41 @@ def add_model_components(m, d):
     | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_slope_mmbtu_per_mwh`                                 |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                             |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment. The units are MMBtu of fuel burn per  |
-    | MWh of electricity generation.                                          |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                             |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear fuel burn    |
-    | for each project's heat rate segment. The units are MMBtu of fuel burn  |
-    | per MW of operational capacity per hour (multiply by operational        |
-    | capacity and timepoint duration to get fuel burn in MMBtu).             |
+    | for each project's heat rate segment in each operational period. The    |
+    | units are MMBtu of fuel burn per MW of operational capacity per hour    |
+    | (multiply by operational capacity and timepoint duration to get fuel    |
+    | burn in MMBtu).                                                         |
     +-------------------------------------------------------------------------+
     | | :code:`vom_slope_cost_per_mwh`                                        |
-    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                            |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear variable O&M     |
-    | cost for each project's variable O&M cost segment. The units are cost   |
-    | of variable O&M per MWh of electricity generation.                      |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MWh of electricity       |
+    | generation.                                                             |
     +-------------------------------------------------------------------------+
     | | :code:`vom_intercept_cost_per_mw_hr`                                  |
-    | | *Defined over*: :code:`VOM_PRJS_SGMS`                                 |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                            |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear variable O&M |
-    | cost for each project's variable O&M cost segment. The units are cost   |
-    | of variable O&M per MW of operational capacity per hour (multiply by    |
-    | operational capacity and timepoint duration to get actual cost).        |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MW of operational        |
+    | capacity per hour (multiply by operational capacity and timepoint       |
+    | duration to get actual cost).                                           |
     +-------------------------------------------------------------------------+
 
     """
@@ -133,8 +137,8 @@ def add_model_components(m, d):
         within=m.PROJECTS
     )
 
-    m.FUEL_PRJ_SGMS = Set(
-        dimen=2
+    m.FUEL_PRJ_PRD_SGMS = Set(
+        dimen=3
     )
 
     m.FUEL_PRJ_OPR_TMPS = Set(
@@ -148,12 +152,12 @@ def add_model_components(m, d):
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.FUEL_PRJ_SGMS
-            if g in mod.FUEL_PRJS and g == _g)
+            for _g, p, s in mod.FUEL_PRJ_PRD_SGMS
+            if g in mod.FUEL_PRJS and g == _g and mod.period[tmp] == p)
     )
 
-    m.VOM_PRJS_SGMS = Set(
-        dimen=2,
+    m.VOM_PRJS_PRDS_SGMS = Set(
+        dimen=3,
         ordered=True
     )
 
@@ -161,8 +165,8 @@ def add_model_components(m, d):
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.VOM_PRJS_SGMS
-            if g == _g)
+            for _g, p, s in mod.VOM_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
     )
 
     # Input Params
@@ -176,28 +180,29 @@ def add_model_components(m, d):
     )
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
         within=PositiveReals
     )
 
     m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
         within=Reals
     )
 
     m.vom_slope_cost_per_mwh = Param(
-        m.VOM_PRJS_SGMS,
+        m.VOM_PRJS_PRDS_SGMS,
         within=PositiveReals
     )
 
     m.vom_intercept_cost_per_mw_hr = Param(
-        m.VOM_PRJS_SGMS,
+        m.VOM_PRJS_PRDS_SGMS,
         within=Reals
     )
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -210,8 +215,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
         headers = next(reader)
 
-    # Load variable_om_cost_per_mwh (all projects have it, so it's defined
-    # here)
+    # Get modelled periods
+    # TODO: could we simply use m.PRJ_OPR_PRDS?
+    periods = read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "periods.tab"),
+        sep="\t"
+    )
+    periods = set(periods["period"])
+
+    # variable_om_cost_per_mwh (all projects have it, so it's defined here)
     var_cost_df = read_csv(
         os.path.join(scenario_directory, subproblem, stage,
                      "inputs", "projects.tab"),
@@ -223,7 +236,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
     data_portal.data()["variable_om_cost_per_mwh"] = var_cost_dict
 
-    def determine_fuel_prj_sgms():
+    # Heat Rate Curves
+    if "fuel" in headers:
         # TODO: read_csv seems to fail silently if file not found; check and
         #  implement validation
         hr_df = read_csv(
@@ -239,66 +253,119 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             usecols=["project", "fuel"]
         )
         pr_df = pr_df[pr_df["fuel"] != "."]
+        projects = pr_df["project"].tolist()
 
-        fuels_dict = dict(zip(pr_df["project"], pr_df["fuel"]))
-        slope_dict = {}
-        intercept_dict = {}
-        for project in fuels_dict.keys():
-            # read in the power setpoints and average heat rates
-            hr_slice = hr_df[hr_df["project"] == project]
-            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-            load_points = hr_slice["load_point_fraction"].values
-            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+        fuels_dict = dict(zip(projects, pr_df["fuel"]))
 
-            slopes, intercepts = calculate_slope_intercept(
-                project, load_points, heat_rates
-            )
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                hr_df, "average_heat_rate_mmbtu_per_mwh", projects, periods)
 
-            slope_dict.update(slopes)
-            intercept_dict.update(intercepts)
-
-        return fuels_dict, slope_dict, intercept_dict
-
-    if "fuel" in headers:
-        fuels_dict, slope_dict, intercept_dict = determine_fuel_prj_sgms()
-        fuel_projects = list(fuels_dict.keys())
         fuel_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["FUEL_PRJS"] = {None: fuel_projects}
-        data_portal.data()["FUEL_PRJ_SGMS"] = {None: fuel_project_segments}
+        data_portal.data()["FUEL_PRJS"] = {None: projects}
+        data_portal.data()["FUEL_PRJ_PRD_SGMS"] = {None: fuel_project_segments}
         data_portal.data()["fuel"] = fuels_dict
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
             intercept_dict
 
-    # Variable OM curves
+    # Variable O7M curves
     vom_df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
                      "inputs", "variable_om_curves.tab"),
         sep="\t"
     )
+    vom_projects = vom_df["project"].unique().tolist()
 
-    slope_dict = {}
-    intercept_dict = {}
-    for project in vom_df["project"].unique():
-        # read in the power setpoints and average heat rates
-        vom_slice = vom_df[vom_df["project"] == project]
-        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
-        load_points = vom_slice["load_point_fraction"].values
-        vom = vom_slice["average_variable_om_cost_per_mwh"].values
-
-        slopes, intercepts = calculate_slope_intercept(
-            project, load_points, vom
-        )
-
-        slope_dict.update(slopes)
-        intercept_dict.update(intercepts)
+    slope_dict, intercept_dict = \
+        get_slopes_intercept_by_project_period_segment(
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods)
 
     vom_project_segments = list(slope_dict.keys())
 
-    data_portal.data()["VOM_PRJS_SGMS"] = {None: vom_project_segments}
+    data_portal.data()["VOM_PRJS_PRDS_SGMS"] = {None: vom_project_segments}
     data_portal.data()["vom_slope_cost_per_mwh"] = slope_dict
     data_portal.data()["vom_intercept_cost_per_mw_hr"] = intercept_dict
+
+
+def get_slopes_intercept_by_project_period_segment(
+        df, input_col, projects, periods):
+    """
+    Given a DataFrame with the average heat rates or variable O&M curves by
+    load point fraction for each project in each period, calculate the slope
+    and intercept for the fuel burn or variable O&M cost curves for the
+    segments defined by the load points (for each project and period). If the
+    period in the DataFrame is zero, set the same slope and intercept for each
+    of the modeling periods.
+    fractions.
+
+    :param df: DataFrame with columns [project, period, load_point_fraction,
+        input_col]
+    :param input_col: string with the name of the column in the DataFrame that
+        has the average heat rate or variable O&M rate.
+    :param projects: list of all the projects to be included
+    :param periods: set of all the modeling periods to  be included
+    :return: (slope_dict, intercept_dict), with slope_dict and
+        intercept_dict a dictionary of the fuel burn / variable O&M cost slope
+        and intercept by (project, period, segment).
+
+    """
+
+    slope_dict = {}
+    intercept_dict = {}
+
+    for project in projects:
+        df_slice = df[df["project"] == project]
+        slice_periods = set(df_slice["period"])
+
+        if slice_periods == set([0]):
+            p_iterable = [0]
+        elif periods.issubset(slice_periods):
+            p_iterable = periods
+        else:
+            raise ValueError(
+                """{} for project '{}' isn't specified for all 
+                modelled periods. Set period to 0 if inputs are the 
+                same for each period or make sure all modelled periods 
+                are included.""".format(input_col, project)
+            )
+
+        for period in p_iterable:
+            df_slice_p = df_slice[df_slice["period"] == period]
+            df_slice_p = df_slice_p.sort_values(by=["load_point_fraction"])
+            load_points = df_slice_p["load_point_fraction"].values
+            averages = df_slice_p[input_col].values
+
+            slopes, intercepts = calculate_slope_intercept(
+                project, load_points, averages
+            )
+            sgms = range(len(slopes))
+
+            # If period is 0, create same inputs for all periods
+            if period == 0:
+                slope_dict.update(
+                    {(project, p, sgms[i]): slope
+                     for i, slope in enumerate(slopes)
+                     for p in periods}
+                )
+                intercept_dict.update(
+                    {(project, p, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)
+                     for p in periods}
+                )
+            # If not, create inputs for just this period
+            else:
+                slope_dict.update(
+                    {(project, period, sgms[i]): slope
+                     for i, slope in enumerate(slopes)}
+                )
+                intercept_dict.update(
+                    {(project, period, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)}
+                )
+
+    return slope_dict, intercept_dict
 
 
 def calculate_slope_intercept(project, load_points, heat_rates):
@@ -307,12 +374,14 @@ def calculate_slope_intercept(project, load_points, heat_rates):
     average heat rates or variable O&M rates.
     Note that the intercept will be normalized to the
     operational capacity (Pmax) and the timepoint duration.
-    :param project: the project name
+    :param project: the project name (for error messages)
     :param load_points: NumPy array with the loading points in fraction of Pmax
     :param heat_rates: NumPy array with the corresponding *average* heat rates
     in MMBtu per MWh or variable O&M in cost/MWh
-    :return: (slope_dict, intercept_dict): Tuple with dictionary containing
-    resp. the slope and intercepts, with (project, segement_ID) as the key.
+    :return: slopes, intercepts: tuple with the array of slopes and intercepts
+    for each segment. If more than one loading point, the array will have
+    one less element than the amount of load points.
+
     """
 
     n_points = len(load_points)
@@ -335,13 +404,10 @@ def calculate_slope_intercept(project, load_points, heat_rates):
             """.format(project)
         )
 
-    # calculate the slope and intercept for each pair of load points
-    slope_dict = {}
-    intercept_dict = {}
     # if just one point, assume constant heat rate (no intercept)
     if n_points == 1:
-        slope_dict[(project, 0)] = heat_rates[0]
-        intercept_dict[(project, 0)] = 0
+        slopes = np.array([heat_rates[0]])
+        intercepts = np.array([0])
     else:
         fuel_burn = load_points * heat_rates
         incr_loads = np.diff(load_points)
@@ -376,11 +442,7 @@ def calculate_slope_intercept(project, load_points, heat_rates):
                 """.format(project)
             )
 
-        for i in range(n_points - 1):
-            slope_dict[(project, i)] = slopes[i]
-            intercept_dict[(project, i)] = intercepts[i]
-
-    return slope_dict, intercept_dict
+    return slopes, intercepts
 
 
 # Database
@@ -435,7 +497,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     heat_rates = c1.execute(
         """
-        SELECT project, fuel, heat_rate_curves_scenario_id, 
+        SELECT project, fuel, heat_rate_curves_scenario_id, period,
         load_point_fraction, average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
@@ -458,8 +520,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c3 = conn.cursor()
     variable_om = c3.execute(
         """
-        SELECT project, variable_om_curves_scenario_id, load_point_fraction, 
-        average_variable_om_cost_per_mwh
+        SELECT project, variable_om_curves_scenario_id, period,  
+        load_point_fraction, average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN
@@ -523,14 +585,17 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     )
 
     # Convert heat rates to dataframe and pre-process data
-    # (filter out only projects with fuel; select columns)
+    # (filter out only projects with fuel; select columns, convert periods
+    # type to integer)
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
     fuel_mask = pd.notna(hr_df["fuel"])
-    columns = ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
-    heat_rates = hr_df[columns][fuel_mask].values
+    columns = ["project", "period", "load_point_fraction",
+               "average_heat_rate_mmbtu_per_mwh"]
+    hr_df = hr_df[columns][fuel_mask].astype({"period": int})
+    heat_rates = hr_df.values
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
               "w", newline="") as \
@@ -538,7 +603,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(heat_rate_tab_file, delimiter="\t",
                             lineterminator="\n")
 
-        writer.writerow(["project", "load_point_fraction",
+        writer.writerow(["project", "period", "load_point_fraction",
                          "average_heat_rate_mmbtu_per_mwh"])
 
         for row in heat_rates:
@@ -550,7 +615,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         data=variable_om.fetchall(),
         columns=[s[0] for s in variable_om.description]
     )
-    columns = ["project", "load_point_fraction",
+    columns = ["project", "period", "load_point_fraction",
                "average_variable_om_cost_per_mwh"]
     variable_om = vom_df[columns].values
 
@@ -559,7 +624,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(variable_om_tab_file, delimiter="\t",
                             lineterminator="\n")
 
-        writer.writerow(["project", "load_point_fraction",
+        writer.writerow(["project", "period", "load_point_fraction",
                          "average_variable_om_cost_per_mwh"])
 
         for row in variable_om:
@@ -599,7 +664,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in variable_om.description]
     )
 
-    # Check data types:
+    # Check data types operational chars:
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_operational_chars"]
     )
@@ -788,6 +853,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              error
              )
         )
+
+    # TODO: check that if there is a "0" for the period for a given
+    #  project there are zeroes everywhere for that project.
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
