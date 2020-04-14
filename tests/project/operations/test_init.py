@@ -313,7 +313,7 @@ class TestOperationsInit(unittest.TestCase):
             ("Disp_No_Commit", 2030, 0): 8,
             ("Clunky_Old_Gen", 2030, 0): 15,
             ("Clunky_Old_Gen2", 2030, 0): 15,
-            ("Nuclear_Flexible", 2030, 0): 10,
+            ("Nuclear_Flexible", 2030, 0): 9,
         }.items()))
         actual_fuel_burn_slope = OrderedDict(sorted(
             {(prj, p, s): instance.fuel_burn_slope_mmbtu_per_mwh[(prj, p, s)]
