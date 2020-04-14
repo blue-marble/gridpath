@@ -520,7 +520,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c3 = conn.cursor()
     variable_om = c3.execute(
         """
-        SELECT project, period, variable_om_curves_scenario_id, 
+        SELECT project, variable_om_curves_scenario_id, period,  
         load_point_fraction, average_variable_om_cost_per_mwh
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
