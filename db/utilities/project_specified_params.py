@@ -98,7 +98,7 @@ def update_project_fixed_costs(
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_specified_fixed_cost
         (project_specified_fixed_cost_scenario_id, project, period,
-        annual_fixed_cost_per_kw_year, annual_fixed_cost_per_kwh_year)
+        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year)
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

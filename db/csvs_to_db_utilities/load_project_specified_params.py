@@ -61,7 +61,7 @@ def load_project_specified_capacities(io, c, subscenario_input, data_input):
 
 def load_project_specified_fixed_costs(io, c, subscenario_input, data_input):
     """
-    Data output dictionary is {project:{period: (annual_fixed_cost_per_kw_year, annual_fixed_cost_per_kwh_year)}}
+    Data output dictionary is {project:{period: (annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year)}}
     Convert values to floats else they show up as blobs in sql db
     :param io:
     :param c:
@@ -85,21 +85,21 @@ def load_project_specified_fixed_costs(io, c, subscenario_input, data_input):
             for p in data_input_subscenario.loc[data_input_subscenario['project'] == prj]['period'].to_list():
                 project_specified_fixed_costs[prj][p] = OrderedDict()
 
-                annual_fixed_cost_kw = data_input_subscenario.loc[
+                annual_fixed_cost_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annual_fixed_cost_per_kw_year'].iloc[0]
-                if annual_fixed_cost_kw != None:
-                    annual_fixed_cost_kw = float(annual_fixed_cost_kw)
+                                                                       'period'] == p), 'annual_fixed_cost_per_mw_year'].iloc[0]
+                if annual_fixed_cost_mw != None:
+                    annual_fixed_cost_mw = float(annual_fixed_cost_mw)
 
-                annual_fixed_cost_kwh = data_input_subscenario.loc[
+                annual_fixed_cost_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annual_fixed_cost_per_kwh_year'].iloc[0]
-                if annual_fixed_cost_kw != None:
-                    annual_fixed_cost_kwh = float(annual_fixed_cost_kwh)
+                                                                       'period'] == p), 'annual_fixed_cost_per_mwh_year'].iloc[0]
+                if annual_fixed_cost_mw != None:
+                    annual_fixed_cost_mwh = float(annual_fixed_cost_mwh)
 
-                project_specified_fixed_costs[prj][p] = (annual_fixed_cost_kw, annual_fixed_cost_kwh)
+                project_specified_fixed_costs[prj][p] = (annual_fixed_cost_mw, annual_fixed_cost_mwh)
 
         project_specified_params.update_project_fixed_costs(
             io=io, c=c,

@@ -926,8 +926,8 @@ def get_module_specific_inputs_from_database(
 
     new_stor_costs = c.execute(
         """SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000,
-        annualized_real_cost_per_kwh_yr * 1000"""
+        annualized_real_cost_per_mw_yr,
+        annualized_real_cost_per_mwh_yr"""
         + get_potentials[0] +
         """FROM inputs_project_portfolios
         CROSS JOIN
@@ -936,7 +936,7 @@ def get_module_specific_inputs_from_database(
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
+        annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)""".format(

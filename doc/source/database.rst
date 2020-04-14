@@ -489,9 +489,9 @@ then get the cost for only those projects and for the periods selected in
 the temporal settings.
 
 Note that capital costs must be annualized outside of GridPath and input as
-$/kW-yr in the :code:`inputs_project_new_cost` table. For storage projects,
+$/MW-yr in the :code:`inputs_project_new_cost` table. For storage projects,
 GridPath also requires an annualized cost for the project's energy
-component, so both a $/kW-yr capacity component cost and a $/kWh-yr energy
+component, so both a $/MW-yr capacity component cost and a $/MWh-yr energy
 component cost is required, allowing GridPath to endogenously determine
 storage sizing.
 
