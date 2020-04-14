@@ -381,6 +381,10 @@ def parse_arguments(args):
         parents=[get_db_parser()]
     )
 
+    # Add quiet flag which can suppress run output
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print run output.")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -391,12 +395,14 @@ def main(args=None):
 
     :return:
     """
-    print("Validating inputs...")
 
-    # Retrieve scenario_id and/or name from args
+    # Retrieve scenario_id and/or name from args + "quiet" flag
     if args is None:
         args = sys.argv[1:]
     parsed_arguments = parse_arguments(args=args)
+
+    if not parsed_arguments.quiet:
+        print("Validating inputs...")
 
     db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
