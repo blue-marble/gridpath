@@ -365,23 +365,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check 0 < min stable fraction <= 1
-    if "min_stable_level" not in error_columns:
-        validation_errors = validate_min_stable_level(df)
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "High",
-                 "Invalid min_stable_level",
-                 error
-                 )
-            )
-
     # Check that we're not combining incompatible cap-types and op-types
     invalid_combos = c.execute(
         """SELECT capacity_type, operational_type 
@@ -446,27 +429,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-
-
-def validate_min_stable_level(df):
-    """
-    Check 0 < min stable fraction <= 1
-    :param df:
-    :return:
-    """
-    results = []
-
-    invalids = ((df["min_stable_level"] <= 0) |
-                (df["min_stable_level"] > 1))
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 < min_stable_level <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results
 
 
 def validate_op_cap_combos(df, invalid_combos):

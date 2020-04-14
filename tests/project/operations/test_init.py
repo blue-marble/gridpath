@@ -374,6 +374,33 @@ class TestOperationsInit(unittest.TestCase):
             self.assertDictEqual(expected_slopes, actual_slopes)
             self.assertDictEqual(expected_intercepts, actual_intercepts)
 
+    def test_project_validations(self):
+        cols = ["project", "min_stable_level"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.5]
+                          ]),
+                "min_stable_level_error": [],
+                },
+            # Make sure invalid min_stable_level is flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct1", 1.5],
+                      ["gas_ct2", 0]
+                      ]),
+                "min_stable_level_error": ["Project(s) 'gas_ct1, gas_ct2': expected 0 < min_stable_level <= 1"],
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["min_stable_level_error"]
+            actual_list = MODULE_BEING_TESTED.validate_min_stable_level(
+                df=test_cases[test_case]["df"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
     def test_heat_rate_validations(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
                       "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]

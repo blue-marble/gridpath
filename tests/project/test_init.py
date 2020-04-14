@@ -240,38 +240,29 @@ class TestProjectInit(unittest.TestCase):
         self.assertDictEqual(expected_op_type, actual_op_type)
 
     def test_project_validations(self):
-        cols = ["project", "capacity_type", "operational_type",
-                "min_stable_level"]
+        cols = ["project", "capacity_type", "operational_type"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
                     data=[["gas_ct", "gen_new_lin",
-                           "gen_commit_cap", 0.5]
+                           "gen_commit_cap"]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
-                "min_stable_level_error": [],
                 "combo_error": [],
                 },
-            # Make sure invalid min_stable_level and invalid combo are flagged
+            # Make sure invalid combo is flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["gas_ct1", "cap1", "op2", 1.5],
-                      ["gas_ct2", "cap1", "op3", 0]
+                data=[["gas_ct1", "cap1", "op2"],
+                      ["gas_ct2", "cap1", "op3"]
                       ]),
                 "invalid_combos": [("cap1", "op2")],
-                "min_stable_level_error": ["Project(s) 'gas_ct1, gas_ct2': expected 0 < min_stable_level <= 1"],
                 "combo_error": ["Project(s) 'gas_ct1': 'cap1' and 'op2'"],
                 }
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["min_stable_level_error"]
-            actual_list = MODULE_BEING_TESTED.validate_min_stable_level(
-                df=test_cases[test_case]["df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
             expected_list = test_cases[test_case]["combo_error"]
             actual_list = MODULE_BEING_TESTED.validate_op_cap_combos(
                 df=test_cases[test_case]["df"],
