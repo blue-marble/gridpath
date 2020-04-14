@@ -15,14 +15,11 @@ Costs for this operational type include variable O&M costs.
 from __future__ import division
 from __future__ import print_function
 
-from builtins import zip
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
-import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import generator_subset_init
@@ -34,7 +31,7 @@ from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 from gridpath.project.operations.operational_types.common_functions import \
-    update_dispatch_results_table
+    update_dispatch_results_table, load_var_op_type_profiles
 
 
 def add_module_specific_components(m, d):
@@ -449,57 +446,10 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-    # Determine list of 'gen_var' projects
-    projects = list()
-    # Also get a list of the projects of the 'gen_var_must_take'
-    # operational_type, needed for the data check below
-    # (to avoid throwing warning unnecessarily)
-    var_must_take_prjs = list()
 
-    prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"]
-    )
-
-    for row in zip(prj_op_type_df["project"],
-                   prj_op_type_df["operational_type"]):
-        if row[1] == 'gen_var':
-            projects.append(row[0])
-        elif row[1] == 'gen_var_must_take':
-            var_must_take_prjs.append(row[0])
-        else:
-            pass
-
-    # Determine subset of project-timepoints in variable profiles file
-    cap_factor = dict()
-
-    prj_tmp_cf_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "variable_generator_profiles.tab"),
-        sep="\t",
-        usecols=["project", "timepoint", "cap_factor"]
-    )
-    for row in zip(prj_tmp_cf_df["project"],
-                   prj_tmp_cf_df["timepoint"],
-                   prj_tmp_cf_df["cap_factor"]):
-        if row[0] in projects:
-            cap_factor[(row[0], row[1])] = float(row[2])
-        # Profile could be for a 'gen_var' project, in which case ignore
-        elif row[0] in var_must_take_prjs:
-            pass
-        else:
-            warnings.warn(
-                """WARNING: Profiles are specified for '{}' in 
-                variable_generator_profiles.tab, but '{}' is not in 
-                projects.tab.""".format(
-                    row[0], row[0]
-                )
-            )
-
-    # Load data
-    data_portal.data()["gen_var_cap_factor"] = cap_factor
+    load_var_op_type_profiles(
+        mod, data_portal, scenario_directory, subproblem, stage,
+        "gen_var")
 
 
 def export_module_specific_results(mod, d,

@@ -8,10 +8,8 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
@@ -22,6 +20,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
+from gridpath.project.operations.operational_types.common_functions import \
+    load_var_op_type_profiles
 
 
 def add_module_specific_components(m, d):
@@ -295,58 +295,9 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
-    # Determine list of projects
-    projects = list()
-    # Also get a list of the projects of the 'gen_var' operational_type,
-    # needed for the data check below (to avoid throwing warning unnecessarily)
-    var_proj = list()
-
-    prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"]
-    )
-
-    for row in zip(prj_op_type_df["project"],
-                   prj_op_type_df["operational_type"]):
-        if row[1] == 'gen_var_must_take':
-            projects.append(row[0])
-        elif row[1] == 'gen_var':
-            var_proj.append(row[0])
-        else:
-            pass
-
-    # Determine subset of project-timepoints in variable profiles file
-    cap_factor = dict()
-
-    prj_tmp_cf_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "variable_generator_profiles.tab"),
-        sep="\t",
-        usecols=["project", "timepoint", "cap_factor"]
-    )
-    for row in zip(prj_tmp_cf_df["project"],
-                   prj_tmp_cf_df["timepoint"],
-                   prj_tmp_cf_df["cap_factor"]):
-        if row[0] in projects:
-            cap_factor[(row[0], row[1])] = float(row[2])
-        # Profile could be for a 'gen_var' project, in which case ignore
-        elif row[0] in var_proj:
-            pass
-        # Throw warning if profile exists for a project not in projects.tab
-        # (as 'gen_var' or 'gen_var_must_take')
-        else:
-            warnings.warn(
-                """WARNING: Profiles are specified for '{}' in 
-                variable_generator_profiles.tab, but '{}' is not in 
-                projects.tab.""".format(
-                    row[0], row[0]
-                )
-            )
-
-    # Load data
-    data_portal.data()["gen_var_must_take_cap_factor"] = cap_factor
+    load_var_op_type_profiles(
+        mod, data_portal, scenario_directory, subproblem, stage,
+        "gen_var_must_take")
 
 
 # Database

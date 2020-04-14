@@ -4,6 +4,7 @@
 import csv
 import os.path
 import pandas as pd
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
@@ -354,3 +355,63 @@ def load_optype_module_specific_data(
             pass
 
     return op_type_projects
+
+
+def load_var_op_type_profiles(
+        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :return:
+    """
+
+    var_op_types = ["gen_var_must_take", "gen_var"]
+    other_var_op_types = set(var_op_types) - set([op_type])
+    assert op_type in var_op_types
+
+    # Determine projects of this op_type and other var op_types
+    # TODO: re-factor getting projects of certain op-type?
+    prj_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
+    op_type_prjs = prj_df[prj_df["operational_type"] == op_type]["project"]
+    other_var_op_type_prjs = prj_df[prj_df["operational_type"].isin(
+        other_var_op_types)]["project"]
+    var_prjs = list(op_type_prjs) + list(other_var_op_type_prjs)
+
+    # Read in the cap factors, filter for projects with the correct op_type
+    # and convert to dictionary
+    cf_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "variable_generator_profiles.tab"),
+        sep="\t",
+        usecols=["project", "timepoint", "cap_factor"],
+        dtype={"cap_factor": float}
+    )
+    op_type_cf_df = cf_df[cf_df["project"].isin(op_type_prjs)]
+    cap_factor = op_type_cf_df.set_index(["project", "timepoint"])[
+        "cap_factor"].to_dict()
+
+    # Throw warning if profile exists for a project not in projects.tab
+    # (as 'gen_var' or 'gen_var_must_take')
+    # TODO: this will throw warning twice, once for gen_var and once for
+    #  gen_var_must_take
+    # TODO: move this to validation instead?
+    invalid_prjs = cf_df[~cf_df["project"].isin(var_prjs)]["project"].unique()
+    for prj in invalid_prjs:
+        warnings.warn(
+            """WARNING: Profiles are specified for '{}' in 
+            variable_generator_profiles.tab, but '{}' is not in 
+            projects.tab.""".format(prj, prj)
+        )
+
+    # Load data
+    data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
