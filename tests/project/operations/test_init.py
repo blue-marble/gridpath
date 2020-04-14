@@ -254,6 +254,8 @@ class TestOperationsInit(unittest.TestCase):
         expected_vom_project_period_segments = sorted([
             ("Disp_Binary_Commit", 2020, 0),
             ("Disp_Binary_Commit", 2030, 0),
+            ("Disp_Cont_Commit", 2020, 0),
+            ("Disp_Cont_Commit", 2030, 0),
         ])
         actual_vom_project_period_segments = sorted([
             (prj, p, s) for (prj, p, s) in instance.VOM_PRJS_PRDS_SGMS
@@ -263,7 +265,8 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: VOM_PRJS_OPR_TMPS_SGMS
         expected_prj_opr_tmps = sorted(
-            get_project_operational_timepoints(["Disp_Binary_Commit"])
+            get_project_operational_timepoints(["Disp_Binary_Commit",
+                                                "Disp_Cont_Commit"])
         )
         expected_vom_project_segments_operational_timepoints = sorted([
             (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
@@ -377,6 +380,8 @@ class TestOperationsInit(unittest.TestCase):
         expected_vom_slope = OrderedDict(sorted({
             ("Disp_Binary_Commit", 2020, 0): 1,
             ("Disp_Binary_Commit", 2030, 0): 1,
+            ("Disp_Cont_Commit", 2020, 0): 1,
+            ("Disp_Cont_Commit", 2030, 0): 1,
         }.items()))
         actual_vom_slope = OrderedDict(sorted(
             {(prj, p, s): instance.vom_slope_cost_per_mwh[(prj, p, s)]
@@ -392,6 +397,8 @@ class TestOperationsInit(unittest.TestCase):
         expected_vom_intercept = OrderedDict(sorted({
             ("Disp_Binary_Commit", 2020, 0): 0.5,
             ("Disp_Binary_Commit", 2030, 0): 0.5,
+            ("Disp_Cont_Commit", 2020, 0): 0,
+            ("Disp_Cont_Commit", 2030, 0): 0,
         }.items()))
         actual_vom_intercept = OrderedDict(sorted(
             {(prj, p, s): instance.vom_intercept_cost_per_mw_hr[(prj, p, s)]
