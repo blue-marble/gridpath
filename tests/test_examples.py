@@ -151,6 +151,20 @@ class TestExamples(unittest.TestCase):
         #     csv_path="../db/csvs_test_examples"
         # )
 
+    def test_validation(self):
+        """
+        Check that validate inputs doesn't throw errors for any of the test
+        examples
+        :return:
+        """
+        for test in TEST_EXAMPLES.keys():
+            with self.subTest(i=test):
+                validate_inputs.main(
+                    ["--database", "../db/test_examples.db",
+                     "--scenario", test,
+                     "--quiet"]
+                )
+
     def test_objective_function(self):
         """
         Check objective function for all test examples
