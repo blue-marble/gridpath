@@ -10,6 +10,6 @@ Gas_CT_new	gen_new_lin	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	0.
 Gas_CT_new_z2	gen_new_lin	exogenous	gen_commit_cap	day	Gas	Zone2	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.
 Gas_CT_z2	gen_spec	exogenous	gen_commit_cap	day	Gas	Zone2	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.
 Nuclear	gen_spec	exogenous	gen_must_run	day	Nuclear	Zone1	Uranium	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Nuclear_z2	gen_spec	exogenous	gen_must_run	day	Nuclear	Zone2	Uranium	1.0	.	6.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Nuclear_z2	gen_spec	exogenous	gen_must_run	day	Nuclear	Zone2	Uranium	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Wind	gen_spec	exogenous	gen_var	day	Wind	Zone1	.	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Wind_z2	gen_spec	exogenous	gen_var	day	Wind	Zone2	.	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
