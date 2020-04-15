@@ -418,7 +418,6 @@ def main(args=None):
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-
     solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
