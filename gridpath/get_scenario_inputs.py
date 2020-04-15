@@ -418,12 +418,24 @@ def main(args=None):
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
     solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.determine_feature_list()
-    modules_to_use = determine_modules(features=feature_list)
+    # If any subproblem's stage list is non-empty, we have stages, so set
+    # the stages_flag to True to pass to determine_modules below
+    # This tells the determine_modules function to include the
+    # stages-related modules
+    stages_flag = any([
+        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
+        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+    ])
+
+    # Figure out which modules to use and load the modules
+    modules_to_use = determine_modules(features=feature_list,
+                                       multi_stage=stages_flag)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Get appropriate inputs from database and write the .tab file model inputs
