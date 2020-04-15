@@ -855,6 +855,7 @@ def check_for_integer_subdirectories(main_directory):
     Check for subdirectories and return list. Only take subdirectories
     that can be cast to integer (this will exclude other directories
     such as "pass_through_inputs", "inputs", "results", "logs", and so on).
+    We do rely on order downstream, so make sure these are sorted.
     """
     subdirectories = [
         d for d in sorted(next(os.walk(main_directory))[1])

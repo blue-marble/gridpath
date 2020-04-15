@@ -45,16 +45,9 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
     :return:
     """
     subproblems_list = subproblems.SUBPROBLEMS
-    # create subproblem.csv file for subproblems if appropriate:
-    if len(subproblems_list) > 1:
-        write_subproblems_csv(scenario_directory, subproblems_list)
 
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
-        # create subproblem.csv file for stages if appropriate:
-        if len(stages) > 1:
-            target_directory = os.path.join(scenario_directory, str(subproblem))
-            write_subproblems_csv(target_directory, stages)
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
@@ -147,28 +140,6 @@ def parse_arguments(args):
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
-
-
-def write_subproblems_csv(scenario_directory, subproblems):
-    """
-    Write the subproblems.csv file that will be used when solving multiple
-    subproblems/stages in 'production cost' mode.
-    :return:
-    """
-
-    if not os.path.exists(scenario_directory):
-        os.makedirs(scenario_directory)
-    with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
-            subproblems_csv_file:
-        writer = csv.writer(
-            subproblems_csv_file, delimiter=",", lineterminator="\n"
-        )
-
-        # Write header
-        writer.writerow(["subproblems"])
-
-        for subproblem in subproblems:
-            writer.writerow([subproblem])
 
 
 def write_features_csv(scenario_directory, feature_list):
