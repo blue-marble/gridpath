@@ -445,7 +445,8 @@ def main(args=None):
         # Read in inputs from db and validate inputs for loaded modules
         validate_inputs(subproblems, loaded_modules, subscenarios, conn)
     else:
-        print("Invalid subscenario ID(s). Skipped detailed input validation.")
+        if not parsed_arguments.quiet:
+            print("Invalid subscenario ID(s). Skipped detailed input validation.")
 
     # Update validation status:
     update_validation_status(conn, subscenarios.SCENARIO_ID)
