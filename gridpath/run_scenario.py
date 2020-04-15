@@ -16,13 +16,12 @@ import argparse
 from csv import reader, writer
 import datetime
 import os.path
-import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
-import traceback
 
+from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
     get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
@@ -56,7 +55,7 @@ class ScenarioStructure(object):
 
         # Check if there are subproblem directories
         self.subproblems = \
-            self.check_for_subdirectories(self.main_scenario_directory)
+            check_for_integer_subdirectories(self.main_scenario_directory)
 
         # Make dictionary for the stages by subproblem, starting with empty
         # list for each subproblem
@@ -71,7 +70,7 @@ class ScenarioStructure(object):
                 subproblem_dir = os.path.join(
                     self.main_scenario_directory, subproblem
                 )
-                stages = self.check_for_subdirectories(subproblem_dir)
+                stages = check_for_integer_subdirectories(subproblem_dir)
                 # If the list isn't empty, update the stage dictionary and
                 # create the stage pass-through directory and input file
                 # TODO: we probably don't need a directory for the
@@ -100,25 +99,6 @@ class ScenarioStructure(object):
                         fixed_commitment_writer.writerow(
                             ["project", "timepoint", "stage",
                              "final_commitment_stage", "commitment"])
-
-    # Auxiliary functions
-    @staticmethod
-    def check_for_subdirectories(main_directory):
-        """
-        :param main_directory: directory where we'll look for subdirectories
-        :return: True or False depending on whether subdirectories are found
-
-        Check for subdirectories and return list. Only take subdirectories
-        that can be cast to integer (this will exclude other directories
-        such as "pass_through_inputs", "inputs", "results", "logs", and so on).
-        """
-        subdirectories = [
-            d for d in sorted(next(os.walk(main_directory))[1])
-            if is_integer(d)
-        ]
-
-        # There are subdirectories if the list isn't empty
-        return subdirectories
 
 
 def create_and_solve_problem(scenario_directory, subproblem, stage,
@@ -763,17 +743,6 @@ def parse_arguments(args):
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
-
-
-def is_integer(n):
-    """
-    Check if a value can be cast to integer.
-    """
-    try:
-        int(n)
-        return True
-    except ValueError:
-        return False
 
 
 def main(args=None):
