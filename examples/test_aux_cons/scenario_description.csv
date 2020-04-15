@@ -1,6 +1,5 @@
 scenario_id,47
 scenario_name,test_aux_cons
-of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,

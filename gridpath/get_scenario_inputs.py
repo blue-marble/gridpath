@@ -190,9 +190,6 @@ def write_scenario_description(
 
         # Optional features
         writer.writerow(
-            ["of_multi_stage", optional_features.OPTIONAL_FEATURE_MULTI_STAGE]
-        )
-        writer.writerow(
             ["of_transmission",
              optional_features.OPTIONAL_FEATURE_TRANSMISSION]
         )

@@ -1,6 +1,5 @@
 scenario_id,9
 scenario_name,test_no_overgen_allowed
-of_multi_stage,
 of_transmission,
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,
