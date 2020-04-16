@@ -162,6 +162,19 @@ def add_model_components(m, d):
         set([tmp for tmp in mod.TMPS if mod.link_to_next_subproblem[tmp]])
     )
 
+    def link_tmp_id_rule(mod, tmp):
+        tmp_linked_id_dict = dict()
+        linked_tmp_id = -len(mod.TMPS_TO_LINK) + 1
+        for tmp in mod.TMPS_TO_LINK:
+            tmp_linked_id_dict[tmp] = linked_tmp_id
+            linked_tmp_id += 1
+
+        return tmp_linked_id_dict
+
+    m.linked_tmp_id = Param(
+        m.TMPS_TO_LINK, rule=link_tmp_id_rule
+    )
+
 
 # Input-Output
 ###############################################################################
