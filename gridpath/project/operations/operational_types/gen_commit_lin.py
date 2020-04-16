@@ -1973,6 +1973,30 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitLin_Active_Startup_Type[p, tmp])
             ])
 
+    export_linked_subproblem_inputs(
+        mod, d, scenario_directory, subproblem, stage
+    )
+
+# TODO: how do we get correct subproblem and stage
+def export_linked_subproblem_inputs(
+        mod, d, scenario_directory, subproblem, stage):
+    print("made it")
+    with open(os.path.join(scenario_directory,
+                           subproblem, stage, "results",
+                           "gen_commit_lin_to_link.tab"),
+              "w", newline="") as f:
+        writer = csv.writer(f, delimiter="\t")
+        writer.writerow(["project", "timepoint", "commitment"])
+
+        for (p, tmp) \
+                in mod.GEN_COMMIT_LIN_OPR_TMPS:
+            if tmp in [arg for arg in mod.TMPS_TO_LINK]:
+                writer.writerow([
+                    p,
+                    tmp,
+                    value(mod.GenCommitLin_Commit[p, tmp])
+                ])
+
 
 # Database
 ###############################################################################

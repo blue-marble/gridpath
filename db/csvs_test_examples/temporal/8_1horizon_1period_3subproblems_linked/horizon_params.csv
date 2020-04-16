@@ -1,4 +1,4 @@
 subproblem_id,balancing_type_horizon,horizon,boundary
-1,day,202001,linear
-2,day,202002,linked
-3,day,202003,linked
+1,day,202001,circular
+2,day,202002,circular
+3,day,202003,circular

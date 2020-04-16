@@ -497,6 +497,33 @@ class TestExamples(unittest.TestCase):
                 places=1
             )
 
+    def test_example_single_stage_prod_cost_linked_subproblems(self):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        actual_objectives = \
+            run_end_to_end.main(["--database", "../db/test_examples.db",
+                                 "--scenario",
+                                 "single_stage_prod_cost_linked_subproblems",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
+
+        expected_objectives = {
+            1: 866737242.3466034,
+            2: 866737242.3466034,
+            3: 866737242.3466034
+        }
+
+        for horizon in [1, 2, 3]:
+            self.assertAlmostEqual(
+                expected_objectives[horizon],
+                actual_objectives[str(horizon)],
+                places=1
+            )
+
     def test_example_multi_stage_prod_cost(self):
         """
         Check objective function values of "multi_stage_prod_cost" example

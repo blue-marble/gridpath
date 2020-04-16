@@ -65,7 +65,7 @@ class TestTimepoints(unittest.TestCase):
                 sep="\t",
                 usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
-                         "month"]
+                         "link_to_next_subproblem", "month"]
             )
 
         m, data = \
@@ -111,6 +111,26 @@ class TestTimepoints(unittest.TestCase):
         self.assertListEqual([m for m in instance.MONTHS],
                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
+        # Params: link_to_next_subproblem
+        expected_timepoint_link = \
+            timepoints_df.set_index("timepoint").to_dict()[
+                "link_to_next_subproblem"
+            ]
+        for key, value in expected_timepoint_link.items():
+            if expected_timepoint_link[key] == ".":
+                expected_timepoint_link[key] = 0
+            else:
+                expected_timepoint_link[key] = int(value)
+
+        actual_timepoint_link = \
+            {tmp: instance.link_to_next_subproblem[tmp]
+             for tmp in instance.TMPS
+             }
+
+        self.assertDictEqual(
+            expected_timepoint_link, actual_timepoint_link
+        )
+
         # Params: month
         expected_month = \
             timepoints_df.set_index("timepoint").to_dict()["month"]
@@ -120,17 +140,7 @@ class TestTimepoints(unittest.TestCase):
              }
         self.assertDictEqual(expected_month, actual_month,
                              msg="Data for param month not loaded correctly")
-        # Param: month
-        expected_month_param = \
-            timepoints_df.set_index('timepoint').to_dict()[
-                'month'
-            ]
-        actual_month_param = \
-            {tmp: instance.month[tmp]
-             for tmp in instance.TMPS
-             }
-        self.assertDictEqual(expected_month_param, actual_month_param,
-                             msg="Data for param 'month' not loaded correctly")
+
 
         # TODO: we're missing a test for the loading of the
         #  previous_stage_timepoint_map param

@@ -28,7 +28,7 @@ import csv
 import os.path
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
-    PositiveIntegers
+    PositiveIntegers, NonPositiveIntegers, Boolean
 
 
 def add_model_components(m, d):
@@ -39,7 +39,7 @@ def add_model_components(m, d):
     | Sets                                                                    |
     +=========================================================================+
     | | :code:`TMPS`                                                          |
-    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Within*: :code:`PositiveIntegers`                                    |
     |                                                                         |
     | The list of timepoints being modeled; timepoints are ordered and must   |
     | be non-negative integers.                                               |
@@ -105,13 +105,19 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.TMPS = Set(
-        within=NonNegativeIntegers,
+        within=PositiveIntegers,
         ordered=True
     )
 
     m.MONTHS = Set(
         within=PositiveIntegers,
         initialize=list(range(1, 12 + 1))
+    )
+
+    # These are the timepoints from the previous subproblem for which we'll
+    # have parameters to constrain the current subproblem
+    m.LINKED_TMPS = Set(
+        within=NonPositiveIntegers
     )
 
     # Required Params
@@ -132,9 +138,28 @@ def add_model_components(m, d):
         within=NonNegativeIntegers
     )
 
+    m.link_to_next_subproblem = Param(
+        m.TMPS, default=0,
+        within=Boolean
+    )
+
     m.month = Param(
         m.TMPS,
         within=m.MONTHS
+    )
+
+    m.hrs_in_linked_tmp = Param(
+        m.TMPS,
+        within=NonNegativeReals
+    )
+
+    # These are the timepoints for which we'll export results that will be
+    # used in the next subproblem (if relevant)
+    m.TMPS_TO_LINK = Set(
+        within=m.TMPS,
+        ordered=True,
+        rule=lambda mod:
+        set([tmp for tmp in mod.TMPS if mod.link_to_next_subproblem[tmp]])
     )
 
 
@@ -149,11 +174,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.tmp_weight,
                m.hrs_in_tmp,
                m.prev_stage_tmp_map,
+               m.link_to_next_subproblem,
                m.month),
         select=("timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
+                "link_to_next_subproblem",
                 "month")
     )
 
@@ -172,7 +199,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, 
+           link_to_next_subproblem, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -209,7 +237,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(["timepoint", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map", "month"])
+                         "previous_stage_timepoint_map",
+                         "link_to_next_subproblem", "month"])
 
         # Write timepoints
         for row in timepoints:
