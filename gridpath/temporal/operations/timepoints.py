@@ -26,6 +26,7 @@ as annual emissions, energy, or cost.
 
 import csv
 import os.path
+import pandas as pd
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
     PositiveIntegers, NonPositiveIntegers, Boolean
@@ -138,18 +139,21 @@ def add_model_components(m, d):
         within=NonNegativeIntegers
     )
 
-    m.link_to_next_subproblem = Param(
-        m.TMPS, default=0,
-        within=Boolean
-    )
-
     m.month = Param(
         m.TMPS,
         within=m.MONTHS
     )
 
+    # Optional Params
+    ###########################################################################
+
+    m.link_to_next_subproblem = Param(
+        m.TMPS, default=0,
+        within=Boolean
+    )
+
     m.hrs_in_linked_tmp = Param(
-        m.TMPS,
+        m.LINKED_TMPS,
         within=NonNegativeReals
     )
 
@@ -197,6 +201,25 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 "month")
     )
 
+    # TODO: need to figure out how to skip looking for previous subproblems
+    #  that do not exist
+    if int(subproblem) > 1:
+        linked_tmps_df = pd.read_csv(
+            os.path.join(scenario_directory, str(int(subproblem) - 1), stage,
+                         "inputs", "timepoints_to_link.tab"),
+            sep="\t",
+            usecols=["linked_timepoint", "hrs_in_tmp"]
+        )
+        linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
+        data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
+        hrs_in_linked_tmp_dict = dict(
+            zip(linked_tmps, linked_tmps_df["hrs_in_tmp"])
+        )
+        data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
+    else:
+        data_portal.data()["LINKED_TMPS"] = {None: []}
+        data_portal.data()["hrs_in_linked_tmp"] = {}
+
 
 # Database
 ###############################################################################
@@ -240,7 +263,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
 
     timepoints = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        subscenarios, subproblem, stage, conn
+    )
 
     with open(os.path.join(inputs_directory, "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
@@ -253,10 +277,38 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                          "previous_stage_timepoint_map",
                          "link_to_next_subproblem", "month"])
 
+        timepoints_to_link = dict()
+
         # Write timepoints
         for row in timepoints:
+            print(row[5])
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+            if row[5] == 1:
+                # Get the linked timepoints and their n of hours
+                timepoints_to_link[row[0]] = row[3]
+
+    # TODO: move this to a pass-through directory
+    # Add the timepoints_to_link.tab file for the next subproblem
+    # We'll move this file once this subproblem is solved
+    timepoints_to_link_count = len([k for k in timepoints_to_link.keys()])
+    with open(os.path.join(inputs_directory,
+                           "timepoints_to_link.tab"),
+              "w", newline="") as linked_timepoints_tab_file:
+        writer = csv.writer(linked_timepoints_tab_file,
+                            delimiter="\t",
+                            lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            ["linked_timepoint", "timepoint", "hrs_in_tmp"])
+
+        # Write timepoints
+        x = - (timepoints_to_link_count - 1)
+        for tmp in timepoints_to_link.keys():
+            writer.writerow([x, tmp, timepoints_to_link[tmp]])
+            x += 1
 
 
 # Validation
