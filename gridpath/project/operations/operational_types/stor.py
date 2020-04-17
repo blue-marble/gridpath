@@ -603,7 +603,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_stor.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",

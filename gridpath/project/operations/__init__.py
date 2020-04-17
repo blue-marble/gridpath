@@ -209,7 +209,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     # Get column names as a few columns will be optional;
     # won't load data if column does not exist
-    with open(os.path.join(scenario_directory, subproblem, stage, "inputs",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "projects.tab")
               ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
@@ -218,7 +218,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Get modelled periods
     # TODO: could we simply use m.PRJ_OPR_PRDS?
     periods = read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "periods.tab"),
         sep="\t"
     )
@@ -226,7 +226,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # variable_om_cost_per_mwh (all projects have it, so it's defined here)
     var_cost_df = read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "variable_om_cost_per_mwh"]
@@ -241,13 +241,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         # TODO: read_csv seems to fail silently if file not found; check and
         #  implement validation
         hr_df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "heat_rate_curves.tab"),
             sep="\t"
         )
 
         pr_df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "fuel"]
@@ -272,7 +272,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Variable O7M curves
     vom_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "variable_om_curves.tab"),
         sep="\t"
     )
@@ -456,6 +456,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     proj_opchar = c.execute("""
         SELECT project, fuel, variable_cost_per_mwh,
@@ -545,11 +547,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return proj_opchar, heat_rates, variable_om
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     heat_rate_curves.tab and variable_om_curves.tab files
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -577,7 +579,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         "last_commitment_stage"
     ]
     append_to_input_file(
-        inputs_directory=inputs_directory,
+        inputs_directory=os.path.join(scenario_directory, str(subproblem), str(stage),
+                                      "inputs"),
         input_file="projects.tab",
         query_results=proj_opchar,
         index_n_columns=1,
@@ -597,7 +600,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     hr_df = hr_df[columns][fuel_mask].astype({"period": int})
     heat_rates = hr_df.values
 
-    with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "heat_rate_curves.tab"),
               "w", newline="") as \
             heat_rate_tab_file:
         writer = csv.writer(heat_rate_tab_file, delimiter="\t",
@@ -619,7 +622,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                "average_variable_om_cost_per_mwh"]
     variable_om = vom_df[columns].values
 
-    with open(os.path.join(inputs_directory, "variable_om_curves.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "variable_om_curves.tab"),
               "w", newline="") as variable_om_tab_file:
         writer = csv.writer(variable_om_tab_file, delimiter="\t",
                             lineterminator="\n")

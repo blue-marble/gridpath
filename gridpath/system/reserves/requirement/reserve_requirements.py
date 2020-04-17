@@ -58,7 +58,7 @@ def generic_load_model_data(m, d, data_portal,
     :param reserve_requirement_param:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs",
                                            requirement_filename),
                      index=getattr(m, reserve_zone_timepoint_set),

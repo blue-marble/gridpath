@@ -218,7 +218,7 @@ def get_optype_inputs_as_df(
     # Read in the appropriate columns for the operational type from
     # projects.tab
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "operational_type"]

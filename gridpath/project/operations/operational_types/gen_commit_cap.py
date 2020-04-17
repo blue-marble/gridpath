@@ -1342,7 +1342,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_capacity_commit.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)

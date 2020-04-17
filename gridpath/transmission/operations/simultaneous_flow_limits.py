@@ -203,7 +203,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "transmission_simultaneous_flow_limits.tab"),
         select=("simultaneous_flow_limit", "period",
                 "simultaneous_flow_limit_mw"),
@@ -212,7 +212,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "transmission_simultaneous_flow_limit_lines.tab"),
         select=("simultaneous_flow_limit", "transmission_line",
                 "simultaneous_flow_direction"),
@@ -231,7 +231,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "transmission_simultaneous_flow_limits.csv"),
               "w", newline="") as tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
@@ -263,6 +263,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     flow_limits = c1.execute(
         """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
@@ -308,13 +310,13 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     transmission_simultaneous_flow_limits.tab and
     transmission_simultaneous_flow_limit_lines files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -326,7 +328,7 @@ def write_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     # transmission_simultaneous_flow_limits.tab
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "transmission_simultaneous_flow_limits.tab"),
               "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
@@ -340,7 +342,7 @@ def write_model_inputs(
             writer.writerow(row)
 
     # transmission_simultaneous_flow_limit_lines.tab
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "transmission_simultaneous_flow_limit_lines.tab"),
               "w", newline="") as sim_flow_limit_lines_file:
         writer = csv.writer(sim_flow_limit_lines_file,

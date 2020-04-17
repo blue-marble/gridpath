@@ -286,7 +286,7 @@ def load_module_specific_data(
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_build_transmission_vintage_costs.tab"),
         index=m.TX_NEW_LIN_VNTS,
         select=("transmission_line", "vintage",
@@ -312,7 +312,7 @@ def export_module_specific_results(
     """
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "transmission_new_capacity.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -369,10 +369,10 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn):
+        scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -383,7 +383,7 @@ def write_module_specific_model_inputs(
     tx_cost = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_build_transmission_vintage_costs.tab"),
               "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,

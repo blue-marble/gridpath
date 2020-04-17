@@ -1901,7 +1901,7 @@ def load_module_specific_data(mod, data_portal,
     #  gen_commit_bin and gen_commit_lin
     # Startup characteristics
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "startup_chars.tab"),
         sep="\t"
     )
@@ -1959,7 +1959,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_binary_commit.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -2062,12 +2062,12 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     startup_chars.tab files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -2078,8 +2078,8 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     # If startup_chars.tab file already exists, append rows to it
-    if os.path.isfile(os.path.join(inputs_directory, "startup_chars.tab")):
-        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab")):
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"),
                   "a") as startup_chars_file:
             writer = csv.writer(startup_chars_file,
                                 delimiter="\t", lineterminator="\n")
@@ -2088,7 +2088,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(replace_nulls)
     # If startup_chars.tab does not exist, write header first, then add data
     else:
-        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"),
                   "w", newline="") as startup_chars_file:
             writer = csv.writer(startup_chars_file,
                                 delimiter="\t", lineterminator="\n")

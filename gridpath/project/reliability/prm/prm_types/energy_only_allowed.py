@@ -323,7 +323,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
             ])
 
     # Total capacity for all projects in group
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "deliverability_group_capacity_and_costs.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
@@ -422,13 +422,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     deliverability_group_params.tab and
     deliverability_group_projects.tab files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -442,7 +442,7 @@ def write_module_specific_model_inputs(
 
     if group_threshold_costs:
         with open(os.path.join(
-                inputs_directory,
+                scenario_directory, subproblem, stage,
                 "deliverability_group_params.tab"), "w", newline="") as \
                 elcc_eligibility_thresholds_file:
             writer = csv.writer(elcc_eligibility_thresholds_file,
@@ -461,7 +461,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
         with open(os.path.join(
-                inputs_directory,
+                scenario_directory, subproblem, stage,
                 "deliverability_group_projects.tab"), "w"
         ) as group_projects_file:
             writer = csv.writer(group_projects_file, delimiter="\t", lineterminator="\n")

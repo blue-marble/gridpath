@@ -191,7 +191,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         """
         fnl_commit_prjs = list()
         df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "last_commitment_stage"],
@@ -249,7 +249,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
     """
 
     df = read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "last_commitment_stage"]

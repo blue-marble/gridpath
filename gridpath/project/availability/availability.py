@@ -47,10 +47,10 @@ def add_model_components(m, d):
 
 
 def write_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -74,7 +74,7 @@ def write_model_inputs(
                    "write_module_specific_model_inputs"):
             imported_availability_type_modules[op_m].\
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

@@ -32,7 +32,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
 
     # Get the capacity and operational type of each transmission line
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -155,6 +155,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
 
     # TODO: we might want to get the reactance in the tx_dcopf
     #  tx_operational_type rather than here (see also comment in project/init)
@@ -187,11 +189,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return transmission_lines
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     transmission_lines.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -202,7 +204,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     transmission_lines = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
               "w", newline="") as \
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t", lineterminator="\n")

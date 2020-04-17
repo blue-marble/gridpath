@@ -173,7 +173,7 @@ def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    logs_directory = os.path.join(scenario_directory, subproblem, stage, "logs")
+    logs_directory = os.path.join(scenario_directory, str(subproblem), str(stage), "logs")
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
     return logs_directory

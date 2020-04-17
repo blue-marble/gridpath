@@ -318,14 +318,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "horizons.tab"),
         select=("balancing_type_horizon", "horizon", "boundary"),
         index=m.BLN_TYPE_HRZS,
         param=m.boundary
     )
 
-    with open(os.path.join(scenario_directory, subproblem, stage,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
                            "inputs", "horizon_timepoints.tab")
               ) as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -355,6 +355,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     horizons = c1.execute(
         """SELECT horizon, balancing_type_horizon, boundary
@@ -386,11 +388,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return horizons, timepoint_horizons
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     horizons.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -401,7 +403,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     horizons, timepoint_horizons = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "horizons.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
               "w", newline="") as horizons_tab_file:
         hwriter = csv.writer(horizons_tab_file, delimiter="\t",
                              lineterminator="\n")
@@ -412,7 +414,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         for row in horizons:
             hwriter.writerow(row)
 
-    with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizon_timepoints.tab"), "w",
               newline="") as timepoint_horizons_tab_file:
         thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t",
                               lineterminator="\n")

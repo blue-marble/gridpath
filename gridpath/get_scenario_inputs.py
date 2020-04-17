@@ -59,21 +59,17 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(subproblem),
-                                                str(stage),
-                                                "inputs")
+                pass
             elif len(subproblems.SUBPROBLEMS) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(subproblem),
-                                                "inputs")
+                stage = ""
             elif len(stages) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(stage),
-                                                "inputs")
+                subproblem = ""
             else:
-                inputs_directory = os.path.join(scenario_directory,
-                                                "inputs")
+                subproblem = ""
+                stage = ""
+            inputs_directory = os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs"
+            )
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
 
@@ -91,7 +87,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
             for m in loaded_modules:
                 if hasattr(m, "write_model_inputs"):
                     m.write_model_inputs(
-                        inputs_directory=inputs_directory,
+                        scenario_directory=scenario_directory,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,

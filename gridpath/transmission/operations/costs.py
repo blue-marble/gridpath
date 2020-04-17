@@ -185,7 +185,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "transmission_hurdle_rates.tab"),
         select=("transmission_line", "period",
                 "hurdle_rate_positive_direction_per_mwh",
@@ -205,7 +205,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d: Dynamic components
     :return: Nothing
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
               "costs_transmission_hurdle.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -239,6 +239,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     hurdle_rates = c.execute(
         """SELECT transmission_line, period, 
@@ -261,12 +263,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     transmission_hurdle_rates.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -277,7 +279,7 @@ def write_model_inputs(
     hurdle_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "transmission_hurdle_rates.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_hurdle_rates.tab"),
               "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
 

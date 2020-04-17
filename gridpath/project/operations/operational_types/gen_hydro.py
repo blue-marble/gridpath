@@ -582,7 +582,7 @@ def load_module_specific_data(m, data_portal,
     max = dict()
 
     prj_hor_opchar_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "hydro_conventional_horizon_params.tab"),
         sep="\t",
         usecols=["project", "horizon", "hydro_average_power_fraction",
@@ -619,7 +619,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -659,6 +659,9 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     # Select only budgets/min/max of projects in the portfolio
     # Select only budgets/min/max of projects with 'gen_hydro'
@@ -725,12 +728,12 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     hydro_conventional_horizon_params.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -742,10 +745,10 @@ def write_module_specific_model_inputs(
 
     # If hydro_conventional_horizon_params.tab file already exists,
     # append rows to it
-    if os.path.isfile(os.path.join(inputs_directory,
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                    "hydro_conventional_horizon_params.tab")
                       ):
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "hydro_conventional_horizon_params.tab"),
                   "a") as \
                 hydro_chars_tab_file:
@@ -755,7 +758,7 @@ def write_module_specific_model_inputs(
     # If hydro_conventional_horizon_params.tab does not exist, write header
     # first, then add inputs data
     else:
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "hydro_conventional_horizon_params.tab"),
                   "w", newline="") as \
                 hydro_chars_tab_file:

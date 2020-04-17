@@ -143,7 +143,7 @@ def add_model_components(m, d):
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
         index=m.TMPS,
         param=(m.tmp_weight,
@@ -169,6 +169,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
@@ -186,11 +189,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return timepoints
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     timepoints.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -201,7 +204,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "timepoints.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t",
                             lineterminator="\n")
