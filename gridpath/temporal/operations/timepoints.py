@@ -203,10 +203,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # TODO: need to figure out how to skip looking for previous subproblems
     #  that do not exist
-    if int(subproblem) > 1:
+    # TODO: add the ID of the subproblem we're linking to the tab filename
+    if subproblem != "":
         linked_tmps_df = pd.read_csv(
-            os.path.join(scenario_directory, str(int(subproblem) - 1), stage,
-                         "inputs", "timepoints_to_link.tab"),
+            os.path.join(scenario_directory, "timepoints_to_link.tab"),
             sep="\t",
             usecols=["linked_timepoint", "hrs_in_tmp"]
         )
@@ -296,7 +296,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     # Add the timepoints_to_link.tab file for the next subproblem
     # We'll move this file once this subproblem is solved
     timepoints_to_link_count = len([k for k in timepoints_to_link.keys()])
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory,
                            "timepoints_to_link.tab"),
               "w", newline="") as linked_timepoints_tab_file:
         writer = csv.writer(linked_timepoints_tab_file,
