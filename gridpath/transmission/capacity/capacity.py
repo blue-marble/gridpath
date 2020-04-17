@@ -288,7 +288,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "transmission_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
@@ -305,7 +305,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     # Export transmission capacity costs
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
               "costs_transmission_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(

@@ -44,6 +44,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     lf_reserves_up = c.execute(
         """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
@@ -90,11 +92,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     lf_reserves_up_requirement.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -105,7 +107,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     lf_reserves_up = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "lf_reserves_up_requirement.tab"), "w", newline="") as \
             lf_reserves_up_tab_file:
         writer = csv.writer(lf_reserves_up_tab_file, delimiter="\t", lineterminator="\n")

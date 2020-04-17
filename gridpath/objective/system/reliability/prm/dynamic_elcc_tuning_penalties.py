@@ -83,6 +83,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     dynamic_elcc_tuning_cost = c.execute(
         """SELECT dynamic_elcc_tuning_cost_per_mw
@@ -110,11 +112,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -127,8 +129,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
-    if os.path.isfile(os.path.join(inputs_directory, "tuning_params.tab")):
-        with open(os.path.join(inputs_directory, "tuning_params.tab"), "r"
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab")):
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"), "r"
                   ) as tuning_params_file_in:
             reader = csv.reader(tuning_params_file_in, delimiter="\t", lineterminator="\n")
 
@@ -144,14 +146,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             param_value.append(dynamic_elcc_tuning_cost)
             new_rows.append(param_value)
 
-        with open(os.path.join(inputs_directory, "tuning_params.tab"),
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
                   "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
             writer.writerows(new_rows)
 
     else:
-        with open(os.path.join(inputs_directory, "tuning_params.tab"),
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
                   "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")

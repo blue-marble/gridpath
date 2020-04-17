@@ -238,7 +238,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "transmission_lines.tab"),
         select=("TRANSMISSION_LINES", "carbon_cap_zone",
                 "carbon_cap_zone_import_direction",
@@ -263,7 +263,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "carbon_emission_imports_by_tx_line.csv"),
               "w", newline="") as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
@@ -294,6 +294,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     transmission_zones = c.execute(
         """SELECT transmission_line, carbon_cap_zone, import_direction,
@@ -308,12 +310,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-    inputs_directory, subscenarios, subproblem, stage, conn
+    scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     transmission_lines.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -331,7 +333,7 @@ def write_model_inputs(
             (".", ".", ".") if zone is None \
             else (str(zone), str(direction), intensity)
 
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
               "r") as tx_file_in:
         reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
 
@@ -359,7 +361,7 @@ def write_model_inputs(
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
               "w", newline="") as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

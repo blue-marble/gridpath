@@ -75,7 +75,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "carbon_cap.csv"), "w", newline="") as carbon_cap_results_file:
         writer = csv.writer(carbon_cap_results_file)
         writer.writerow(["carbon_cap_zone", "period",

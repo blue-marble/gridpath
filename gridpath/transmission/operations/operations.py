@@ -112,7 +112,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Transmission flows for all lines
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "transmission_operations.csv"), "w", newline="") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)

@@ -92,7 +92,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # First power
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -142,7 +142,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     # Get the results CSV as dataframe
     operational_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "dispatch_all.csv")
     )
 

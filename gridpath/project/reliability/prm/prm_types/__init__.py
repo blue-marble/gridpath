@@ -26,7 +26,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     project_dynamic_data = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "prm_type"]
@@ -197,10 +197,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -226,7 +226,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                    "write_module_specific_model_inputs"):
             imported_prm_modules[prm_m]. \
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

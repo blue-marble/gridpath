@@ -112,12 +112,12 @@ def get_required_tx_opchar_modules(scenario_id, c):
 # Database
 ###############################################################################
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Go through each relevant operational type and write the model inputs
     for that operational type based on the database.
 
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -138,7 +138,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                    "write_module_specific_model_inputs"):
             imported_tx_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

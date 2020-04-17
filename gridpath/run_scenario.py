@@ -323,7 +323,7 @@ def save_results(scenario_directory, subproblem, stage,
         print("Saving results...")
 
     # TODO: how best to handle non-empty results directories?
-    results_directory = os.path.join(scenario_directory, subproblem, stage,
+    results_directory = os.path.join(scenario_directory, str(subproblem), str(stage),
                                      "results")
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)

@@ -330,7 +330,7 @@ def load_module_specific_data(
     avl_cont_min_unavl_hrs_per_event_dict = {}
     avl_cont_min_avl_hrs_between_events_dict = {}
 
-    with open(os.path.join(scenario_directory, subproblem, stage,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
                            "inputs", "project_availability_endogenous.tab"),
               "r") as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -363,7 +363,7 @@ def export_module_specific_results(
     :return: Nothing
     """
 
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "project_availability_endogenous_continuous.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -436,11 +436,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
 
-    :param inputs_directory:
+    :param scenario_directory:
     :param subscenarios:
     :param subproblem:
     :param stage:
@@ -456,7 +456,8 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        inputs_directory, "project_availability_endogenous.tab"
+        scenario_directory, subproblem, stage,
+        "project_availability_endogenous.tab"
     )
 
     if not os.path.exists(availability_file):

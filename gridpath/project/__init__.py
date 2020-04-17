@@ -51,7 +51,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "projects.tab"),
         sep="\t"
     )
@@ -179,7 +179,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "projects.tab"),
         index=m.PROJECTS,
         select=("project", "load_zone", "capacity_type",
@@ -191,14 +191,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
 
     if "technology" in header:
         data_portal.load(
-            filename=os.path.join(scenario_directory, subproblem, stage,
+            filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                   "inputs", "projects.tab"),
             select=("project", "technology"),
             param=m.technology
@@ -216,6 +216,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
 
     projects = c.execute(
@@ -260,11 +262,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return projects
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -278,10 +280,10 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     #   of the tab files. If going this route, would need to make sure database
     #   columns and tab file column names are the same everywhere
     #   projects.fillna(".", inplace=True)
-    #   filename = os.path.join(inputs_directory, "projects.tab")
+    #   filename = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab")
     #   projects.to_csv(filename, sep="\t", mode="w", newline="")
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
               newline="") as projects_tab_file:
         writer = csv.writer(projects_tab_file,
                             delimiter="\t",

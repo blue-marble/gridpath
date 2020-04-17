@@ -37,7 +37,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "prm_requirement.tab"),
                      index=m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
                      param=m.prm_requirement_mw,
@@ -54,6 +54,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     prm_requirement = c.execute(
         """SELECT prm_zone, period, prm_requirement_mw
@@ -94,11 +96,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     prm_requirement.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -109,7 +111,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     prm_requirement = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "prm_requirement.tab"), "w", newline="") as \
             prm_requirement_tab_file:
         writer = csv.writer(prm_requirement_tab_file,

@@ -302,7 +302,7 @@ def load_module_specific_data(mod, data_portal,
     var_proj = list()
 
     prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "operational_type"]
@@ -321,7 +321,7 @@ def load_module_specific_data(mod, data_portal,
     cap_factor = dict()
 
     prj_tmp_cf_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "variable_generator_profiles.tab"),
         sep="\t",
         usecols=["project", "timepoint", "cap_factor"]
@@ -448,12 +448,12 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     variable_generator_profiles.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -464,10 +464,10 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     # If variable_generator_profiles.tab file already exists, append rows to it
-    if os.path.isfile(os.path.join(inputs_directory,
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                    "variable_generator_profiles.tab")
                       ):
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "variable_generator_profiles.tab"), "a") as \
                 variable_profiles_tab_file:
             writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")
@@ -476,7 +476,7 @@ def write_module_specific_model_inputs(
     # If variable_generator_profiles.tab does not exist, write header first,
     # then add profiles data
     else:
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "variable_generator_profiles.tab"), "w", newline="") as \
                 variable_profiles_tab_file:
             writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")

@@ -35,7 +35,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "load_following_up_balancing_areas.tab"),
         select=("balancing_area", "allow_violation",
                 "violation_penalty_per_mw"),
@@ -53,6 +53,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     lf_up_bas = c.execute(
         """SELECT lf_reserves_up_ba, allow_violation,
@@ -81,11 +83,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     load_following_up_balancing_areas.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -96,7 +98,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     lf_up_bas = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "load_following_up_balancing_areas.tab"), "w", newline="") as \
             lf_up_bas_tab_file:
         writer = csv.writer(lf_up_bas_tab_file, delimiter="\t", lineterminator="\n")

@@ -86,7 +86,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :param reserve_violation_expression:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            filename), "w", newline="") \
             as results_file:
         writer = csv.writer(results_file)
