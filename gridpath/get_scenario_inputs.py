@@ -45,16 +45,9 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
     :return:
     """
     subproblems_list = subproblems.SUBPROBLEMS
-    # create subproblem.csv file for subproblems if appropriate:
-    if len(subproblems_list) > 1:
-        write_subproblems_csv(scenario_directory, subproblems_list)
 
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
-        # create subproblem.csv file for stages if appropriate:
-        if len(stages) > 1:
-            target_directory = os.path.join(scenario_directory, str(subproblem))
-            write_subproblems_csv(target_directory, stages)
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
@@ -149,28 +142,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def write_subproblems_csv(scenario_directory, subproblems):
-    """
-    Write the subproblems.csv file that will be used when solving multiple
-    subproblems/stages in 'production cost' mode.
-    :return:
-    """
-
-    if not os.path.exists(scenario_directory):
-        os.makedirs(scenario_directory)
-    with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
-            subproblems_csv_file:
-        writer = csv.writer(
-            subproblems_csv_file, delimiter=",", lineterminator="\n"
-        )
-
-        # Write header
-        writer.writerow(["subproblems"])
-
-        for subproblem in subproblems:
-            writer.writerow([subproblem])
-
-
 def write_features_csv(scenario_directory, feature_list):
     """
     Write the features.csv file that will be used to determine which
@@ -218,9 +189,6 @@ def write_scenario_description(
         )
 
         # Optional features
-        writer.writerow(
-            ["of_multi_stage", optional_features.OPTIONAL_FEATURE_MULTI_STAGE]
-        )
         writer.writerow(
             ["of_transmission",
              optional_features.OPTIONAL_FEATURE_TRANSMISSION]
@@ -455,7 +423,18 @@ def main(args=None):
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.determine_feature_list()
-    modules_to_use = determine_modules(features=feature_list)
+    # If any subproblem's stage list is non-empty, we have stages, so set
+    # the stages_flag to True to pass to determine_modules below
+    # This tells the determine_modules function to include the
+    # stages-related modules
+    stages_flag = any([
+        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
+        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+    ])
+
+    # Figure out which modules to use and load the modules
+    modules_to_use = determine_modules(features=feature_list,
+                                       multi_stage=stages_flag)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Get appropriate inputs from database and write the .tab file model inputs

@@ -9,6 +9,7 @@ from collections import OrderedDict
 
 from db.utilities import scenario
 
+
 def load_scenarios(io, c, data_input):
     """
     scenario dictionary
@@ -27,7 +28,6 @@ def load_scenarios(io, c, data_input):
         scenario.create_scenario_all_args(
             io=io, c=c,
             scenario_name=sc,
-            of_multi_stage=scenarios["of_multi_stage"],
             of_transmission=scenarios["of_transmission"],
             of_transmission_hurdle_rates=scenarios["of_transmission_hurdle_rates"],
             of_simultaneous_flow_limits=scenarios["of_simultaneous_flow_limits"],

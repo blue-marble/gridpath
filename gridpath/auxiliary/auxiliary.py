@@ -10,6 +10,7 @@ from __future__ import print_function
 from builtins import str
 import datetime
 from importlib import import_module
+import os.path
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock
@@ -844,3 +845,33 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
 
     spin_on_database_lock(conn=conn, cursor=cursor, sql=temp_tbl_sql,
                           data=(), many=False)
+
+
+def check_for_integer_subdirectories(main_directory):
+    """
+    :param main_directory: directory where we'll look for subdirectories
+    :return: True or False depending on whether subdirectories are found
+
+    Check for subdirectories and return list. Only take subdirectories
+    that can be cast to integer (this will exclude other directories
+    such as "pass_through_inputs", "inputs", "results", "logs", and so on).
+    We do rely on order downstream, so make sure these are sorted.
+    """
+    subdirectories = [
+        d for d in sorted(next(os.walk(main_directory))[1])
+        if is_integer(d)
+    ]
+
+    # There are subdirectories if the list isn't empty
+    return subdirectories
+
+
+def is_integer(n):
+    """
+    Check if a value can be cast to integer.
+    """
+    try:
+        int(n)
+        return True
+    except ValueError:
+        return False

@@ -54,7 +54,7 @@ class TestFixCommitment(unittest.TestCase):
                               module_to_test=MODULE_BEING_TESTED,
                               test_data_dir=TEST_DATA_DIRECTORY,
                               subproblem="202001",
-                              stage="ha"
+                              stage="2"
                               )
 
     def test_load_model_data(self):
@@ -66,7 +66,7 @@ class TestFixCommitment(unittest.TestCase):
                                      module_to_test=MODULE_BEING_TESTED,
                                      test_data_dir=TEST_DATA_DIRECTORY,
                                      subproblem="202001",
-                                     stage="ha"
+                                     stage="2"
                                      )
 
     def test_data_loaded_correctly(self):
@@ -79,7 +79,7 @@ class TestFixCommitment(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="202001",
-            stage="ha"
+            stage="2"
         )
         instance = m.create_instance(data)
 

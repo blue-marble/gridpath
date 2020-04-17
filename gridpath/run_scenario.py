@@ -16,13 +16,12 @@ import argparse
 from csv import reader, writer
 import datetime
 import os.path
-import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
-import traceback
 
+from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
     get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
@@ -33,8 +32,8 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 class ScenarioStructure(object):
     """
     This class defines the scenario structure, i.e. is the scenario a single
-    problem or does it consist of subproblems, both horizon subproblems and
-    stage subproblems for each horizon.
+    problem or does it consist of multiple subproblems, and whether there are
+    stages for each subproblem.
 
     Based on the subproblem structure, we will define the directory and file
     structure for the scenario including where the inputs and outputs are
@@ -54,43 +53,37 @@ class ScenarioStructure(object):
                           " scenario name and scenario location"
                           .format(scenario_location, scenario))
 
-        # Check if there are horizon subproblems
-        # If yes, make list of horizon subproblem names and
-        # make a dictionary with the horizon subproblem name as key and
-        # the horizon subproblem directory as value
-        if self.check_for_subproblems(self.main_scenario_directory):
-            self.horizons_flag = True
-            self.horizon_subproblems = \
-                self.get_subproblems(self.main_scenario_directory)
-            self.horizon_subproblem_directories = \
-                {h: os.path.join(self.main_scenario_directory, h)
-                 for h in self.horizon_subproblems}
+        # Check if there are subproblem directories
+        self.subproblems = \
+            check_for_integer_subdirectories(self.main_scenario_directory)
 
-            # For each horizon subproblem, check if there are stage subproblems
-            self.stage_subproblems = {}
-            self.stage_subproblem_directories = {}
-            for h in self.horizon_subproblems:
-                # If there are stage subproblems, make dictionaries of stages
-                # by horizon and of stage directories by horizon and stage
-                if self.check_for_subproblems(
-                        self.horizon_subproblem_directories[h]):
-                    self.stages_flag = True
-                    self.stage_subproblems[h] = \
-                        self.get_subproblems(
-                            self.horizon_subproblem_directories[h])
-                    self.stage_subproblem_directories[h] = \
-                        {s: os.path.join(
-                            self.horizon_subproblem_directories[h], s)
-                         for s in self.stage_subproblems[h]}
+        # Make dictionary for the stages by subproblem, starting with empty
+        # list for each subproblem
+        self.stages_by_subproblem = {
+            subp: [] for subp in self.subproblems
+        }
+
+        # If we have subproblems, check for stage subdirectories for each
+        # subproblem directory
+        if self.subproblems:
+            for subproblem in self.subproblems:
+                subproblem_dir = os.path.join(
+                    self.main_scenario_directory, subproblem
+                )
+                stages = check_for_integer_subdirectories(subproblem_dir)
+                # If the list isn't empty, update the stage dictionary and
+                # create the stage pass-through directory and input file
+                # TODO: we probably don't need a directory for the
+                #  pass-through inputs, as it's only one file
+                if stages:
+                    self.stages_by_subproblem[subproblem] = stages
                     # Create the commitment pass-through file (also deletes any
                     # prior results)
                     # First create the pass-through directory if it doesn't
                     # exist
                     # TODO: need better handling of deleting prior results?
                     pass_through_directory = \
-                        os.path.join(
-                            self.horizon_subproblem_directories[h],
-                            "pass_through_inputs")
+                        os.path.join(subproblem_dir, "pass_through_inputs")
                     if not os.path.exists(pass_through_directory):
                         os.makedirs(pass_through_directory)
                     with open(
@@ -99,69 +92,13 @@ class ScenarioStructure(object):
                                 "fixed_commitment.tab"
                             ), "w", newline=""
                     ) as fixed_commitment_file:
-                        fixed_commitment_writer = \
-                            writer(fixed_commitment_file, delimiter="\t", lineterminator="\n")
+                        fixed_commitment_writer = writer(
+                            fixed_commitment_file,
+                            delimiter="\t", lineterminator="\n"
+                        )
                         fixed_commitment_writer.writerow(
                             ["project", "timepoint", "stage",
                              "final_commitment_stage", "commitment"])
-
-                    # Since there were subproblems in this horizon, empty the
-                    # horizon subproblems list -- problems are actually by
-                    # stage one level down
-                    self.horizon_subproblem_directories[h] = []
-                # If horizon has no stage subproblems, stages list is empty
-                else:
-                    self.stages_flag = False
-                    self.stage_subproblems[h] = []
-
-        # If main scenario has no horizon subproblems, horizons list is empty
-        else:
-            self.horizons_flag = False
-            self.horizon_subproblems = []
-
-    # Auxiliary functions
-    @staticmethod
-    def check_for_subproblems(directory):
-        """
-        :param directory: the directory where we're looking for a
-            'subproblems.csv' file
-        :return: True or False
-
-        Check for subproblems. Currently, this is done by checking if a
-        'subproblems.csv' file exists in the directory.
-
-        .. todo:: a subproblems file may not be how we tell GridPath what the
-            scenario structure is; we need to think about what the best way to
-            do this is, particularly in the context of linking to the database
-        """
-        subproblems_file = \
-            os.path.join(directory, "subproblems.csv")
-        if os.path.isfile(subproblems_file):
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def get_subproblems(directory):
-        """
-        :param directory:
-        :return: a list of the subproblems
-
-        Get the names of the subproblems from the CSV.
-        """
-        subproblems_file = os.path.join(directory, "subproblems.csv")
-        try:
-            subproblems = \
-                [str(sp) for sp in pd.read_csv(subproblems_file)["subproblems"]
-                    .tolist()]
-            return subproblems
-        except IOError:
-            print(
-                """ERROR! Subproblems file {} not found""".
-                format(subproblems_file)
-            )
-            traceback.print_exc()
-            sys.exit(1)
 
 
 def create_and_solve_problem(scenario_directory, subproblem, stage,
@@ -340,26 +277,28 @@ def run_scenario(structure, parsed_arguments):
     The objective function is returned, but it's only really used if we
     are in 'testing' mode.
     """
-    # If no horizon subproblems (empty list), run main problem
-    if not structure.horizon_subproblems:
+    # If no subproblem directories (empty list), run main problem
+    if not structure.subproblems:
         objective_values = run_optimization(
             structure.main_scenario_directory, "", "", parsed_arguments)
     else:
         # Create dictionary with which we'll keep track
         # of subproblem objective function values
         objective_values = {}
-        for h in structure.horizon_subproblems:
-            # If no stage subproblems (empty list), run horizon problem
-            if not structure.stage_subproblems[h]:
-                objective_values[h] = run_optimization(
-                    structure.main_scenario_directory, h, "",
+        for subproblem in structure.subproblems:
+            # If no stages in this subproblem (empty list), run the subproblem
+            if not structure.stages_by_subproblem[subproblem]:
+                objective_values[subproblem] = run_optimization(
+                    structure.main_scenario_directory, subproblem, "",
                     parsed_arguments)
+            # Otherwise, run the stage problem
             else:
-                objective_values[h] = {}
-                for s in structure.stage_subproblems[h]:
-                    objective_values[h][s] = \
+                objective_values[subproblem] = {}
+                for stage in structure.stages_by_subproblem[subproblem]:
+                    objective_values[subproblem][stage] = \
                         run_optimization(
-                            structure.main_scenario_directory, h, s,
+                            structure.main_scenario_directory,
+                            subproblem, stage,
                             parsed_arguments)
     return objective_values
 
