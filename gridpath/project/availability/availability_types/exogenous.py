@@ -143,6 +143,8 @@ def get_inputs_from_database(
     :param conn:
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
 
     c = conn.cursor()
     availabilities = c.execute("""
@@ -227,10 +229,10 @@ def get_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
-    :param inputs_directory:
+    :param scenario_directory:
     :param subscenarios:
     :param subproblem:
     :param stage:
@@ -242,7 +244,7 @@ def write_module_specific_model_inputs(
     ).fetchall()
 
     if availabilities:
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "project_availability_exogenous.tab"),
                   "w", newline="") as availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t", lineterminator="\n")

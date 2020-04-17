@@ -342,7 +342,7 @@ def load_module_specific_data(
         max_fraction = dict()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type", "minimum_duration_hours"]
@@ -391,7 +391,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_dr_new.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -421,7 +421,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "capacity_dr_new.csv")
     )
 
@@ -536,7 +536,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -546,7 +546,7 @@ def write_module_specific_model_inputs(
     Max potential is required for this module, so
     PROJECT_NEW_POTENTIAL_SCENARIO_ID can't be NULL
 
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -558,7 +558,7 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve_potential.tab"),
               "w", newline="") as potentials_tab_file:
         writer = csv.writer(potentials_tab_file, delimiter="\t", lineterminator="\n")
@@ -575,7 +575,7 @@ def write_module_specific_model_inputs(
     # Supply curve
     # No supply curve periods for now, so check that we have only specified
     # a single supply curve for all periods in inputs_project_new_cost
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve.tab"),
               "w", newline="") as supply_curve_tab_file:
         writer = csv.writer(supply_curve_tab_file, delimiter="\t", lineterminator="\n")

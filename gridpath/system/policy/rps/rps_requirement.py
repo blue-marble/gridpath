@@ -38,7 +38,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
         index=m.RPS_ZONE_PERIODS_WITH_RPS,
         param=m.rps_target_mwh,
@@ -54,6 +54,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     rps_targets = c.execute(
         """SELECT rps_zone, period, rps_target_mwh
@@ -98,11 +101,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     rps_targets.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -113,7 +116,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     rps_targets = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "rps_targets.tab"), "w", newline="") as \
             rps_targets_tab_file:
         writer = csv.writer(rps_targets_tab_file,

@@ -147,7 +147,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "projects.tab"),
         select=("project", "carbon_cap_zone"),
         param=(m.carbon_cap_zone,)
@@ -168,7 +168,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "carbon_emissions_by_project.csv"),
               "w", newline="") as carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)
@@ -200,6 +200,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, carbon_cap_zone
@@ -233,12 +235,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage,
                        conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -253,7 +255,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
     for (prj, zone) in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t",
                             lineterminator="\n")
@@ -276,7 +278,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
               newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t",

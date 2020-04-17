@@ -106,7 +106,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "prm_elcc_surface.csv"), "w", newline="") as \
             results_file:
         writer = csv.writer(results_file)
@@ -165,11 +165,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     prm_zone_surface_facets_and_intercept.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -180,7 +180,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
-            inputs_directory, "prm_zone_surface_facets_and_intercept.tab"
+            scenario_directory, subproblem, stage,
+            "prm_zone_surface_facets_and_intercept.tab"
     ), "w", newline="") as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
 

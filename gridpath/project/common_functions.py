@@ -29,7 +29,7 @@ def determine_project_subset(
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
+            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                          "projects.tab"),
             sep="\t", usecols=["project", column]
         )

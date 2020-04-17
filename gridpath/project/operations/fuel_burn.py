@@ -133,7 +133,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
               "fuel_burn.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(

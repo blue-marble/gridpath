@@ -170,7 +170,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "periods.tab"),
         select=("period", "discount_factor", "number_years_represented"),
         index=m.PERIODS,
@@ -178,7 +178,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
         select=("timepoint", "period"),
         index=m.TMPS,
@@ -197,6 +197,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     periods = c.execute(
         """SELECT period, discount_factor, number_years_represented
@@ -209,11 +211,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return periods
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     periods.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -224,7 +226,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     periods = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "periods.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"),
               "w", newline="") as periods_tab_file:
         writer = csv.writer(periods_tab_file, delimiter="\t",
                             lineterminator="\n")
