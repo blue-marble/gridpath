@@ -205,15 +205,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     #  that do not exist
     # TODO: add the ID of the subproblem we're linking to the tab filename
     if subproblem != "":
-        linked_tmps_df = pd.read_csv(
-            os.path.join(scenario_directory, "timepoints_to_link.tab"),
-            sep="\t",
-            usecols=["linked_timepoint", "hrs_in_tmp"]
+        map_df = pd.read_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            sep=","
         )
-        linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
+
+        linked_tmps_df = map_df.loc[map_df["subproblem_to_link"] == subproblem]
+
+        linked_tmps = linked_tmps_df[
+            "next_subproblem_linked_timepoint"].tolist()
+
         data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
         hrs_in_linked_tmp_dict = dict(
-            zip(linked_tmps, linked_tmps_df["hrs_in_tmp"])
+            zip(linked_tmps, linked_tmps_df["number_of_hours_in_timepoint"])
         )
         data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
     else:
@@ -284,8 +288,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                          "number_of_hours_in_timepoint",
                          "previous_stage_timepoint_map",
                          "next_subproblem_linked_timepoint", "month"])
-
-        timepoints_to_link = dict()
 
         # Write timepoints
         for row in timepoints:

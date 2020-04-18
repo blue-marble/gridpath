@@ -375,6 +375,9 @@ def write_solver_options(scenario_directory, solver_options):
 
 
 def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
+    # TODO: only write this file if there are any linked problems
+    # TODO: probably shouldn't change the names of the columns, so change to
+    #  what's in the database downstream
     sql = """
         SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
         subproblem_id + 1 as subproblem_to_link, 
