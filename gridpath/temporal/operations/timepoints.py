@@ -29,7 +29,7 @@ import os.path
 import pandas as pd
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
-    PositiveIntegers, NonPositiveIntegers, Boolean
+    PositiveIntegers, NonPositiveIntegers
 
 
 def add_model_components(m, d):
@@ -115,10 +115,18 @@ def add_model_components(m, d):
         initialize=list(range(1, 12 + 1))
     )
 
+    # These are the timepoints, a subset of TMPS, for which we'll export
+    # results that will be used in the next subproblem (if relevant)
+    m.TMPS_TO_LINK = Set(
+        within=m.TMPS,
+        ordered=True
+    )
+
     # These are the timepoints from the previous subproblem for which we'll
     # have parameters to constrain the current subproblem
     m.LINKED_TMPS = Set(
-        within=NonPositiveIntegers
+        within=NonPositiveIntegers,
+        ordered=True
     )
 
     # Required Params
@@ -147,36 +155,9 @@ def add_model_components(m, d):
     # Optional Params
     ###########################################################################
 
-    m.next_subproblem_linked_timepoint = Param(
-        m.TMPS, default=0,
-        within=Boolean
-    )
-
     m.hrs_in_linked_tmp = Param(
         m.LINKED_TMPS,
         within=NonNegativeReals
-    )
-
-    # These are the timepoints for which we'll export results that will be
-    # used in the next subproblem (if relevant)
-    m.TMPS_TO_LINK = Set(
-        within=m.TMPS,
-        ordered=True,
-        rule=lambda mod:
-        set([tmp for tmp in mod.TMPS if mod.next_subproblem_linked_timepoint[tmp]])
-    )
-
-    def link_tmp_id_rule(mod, tmp):
-        tmp_linked_id_dict = dict()
-        linked_tmp_id = -len(mod.TMPS_TO_LINK) + 1
-        for tmp in mod.TMPS_TO_LINK:
-            tmp_linked_id_dict[tmp] = linked_tmp_id
-            linked_tmp_id += 1
-
-        return tmp_linked_id_dict
-
-    m.linked_tmp_id = Param(
-        m.TMPS_TO_LINK, rule=link_tmp_id_rule
     )
 
 
@@ -191,36 +172,44 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.tmp_weight,
                m.hrs_in_tmp,
                m.prev_stage_tmp_map,
-               m.next_subproblem_linked_timepoint,
                m.month),
         select=("timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
-                "next_subproblem_linked_timepoint",
                 "month")
     )
 
-    # TODO: need to figure out how to skip looking for previous subproblems
-    #  that do not exist
-    # TODO: add the ID of the subproblem we're linking to the tab filename
-    if subproblem != "":
+    # Load in any timepoints to link to the next subproblem and linked
+    # timepoints from a previous subproblem
+    # Try to load in the map CSV
+    # TODO: figure out how we'll deal with stages
+    try:
         map_df = pd.read_csv(
             os.path.join(scenario_directory, "linked_subproblems_map.csv"),
             sep=","
         )
 
+        # Figure out which timepoints we'll be linking to the next subproblem
+        # These are subset of all TMPS in the current subproblem
+        tmps_to_link_df = map_df.loc[map_df["subproblem"] == subproblem]
+        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
+        # Load in the data
+        data_portal.data()["TMPS_TO_LINK"] = {None: tmps_to_link}
+
+        # Get the linked timepoints for the current subproblem
         linked_tmps_df = map_df.loc[map_df["subproblem_to_link"] == subproblem]
-
-        linked_tmps = linked_tmps_df[
-            "next_subproblem_linked_timepoint"].tolist()
-
+        linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
+        # Load in the data
         data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
         hrs_in_linked_tmp_dict = dict(
             zip(linked_tmps, linked_tmps_df["number_of_hours_in_timepoint"])
         )
         data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
-    else:
+
+    # If the file is not there, there were no linked subproblems and the
+    # file was not written, so load in empty components
+    except FileNotFoundError:
         data_portal.data()["LINKED_TMPS"] = {None: []}
         data_portal.data()["hrs_in_linked_tmp"] = {}
 
@@ -242,8 +231,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, 
-           next_subproblem_linked_timepoint, month
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -270,24 +258,17 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     timepoints = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
-    )
+        subscenarios, subproblem, stage, conn)
 
-    with open(
-            os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "timepoints.tab"
-            ),
-            "w", newline=""
-    ) as timepoints_tab_file:
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
+              "w", newline="") as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t",
                             lineterminator="\n")
 
         # Write header
         writer.writerow(["timepoint", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map",
-                         "next_subproblem_linked_timepoint", "month"])
+                         "previous_stage_timepoint_map", "month"])
 
         # Write timepoints
         for row in timepoints:

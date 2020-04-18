@@ -375,15 +375,12 @@ def write_solver_options(scenario_directory, solver_options):
 
 
 def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
-    # TODO: only write this file if there are any linked problems
-    # TODO: probably shouldn't change the names of the columns, so change to
-    #  what's in the database downstream
     sql = """
         SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
         subproblem_id + 1 as subproblem_to_link, 
-        next_subproblem_linked_timepoint, number_of_hours_in_timepoint
+        linked_timepoint, number_of_hours_in_timepoint
         FROM inputs_temporal_timepoints
-        WHERE next_subproblem_linked_timepoint IS NOT NULL
+        WHERE linked_timepoint IS NOT NULL
         AND temporal_scenario_id = ?;
         """
 
@@ -391,35 +388,12 @@ def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
         sql=sql, con=conn, params=(subscenarios.TEMPORAL_SCENARIO_ID, )
     )
 
-    df.to_csv(
-        os.path.join(scenario_directory, "linked_subproblems_map.csv"),
-        index=False
-    )
-
-    # print(df)
-    #
-    # # TODO: make sure this file is deleted when on getting scenario inputs
-    # # Create the file when getting inputs if problems are linked, then only
-    # # append to it or alternatively create it based on the temporal inputs
-    # # on getting inputs
-    # # Add the timepoints_to_link.csv file
-    # # timepoints_to_link_count = len([k for k in timepoints_to_link.keys()])
-    # with open(os.path.join(scenario_directory, "linked_subproblems_map.csv"),
-    #           "w", newline="") as map_file:
-    #     writer = csv.writer(
-    #         map_file, delimiter=",", lineterminator="\n"
-    #     )
-    #
-    #     # Write header
-    #     writer.writerow(
-    #         ["subproblem", "stage", "timepoint", "subproblem_to_link",
-    #          "linked_timepoint", "hrs_in_tmp"]
-    #     )
-    #
-    #     # Write timepoints
-    #     for row in df:
-    #         writer.writerow(row)
-
+    # Only write this file if there are any linked problems
+    if not df.empty:
+        df.to_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            index=False
+        )
 
 
 def main(args=None):

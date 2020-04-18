@@ -65,7 +65,7 @@ class TestTimepoints(unittest.TestCase):
                 sep="\t",
                 usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
-                         "next_subproblem_linked_timepoint", "month"]
+                         "month"]
             )
 
         m, data = \
@@ -111,26 +111,6 @@ class TestTimepoints(unittest.TestCase):
         self.assertListEqual([m for m in instance.MONTHS],
                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
-        # Params: next_subproblem_linked_timepoint
-        expected_timepoint_link = \
-            timepoints_df.set_index("timepoint").to_dict()[
-                "next_subproblem_linked_timepoint"
-            ]
-        for key, value in expected_timepoint_link.items():
-            if expected_timepoint_link[key] == ".":
-                expected_timepoint_link[key] = 0
-            else:
-                expected_timepoint_link[key] = int(value)
-
-        actual_timepoint_link = \
-            {tmp: instance.next_subproblem_linked_timepoint[tmp]
-             for tmp in instance.TMPS
-             }
-
-        self.assertDictEqual(
-            expected_timepoint_link, actual_timepoint_link
-        )
-
         # Params: month
         expected_month = \
             timepoints_df.set_index("timepoint").to_dict()["month"]
@@ -141,6 +121,8 @@ class TestTimepoints(unittest.TestCase):
         self.assertDictEqual(expected_month, actual_month,
                              msg="Data for param month not loaded correctly")
 
+
+        # TODO: add tests for linked timepoints sets + param
 
         # TODO: we're missing a test for the loading of the
         #  previous_stage_timepoint_map param
