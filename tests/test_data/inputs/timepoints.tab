@@ -1,4 +1,4 @@
-timepoint	period	number_of_hours_in_timepoint	timepoint_weight	previous_stage_timepoint_map	link_to_next_subproblem	month
+timepoint	period	number_of_hours_in_timepoint	timepoint_weight	previous_stage_timepoint_map	next_subproblem_linked_timepoint	month
 20200101	2020	1	1	.	.	5
 20200102	2020	3	1	.	.	5
 20200103	2020	1	1	.	.	5

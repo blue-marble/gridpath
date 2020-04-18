@@ -216,7 +216,7 @@ number_of_hours_in_timepoint INTEGER,
 timepoint_weight FLOAT,
 previous_stage_timepoint_map INTEGER,
 spinup_or_lookahead INTEGER,
-link_to_next_subproblem INTEGER,
+next_subproblem_linked_timepoint INTEGER,
 month INTEGER,
 hour_of_day FLOAT,  -- FLOAT to accommodate subhourly timepoints
 timestamp DATETIME,

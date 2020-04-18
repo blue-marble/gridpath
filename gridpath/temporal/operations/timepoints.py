@@ -147,7 +147,7 @@ def add_model_components(m, d):
     # Optional Params
     ###########################################################################
 
-    m.link_to_next_subproblem = Param(
+    m.next_subproblem_linked_timepoint = Param(
         m.TMPS, default=0,
         within=Boolean
     )
@@ -163,7 +163,7 @@ def add_model_components(m, d):
         within=m.TMPS,
         ordered=True,
         rule=lambda mod:
-        set([tmp for tmp in mod.TMPS if mod.link_to_next_subproblem[tmp]])
+        set([tmp for tmp in mod.TMPS if mod.next_subproblem_linked_timepoint[tmp]])
     )
 
     def link_tmp_id_rule(mod, tmp):
@@ -191,13 +191,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.tmp_weight,
                m.hrs_in_tmp,
                m.prev_stage_tmp_map,
-               m.link_to_next_subproblem,
+               m.next_subproblem_linked_timepoint,
                m.month),
         select=("timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
-                "link_to_next_subproblem",
+                "next_subproblem_linked_timepoint",
                 "month")
     )
 
@@ -239,7 +239,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
            number_of_hours_in_timepoint, previous_stage_timepoint_map, 
-           link_to_next_subproblem, month
+           next_subproblem_linked_timepoint, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -269,8 +269,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         subscenarios, subproblem, stage, conn
     )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
-              "w", newline="") as timepoints_tab_file:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs",
+                "timepoints.tab"
+            ),
+            "w", newline=""
+    ) as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t",
                             lineterminator="\n")
 
@@ -278,40 +283,14 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         writer.writerow(["timepoint", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "previous_stage_timepoint_map",
-                         "link_to_next_subproblem", "month"])
+                         "next_subproblem_linked_timepoint", "month"])
 
         timepoints_to_link = dict()
 
         # Write timepoints
         for row in timepoints:
-            print(row[5])
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
-
-            if row[5] == 1:
-                # Get the linked timepoints and their n of hours
-                timepoints_to_link[row[0]] = row[3]
-
-    # TODO: move this to a pass-through directory
-    # Add the timepoints_to_link.tab file for the next subproblem
-    # We'll move this file once this subproblem is solved
-    timepoints_to_link_count = len([k for k in timepoints_to_link.keys()])
-    with open(os.path.join(scenario_directory,
-                           "timepoints_to_link.tab"),
-              "w", newline="") as linked_timepoints_tab_file:
-        writer = csv.writer(linked_timepoints_tab_file,
-                            delimiter="\t",
-                            lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["linked_timepoint", "timepoint", "hrs_in_tmp"])
-
-        # Write timepoints
-        x = - (timepoints_to_link_count - 1)
-        for tmp in timepoints_to_link.keys():
-            writer.writerow([x, tmp, timepoints_to_link[tmp]])
-            x += 1
 
 
 # Validation

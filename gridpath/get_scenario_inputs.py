@@ -16,6 +16,7 @@ from builtins import str
 from argparse import ArgumentParser
 import csv
 import os.path
+import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
@@ -75,8 +76,8 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
             # appropriate. Note that all input files are saved in the
             # input_directory, even the non-temporal inputs that are not
             # dependent on the subproblem or stage. This simplifies the file
-            # structure at the expense of unnecessarily duplicating non-temporal
-            # input files such as projects.tab.
+            # structure at the expense of unnecessarily duplicating
+            # non-temporal input files such as projects.tab.
             for m in loaded_modules:
                 if hasattr(m, "write_model_inputs"):
                     m.write_model_inputs(
@@ -97,7 +98,8 @@ def delete_prior_aux_files(scenario_directory):
     :return:
     """
     prior_aux_files = [
-        "features.csv", "scenario_description.csv", "solver_options.csv"
+        "features.csv", "scenario_description.csv", "solver_options.csv",
+        "linked_subproblems_map.csv"
     ]
 
     for f in prior_aux_files:
@@ -372,6 +374,51 @@ def write_solver_options(scenario_directory, solver_options):
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
 
 
+def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
+    sql = """
+        SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
+        subproblem_id + 1 as subproblem_to_link, 
+        next_subproblem_linked_timepoint, number_of_hours_in_timepoint
+        FROM inputs_temporal_timepoints
+        WHERE next_subproblem_linked_timepoint IS NOT NULL
+        AND temporal_scenario_id = ?;
+        """
+
+    df = pd.read_sql(
+        sql=sql, con=conn, params=(subscenarios.TEMPORAL_SCENARIO_ID, )
+    )
+
+    df.to_csv(
+        os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+        index=False
+    )
+
+    # print(df)
+    #
+    # # TODO: make sure this file is deleted when on getting scenario inputs
+    # # Create the file when getting inputs if problems are linked, then only
+    # # append to it or alternatively create it based on the temporal inputs
+    # # on getting inputs
+    # # Add the timepoints_to_link.csv file
+    # # timepoints_to_link_count = len([k for k in timepoints_to_link.keys()])
+    # with open(os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+    #           "w", newline="") as map_file:
+    #     writer = csv.writer(
+    #         map_file, delimiter=",", lineterminator="\n"
+    #     )
+    #
+    #     # Write header
+    #     writer.writerow(
+    #         ["subproblem", "stage", "timepoint", "subproblem_to_link",
+    #          "linked_timepoint", "hrs_in_tmp"]
+    #     )
+    #
+    #     # Write timepoints
+    #     for row in df:
+    #         writer.writerow(row)
+
+
+
 def main(args=None):
     """
 
@@ -458,6 +505,11 @@ def main(args=None):
     write_solver_options(
         scenario_directory=scenario_directory,
         solver_options=solver_options
+    )
+
+    # Write the subproblem linked timepoints map file if needed
+    write_linked_subproblems_map(
+        scenario_directory, conn, subscenarios
     )
 
     # Close the database connection

@@ -65,7 +65,7 @@ class TestTimepoints(unittest.TestCase):
                 sep="\t",
                 usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
-                         "link_to_next_subproblem", "month"]
+                         "next_subproblem_linked_timepoint", "month"]
             )
 
         m, data = \
@@ -111,10 +111,10 @@ class TestTimepoints(unittest.TestCase):
         self.assertListEqual([m for m in instance.MONTHS],
                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
-        # Params: link_to_next_subproblem
+        # Params: next_subproblem_linked_timepoint
         expected_timepoint_link = \
             timepoints_df.set_index("timepoint").to_dict()[
-                "link_to_next_subproblem"
+                "next_subproblem_linked_timepoint"
             ]
         for key, value in expected_timepoint_link.items():
             if expected_timepoint_link[key] == ".":
@@ -123,7 +123,7 @@ class TestTimepoints(unittest.TestCase):
                 expected_timepoint_link[key] = int(value)
 
         actual_timepoint_link = \
-            {tmp: instance.link_to_next_subproblem[tmp]
+            {tmp: instance.next_subproblem_linked_timepoint[tmp]
              for tmp in instance.TMPS
              }
 
