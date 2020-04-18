@@ -1977,26 +1977,55 @@ def export_module_specific_results(mod, d,
         mod, d, scenario_directory, subproblem, stage
     )
 
+
 # TODO: how do we get correct subproblem and stage
 def export_linked_subproblem_inputs(
-        mod, d, scenario_directory, subproblem, stage):
-    with open(os.path.join(scenario_directory,
-                           subproblem, stage, "results",
-                           "gen_commit_lin_to_link.tab"),
-              "w", newline="") as f:
-        writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["project", "linked_tmp_id", "timepoint",
-                         "commitment"])
+        mod, d, scenario_directory, subproblem, stage
+):
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    try:
+        map_df = pd.read_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            sep=","
+        )
 
-        for (p, tmp) \
-                in mod.GEN_COMMIT_LIN_OPR_TMPS:
-            if tmp in [arg for arg in mod.TMPS_TO_LINK]:
-                writer.writerow([
-                    p,
-                    mod.linked_tmp_id[tmp],
-                    tmp,
-                    value(mod.GenCommitLin_Commit[p, tmp])
-                ])
+        # Figure out which timepoints we'll be linking to the next subproblem
+        # These are subset of all TMPS in the current subproblem
+        tmps_to_link_df = map_df.loc[map_df["subproblem"] == int(subproblem)]
+        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
+        tmp_linked_tmp_dict = {
+            tmp: tmps_to_link_df.loc[
+                tmps_to_link_df["timepoint"] == tmp
+                ]["linked_timepoint"].values.item()
+            for tmp in tmps_to_link
+        }
+
+        # If the list is not empty, write the linked timepoint results for
+        # this module in the next subproblem's input directory
+        if tmps_to_link:
+            next_subproblem = str(int(subproblem) + 1)
+            with open(os.path.join(
+                    scenario_directory, next_subproblem, stage, "inputs",
+                    "linked_timepoint_gen_commit_lin.tab"
+            ), "w", newline=""
+            ) as f:
+                writer = csv.writer(f, delimiter="\t")
+                writer.writerow(["project", "linked_timepoint", "commitment"])
+
+                for (p, tmp) \
+                        in mod.GEN_COMMIT_LIN_OPR_TMPS:
+                    if tmp in tmps_to_link:
+                        writer.writerow([
+                            p,
+                            tmp_linked_tmp_dict[tmp],
+                            value(mod.GenCommitLin_Commit[p, tmp])
+                        ])
+        else:
+            pass
+    except FileNotFoundError:
+        pass
 
 
 # Database

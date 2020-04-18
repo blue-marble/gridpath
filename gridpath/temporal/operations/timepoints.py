@@ -115,13 +115,6 @@ def add_model_components(m, d):
         initialize=list(range(1, 12 + 1))
     )
 
-    # These are the timepoints, a subset of TMPS, for which we'll export
-    # results that will be used in the next subproblem (if relevant)
-    m.TMPS_TO_LINK = Set(
-        within=m.TMPS,
-        ordered=True
-    )
-
     # These are the timepoints from the previous subproblem for which we'll
     # have parameters to constrain the current subproblem
     m.LINKED_TMPS = Set(
@@ -165,6 +158,16 @@ def add_model_components(m, d):
 ###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m: Pyomo AbstractModel
+    :param d: class
+    :param data_portal: Pyomo DataPortal
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
+    :return:
+    """
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
@@ -189,16 +192,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             os.path.join(scenario_directory, "linked_subproblems_map.csv"),
             sep=","
         )
-
-        # Figure out which timepoints we'll be linking to the next subproblem
-        # These are subset of all TMPS in the current subproblem
-        tmps_to_link_df = map_df.loc[map_df["subproblem"] == subproblem]
-        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
-        # Load in the data
-        data_portal.data()["TMPS_TO_LINK"] = {None: tmps_to_link}
-
         # Get the linked timepoints for the current subproblem
-        linked_tmps_df = map_df.loc[map_df["subproblem_to_link"] == subproblem]
+        linked_tmps_df = map_df.loc[map_df["subproblem_to_link"] ==
+                                    int(subproblem)]
         linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
         # Load in the data
         data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
