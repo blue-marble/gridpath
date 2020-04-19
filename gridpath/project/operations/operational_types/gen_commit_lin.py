@@ -587,6 +587,8 @@ def add_module_specific_components(m, d):
         ordered=True
     )
 
+    m.GEN_COMMIT_LIN_OPR_LINKED_TMPS = Set(dimen=2)
+
     # Required Params
     ###########################################################################
     m.gen_commit_lin_min_stable_level_fraction = Param(
@@ -654,6 +656,11 @@ def add_module_specific_components(m, d):
     m.gen_commit_lin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
         within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_startup = Param(
+        m.GEN_COMMIT_LIN_OPR_LINKED_TMPS,
+        within=PercentFraction
     )
 
     # Variables
@@ -1159,12 +1166,14 @@ def min_up_time_constraint_rule(mod, g, tmp):
       --> for all timepoints
     """
 
-    relevant_tmps, linked_tmps = determine_relevant_timepoints(
+    relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_min_up_time_hours[g]
     )
 
     number_of_starts_min_up_time_or_less_hours_ago = \
-        sum(mod.GenCommitLin_Startup[g, tp] for tp in relevant_tmps)
+        sum(mod.GenCommitLin_Startup[g, tp] for tp in relevant_tmps) \
+        + sum(mod.gen_commit_lin_linked_startup[g, ltp] for ltp in
+              relevant_linked_timepoints)
 
     # If we've reached the first timepoint in linear boundary mode and
     # the total duration of the relevant timepoints (which includes *tmp*)
@@ -1924,6 +1933,20 @@ def load_module_specific_data(mod, data_portal,
         data_portal.data()["gen_commit_lin_startup_cost_per_mw"] = \
             startup_cost_dict
 
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "linked_timepoint_gen_commit_lin.tab"
+        )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=mod.GEN_COMMIT_LIN_OPR_LINKED_TMPS,
+            param=mod.gen_commit_lin_linked_startup
+        )
+    else:
+        pass
+
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -2012,7 +2035,10 @@ def export_linked_subproblem_inputs(
             ), "w", newline=""
             ) as f:
                 writer = csv.writer(f, delimiter="\t")
-                writer.writerow(["project", "linked_timepoint", "commitment"])
+                writer.writerow(
+                    ["project", "linked_timepoint",
+                     "gen_commit_lin_linked_startup"]
+                )
 
                 for (p, tmp) \
                         in mod.GEN_COMMIT_LIN_OPR_TMPS:
@@ -2020,7 +2046,7 @@ def export_linked_subproblem_inputs(
                         writer.writerow([
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            value(mod.GenCommitLin_Commit[p, tmp])
+                            value(mod.GenCommitLin_Startup[p, tmp])
                         ])
         else:
             pass

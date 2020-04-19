@@ -53,7 +53,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     constraint in timepoint *t*.
     """
     relevant_tmps = [tmp]
-    linked_tmps = []
+    relevant_linked_tmps = []
 
     if check_if_linear_horizon_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
@@ -116,11 +116,11 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                         mod.balancing_type_project[g],
                         mod.horizon[tmp, mod.balancing_type_project[g]]
                     ]:
-                linked_tmps.append(linked_tmp)
+                relevant_linked_tmps.append(linked_tmp)
                 hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
                 # If this is the furthest linked timepoint, break out of the
                 # loop; otherwise, move on to the next one
-                if linked_tmp == min(linked_tmps):
+                if linked_tmp == min(relevant_linked_tmps):
                     break
                 else:
                     linked_tmp += -1
@@ -137,7 +137,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                 relevant_tmp = mod.prev_tmp[
                     relevant_tmp, mod.balancing_type_project[g]]
 
-    return relevant_tmps, linked_tmps
+    return relevant_tmps, relevant_linked_tmps
 
 
 def update_dispatch_results_table(
