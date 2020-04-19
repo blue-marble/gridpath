@@ -56,22 +56,28 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
 
         test_cases = {
             1: {"min_time": 4, "g": "Gas_CCGT", "tmp": 20200103,
-                "relevant_timepoints": [20200103, 20200102]},
+                "relevant_timepoints": [20200103, 20200102],
+                "relevant_linked_timepoints": []},
             2: {"min_time": 5, "g": "Gas_CCGT", "tmp": 20200103,
                 "relevant_timepoints":
-                    [20200103, 20200102, 20200101, 20200124, 20200123]},
+                    [20200103, 20200102, 20200101, 20200124, 20200123],
+                "relevant_linked_timepoints": []},
             3: {"min_time": 8, "g": "Gas_CCGT", "tmp": 20200103,
                 "relevant_timepoints":
                     [20200103, 20200102, 20200101, 20200124, 20200123,
-                     20200122, 20200121]},
+                     20200122, 20200121],
+                "relevant_linked_timepoints": []},
             4: {"min_time": 1, "g": "Gas_CCGT", "tmp": 20200120,
-                "relevant_timepoints": [20200120, 20200119, 20200118]},
+                "relevant_timepoints": [20200120, 20200119, 20200118],
+                "relevant_linked_timepoints": []},
             5: {"min_time": 2, "g": "Gas_CCGT", "tmp": 20200120,
                 "relevant_timepoints":
-                    [20200120, 20200119, 20200118, 20200117]},
+                    [20200120, 20200119, 20200118, 20200117],
+                "relevant_linked_timepoints": []},
             6: {"min_time": 3, "g": "Gas_CCGT", "tmp": 20200120,
                 "relevant_timepoints":
-                    [20200120, 20200119, 20200118, 20200117, 20200116]},
+                    [20200120, 20200119, 20200118, 20200117, 20200116],
+                "relevant_linked_timepoints": []},
             # Test min times of longer duration than the horizon in a
             # 'circular' horizon setting
             7: {"min_time": 100, "g": "Gas_CCGT", "tmp": 20200101,
@@ -80,25 +86,31 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
                      20200120, 20200119, 20200118, 20200117, 20200116,
                      20200115, 20200114, 20200113, 20200112, 20200111,
                      20200110, 20200109, 20200108, 20200107, 20200106,
-                     20200105, 20200104, 20200103, 20200102, 20200101]},
+                     20200105, 20200104, 20200103, 20200102, 20200101],
+                "relevant_linked_timepoints": []},
             # If we're in the first timepoint of a linear horizon, test that
             # we only get that timepoint (i.e. that we break out of the loop
             # before adding any more timepoints)
             8: {"min_time": 100, "g": "Gas_CCGT", "tmp": 20200201,
-                "relevant_timepoints": [20200201]},
+                "relevant_timepoints": [20200201],
+                "relevant_linked_timepoints": []},
             # Test that we break out of the loop with min times that reach the
             # first horizon timepoint in a 'linear' horizon setting
             9: {"min_time": 100, "g": "Gas_CCGT", "tmp": 20200202,
-                "relevant_timepoints": [20200202, 20200201]}
+                "relevant_timepoints": [20200202, 20200201],
+                "relevant_linked_timepoints": []}
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["relevant_timepoints"]
-            actual_list = determine_relevant_timepoints(
+            expected_rel_tmps, expected_linked_tmps = \
+                test_cases[test_case]["relevant_timepoints"], \
+                test_cases[test_case]["relevant_linked_timepoints"]
+            actual_rel_tmps, actual_linked_tmps = determine_relevant_timepoints(
                 mod=instance,
                 g=test_cases[test_case]["g"],
                 tmp=test_cases[test_case]["tmp"],
                 min_time=test_cases[test_case]["min_time"]
             )
 
-            self.assertListEqual(expected_list, actual_list)
+            self.assertListEqual(expected_rel_tmps, actual_rel_tmps)
+            self.assertListEqual(expected_linked_tmps, actual_linked_tmps)
