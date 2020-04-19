@@ -49,7 +49,7 @@ def check_if_linear_horizon_first_timepoint(mod, tmp, balancing_type):
         balancing_type, mod.horizon[tmp, balancing_type]] \
             and mod.boundary[
                balancing_type, mod.horizon[tmp, balancing_type]] \
-            == "linear"
+            in ["linear", "linked"]
 
 
 def check_if_linear_horizon_last_timepoint(mod, tmp, balancing_type):
@@ -57,7 +57,7 @@ def check_if_linear_horizon_last_timepoint(mod, tmp, balancing_type):
         balancing_type, mod.horizon[tmp, balancing_type]] \
             and mod.boundary[
                balancing_type, mod.horizon[tmp, balancing_type]] \
-            == "linear"
+            in ["linear", "linked"]
 
 
 def get_column_row_value(header, column_name, row):

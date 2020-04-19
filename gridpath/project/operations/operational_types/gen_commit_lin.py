@@ -1159,7 +1159,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
       --> for all timepoints
     """
 
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, linked_tmps = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_min_up_time_hours[g]
     )
 
@@ -1225,7 +1225,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     Constraint (7) in Morales-Espana et al. (2013)
     """
 
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, linked_tmps = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_min_down_time_hours[g]
     )
 
@@ -1402,9 +1402,9 @@ def active_startup_type_constraint_rule(mod, g, tmp, s):
         return Constraint.Skip
 
     # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
-    relevant_tmps1 = determine_relevant_timepoints(
+    relevant_tmps1, linked_tmps2 = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_down_time_cutoff_hours[g, s])
-    relevant_tmps2 = determine_relevant_timepoints(
+    relevant_tmps2, linked_tmps2 = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_down_time_cutoff_hours[g, s+1])
     relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
 

@@ -166,7 +166,7 @@ def add_model_components(m, d):
 
     m.boundary = Param(
         m.BLN_TYPE_HRZS,
-        within=['circular', 'linear']
+        within=['circular', 'linear', 'linked']
     )
 
     # Derived Params
@@ -255,7 +255,7 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
             if tmp == mod.first_hrz_tmp[bt, hrz]:
                 if mod.boundary[bt, hrz] == "circular":
                     prev_tmp_dict[tmp, bt] = mod.last_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] == "linear":
+                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
                     prev_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(
@@ -292,7 +292,7 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
             if tmp == mod.last_hrz_tmp[bt, hrz]:
                 if mod.boundary[bt, hrz] == "circular":
                     next_tmp_dict[tmp, bt] = mod.first_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] == "linear":
+                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
                     next_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(

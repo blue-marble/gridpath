@@ -53,6 +53,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     constraint in timepoint *t*.
     """
     relevant_tmps = [tmp]
+    linked_tmps = []
 
     if check_if_linear_horizon_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
@@ -67,14 +68,17 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
+        # The first possible linked timepoint is 0
+        linked_tmp = 0
+
         while hours_from_tmp < min_time:
             # If we haven't exceed the minimum up/down time yet, this timepoint
             # is relevant and we add it to our list
             relevant_tmps.append(relevant_tmp)
 
-            # In a 'linear' horizon setting, once we reach the first timepoint
-            # of the horizon, we break out of the loop since there are no more
-            # timepoints to consider
+            # In a 'linear' horizon setting, once we reach the first
+            # timepoint of the horizon, we break out of the loop since there
+            # are no more timepoints to consider
             if mod.boundary[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
@@ -97,6 +101,29 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                     == "circular" \
                     and relevant_tmp == tmp:
                 break
+            # TODO: only allow the first horizon of a subproblem to have
+            #  linked timepoints
+            # In a 'linked' horizon setting, once we reach the first
+            # timepoint of the horizon, we'll start adding the linked
+            # timepoints
+            if mod.boundary[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ] \
+                    == "linked" \
+                    and relevant_tmp == \
+                    mod.first_hrz_tmp[
+                        mod.balancing_type_project[g],
+                        mod.horizon[tmp, mod.balancing_type_project[g]]
+                    ]:
+                linked_tmps.append(linked_tmp)
+                hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                # If this is the furthest linked timepoint, break out of the
+                # loop; otherwise, move on to the next one
+                if linked_tmp == min(linked_tmps):
+                    break
+                else:
+                    linked_tmp += -1
             # Otherwise, we move on to the relevant timepoint's previous
             # timepoint and will add that timepoint's duration to
             # hours_from_tmp
@@ -110,7 +137,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                 relevant_tmp = mod.prev_tmp[
                     relevant_tmp, mod.balancing_type_project[g]]
 
-    return relevant_tmps
+    return relevant_tmps, linked_tmps
 
 
 def update_dispatch_results_table(
