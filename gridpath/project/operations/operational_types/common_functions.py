@@ -551,3 +551,59 @@ def write_var_profile_model_inputs(
 
         for row in variable_profiles:
             writer.writerow(row)
+
+
+def load_hydro_opchars(m, data_portal, scenario_directory, subproblem,
+                       stage, op_type):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :return:
+    """
+
+    # Determine list of projects load params from projects.tab (optional
+    # ramp rates)
+    projects = load_optype_module_specific_data(
+        mod=m, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type=op_type
+    )
+
+    # Load hydro operational data from hydro-specific input files
+    # Determine subset of project-horizons in hydro budgets file
+    project_horizons = list()
+    avg = dict()
+    min = dict()
+    max = dict()
+
+    prj_hor_opchar_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "hydro_conventional_horizon_params.tab"),
+        sep="\t",
+        usecols=["project", "horizon", "hydro_average_power_fraction",
+                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
+    )
+    for row in zip(prj_hor_opchar_df["project"],
+                   prj_hor_opchar_df["horizon"],
+                   prj_hor_opchar_df["hydro_average_power_fraction"],
+                   prj_hor_opchar_df["hydro_min_power_fraction"],
+                   prj_hor_opchar_df["hydro_max_power_fraction"]):
+        if row[0] in projects:
+            project_horizons.append((row[0], row[1]))
+            avg[(row[0], row[1])] = float(row[2])
+            min[(row[0], row[1])] = float(row[3])
+            max[(row[0], row[1])] = float(row[4])
+        else:
+            pass
+
+    # Load data
+    data_portal.data()["{}_OPR_HRZS".format(op_type.upper())] = \
+        {None: project_horizons}
+    data_portal.data()["{}_average_power_fraction".format(op_type)] = avg
+    data_portal.data()["{}_min_power_fraction".format(op_type)] = min
+    data_portal.data()["{}_max_power_fraction".format(op_type)] = max

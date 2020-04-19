@@ -10,24 +10,19 @@ output is must-take, i.e. curtailment is not allowed.
 
 from __future__ import print_function
 
-from builtins import next
-from builtins import zip
 from builtins import str
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, \
-    Expression, NonNegativeReals, PercentFraction, value
+    Expression, NonNegativeReals, PercentFraction
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    setup_results_import
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data
+    load_hydro_opchars
 
 
 def add_module_specific_components(m, d):
@@ -547,47 +542,9 @@ def load_module_specific_data(m, data_portal,
     :param stage:
     :return:
     """
-    # Determine list of projects load params from projects.tab (optional
-    # ramp rates)
-    projects = load_optype_module_specific_data(
-        mod=m, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_hydro_must_take"
-    )
 
-    # Load hydro operational data from hydro-specific input files
-    # Determine subset of project-horizons in hydro budgets file
-    project_horizons = list()
-    avg = dict()
-    min = dict()
-    max = dict()
-
-    prj_hor_opchar_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "hydro_conventional_horizon_params.tab"),
-        sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_fraction",
-                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
-    )
-    for row in zip(prj_hor_opchar_df["project"],
-                   prj_hor_opchar_df["horizon"],
-                   prj_hor_opchar_df["hydro_average_power_fraction"],
-                   prj_hor_opchar_df["hydro_min_power_fraction"],
-                   prj_hor_opchar_df["hydro_max_power_fraction"]):
-        if row[0] in projects:
-            project_horizons.append((row[0], row[1]))
-            avg[(row[0], row[1])] = float(row[2])
-            min[(row[0], row[1])] = float(row[3])
-            max[(row[0], row[1])] = float(row[4])
-        else:
-            pass
-
-    # Load data
-    data_portal.data()["GEN_HYDRO_MUST_TAKE_OPR_HRZS"] = \
-        {None: project_horizons}
-    data_portal.data()["gen_hydro_must_take_average_power_fraction"] = avg
-    data_portal.data()["gen_hydro_must_take_min_power_fraction"] = min
-    data_portal.data()["gen_hydro_must_take_max_power_fraction"] = max
+    load_hydro_opchars(m, data_portal, scenario_directory, subproblem,
+                       stage, op_type="gen_hydro_must_take")
 
 
 # Database
