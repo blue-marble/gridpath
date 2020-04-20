@@ -778,3 +778,72 @@ def write_hydro_model_inputs(
 
         for row in hydro_chars:
             writer.writerow(row)
+
+
+def load_startup_chars(mod, data_portal, scenario_directory, subproblem,
+                       stage, op_type, projects):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param projects:
+    :return:
+    """
+
+    # TODO: change the name of the startup_cost_per_mw,
+    #  gen_commit_bin_startup_plus_ramp_up_rate, and
+    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
+    #  like that, and re-add these same params for a simple treatment to
+    #  gen_commit_bin and gen_commit_lin
+    # Startup characteristics
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "startup_chars.tab"),
+        sep="\t"
+    )
+
+    # Note: the rank function requires at least one numeric input in the
+    # down_time_cutoff_hours column (can't be all NULL/None).
+    if len(df) > 0:
+        df["startup_type_id"] = df.groupby("project")[
+            "down_time_cutoff_hours"].rank()
+
+    startup_ramp_projects = set()
+    startup_ramp_projects_types = list()
+    down_time_cutoff_hours_dict = dict()
+    startup_plus_ramp_up_rate_dict = dict()
+    startup_cost_dict = dict()
+
+    for i, row in df.iterrows():
+        project = row["project"]
+        startup_type_id = row["startup_type_id"]
+        down_time_cutoff_hours = row["down_time_cutoff_hours"]
+        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+        startup_cost = row["startup_cost_per_mw"]
+
+        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
+                and project in projects:
+            startup_ramp_projects.add(project)
+            startup_ramp_projects_types.append((project, startup_type_id))
+            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
+                float(down_time_cutoff_hours)
+            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
+                float(startup_plus_ramp_up_rate)
+            startup_cost_dict[(project, startup_type_id)] = \
+                float(startup_cost)
+
+    if startup_ramp_projects:
+        data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
+            {None: startup_ramp_projects}
+        data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
+            {None: startup_ramp_projects_types}
+        data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
+            down_time_cutoff_hours_dict
+        data_portal.data()["{}_startup_plus_ramp_up_rate".format(op_type)] = \
+            startup_plus_ramp_up_rate_dict
+        data_portal.data()["{}_startup_cost_per_mw".format(op_type)] = \
+            startup_cost_dict

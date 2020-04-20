@@ -36,7 +36,6 @@ Morales-Espana et al. (2013).
 
 from __future__ import division
 
-from builtins import zip
 import csv
 import os.path
 import pandas as pd
@@ -50,7 +49,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data
+    load_optype_module_specific_data, load_startup_chars
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint,\
     check_if_linear_horizon_last_timepoint
@@ -1874,6 +1873,7 @@ def fix_commitment(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
+
 def load_module_specific_data(mod, data_portal,
                               scenario_directory, subproblem, stage):
     """
@@ -1886,67 +1886,18 @@ def load_module_specific_data(mod, data_portal,
     """
 
     # Load data from projects.tab and get the list of projects of this type
-    gen_commit_bin_projects = load_optype_module_specific_data(
+    projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_commit_bin"
     )
 
-    # TODO: refactor to consolidate loading of startup chars with
-    #  gen_commit_lin; the code is the same
-    # TODO: change the name of the startup_cost_per_mw,
-    #  gen_commit_bin_startup_plus_ramp_up_rate, and
-    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
-    #  like that, and re-add these same params for a simple treatment to
-    #  gen_commit_bin and gen_commit_lin
-    # Startup characteristics
-    df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "startup_chars.tab"),
-        sep="\t"
+    # Load data from startup_chars.tab
+    load_startup_chars(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_bin", projects=projects
     )
-
-    # Note: the rank function requires at least one numeric input in the
-    # down_time_cutoff_hours column (can't be all NULL/None).
-    if len(df) > 0:
-        df["startup_type_id"] = df.groupby("project")[
-            "down_time_cutoff_hours"].rank()
-
-    startup_ramp_projects = set()
-    startup_ramp_projects_types = list()
-    down_time_cutoff_hours_dict = dict()
-    startup_plus_ramp_up_rate_dict = dict()
-    startup_cost_dict = dict()
-
-    for i, row in df.iterrows():
-        project = row["project"]
-        startup_type_id = row["startup_type_id"]
-        down_time_cutoff_hours = row["down_time_cutoff_hours"]
-        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
-        startup_cost = row["startup_cost_per_mw"]
-
-        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
-                and project in gen_commit_bin_projects:
-            startup_ramp_projects.add(project)
-            startup_ramp_projects_types.append((project, startup_type_id))
-            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
-                float(down_time_cutoff_hours)
-            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
-                float(startup_plus_ramp_up_rate)
-            startup_cost_dict[(project, startup_type_id)] = \
-                float(startup_cost)
-
-    if startup_ramp_projects:
-        data_portal.data()["GEN_COMMIT_BIN_STR_RMP_PRJS"] = \
-            {None: startup_ramp_projects}
-        data_portal.data()["GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES"] = \
-            {None: startup_ramp_projects_types}
-        data_portal.data()["gen_commit_bin_down_time_cutoff_hours"] = \
-            down_time_cutoff_hours_dict
-        data_portal.data()["gen_commit_bin_startup_plus_ramp_up_rate"] = \
-            startup_plus_ramp_up_rate_dict
-        data_portal.data()["gen_commit_bin_startup_cost_per_mw"] = \
-            startup_cost_dict
 
 
 def export_module_specific_results(mod, d,
