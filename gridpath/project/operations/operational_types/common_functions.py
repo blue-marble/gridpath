@@ -357,11 +357,12 @@ def load_optype_module_specific_data(
     return op_type_projects
 
 
-def load_var_op_type_profiles(
-        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+def load_var_profile_inputs(
+        data_portal, scenario_directory, subproblem, stage, op_type):
     """
+    Capacity factors vary by horizon and stage, so get inputs from appropriate
+    directory.
 
-    :param mod:
     :param data_portal:
     :param scenario_directory:
     :param subproblem:
@@ -415,3 +416,138 @@ def load_var_op_type_profiles(
 
     # Load data
     data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
+
+
+def get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Select only profiles of projects in the portfolio
+    Select only profiles of projects with 'op_type' operational type
+    Select only profiles for timepoints from the correct temporal scenario
+    and the correct subproblem
+    Select only timepoints on periods when the project is operational
+    (periods with existing project capacity for existing projects or
+    with costs specified for new projects)
+
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    variable_profiles = c.execute("""
+        SELECT project, timepoint, cap_factor
+        FROM (
+        -- Select only projects from the relevant portfolio
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        ) as portfolio_tbl
+        -- Of the projects in the portfolio, select only those that are in 
+        -- this project_operational_chars_scenario_id and have 'op_type' as 
+        -- their operational_type
+        INNER JOIN
+        (SELECT project, variable_generator_profile_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}'
+        ) AS op_char
+        USING (project)
+        -- Cross join to the timepoints in the relevant 
+        -- temporal_scenario_id, subproblem_id, and stage_id
+        -- Get the period since we'll need that to get only the operational 
+        -- timepoints for a project via an INNER JOIN below
+        CROSS JOIN
+        (SELECT stage_id, timepoint, period
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}
+        ) as tmps_tbl
+        -- Now that we have the relevant projects and timepoints, get the 
+        -- respective cap_factor (and no others) from 
+        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
+        LEFT OUTER JOIN
+        inputs_project_variable_generator_profiles
+        USING (variable_generator_profile_scenario_id, project, 
+        stage_id, timepoint)
+        -- We also only want timepoints in periods when the project actually 
+        -- exists, so we figure out the operational periods for each of the  
+        -- projects below and INNER JOIN to that
+        INNER JOIN
+            (SELECT project, period
+            FROM (
+                -- Get the operational periods for each 'existing' and 
+                -- 'new' project
+                SELECT project, period
+                FROM inputs_project_specified_capacity
+                WHERE project_specified_capacity_scenario_id = {}
+                UNION
+                SELECT project, period
+                FROM inputs_project_new_cost
+                WHERE project_new_cost_scenario_id = {}
+                ) as all_operational_project_periods
+            -- Only use the periods in temporal_scenario_id via an INNER JOIN
+            INNER JOIN (
+                SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {}
+                ) as relevant_periods_tbl
+            USING (period)
+            ) as relevant_op_periods_tbl
+        USING (project, period);
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            op_type,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID
+        )
+    )
+
+    return variable_profiles
+
+
+def write_var_profile_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    variable_profiles = get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", "variable_generator_profiles.tab")
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            writer.writerow(
+                ["project", "timepoint", "cap_factor"]
+            )
+
+        for row in variable_profiles:
+            writer.writerow(row)
