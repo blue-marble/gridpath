@@ -32,7 +32,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, load_startup_chars
+    load_optype_module_specific_data, load_startup_chars, \
+    get_startup_chars_inputs_from_database, write_startup_chars_model_inputs
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint, \
     check_if_linear_horizon_last_timepoint
@@ -1876,7 +1877,7 @@ def load_module_specific_data(mod, data_portal,
 
     # Load data from startup_chars.tab
     load_startup_chars(
-        mod=mod, data_portal=data_portal,
+        data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_commit_lin", projects=projects
     )
@@ -1967,31 +1968,9 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
-    c = conn.cursor()
-    # TODO: should we align this better with heat rates (queries and input
-    #  validations are slightly different).
-    startup_chars = c.execute(
-        """
-        SELECT project, 
-        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, startup_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
-        USING(project)
-        INNER JOIN
-        inputs_project_startup_chars
-        USING(project, startup_chars_scenario_id)
-        WHERE project_portfolio_scenario_id = {}
-        AND startup_chars_scenario_id is not Null
-        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "gen_commit_lin",
-                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    return get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_commit_lin"
     )
-
-    return startup_chars
 
 
 def write_module_specific_model_inputs(
@@ -1999,7 +1978,7 @@ def write_module_specific_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    startup_chars.tab file.
+    startup_chars.tab files.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -2007,34 +1986,11 @@ def write_module_specific_model_inputs(
     :param conn: database connection
     :return:
     """
-    startup_chars = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
 
-    # If startup_chars.tab file already exists, append rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab")):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"),
-                  "a") as startup_chars_file:
-            writer = csv.writer(startup_chars_file,
-                                delimiter="\t", lineterminator="\n")
-            for row in startup_chars:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
-    # If startup_chars.tab does not exist, write header first, then add data
-    else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"),
-                  "w", newline="") as startup_chars_file:
-            writer = csv.writer(startup_chars_file,
-                                delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(["project",
-                             "down_time_cutoff_hours",
-                             "startup_plus_ramp_up_rate",
-                             "startup_cost_per_mw"])
-
-            for row in startup_chars:
-                replace_nulls = ["." if i is None else i for i in row]
-                writer.writerow(replace_nulls)
+    write_startup_chars_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn,
+        "gen_commit_lin"
+    )
 
 
 # Validation

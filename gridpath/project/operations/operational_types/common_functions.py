@@ -780,11 +780,10 @@ def write_hydro_model_inputs(
             writer.writerow(row)
 
 
-def load_startup_chars(mod, data_portal, scenario_directory, subproblem,
+def load_startup_chars(data_portal, scenario_directory, subproblem,
                        stage, op_type, projects):
     """
 
-    :param mod:
     :param data_portal:
     :param scenario_directory:
     :param subproblem:
@@ -847,3 +846,80 @@ def load_startup_chars(mod, data_portal, scenario_directory, subproblem,
             startup_plus_ramp_up_rate_dict
         data_portal.data()["{}_startup_cost_per_mw".format(op_type)] = \
             startup_cost_dict
+
+
+def get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+
+    c = conn.cursor()
+    # TODO: should we align this better with heat rates (queries and input
+    #  validations are slightly different).
+    startup_chars = c.execute(
+        """
+        SELECT project, 
+        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, startup_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_startup_chars
+        USING(project, startup_chars_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND startup_chars_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   op_type,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return startup_chars
+
+
+def write_startup_chars_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get inputs from database and write out the model input
+    startup_chars.tab files.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    startup_chars = get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", "startup_chars.tab")
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            writer.writerow(
+                ["project",
+                 "down_time_cutoff_hours",
+                 "startup_plus_ramp_up_rate",
+                 "startup_cost_per_mw"]
+            )
+
+        for row in startup_chars:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
