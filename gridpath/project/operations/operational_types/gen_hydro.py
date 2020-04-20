@@ -15,10 +15,8 @@ Costs for this operational type include variable O&M costs.
 
 from __future__ import print_function
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, \
     Expression, NonNegativeReals, PercentFraction, value
 
@@ -29,7 +27,10 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 from gridpath.project.operations.operational_types.common_functions import \
-    update_dispatch_results_table, load_optype_module_specific_data
+    update_dispatch_results_table, load_optype_module_specific_data, \
+    load_hydro_opchars, get_hydro_inputs_from_database, \
+    write_hydro_model_inputs
+
 
 def add_module_specific_components(m, d):
     """
@@ -554,6 +555,7 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
+
 def load_module_specific_data(m, data_portal,
                               scenario_directory, subproblem, stage):
     """
@@ -565,6 +567,7 @@ def load_module_specific_data(m, data_portal,
     :param stage:
     :return:
     """
+
     # Determine list of projects load params from projects.tab (optional
     # ramp rates)
     projects = load_optype_module_specific_data(
@@ -573,39 +576,12 @@ def load_module_specific_data(m, data_portal,
         stage=stage, op_type="gen_hydro"
     )
 
-    # TODO: refactor to consolidate with gen_hydro_must_take
     # Load hydro operational data from hydro-specific input files
-    # Determine subset of project-horizons in hydro budgets file
-    project_horizons = list()
-    avg = dict()
-    min = dict()
-    max = dict()
-
-    prj_hor_opchar_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "hydro_conventional_horizon_params.tab"),
-        sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_fraction",
-                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
+    load_hydro_opchars(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_hydro", projects=projects
     )
-    for row in zip(prj_hor_opchar_df["project"],
-                   prj_hor_opchar_df["horizon"],
-                   prj_hor_opchar_df["hydro_average_power_fraction"],
-                   prj_hor_opchar_df["hydro_min_power_fraction"],
-                   prj_hor_opchar_df["hydro_max_power_fraction"]):
-        if row[0] in projects:
-            project_horizons.append((row[0], row[1]))
-            avg[(row[0], row[1])] = float(row[2])
-            min[(row[0], row[1])] = float(row[3])
-            max[(row[0], row[1])] = float(row[4])
-        else:
-            pass
-
-    # Load data
-    data_portal.data()["GEN_HYDRO_OPR_HRZS"] = {None: project_horizons}
-    data_portal.data()["gen_hydro_average_power_fraction"] = avg
-    data_portal.data()["gen_hydro_min_power_fraction"] = min
-    data_portal.data()["gen_hydro_max_power_fraction"] = max
 
 
 def export_module_specific_results(mod, d,
@@ -659,72 +635,10 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
 
-    c = conn.cursor()
-    # Select only budgets/min/max of projects in the portfolio
-    # Select only budgets/min/max of projects with 'gen_hydro'
-    # Select only budgets/min/max for horizons from the correct temporal
-    # scenario and subproblem
-    # Select only horizons on periods when the project is operational
-    # (periods with existing project capacity for existing projects or
-    # with costs specified for new projects)
-    # TODO: should we ensure that the project balancing type and the horizon
-    #  length type match (e.g. by joining on them being equal here)
-    hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_fraction, min_power_fraction,
-        max_power_fraction
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, hydro_operational_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'gen_hydro') AS op_char
-        USING (project)
-        CROSS JOIN
-        (SELECT horizon
-        FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {})
-        LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, horizon)
-        INNER JOIN
-        (SELECT project, period
-        FROM
-        (SELECT project, period
-        FROM inputs_project_specified_capacity
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_specified_capacity_scenario_id = {}) as existing
-        UNION
-        SELECT project, period
-        FROM inputs_project_new_cost
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_new_cost_scenario_id = {})
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+    return get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type="gen_hydro"
     )
-
-    return hydro_chars
 
 
 def write_module_specific_model_inputs(
@@ -740,39 +654,11 @@ def write_module_specific_model_inputs(
     :param conn: database connection
     :return:
     """
-    hydro_chars = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
 
-    # If hydro_conventional_horizon_params.tab file already exists,
-    # append rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "hydro_conventional_horizon_params.tab")
-                      ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "hydro_conventional_horizon_params.tab"),
-                  "a") as \
-                hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
-            for row in hydro_chars:
-                writer.writerow(row)
-    # If hydro_conventional_horizon_params.tab does not exist, write header
-    # first, then add inputs data
-    else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "hydro_conventional_horizon_params.tab"),
-                  "w", newline="") as \
-                hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                ["project", "horizon",
-                 "hydro_average_power_fraction",
-                 "hydro_min_power_fraction",
-                 "hydro_max_power_fraction"]
-            )
-            for row in hydro_chars:
-                writer.writerow(row)
+    write_hydro_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn,
+        op_type="gen_hydro"
+    )
 
 
 def import_module_specific_results_to_database(
