@@ -5,21 +5,21 @@
 --> New Storage Capacity <--
                              New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
 load_zone technology period                                                                    
-Zone1     Storage    2020                                  6                                 10
-                     2030                                  6                                 10
+Zone1     Storage    2020                               6.43                               9.64
+                     2030                               6.43                               9.64
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                          0              0
-                 Gas                          17             55
-                 Nuclear                      12             40
-                 Storage                      -1             -5
-                 Wind                          3              9
-          2030   Coal                          0              0
-                 Gas                          17             55
-                 Nuclear                      12             40
-                 Storage                      -1             -5
-                 Wind                          3              9
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                       16.57          55.23
+                 Nuclear                   12.00          40.00
+                 Storage                   -1.37          -4.56
+                 Wind                       2.80           9.33
+          2030   Coal                       0.00           0.00
+                 Gas                       16.57          55.23
+                 Nuclear                   12.00          40.00
+                 Storage                   -1.37          -4.56
+                 Wind                       2.80           9.33

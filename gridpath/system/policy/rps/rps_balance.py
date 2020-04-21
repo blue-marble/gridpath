@@ -183,9 +183,6 @@ def summarize_results(d, scenario_directory, subproblem, stage):
             / (results_df.discount_factor[indx] *
                results_df.number_years_represented[indx])
 
-    # Set float format options
-    pd.options.display.float_format = "{:,.0f}".format
-
     # Drop unnecessary columns before exporting
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
@@ -200,7 +197,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     results_df = results_df[cols]
     results_df.sort_index(inplace=True)
     with open(summary_results_file, "a") as outfile:
-        results_df.to_string(outfile)
+        results_df.to_string(outfile, float_format="{:,.2f}".format)
         outfile.write("\n")
 
 

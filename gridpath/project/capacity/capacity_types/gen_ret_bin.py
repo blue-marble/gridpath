@@ -335,9 +335,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
-
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -352,7 +349,7 @@ def summarize_module_specific_results(
         if bin_retirement_df.empty:
             outfile.write("No retirements.\n")
         else:
-            bin_retirement_df.to_string(outfile)
+            bin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
