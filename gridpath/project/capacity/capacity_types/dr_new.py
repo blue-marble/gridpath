@@ -430,8 +430,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -447,7 +445,7 @@ def summarize_module_specific_results(
         if new_build_df.empty:
             outfile.write("No new DR was built.\n")
         else:
-            new_build_df.to_string(outfile)
+            new_build_df.to_string(outfile, float_format="{:,.0f}".format)
             outfile.write("\n")
 
 
