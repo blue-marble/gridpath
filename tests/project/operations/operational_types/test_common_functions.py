@@ -141,6 +141,10 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             4: {"min_time": 1, "g": "Gas_CCGT", "tmp": 20200203,
                 "relevant_timepoints": [20200203],
                 "relevant_linked_timepoints": []},
+            # Starting in the first timepoint of the horizon
+            5: {"min_time": 4, "g": "Gas_CCGT", "tmp": 20200201,
+                "relevant_timepoints": [20200201],
+                "relevant_linked_timepoints": [0, -1, -2]},
         }
 
         for test_case in test_cases.keys():

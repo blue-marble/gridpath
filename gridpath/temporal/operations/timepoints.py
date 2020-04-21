@@ -172,6 +172,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage: str
     :return:
     """
+    print("Subproblem: ", subproblem)
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
@@ -206,7 +207,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             zip(linked_tmps, linked_tmps_df["number_of_hours_in_timepoint"])
         )
         data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
-        data_portal.data()["furthest_linked_tmp"] = {None: min(linked_tmps)}
+        if linked_tmps:
+            data_portal.data()["furthest_linked_tmp"] = \
+                {None: min(linked_tmps)}
+        else:
+            pass
 
     # If the file is not there, there were no linked subproblems and the
     # file was not written, so load in empty components

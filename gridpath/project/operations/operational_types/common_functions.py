@@ -52,19 +52,48 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     up/down time, so t-3 will not be relevant for the minimum up time
     constraint in timepoint *t*.
     """
+    print(g, tmp, min_time)
+
     # The first possible relevant timepoint is the current timepoint
     relevant_tmps = [tmp]
     relevant_linked_tmps = []
     # The first possible linked timepoint is 0
     linked_tmp = 0
 
+    # If we have already reached the first timepoint of a horizon in a
+    # linear or linked horizon setting, we'll either just pass (linear
+    # horizon) or move on to the linked timepoints (linked horizon) without
+    # looking for a previous timepoint
     if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
     ):
-        pass  # no more relevant timepoints, keep list limited to *t*
+        if check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ):
+            pass  # no more relevant timepoints, keep list limited to *t*
+        if check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            # Add the first linked timepoint's duration to hours_from_tmp
+            hours_from_tmp = mod.hrs_in_linked_tmp[linked_tmp]
+            # If we haven't exceeded the min time yet, the first linked
+            # timepoint is relevant, so we'll add it and move on to the
+            # next one
+            while hours_from_tmp < min_time:
+                relevant_linked_tmps.append(linked_tmp)
+                # If this is the furthest linked timepoint, break out of
+                # the linked timepoints loop and set the
+                # done_with_linked_tmps flag to True; otherwise,
+                # move on to the next linked timepoint
+                if linked_tmp == mod.furthest_linked_tmp:
+                    break
+                else:
+                    hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                    linked_tmp += -1
+    # If we haven't reached the first timepoint of a linear or linked
+    # horizon, we'll look for the previous timepoint
     else:
         # The next possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
