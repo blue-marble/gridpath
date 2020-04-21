@@ -23,7 +23,7 @@ from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, load_hydro_opchars, \
-    get_hydro_inputs_from_database, write_hydro_model_inputs
+    get_hydro_inputs_from_database, write_tab_file_model_inputs
 
 
 def add_module_specific_components(m, d):
@@ -571,7 +571,7 @@ def get_module_specific_inputs_from_database(
     :param subproblem:
     :param stage:
     :param conn: database connection
-    :return:
+    :return: cursor object with query results
     """
     return get_hydro_inputs_from_database(
         subscenarios, subproblem, stage, conn, op_type="gen_hydro_must_take")
@@ -591,9 +591,12 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    write_hydro_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn,
-        op_type="gen_hydro_must_take"
+    data = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+    fname = "hydro_conventional_horizon_params.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data
     )
 
 

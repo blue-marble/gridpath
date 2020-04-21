@@ -22,7 +22,7 @@ from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 from gridpath.project.operations.operational_types.common_functions import \
     load_var_profile_inputs, get_var_profile_inputs_from_database, \
-    write_var_profile_model_inputs
+    write_tab_file_model_inputs
 
 
 def add_module_specific_components(m, d):
@@ -310,7 +310,7 @@ def get_module_specific_inputs_from_database(
     :param subproblem:
     :param stage:
     :param conn: database connection
-    :return:
+    :return: cursor object with query results
     """
     return get_var_profile_inputs_from_database(
         subscenarios, subproblem, stage, conn, "gen_var_must_take"
@@ -331,9 +331,12 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    write_var_profile_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn,
-        "gen_var_must_take"
+    data = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+    fname = "variable_generator_profiles.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data
     )
 
 
