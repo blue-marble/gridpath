@@ -197,7 +197,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     results_df = results_df[cols]
     results_df.sort_index(inplace=True)
     with open(summary_results_file, "a") as outfile:
-        results_df.to_string(outfile, float_format="{:,.0f}".format)
+        results_df.to_string(outfile, float_format="{:,.2f}".format)
         outfile.write("\n")
 
 

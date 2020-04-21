@@ -385,7 +385,7 @@ def summarize_module_specific_results(
         if lin_retirement_df.empty:
             outfile.write("No retirements.\n")
         else:
-            lin_retirement_df.to_string(outfile, float_format="{:,.0f}".format)
+            lin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 

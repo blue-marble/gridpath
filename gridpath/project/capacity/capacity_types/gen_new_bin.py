@@ -414,7 +414,7 @@ def summarize_module_specific_results(
         if new_build_df.empty:
             outfile.write("No new generation was built.\n")
         else:
-            new_build_df.to_string(outfile, float_format="{:,.0f}".format)
+            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
