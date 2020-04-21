@@ -589,6 +589,45 @@ class TestExamples(unittest.TestCase):
                     places=1
                 )
 
+    def test_example_multi_stage_prod_cost_linked_subproblems(self):
+        """
+        Check objective function values of "multi_stage_prod_cost" example
+        :return:
+        """
+        actual_objectives = \
+            run_end_to_end.main(["--database", "../db/test_examples.db",
+                                 "--scenario",
+                                 "multi_stage_prod_cost_linked_subproblems",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
+
+        expected_objectives = {
+            '1': {
+                '1': 866737242.3466034,
+                '2': 866737242.3466034,
+                '3': 866737241.3466034
+            },
+            '2': {
+                '1': 866737242.3466034,
+                '2': 866737242.3466034,
+                '3': 866737241.3466034
+            },
+            '3': {
+                '1': 866737242.3466034,
+                '2': 866737242.3466034,
+                '3': 866737241.3466034
+            }
+        }
+
+        for subproblem in [str(x) for x in [1, 2, 3]]:
+            for stage in [str(x) for x in [1, 2, 3]]:
+                self.assertAlmostEqual(
+                    expected_objectives[subproblem][stage],
+                    actual_objectives[str(subproblem)][str(stage)],
+                    places=1
+                )
+
     def test_example_2periods_gen_lin_econ_retirement(self):
         """
         Check objective function value of "2periods_gen_lin_econ_retirement"

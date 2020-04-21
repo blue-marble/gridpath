@@ -2088,8 +2088,12 @@ def export_linked_subproblem_inputs(
         )
 
         # Figure out which timepoints we'll be linking to the next subproblem
+        # Stages must match in the linked subproblems
         # These are subset of all TMPS in the current subproblem
-        tmps_to_link_df = map_df.loc[map_df["subproblem"] == int(subproblem)]
+        tmps_to_link_df = map_df.loc[
+            (map_df["subproblem"] == int(subproblem)) &
+            (map_df["stage"] == (1 if stage == "" else int(stage)))
+            ]
         tmps_to_link = tmps_to_link_df["timepoint"].tolist()
         tmp_linked_tmp_dict = {
             tmp: tmps_to_link_df.loc[

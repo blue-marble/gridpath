@@ -196,9 +196,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             os.path.join(scenario_directory, "linked_subproblems_map.csv"),
             sep=","
         )
-        # Get the linked timepoints for the current subproblem
-        linked_tmps_df = map_df.loc[map_df["subproblem_to_link"] ==
-                                    int(subproblem)]
+        # Get the linked timepoints for the current subproblem and stage
+        linked_tmps_df = map_df.loc[
+            (map_df["subproblem_to_link"] == int(subproblem)) &
+            (map_df["stage"] == (1 if stage == "" else int(stage)))
+            ]
         linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
         # Load in the data
         data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
