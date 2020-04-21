@@ -4,11 +4,10 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint, get_column_row_value
+    check_if_first_timepoint, get_column_row_value, check_boundary_type
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -59,8 +58,11 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     # The first possible linked timepoint is 0
     linked_tmp = 0
 
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         pass  # no more relevant timepoints, keep list limited to *t*
     else:

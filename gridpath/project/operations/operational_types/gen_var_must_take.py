@@ -21,7 +21,7 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -262,8 +262,11 @@ def power_delta_rule(mod, g, tmp):
     """
     Exogenously defined ramp for variable must-take generators.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         pass
     else:

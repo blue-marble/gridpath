@@ -21,7 +21,7 @@ from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint
 
 
 def add_model_components(m, d):

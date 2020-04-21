@@ -52,8 +52,8 @@ from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint,\
-    check_if_linear_horizon_last_timepoint
+    check_if_first_timepoint, \
+    check_if_last_timepoint, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -1066,8 +1066,11 @@ def binary_logic_constraint_rule(mod, g, tmp):
 
     # TODO: if we can link horizons, input commit from previous horizon's
     #  last timepoint rather than skipping the constraint
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1296,8 +1299,11 @@ def ramp_up_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     Constraint (12) in Morales-Espana et al. (2013)
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
@@ -1335,8 +1341,11 @@ def ramp_down_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     Constraint (13) in Morales-Espana et al. (2013)
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
@@ -1475,8 +1484,11 @@ def ramp_during_startup_constraint_rule(mod, g, tmp, s):
     ramp rate is adjusted for the duration of the first timepoint.
     """
 
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1501,8 +1513,11 @@ def increasing_startup_power_constraint_rule(mod, g, tmp, s):
     model can abuse this by providing starting power in some timepoints and
     then reducing power back to 0 without ever committing the unit.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1541,8 +1556,11 @@ def power_during_startup_constraint_rule(mod, g, tmp, s):
     (1 - Start[t]) x Pmax + Start[t] x Startup_Ramp_Rate x Pmax
     """
 
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1590,8 +1608,11 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     """
 
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1615,8 +1636,11 @@ def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
     model can abuse this by providing stopping power in some timepoints without
     previously having committed the unit.
     """
-    if check_if_linear_horizon_last_timepoint(
+    if check_if_last_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1656,8 +1680,11 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
     (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
     """
 
-    if check_if_linear_horizon_last_timepoint(
+    if check_if_last_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -1853,8 +1880,11 @@ def power_delta_rule(mod, g, tmp):
     Ramp between this timepoint and the previous timepoint
     Actual ramp rate in MW/hr depends on the duration of the timepoints.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         pass
     else:

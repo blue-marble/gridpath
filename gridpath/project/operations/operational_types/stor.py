@@ -32,7 +32,7 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data
 
@@ -326,8 +326,11 @@ def energy_tracking_rule(mod, s, tmp):
     efficiency and timepoint duration) plus any charged power (adjusted for
     charging efficiency and timepoint duration).
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -558,8 +561,11 @@ def startup_fuel_burn_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         pass
     else:
