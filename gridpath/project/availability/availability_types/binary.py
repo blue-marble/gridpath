@@ -265,7 +265,7 @@ def event_min_duration_rule(mod, g, tmp):
     from the current timepoint, it must still be unavailable in the current
     timepoint.
     """
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.avl_bin_min_unavl_hrs_per_event[g]
     )
     if relevant_tmps == [tmp]:
@@ -285,7 +285,7 @@ def min_time_between_events_rule(mod, g, tmp):
     from the current timepoint, it must still be available in the current
     timepoint.
     """
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.avl_bin_min_avl_hrs_between_events[g]
     )
     if relevant_tmps == [tmp]:

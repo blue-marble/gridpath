@@ -1067,7 +1067,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
     relative to the start of timepoint *tmp*) and then summing those
     capacities.
     """
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_cap_min_up_time_hours[g]
     )
 
@@ -1107,7 +1107,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     capacities.
     """
 
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_cap_min_down_time_hours[g]
     )
 
