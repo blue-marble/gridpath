@@ -4,6 +4,7 @@
 import csv
 import os.path
 import pandas as pd
+from pyomo.environ import value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
@@ -52,24 +53,24 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     up/down time, so t-3 will not be relevant for the minimum up time
     constraint in timepoint *t*.
     """
+    # The first possible relevant timepoint is the current timepoint
     relevant_tmps = [tmp]
     relevant_linked_tmps = []
+    # The first possible linked timepoint is 0
+    linked_tmp = 0
 
     if check_if_linear_horizon_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
     ):
-        pass  # no relevant timepoints, keep list limited to *t*
+        pass  # no more relevant timepoints, keep list limited to *t*
     else:
-        # The first possible relevant timepoint is the previous timepoint,
+        # The next possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
         # minimum up/down time, we'll break out of the loop immediately)
         relevant_tmp = mod.prev_tmp[tmp, mod.balancing_type_project[g]]
         hours_from_tmp = \
             mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-
-        # The first possible linked timepoint is 0
-        linked_tmp = 0
 
         while hours_from_tmp < min_time:
             # If we haven't exceed the minimum up/down time yet, this timepoint
@@ -105,8 +106,8 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             #  linked timepoints
             # In a 'linked' horizon setting, once we reach the first
             # timepoint of the horizon, we'll start adding the linked
-            # timepoints
-            if mod.boundary[
+            # timepoints until we reach the target min time
+            elif mod.boundary[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
             ] \
@@ -116,14 +117,25 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                         mod.balancing_type_project[g],
                         mod.horizon[tmp, mod.balancing_type_project[g]]
                     ]:
-                relevant_linked_tmps.append(linked_tmp)
+                # Add the first linked timepoint's duration to hours_from_tmp
                 hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
-                # If this is the furthest linked timepoint, break out of the
-                # loop; otherwise, move on to the next one
-                if linked_tmp == min(relevant_linked_tmps):
-                    break
-                else:
-                    linked_tmp += -1
+                # If we haven't exceeded the min time yet, the first linked
+                # timepoint is relevant, so we'll add it and move on to the
+                # next one
+                while hours_from_tmp < min_time:
+                    relevant_linked_tmps.append(linked_tmp)
+                    # If this is the furthest linked timepoint, break out of
+                    # the linked timepoints loop and set the
+                    # done_with_linked_tmps flag to True; otherwise,
+                    # move on to the next linked timepoint
+                    if linked_tmp == mod.furthest_linked_tmp:
+                        break
+                    else:
+                        hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                        linked_tmp += -1
+                # Break out from the outer while loop when done with the
+                # linked timepoints
+                break
             # Otherwise, we move on to the relevant timepoint's previous
             # timepoint and will add that timepoint's duration to
             # hours_from_tmp
