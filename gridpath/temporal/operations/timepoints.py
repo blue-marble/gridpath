@@ -172,7 +172,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage: str
     :return:
     """
-    print("Subproblem: ", subproblem)
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
