@@ -948,41 +948,44 @@ def validate_heat_rate_curves(hr_df):
 
     # Check that each project has convex heat rates etc.
     relevant_mask = fuel_mask & load_point_mask
-    for project in pd.unique(hr_df["project"][relevant_mask]):
-        # read in the power setpoints and average heat rates
-        hr_slice = hr_df[hr_df["project"] == project]
-        hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-        load_points = hr_slice["load_point_fraction"].values
-        heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+    hr_df = hr_df[relevant_mask]
+    for project in hr_df["project"].unique():
+        for period in hr_df[hr_df["project"] == project]["period"].unique():
+            # read in the power setpoints and average heat rates
+            hr_slice = hr_df[(hr_df["project"] == project)
+                             & (hr_df["period"] == period)]
+            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
+            load_points = hr_slice["load_point_fraction"].values
+            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
-        if len(load_points) > 1:
-            incr_loads = np.diff(load_points)
+            if len(load_points) > 1:
+                incr_loads = np.diff(load_points)
 
-            if np.any(incr_loads == 0):
-                # note: primary key should already prohibit this
-                results.append(
-                    "Project(s) '{}': load points can not be identical"
-                    .format(project)
-                )
-
-            else:
-                fuel_burn = load_points * heat_rates
-                incr_fuel_burn = np.diff(fuel_burn)
-                slopes = incr_fuel_burn / incr_loads
-
-                if np.any(incr_fuel_burn <= 0):
+                if np.any(incr_loads == 0):
+                    # note: primary key should already prohibit this
                     results.append(
-                        "Project(s) '{}': Total fuel burn should increase "
-                        "with increasing load"
+                        "Project(s) '{}': load points can not be identical"
                         .format(project)
                     )
-                if np.any(np.diff(slopes) <= 0):
-                    results.append(
-                        "Project(s) '{}': Fuel burn should be convex, "
-                        "i.e. marginal heat rate should increase with "
-                        "increading load"
-                        .format(project)
-                    )
+
+                else:
+                    fuel_burn = load_points * heat_rates
+                    incr_fuel_burn = np.diff(fuel_burn)
+                    slopes = incr_fuel_burn / incr_loads
+
+                    if np.any(incr_fuel_burn <= 0):
+                        results.append(
+                            "Project(s) '{}': Total fuel burn should increase "
+                            "with increasing load"
+                            .format(project)
+                        )
+                    if np.any(np.diff(slopes) <= 0):
+                        results.append(
+                            "Project(s) '{}': Fuel burn should be convex, "
+                            "i.e. marginal heat rate should increase with "
+                            "increading load"
+                            .format(project)
+                        )
 
     return results
 
@@ -1014,40 +1017,43 @@ def validate_vom_curves(vom_df):
         )
 
     # Check that each project has convex variable O&M rates etc.
-    for project in pd.unique(vom_df["project"][load_point_mask]):
-        # read in the power setpoints and average variable O&M
-        vom_slice = vom_df[vom_df["project"] == project]
-        vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
-        load_points = vom_slice["load_point_fraction"].values
-        vom = vom_slice["average_variable_om_cost_per_mwh"].values
+    vom_df = vom_df[load_point_mask]
+    for project in vom_df["project"].unique():
+        for period in vom_df[vom_df["project"] == project]["period"].unique():
+            # read in the power setpoints and average variable O&M
+            vom_slice = vom_df[(vom_df["project"] == project)
+                               & (vom_df["period"] == period)]
+            vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
+            load_points = vom_slice["load_point_fraction"].values
+            vom = vom_slice["average_variable_om_cost_per_mwh"].values
 
-        if len(load_points) > 1:
-            incr_loads = np.diff(load_points)
+            if len(load_points) > 1:
+                incr_loads = np.diff(load_points)
 
-            if np.any(incr_loads == 0):
-                # note: primary key should already prohibit this
-                results.append(
-                    "Project(s) '{}': load points can not be identical"
-                    .format(project)
-                )
-
-            else:
-                vom_cost = load_points * vom
-                incr_vom_cost = np.diff(vom_cost)
-                slopes = incr_vom_cost / incr_loads
-
-                if np.any(incr_vom_cost <= 0):
+                if np.any(incr_loads == 0):
+                    # note: primary key should already prohibit this
                     results.append(
-                        "Project(s) '{}': Total variable O&M cost should "
-                        "increase with increasing load"
+                        "Project(s) '{}': load points can not be identical"
                         .format(project)
                     )
-                if np.any(np.diff(slopes) <= 0):
-                    results.append(
-                        "Project(s) '{}': Variable O&M cost should be convex, "
-                        "i.e. variable O&M rate should increase with "
-                        "increasing load"
-                        .format(project)
-                    )
+
+                else:
+                    vom_cost = load_points * vom
+                    incr_vom_cost = np.diff(vom_cost)
+                    slopes = incr_vom_cost / incr_loads
+
+                    if np.any(incr_vom_cost <= 0):
+                        results.append(
+                            "Project(s) '{}': Total variable O&M cost should "
+                            "increase with increasing load"
+                            .format(project)
+                        )
+                    if np.any(np.diff(slopes) <= 0):
+                        results.append(
+                            "Project(s) '{}': Variable O&M cost should be "
+                            "convex, i.e. variable O&M rate should increase "
+                            "with increasing load"
+                            .format(project)
+                        )
 
     return results

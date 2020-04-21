@@ -8,10 +8,8 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
@@ -22,6 +20,9 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
+from gridpath.project.operations.operational_types.common_functions import \
+    load_var_profile_inputs, get_var_profile_inputs_from_database, \
+    write_var_profile_model_inputs
 
 
 def add_module_specific_components(m, d):
@@ -288,8 +289,6 @@ def power_delta_rule(mod, g, tmp):
 def load_module_specific_data(mod, data_portal,
                               scenario_directory, subproblem, stage):
     """
-    Capacity factors vary by horizon and stage, so get inputs from appropriate
-    directory
     :param mod:
     :param data_portal:
     :param scenario_directory:
@@ -298,58 +297,9 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
-    # Determine list of projects
-    projects = list()
-    # Also get a list of the projects of the 'gen_var' operational_type,
-    # needed for the data check below (to avoid throwing warning unnecessarily)
-    var_proj = list()
-
-    prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"]
+    load_var_profile_inputs(
+        data_portal, scenario_directory, subproblem, stage, "gen_var_must_take"
     )
-
-    for row in zip(prj_op_type_df["project"],
-                   prj_op_type_df["operational_type"]):
-        if row[1] == 'gen_var_must_take':
-            projects.append(row[0])
-        elif row[1] == 'gen_var':
-            var_proj.append(row[0])
-        else:
-            pass
-
-    # Determine subset of project-timepoints in variable profiles file
-    cap_factor = dict()
-
-    prj_tmp_cf_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "variable_generator_profiles.tab"),
-        sep="\t",
-        usecols=["project", "timepoint", "cap_factor"]
-    )
-    for row in zip(prj_tmp_cf_df["project"],
-                   prj_tmp_cf_df["timepoint"],
-                   prj_tmp_cf_df["cap_factor"]):
-        if row[0] in projects:
-            cap_factor[(row[0], row[1])] = float(row[2])
-        # Profile could be for a 'gen_var' project, in which case ignore
-        elif row[0] in var_proj:
-            pass
-        # Throw warning if profile exists for a project not in projects.tab
-        # (as 'gen_var' or 'gen_var_must_take')
-        else:
-            warnings.warn(
-                """WARNING: Profiles are specified for '{}' in 
-                variable_generator_profiles.tab, but '{}' is not in 
-                projects.tab.""".format(
-                    row[0], row[0]
-                )
-            )
-
-    # Load data
-    data_portal.data()["gen_var_must_take_cap_factor"] = cap_factor
 
 
 # Database
@@ -365,89 +315,9 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    # Select only profiles of projects in the portfolio
-    # Select only profiles of projects with 'gen_var_must_take'
-    # operational type
-    # Select only profiles for timepoints from the correct timepoint
-    # scenario
-    # Select only timepoints on periods when the project is operational
-    # (periods with existing project capacity for existing projects or
-    # with costs specified for new projects)
-    variable_profiles = c.execute("""
-        SELECT project, timepoint, cap_factor
-        FROM (
-        -- Select only projects from the relevant portfolio
-        SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        ) as portfolio_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'gen_var_must_take' as 
-        -- their operational_type
-        INNER JOIN
-        (SELECT project, variable_generator_profile_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'gen_var_must_take'
-        ) AS op_char
-        USING (project)
-        -- Cross join to the timepoints in the relevant 
-        -- temporal_scenario_id, subproblem_id, and stage_id
-        -- Get the period since we'll need that to get only the operational 
-        -- timepoints for a project via an INNER JOIN below
-        CROSS JOIN
-        (SELECT stage_id, timepoint, period
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}
-        ) as tmps_tbl
-        -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap_factor (and no others) from 
-        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
-        LEFT OUTER JOIN
-        inputs_project_variable_generator_profiles
-        USING (variable_generator_profile_scenario_id, project, 
-        stage_id, timepoint)
-        -- We also only want timepoints in periods when the project actually 
-        -- exists, so we figure out the operational periods for each of the  
-        -- projects below and INNER JOIN to that
-        INNER JOIN
-            (SELECT project, period
-            FROM (
-                -- Get the operational periods for each 'existing' and 
-                -- 'new' project
-                SELECT project, period
-                FROM inputs_project_specified_capacity
-                WHERE project_specified_capacity_scenario_id = {}
-                UNION
-                SELECT project, period
-                FROM inputs_project_new_cost
-                WHERE project_new_cost_scenario_id = {}
-                ) as all_operational_project_periods
-            -- Only use the periods in temporal_scenario_id via an INNER JOIN
-            INNER JOIN (
-                SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {}
-                ) as relevant_periods_tbl
-            USING (period)
-            ) as relevant_op_periods_tbl
-        USING (project, period);
-        """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
-        )
+    return get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_var_must_take"
     )
-
-    return variable_profiles
 
 
 def write_module_specific_model_inputs(
@@ -463,33 +333,11 @@ def write_module_specific_model_inputs(
     :param conn: database connection
     :return:
     """
-    variable_profiles = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
 
-    # If variable_generator_profiles.tab file already exists, append rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "variable_generator_profiles.tab")
-                      ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "variable_generator_profiles.tab"), "a") as \
-                variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")
-            for row in variable_profiles:
-                writer.writerow(row)
-    # If variable_generator_profiles.tab does not exist, write header first,
-    # then add profiles data
-    else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "variable_generator_profiles.tab"), "w", newline="") as \
-                variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                ["project", "timepoint", "cap_factor"]
-            )
-            for row in variable_profiles:
-                writer.writerow(row)
+    write_var_profile_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn,
+        "gen_var_must_take"
+    )
 
 
 # Validation

@@ -4,6 +4,7 @@
 import csv
 import os.path
 import pandas as pd
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
@@ -415,3 +416,514 @@ def load_optype_module_specific_data(
             pass
 
     return op_type_projects
+
+
+def load_var_profile_inputs(
+        data_portal, scenario_directory, subproblem, stage, op_type):
+    """
+    Capacity factors vary by horizon and stage, so get inputs from appropriate
+    directory.
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :return:
+    """
+
+    var_op_types = ["gen_var_must_take", "gen_var"]
+    other_var_op_types = set(var_op_types) - set([op_type])
+    assert op_type in var_op_types
+
+    # Determine projects of this op_type and other var op_types
+    # TODO: re-factor getting projects of certain op-type?
+    prj_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
+    op_type_prjs = prj_df[prj_df["operational_type"] == op_type]["project"]
+    other_var_op_type_prjs = prj_df[prj_df["operational_type"].isin(
+        other_var_op_types)]["project"]
+    var_prjs = list(op_type_prjs) + list(other_var_op_type_prjs)
+
+    # Read in the cap factors, filter for projects with the correct op_type
+    # and convert to dictionary
+    cf_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "variable_generator_profiles.tab"),
+        sep="\t",
+        usecols=["project", "timepoint", "cap_factor"],
+        dtype={"cap_factor": float}
+    )
+    op_type_cf_df = cf_df[cf_df["project"].isin(op_type_prjs)]
+    cap_factor = op_type_cf_df.set_index(["project", "timepoint"])[
+        "cap_factor"].to_dict()
+
+    # Throw warning if profile exists for a project not in projects.tab
+    # (as 'gen_var' or 'gen_var_must_take')
+    # TODO: this will throw warning twice, once for gen_var and once for
+    #  gen_var_must_take
+    # TODO: move this to validation instead?
+    invalid_prjs = cf_df[~cf_df["project"].isin(var_prjs)]["project"].unique()
+    for prj in invalid_prjs:
+        warnings.warn(
+            """WARNING: Profiles are specified for '{}' in 
+            variable_generator_profiles.tab, but '{}' is not in 
+            projects.tab.""".format(prj, prj)
+        )
+
+    # Load data
+    data_portal.data()["{}_cap_factor".format(op_type)] = cap_factor
+
+
+def get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Select only profiles of projects in the portfolio
+    Select only profiles of projects with 'op_type' operational type
+    Select only profiles for timepoints from the correct temporal scenario
+    and the correct subproblem
+    Select only timepoints on periods when the project is operational
+    (periods with existing project capacity for existing projects or
+    with costs specified for new projects)
+
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    variable_profiles = c.execute("""
+        SELECT project, timepoint, cap_factor
+        FROM (
+        -- Select only projects from the relevant portfolio
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        ) as portfolio_tbl
+        -- Of the projects in the portfolio, select only those that are in 
+        -- this project_operational_chars_scenario_id and have 'op_type' as 
+        -- their operational_type
+        INNER JOIN
+        (SELECT project, variable_generator_profile_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}'
+        ) AS op_char
+        USING (project)
+        -- Cross join to the timepoints in the relevant 
+        -- temporal_scenario_id, subproblem_id, and stage_id
+        -- Get the period since we'll need that to get only the operational 
+        -- timepoints for a project via an INNER JOIN below
+        CROSS JOIN
+        (SELECT stage_id, timepoint, period
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}
+        ) as tmps_tbl
+        -- Now that we have the relevant projects and timepoints, get the 
+        -- respective cap_factor (and no others) from 
+        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
+        LEFT OUTER JOIN
+        inputs_project_variable_generator_profiles
+        USING (variable_generator_profile_scenario_id, project, 
+        stage_id, timepoint)
+        -- We also only want timepoints in periods when the project actually 
+        -- exists, so we figure out the operational periods for each of the  
+        -- projects below and INNER JOIN to that
+        INNER JOIN
+            (SELECT project, period
+            FROM (
+                -- Get the operational periods for each 'existing' and 
+                -- 'new' project
+                SELECT project, period
+                FROM inputs_project_specified_capacity
+                WHERE project_specified_capacity_scenario_id = {}
+                UNION
+                SELECT project, period
+                FROM inputs_project_new_cost
+                WHERE project_new_cost_scenario_id = {}
+                ) as all_operational_project_periods
+            -- Only use the periods in temporal_scenario_id via an INNER JOIN
+            INNER JOIN (
+                SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {}
+                ) as relevant_periods_tbl
+            USING (period)
+            ) as relevant_op_periods_tbl
+        USING (project, period);
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            op_type,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID
+        )
+    )
+
+    return variable_profiles
+
+
+def write_var_profile_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    variable_profiles = get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", "variable_generator_profiles.tab")
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            writer.writerow(
+                ["project", "timepoint", "cap_factor"]
+            )
+
+        for row in variable_profiles:
+            writer.writerow(row)
+
+
+def load_hydro_opchars(data_portal, scenario_directory, subproblem,
+                       stage, op_type, projects):
+    """
+    Load hydro operational data from hydro-specific input files
+    Determine subset of project-horizons in hydro budgets file
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param projects:
+    :return:
+    """
+
+    project_horizons = list()
+    avg = dict()
+    min = dict()
+    max = dict()
+
+    prj_hor_opchar_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "hydro_conventional_horizon_params.tab"),
+        sep="\t",
+        usecols=["project", "horizon", "hydro_average_power_fraction",
+                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
+    )
+    for row in zip(prj_hor_opchar_df["project"],
+                   prj_hor_opchar_df["horizon"],
+                   prj_hor_opchar_df["hydro_average_power_fraction"],
+                   prj_hor_opchar_df["hydro_min_power_fraction"],
+                   prj_hor_opchar_df["hydro_max_power_fraction"]):
+        if row[0] in projects:
+            project_horizons.append((row[0], row[1]))
+            avg[(row[0], row[1])] = float(row[2])
+            min[(row[0], row[1])] = float(row[3])
+            max[(row[0], row[1])] = float(row[4])
+        else:
+            pass
+
+    # Load data
+    data_portal.data()["{}_OPR_HRZS".format(op_type.upper())] = \
+        {None: project_horizons}
+    data_portal.data()["{}_average_power_fraction".format(op_type)] = avg
+    data_portal.data()["{}_min_power_fraction".format(op_type)] = min
+    data_portal.data()["{}_max_power_fraction".format(op_type)] = max
+
+
+def get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get the hydro-specific operational characteristics from the
+    inputs_project_hydro_operational_chars input table.
+
+    Select only budgets/min/max of projects in the portfolio
+    Select only budgets/min/max of projects with 'op_type'
+    Select only budgets/min/max for horizons from the correct temporal
+    scenario and subproblem
+    Select only horizons on periods when the project is operational
+    (periods with existing project capacity for existing projects or
+    with costs specified for new projects)
+
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    # TODO: should we ensure that the project balancing type and the horizon
+    #  length type match (e.g. by joining on them being equal here)
+    hydro_chars = c.execute(
+        """SELECT project, horizon, average_power_fraction, min_power_fraction,
+        max_power_fraction
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, hydro_operational_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING (project)
+        CROSS JOIN
+        (SELECT horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {})
+        LEFT OUTER JOIN
+        inputs_project_hydro_operational_chars
+        USING (hydro_operational_chars_scenario_id, project, horizon)
+        INNER JOIN
+        (SELECT project, period
+        FROM
+        (SELECT project, period
+        FROM inputs_project_specified_capacity
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {})
+        USING (period)
+        WHERE project_specified_capacity_scenario_id = {}) as existing
+        UNION
+        SELECT project, period
+        FROM inputs_project_new_cost
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {})
+        USING (period)
+        WHERE project_new_cost_scenario_id = {})
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            op_type,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    return hydro_chars
+
+
+def write_hydro_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get inputs from database and write out the model input
+    hydro_conventional_horizon_params.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    hydro_chars = get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", "hydro_conventional_horizon_params.tab")
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            writer.writerow(
+                ["project", "horizon",
+                 "hydro_average_power_fraction",
+                 "hydro_min_power_fraction",
+                 "hydro_max_power_fraction"]
+            )
+
+        for row in hydro_chars:
+            writer.writerow(row)
+
+
+def load_startup_chars(data_portal, scenario_directory, subproblem,
+                       stage, op_type, projects):
+    """
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param projects:
+    :return:
+    """
+
+    # TODO: change the name of the startup_cost_per_mw,
+    #  gen_commit_bin_startup_plus_ramp_up_rate, and
+    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
+    #  like that, and re-add these same params for a simple treatment to
+    #  gen_commit_bin and gen_commit_lin
+    # Startup characteristics
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "startup_chars.tab"),
+        sep="\t"
+    )
+
+    # Note: the rank function requires at least one numeric input in the
+    # down_time_cutoff_hours column (can't be all NULL/None).
+    if len(df) > 0:
+        df["startup_type_id"] = df.groupby("project")[
+            "down_time_cutoff_hours"].rank()
+
+    startup_ramp_projects = set()
+    startup_ramp_projects_types = list()
+    down_time_cutoff_hours_dict = dict()
+    startup_plus_ramp_up_rate_dict = dict()
+    startup_cost_dict = dict()
+
+    for i, row in df.iterrows():
+        project = row["project"]
+        startup_type_id = row["startup_type_id"]
+        down_time_cutoff_hours = row["down_time_cutoff_hours"]
+        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+        startup_cost = row["startup_cost_per_mw"]
+
+        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
+                and project in projects:
+            startup_ramp_projects.add(project)
+            startup_ramp_projects_types.append((project, startup_type_id))
+            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
+                float(down_time_cutoff_hours)
+            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
+                float(startup_plus_ramp_up_rate)
+            startup_cost_dict[(project, startup_type_id)] = \
+                float(startup_cost)
+
+    if startup_ramp_projects:
+        data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
+            {None: startup_ramp_projects}
+        data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
+            {None: startup_ramp_projects_types}
+        data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
+            down_time_cutoff_hours_dict
+        data_portal.data()["{}_startup_plus_ramp_up_rate".format(op_type)] = \
+            startup_plus_ramp_up_rate_dict
+        data_portal.data()["{}_startup_cost_per_mw".format(op_type)] = \
+            startup_cost_dict
+
+
+def get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+
+    c = conn.cursor()
+    # TODO: should we align this better with heat rates (queries and input
+    #  validations are slightly different).
+    startup_chars = c.execute(
+        """
+        SELECT project, 
+        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, startup_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_startup_chars
+        USING(project, startup_chars_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND startup_chars_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   op_type,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return startup_chars
+
+
+def write_startup_chars_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn, op_type
+):
+    """
+    Get inputs from database and write out the model input
+    startup_chars.tab files.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return:
+    """
+    startup_chars = get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", "startup_chars.tab")
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            writer.writerow(
+                ["project",
+                 "down_time_cutoff_hours",
+                 "startup_plus_ramp_up_rate",
+                 "startup_cost_per_mw"]
+            )
+
+        for row in startup_chars:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

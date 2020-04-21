@@ -551,17 +551,17 @@ class TestOperationsInit(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    # TODO: add periods column for completeness
     def test_heat_rate_validations(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
+                      "period",
                       "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"hr_df": pd.DataFrame(
                     columns=hr_columns,
-                    data=[["gas_ct", "gas", 1, 10, 10.5],
-                          ["gas_ct", "gas", 1, 20, 9],
-                          ["coal_plant", "coal", 1, 100, 10]
+                    data=[["gas_ct", "gas", 1, 2020, 10, 10.5],
+                          ["gas_ct", "gas", 1, 2020, 20, 9],
+                          ["coal_plant", "coal", 1, 2020, 100, 10]
                           ]),
                 "fuel_vs_hr_error": [],
                 "hr_curves_error": []
@@ -569,8 +569,8 @@ class TestOperationsInit(unittest.TestCase):
             # Check fuel vs heat rate curve errors
             2: {"hr_df": pd.DataFrame(
                 columns=hr_columns,
-                data=[["gas_ct", "gas", None, None, None],
-                      ["coal_plant", None, 1, 100, 10]
+                data=[["gas_ct", "gas", None, None, None, None],
+                      ["coal_plant", None, 1, 2020, 100, 10]
                       ]),
                 "fuel_vs_hr_error": ["Project(s) 'gas_ct': Missing heat_rate_curves_scenario_id",
                                      "Project(s) 'coal_plant': No fuel specified so no heat rate expected"],
@@ -579,14 +579,14 @@ class TestOperationsInit(unittest.TestCase):
             # Check heat rate curves validations
             3: {"hr_df": pd.DataFrame(
                 columns=hr_columns,
-                data=[["gas_ct1", "gas", 1, None, None],
-                      ["gas_ct2", "gas", 1, 10, 11],
-                      ["gas_ct2", "gas", 1, 10, 12],
-                      ["gas_ct3", "gas", 1, 10, 11],
-                      ["gas_ct3", "gas", 1, 20, 5],
-                      ["gas_ct4", "gas", 1, 10, 11],
-                      ["gas_ct4", "gas", 1, 20, 10],
-                      ["gas_ct4", "gas", 1, 30, 9]
+                data=[["gas_ct1", "gas", 1, None, None, None],
+                      ["gas_ct2", "gas", 1, 2020, 10, 11],
+                      ["gas_ct2", "gas", 1, 2020, 10, 12],
+                      ["gas_ct3", "gas", 1, 2020, 10, 11],
+                      ["gas_ct3", "gas", 1, 2020, 20, 5],
+                      ["gas_ct4", "gas", 1, 2020, 10, 11],
+                      ["gas_ct4", "gas", 1, 2020, 20, 10],
+                      ["gas_ct4", "gas", 1, 2020, 30, 9]
                       ]),
                 "fuel_vs_hr_error": [],
                 "hr_curves_error": ["Project(s) 'gas_ct1': Expected at least one load point",
