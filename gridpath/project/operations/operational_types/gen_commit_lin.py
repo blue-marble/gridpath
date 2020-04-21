@@ -1074,7 +1074,7 @@ def synced_constraint_rule(mod, g, tmp):
         + (sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
                for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
            + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]) \
-        / mod.GenCommitLin_Pmin_MW[g, tmp]
+        / mod.Capacity_MW[g, mod.period[tmp]]
 
 
 # Power
