@@ -50,7 +50,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
-    get_startup_chars_inputs_from_database, write_startup_chars_model_inputs
+    get_startup_chars_inputs_from_database, write_tab_file_model_inputs
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint,\
     check_if_linear_horizon_last_timepoint
@@ -1983,7 +1983,7 @@ def get_module_specific_inputs_from_database(
     :param subproblem:
     :param stage:
     :param conn: database connection
-    :return:
+    :return: cursor object with query results
     """
 
     return get_startup_chars_inputs_from_database(
@@ -2005,9 +2005,12 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    write_startup_chars_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn,
-        "gen_commit_bin"
+    data = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+    fname = "startup_chars.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data, replace_nulls=True
     )
 
 

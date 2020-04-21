@@ -357,6 +357,45 @@ def load_optype_module_specific_data(
     return op_type_projects
 
 
+def write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data,
+        replace_nulls=False
+):
+    """
+    Write inputs to tab-delimited file in appropriate directory
+
+    TODO: could use this function in many more modules where we write to file
+     but need to make sure db column names and tab file column names are
+     consistent
+
+    :param scenario_directory: string, the scenario directory
+    :param subproblem: the active subproblem, set to "" if only 1 subproblem
+    :param stage: the active stage, set to " if only 1 stage
+    :param fname: the filename (with the .tab file extension)
+    :param data: cursor object with query results
+    :param replace_nulls: Booolean, whether the replace Nulls with "."
+    :return:
+    """
+
+    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
+                            "inputs", fname)
+    f_exists = os.path.isfile(out_file)
+    append_mode = "a" if f_exists else "w"
+
+    with open(out_file, append_mode, newline="") as f:
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+
+        # If file doesn't exist, write header first
+        if not f_exists:
+            cols = [s[0] for s in data.description]
+            writer.writerow(cols)
+
+        for row in data:
+            if replace_nulls:
+                row = ["." if i is None else i for i in row]
+            writer.writerow(row)
+
+
 def load_var_profile_inputs(
         data_portal, scenario_directory, subproblem, stage, op_type):
     """
@@ -435,7 +474,7 @@ def get_var_profile_inputs_from_database(
     :param stage:
     :param conn: database connection
     :param op_type:
-    :return:
+    :return: cursor object with query results
     """
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
@@ -518,41 +557,6 @@ def get_var_profile_inputs_from_database(
     return variable_profiles
 
 
-def write_var_profile_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn, op_type
-):
-    """
-    Get inputs from database and write out the model input
-    variable_generator_profiles.tab file.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return:
-    """
-    variable_profiles = get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type)
-
-    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
-                            "inputs", "variable_generator_profiles.tab")
-    f_exists = os.path.isfile(out_file)
-    append_mode = "a" if f_exists else "w"
-
-    with open(out_file, append_mode, newline="") as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # If file doesn't exist, write header first
-        if not f_exists:
-            writer.writerow(
-                ["project", "timepoint", "cap_factor"]
-            )
-
-        for row in variable_profiles:
-            writer.writerow(row)
-
-
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
                        stage, op_type, projects):
     """
@@ -621,7 +625,7 @@ def get_hydro_inputs_from_database(
     :param stage:
     :param conn: database connection
     :param op_type:
-    :return:
+    :return: cursor object with query results
     """
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
@@ -683,44 +687,6 @@ def get_hydro_inputs_from_database(
     )
 
     return hydro_chars
-
-
-def write_hydro_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn, op_type
-):
-    """
-    Get inputs from database and write out the model input
-    hydro_conventional_horizon_params.tab file.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return:
-    """
-    hydro_chars = get_hydro_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type)
-
-    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
-                            "inputs", "hydro_conventional_horizon_params.tab")
-    f_exists = os.path.isfile(out_file)
-    append_mode = "a" if f_exists else "w"
-
-    with open(out_file, append_mode, newline="") as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # If file doesn't exist, write header first
-        if not f_exists:
-            writer.writerow(
-                ["project", "horizon",
-                 "hydro_average_power_fraction",
-                 "hydro_min_power_fraction",
-                 "hydro_max_power_fraction"]
-            )
-
-        for row in hydro_chars:
-            writer.writerow(row)
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,
@@ -799,7 +765,7 @@ def get_startup_chars_inputs_from_database(
     :param stage:
     :param conn: database connection
     :param op_type:
-    :return:
+    :return: cursor object with query results
     """
 
     c = conn.cursor()
@@ -828,41 +794,3 @@ def get_startup_chars_inputs_from_database(
 
     return startup_chars
 
-
-def write_startup_chars_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn, op_type
-):
-    """
-    Get inputs from database and write out the model input
-    startup_chars.tab files.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :param op_type:
-    :return:
-    """
-    startup_chars = get_startup_chars_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type)
-
-    out_file = os.path.join(scenario_directory, str(subproblem), str(stage),
-                            "inputs", "startup_chars.tab")
-    f_exists = os.path.isfile(out_file)
-    append_mode = "a" if f_exists else "w"
-
-    with open(out_file, append_mode, newline="") as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # If file doesn't exist, write header first
-        if not f_exists:
-            writer.writerow(
-                ["project",
-                 "down_time_cutoff_hours",
-                 "startup_plus_ramp_up_rate",
-                 "startup_cost_per_mw"]
-            )
-
-        for row in startup_chars:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
