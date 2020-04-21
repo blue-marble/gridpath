@@ -1,2 +1,2 @@
-project	horizon	hydro_average_power_fraction	hydro_min_power_fraction	hydro_max_power_fraction
+project	horizon	average_power_fraction	min_power_fraction	max_power_fraction
 Hydro	202003	0.5	0.166667	1.0

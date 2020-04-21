@@ -581,14 +581,14 @@ def load_hydro_opchars(data_portal, scenario_directory, subproblem,
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "hydro_conventional_horizon_params.tab"),
         sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_fraction",
-                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
+        usecols=["project", "horizon", "average_power_fraction",
+                 "min_power_fraction", "max_power_fraction"]
     )
     for row in zip(prj_hor_opchar_df["project"],
                    prj_hor_opchar_df["horizon"],
-                   prj_hor_opchar_df["hydro_average_power_fraction"],
-                   prj_hor_opchar_df["hydro_min_power_fraction"],
-                   prj_hor_opchar_df["hydro_max_power_fraction"]):
+                   prj_hor_opchar_df["average_power_fraction"],
+                   prj_hor_opchar_df["min_power_fraction"],
+                   prj_hor_opchar_df["max_power_fraction"]):
         if row[0] in projects:
             project_horizons.append((row[0], row[1]))
             avg[(row[0], row[1])] = float(row[2])
@@ -698,7 +698,7 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     :param subproblem:
     :param stage:
     :param op_type:
-    :param projects:
+    :param projects:`
     :return:
     """
 
