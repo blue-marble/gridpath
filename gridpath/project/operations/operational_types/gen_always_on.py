@@ -24,10 +24,11 @@ Costs for this operational type include fuel costs and variable O&M costs.
 from __future__ import division
 
 from builtins import zip
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, Var, NonNegativeReals, \
-    PercentFraction, Constraint, Expression
+    PercentFraction, Constraint, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
     write_validation_to_database, check_req_prj_columns
@@ -36,7 +37,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data
+    load_optype_module_specific_data, check_for_tmps_to_link
 
 
 def add_module_specific_components(m, d):
@@ -72,6 +73,11 @@ def add_module_specific_components(m, d):
     | Three-dimensional set describing projects, their variable O&M cost      |
     | curve segment IDs, and the timepoints in which the project could be     |
     | operational. The variable O&M cost constraint is applied over this set. |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_ALWAYS_ON_LINKED_TMPS`                              |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_always_on`        |
+    | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -116,6 +122,30 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`gen_always_on_linked_power`                                    |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_LINKED_TMPS`                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's power provision in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_always_on_linked_upwards_reserves`                         |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_LINKED_TMPS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's upward reserve provision in the linked timepoints.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_always_on_linked_downwards_reserves`                       |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_LINKED_TMPS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's downward reserve provision in the linked timepoints.      |
     +-------------------------------------------------------------------------+
 
     |
@@ -238,6 +268,8 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_ALWAYS_ON)
     )
 
+    m.GEN_ALWAYS_ON_LINKED_TMPS = Set(dimen=2)
+
     # Required Params
     ###########################################################################
 
@@ -260,6 +292,24 @@ def add_module_specific_components(m, d):
     m.gen_always_on_ramp_down_when_on_rate = Param(
         m.GEN_ALWAYS_ON, within=PercentFraction,
         default=1
+    )
+
+    # Linked Params
+    ###########################################################################
+
+    m.gen_always_on_linked_power = Param(
+        m.GEN_ALWAYS_ON_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_always_on_linked_upwards_reserves = Param(
+        m.GEN_ALWAYS_ON_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_always_on_linked_downwards_reserves = Param(
+        m.GEN_ALWAYS_ON_LINKED_TMPS,
+        within=NonNegativeReals
     )
 
     # Variables
@@ -384,28 +434,47 @@ def ramp_up_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # If ramp rate limits, adjusted for timepoint duration, allow you to
-    # ramp up the full operable range between timepoints, constraint won't
-    # bind, so skip
-    elif (mod.gen_always_on_ramp_up_when_on_rate[g] * 60
-          * mod.hrs_in_tmp[mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]]]
-          >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
-        return Constraint.Skip
     else:
-        return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
-            + mod.GenAlwaysOn_Upwards_Reserves_MW[g, tmp] \
-            - (mod.GenAlwaysOn_Provide_Power_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               - mod.GenAlwaysOn_Downwards_Reserves_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[
-                       g]]]) \
-            <= \
-            mod.gen_always_on_ramp_up_when_on_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_always_on_linked_power[g, 0]
+            prev_tmp_downwards_reserves = \
+                mod.gen_always_on_linked_downwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenAlwaysOn_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_downwards_reserves = \
+                mod.GenAlwaysOn_Downwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp up the full operable range between timepoints, constraint won't
+        # bind, so skip
+        if (mod.gen_always_on_ramp_up_when_on_rate[g] * 60
+                * prev_tmp_hrs_in_tmp
+                >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+                + mod.GenAlwaysOn_Upwards_Reserves_MW[g, tmp] \
+                - (prev_tmp_power - prev_tmp_downwards_reserves) \
+                <= \
+                mod.gen_always_on_ramp_up_when_on_rate[g] * 60 \
+                * prev_tmp_hrs_in_tmp \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.Availability_Derate[g, tmp]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -429,28 +498,48 @@ def ramp_down_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # If ramp rate limits, adjusted for timepoint duration, allow you to
-    # ramp down the full operable range between timepoints, constraint
-    # won't bind, so skip
-    elif (mod.gen_always_on_ramp_down_when_on_rate[g] * 60
-          * mod.hrs_in_tmp[
-              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-          >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
-        return Constraint.Skip
+
     else:
-        return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
-            - mod.GenAlwaysOn_Downwards_Reserves_MW[g, tmp] \
-            - (mod.GenAlwaysOn_Provide_Power_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               + mod.GenAlwaysOn_Upwards_Reserves_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               ) \
-            >= \
-            - mod.gen_always_on_ramp_down_when_on_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_always_on_linked_power[g, 0]
+            prev_tmp_upwards_reserves = \
+                mod.gen_always_on_linked_upwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenAlwaysOn_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_upwards_reserves = \
+                mod.GenAlwaysOn_Upwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+
+            # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp down the full operable range between timepoints, constraint
+        # won't bind, so skip
+        if (mod.gen_always_on_ramp_down_when_on_rate[g] * 60
+            * prev_tmp_hrs_in_tmp
+                >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+                - mod.GenAlwaysOn_Downwards_Reserves_MW[g, tmp] \
+                - (prev_tmp_power + prev_tmp_upwards_reserves) \
+                >= \
+                - mod.gen_always_on_ramp_down_when_on_rate[g] * 60 \
+                * prev_tmp_hrs_in_tmp \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.Availability_Derate[g, tmp]
 
 
 # Fuel Burn
@@ -632,6 +721,74 @@ def load_module_specific_data(mod, data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_always_on"
     )
+
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "gen_always_on_linked_timepoint_params.tab"
+        )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=mod.GEN_ALWAYS_ON_LINKED_TMPS,
+            param=(
+                mod.gen_always_on_linked_power,
+                mod.gen_always_on_linked_upwards_reserves,
+                mod.gen_always_on_linked_downwards_reserves
+            )
+        )
+    else:
+        pass
+
+
+def export_module_specific_results(
+        mod, d, scenario_directory, subproblem, stage
+):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param mod:
+    :param d:
+    :return:
+    """
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage
+    )
+
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
+
+        # Export params by project and timepoint
+        with open(os.path.join(
+                scenario_directory, next_subproblem, stage, "inputs",
+                "gen_always_on_linked_timepoint_params.tab"
+        ), "w", newline=""
+        ) as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                ["project", "linked_timepoint",
+                 "linked_provide_power",
+                 "linked_upward_reserves",
+                 "linked_downward_reserves"]
+            )
+        for (p, tmp) \
+                in mod.GEN_ALWAYS_ON_OPR_TMPS:
+            if tmp in tmps_to_link:
+                writer.writerow([
+                    p,
+                    tmp_linked_tmp_dict[tmp],
+                    value(mod.GenAlwaysOn_Provide_Power_MW[p, tmp]),
+                    value(mod.GenAlwaysOn_Upwards_Reserves_MW[p, tmp]),
+                    value(mod.GenAlwaysOn_Downwards_Reserves_MW[p, tmp])
+                ])
 
 # Validation
 ###############################################################################
