@@ -857,10 +857,10 @@ def check_for_integer_subdirectories(main_directory):
     such as "pass_through_inputs", "inputs", "results", "logs", and so on).
     We do rely on order downstream, so make sure these are sorted.
     """
-    subdirectories = [
-        d for d in sorted(next(os.walk(main_directory))[1])
-        if is_integer(d)
-    ]
+    subdirectories = sorted(
+        [d for d in next(os.walk(main_directory))[1] if is_integer(d)],
+        key=int
+    )
 
     # There are subdirectories if the list isn't empty
     return subdirectories
