@@ -94,6 +94,11 @@ def add_module_specific_components(m, d):
     | Indexed set that describes the startup types for each project of the    |
     | :code:`gen_commit_lin`operational type.                                 |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_LIN_LINKED_TMPS`                                    |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_commit_lin`       |
+    | operational type and their linked timepoints.                           |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -2256,6 +2261,7 @@ def load_module_specific_data(mod, data_portal,
     else:
         pass
 
+    # Linked timepoint params (by startup type)
     linked_startup_inputs_filename = os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",
             "gen_commit_lin_linked_timepoint_str_type_params.tab"
