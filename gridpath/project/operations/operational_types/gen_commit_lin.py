@@ -218,6 +218,89 @@ def add_module_specific_components(m, d):
     |
 
     +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`gen_commit_lin_linked_commit`                                  |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's commitment status in the linked timepoints.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_startup`                                 |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's startup status in the linked timepoints.                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_shutdown`                                |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's shutdown status in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_power_above_pmin`                        |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power provision above Pmin in the linked timepoints.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_upwards_reserves`                        |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's upward reserve provision in the linked timepoints.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_downwards_reserves`                      |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's downward reserve provision in the linked timepoints.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_ramp_up_rate_mw_per_tmp`                 |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's upward ramp rate in MW in the linked timepoints           |
+    | (depends on timepoint duration.)                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_ramp_down_rate_mw_per_tmp`               |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's downward ramp rate in MW in the linked timepoints         |
+    | (depends on timepoint duration.)                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_provide_power_startup_mw`                |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES`          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's startup power provision by startup type for each linked   |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp`            |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES`          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's startup ramp rate in MW by startup type in the linked     |
+    | timepoints (depends on timepoint duration.)                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_provide_power_shutdown_mw`               |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's shutdown power provision for each linked timepoint.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_linked_shutdown_ramp_rate_mw_per_tmp`           |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's shutdown ramp rate in MW in the linked timepointsvvv      |
+    | (depends on timepoint duration.)                                        |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`GenCommitLin_Commit`                                           |
@@ -587,7 +670,15 @@ def add_module_specific_components(m, d):
         ordered=True
     )
 
-    m.GEN_COMMIT_LIN_OPR_LINKED_TMPS = Set(dimen=2)
+    m.GEN_COMMIT_LIN_LINKED_TMPS = Set(dimen=2)
+
+    m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
+            for _g, s in mod.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
+            if g == _g)
+    )
 
     # Required Params
     ###########################################################################
@@ -658,14 +749,67 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
+    # Linked Params
+    ###########################################################################
+
     m.gen_commit_lin_linked_commit = Param(
-        m.GEN_COMMIT_LIN_OPR_LINKED_TMPS,
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
         within=PercentFraction
     )
 
     m.gen_commit_lin_linked_startup = Param(
-        m.GEN_COMMIT_LIN_OPR_LINKED_TMPS,
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
         within=PercentFraction
+    )
+
+    m.gen_commit_lin_linked_shutdown = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=PercentFraction
+    )
+
+    m.gen_commit_lin_linked_power_above_pmin = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_upwards_reserves = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_downwards_reserves = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_ramp_up_rate_mw_per_tmp = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_ramp_down_rate_mw_per_tmp = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_provide_power_startup_mw = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_provide_power_shutdown_mw = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_commit_lin_linked_shutdown_ramp_rate_mw_per_tmp = Param(
+        m.GEN_COMMIT_LIN_LINKED_TMPS,
+        within=NonNegativeReals
     )
 
     # Variables
@@ -1059,9 +1203,6 @@ def binary_logic_constraint_rule(mod, g, tmp):
     Constraint (8) in Morales-Espana et al. (2013)
     """
     # If this is the first timepoint of a linear horizon, skip the constraint
-    # If this is the first timepoint of a linked horizon, set the previous
-    # timepoint's commitment to that in the closest linked timepoint (the
-    # linked timepoint with index 0)
     if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
     ) and check_boundary_type(
@@ -1070,6 +1211,9 @@ def binary_logic_constraint_rule(mod, g, tmp):
     ):
         return Constraint.Skip
     else:
+        # If this is the first timepoint of a linked horizon, set the previous
+        # timepoint's commitment to that in the closest linked timepoint (the
+        # linked timepoint with index 0)
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
         ) and check_boundary_type(
@@ -1077,6 +1221,7 @@ def binary_logic_constraint_rule(mod, g, tmp):
             boundary_type="linked"
         ):
             prev_timepoint_commit = mod.gen_commit_lin_linked_commit[g, 0]
+        # Otherwise, use the previous timepoint's commitment
         else:
             prev_timepoint_commit = \
                 mod.GenCommitLin_Commit[
@@ -1255,12 +1400,14 @@ def min_down_time_constraint_rule(mod, g, tmp):
     Constraint (7) in Morales-Espana et al. (2013)
     """
 
-    relevant_tmps, linked_tmps = determine_relevant_timepoints(
+    relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_min_down_time_hours[g]
     )
 
     number_of_stops_min_down_time_or_less_hours_ago = \
-        sum(mod.GenCommitLin_Shutdown[g, tp] for tp in relevant_tmps)
+        sum(mod.GenCommitLin_Shutdown[g, tp] for tp in relevant_tmps) \
+        + sum(mod.gen_commit_lin_linked_shutdown[g, ltp] for ltp in
+              relevant_linked_timepoints)
 
     # If we've reached the first timepoint in linear boundary mode and
     # the total duration of the relevant timepoints (which includes *tmp*)
@@ -1316,35 +1463,53 @@ def ramp_up_constraint_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip constraint to get test to work, but need to fix
-    #  this
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
-    # If ramp rate limits, adjusted for timepoint duration, allow you to
-    # ramp up the full operable range between timepoints, constraint
-    # won't bind, so skip
-    elif (mod.gen_commit_lin_ramp_up_when_on_rate[g] * 60
-          * mod.hrs_in_tmp[
-              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-          >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
-        return Constraint.Skip
     else:
-        return \
-            (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
-             + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp]) \
-            - \
-            (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-             - mod.GenCommitLin_Downwards_Reserves_MW[
-                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
-            <= \
-            mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power_above_pmin = \
+                mod.gen_commit_lin_linked_power_above_pmin[g, 0]
+            prev_tmp_downwards_reserves = \
+                mod.gen_commit_lin_linked_downwards_reserves[g, 0]
+            prev_tmp_ramp_up_rate_mw_per_tmp = \
+                mod.gen_commit_lin_linked_ramp_up_rate_mw_per_tmp[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = \
+                mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_power_above_pmin = \
+                mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_downwards_reserves = \
+                mod.GenCommitLin_Downwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_ramp_up_rate_mw_per_tmp = \
+                mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+
+        # Apply constraints
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp up the full operable range between timepoints, constraint
+        # won't bind, so skip
+        if (mod.gen_commit_lin_ramp_up_when_on_rate[g] * 60
+            * prev_tmp_hrs_in_tmp
+                >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return \
+                (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
+                 + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp]) \
+                - \
+                prev_tmp_power_above_pmin - prev_tmp_downwards_reserves \
+                <= prev_tmp_ramp_up_rate_mw_per_tmp
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1367,34 +1532,51 @@ def ramp_down_constraint_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip constraint to get test to work, but need to fix
-    #  this
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
-    # If ramp rate limits, adjusted for timepoint duration, allow you to
-    # ramp down the full operable range between timepoints, constraint
-    # won't bind, so skip
-    elif (mod.gen_commit_lin_ramp_down_when_on_rate[g] * 60
-          * mod.hrs_in_tmp[
-              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-          >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
-        return Constraint.Skip
     else:
-        return \
-            (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-             + mod.GenCommitLin_Upwards_Reserves_MW[
-                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
-            - \
-            (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
-             - mod.GenCommitLin_Downwards_Reserves_MW[g, tmp]) \
-            <= mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power_above_pmin = \
+                mod.gen_commit_lin_linked_power_above_pmin[g, 0]
+            prev_tmp_upwards_reserves = \
+                mod.gen_commit_lin_linked_upwards_reserves[g, 0]
+            prev_tmp_ramp_down_rate_mw_per_tmp = \
+                mod.gen_commit_lin_linked_ramp_down_rate_mw_per_tmp[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = \
+                mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_power_above_pmin = \
+                mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_upwards_reserves = \
+                mod.GenCommitLin_Upwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_ramp_down_rate_mw_per_tmp = \
+                mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp down the full operable range between timepoints, constraint
+        # won't bind, so skip
+        if (mod.gen_commit_lin_ramp_down_when_on_rate[g] * 60
+            * prev_tmp_hrs_in_tmp
+                >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return \
+                (prev_tmp_power_above_pmin + prev_tmp_upwards_reserves) \
+                - \
+                (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
+                 - mod.GenCommitLin_Downwards_Reserves_MW[g, tmp]) \
+                <= prev_tmp_ramp_down_rate_mw_per_tmp
 
 
 # Startup Power
@@ -1456,24 +1638,29 @@ def active_startup_type_constraint_rule(mod, g, tmp, s):
         return Constraint.Skip
 
     # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
-    relevant_tmps1, linked_tmps2 = determine_relevant_timepoints(
+    relevant_tmps1, relevant_linked_tmps1 = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_down_time_cutoff_hours[g, s])
-    relevant_tmps2, linked_tmps2 = determine_relevant_timepoints(
+    relevant_tmps2, relevant_linked_tmps2 = determine_relevant_timepoints(
         mod, g, tmp, mod.gen_commit_lin_down_time_cutoff_hours[g, s+1])
     relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
+    relevant_linked_tmps = \
+        set(relevant_linked_tmps2) - set(relevant_linked_tmps1)
 
     # Skip constraint if we are within TSU,s hours from the start of the
-    # horizon (linear horizon boundary) or from the current tmp (circular
-    # horizon boundary). We have no way to know whether unit was down
+    # horizon (linear horizon boundary), from the start of the furthest
+    # linked timepoint (linked horizon boundary) or from the current tmp
+    # (circular horizon boundary). We have no way to know whether unit was down
     # [TSU,s; TSU,s+1) hours ago so we can't know if this start type could
     # be active.
-    if len(relevant_tmps) == 0:
+    if len(relevant_tmps) == 0 and len(relevant_linked_tmps) == 0:
         return Constraint.Skip
 
     # Equal to 1 if unit has been down within interval [TSU,s; TSU,s+1)
     # before hour t. This "activates" this particular startup type
     shutdown_within_interval = \
-        sum(mod.GenCommitLin_Shutdown[g, tp] for tp in relevant_tmps)
+        sum(mod.GenCommitLin_Shutdown[g, tp] for tp in relevant_tmps) \
+        + sum(mod.gen_commit_lin_linked_shutdown[g, ltp]
+              for ltp in relevant_linked_tmps)
 
     return mod.GenCommitLin_Startup_Type[g, tmp, s] <= shutdown_within_interval
 
@@ -1519,21 +1706,31 @@ def ramp_during_startup_constraint_rule(mod, g, tmp, s):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
     else:
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_provide_power_startup = \
+                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+            prev_tmp_startup_ramp_rate_mw_per_tmp = \
+                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp[g, 0, s]
+        else:
+            prev_tmp_provide_power_startup = \
+                mod.GenCommitLin_Provide_Power_Startup_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
+                ]
+            prev_tmp_startup_ramp_rate_mw_per_tmp = \
+                mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
+                ]
+
         return \
             mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] \
-            - mod.GenCommitLin_Provide_Power_Startup_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s] \
-            <= mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
+            - prev_tmp_provide_power_startup \
+            <= prev_tmp_startup_ramp_rate_mw_per_tmp
 
 
 def increasing_startup_power_constraint_rule(mod, g, tmp, s):
@@ -1556,19 +1753,24 @@ def increasing_startup_power_constraint_rule(mod, g, tmp, s):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
     else:
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_provide_power_startup = \
+                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+        else:
+            prev_tmp_provide_power_startup = \
+                mod.GenCommitLin_Provide_Power_Startup_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
+                ]
+
         return \
             mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] \
-            - mod.GenCommitLin_Provide_Power_Startup_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s] \
+            - prev_tmp_provide_power_startup \
             >= - mod.GenCommitLin_Startup_Type[g, tmp, s] \
             * mod.GenCommitLin_Pmin_MW[g, tmp]
 
@@ -1607,28 +1809,38 @@ def power_during_startup_constraint_rule(mod, g, tmp, s):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
     else:
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_provide_power_startup = \
+                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+            prev_tmp_startup_ramp_rate_mw_per_tmp = \
+                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp[g, 0, s]
+        else:
+            prev_tmp_provide_power_startup = \
+                mod.GenCommitLin_Provide_Power_Startup_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
+                ]
+            prev_tmp_startup_ramp_rate_mw_per_tmp = \
+                mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
+                ]
+
         return (mod.GenCommitLin_Commit[g, tmp]
                 * mod.GenCommitLin_Pmin_MW[g, tmp]
                 + mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
                 ) \
             + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp] \
-            - mod.GenCommitLin_Provide_Power_Startup_MW[g, mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]], s] \
+            - prev_tmp_provide_power_startup \
             <= \
             (1 - mod.GenCommitLin_Startup_Type[g, tmp, s]) \
             * mod.GenCommitLin_Pmax_MW[g, tmp] \
             + mod.GenCommitLin_Startup[g, tmp] \
-            * mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
+            * prev_tmp_startup_ramp_rate_mw_per_tmp
 
 
 # Shutdown Power
@@ -1667,20 +1879,30 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-        return Constraint.Skip
     else:
-        return mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.prev_tmp[
-            tmp, mod.balancing_type_project[g]]] \
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_provide_power_shutdown = \
+                mod.gen_commit_lin_linked_provide_power_shutdown_mw[g, 0]
+            prev_tmp_shutdown_ramp_rate_mw_per_tmp = \
+                mod.gen_commit_lin_linked_shutdown_ramp_rate_mw_per_tmp[g, 0]
+        else:
+            prev_tmp_provide_power_shutdown = \
+                mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.prev_tmp[
+                    tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_shutdown_ramp_rate_mw_per_tmp = \
+                mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+
+        return prev_tmp_provide_power_shutdown \
             - mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp] \
-            <= mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            <= prev_tmp_shutdown_ramp_rate_mw_per_tmp
 
 
 def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
@@ -1698,17 +1920,15 @@ def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
     """
     if check_if_last_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_last_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         return Constraint.Skip
     else:
@@ -1750,17 +1970,15 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
 
     if check_if_last_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    # TODO: temporarily skip this, but formulation needs to be updated
-    elif check_if_last_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         return Constraint.Skip
     else:
@@ -1953,14 +2171,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
-    Ramp between this timepoint and the previous timepoint
+    Ramp between this timepoint and the previous timepoint.
     Actual ramp rate in MW/hr depends on the duration of the timepoints.
+    This is only used in tuning costs, so fine to skip for linked horizon's
+    first timepoint.
     """
     if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
@@ -2008,14 +2234,39 @@ def load_module_specific_data(mod, data_portal,
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",
-            "linked_timepoint_gen_commit_lin.tab"
+            "gen_commit_lin_linked_timepoint_params.tab"
         )
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
-            index=mod.GEN_COMMIT_LIN_OPR_LINKED_TMPS,
-            param=(mod.gen_commit_lin_linked_commit,
-                   mod.gen_commit_lin_linked_startup)
+            index=mod.GEN_COMMIT_LIN_LINKED_TMPS,
+            param=(
+                mod.gen_commit_lin_linked_commit,
+                mod.gen_commit_lin_linked_startup,
+                mod.gen_commit_lin_linked_shutdown,
+                mod.gen_commit_lin_linked_power_above_pmin,
+                mod.gen_commit_lin_linked_upwards_reserves,
+                mod.gen_commit_lin_linked_downwards_reserves,
+                mod.gen_commit_lin_linked_ramp_up_rate_mw_per_tmp,
+                mod.gen_commit_lin_linked_ramp_down_rate_mw_per_tmp,
+                mod.gen_commit_lin_linked_provide_power_shutdown_mw,
+                mod.gen_commit_lin_linked_shutdown_ramp_rate_mw_per_tmp
+            )
+        )
+    else:
+        pass
+
+    linked_startup_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "gen_commit_lin_linked_timepoint_str_type_params.tab"
+        )
+    if os.path.exists(linked_startup_inputs_filename):
+        data_portal.load(
+            filename=linked_startup_inputs_filename,
+            param=(
+                mod.gen_commit_lin_linked_provide_power_startup_mw,
+                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
+            )
         )
     else:
         pass
@@ -2106,15 +2357,24 @@ def export_linked_subproblem_inputs(
         # this module in the next subproblem's input directory
         if tmps_to_link:
             next_subproblem = str(int(subproblem) + 1)
+            
+            # Export params by project and timepoint
             with open(os.path.join(
                     scenario_directory, next_subproblem, stage, "inputs",
-                    "linked_timepoint_gen_commit_lin.tab"
+                    "gen_commit_lin_linked_timepoint_params.tab"
             ), "w", newline=""
             ) as f:
                 writer = csv.writer(f, delimiter="\t")
                 writer.writerow(
                     ["project", "linked_timepoint", "linked_commit",
-                     "linked_startup"]
+                     "linked_startup", "linked_shutdown",
+                     "linked_provide_power_above_pmin",
+                     "linked_upward_reserves",
+                     "linked_downward_reserves",
+                     "linked_ramp_up_rate_mw_per_tmp",
+                     "linked_ramp_down_rate_mw_per_tmp",
+                     "linked_provide_power_shutdown",
+                     "linked_shutdown_ramp_rate_mw_per_tmp"]
                 )
 
                 for (p, tmp) \
@@ -2124,8 +2384,64 @@ def export_linked_subproblem_inputs(
                             p,
                             tmp_linked_tmp_dict[tmp],
                             value(mod.GenCommitLin_Commit[p, tmp]),
-                            value(mod.GenCommitLin_Startup[p, tmp])
+                            value(mod.GenCommitLin_Startup[p, tmp]),
+                            value(mod.GenCommitLin_Shutdown[p, tmp]),
+                            value(
+                                mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
+                                    p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Upwards_Reserves_MW[p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Downwards_Reserves_MW[p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
+                                    p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
+                                    p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Provide_Power_Shutdown_MW[
+                                    p, tmp]
+                            ),
+                            value(
+                                mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
+                                    p, tmp]
+                            )
                         ])
+                # Export params by project, timepoint, and startup type
+                with open(os.path.join(
+                        scenario_directory, next_subproblem, stage, "inputs",
+                        "gen_commit_lin_linked_timepoint_str_type_params.tab"
+                ), "w", newline=""
+                ) as f:
+                    writer = csv.writer(f, delimiter="\t")
+                    writer.writerow(
+                        ["project", "linked_timepoint", "startup_type",
+                         "linked_provide_power_startup",
+                         "linked_startup_ramp_rate_mw_per_tmp"]
+                    )
+                    for (p, tmp, s) \
+                            in mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES:
+                        if tmp in tmps_to_link:
+                            writer.writerow([
+                                p,
+                                tmp_linked_tmp_dict[tmp],
+                                s,
+                                value(
+                                    mod.GenCommitLin_Provide_Power_Startup_MW[
+                                        p, tmp, s]
+                                ),
+                                value(
+                                    mod.
+                                    GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                                        p, tmp, s]
+                                )
+                            ])
         else:
             pass
     except FileNotFoundError:
