@@ -2368,8 +2368,7 @@ def export_linked_subproblem_inputs(
                  "linked_shutdown_ramp_rate_mw_per_tmp"]
             )
 
-            for (p, tmp) \
-                    in mod.GEN_COMMIT_LIN_OPR_TMPS:
+            for (p, tmp) in sorted(mod.GEN_COMMIT_LIN_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow([
                         p,
