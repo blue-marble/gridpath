@@ -17,7 +17,7 @@ from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.project.common_functions import \
-    check_if_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -266,9 +266,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, p, tmp):
     """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
     if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[p]
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[p],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[p],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
