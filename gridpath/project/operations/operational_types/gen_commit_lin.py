@@ -33,10 +33,10 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
-    get_startup_chars_inputs_from_database, write_startup_chars_model_inputs
+    get_startup_chars_inputs_from_database, write_startup_chars_model_inputs, \
+    check_for_tmps_to_link
 from gridpath.project.common_functions import \
-    check_if_first_timepoint, \
-    check_if_last_timepoint, check_boundary_type
+    check_if_first_timepoint, check_if_last_timepoint, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -2320,131 +2320,114 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitLin_Active_Startup_Type[p, tmp])
             ])
 
+    # Export any results that will be become inputs to a linked subproblem
     export_linked_subproblem_inputs(
         mod, d, scenario_directory, subproblem, stage
     )
 
 
-# TODO: how do we get correct subproblem and stage
 def export_linked_subproblem_inputs(
         mod, d, scenario_directory, subproblem, stage
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
     # next subproblem
-    try:
-        map_df = pd.read_csv(
-            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
-            sep=","
-        )
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage
+    )
 
-        # Figure out which timepoints we'll be linking to the next subproblem
-        # Stages must match in the linked subproblems
-        # These are subset of all TMPS in the current subproblem
-        tmps_to_link_df = map_df.loc[
-            (map_df["subproblem"] == int(subproblem)) &
-            (map_df["stage"] == (1 if stage == "" else int(stage)))
-            ]
-        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
-        tmp_linked_tmp_dict = {
-            tmp: tmps_to_link_df.loc[
-                tmps_to_link_df["timepoint"] == tmp
-                ]["linked_timepoint"].values.item()
-            for tmp in tmps_to_link
-        }
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
 
-        # If the list is not empty, write the linked timepoint results for
-        # this module in the next subproblem's input directory
-        if tmps_to_link:
-            next_subproblem = str(int(subproblem) + 1)
-            
-            # Export params by project and timepoint
+        # Export params by project and timepoint
+        with open(os.path.join(
+                scenario_directory, next_subproblem, stage, "inputs",
+                "gen_commit_lin_linked_timepoint_params.tab"
+        ), "w", newline=""
+        ) as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                ["project", "linked_timepoint", "linked_commit",
+                 "linked_startup", "linked_shutdown",
+                 "linked_provide_power_above_pmin",
+                 "linked_upward_reserves",
+                 "linked_downward_reserves",
+                 "linked_ramp_up_rate_mw_per_tmp",
+                 "linked_ramp_down_rate_mw_per_tmp",
+                 "linked_provide_power_shutdown",
+                 "linked_shutdown_ramp_rate_mw_per_tmp"]
+            )
+
+            for (p, tmp) \
+                    in mod.GEN_COMMIT_LIN_OPR_TMPS:
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        value(mod.GenCommitLin_Commit[p, tmp]),
+                        value(mod.GenCommitLin_Startup[p, tmp]),
+                        value(mod.GenCommitLin_Shutdown[p, tmp]),
+                        value(
+                            mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
+                                p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Upwards_Reserves_MW[p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Downwards_Reserves_MW[p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
+                                p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
+                                p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Provide_Power_Shutdown_MW[
+                                p, tmp]
+                        ),
+                        value(
+                            mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
+                                p, tmp]
+                        )
+                    ])
+            # Export params by project, timepoint, and startup type
             with open(os.path.join(
                     scenario_directory, next_subproblem, stage, "inputs",
-                    "gen_commit_lin_linked_timepoint_params.tab"
+                    "gen_commit_lin_linked_timepoint_str_type_params.tab"
             ), "w", newline=""
             ) as f:
                 writer = csv.writer(f, delimiter="\t")
                 writer.writerow(
-                    ["project", "linked_timepoint", "linked_commit",
-                     "linked_startup", "linked_shutdown",
-                     "linked_provide_power_above_pmin",
-                     "linked_upward_reserves",
-                     "linked_downward_reserves",
-                     "linked_ramp_up_rate_mw_per_tmp",
-                     "linked_ramp_down_rate_mw_per_tmp",
-                     "linked_provide_power_shutdown",
-                     "linked_shutdown_ramp_rate_mw_per_tmp"]
+                    ["project", "linked_timepoint", "startup_type",
+                     "linked_provide_power_startup",
+                     "linked_startup_ramp_rate_mw_per_tmp"]
                 )
-
-                for (p, tmp) \
-                        in mod.GEN_COMMIT_LIN_OPR_TMPS:
+                for (p, tmp, s) \
+                        in mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES:
                     if tmp in tmps_to_link:
                         writer.writerow([
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            value(mod.GenCommitLin_Commit[p, tmp]),
-                            value(mod.GenCommitLin_Startup[p, tmp]),
-                            value(mod.GenCommitLin_Shutdown[p, tmp]),
+                            s,
                             value(
-                                mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                                    p, tmp]
+                                mod.GenCommitLin_Provide_Power_Startup_MW[
+                                    p, tmp, s]
                             ),
                             value(
-                                mod.GenCommitLin_Upwards_Reserves_MW[p, tmp]
-                            ),
-                            value(
-                                mod.GenCommitLin_Downwards_Reserves_MW[p, tmp]
-                            ),
-                            value(
-                                mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
-                                    p, tmp]
-                            ),
-                            value(
-                                mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
-                                    p, tmp]
-                            ),
-                            value(
-                                mod.GenCommitLin_Provide_Power_Shutdown_MW[
-                                    p, tmp]
-                            ),
-                            value(
-                                mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                                    p, tmp]
+                                mod.
+                                GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                                    p, tmp, s]
                             )
                         ])
-                # Export params by project, timepoint, and startup type
-                with open(os.path.join(
-                        scenario_directory, next_subproblem, stage, "inputs",
-                        "gen_commit_lin_linked_timepoint_str_type_params.tab"
-                ), "w", newline=""
-                ) as f:
-                    writer = csv.writer(f, delimiter="\t")
-                    writer.writerow(
-                        ["project", "linked_timepoint", "startup_type",
-                         "linked_provide_power_startup",
-                         "linked_startup_ramp_rate_mw_per_tmp"]
-                    )
-                    for (p, tmp, s) \
-                            in mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES:
-                        if tmp in tmps_to_link:
-                            writer.writerow([
-                                p,
-                                tmp_linked_tmp_dict[tmp],
-                                s,
-                                value(
-                                    mod.GenCommitLin_Provide_Power_Startup_MW[
-                                        p, tmp, s]
-                                ),
-                                value(
-                                    mod.
-                                    GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                                        p, tmp, s]
-                                )
-                            ])
-        else:
-            pass
-    except FileNotFoundError:
+    else:
         pass
 
 

@@ -927,3 +927,42 @@ def write_startup_chars_model_inputs(
         for row in startup_chars:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def check_for_tmps_to_link(
+    scenario_directory, subproblem, stage
+):
+    """
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
+    :return:
+
+    If there's a linked_subproblems_map CSV file, check which of the current
+    subproblem TMPS we should export results for to link to the next
+    subproblem and pass that; otherwise, pass empty list.
+    """
+    try:
+        map_df = pd.read_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            sep=","
+        )
+
+        # Figure out which timepoints we'll be linking to the next subproblem
+        # Stages must match in the linked subproblems
+        # These are subset of all TMPS in the current subproblem
+        tmps_to_link_df = map_df.loc[
+            (map_df["subproblem"] == int(subproblem)) &
+            (map_df["stage"] == (1 if stage == "" else int(stage)))
+            ]
+        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
+        tmp_linked_tmp_dict = {
+            tmp: tmps_to_link_df.loc[
+                tmps_to_link_df["timepoint"] == tmp
+                ]["linked_timepoint"].values.item()
+            for tmp in tmps_to_link
+        }
+
+        return tmps_to_link, tmp_linked_tmp_dict
+    except FileNotFoundError:
+        return [], {}
