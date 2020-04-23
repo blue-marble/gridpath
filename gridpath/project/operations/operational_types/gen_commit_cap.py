@@ -52,7 +52,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, check_for_tmps_to_link
 from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
+    check_if_first_timepoint_and_boundary_type, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -834,20 +834,16 @@ def ramp_up_off_to_on_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
@@ -893,20 +889,16 @@ def ramp_up_on_to_on_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
@@ -938,20 +930,16 @@ def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
     downward reserves).
     """
     # TODO: check behavior more carefully (same for ramp down)
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
             prev_tmp_power = \
@@ -996,20 +984,16 @@ def ramp_up_constraint_rule(mod, g, tmp):
     timepoint could have ramped up at a certain rate since the previous
     timepoint
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
             prev_tmp_power = \
                 mod.gen_commit_cap_linked_power[g, 0]
@@ -1062,20 +1046,16 @@ def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
@@ -1102,20 +1082,16 @@ def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
     down at a rate at or below the online capacity times a pre-specified
     ramp rate fraction. Shutdowns are treated separately.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
@@ -1142,9 +1118,7 @@ def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
     """
     # TODO: bug -- this shouldn't be skipping the first tmp of linear
     #  horizons as it's not looking to a previous timepoint
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
@@ -1176,20 +1150,16 @@ def ramp_down_constraint_rule(mod, g, tmp):
     Units still committed in the current timepoint could have ramped down
     at a certain rate since the previous timepoint
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
             prev_tmp_power = \
                 mod.gen_commit_cap_linked_power[g, 0]
@@ -1235,20 +1205,16 @@ def startup_constraint_rule(mod, g, tmp):
     When units are shut off, GenCommitCap_Startup_MW will be 0 (as it
     has to be non-negative)
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
@@ -1267,20 +1233,16 @@ def shutdown_constraint_rule(mod, g, tmp):
     When units are turned on, GenCommitCap_Shutdown_MW will be 0 (as it
     has to be non-negative)
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
+        if check_if_first_timepoint_and_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
             prev_tmp_commit_capacity = \
                 mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
@@ -1539,19 +1501,17 @@ def power_delta_rule(mod, g, tmp):
     This rule is only used in tuning costs, so fine to skip for linked
     horizon's first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and (
-        check_boundary_type(
+    if (
+            check_if_first_timepoint_and_boundary_type(
             mod=mod, tmp=tmp,
             balancing_type=mod.balancing_type_project[g],
             boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp,
-            balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        )
+            ) or
+            check_if_first_timepoint_and_boundary_type(
+                mod=mod, tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked"
+            )
     ):
         pass
     else:

@@ -17,7 +17,7 @@ from pyomo.environ import Param, Var, Expression, Constraint, \
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
 from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
+    check_if_first_timepoint_and_boundary_type
 
 
 def add_model_components(m, d):
@@ -155,9 +155,7 @@ def ramp_up_rule(mod, g, tmp):
     tuning_cost = mod.ramp_tuning_cost_per_mw \
         if gen_op_type in ["gen_hydro", "gen_hydro_must_take", "stor"] \
         else 0
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
@@ -180,9 +178,7 @@ def ramp_down_rule(mod, g, tmp):
     tuning_cost = mod.ramp_tuning_cost_per_mw \
         if gen_op_type in ["gen_hydro", "gen_hydro_must_take"] \
         else 0
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):

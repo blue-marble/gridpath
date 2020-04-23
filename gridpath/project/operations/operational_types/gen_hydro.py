@@ -25,7 +25,8 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
+    check_if_first_timepoint_and_boundary_type, check_if_first_timepoint, \
+    check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     update_dispatch_results_table, load_optype_module_specific_data, \
     load_hydro_opchars, get_hydro_inputs_from_database, \
@@ -437,17 +438,13 @@ def ramp_up_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
+        if check_if_first_timepoint_and_boundary_type(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
             boundary_type="linked"
         ):
@@ -507,17 +504,13 @@ def ramp_down_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
+    if check_if_first_timepoint_and_boundary_type(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
         return Constraint.Skip
     else:
-        if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ) and check_boundary_type(
+        if check_if_first_timepoint_and_boundary_type(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
             boundary_type="linked"
         ):
