@@ -7,8 +7,6 @@ Simplest implementation with a MWh target
 
 import csv
 import os.path
-import pandas as pd
-
 from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, \
     Expression
 
@@ -54,15 +52,20 @@ def add_model_components(m, d):
         :param period:
         :return:
         """
-        total_period_static_load = sum(
-            mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
-            for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
-            if _rps_zone == rps_zone
-            for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
-        )
+        if mod.RPS_ZONE_LOAD_ZONES:
+            total_period_static_load = sum(
+                mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
+                for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
+                if _rps_zone == rps_zone
+                for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
+            )
+            percentage_target = \
+                mod.rps_target_percentage[rps_zone, period] \
+                * total_period_static_load
+        else:
+            percentage_target = 0
 
-        return mod.rps_target_mwh \
-            + mod.rps_target_percentage * total_period_static_load
+        return mod.rps_target_mwh[rps_zone, period] + percentage_target
 
     m.RPS_Target = Expression(
         m.RPS_ZONE_PERIODS_WITH_RPS,
@@ -85,9 +88,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
         index=m.RPS_ZONE_PERIODS_WITH_RPS,
-        param=m.rps_target_mwh,
-        select=("rps_zone", "period", "rps_target_mwh",
-                "rps_target_percentage")
+        param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 
 
@@ -104,7 +105,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     c = conn.cursor()
     rps_targets = c.execute(
-        """SELECT rps_zone, period, rps_target_mwh
+        """SELECT rps_zone, period, rps_target_mwh, rps_target_percentage
         FROM inputs_system_rps_targets
         JOIN
         (SELECT period
@@ -140,6 +141,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    # TODO: warn if percentage target is specified but no mapping to load
+    #  zones or vice versa
     pass
     # Validation to be added
     # rps_targets = get_inputs_from_database(
@@ -169,8 +172,9 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
         # Write header
         writer.writerow(
-            ["rps_zone", "period", "rps_target_mwh"]
+            ["rps_zone", "period", "rps_target_mwh", "rps_target_percentage"]
         )
 
         for row in rps_targets:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
