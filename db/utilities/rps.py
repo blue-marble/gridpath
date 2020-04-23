@@ -28,8 +28,6 @@ def insert_rps_targets(
 
     c = conn.cursor()
 
-    print(subscenario_data)
-
     # Subscenario
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_system_rps_targets
