@@ -9,7 +9,8 @@ import csv
 import os.path
 import pandas as pd
 
-from pyomo.environ import Set, Param, NonNegativeReals, value
+from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, \
+    Expression
 
 
 def add_model_components(m, d):
@@ -20,10 +21,53 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.RPS_ZONE_PERIODS_WITH_RPS = \
-        Set(dimen=2, within=m.RPS_ZONES * m.PERIODS)
-    m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS,
-                             within=NonNegativeReals)
+    m.RPS_ZONE_PERIODS_WITH_RPS = Set(
+        dimen=2,
+        within=m.RPS_ZONES * m.PERIODS
+    )
+
+    # RPS target specified in energy terms
+    m.rps_target_mwh = Param(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        within=NonNegativeReals,
+        default=0
+    )
+
+    # RPS target specified in percent of load terms
+    m.rps_target_percentage = Param(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        within=PercentFraction,
+        default=0
+    )
+
+    # Load zones included in RPS percentage target
+    m.RPS_ZONE_LOAD_ZONES = Set(
+        dimen=2,
+        within=m.RPS_ZONES * m.LOAD_ZONES
+    )
+
+    def rps_target_rule(mod, rps_zone, period):
+        """
+
+        :param mod:
+        :param rps_zone:
+        :param period:
+        :return:
+        """
+        total_period_static_load = sum(
+            mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
+            for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
+            if _rps_zone == rps_zone
+            for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
+        )
+
+        return mod.rps_target_mwh \
+            + mod.rps_target_percentage * total_period_static_load
+
+    m.RPS_Target = Expression(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        rule=rps_target_rule
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -42,7 +86,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                               "inputs", "rps_targets.tab"),
         index=m.RPS_ZONE_PERIODS_WITH_RPS,
         param=m.rps_target_mwh,
-        select=("rps_zone", "period", "rps_target_mwh")
+        select=("rps_zone", "period", "rps_target_mwh",
+                "rps_target_percentage")
     )
 
 
