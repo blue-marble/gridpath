@@ -1721,11 +1721,9 @@ period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 rps_target_mwh FLOAT,
-rps_zone_scenario_id INTEGER,
+rps_target_percentage FLOAT,
 PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
-stage_id),
-FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
-inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
+stage_id)
 );
 
 -- Carbon cap
