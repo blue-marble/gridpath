@@ -2415,8 +2415,8 @@ def export_linked_subproblem_inputs(
                      "linked_provide_power_startup",
                      "linked_startup_ramp_rate_mw_per_tmp"]
                 )
-                for (p, tmp, s) \
-                        in mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES:
+                for (p, tmp, s) in sorted(
+                        mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES):
                     if tmp in tmps_to_link:
                         writer.writerow([
                             p,
