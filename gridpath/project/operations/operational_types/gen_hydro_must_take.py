@@ -14,7 +14,7 @@ from builtins import str
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, \
-    Expression, NonNegativeReals, PercentFraction
+    Expression, NonNegativeReals, PercentFraction, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -23,7 +23,8 @@ from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, load_hydro_opchars, \
-    get_hydro_inputs_from_database, write_hydro_model_inputs
+    get_hydro_inputs_from_database, write_hydro_model_inputs, \
+    check_for_tmps_to_link
 
 
 def add_module_specific_components(m, d):
@@ -47,6 +48,11 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro_must_take`  |
     | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_MUST_TAKE_LINKED_TMPS`                               |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_hydro_must_take`  |
+    | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -99,6 +105,29 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
 
+    |
+
+    +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`gen_hydro_must_take_linked_power`                              |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_LINKED_TMPS`               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power provision in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_must_take_linked_upwards_reserves`                   |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_LINKED_TMPS`               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's upward reserve provision in the linked timepoints.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_must_take_linked_downwards_reserves`                 |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_LINKED_TMPS`               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's downward reserve provision in the linked timepoints.      |
+    +-------------------------------------------------------------------------+
     |
 
     +-------------------------------------------------------------------------+
@@ -173,6 +202,8 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_HYDRO_MUST_TAKE)
     )
 
+    m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS = Set(dimen=2)
+
     # Required Params
     ###########################################################################
 
@@ -202,6 +233,24 @@ def add_module_specific_components(m, d):
     m.gen_hydro_must_take_ramp_down_when_on_rate = Param(
         m.GEN_HYDRO_MUST_TAKE,
         within=PercentFraction, default=1
+    )
+
+    # Linked Params
+    ###########################################################################
+
+    m.gen_hydro_must_take_linked_power = Param(
+        m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_hydro_must_take_linked_upwards_reserves = Param(
+        m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_hydro_must_take_linked_downwards_reserves = Param(
+        m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS,
+        within=NonNegativeReals
     )
 
     # Variables
@@ -368,28 +417,45 @@ def ramp_up_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # If you can ramp up the the total project's capacity within the
-    # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-        mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            >= 1:
-        return Constraint.Skip
     else:
-        return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
-                + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]) \
-               - (mod.GenHydroMustTake_Provide_Power_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]
-                  - mod.GenHydroMustTake_Downwards_Reserves_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]) \
-               <= \
-               mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
-               * mod.hrs_in_tmp[
-                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]]\
-               * mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_hydro_must_take_linked_power[g, 0]
+            prev_tmp_downwards_reserves = \
+                mod.gen_hydro_must_take_linked_downwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenHydroMustTake_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_downwards_reserves = \
+                mod.GenHydroMustTake_Downwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+        # If you can ramp up the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        if mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
+            * prev_tmp_hrs_in_tmp \
+                >= 1:
+            return Constraint.Skip
+        else:
+            return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+                    + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]) \
+                   - (prev_tmp_power - prev_tmp_downwards_reserves) \
+                   <= \
+                   mod.gen_hydro_must_take_ramp_up_when_on_rate[g] * 60 \
+                   * prev_tmp_hrs_in_tmp \
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.Availability_Derate[g, tmp]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -413,28 +479,45 @@ def ramp_down_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-    # If you can ramp down the the total project's capacity within the
-    # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-        mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            >= 1:
-        return Constraint.Skip
     else:
-        return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
-                - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]) \
-               - (mod.GenHydroMustTake_Provide_Power_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]
-                  + mod.GenHydroMustTake_Upwards_Reserves_MW[
-                      g, mod.prev_tmp[
-                          tmp, mod.balancing_type_project[g]]]) \
-               >= \
-               - mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
-               * mod.hrs_in_tmp[
-                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]]\
-               * mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp]
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_hydro_must_take_linked_power[g, 0]
+            prev_tmp_upwards_reserves = \
+                mod.gen_hydro_must_take_linked_upwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenHydroMustTake_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_upwards_reserves = \
+                mod.GenHydroMustTake_Upwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+        # If you can ramp down the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        if mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
+            * prev_tmp_hrs_in_tmp \
+                >= 1:
+            return Constraint.Skip
+        else:
+            return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+                    - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]) \
+                   - (prev_tmp_power + prev_tmp_upwards_reserves) \
+                   >= \
+                   - mod.gen_hydro_must_take_ramp_down_when_on_rate[g] * 60 \
+                   * prev_tmp_hrs_in_tmp \
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.Availability_Derate[g, tmp]
 
 
 # Operational Type Methods
@@ -524,12 +607,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
     if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
@@ -568,6 +661,74 @@ def load_module_specific_data(m, data_portal,
         stage=stage, op_type="gen_hydro_must_take", projects=projects
     )
 
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "gen_hydro_must_take_linked_timepoint_params.tab"
+        )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS,
+            param=(
+                m.gen_hydro_must_take_linked_power,
+                m.gen_hydro_must_take_linked_upwards_reserves,
+                m.gen_hydro_must_take_linked_downwards_reserves
+            )
+        )
+    else:
+        pass
+
+
+def export_module_specific_results(
+        mod, d, scenario_directory, subproblem, stage
+):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param mod:
+    :param d:
+    :return:
+    """
+
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage
+    )
+
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
+
+        # Export params by project and timepoint
+        with open(os.path.join(
+                scenario_directory, next_subproblem, stage, "inputs",
+                "gen_hydro_linked_timepoint_params.tab"
+        ), "w", newline=""
+        ) as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                ["project", "linked_timepoint",
+                 "linked_provide_power",
+                 "linked_upward_reserves",
+                 "linked_downward_reserves"]
+            )
+        for (p, tmp) in sorted(mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS):
+            if tmp in tmps_to_link:
+                writer.writerow([
+                    p,
+                    tmp_linked_tmp_dict[tmp],
+                    value(mod.GenHydroMustTake_Provide_Power_MW_[p, tmp]),
+                    value(mod.GenHydroMustTake_Upwards_Reserves_MW[p, tmp]),
+                    value(mod.GenHydroMustTake_Downwards_Reserves_MW[p, tmp])
+                ])
 
 # Database
 ###############################################################################
