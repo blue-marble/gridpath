@@ -20,8 +20,6 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
     setup_results_import
-from gridpath.project.common_functions import \
-    check_if_first_timepoint
 
 
 def add_model_components(m, d):

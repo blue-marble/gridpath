@@ -63,7 +63,7 @@ def check_boundary_type(mod, tmp, balancing_type, boundary_type):
            == boundary_type
 
 
-def check_if_first_timepoint_and_boundary_type(
+def check_if_boundary_type_and_first_timepoint(
     mod, tmp, balancing_type, boundary_type
 ):
     if check_if_first_timepoint(

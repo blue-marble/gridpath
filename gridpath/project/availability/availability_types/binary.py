@@ -22,7 +22,7 @@ from gridpath.project.availability.availability_types.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
 from gridpath.project.common_functions import determine_project_subset,\
-    check_if_first_timepoint_and_boundary_type
+    check_if_boundary_type_and_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -244,7 +244,7 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
     timepoint and was down in the previous timepoint, then the RHS is -1
     and AvlBin_Stop_Unavailability must be set to 1.
     """
-    if check_if_first_timepoint_and_boundary_type(
+    if check_if_boundary_type_and_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):

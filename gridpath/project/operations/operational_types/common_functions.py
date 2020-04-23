@@ -8,7 +8,7 @@ import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
-    check_if_first_timepoint_and_boundary_type, get_column_row_value, \
+    check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
 
 
@@ -63,7 +63,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
 
     # If we have already reached the first timepoint of a horizon in a
     # linear we'll just pass, as there are no more relevant timepoints to add
-    if check_if_first_timepoint_and_boundary_type(
+    if check_if_boundary_type_and_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
     ):
@@ -71,7 +71,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     # If we have already reached the first timepoint in a linked horizon
     # setting, we'll immediately move on to the linked timepoints without
     # looking for a previous timepoint
-    elif check_if_first_timepoint_and_boundary_type(
+    elif check_if_boundary_type_and_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linked"
     ):
@@ -109,7 +109,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # In a 'linear' horizon setting, once we reach the first
             # timepoint of the horizon, we break out of the loop since there
             # are no more timepoints to consider
-            if check_if_first_timepoint_and_boundary_type(
+            if check_if_boundary_type_and_first_timepoint(
                 mod=mod, tmp=relevant_tmp, balancing_type=mod.balancing_type_project[g],
                 boundary_type="linear"
             ):
@@ -128,7 +128,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # In a 'linked' horizon setting, once we reach the first
             # timepoint of the horizon, we'll start adding the linked
             # timepoints until we reach the target min time
-            elif check_if_first_timepoint_and_boundary_type(
+            elif check_if_boundary_type_and_first_timepoint(
                 mod=mod, tmp=relevant_tmp, balancing_type=mod.balancing_type_project[g],
                 boundary_type="linked"
             ):
