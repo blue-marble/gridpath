@@ -194,7 +194,8 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Energy Production <--\n")
-        operational_results_agg_df.to_string(outfile)
+        operational_results_agg_df.to_string(outfile,
+                                             float_format="{:,.2f}".format)
         outfile.write("\n")
 
 

@@ -33,7 +33,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
-    get_startup_chars_inputs_from_database, write_startup_chars_model_inputs, \
+    get_startup_chars_inputs_from_database, write_tab_file_model_inputs, \
     check_for_tmps_to_link
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_last_timepoint, \
@@ -1243,13 +1243,36 @@ def synced_constraint_rule(mod, g, tmp):
 
     Synced is 1 if the unit is committed, starting, or stopping and zero
     otherwise.
+
+    Note: This contains a division by the Pmin expression, so cases where Pmin
+    would be zero need to be treated differently to avoid zero-division errors.
     """
+
+    # If specified capacity is zero, synced units is zero
+    if mod.capacity_type[g] in ['gen_spec', 'gen_ret_bin', 'gen_ret_lin']:
+        spec_capacity = getattr(mod, mod.capacity_type[g] + '_capacity_mw')
+        if spec_capacity[g, mod.period[tmp]] == 0:
+            return mod.GenCommitLin_Synced[g, tmp] == 0
+
+    # If exogenous availability is zero, synced units is zero
+    if mod.availability_type[g] == 'exogenous':
+        if mod.avl_exog_derate[g, tmp] == 0:
+            return mod.GenCommitLin_Synced[g, tmp] == 0
+
+    # If min stable level is zero, there will be no trajectories so we drop the
+    # second RHS term which checks for startup/shutdown power
+    if mod.gen_commit_lin_min_stable_level_fraction[g] == 0:
+        startup_shutdown_fraction = 0
+    else:
+        startup_shutdown_fraction = (
+            sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
+                for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
+            + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
+        ) / mod.GenCommitLin_Pmin_MW[g, tmp]
+
     return mod.GenCommitLin_Synced[g, tmp] \
         >= mod.GenCommitLin_Commit[g, tmp] \
-        + (sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
-               for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
-           + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]) \
-        / mod.GenCommitLin_Pmin_MW[g, tmp]
+        + startup_shutdown_fraction
 
 
 # Power
@@ -2441,7 +2464,7 @@ def get_module_specific_inputs_from_database(
     :param subproblem:
     :param stage:
     :param conn: database connection
-    :return:
+    :return: cursor object with query results
     """
 
     return get_startup_chars_inputs_from_database(
@@ -2463,9 +2486,12 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    write_startup_chars_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn,
-        "gen_commit_lin"
+    data = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+    fname = "startup_chars.tab"
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data, replace_nulls=True
     )
 
 

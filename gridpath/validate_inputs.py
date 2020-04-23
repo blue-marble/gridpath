@@ -371,6 +371,8 @@ def main(args=None):
     # Reset input validation status and results
     reset_input_validation(conn, scenario_id)
 
+    # TODO: this is very similar to what's in get_scenario_inputs.py,
+    #  so we should consolidate
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
@@ -384,7 +386,17 @@ def main(args=None):
     if is_valid:
         # Load modules for all requested features
         feature_list = optional_features.determine_feature_list()
-        modules_to_use = determine_modules(features=feature_list)
+        # If any subproblem's stage list is non-empty, we have stages, so set
+        # the stages_flag to True to pass to determine_modules below
+        # This tells the determine_modules function to include the
+        # stages-related modules
+        stages_flag = any([
+            len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
+            subproblems.SUBPROBLEM_STAGE_DICT.keys()
+        ])
+        modules_to_use = determine_modules(
+            features=feature_list, multi_stage=stages_flag
+        )
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules

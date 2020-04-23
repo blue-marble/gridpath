@@ -5,27 +5,27 @@
 --> New Generation Capacity <--
                              New Capacity (MW)
 load_zone technology period                   
-Zone1     Gas        2020                   52
-                     2030                    5
+Zone1     Gas        2020                52.40
+                     2030                 4.80
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                          5              4
-                 Gas                         115             85
-                 Nuclear                      12              9
-                 Wind                          3              2
-          2030   Coal                          4              3
-                 Gas                         121             87
-                 Nuclear                      12              9
-                 Wind                          3              2
-Zone2     2020   Coal                          9             20
-                 Gas                          22             48
-                 Nuclear                      12             26
-                 Wind                          3              6
-          2030   Coal                          4             11
-                 Gas                          21             53
-                 Nuclear                      12             30
-                 Wind                          3              7
+Zone1     2020   Coal                       5.00           3.72
+                 Gas                      114.60          85.27
+                 Nuclear                   12.00           8.93
+                 Wind                       2.80           2.08
+          2030   Coal                       4.00           2.86
+                 Gas                      120.93          86.55
+                 Nuclear                   12.00           8.59
+                 Wind                       2.80           2.00
+Zone2     2020   Coal                       9.00          19.74
+                 Gas                       21.80          47.81
+                 Nuclear                   12.00          26.32
+                 Wind                       2.80           6.14
+          2030   Coal                       4.27          10.60
+                 Gas                       21.20          52.65
+                 Nuclear                   12.00          29.80
+                 Wind                       2.80           6.95
