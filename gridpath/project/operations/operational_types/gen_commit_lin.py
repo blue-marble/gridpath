@@ -720,7 +720,7 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
     )
-    
+
     m.gen_commit_lin_aux_consumption_frac_capacity = Param(
         m.GEN_COMMIT_LIN,
         within=PercentFraction,
@@ -1512,8 +1512,7 @@ def ramp_up_constraint_rule(mod, g, tmp):
             return \
                 (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
                  + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp]) \
-                - \
-                prev_tmp_power_above_pmin - prev_tmp_downwards_reserves \
+                - (prev_tmp_power_above_pmin - prev_tmp_downwards_reserves) \
                 <= prev_tmp_ramp_up_rate_mw_per_tmp
 
 
