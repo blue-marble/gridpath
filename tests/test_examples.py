@@ -146,7 +146,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test(self):
         """
-        Check objective function value of "test" example
+        Check validation and objective function value of "test" example
         :return:
         """
 
@@ -155,7 +155,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_no_overgen_allowed(self):
         """
-        Check objective function value of "test_no_overgen_allowed" example
+        Check validation and objective function value of
+        "test_no_overgen_allowed" example
         :return:
         """
 
@@ -165,7 +166,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_build_storage(self):
         """
-        Check objective function value of "test_new_build_storage" example
+        Check validation and objective function value of
+        "test_new_build_storage" example
         :return:
         """
 
@@ -175,8 +177,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_binary_build_storage(self):
         """
-        Check objective function value of "test_new_binary_build_storage"
-        example
+        Check validation and objective function value of
+        "test_new_binary_build_storage" example
         :return:
         """
 
@@ -186,7 +188,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "test_new_build_storage_cumulative_min_max" example
         :return:
         """
@@ -197,7 +199,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_no_reserves(self):
         """
-        Check objective function value of "test_no_reserves" example
+        Check validation and objective function value of
+        "test_no_reserves" example
         :return:
         """
 
@@ -206,7 +209,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_w_hydro(self):
         """
-        Check objective function value of "test_w_hydro" example
+        Check validation and objective function value of "test_w_hydro" example
         :return:
         """
 
@@ -215,7 +218,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_w_storage(self):
         """
-        Check objective function value of "test_w_storage" example
+        Check validation and objective function value of "test_w_storage" example
         :return:
         """
 
@@ -224,7 +227,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2horizons(self):
         """
-        Check objective function value of "2horizons" example
+        Check validation and objective function value of "2horizons" example
         :return:
         """
 
@@ -233,7 +236,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2horizons_w_hydro(self):
         """
-        Check objective function value of "2horizons_w_hydro" example
+        Check validation and objective function value of
+        "2horizons_w_hydro" example
         :return:
         """
 
@@ -242,7 +246,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2horizons_w_hydro_and_nuclear_binary_availability" example
 
         NOTE: the objective function for this example is lower than that for
@@ -264,7 +268,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2horizons_w_hydro_w_balancing_types(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2horizons_w_hydro_w_balancing_types" example. The objective
         function of this example should be lower than that of the
         '2horizons_w_hydro' example, as the average hydro budget is the
@@ -279,7 +283,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods(self):
         """
-        Check objective function value of "2periods" example
+        Check validation and objective function value of "2periods" example
         :return:
         """
 
@@ -288,7 +292,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build(self):
         """
-        Check objective function value of "2periods_new_build" example
+        Check validation and objective function value of "2periods_new_build" example
         """
 
         self.check_validation("2periods_new_build")
@@ -296,7 +300,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_2zones(self):
         """
-        Check objective function value of "2periods_new_build_2zones" example
+        Check validation and objective function value of
+        "2periods_new_build_2zones" example
         :return:
         """
 
@@ -306,7 +311,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_2zones_new_build_transmission(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_2zones_new_build_transmission" example
         :return:
         """
@@ -319,7 +324,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_2zones_singleBA(self):
         """
-        Check objective function value of "2periods_new_build_2zones_singleBA"
+        Check validation and objective function value of
+        "2periods_new_build_2zones_singleBA"
         example
         :return:
         """
@@ -330,7 +336,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_2zones_transmission(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_2zones_transmission" example
         :return:
         """
@@ -341,7 +347,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_2zones_transmission_w_losses(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_2zones_transmission_w_losses" example
         :return:
         """
@@ -355,7 +361,7 @@ class TestExamples(unittest.TestCase):
     def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(
             self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_2zones_transmission_w_losses_opp_dir" example
 
         Note: this should be the same as the objective function for
@@ -371,7 +377,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_rps(self):
         """
-        Check objective function value of "2periods_new_build_rps" example
+        Check validation and objective function value of
+        "2periods_new_build_rps" example
         :return:
         """
 
@@ -381,7 +388,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_cumulative_min_max" example
         :return:
         """
@@ -392,7 +399,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_single_stage_prod_cost(self):
         """
-        Check objective function values of "single_stage_prod_cost" example
+        Check validation and objective function values of
+        "single_stage_prod_cost" example
         :return:
         """
 
@@ -404,7 +412,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_multi_stage_prod_cost(self):
         """
-        Check objective function values of "multi_stage_prod_cost" example
+        Check validation and objective function values of
+        "multi_stage_prod_cost" example
         :return:
         """
 
@@ -422,7 +431,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
-        Check objective function values of "multi_stage_prod_cost_w_hydro"
+        Check validation and objective function values of
+        "multi_stage_prod_cost_w_hydro"
         example
         :return:
         """
@@ -441,7 +451,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_gen_lin_econ_retirement(self):
         """
-        Check objective function value of "2periods_gen_lin_econ_retirement"
+        Check validation and objective function value of
+        "2periods_gen_lin_econ_retirement"
         example
         :return:
         """
@@ -452,7 +463,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_gen_bin_econ_retirement(self):
         """
-        Check objective function value of "2periods_gen_bin_econ_retirement"
+        Check validation and objective function value of
+        "2periods_gen_bin_econ_retirement"
         example
         :return:
         """
@@ -463,7 +475,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_variable_gen_reserves(self):
         """
-        Check objective function value of "variable_gen_reserves"
+        Check validation and objective function value of
+        "variable_gen_reserves"
         example; this example requires a non-linear solver
         :return:
         """
@@ -474,7 +487,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_rps_variable_reserves(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_rps_variable_reserves" example
         :return:
         """
@@ -486,7 +499,7 @@ class TestExamples(unittest.TestCase):
     def test_example_2periods_new_build_rps_variable_reserves_subhourly_adj(
             self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_rps_variable_reserves_subhourly_adj" example
         :return:
         """
@@ -499,7 +512,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_ramp_up_constraints(self):
         """
-        Check objective function value of "test_ramp_up_constraints" example
+        Check validation and objective function value of
+        "test_ramp_up_constraints" example
         :return:
         """
 
@@ -509,7 +523,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_ramp_up_and_down_constraints(self):
         """
-        Check objective function value of "test_ramp_up_and_down_constraints"
+        Check validation and objective function value of
+        "test_ramp_up_and_down_constraints"
         example;
         :return:
         """
@@ -520,7 +535,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_rps_w_rps_ineligible_storage(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_rps_w_rps_ineligible_storage" example
         :return:
         """
@@ -533,7 +548,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "2periods_new_build_rps_w_rps_eligible_storage" example
         :return:
         """
@@ -546,7 +561,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_solar(self):
         """
-        Check objective function value of "test_new_solar" example
+        Check validation and objective function value of
+        "test_new_solar" example
         :return:
         """
 
@@ -555,7 +571,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_binary_solar(self):
         """
-        Check objective function value of "test_new_binary_solar" example
+        Check validation and objective function value of
+        "test_new_binary_solar" example
         :return:
         """
 
@@ -564,7 +581,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_solar_carbon_cap(self):
         """
-        Check objective function value of "test_new_solar_carbon_cap" example
+        Check validation and objective function value of
+        "test_new_solar_carbon_cap" example
         :return:
         """
 
@@ -574,7 +592,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_solar_carbon_cap_2zones_tx(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "test_new_solar_carbon_cap_2zones_tx" example
         :return:
         """
@@ -585,7 +603,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_new_solar_carbon_cap_2zones_dont_count_tx(self):
         """
-        Check objective function value of
+        Check validation and objective function value of
         "test_new_solar_carbon_cap_2zones_dont_count_tx" example
         :return:
         """
@@ -598,7 +616,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_simple_prm(self):
         """
-        Check objective function value of "2periods_new_build_simple_prm"
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
         example
         :return:
         """
@@ -609,7 +628,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_2periods_new_build_local_capacity(self):
         """
-        Check objective function value of "2periods_new_build_local_capacity"
+        Check validation and objective function value of
+        "2periods_new_build_local_capacity"
         example
         :return:
         """
@@ -620,7 +640,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_tx_dcopf(self):
         """
-        Check objective function value of "test_tx_dcopf" example
+        Check validation and objective function value of
+        "test_tx_dcopf" example
         :return:
         """
 
@@ -629,7 +650,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_tx_simple(self):
         """
-        Check objective function value of "test_tx_simple" example
+        Check validation and objective function value of
+        "test_tx_simple" example
         :return:
         """
 
@@ -638,7 +660,8 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_startup_shutdown_rates(self):
         """
-        Check objective function value of "test_startup_shutdown_rates"
+        Check validation and objective function value of
+        "test_startup_shutdown_rates"
         example
         :return:
         """
@@ -649,7 +672,7 @@ class TestExamples(unittest.TestCase):
 
     def test_no_fuels(self):
         """
-        Check objective function value of "test_no_fuels"
+        Check validation and objective function value of "test_no_fuels"
         example
         :return:
         """
@@ -659,7 +682,8 @@ class TestExamples(unittest.TestCase):
 
     def test_variable_om_curves(self):
         """
-        Check objective function value of "test_variable_om_curves"
+        Check validation and objective function value of
+        "test_variable_om_curves"
         example
         :return:
         """
@@ -670,7 +694,8 @@ class TestExamples(unittest.TestCase):
 
     def test_aux_cons(self):
         """
-        Check objective function value of "test_aux_cons" example
+        Check validation and objective function value of
+        "test_aux_cons" example
 
         Note: the objective function value is lower than that for the "test"
         example because the auxiliary consumption results in less
