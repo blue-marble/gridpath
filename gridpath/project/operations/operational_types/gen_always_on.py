@@ -131,7 +131,7 @@ def add_module_specific_components(m, d):
     +=========================================================================+
     | | :code:`gen_always_on_linked_power`                                    |
     | | *Defined over*: :code:`GEN_ALWAYS_ON_LINKED_TMPS`                     |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's power provision in the linked timepoints.                 |
     +-------------------------------------------------------------------------+
@@ -498,7 +498,6 @@ def ramp_down_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
@@ -524,7 +523,7 @@ def ramp_down_rule(mod, g, tmp):
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
 
-            # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
         # ramp down the full operable range between timepoints, constraint
         # won't bind, so skip
         if (mod.gen_always_on_ramp_down_when_on_rate[g] * 60
