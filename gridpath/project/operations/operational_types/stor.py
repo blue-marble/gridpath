@@ -754,7 +754,7 @@ def export_module_specific_results(mod, d,
                 "stor_linked_timepoint_params.tab"
         ), "w", newline=""
         ) as f:
-            writer = csv.writer(f, delimiter="\t")
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
                 ["project", "linked_timepoint",
                  "linked_starting_energy_in_storage",

@@ -2350,7 +2350,7 @@ def export_linked_subproblem_inputs(
                 "gen_commit_lin_linked_timepoint_params.tab"
         ), "w", newline=""
         ) as f:
-            writer = csv.writer(f, delimiter="\t")
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
                 ["project", "linked_timepoint", "linked_commit",
                  "linked_startup", "linked_shutdown",
@@ -2404,7 +2404,7 @@ def export_linked_subproblem_inputs(
                     "gen_commit_lin_linked_timepoint_str_type_params.tab"
             ), "w", newline=""
             ) as f:
-                writer = csv.writer(f, delimiter="\t")
+                writer = csv.writer(f, delimiter="\t", lineterminator="\n")
                 writer.writerow(
                     ["project", "linked_timepoint", "startup_type",
                      "linked_provide_power_startup",

@@ -774,7 +774,7 @@ def export_module_specific_results(
                 "gen_always_on_linked_timepoint_params.tab"
         ), "w", newline=""
         ) as f:
-            writer = csv.writer(f, delimiter="\t")
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
                 ["project", "linked_timepoint",
                  "linked_provide_power",
