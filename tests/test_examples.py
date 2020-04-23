@@ -3,10 +3,12 @@
 
 import logging
 import os
+import sqlite3
 import unittest
 
-from gridpath import run_end_to_end
+from gridpath import run_end_to_end, validate_inputs
 from db import create_database, port_csvs_to_gridpath
+from db.common_functions import connect_to_database
 
 
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
@@ -14,7 +16,8 @@ from db import create_database, port_csvs_to_gridpath
 # TODO: handle this more robustly? (e.g. db scripts expect you to be in
 #  db folder and changing directions all the time is not ideal.
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
-EXAMPLES_DIRECTORY = os.path.join(os.getcwd(), "..", "examples")
+EXAMPLES_DIRECTORY = os.path.join("..", "examples")
+DB_PATH = os.path.join("..", "db", "test_examples.db")
 
 
 class TestExamples(unittest.TestCase):
@@ -38,6 +41,39 @@ class TestExamples(unittest.TestCase):
             else:
                 self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
 
+    def check_validation(self, test):
+        """
+        Check that validate inputs runs without errors, and that there
+        are no validation issues recorded in the status_validation table
+        :return:
+        """
+
+        # Check that test validation runs without errors
+        validate_inputs.main(
+            ["--database", DB_PATH,
+             "--scenario", test,
+             "--quiet"]
+        )
+
+        # Check that no validation issues are recorded in the db for the test
+        expected_validations = []
+
+        conn = connect_to_database(db_path=DB_PATH,
+                                   detect_types=sqlite3.PARSE_DECLTYPES)
+        c = conn.cursor()
+        validations = c.execute(
+            """
+            SELECT scenario_name FROM status_validation
+            INNER JOIN
+            (SELECT scenario_id, scenario_name FROM scenarios)
+            USING (scenario_id)
+            WHERE scenario_name = '{}'
+            """.format(test)
+        )
+        actual_validations = validations.fetchall()
+
+        self.assertListEqual(expected_validations, actual_validations)
+
     def run_and_check_objective(self, test, expected_objective):
         """
 
@@ -47,7 +83,7 @@ class TestExamples(unittest.TestCase):
         """
 
         actual_objective = run_end_to_end.main(
-            ["--database", "../db/test_examples.db",
+            ["--database", DB_PATH,
              "--scenario", test,
              "--scenario_location", EXAMPLES_DIRECTORY,
              "--quiet",
@@ -114,6 +150,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test")
         self.run_and_check_objective("test", 866737242.3466034)
 
     def test_example_test_no_overgen_allowed(self):
@@ -122,6 +159,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_no_overgen_allowed")
         self.run_and_check_objective("test_no_overgen_allowed",
                                      1200069229.87995)
 
@@ -131,6 +169,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_build_storage")
         self.run_and_check_objective("test_new_build_storage",
                                      102420.06359999996)
 
@@ -141,6 +180,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_binary_build_storage")
         self.run_and_check_objective("test_new_binary_build_storage",
                                      102487.92)
 
@@ -151,6 +191,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_build_storage_cumulative_min_max")
         self.run_and_check_objective("test_new_build_storage_cumulative_min_max",
                                      104184.53965)
 
@@ -160,6 +201,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_no_reserves")
         self.run_and_check_objective("test_no_reserves", 53381.74655000001)
 
     def test_example_test_w_hydro(self):
@@ -168,6 +210,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_w_hydro")
         self.run_and_check_objective("test_w_hydro", 49067.079900000004)
 
     def test_example_test_w_storage(self):
@@ -176,6 +219,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_w_storage")
         self.run_and_check_objective("test_w_storage", 54334.546550000014)
 
     def test_example_2horizons(self):
@@ -184,6 +228,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2horizons")
         self.run_and_check_objective("2horizons", 1733474484.6932068)
 
     def test_example_2horizons_w_hydro(self):
@@ -192,6 +237,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2horizons_w_hydro")
         self.run_and_check_objective("2horizons_w_hydro", 100062.55)
 
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
@@ -210,6 +256,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2horizons_w_hydro_and_nuclear_binary_availability")
         self.run_and_check_objective(
             "2horizons_w_hydro_and_nuclear_binary_availability",
             81943.32
@@ -226,6 +273,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2horizons_w_hydro_w_balancing_types")
         self.run_and_check_objective("2horizons_w_hydro_w_balancing_types",
                                      98134.16)
 
@@ -235,6 +283,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods")
         self.run_and_check_objective("2periods", 17334744846.932064)
 
     def test_example_2periods_new_build(self):
@@ -242,6 +291,7 @@ class TestExamples(unittest.TestCase):
         Check objective function value of "2periods_new_build" example
         """
 
+        self.check_validation("2periods_new_build")
         self.run_and_check_objective("2periods_new_build", 111439176.928)
 
     def test_example_2periods_new_build_2zones(self):
@@ -250,6 +300,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones")
         self.run_and_check_objective("2periods_new_build_2zones",
                                      222878353.856)
 
@@ -260,6 +311,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones_new_build_transmission")
         self.run_and_check_objective(
             "2periods_new_build_2zones_new_build_transmission",
             1821806657.8548598
@@ -272,6 +324,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones_singleBA")
         self.run_and_check_objective("2periods_new_build_2zones_singleBA",
                                      222878353.857)
 
@@ -282,6 +335,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones_transmission")
         self.run_and_check_objective("2periods_new_build_2zones_transmission",
                                      50553647766.524)
 
@@ -292,6 +346,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones_transmission_w_losses")
         self.run_and_check_objective(
             "2periods_new_build_2zones_transmission_w_losses",
             54553647726.524
@@ -308,6 +363,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_2zones_transmission_w_losses_opp_dir")
         self.run_and_check_objective(
             "2periods_new_build_2zones_transmission_w_losses_opp_dir",
             54553647726.524
@@ -319,6 +375,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_rps")
         self.run_and_check_objective("2periods_new_build_rps",
                                      972692908.1319999)
 
@@ -329,6 +386,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_cumulative_min_max")
         self.run_and_check_objective("2periods_new_build_cumulative_min_max",
                                      6296548240.926001)
 
@@ -338,6 +396,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("single_stage_prod_cost")
         self.run_and_check_objective("single_stage_prod_cost",
                                      {"1": 866737242.3466034,
                                       "2": 866737242.3466034,
@@ -349,6 +408,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("multi_stage_prod_cost")
         self.run_and_check_objective("multi_stage_prod_cost",
                                      {"1": {"1": 866737242.3466433,
                                             "2": 866737242.3466433,
@@ -367,6 +427,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("multi_stage_prod_cost_w_hydro")
         self.run_and_check_objective("multi_stage_prod_cost_w_hydro",
                                      {"1": {"1": 966735555.35,
                                             "2": 966735555.35,
@@ -385,6 +446,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_gen_lin_econ_retirement")
         self.run_and_check_objective("2periods_gen_lin_econ_retirement",
                                      17334744846.932064)
 
@@ -395,6 +457,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_gen_bin_econ_retirement")
         self.run_and_check_objective("2periods_gen_bin_econ_retirement",
                                      17334744846.932064)
 
@@ -405,6 +468,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_variable_gen_reserves")
         self.run_and_check_objective("test_variable_gen_reserves",
                                      306735066.21341676)
 
@@ -415,6 +479,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_rps_variable_reserves")
         self.run_and_check_objective("2periods_new_build_rps_variable_reserves",
                                      844029554.4855622)
 
@@ -426,6 +491,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_rps_variable_reserves_subhourly_adj")
         self.run_and_check_objective(
             "2periods_new_build_rps_variable_reserves_subhourly_adj",
             845462123.9605286
@@ -437,6 +503,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_ramp_up_constraints")
         self.run_and_check_objective("test_ramp_up_constraints",
                                      866737242.3466034)
 
@@ -447,6 +514,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_ramp_up_and_down_constraints")
         self.run_and_check_objective("test_ramp_up_and_down_constraints",
                                      1080081236.67995)
 
@@ -457,6 +525,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_ineligible_storage",
             937245877.5932124
@@ -469,6 +538,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_eligible_storage",
             941888308.1279974
@@ -480,6 +550,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_solar")
         self.run_and_check_objective("test_new_solar", 866735867.6799834)
 
     def test_example_test_new_binary_solar(self):
@@ -488,6 +559,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_binary_solar")
         self.run_and_check_objective("test_new_binary_solar", 866736353.35)
 
     def test_example_test_new_solar_carbon_cap(self):
@@ -496,6 +568,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_solar_carbon_cap")
         self.run_and_check_objective("test_new_solar_carbon_cap",
                                      3286733066.412322)
 
@@ -506,6 +579,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_solar_carbon_cap_2zones_tx")
         self.run_and_check_objective("test_new_solar_carbon_cap_2zones_tx",
                                      3180162433.1252494)
 
@@ -516,6 +590,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_new_solar_carbon_cap_2zones_dont_count_tx")
         self.run_and_check_objective(
             "test_new_solar_carbon_cap_2zones_dont_count_tx",
             3164472610.8364196
@@ -528,6 +603,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_simple_prm")
         self.run_and_check_objective("2periods_new_build_simple_prm",
                                      198677529.596)
 
@@ -538,6 +614,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("2periods_new_build_local_capacity")
         self.run_and_check_objective("2periods_new_build_local_capacity",
                                      114863176.928)
 
@@ -547,6 +624,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_tx_dcopf")
         self.run_and_check_objective("test_tx_dcopf", 3100193282.07)
 
     def test_example_test_tx_simple(self):
@@ -555,6 +633,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_tx_simple")
         self.run_and_check_objective("test_tx_simple", 3100192148.07)
 
     def test_example_test_startup_shutdown_rates(self):
@@ -564,6 +643,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_startup_shutdown_rates")
         self.run_and_check_objective("test_startup_shutdown_rates",
                                      768213599.01778)
 
@@ -574,6 +654,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_no_fuels")
         self.run_and_check_objective("test_no_fuels", 866666717.3333334)
 
     def test_variable_om_curves(self):
@@ -583,6 +664,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        self.check_validation("test_variable_om_curves")
         self.run_and_check_objective("test_variable_om_curves",
                                      866737258.8866034)
 
@@ -595,6 +677,7 @@ class TestExamples(unittest.TestCase):
         overgeneration and therefore lower overgeneration penalty.
         """
 
+        self.check_validation("test_aux_cons")
         self.run_and_check_objective("test_aux_cons", 836737625.8990427)
 
     @classmethod
