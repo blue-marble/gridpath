@@ -116,9 +116,15 @@ def add_module_specific_components(m, d):
     +=========================================================================+
     | | :code:`gen_hydro_linked_power`                                        |
     | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's power provision in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_linked_curtailment`                                  |
+    | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's curtailment in the linked timepoints.                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_linked_upwards_reserves`                             |
     | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
@@ -508,7 +514,6 @@ def ramp_down_rule(mod, g, tmp):
         boundary_type="linear"
     ):
         return Constraint.Skip
-
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
