@@ -262,12 +262,23 @@ def startup_fuel_burn_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     Exogenously defined ramp for variable must-take generators.
+
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
     if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
