@@ -62,7 +62,8 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     linked_tmp = 0
 
     # If we have already reached the first timepoint of a horizon in a
-    # linear we'll just pass, as there are no more relevant timepoints to add
+    # linear boundary type we'll just pass, as there are no more relevant
+    # timepoints to add
     if check_if_boundary_type_and_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
         boundary_type="linear"
