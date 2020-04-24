@@ -31,7 +31,7 @@ def add_model_components(m, d):
         default=0
     )
 
-    # RPS target specified in percent of load terms
+    # RPS target specified in 'percent of load' terms
     m.rps_target_percentage = Param(
         m.RPS_ZONE_PERIODS_WITH_RPS,
         within=PercentFraction,
@@ -46,14 +46,15 @@ def add_model_components(m, d):
 
     def rps_target_rule(mod, rps_zone, period):
         """
-
-        :param mod:
-        :param rps_zone:
-        :param period:
-        :return:
+        The RPS target consists of two additive components: an energy term
+        and a 'percent of load x load' term, where a mapping between the RPS
+        zone and the load zones whose load to consider must be specified.
+        Either the energy target or the percent target can be omitted (they
+        default to 0). If a mapping is not specified, the
+        'percent of load x load' is 0.
         """
         # If we have a map of RPS zones to load zones, apply the percentage
-        # target (it defaults to 0 if not specified)
+        # target; if no map provided, the percentage_target is 0
         if mod.RPS_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
                 mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
@@ -86,6 +87,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    # Load the targets
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
@@ -93,6 +95,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 
+    # If we have a RPS zone to load zone map input file, load it; otherwise,
+    # initialize RPS_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs",
         "rps_target_load_zone_map.tab"
@@ -103,7 +107,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             set=m.RPS_ZONE_LOAD_ZONES
         )
     else:
-        pass
+        data_portal.data()["RPS_ZONE_LOAD_ZONES"] = {None: []}
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -117,6 +121,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
 
+    # Get the energy and percent targets
     c = conn.cursor()
     rps_targets = c.execute(
         """SELECT rps_zone, period, rps_target_mwh, rps_target_percentage
@@ -143,6 +148,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
+    # Get any RPS zone to load zone mapping for the percent target
     c2 = conn.cursor()
     lz_mapping = c2.execute(
         """SELECT rps_zone, load_zone
@@ -194,8 +200,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     rps_targets, lz_mapping = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    print([row for row in lz_mapping])
-
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "rps_targets.tab"), "w", newline="") as \
             rps_targets_tab_file:
@@ -208,9 +212,12 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         )
 
         for row in rps_targets:
+            # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
+    # Write the RPS zone to load zone map file for the RPS percent target if
+    # there are any mappings only
     rps_lz_map_list = [row for row in lz_mapping]
     if rps_lz_map_list:
         with open(os.path.join(scenario_directory, str(subproblem), str(stage),
@@ -225,3 +232,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
             writer.writerow(
                 ["rps_zone", "load_zone"]
             )
+            for row in rps_lz_map_list:
+                writer.writerow(row)
+    else:
+        pass

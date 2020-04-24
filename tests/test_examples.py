@@ -326,6 +326,9 @@ class TestExamples(unittest.TestCase):
         """
         Check objective function value of
         "2periods_new_build_rps_percent_target" example
+        This example should have the same objective function as
+        test_example_2periods_new_build_rps, as its target is the same,
+        but specified as percentage of load.
         :return:
         """
 
