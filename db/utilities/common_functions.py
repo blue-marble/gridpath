@@ -6,6 +6,7 @@ Common functions for data-loading utilities and port script.
 """
 
 import os
+import pandas as pd
 import warnings
 
 
@@ -40,3 +41,55 @@ def get_directory_subscenarios(main_directory, quiet):
         subscenario_directories.append(subscenario_directory)
 
     return subscenario_directories
+
+
+def parse_subscenario_directory_contents(
+        subscenario_directory, csv_file_names
+):
+    # Get the paths for the required input files
+    csv_file_paths = [
+        os.path.join(subscenario_directory, csv_file_name)
+        for csv_file_name in csv_file_names
+    ]
+
+    # Get subscenario ID, name, and description
+    # The subscenario directory must start with an integer for the
+    # subscenario_id followed by "_" and then the subscenario name
+    # The subscenario description must be in the description.txt file under
+    # the subscenario directory
+    directory_basename = os.path.basename(subscenario_directory)
+    subscenario_id = int(directory_basename.split("_", 1)[0])
+    subscenario_name = directory_basename.split("_", 1)[1]
+
+    # Check if there's a description file, otherwise the description will be
+    # an empty string
+    description_file = os.path.join(subscenario_directory, "description.txt")
+    if os.path.exists(description_file):
+        with open(description_file, "r") as f:
+            subscenario_description = f.read()
+    else:
+        subscenario_description = ""
+
+    # Make the tuple for insertion into the subscenario table
+    subscenario_tuple = \
+        (subscenario_id, subscenario_name, subscenario_description)
+
+    return subscenario_tuple, csv_file_paths
+
+
+def csv_to_tuples(subscenario_id, csv_file):
+    """
+    :param subscenario_id: int
+    :param csv_file: str, path to CSV file
+    :return: list of tuples
+
+    Convert the data from a CSV into a list of tuples for insertion into an
+    input table.
+    """
+    df = pd.read_csv(csv_file, delimiter=",")
+    tuples_for_import = [
+        (subscenario_id,) + tuple(x)
+        for x in df.to_records(index=False)
+    ]
+
+    return tuples_for_import

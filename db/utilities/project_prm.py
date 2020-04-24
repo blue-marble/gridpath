@@ -5,11 +5,11 @@
 ELCC characteristics of projects
 """
 
-import os.path
-import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+from db.utilities.common_functions import \
+    parse_subscenario_directory_contents, csv_to_tuples
 
 
 def project_elcc_chars(
@@ -293,47 +293,35 @@ def elcc_surface_load_from_csvs(conn, subscenario_directory):
     underscore, and the subscenario name as the name of the directory (already
     passed here), so we get this to import from the subscenario_directory path.
 
-    Within each subscenario directory there are three required files:
-    description.txt, zone.csv, and projects.csv.
+    Within each subscenario directory there are two required files:
+    zone.csv and projects.csv. A file with the subscenario description
+    (description.txt) is optional.
     """
 
-    # Required input files
-    description_file = os.path.join(subscenario_directory, "description.txt")
-    zone_file = os.path.join(subscenario_directory, "zone.csv")
-    projects_file = os.path.join(subscenario_directory, "projects.csv")
+    # Get the subscenario (id, name, description) data for insertion into the
+    # subscenario table and the paths to the required input files
+    subscenario_data, [zone_file, projects_file] = \
+        parse_subscenario_directory_contents(
+            subscenario_directory=subscenario_directory,
+            csv_file_names=["zone.csv", "projects.csv"]
+        )
 
-    # TODO: this is the same as for the temporal scenarios, so could be
-    #  factored out
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
-    with open(description_file, "r") as f:
-        subscenario_description = f.read()
-    subscenario_data = [
-        (subscenario_id, subscenario_name, subscenario_description)
-    ]
+    # Get the subscenario_id from the subscenario_data tuple
+    subscenario_id = subscenario_data[0]
 
     # Get the ELCC surface intercepts (by zone)
-    zone_df = pd.read_csv(zone_file, delimiter=",")
-    zone_tuples_list = [
-        (subscenario_id, ) + tuple(x) for x in zone_df.to_records(index=False)
-    ]
+    zone_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=zone_file
+    )
 
     # Get the ELCC surface coefficients (by project)
-    projects_df = pd.read_csv(projects_file, delimiter=",")
-    projects_tuples_list = [
-        (subscenario_id, ) +
-        tuple(x) for x in projects_df.to_records(index=False)
-    ]
+    projects_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=projects_file
+    )
 
     elcc_surface(
         conn=conn,
-        subscenario_data=subscenario_data,
+        subscenario_data=[subscenario_data],
         zone_data=zone_tuples_list,
         projects_data=projects_tuples_list
     )
