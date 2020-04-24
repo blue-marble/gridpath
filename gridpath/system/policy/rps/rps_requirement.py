@@ -57,7 +57,8 @@ def add_model_components(m, d):
         # target; if no map provided, the percentage_target is 0
         if mod.RPS_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
-                mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
+                mod.static_load_mw[lz, tmp]
+                * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
                 for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
                 if _rps_zone == rps_zone
                 for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
