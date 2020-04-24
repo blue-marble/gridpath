@@ -19,12 +19,16 @@ on each of the 365 'day' *horizons* whereas one of the *balancing type*
 'year' would only have a single energy budget constraint grouping all 8760
 timepoints.
 
-Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
-the 'circular' approach, the last timepoint of the horizon is considered the
-previous timepoint for the first timepoint of the horizon (for the purposes
-of functionality such as ramp constraints or tracking storage state of
-charge). If the boundary is 'linear,' then we ignore constraints relating to
-the previous timepoint in the first timepoint of a horizon.
+Each *horizon* has boundary condition that can be 'circular,' 'linear,'
+or 'linked.' With the 'circular' approach, the last timepoint of the
+horizon is considered the previous timepoint for the first timepoint of the
+horizon (for the purposes of functionality such as ramp constraints or
+tracking storage state of charge). If the boundary is 'linear,' then we
+ignore constraints relating to the previous timepoint in the first timepoint
+of a horizon. If the boundary is 'linked,' then we use the last timepoint of
+the previous horizon as the previous timepoint for the first timepoint of a
+horizon (this can only be done when running multiple subproblems and inputs
+must be specified appropriately).
 """
 
 import csv
@@ -263,8 +267,8 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
                         "horizon '{} {}'".
                         format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
+                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "or 'linked.'"
                     )
             else:
                 prev_tmp_dict[tmp, bt] = list(
@@ -300,8 +304,8 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
                         "type horizon '{} {}'".
                         format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
+                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "or 'linked.'"
                     )
             else:
                 next_tmp_dict[tmp, bt] = list(
