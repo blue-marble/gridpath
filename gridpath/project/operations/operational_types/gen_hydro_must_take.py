@@ -703,7 +703,7 @@ def export_module_specific_results(
         # Export params by project and timepoint
         with open(os.path.join(
                 scenario_directory, next_subproblem, stage, "inputs",
-                "gen_hydro_linked_timepoint_params.tab"
+                "gen_hydro_must_take_linked_timepoint_params.tab"
         ), "w", newline=""
         ) as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
