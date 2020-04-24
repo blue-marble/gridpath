@@ -17,19 +17,22 @@ TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "temporal.operations.horizons",
-                             "temporal.investment.periods",
-                             "geography.load_zones",
-                             "geography.rps_zones",
-                             "system.policy.rps.rps_requirement",
-                             "project", "project.capacity.capacity",
-                             "project.availability.availability",
-                             "project.fuels", "project.operations",
-                             "project.operations.operational_types",
-                             "project.operations.power",
-                             "project.operations.recs",
-                             "system.policy.rps.aggregate_recs"]
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "system.load_balance.static_load_requirement",
+    "geography.rps_zones",
+    "system.policy.rps.rps_requirement",
+    "project", "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels", "project.operations",
+    "project.operations.operational_types",
+    "project.operations.power",
+    "project.operations.recs",
+    "system.policy.rps.aggregate_recs"
+]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_balance"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
