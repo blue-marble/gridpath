@@ -22,7 +22,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.load_zones",
-    "geography.rps_zones"
+    "geography.rps_zones",
+    "system.load_balance.static_load_requirement"
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_requirement"
 IMPORTED_PREREQ_MODULES = list()
@@ -108,6 +109,29 @@ class TestRPSRequirement(unittest.TestCase):
                                         )
         self.assertDictEqual(expected_rps_target, actual_rps_target)
 
+        # Param: rps_target_percentage
+        expected_rps_percentage = OrderedDict(sorted({
+            ("RPS_Zone_1", 2020): 0.2, ("RPS_Zone_1", 2030): 0.33,
+            ("RPS_Zone_2", 2020): 0, ("RPS_Zone_2", 2030): 0}.items()
+                                                 )
+                                          )
+        actual_rps_percentage = OrderedDict(sorted({
+            (z, p): instance.rps_target_percentage[z, p]
+            for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS}.items()
+                                               )
+                                        )
+        self.assertDictEqual(expected_rps_percentage, actual_rps_percentage)
+
+        # Set: RPS_ZONE_LOAD_ZONES
+        expected_rps_zone_load_zones = sorted([
+            ("RPS_Zone_1", "Zone1"), ("RPS_Zone_1", "Zone2"),
+            ("RPS_Zone_2", "Zone3")
+        ])
+        actual_rps_zone_load_zones = sorted([
+            (z, p) for (z, p) in instance.RPS_ZONE_LOAD_ZONES
+        ])
+        self.assertListEqual(expected_rps_zone_load_zones,
+                             actual_rps_zone_load_zones)
 
 
 if __name__ == "__main__":
