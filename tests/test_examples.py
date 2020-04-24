@@ -322,6 +322,16 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective("2periods_new_build_rps",
                                      972692908.1319999)
 
+    def test_example_2periods_new_build_rps_percent_target(self):
+        """
+        Check objective function value of
+        "2periods_new_build_rps_percent_target" example
+        :return:
+        """
+
+        self.run_and_check_objective("2periods_new_build_rps_percent_target",
+                                     972692908.1319999)
+
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
         Check objective function value of

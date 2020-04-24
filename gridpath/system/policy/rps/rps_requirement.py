@@ -52,6 +52,8 @@ def add_model_components(m, d):
         :param period:
         :return:
         """
+        # If we have a map of RPS zones to load zones, apply the percentage
+        # target (it defaults to 0 if not specified)
         if mod.RPS_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
                 mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp]
@@ -91,6 +93,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 
+    map_filename = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs",
+        "rps_target_load_zone_map.tab"
+    )
+    if os.path.exists(map_filename):
+        data_portal.load(
+            filename=map_filename,
+            set=m.RPS_ZONE_LOAD_ZONES
+        )
+    else:
+        pass
+
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -129,7 +143,23 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return rps_targets
+    c2 = conn.cursor()
+    lz_mapping = c2.execute(
+        """SELECT rps_zone, load_zone
+        FROM inputs_system_rps_target_load_zone_map
+        JOIN
+        (SELECT rps_zone
+        FROM inputs_geography_rps_zones
+        WHERE rps_zone_scenario_id = {}) as relevant_zones
+        using (rps_zone)
+        WHERE rps_target_scenario_id = {}
+        """.format(
+            subscenarios.RPS_ZONE_SCENARIO_ID,
+            subscenarios.RPS_TARGET_SCENARIO_ID
+        )
+    )
+
+    return rps_targets, lz_mapping
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -161,8 +191,10 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    rps_targets = get_inputs_from_database(
+    rps_targets, lz_mapping = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
+
+    print([row for row in lz_mapping])
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "rps_targets.tab"), "w", newline="") as \
@@ -178,3 +210,18 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         for row in rps_targets:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+    rps_lz_map_list = [row for row in lz_mapping]
+    if rps_lz_map_list:
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                               "inputs",
+                               "rps_target_load_zone_map.tab"), "w",
+                  newline="") as \
+                rps_lz_map_tab_file:
+            writer = csv.writer(rps_lz_map_tab_file,
+                                delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["rps_zone", "load_zone"]
+            )

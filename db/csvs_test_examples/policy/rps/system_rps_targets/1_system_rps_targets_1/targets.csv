@@ -1,5 +1,5 @@
 rps_zone,period,subproblem_id,stage_id,rps_target_mwh,rps_target_percentage
-RPSZone1,2020,1,1,50,
-RPSZone1,2030,1,1,50,
-RPSZone2,2020,1,1,50,
-RPSZone2,2030,1,1,50,
+RPSZone1,2020,1,1,,0.625
+RPSZone1,2030,1,1,,0.625
+RPSZone2,2020,1,1,,
+RPSZone2,2030,1,1,,

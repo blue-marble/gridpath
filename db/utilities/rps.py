@@ -39,14 +39,22 @@ def insert_rps_targets(
     )
 
     # Insert data
-    inputs_sql = """
+    targets_sql = """
         INSERT OR IGNORE INTO inputs_system_rps_targets
         (rps_target_scenario_id, rps_zone, period, subproblem_id, stage_id,
         rps_target_mwh, rps_target_percentage)
         VALUES (?, ?, ?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=targets_sql,
                           data=zone_period_targets)
+
+    mapping_sql = """
+        INSERT OR IGNORE INTO inputs_system_rps_target_load_zone_map
+        (rps_target_scenario_id, rps_zone, load_zone)
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=mapping_sql,
+                          data=rps_zone_load_zone_map)
 
 
 def load_from_csvs(conn, subscenario_directory):

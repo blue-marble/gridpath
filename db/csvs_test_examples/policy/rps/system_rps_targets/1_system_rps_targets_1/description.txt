@@ -1,1 +1,1 @@
-Default MWh only target
+Target given as percent of load
