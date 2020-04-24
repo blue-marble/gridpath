@@ -206,12 +206,19 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 
 -- Timepoints
 -- Note on linked timepoints: the user can designate timepoints from the last
--- horizon of the subproblem to be linked to the next subproblem; linked
--- timepoints should be non-positive integers, ordered, and the most recent
--- linked timepoint should be 0; if linked timepoints are specified for a
--- subproblem, GP will use those as the previous timepoints for the first
--- horizon of the next subproblem (subproblem_id + 1) only if the first
--- horizon of the next subproblem has a 'linked' boundary
+-- horizon of the subproblem to be linked to the first horizon of the next
+-- subproblem -- it is up to the user to ensure that only the last horizon
+-- of a subproblem and the first horizon of the next subproblem are linked
+-- like this
+-- Linked timepoints should be non-positive integers, ordered, and the most
+-- recent linked timepoint should be 0, i.e. the linked timepoint indexed 0
+-- will be the previous timepoint for the first timepoint of the first
+-- horizon of the next subproblem. The previous timepoint for linked
+-- timepoint 0 will be -1, and so on.
+-- If linked timepoints are specified for a subproblem, GP will use those as
+-- the previous timepoints for the first horizon of the next subproblem
+-- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
+-- a 'linked' boundary
 DROP TABLE IF EXISTS inputs_temporal_timepoints;
 CREATE TABLE inputs_temporal_timepoints (
 temporal_scenario_id INTEGER,
