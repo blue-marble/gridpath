@@ -190,7 +190,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Load in any timepoints to link to the next subproblem and linked
     # timepoints from a previous subproblem
     # Try to load in the map CSV
-    # TODO: figure out how we'll deal with stages
     try:
         map_df = pd.read_csv(
             os.path.join(scenario_directory, "linked_subproblems_map.csv"),
