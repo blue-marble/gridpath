@@ -398,6 +398,7 @@ class TestExamples(unittest.TestCase):
 
         self.run_and_check_objective("2periods_new_build_rps_percent_target",
                                      972692908.1319999)
+        self.check_validation("2periods_new_build_rps_percent_target")
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
