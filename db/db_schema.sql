@@ -1728,7 +1728,8 @@ stage_id)
 
 -- If the RPS target is specified as percentage of load, we need to also
 -- specify which load, i.e. specify a mapping between the RPS zone and the
--- load zones
+-- load zones whose load should be part of the target calculation (mapping
+-- should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_rps_target_load_zone_map;
 CREATE TABLE inputs_system_rps_target_load_zone_map (
 rps_target_scenario_id INTEGER,
