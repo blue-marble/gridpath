@@ -875,12 +875,9 @@ def check_for_tmps_to_link(
             (map_df["stage"] == (1 if stage == "" else int(stage)))
             ]
         tmps_to_link = tmps_to_link_df["timepoint"].tolist()
-        tmp_linked_tmp_dict = {
-            tmp: tmps_to_link_df.loc[
-                tmps_to_link_df["timepoint"] == tmp
-                ]["linked_timepoint"].values.item()
-            for tmp in tmps_to_link
-        }
+        tmp_linked_tmp_dict = \
+            tmps_to_link_df.set_index("timepoint")["linked_timepoint"]\
+            .to_dict()
 
         return tmps_to_link, tmp_linked_tmp_dict
     except FileNotFoundError:
