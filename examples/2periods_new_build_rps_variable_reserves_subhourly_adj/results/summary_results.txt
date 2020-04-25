@@ -24,7 +24,7 @@ Zone1     2020   Coal                       2.88           3.60
                  Wind                      50.00          62.50
 
 ### RPS RESULTS ###
-                 rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed          dual  rps_marginal_cost_per_mwh
-rps_zone period                                                                                                                                
-RPSZone1 2020             50.00                     50.00                      0.12               0.23  7,199,750.20                 719,975.02
-         2030             50.00                     50.00                     22.80              31.32 18,595,563.00               1,859,556.30
+                 rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed           dual  rps_marginal_cost_per_mwh
+rps_zone period                                                                                                                                 
+RPSZone1 2020             50.00                     50.00                      0.12               0.23  -7,199,750.20                -719,975.02
+         2030             50.00                     50.00                     22.80              31.32 -18,595,563.00              -1,859,556.30

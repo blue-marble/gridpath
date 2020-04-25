@@ -48,7 +48,7 @@ def add_model_components(m, d):
         """
         return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
             + mod.RPS_Shortage_MWh_Expression[z, p] \
-            >= mod.rps_target_mwh[z, p]
+            >= mod.RPS_Target[z, p]
 
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
