@@ -9,6 +9,7 @@ from builtins import str
 from argparse import ArgumentParser
 import csv
 import os.path
+import pandas as pd
 import sqlite3
 import sys
 
@@ -69,6 +70,8 @@ def parse_arguments(arguments):
     parser.add_argument("--omit_data", default=False, action="store_true",
                         help="Don't load the model defaults data from the "
                              "data directory.")
+    parser.add_argument("--custom_units", default=False, action="store_true",
+                        help="Ask the user for custom units.")
 
     # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
@@ -91,12 +94,13 @@ def create_database_schema(db, parsed_arguments):
         db.executescript(schema)
 
 
-def load_data(db, omit_data):
+def load_data(db, omit_data, custom_units):
     """
     Load GridPath structural data (e.g. defaults, allowed modules, validation
     data, UI component data, etc.)
     :param db:
     :param omit_data:
+    :param custom_units:
     :return:
     """
     if not omit_data:
@@ -117,6 +121,7 @@ def load_data(db, omit_data):
         load_mod_validation_status_types(db=db, c=c)
         load_mod_features(db=db, c=c)
         load_mod_feature_subscenarios(db=db, c=c)
+        load_mod_units(db=db, c=c, custom_units=custom_units)
 
         # Data required for the UI
         load_ui_scenario_detail_table_metadata(db=db, c=c)
@@ -269,6 +274,106 @@ def load_mod_feature_subscenarios(db, c):
                   sql=sql)
 
 
+def load_mod_units(db, c, custom_units):
+    sql = """
+        INSERT INTO mod_units
+        (metric, type, numerator_core_units, denominator_core_units,
+        abbreviation, unit, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_units.csv",
+                  sql=sql)
+
+    if custom_units:
+        # Retrieve settings from user
+        power = input(
+            """
+            Specify the unit of power, e.g. kW, MW, GW, etc.
+            Note: the unit of energy will be derived from the unit of power by 
+            multiplying by 1 hour, e.g. MW -> MWh.
+            Use `default` to keep the defaults (MW). 
+            """
+        )
+        fuel_energy = input(
+            """
+            Specify the unit of fuel energy content, e.g. MMBtu, J, MJ, etc.
+            Use 'default' to keep defaults (MMBtu). 
+            """
+        )
+        cost = input(
+            """
+            Specify the unit of cost, e.g. USD, EUR, INR, etc.
+            Use 'default' to keep defaults (USD).
+            """
+        )
+        carbon_emissions = input(
+            """
+            Specify the unit of carbon emissions, e.g. tCO2, MtCO2, etc. 
+            Use 'default' to keep defaults (tCO2; metric tonne)
+            """
+        )
+
+        # Update table with user settings
+        if power != "default":
+            sql = """UPDATE mod_units
+                SET unit = ?
+                WHERE metric = 'power'"""
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                                  data=(power,))
+            # add energy units based on user's power units
+            energy = power + "h"
+            sql = """UPDATE mod_units
+                SET unit = ?
+                WHERE metric = 'energy'"""
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                                  data=(energy,))
+        if fuel_energy != "default":
+            sql = """UPDATE mod_units
+                SET unit = ?
+                WHERE metric = 'fuel_energy'"""
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                                  data=(fuel_energy,))
+        if cost != "default":
+            sql = """UPDATE mod_units
+                SET unit = ?
+                WHERE metric = 'cost'"""
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                                  data=(cost,))
+        if carbon_emissions != "default":
+            sql = """UPDATE mod_units
+                SET unit = ?
+                WHERE metric = 'carbon_emissions'"""
+            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                                  data=(carbon_emissions,))
+
+    # Derive secondary units
+    df = pd.read_sql(sql="SELECT * FROM mod_units", con=db,
+                     index_col="metric")
+    for sec_metric in df[df["type"] == "secondary"].index:
+        numerator = df.loc[sec_metric, "numerator_core_units"]
+        if pd.isna(numerator) or numerator == "":
+            num_str = "1"
+        else:
+            num_metrics = numerator.split("*")
+            num_units = [df.loc[m, "unit"] for m in num_metrics]
+            num_str = "-".join(num_units)
+
+        denominator = df.loc[sec_metric, "denominator_core_units"]
+        if pd.isna(denominator) or denominator == "":
+            denom_str = ""
+        else:
+            denom_metrics = denominator.split("*")
+            denom_units = [df.loc[m, "unit"] for m in denom_metrics]
+            denom_str = "/" + "-".join(denom_units)
+
+        sec_unit = num_str + denom_str
+
+        sql = """UPDATE mod_units
+            SET unit = ?
+            WHERE metric = ?"""
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+                              data=(sec_unit, sec_metric))
+
+
 def load_ui_scenario_detail_table_metadata(db, c):
     sql = """
         INSERT INTO ui_scenario_detail_table_metadata
@@ -369,7 +474,11 @@ def main(args=None):
         # Create schema
         create_database_schema(db=db, parsed_arguments=parsed_args)
         # Load data
-        load_data(db=db, omit_data=parsed_args.omit_data)
+        load_data(
+            db=db,
+            omit_data=parsed_args.omit_data,
+            custom_units=parsed_args.custom_units
+        )
         # Close the database
         db.close()
 
