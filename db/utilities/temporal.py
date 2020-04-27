@@ -95,9 +95,9 @@ def insert_into_database(
         INSERT OR IGNORE INTO inputs_temporal_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint,
         period, number_of_hours_in_timepoint, timepoint_weight, 
-        previous_stage_timepoint_map, 
-        spinup_or_lookahead, month, hour_of_day, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        previous_stage_timepoint_map, spinup_or_lookahead, 
+        linked_timepoint, month, hour_of_day, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
     
     spin_on_database_lock(conn=conn, cursor=c, sql=timepoints_sql,
@@ -253,8 +253,8 @@ def load_from_csvs(conn, subscenario_directory):
     timepoints_tmp_df = tmp_df[
         ["subproblem_id", "stage_id", "timepoint", "period",
          "number_of_hours_in_timepoint", "timepoint_weight",
-         "previous_stage_timepoint_map", "spinup_or_lookahead", "month",
-         "hour_of_day", "timestamp"]
+         "previous_stage_timepoint_map", "spinup_or_lookahead",
+         "linked_timepoint", "month", "hour_of_day", "timestamp"]
     ]
     subproblem_stage_timepoints = [
         (subscenario_id,) + tuple(x)

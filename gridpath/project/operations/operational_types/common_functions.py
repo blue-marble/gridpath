@@ -8,7 +8,8 @@ import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint, get_column_row_value
+    check_if_boundary_type_and_first_timepoint, get_column_row_value, \
+    check_boundary_type
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -53,14 +54,47 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     up/down time, so t-3 will not be relevant for the minimum up time
     constraint in timepoint *t*.
     """
-    relevant_tmps = [tmp]
 
-    if check_if_linear_horizon_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    # The first possible relevant timepoint is the current timepoint
+    relevant_tmps = [tmp]
+    relevant_linked_tmps = []
+    # The first possible linked timepoint is 0
+    linked_tmp = 0
+
+    # If we have already reached the first timepoint of a horizon in a
+    # linear boundary type we'll just pass, as there are no more relevant
+    # timepoints to add
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
-        pass  # no relevant timepoints, keep list limited to *t*
+        pass  # no more relevant timepoints, keep list limited to *t*
+    # If we have already reached the first timepoint in a linked horizon
+    # setting, we'll immediately move on to the linked timepoints without
+    # looking for a previous timepoint
+    elif check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked"
+    ):
+        # Add the first linked timepoint's duration to hours_from_tmp
+        hours_from_tmp = mod.hrs_in_linked_tmp[linked_tmp]
+        # If we haven't exceeded the min time yet, the first linked
+        # timepoint is relevant, so we'll add it and move on to the
+        # next one
+        while hours_from_tmp < min_time:
+            relevant_linked_tmps.append(linked_tmp)
+            # If this is the furthest linked timepoint, break out of
+            # the linked timepoints loop; otherwise, move on to the next
+            # linked timepoint
+            if linked_tmp == mod.furthest_linked_tmp:
+                break
+            else:
+                hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                linked_tmp += -1
+    # If we haven't reached the first timepoint of a linear or linked
+    # horizon, we'll look for the previous timepoint
     else:
-        # The first possible relevant timepoint is the previous timepoint,
+        # The next possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
         # minimum up/down time, we'll break out of the loop immediately)
         relevant_tmp = mod.prev_tmp[tmp, mod.balancing_type_project[g]]
@@ -73,30 +107,49 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # is relevant and we add it to our list
             relevant_tmps.append(relevant_tmp)
 
-            # In a 'linear' horizon setting, once we reach the first timepoint
-            # of the horizon, we break out of the loop since there are no more
-            # timepoints to consider
-            if mod.boundary[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ] \
-                    == "linear" \
-                    and relevant_tmp == \
-                    mod.first_hrz_tmp[
-                        mod.balancing_type_project[g],
-                        mod.horizon[tmp, mod.balancing_type_project[g]]
-                    ]:
+            # In a 'linear' horizon setting, once we reach the first
+            # timepoint of the horizon, we break out of the loop since there
+            # are no more timepoints to consider
+            if check_if_boundary_type_and_first_timepoint(
+                mod=mod, tmp=relevant_tmp, balancing_type=mod.balancing_type_project[g],
+                boundary_type="linear"
+            ):
                 break
             # In a 'circular' horizon setting, once we reach timepoint *t*,
             # we break out of the loop since there are no more timepoints to
             # consider (we have already added all horizon timepoints as
             # relevant)
-            elif mod.boundary[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ] \
-                    == "circular" \
-                    and relevant_tmp == tmp:
+            elif check_boundary_type(
+                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+                boundary_type="circular"
+            ) and relevant_tmp == tmp:
+                break
+            # TODO: only allow the first horizon of a subproblem to have
+            #  linked timepoints
+            # In a 'linked' horizon setting, once we reach the first
+            # timepoint of the horizon, we'll start adding the linked
+            # timepoints until we reach the target min time
+            elif check_if_boundary_type_and_first_timepoint(
+                mod=mod, tmp=relevant_tmp, balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked"
+            ):
+                # Add the first linked timepoint's duration to hours_from_tmp
+                hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                # If we haven't exceeded the min time yet, the first linked
+                # timepoint is relevant, so we'll add it and move on to the
+                # next one
+                while hours_from_tmp < min_time:
+                    relevant_linked_tmps.append(linked_tmp)
+                    # If this is the furthest linked timepoint, break out of
+                    # the linked timepoints loop; otherwise, move on to the
+                    # next linked timepoint
+                    if linked_tmp == mod.furthest_linked_tmp:
+                        break
+                    else:
+                        hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
+                        linked_tmp += -1
+                # Break out from the outer while loop when done with the
+                # linked timepoints
                 break
             # Otherwise, we move on to the relevant timepoint's previous
             # timepoint and will add that timepoint's duration to
@@ -111,7 +164,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                 relevant_tmp = mod.prev_tmp[
                     relevant_tmp, mod.balancing_type_project[g]]
 
-    return relevant_tmps
+    return relevant_tmps, relevant_linked_tmps
 
 
 def update_dispatch_results_table(
@@ -794,3 +847,38 @@ def get_startup_chars_inputs_from_database(
 
     return startup_chars
 
+
+def check_for_tmps_to_link(
+    scenario_directory, subproblem, stage
+):
+    """
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
+    :return:
+
+    If there's a linked_subproblems_map CSV file, check which of the current
+    subproblem TMPS we should export results for to link to the next
+    subproblem and pass that; otherwise, pass empty list.
+    """
+    try:
+        map_df = pd.read_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            sep=","
+        )
+
+        # Figure out which timepoints we'll be linking to the next subproblem
+        # Stages must match in the linked subproblems
+        # These are subset of all TMPS in the current subproblem
+        tmps_to_link_df = map_df.loc[
+            (map_df["subproblem"] == int(subproblem)) &
+            (map_df["stage"] == (1 if stage == "" else int(stage)))
+            ]
+        tmps_to_link = tmps_to_link_df["timepoint"].tolist()
+        tmp_linked_tmp_dict = \
+            tmps_to_link_df.set_index("timepoint")["linked_timepoint"]\
+            .to_dict()
+
+        return tmps_to_link, tmp_linked_tmp_dict
+    except FileNotFoundError:
+        return [], {}

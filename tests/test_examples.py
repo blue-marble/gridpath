@@ -424,6 +424,22 @@ class TestExamples(unittest.TestCase):
                                       "2": 866737242.3466034,
                                       "3": 866737242.3466034})
 
+    def test_example_single_stage_prod_cost_linked_subproblems(self):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        self.check_validation("single_stage_prod_cost_linked_subproblems")
+        self.run_and_check_objective(
+            "single_stage_prod_cost_linked_subproblems",
+            {
+                "1": 866737242.3466034,
+                "2": 866737242.3466034,
+                "3": 866737242.3466034
+            }
+        )
+
     def test_example_multi_stage_prod_cost(self):
         """
         Check validation and objective function values of
@@ -462,6 +478,34 @@ class TestExamples(unittest.TestCase):
                                       "3": {"1": 966735555.35,
                                             "2": 966735555.35,
                                             "3": 966735555.35}})
+
+    def test_example_multi_stage_prod_cost_linked_subproblems(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        self.check_validation("multi_stage_prod_cost_linked_subproblems")
+        self.run_and_check_objective(
+            "multi_stage_prod_cost_linked_subproblems",
+            {
+                "1": {
+                    "1": 866737242.3466034,
+                    "2": 866737242.3466034,
+                    "3": 866737241.3466034
+                },
+                "2": {
+                    "1": 866737242.3466034,
+                    "2": 866737242.3466034,
+                    "3": 866737241.3466034
+                },
+                "3": {
+                    "1": 866737242.3466034,
+                    "2": 866737242.3466034,
+                    "3": 866737241.3466034
+                }
+            }
+        )
 
     def test_example_2periods_gen_lin_econ_retirement(self):
         """
