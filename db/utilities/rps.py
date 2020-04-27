@@ -5,10 +5,9 @@
 RPS targets
 """
 
-import os.path
-import pandas as pd
-
 from db.common_functions import spin_on_database_lock
+from db.utilities.common_functions import \
+    parse_subscenario_directory_contents, csv_to_tuples
 
 
 def insert_rps_targets(
@@ -58,45 +57,29 @@ def insert_rps_targets(
 
 
 def load_from_csvs(conn, subscenario_directory):
-    # TODO: refactor with temporal inputs
 
-    # Required input files
-    description_file = os.path.join(subscenario_directory, "description.txt")
-    targets_file = os.path.join(subscenario_directory, "targets.csv")
-    lz_map_file = os.path.join(subscenario_directory, "load_zone_mapping.csv")
+    # Get the subscenario (id, name, description) data for insertion into the
+    # subscenario table and the paths to the required input files
+    subscenario_data, [targets_file, lz_map_file] = \
+        parse_subscenario_directory_contents(
+            subscenario_directory=subscenario_directory,
+            csv_file_names=["targets.csv", "load_zone_mapping.csv"]
+        )
 
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
+    # Get the subscenario_id from the subscenario_data tuple
+    subscenario_id = subscenario_data[0]
 
-    # TODO: make this optional
-    with open(description_file, "r") as f:
-        subscenario_description = f.read()
-
-    # TODO: this df + subscenario to tuples method can be refactored
-    # Load in the targets
-    targets_df = pd.read_csv(targets_file, delimiter=",")
-    targets_tuples_for_import = [
-        (subscenario_id,) + tuple(x)
-        for x in targets_df.to_records(index=False)
-    ]
-
-    # Load in the mapping
-    mapping_df = pd.read_csv(lz_map_file, delimiter=",")
-    mapping_tuples_for_import = [
-        (subscenario_id,) + tuple(x)
-        for x in mapping_df.to_records(index=False)
-    ]
+    # Load in the targets and mapping
+    targets_tuples_for_import = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=targets_file
+    )
+    mapping_tuples_for_import = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=lz_map_file
+    )
 
     insert_rps_targets(
         conn=conn,
-        subscenario_data=[(subscenario_id, subscenario_name,
-                          subscenario_description)],
+        subscenario_data=[subscenario_data],
         zone_period_targets=targets_tuples_for_import,
         rps_zone_load_zone_map=mapping_tuples_for_import
     )
