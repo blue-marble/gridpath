@@ -16,7 +16,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
 
 
 def create_parser():
@@ -107,6 +107,7 @@ def main(args=None):
 
     tech_colors = get_tech_colors(c)
     tech_plotting_order = get_tech_plotting_order(c)
+    power_unit = get_unit(c, "power")
 
     plot_title = \
         "{}Total Capacity by Period - {} - Subproblem {} - Stage {}".format(
@@ -137,7 +138,7 @@ def main(args=None):
         y_axis_column="capacity_mw",
         x_axis_column="period",
         group_column="technology",
-        column_mapper={"capacity_mw": "Capacity (MW)",
+        column_mapper={"capacity_mw": "Capacity ({})".format(power_unit),
                        "period": "Period",
                        "technology": "Technology"},
         group_colors=tech_colors,

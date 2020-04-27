@@ -15,7 +15,7 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
 
 
 def create_parser():
@@ -95,6 +95,7 @@ def main(args=None):
 
     tech_colors = get_tech_colors(conn.cursor())
     tech_plotting_order = get_tech_plotting_order(conn.cursor())
+    power_unit = get_unit(conn.cursor(), "power")
 
     plot_title = "Total Capacity by Scenario - {} - Subproblem {} - Stage {}"\
         .format(
@@ -123,7 +124,7 @@ def main(args=None):
         y_axis_column="capacity_mw",
         x_axis_column="scenario_id",
         group_column="technology",
-        column_mapper={"capacity_mw": "Total Capacity (MW)",
+        column_mapper={"capacity_mw": "Total Capacity ({})".format(power_unit),
                        "scenario_id": "Scenario",
                        "technology": "Technology"},
         group_colors=tech_colors,
