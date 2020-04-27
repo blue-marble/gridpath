@@ -363,8 +363,10 @@ def load_module_specific_data(
     data_portal.data()["dr_new_min_duration"] = determine_projects()[1]
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
-                              "new_shiftable_load_supply_curve.tab"),
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs",
+            "new_shiftable_load_supply_curve.tab")
+        ,
         index=m.DR_NEW_PTS,
         select=("project", "point", "slope", "intercept"),
         param=(m.dr_new_supply_curve_slope,
@@ -372,8 +374,10 @@ def load_module_specific_data(
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
-                              "new_shiftable_load_supply_curve_potential.tab"),
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs",
+            "new_shiftable_load_supply_curve_potential.tab"
+        ),
         param=(m.dr_new_min_cumulative_new_build_mwh,
                m.dr_new_max_cumulative_new_build_mwh)
     )

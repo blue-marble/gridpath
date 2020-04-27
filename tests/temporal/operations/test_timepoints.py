@@ -120,20 +120,39 @@ class TestTimepoints(unittest.TestCase):
              }
         self.assertDictEqual(expected_month, actual_month,
                              msg="Data for param month not loaded correctly")
-        # Param: month
-        expected_month_param = \
-            timepoints_df.set_index('timepoint').to_dict()[
-                'month'
-            ]
-        actual_month_param = \
-            {tmp: instance.month[tmp]
-             for tmp in instance.TMPS
-             }
-        self.assertDictEqual(expected_month_param, actual_month_param,
-                             msg="Data for param 'month' not loaded correctly")
+
+        # There's shouldn't be any linked timepoints in this instance
+        # Set: LINKED_TMPS
+        self.assertListEqual([m for m in instance.LINKED_TMPS], [])
+
+        # Params: furthest_linked_tmp
+        # TODO: not sure how to check that this param has not been initialized
 
         # TODO: we're missing a test for the loading of the
         #  previous_stage_timepoint_map param
+
+    def test_linked_tmps(self):
+        """
+        Create components; check they are initialized with data as expected
+        """
+        m, data = \
+            add_components_and_load_data(
+                prereq_modules=[],
+                module_to_test=MODULE_BEING_TESTED,
+                test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+                subproblem="202002",
+                stage=""
+            )
+        instance = m.create_instance(data)
+
+        # Set: LINKED_TMPS
+        self.assertListEqual(
+            [m for m in instance.LINKED_TMPS],
+            [-11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0]
+        )
+
+        # Params: furthest_linked_tmp
+        self.assertEqual(-11, instance.furthest_linked_tmp)
 
 
 if __name__ == "__main__":

@@ -44,20 +44,37 @@ def determine_project_subset(
     return project_subset
 
 
-def check_if_linear_horizon_first_timepoint(mod, tmp, balancing_type):
+def check_if_first_timepoint(
+        mod, tmp, balancing_type
+):
     return tmp == mod.first_hrz_tmp[
-        balancing_type, mod.horizon[tmp, balancing_type]] \
-            and mod.boundary[
-               balancing_type, mod.horizon[tmp, balancing_type]] \
-            == "linear"
+        balancing_type, mod.horizon[tmp, balancing_type]]
 
 
-def check_if_linear_horizon_last_timepoint(mod, tmp, balancing_type):
+def check_if_last_timepoint(
+        mod, tmp, balancing_type
+):
     return tmp == mod.last_hrz_tmp[
-        balancing_type, mod.horizon[tmp, balancing_type]] \
-            and mod.boundary[
-               balancing_type, mod.horizon[tmp, balancing_type]] \
-            == "linear"
+        balancing_type, mod.horizon[tmp, balancing_type]]
+
+
+def check_boundary_type(mod, tmp, balancing_type, boundary_type):
+    return mod.boundary[balancing_type, mod.horizon[tmp, balancing_type]] \
+           == boundary_type
+
+
+def check_if_boundary_type_and_first_timepoint(
+    mod, tmp, balancing_type, boundary_type
+):
+    if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=balancing_type
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=balancing_type,
+        boundary_type=boundary_type
+    ):
+        return True
+    else:
+        return False
 
 
 def get_column_row_value(header, column_name, row):

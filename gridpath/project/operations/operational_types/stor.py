@@ -32,9 +32,9 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data
+    load_optype_module_specific_data, check_for_tmps_to_link
 
 
 def add_module_specific_components(m, d):
@@ -52,6 +52,11 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set with projects of the :code:`stor`                   |
     | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_LINKED_TMPS`                                              |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`stor`                 |
+    | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -83,6 +88,32 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The fraction of storage losses that count against the RPS target.       |
     +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`stor_linked_starting_energy_in_storage`                        |
+    | | *Defined over*: :code:`STOR_LINKED_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's starting energy in storage in the linked timepoints.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_linked_discharge`                                         |
+    | | *Defined over*: :code:`STOR_LINKED_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's dicharging in the linked timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_linked_charge`                                            |
+    | | *Defined over*: :code:`STOR_LINKED_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's charging in the linked timepoints.                        |
+    +-------------------------------------------------------------------------+
+
+    |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -188,6 +219,8 @@ def add_module_specific_components(m, d):
             if g in mod.STOR)
     )
 
+    m.STOR_LINKED_TMPS = Set(dimen=2)
+
     # Required Params
     ###########################################################################
 
@@ -203,6 +236,24 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     m.stor_losses_factor_in_rps = Param(default=1)
+
+    # Linked Params
+    ###########################################################################
+
+    m.stor_linked_starting_energy_in_storage = Param(
+        m.STOR_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.stor_linked_discharge = Param(
+        m.STOR_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.stor_linked_charge = Param(
+        m.STOR_LINKED_TMPS,
+        within=NonNegativeReals
+    )
 
     # Variables
     ###########################################################################
@@ -326,24 +377,48 @@ def energy_tracking_rule(mod, s, tmp):
     efficiency and timepoint duration) plus any charged power (adjusted for
     charging efficiency and timepoint duration).
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+    ) and check_boundary_type(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
+        if check_if_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+        ) and check_boundary_type(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_starting_energy_in_storage = \
+                mod.stor_linked_starting_energy_in_storage[s, 0]
+            prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
+            prev_tmp_charge = mod.stor_linked_charge[s, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+            ]
+            prev_tmp_starting_energy_in_storage = \
+                mod.Stor_Starting_Energy_in_Storage_MWh[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
+            prev_tmp_discharge = \
+                mod.Stor_Discharge_MW[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
+            prev_tmp_charge = \
+                mod.Stor_Charge_MW[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
+
         return \
             mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
-            == mod.Stor_Starting_Energy_in_Storage_MWh[
-                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
-            + mod.Stor_Charge_MW[
-                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
-            * mod.hrs_in_tmp[
-                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
+            == prev_tmp_starting_energy_in_storage \
+            + prev_tmp_charge * prev_tmp_hrs_in_tmp \
             * mod.stor_charging_efficiency[s] \
-            - mod.Stor_Discharge_MW[
-                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
-            * mod.hrs_in_tmp[
-                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
+            - prev_tmp_discharge * prev_tmp_hrs_in_tmp \
             / mod.stor_discharging_efficiency[s]
 
 
@@ -557,9 +632,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
@@ -590,6 +678,24 @@ def load_module_specific_data(mod, data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="stor"
     )
+
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "stor_linked_timepoint_params.tab"
+        )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=mod.STOR_LINKED_TMPS,
+            param=(
+                mod.stor_linked_starting_energy_in_storage,
+                mod.stor_linked_discharge,
+                mod.stor_linked_charge
+            )
+        )
+    else:
+        pass
 
 
 def export_module_specific_results(mod, d,
@@ -627,3 +733,40 @@ def export_module_specific_results(mod, d,
                 value(mod.Stor_Charge_MW[p, tmp]),
                 value(mod.Stor_Discharge_MW[p, tmp])
             ])
+
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage
+    )
+
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
+
+        # Export params by project and timepoint
+        with open(os.path.join(
+                scenario_directory, next_subproblem, stage, "inputs",
+                "stor_linked_timepoint_params.tab"
+        ), "w", newline=""
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+            writer.writerow(
+                ["project", "linked_timepoint",
+                 "linked_starting_energy_in_storage",
+                 "linked_discharge",
+                 "linked_charge"]
+            )
+        for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+            if tmp in tmps_to_link:
+                writer.writerow([
+                    p,
+                    tmp_linked_tmp_dict[tmp],
+                    value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
+                    value(mod.Stor_Discharge_MW[p, tmp]),
+                    value(mod.Stor_Charge_MW[p, tmp])
+                ])

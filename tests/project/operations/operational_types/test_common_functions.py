@@ -45,6 +45,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
         check that the 'determine_relevant_timepoints' function gives the
         expected results.
         """
+
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
@@ -94,7 +95,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["relevant_timepoints"]
-            actual_list = determine_relevant_timepoints(
+            actual_list, actual_linked_tmps = determine_relevant_timepoints(
                 mod=instance,
                 g=test_cases[test_case]["g"],
                 tmp=test_cases[test_case]["tmp"],
@@ -102,3 +103,63 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             )
 
             self.assertListEqual(expected_list, actual_list)
+            # No linked timepoints, so check that the list is empty in every
+            # test case
+            self.assertListEqual([], actual_linked_tmps)
+
+    def test_determine_relevant_linked_timepoints(self):
+        """
+        Check that the lists of relevant timepoints and relevant linked
+        timepoints are as expected based on the current timepoint and the
+        minimum up/down time (and, on the data side, the duration of other
+        timepoints).
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=None,  # No need to name since not adding components
+            test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
+            subproblem="202002",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        test_cases = {
+            1: {"min_time": 4, "g": "Gas_CCGT", "tmp": 20200203,
+                "relevant_timepoints": [20200203, 20200202, 20200201],
+                "relevant_linked_timepoints": [0]},
+            2: {"min_time": 5, "g": "Gas_CCGT", "tmp": 20200203,
+                "relevant_timepoints": [20200203, 20200202, 20200201],
+                "relevant_linked_timepoints": [0, -1]},
+            # Stop at the last included linked timepoint if the min time is
+            # longer than the total duration of the current timepoint to the
+            # last linked timepoint
+            3: {"min_time": 24, "g": "Gas_CCGT", "tmp": 20200203,
+                "relevant_timepoints": [20200203, 20200202, 20200201],
+                "relevant_linked_timepoints": [0, -1, -2, -3, -4, -5, -6,
+                                               -7, -8, -9, -10, -11]},
+            # No linked timepoint if min time does not reach them
+            4: {"min_time": 1, "g": "Gas_CCGT", "tmp": 20200203,
+                "relevant_timepoints": [20200203],
+                "relevant_linked_timepoints": []},
+            # Starting in the first timepoint of the horizon
+            5: {"min_time": 4, "g": "Gas_CCGT", "tmp": 20200201,
+                "relevant_timepoints": [20200201],
+                "relevant_linked_timepoints": [0, -1, -2]},
+        }
+
+        for test_case in test_cases.keys():
+            expected_rel_tmp_list = test_cases[test_case][
+                "relevant_timepoints"]
+            expected_rel_linked_tmp_list = test_cases[test_case][
+                "relevant_linked_timepoints"]
+            actual_rel_tmp_list, actual_rel_linked_tmp_list = \
+                determine_relevant_timepoints(
+                    mod=instance,
+                    g=test_cases[test_case]["g"],
+                    tmp=test_cases[test_case]["tmp"],
+                    min_time=test_cases[test_case]["min_time"]
+                )
+
+            self.assertListEqual(expected_rel_tmp_list, actual_rel_tmp_list)
+            self.assertListEqual(actual_rel_linked_tmp_list,
+                                 expected_rel_linked_tmp_list)

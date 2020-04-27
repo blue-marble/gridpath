@@ -74,6 +74,62 @@ def add_model_components(m, d):
         m.RPS_ZONE_PERIODS_WITH_RPS,
         rule=rps_target_rule
     )
+    m.RPS_ZONE_PERIODS_WITH_RPS = Set(
+        dimen=2,
+        within=m.RPS_ZONES * m.PERIODS
+    )
+
+    # RPS target specified in energy terms
+    m.rps_target_mwh = Param(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        within=NonNegativeReals,
+        default=0
+    )
+
+    # RPS target specified in 'percent of load' terms
+    m.rps_target_percentage = Param(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        within=PercentFraction,
+        default=0
+    )
+
+    # Load zones included in RPS percentage target
+    m.RPS_ZONE_LOAD_ZONES = Set(
+        dimen=2,
+        within=m.RPS_ZONES * m.LOAD_ZONES
+    )
+
+    def rps_target_rule(mod, rps_zone, period):
+        """
+        The RPS target consists of two additive components: an energy term
+        and a 'percent of load x load' term, where a mapping between the RPS
+        zone and the load zones whose load to consider must be specified.
+        Either the energy target or the percent target can be omitted (they
+        default to 0). If a mapping is not specified, the
+        'percent of load x load' is 0.
+        """
+        # If we have a map of RPS zones to load zones, apply the percentage
+        # target; if no map provided, the percentage_target is 0
+        if mod.RPS_ZONE_LOAD_ZONES:
+            total_period_static_load = sum(
+                mod.static_load_mw[lz, tmp]
+                * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
+                if _rps_zone == rps_zone
+                for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
+            )
+            percentage_target = \
+                mod.rps_target_percentage[rps_zone, period] \
+                * total_period_static_load
+        else:
+            percentage_target = 0
+
+        return mod.rps_target_mwh[rps_zone, period] + percentage_target
+
+    m.RPS_Target = Expression(
+        m.RPS_ZONE_PERIODS_WITH_RPS,
+        rule=rps_target_rule
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

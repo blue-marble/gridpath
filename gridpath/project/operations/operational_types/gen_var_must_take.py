@@ -19,7 +19,7 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_var_profile_inputs, get_var_profile_inputs_from_database, \
     write_tab_file_model_inputs
@@ -262,9 +262,23 @@ def startup_fuel_burn_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     Exogenously defined ramp for variable must-take generators.
+
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
