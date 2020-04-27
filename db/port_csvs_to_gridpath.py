@@ -45,6 +45,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
+import db.utilities.common_functions as db_util_common
 from db.utilities import temporal, simultaneous_flows, \
     simultaneous_flow_groups, project_prm, system_reserves, project_zones, rps
 
@@ -154,24 +155,12 @@ def load_csv_data(conn, csv_path, quiet):
         temporal_directory = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'temporal', 'path'].iloc[
             0])
-    # Get list of subdirectories (which are the names of our subscenarios)
-    # Each temporal subscenario is a directory, with the scenario ID,
-    # underscore, and the scenario name as the name of the directory (already
-    # passed here).
-    temporal_subscenarios = sorted(next(os.walk(temporal_directory))[1])
-    for temporal_subscenario in temporal_subscenarios:
-        if not quiet:
-            print(temporal_subscenario)
-        if not temporal_subscenario.split("_")[0].isdigit():
-            warnings.warn(
-                "Temporal subfolder `{}` does not start with an integer to "
-                "indicate the subscenario ID and CSV import script will fail. "
-                "Please follow the required folder naming structure "
-                "<subscenarioID_subscenarioName>, e.g. "
-                "'1_default4periods'.".format(temporal_subscenario)
-            )
-        subscenario_directory = os.path.join(
-            temporal_directory, temporal_subscenario)
+    temporal_subscenario_directories = \
+        db_util_common.get_directory_subscenarios(
+            main_directory=temporal_directory,
+            quiet=quiet
+        )
+    for subscenario_directory in temporal_subscenario_directories:
         temporal.load_from_csvs(
             conn=conn, subscenario_directory=subscenario_directory
         )
@@ -473,28 +462,15 @@ def load_csv_data(conn, csv_path, quiet):
         load_system_prm.load_system_prm_requirement(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## SYSTEM RPS TARGETS ##
-    # TODO: refactor this with temporal inputs
     if csv_data_master.loc[csv_data_master['table'] == 'system_rps_targets', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_rps_targets', 'path'].iloc[0])
-        # Get list of subdirectories (which are the names of our subscenarios)
-        # Each temporal subscenario is a directory, with the scenario ID,
-        # underscore, and the scenario name as the name of the directory (already
-        # passed here).
-        rps_target_subscenarios = sorted(next(os.walk(data_folder_path))[1])
-        for subscenario in rps_target_subscenarios:
-            if not quiet:
-                print(subscenario)
-            if not subscenario.split("_")[0].isdigit():
-                warnings.warn(
-                    "RPS target subfolder `{}` does not start with an integer "
-                    "to indicate the subscenario ID and CSV import script will fail. "
-                    "Please follow the required folder naming structure "
-                    "<subscenarioID_subscenarioName>, e.g. "
-                    "'1_default4periods'.".format(subscenario)
-                )
-            subscenario_directory = os.path.join(
-                data_folder_path, subscenario)
+        rps_target_subscenario_directories = \
+            db_util_common.get_directory_subscenarios(
+                main_directory=data_folder_path,
+                quiet=quiet
+            )
+        for subscenario_directory in rps_target_subscenario_directories:
             rps.load_from_csvs(
                 conn=conn, subscenario_directory=subscenario_directory
             )
@@ -622,25 +598,12 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master['table'] == 'system_prm_zone_elcc_surface',
             'path'
         ].iloc[0])
-        # Get list of subdirectories (which are the names of our subscenarios)
-        # Each temporal subscenario is a directory, with the scenario ID,
-        # underscore, and the scenario name as the name of the directory (
-        # already passed here).
-        elcc_surface_subscenarios = \
-            sorted(next(os.walk(elcc_surface_directory))[1])
-        for subscenario in elcc_surface_subscenarios:
-            if not quiet:
-                print(subscenario)
-            if not subscenario.split("_")[0].isdigit():
-                warnings.warn(
-                    "ELCC surface subfolder `{}` does not start with an "
-                    "integer to indicate the subscenario ID and CSV import "
-                    "script will fail. Please follow the required folder "
-                    "naming structure <subscenarioID_subscenarioName>, e.g. "
-                    "'1_default'.".format(subscenario)
-                )
-            subscenario_directory = os.path.join(
-                elcc_surface_directory, subscenario)
+        elcc_surface_subscenario_directories = \
+            db_util_common.get_directory_subscenarios(
+                main_directory=elcc_surface_directory,
+                quiet=quiet
+            )
+        for subscenario_directory in elcc_surface_subscenario_directories:
             project_prm.elcc_surface_load_from_csvs(
                 conn=conn, subscenario_directory=subscenario_directory
             )
