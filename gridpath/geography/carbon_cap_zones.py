@@ -24,7 +24,7 @@ def add_model_components(m, d):
     m.carbon_cap_allow_violation = Param(
         m.CARBON_CAP_ZONES, within=Boolean, default=0
     )
-    m.carbon_cap_violation_penalty_per_mmt = Param(
+    m.carbon_cap_violation_penalty_per_emission = Param(
         m.CARBON_CAP_ZONES, within=NonNegativeReals, default=0
     )
 
@@ -35,7 +35,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "carbon_cap_zones.tab"),
                      index=m.CARBON_CAP_ZONES,
                      param=(m.carbon_cap_allow_violation,
-                            m.carbon_cap_violation_penalty_per_mmt)
+                            m.carbon_cap_violation_penalty_per_emission)
                      )
 
 
@@ -51,7 +51,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     carbon_cap_zone = c.execute(
-        """SELECT carbon_cap_zone, allow_violation, violation_penalty_per_mmt
+        """SELECT carbon_cap_zone, allow_violation, 
+        violation_penalty_per_emission
         FROM inputs_geography_carbon_cap_zones
         WHERE carbon_cap_zone_scenario_id = {};
         """.format(
@@ -99,7 +100,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
         # Write header
         writer.writerow(["carbon_cap_zone", "allow_violation",
-                         "violation_penalty_per_mmt"])
+                         "violation_penalty_per_emission"])
 
         for row in carbon_cap_zone:
             writer.writerow(row)

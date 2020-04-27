@@ -487,7 +487,7 @@ CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
-violation_penalty_per_mmt FLOAT DEFAULT 0,
+violation_penalty_per_emission FLOAT DEFAULT 0,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
@@ -1771,7 +1771,7 @@ carbon_cap_zone VARCHAR(32),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-carbon_cap_mmt FLOAT,
+carbon_cap FLOAT,
 PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
 subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
@@ -2834,15 +2834,15 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_cap_mmt FLOAT,
-in_zone_project_emissions_mmt FLOAT,
-import_emissions_mmt FLOAT,
-total_emissions_mmt FLOAT,
-carbon_cap_overage_mmt FLOAT,
-import_emissions_mmt_degen FLOAT,
-total_emissions_mmt_degen FLOAT,
+carbon_cap FLOAT,
+in_zone_project_emissions FLOAT,
+import_emissions FLOAT,
+total_emissions FLOAT,
+carbon_cap_overage FLOAT,
+import_emissions_degen FLOAT,
+total_emissions_degen FLOAT,
 dual FLOAT,
-carbon_cap_marginal_cost_per_mmt FLOAT,
+carbon_cap_marginal_cost_per_emission FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 

@@ -22,7 +22,7 @@ def add_model_components(m, d):
 
     m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP = \
         Set(dimen=2, within=m.CARBON_CAP_ZONES * m.PERIODS)
-    m.carbon_cap_target_mmt = Param(
+    m.carbon_cap_target = Param(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         within=NonNegativeReals)
 
@@ -41,9 +41,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "carbon_cap.tab"),
                      index=m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
-                     param=m.carbon_cap_target_mmt,
+                     param=m.carbon_cap_target,
                      select=("carbon_cap_zone", "period",
-                             "carbon_cap_target_mmt")
+                             "carbon_cap_target")
                      )
 
 
@@ -59,7 +59,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     carbon_cap_targets = c.execute(
-        """SELECT carbon_cap_zone, period, carbon_cap_mmt
+        """SELECT carbon_cap_zone, period, carbon_cap
         FROM inputs_system_carbon_cap_targets
         JOIN
         (SELECT period
@@ -123,7 +123,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
         # Write header
         writer.writerow(
-            ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
+            ["carbon_cap_zone", "period", "carbon_cap_target"]
         )
 
         for row in carbon_cap_targets:

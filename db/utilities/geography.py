@@ -451,7 +451,7 @@ def geography_carbon_cap_zones(
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_carbon_cap_zones
         (carbon_cap_zone_scenario_id, carbon_cap_zone, allow_violation, 
-        violation_penalty_per_mmt)
+        violation_penalty_per_emission)
         VALUES (?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

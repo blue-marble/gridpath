@@ -93,14 +93,14 @@ class TestCarbonCap(unittest.TestCase):
         self.assertListEqual(expected_cc_zone_periods,
                              actual_cc_zone_periods)
 
-        # Param: carbon_cap_target_mmt
+        # Param: carbon_cap_target
         expected_cc_target = OrderedDict(sorted({
             ("Carbon_Cap_Zone1", 2020): 50, ("Carbon_Cap_Zone1", 2030): 50,
             ("Carbon_Cap_Zone2", 2020): 10, ("Carbon_Cap_Zone2", 2030): 10}.items()
                                                  )
                                           )
         actual_cc_target = OrderedDict(sorted({
-            (z, p): instance.carbon_cap_target_mmt[z, p]
+            (z, p): instance.carbon_cap_target[z, p]
             for (z, p) in instance.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP}.items()
                                                )
                                         )
