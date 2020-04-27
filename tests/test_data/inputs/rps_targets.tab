@@ -1,5 +1,5 @@
-rps_zone	period	rps_target_mwh
-RPS_Zone_1	2020	50
-RPS_Zone_1	2030	50
-RPS_Zone_2	2020	10
-RPS_Zone_2	2030	10
+rps_zone	period	rps_target_mwh	rps_target_percentage
+RPS_Zone_1	2020	50 0.2
+RPS_Zone_1	2030	50	0.33
+RPS_Zone_2	2020	10	0
+RPS_Zone_2	2030	10	0

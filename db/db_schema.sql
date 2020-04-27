@@ -1736,11 +1736,21 @@ period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 rps_target_mwh FLOAT,
-rps_zone_scenario_id INTEGER,
+rps_target_percentage FLOAT,
 PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
-stage_id),
-FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
-inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
+stage_id)
+);
+
+-- If the RPS target is specified as percentage of load, we need to also
+-- specify which load, i.e. specify a mapping between the RPS zone and the
+-- load zones whose load should be part of the target calculation (mapping
+-- should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_rps_target_load_zone_map;
+CREATE TABLE inputs_system_rps_target_load_zone_map (
+rps_target_scenario_id INTEGER,
+rps_zone VARCHAR(32),
+load_zone VARCHAR(64),
+PRIMARY KEY (rps_target_scenario_id, rps_zone, load_zone)
 );
 
 -- Carbon cap
