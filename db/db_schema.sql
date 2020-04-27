@@ -131,7 +131,6 @@ metric VARCHAR(32) PRIMARY KEY,
 type VARCHAR(32),  -- 'core' or 'secondary'
 numerator_core_units VARCHAR(32),
 denominator_core_units VARCHAR(32),
-abbreviation VARCHAR(32),  -- this will be derived for secondary units
 unit VARCHAR(32),  -- this will be derived for secondary units
 description VARCHAR(128)
 );
