@@ -17,11 +17,6 @@ def generic_add_model_components(
     reserve_requirement_expression
 ):
     """
-    Generic treatment of reserves. This function creates model components
-    related to a particular reserve requirement, including
-    1) the 2-dimensional set of reserve zones and timepoints for the
-    requirement
-    2) the reserve requirement (currently by zone and timepoint)
     :param m:
     :param d:
     :param reserve_zone_set:
@@ -30,6 +25,12 @@ def generic_add_model_components(
     :param reserve_zone_load_zone_set:
     :param reserve_requirement_expression:
     :return:
+
+    Generic treatment of reserves. This function creates model components
+    related to a particular reserve requirement, including
+    1) the reserve requirement by zone and timepoint, if any
+    2) the reserve requirement as a percent of load and map for which load
+    zones' load to consider.
     """
 
     # Magnitude of the requirement by reserve zone and timepoint
