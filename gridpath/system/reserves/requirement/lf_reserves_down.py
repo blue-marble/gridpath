@@ -30,7 +30,7 @@ def add_model_components(m, d):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     generic_load_model_data(m, d, data_portal,
                             scenario_directory, subproblem, stage,
-                            "lf_reserves_down_requirement.tab",
+                            "lf_reserves_down_tmp_requirement.tab",
                             "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
                             "lf_reserves_down_requirement_mw"
                             )

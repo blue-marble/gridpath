@@ -227,16 +227,18 @@ def generic_write_model_inputs(
     :param timepoint_req:
     :param percent_req:
     :param percent_map:
+    :param reserve_type:
     :return:
     """
 
-    with open(
-            os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "{}_requirement.tab".format(reserve_type)
-            ),
-            "w", newline=""
-    ) as tmp_req_file:
+    inputs_dir = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs"
+    )
+    with open(os.path.join(inputs_dir,
+                           "{}_tmp_requirement.tab".format(reserve_type)
+                           ),
+              "w", newline=""
+              ) as tmp_req_file:
         writer = csv.writer(tmp_req_file, delimiter="\t", lineterminator="\n")
 
         # Write header
@@ -250,3 +252,42 @@ def generic_write_model_inputs(
 
         for row in timepoint_req:
             writer.writerow(row)
+
+    # Write the percent requirement files only if there's a mapping
+    ba_lz_map_list = [row for row in percent_map]
+
+    if ba_lz_map_list:
+        with open(os.path.join(inputs_dir,
+                               "{}_percent_requirement.tab".format(
+                                   reserve_type)
+                               ),
+                  "w", newline=""
+                  ) as percent_req_file:
+            writer = csv.writer(percent_req_file, delimiter="\t",
+                                lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["ba", "percent_requirement"]
+            )
+
+            for row in percent_req:
+                writer.writerow(row)
+
+        with open(os.path.join(inputs_dir,
+                               "{}_percent_map.tab".format(reserve_type)
+                               ),
+                  "w", newline=""
+                  ) as percent_req_file:
+            writer = csv.writer(percent_req_file, delimiter="\t",
+                                lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["ba", "load_zone"]
+            )
+
+            for row in percent_map:
+                writer.writerow(row)
+    else:
+        pass

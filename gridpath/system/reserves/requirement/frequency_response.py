@@ -53,7 +53,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # single param
     data_portal.load(filename=os.path.join(
         scenario_directory, subproblem, stage, "inputs",
-        "frequency_response_requirement.tab"),
+        "frequency_response_tmp_requirement.tab"),
                      index=m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
                      param=(m.frequency_response_requirement_mw,
                             m.frequency_response_requirement_partial_mw)

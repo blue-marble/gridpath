@@ -91,7 +91,7 @@ class TestSpinningReservesReq(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "spinning_reserves_requirement.tab"
+                    "spinning_reserves_tmp_requirement.tab"
                 ),
                 sep="\t"
             )

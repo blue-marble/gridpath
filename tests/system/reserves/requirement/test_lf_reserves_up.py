@@ -91,7 +91,7 @@ class TestCosts(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "lf_reserves_up_requirement.tab"
+                    "lf_reserves_up_tmp_requirement.tab"
                 ),
                 sep="\t"
             )

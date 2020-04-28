@@ -29,7 +29,7 @@ def add_model_components(m, d):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     generic_load_model_data(m, d, data_portal,
                             scenario_directory, subproblem, stage,
-                            "regulation_down_requirement.tab",
+                            "regulation_down_tmp_requirement.tab",
                             "REGULATION_DOWN_ZONE_TIMEPOINTS",
                             "regulation_down_requirement_mw"
                             )

@@ -91,7 +91,7 @@ class TestFrequencyResponseRequirement(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "frequency_response_requirement.tab"
+                    "frequency_response_tmp_requirement.tab"
                 ),
                 sep="\t"
             )

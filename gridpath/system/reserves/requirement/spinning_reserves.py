@@ -29,7 +29,7 @@ def add_model_components(m, d):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     generic_load_model_data(m, d, data_portal,
                             scenario_directory, subproblem, stage,
-                            "spinning_reserves_requirement.tab",
+                            "spinning_reserves_tmp_requirement.tab",
                             "SPINNING_RESERVES_ZONE_TIMEPOINTS",
                             "spinning_reserves_requirement_mw"
                             )
