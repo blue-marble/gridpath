@@ -1594,6 +1594,10 @@ FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
 CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
@@ -1634,7 +1638,10 @@ FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
-
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
 CREATE TABLE inputs_system_lf_reserves_down_percent (
 lf_reserves_down_scenario_id INTEGER,
@@ -1674,7 +1681,10 @@ FOREIGN KEY (regulation_up_scenario_id) REFERENCES
 subscenarios_system_regulation_up (regulation_up_scenario_id)
 );
 
-
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
 CREATE TABLE inputs_system_regulation_down_percent (
 regulation_down_scenario_id INTEGER,
@@ -1715,6 +1725,10 @@ FOREIGN KEY (regulation_down_scenario_id) REFERENCES
 subscenarios_system_regulation_down (regulation_down_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
 CREATE TABLE inputs_system_regulation_up_percent (
 regulation_up_scenario_id INTEGER,
@@ -1756,6 +1770,10 @@ FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
 CREATE TABLE inputs_system_frequency_response_percent (
 frequency_response_scenario_id INTEGER,
@@ -1796,6 +1814,10 @@ FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
 subscenarios_system_spinning_reserves (spinning_reserves_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
 DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
 CREATE TABLE inputs_system_spinning_reserves_percent (
 spinning_reserves_scenario_id INTEGER,
