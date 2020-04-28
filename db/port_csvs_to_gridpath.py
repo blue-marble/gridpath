@@ -55,7 +55,7 @@ from db.csvs_to_db_utilities import csvs_read, \
     load_project_prm, load_transmission_zones, load_transmission_portfolios, \
     load_transmission_hurdle_rates, load_transmission_operational_chars, \
     load_scenarios, load_fuels, load_project_availability, \
-    load_system_reserves, load_project_zones, load_solver_options, \
+    load_project_zones, load_solver_options, \
     load_system_carbon_cap, load_transmission_new_cost, load_project_list, \
     load_project_operational_chars, load_system_prm, load_project_portfolios, \
     load_transmission_capacities, load_system_load, load_system_local_capacity
@@ -79,12 +79,12 @@ def parse_arguments(args):
     # Database name and location options
     # Adding defaults here even though the connect_to_database function has its own defaults
     # because parser passes a text string of None and not a python None
-    parser.add_argument("--db_name", default="io",
+    parser.add_argument("--db_name", default="test_db",
                         help="Name of the database without the db extension.")
     parser.add_argument("--db_location", default=".",
                         help="Path to the database (relative to "
                              "port_csvs_to_db.py).")
-    parser.add_argument("--csv_location", default="csvs",
+    parser.add_argument("--csv_location", default="csvs_test_examples",
                         help="Path to the csvs folder including folder name (relative to "
                              "port_csvs_to_db.py).")
     parser.add_argument("--quiet", default=False, action="store_true",
@@ -499,15 +499,26 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## SYSTEM RESERVES ##
     for reserve_type in reserves_list:
-        subscenario, inputs = read_data_for_insertion_into_db(
-            csv_data_master=csv_data_master,
-            folder_path=folder_path,
-            quiet=quiet,
-            table="system_{}".format(reserve_type)
-        )
-        system_reserves.insert_system_reserves(
-            conn, c2, subscenario, inputs, reserve_type
-        )
+        if csv_data_master.loc[
+            csv_data_master['table'] == "system_" + reserve_type,
+            'include'
+        ].iloc[0] == 1:
+            data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+                csv_data_master['table']
+                == "system_" + reserve_type, 'path'
+            ].iloc[0])
+
+            reserve_subscenario_directories = \
+                db_util_common.get_directory_subscenarios(
+                    main_directory=data_folder_path,
+                    quiet=quiet
+                )
+
+            for subscenario_directory in reserve_subscenario_directories:
+                system_reserves.load_from_csvs(
+                    conn, subscenario_directory=subscenario_directory,
+                    reserve_type=reserve_type
+                )
 
     #### LOAD TRANSMISSION DATA ####
 
