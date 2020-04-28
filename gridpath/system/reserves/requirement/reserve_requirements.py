@@ -93,8 +93,8 @@ def generic_load_model_data(
     :param scenario_directory:
     :param subproblem:
     :param stage:
-    :param reserve_zone_timepoint_set:
     :param reserve_requirement_param:
+    :param reserve_zone_load_zone_set:
     :param reserve_requirement_percent_param
     :param reserve_type:
     :return:
