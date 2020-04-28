@@ -78,6 +78,28 @@ def load_from_csvs(conn, subscenario_directory, reserve_type):
     :param subscenario_directory: string, path to the directory containing
         the data for this reserve_scenario_id
     :param reserve_type:
+
+    Load temporal reserve data into the database. The data structure for
+    loading reserve data from CSVs is as follows:
+
+    Each reserve req subscenario is a directory, with the scenario ID,
+    underscore, and the scenario name as the name of the directory (already
+    passed here), so we get this to import from the subscenario_directory path.
+
+    Within each subscenario directory there are three required files:
+    timepoint.csv, percentage.csv, and percentage_load_zone_map.csv. A file
+    containing the subscenario description (description.txt) is optional.
+
+    1. *timepoint.csv*: contains timepoint-level reserve requirement
+    specifications for each BA that has them.
+
+    2. *percentage.csv*: contains the percent of load requirement
+    specification for each BA that has it.
+
+    3. *percentage_load_zone_map.csv*: contains the BA-to-load_zones mapping
+    for the percentage requirement.
+
+    Any of those files can be blank (header only).
     """
     # Get the subscenario (id, name, description) data for insertion into the
     # subscenario table and the paths to the required input files
