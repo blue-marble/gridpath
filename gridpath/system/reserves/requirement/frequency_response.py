@@ -7,7 +7,8 @@ import csv
 import os.path
 from pyomo.environ import Param, NonNegativeReals
 
-from .reserve_requirements import generic_add_model_components, \
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
     generic_load_model_data
 
 
@@ -70,38 +71,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    frequency_response = c.execute(
-        """SELECT frequency_response_ba, timepoint, 
-        frequency_response_mw, frequency_response_partial_mw
-        FROM inputs_system_frequency_response
-        INNER JOIN
-        (SELECT timepoint 
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT frequency_response_ba
-        FROM inputs_geography_frequency_response_bas
-        WHERE frequency_response_ba_scenario_id = {}) as relevant_bas
-        USING (frequency_response_ba)
-        WHERE frequency_response_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
-            subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="frequency_respose",
+            reserve_type_ba_subscenario_id
+            =subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID
         )
-    )
-
-    return frequency_response
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -131,7 +110,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    frequency_response = get_inputs_from_database(
+    frequency_response, _, _ = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",

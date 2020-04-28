@@ -6,7 +6,8 @@ from __future__ import absolute_import
 import csv
 import os.path
 
-from .reserve_requirements import generic_add_model_components, \
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
     generic_load_model_data
 
 
@@ -47,37 +48,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    lf_reserves_up = c.execute(
-        """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
-        FROM inputs_system_lf_reserves_up
-        INNER JOIN
-        (SELECT timepoint
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT lf_reserves_up_ba
-        FROM inputs_geography_lf_reserves_up_bas
-        WHERE lf_reserves_up_ba_scenario_id = {}) as relevant_bas
-        USING (lf_reserves_up_ba)
-        WHERE lf_reserves_up_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
-            subscenarios.LF_RESERVES_UP_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="lf_reserves_up",
+            reserve_type_ba_subscenario_id
+            =subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.LF_RESERVES_UP_SCENARIO_ID
         )
-    )
-
-    return lf_reserves_up
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -107,7 +87,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    lf_reserves_up = get_inputs_from_database(
+    lf_reserves_up, _, _ = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",

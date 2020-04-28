@@ -6,7 +6,8 @@ from __future__ import absolute_import
 import csv
 import os.path
 
-from .reserve_requirements import generic_add_model_components, \
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
     generic_load_model_data
 
 
@@ -47,37 +48,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    spinning_reserves = c.execute(
-        """SELECT spinning_reserves_ba, timepoint, spinning_reserves_mw
-        FROM inputs_system_spinning_reserves
-        INNER JOIN
-        (SELECT timepoint
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT spinning_reserves_ba
-        FROM inputs_geography_spinning_reserves_bas
-        WHERE spinning_reserves_ba_scenario_id = {}) as relevant_bas
-        USING (spinning_reserves_ba)
-        WHERE spinning_reserves_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID,
-            subscenarios.SPINNING_RESERVES_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="spinning_reserves",
+            reserve_type_ba_subscenario_id
+            =subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.SPINNING_RESERVES_SCENARIO_ID
         )
-    )
-
-    return spinning_reserves
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -107,7 +87,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    spinning_reserves = get_inputs_from_database(
+    spinning_reserves, _, _ = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # spinning_reserves_requirement.tab

@@ -6,7 +6,8 @@ from __future__ import absolute_import
 import csv
 import os.path
 
-from .reserve_requirements import generic_add_model_components, \
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
     generic_load_model_data
 
 
@@ -47,37 +48,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    regulation_up = c.execute(
-        """SELECT regulation_up_ba, timepoint, regulation_up_mw
-        FROM inputs_system_regulation_up
-        INNER JOIN
-        (SELECT timepoint 
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT regulation_up_ba
-        FROM inputs_geography_regulation_up_bas
-        WHERE regulation_up_ba_scenario_id = {}) as relevant_bas
-        USING (regulation_up_ba)
-        WHERE regulation_up_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.REGULATION_UP_BA_SCENARIO_ID,
-            subscenarios.REGULATION_UP_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="regulation_up",
+            reserve_type_ba_subscenario_id
+            =subscenarios.REGULATION_UP_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.REGULATION_UP_SCENARIO_ID
         )
-    )
-
-    return regulation_up
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -107,7 +87,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    regulation_up = get_inputs_from_database(
+    regulation_up, _, _ = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",

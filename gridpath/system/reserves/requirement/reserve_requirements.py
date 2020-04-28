@@ -171,7 +171,7 @@ def generic_get_inputs_from_database(
     # Get any percentage requirement
     percentage_req = c2.execute("""
         SELECT {}_ba, percent_load_req
-        FROM inputs_system_lf_reserves_{}_percentage
+        FROM inputs_system_{}_percentage
         WHERE {}_scenario_id = {}
         """.format(
         reserve_type,
