@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import absolute_import
-
-import csv
-import os.path
 
 from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_get_inputs_from_database, generic_add_model_components, \
-    generic_load_model_data
+    generic_load_model_data, generic_write_model_inputs
 
 
 def add_model_components(m, d):
@@ -75,7 +71,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     lf_reserves_down_requirement.tab file.
@@ -87,19 +85,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    lf_reserves_down, _, _ = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    tmp_req, percent_req, percent_map = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "lf_reserves_down_requirement.tab"), "w", newline="") as \
-            lf_reserves_down_tab_file:
-        writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        # TODO: change these headers
-        writer.writerow(
-            ["LOAD_ZONES", "timepoint", "downward_reserve_requirement"]
-        )
-
-        for row in lf_reserves_down:
-            writer.writerow(row)
+    generic_write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        timepoint_req=tmp_req,
+        percent_req=percent_req, percent_map=percent_map,
+        reserve_type="lf_reserves_down"
+    )

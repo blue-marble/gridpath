@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import absolute_import
-
-import csv
 import os.path
 from pyomo.environ import Param, NonNegativeReals
 
 from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_get_inputs_from_database, generic_add_model_components, \
-    generic_load_model_data
+    generic_write_model_inputs
 
 
 def add_model_components(m, d):
@@ -110,18 +107,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    frequency_response, _, _ = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    tmp_req, percent_req, percent_map = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "frequency_response_requirement.tab"), "w", newline="") as \
-            frequency_response_tab_file:
-        writer = csv.writer(frequency_response_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["ba", "timepoint", "requirement_mw", "partial_requirement_mw"]
-        )
-
-        for row in frequency_response:
-            writer.writerow(row)
+    generic_write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        timepoint_req=tmp_req,
+        percent_req=percent_req, percent_map=percent_map,
+        reserve_type="frequency_response"
+    )

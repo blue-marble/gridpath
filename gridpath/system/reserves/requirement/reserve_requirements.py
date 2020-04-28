@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, PercentFraction, \
     Expression
@@ -132,8 +133,12 @@ def generic_get_inputs_from_database(
     stage = 1 if stage == "" else stage
     c = conn.cursor()
 
+    partial_freq_resp_extra_column = \
+        ", frequency_response_partial_mw" \
+        if reserve_type == "frequency_response" else ""
+
     tmp_req = c.execute(
-        """SELECT {}_ba, timepoint, {}_mw
+        """SELECT {}_ba, timepoint, {}_mw{}
         FROM inputs_system_{}
         INNER JOIN
         (SELECT timepoint
@@ -152,6 +157,7 @@ def generic_get_inputs_from_database(
         """.format(
             reserve_type,
             reserve_type,
+            partial_freq_resp_extra_column,
             reserve_type,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
@@ -206,3 +212,41 @@ def generic_get_inputs_from_database(
     )
 
     return tmp_req, percentage_req, lz_mapping
+
+
+def generic_write_model_inputs(
+    scenario_directory, subproblem, stage,
+    timepoint_req, percent_req, percent_map, reserve_type
+):
+    """
+    Get inputs from database and write out the model input
+    lf_reserves_down_requirement.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subproblem:
+    :param stage:
+    :param timepoint_req:
+    :param percent_req:
+    :param percent_map:
+    :return:
+    """
+
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs",
+                "{}_requirement.tab".format(reserve_type)
+            ),
+            "w", newline=""
+    ) as tmp_req_file:
+        writer = csv.writer(tmp_req_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        extra_column = \
+            ["partial_requirement"] \
+            if reserve_type == "frequency_response" \
+            else []
+        writer.writerow(
+            ["ba", "timepoint", "requirement"] + extra_column
+        )
+
+        for row in timepoint_req:
+            writer.writerow(row)
