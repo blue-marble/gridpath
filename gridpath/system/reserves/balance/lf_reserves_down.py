@@ -25,7 +25,7 @@ def add_model_components(m, d):
         reserve_violation_expression
         ="LF_Reserves_Down_Violation_MW_Expression",
         reserve_violation_allowed_param="lf_reserves_down_allow_violation",
-        reserve_requirement_param="lf_reserves_down_requirement_mw",
+        reserve_requirement_expression="LF_Down_Requirement",
         total_reserve_provision_expression
         ="Total_LF_Reserves_Down_Provision_MW",
         meet_reserve_constraint="Meet_LF_Reserves_Down_Constraint"

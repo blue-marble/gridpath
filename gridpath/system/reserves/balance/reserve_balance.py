@@ -17,7 +17,7 @@ def generic_add_model_components(
         reserve_violation_variable,
         reserve_violation_expression,
         reserve_violation_allowed_param,
-        reserve_requirement_param,
+        reserve_requirement_expression,
         total_reserve_provision_expression,
         meet_reserve_constraint,
 ):
@@ -29,7 +29,7 @@ def generic_add_model_components(
     :param reserve_violation_variable:
     :param reserve_violation_expression:
     :param reserve_violation_allowed_param:
-    :param reserve_requirement_param:
+    :param reserve_requirement_expression:
     :param total_reserve_provision_expression:
     :param meet_reserve_constraint:
     :return:
@@ -60,7 +60,7 @@ def generic_add_model_components(
     def meet_reserve_rule(mod, ba, tmp):
         return getattr(mod, total_reserve_provision_expression)[ba, tmp] \
             + getattr(mod, reserve_violation_expression)[ba, tmp] \
-            == getattr(mod, reserve_requirement_param)[ba, tmp]
+            == getattr(mod, reserve_requirement_expression)[ba, tmp]
 
     setattr(m, meet_reserve_constraint,
             Constraint(getattr(m, reserve_zone_timepoint_set),

@@ -19,11 +19,14 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "LF_RESERVES_UP_ZONES",
-        "LF_RESERVES_UP_ZONE_TIMEPOINTS",
-        "lf_reserves_up_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="LF_RESERVES_UP_ZONES",
+        reserve_zone_timepoint_set="LF_RESERVES_UP_ZONE_TIMEPOINTS",
+        reserve_requirement_tmp_param="lf_reserves_up_requirement_mw",
+        reserve_requirement_percentage_param="lf_up_per_req",
+        reserve_zone_load_zone_set="LF_UP_BA_LZ",
+        reserve_requirement_expression="LF_Up_Requirement"
         )
 
 

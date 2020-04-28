@@ -19,11 +19,14 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "REGULATION_DOWN_ZONES",
-        "REGULATION_DOWN_ZONE_TIMEPOINTS",
-        "regulation_down_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="REGULATION_DOWN_ZONES",
+        reserve_zone_timepoint_set="REGULATION_DOWN_ZONE_TIMEPOINTS",
+        reserve_requirement_tmp_param="regulation_down_requirement_mw",
+        reserve_requirement_percentage_param="reg_down_per_req",
+        reserve_zone_load_zone_set="REG_DOWN_BA_LZ",
+        reserve_requirement_expression="Reg_Down_Requirement"
         )
 
 

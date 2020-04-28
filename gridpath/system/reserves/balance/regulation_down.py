@@ -24,7 +24,7 @@ def add_model_components(m, d):
         reserve_violation_variable="Regulation_Down_Violation_MW",
         reserve_violation_expression="Regulation_Down_Violation_MW_Expression",
         reserve_violation_allowed_param="regulation_down_allow_violation",
-        reserve_requirement_param="regulation_down_requirement_mw",
+        reserve_requirement_expression="Reg_Down_Requirement",
         total_reserve_provision_expression
         ="Total_Regulation_Down_Provision_MW",
         meet_reserve_constraint="Meet_Regulation_Down_Constraint"

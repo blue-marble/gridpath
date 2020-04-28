@@ -29,7 +29,7 @@ def add_model_components(m, d):
         reserve_violation_expression
         ="Frequency_Response_Violation_MW_Expression",
         reserve_violation_allowed_param="frequency_response_allow_violation",
-        reserve_requirement_param="frequency_response_requirement_mw",
+        reserve_requirement_expression="Frequency_Response_Requirement",
         total_reserve_provision_expression
         ="Total_Frequency_Response_Provision_MW",
         meet_reserve_constraint="Meet_Frequency_Response_Constraint"

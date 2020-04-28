@@ -20,11 +20,14 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "FREQUENCY_RESPONSE_BAS",
-        "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
-        "frequency_response_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="FREQUENCY_RESPONSE_BAS",
+        reserve_zone_timepoint_set="FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+        reserve_requirement_tmp_param="frequency_response_requirement_mw",
+        reserve_requirement_percentage_param="fr_per_req",
+        reserve_zone_load_zone_set="FR_BA_LZ",
+        reserve_requirement_expression="Frequency_Response_Requirement"
         )
 
     # Also add the partial requirement for frequency response that can be

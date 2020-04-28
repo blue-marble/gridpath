@@ -25,7 +25,7 @@ def add_model_components(m, d):
         reserve_violation_expression
         ="Spinning_Reserves_Violation_MW_Expression",
         reserve_violation_allowed_param="spinning_reserves_allow_violation",
-        reserve_requirement_param="spinning_reserves_requirement_mw",
+        reserve_requirement_expression="Spin_Requirement",
         total_reserve_provision_expression
         ="Total_Spinning_Reserves_Provision_MW",
         meet_reserve_constraint="Meet_Spinning_Reserves_Constraint"
