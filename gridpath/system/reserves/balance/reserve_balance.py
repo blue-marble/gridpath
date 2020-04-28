@@ -13,7 +13,7 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 def generic_add_model_components(
         m,
         d,
-        reserve_zone_timepoint_set,
+        reserve_zone_set,
         reserve_violation_variable,
         reserve_violation_expression,
         reserve_violation_allowed_param,
@@ -25,7 +25,7 @@ def generic_add_model_components(
     Ensure reserves are balanced
     :param m:
     :param d:
-    :param reserve_zone_timepoint_set:
+    :param reserve_zone_set:
     :param reserve_violation_variable:
     :param reserve_violation_expression:
     :param reserve_violation_allowed_param:
@@ -37,7 +37,7 @@ def generic_add_model_components(
 
     # Penalty for violation
     setattr(m, reserve_violation_variable,
-            Var(getattr(m, reserve_zone_timepoint_set),
+            Var(getattr(m, reserve_zone_set), m.TMPS,
                 within=NonNegativeReals)
             )
 
@@ -53,7 +53,7 @@ def generic_add_model_components(
             * getattr(mod, reserve_violation_variable)[ba, tmp]
 
     setattr(m, reserve_violation_expression,
-            Expression(getattr(m, reserve_zone_timepoint_set),
+            Expression(getattr(m, reserve_zone_set), m.TMPS,
                        rule=violation_expression_rule))
 
     # Reserve constraints
@@ -63,14 +63,14 @@ def generic_add_model_components(
             == getattr(mod, reserve_requirement_expression)[ba, tmp]
 
     setattr(m, meet_reserve_constraint,
-            Constraint(getattr(m, reserve_zone_timepoint_set),
+            Constraint(getattr(m, reserve_zone_set), m.TMPS,
                        rule=meet_reserve_rule))
 
 
 def generic_export_results(scenario_directory, subproblem, stage, m, d,
                            filename,
                            column_name,
-                           reserve_zone_timepoint_set,
+                           reserve_zone_set,
                            reserve_violation_expression
                            ):
     """
@@ -82,7 +82,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :param d:
     :param filename:
     :param column_name:
-    :param reserve_zone_timepoint_set:
+    :param reserve_zone_set:
     :param reserve_violation_expression:
     :return:
     """
@@ -95,7 +95,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          column_name]
                         )
-        for (ba, tmp) in getattr(m, reserve_zone_timepoint_set):
+        for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
             writer.writerow([
                 ba,
                 m.period[tmp],

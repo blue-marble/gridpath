@@ -9,7 +9,7 @@ def generic_add_model_components(
         m,
         d,
         reserve_zone_param,
-        reserve_zone_timepoint_set,
+        reserve_zone_set,
         reserve_generator_set,
         generator_reserve_provision_variable,
         total_reserve_provision_expression
@@ -21,7 +21,7 @@ def generic_add_model_components(
     :param m:
     :param d:
     :param reserve_zone_param:
-    :param reserve_zone_timepoint_set:
+    :param reserve_zone_set:
     :param reserve_generator_set:
     :param generator_reserve_provision_variable:
     :param total_reserve_provision_expression:
@@ -45,5 +45,5 @@ def generic_add_model_components(
                    if getattr(mod, reserve_zone_param)[g] == ba
                    )
     setattr(m, total_reserve_provision_expression,
-            Expression(getattr(m, reserve_zone_timepoint_set),
+            Expression(getattr(m, reserve_zone_set), m.TMPS,
                        rule=total_reserve_rule))

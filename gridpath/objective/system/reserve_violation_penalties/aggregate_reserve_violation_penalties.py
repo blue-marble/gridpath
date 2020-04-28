@@ -10,7 +10,7 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 def generic_add_model_components(
         m,
         d,
-        reserve_zone_timepoint_set,
+        reserve_zone_set,
         reserve_violation_expression,
         reserve_violation_penalty_param,
         objective_function_reserve_penalty_cost_component
@@ -19,7 +19,7 @@ def generic_add_model_components(
     Aggregate reserve violation penalty costs and add to the objective function
     :param m:
     :param d:
-    :param reserve_zone_timepoint_set:
+    :param reserve_zone_set:
     :param reserve_violation_expression:
     :param reserve_violation_penalty_param:
     :param objective_function_reserve_penalty_cost_component:
@@ -34,7 +34,7 @@ def generic_add_model_components(
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (ba, tmp)
-                   in getattr(mod, reserve_zone_timepoint_set)
+                   in getattr(mod, reserve_zone_set) * mod.TMPS
                    )
     setattr(m, objective_function_reserve_penalty_cost_component,
             Expression(rule=penalty_costs_rule))

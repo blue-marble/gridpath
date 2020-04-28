@@ -11,7 +11,6 @@ def generic_add_model_components(
     m,
     d,
     reserve_zone_set,
-    reserve_zone_timepoint_set,
     reserve_requirement_tmp_param,
     reserve_requirement_percent_param,
     reserve_zone_load_zone_set,
@@ -26,7 +25,6 @@ def generic_add_model_components(
     :param m:
     :param d:
     :param reserve_zone_set:
-    :param reserve_zone_timepoint_set:
     :param reserve_requirement_tmp_param:
     :param reserve_requirement_percent_param:
     :param reserve_zone_load_zone_set:
@@ -34,16 +32,11 @@ def generic_add_model_components(
     :return:
     """
 
-    # BA-timepoint combinations with requirement
-    setattr(m, reserve_zone_timepoint_set,
-            Set(dimen=2,
-                within=getattr(m, reserve_zone_set) * m.TMPS
-                )
-            )
-
     # Magnitude of the requirement by reserve zone and timepoint
+    # If not specified for a reserve zone - timepoint combination,
+    # will default to 0
     setattr(m, reserve_requirement_tmp_param,
-            Param(getattr(m, reserve_zone_timepoint_set),
+            Param(getattr(m, reserve_zone_set), m.TMPS,
                   within=NonNegativeReals,
                   default=0)
             )
@@ -80,8 +73,6 @@ def generic_add_model_components(
             getattr(mod, reserve_requirement_tmp_param)[reserve_zone, tmp] \
             + percentage_target
 
-    # TODO: apply to all reserve zone timepoints; previously we could skip
-    #  some timepoints, so figure out how to deal with that
     setattr(m, reserve_requirement_expression,
             Expression(getattr(m, reserve_zone_set) * m.TMPS,
                        rule=reserve_requirement_rule)
@@ -90,8 +81,8 @@ def generic_add_model_components(
 
 def generic_load_model_data(
         m, d, data_portal, scenario_directory, subproblem, stage,
-        reserve_zone_timepoint_set, reserve_requirement_param,
-        reserve_zone_load_zone_set, reserve_requirement_percent_param,
+        reserve_requirement_param, reserve_zone_load_zone_set,
+        reserve_requirement_percent_param,
         reserve_type
 ):
     """
@@ -104,7 +95,6 @@ def generic_load_model_data(
     :param stage:
     :param reserve_zone_timepoint_set:
     :param reserve_requirement_param:
-    :param reserve_zone_load_zone_set:
     :param reserve_requirement_percent_param
     :param reserve_type:
     :return:
@@ -122,7 +112,6 @@ def generic_load_model_data(
             input_dir,
             "{}_tmp_requirement.tab".format(reserve_type)
         ),
-        index=getattr(m, reserve_zone_timepoint_set),
         param=tmp_params_to_load
     )
 

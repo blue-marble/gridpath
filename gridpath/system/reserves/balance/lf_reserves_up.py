@@ -20,7 +20,7 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
-        reserve_zone_timepoint_set="LF_RESERVES_UP_ZONE_TIMEPOINTS",
+        reserve_zone_set="LF_RESERVES_UP_ZONES",
         reserve_violation_variable="LF_Reserves_Up_Violation_MW",
         reserve_violation_expression
         ="LF_Reserves_Up_Violation_MW_Expression",
@@ -45,7 +45,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "lf_reserves_up_violation.csv",
                            "lf_reserves_up_violation_mw",
-                           "LF_RESERVES_UP_ZONE_TIMEPOINTS",
+                           "LF_RESERVES_UP_ZONES",
                            "LF_Reserves_Up_Violation_MW_Expression"
                            )
 

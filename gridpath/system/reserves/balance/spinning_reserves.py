@@ -20,7 +20,7 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
-        reserve_zone_timepoint_set="SPINNING_RESERVES_ZONE_TIMEPOINTS",
+        reserve_zone_set="SPINNING_RESERVES_ZONES",
         reserve_violation_variable="Spinning_Reserves_Violation_MW",
         reserve_violation_expression
         ="Spinning_Reserves_Violation_MW_Expression",
@@ -45,7 +45,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "spinning_reserves_violation.csv",
                            "spinning_reserves_violation_mw",
-                           "SPINNING_RESERVES_ZONE_TIMEPOINTS",
+                           "SPINNING_RESERVES_ZONES",
                            "Spinning_Reserves_Violation_MW_Expression"
                            )
 

@@ -20,7 +20,6 @@ def add_model_components(m, d):
         m=m,
         d=d,
         reserve_zone_set="FREQUENCY_RESPONSE_BAS",
-        reserve_zone_timepoint_set="FREQUENCY_RESPONSE_BA_TIMEPOINTS",
         reserve_requirement_tmp_param="frequency_response_requirement_mw",
         reserve_requirement_percent_param="fr_per_req",
         reserve_zone_load_zone_set="FR_BA_LZ",
@@ -31,8 +30,9 @@ def add_model_components(m, d):
     # met by only a subset of the projects that can provide frequency response
 
     m.frequency_response_requirement_partial_mw = Param(
-        m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
-        within=NonNegativeReals
+        m.FREQUENCY_RESPONSE_BAS, m.TMPS,
+        within=NonNegativeReals,
+        default=0
     )
 
 
@@ -51,7 +51,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         m=m, d=d, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage,
-        reserve_zone_timepoint_set="FREQUENCY_RESPONSE_BA_TIMEPOINTS",
         reserve_requirement_param="frequency_response_requirement_mw",
         reserve_zone_load_zone_set="FR_BA_LZ",
         reserve_requirement_percent_param="fr_per_req",

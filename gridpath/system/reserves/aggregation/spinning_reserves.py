@@ -18,7 +18,7 @@ def add_model_components(m, d):
         m,
         d,
         "spinning_reserves_zone",
-        "SPINNING_RESERVES_ZONE_TIMEPOINTS",
+        "SPINNING_RESERVES_ZONES",
         "SPINNING_RESERVES_PROJECTS",
         "Provide_Spinning_Reserves_MW",
         "Total_Spinning_Reserves_Provision_MW"

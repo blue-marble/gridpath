@@ -20,7 +20,7 @@ def add_model_components(m, d):
         m,
         d,
         "frequency_response_ba",
-        "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+        "FREQUENCY_RESPONSE_BAS",
         "FREQUENCY_RESPONSE_PROJECTS",
         "Provide_Frequency_Response_MW",
         "Total_Frequency_Response_Provision_MW"
@@ -43,6 +43,6 @@ def add_model_components(m, d):
                 if mod.frequency_response_ba[g] == ba
                    )
     m.Total_Partial_Frequency_Response_Provision_MW = \
-        Expression(m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
+        Expression(m.FREQUENCY_RESPONSE_BAS, m.TMPS,
                    rule=total_partial_frequency_response_rule)
 

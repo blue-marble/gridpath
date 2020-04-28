@@ -100,7 +100,8 @@ class TestFrequencyResponseRequirement(unittest.TestCase):
             list(zip(req_df.ba, req_df.timepoint))
         )
         actual_ba_tmps = sorted([
-            (z, tmp) for (z, tmp) in instance.FREQUENCY_RESPONSE_BA_TIMEPOINTS
+            (z, tmp) for (z, tmp)
+            in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
         ])
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
 
@@ -114,7 +115,7 @@ class TestFrequencyResponseRequirement(unittest.TestCase):
         )
         actual_req = OrderedDict(sorted({
             (z, tmp): instance.frequency_response_requirement_mw[z, tmp]
-            for (z, tmp) in instance.FREQUENCY_RESPONSE_BA_TIMEPOINTS
+            for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
                                               }.items()
                                             )
                                      )
@@ -131,7 +132,7 @@ class TestFrequencyResponseRequirement(unittest.TestCase):
         actual_partial_req = OrderedDict(sorted({
             (z, tmp): instance.frequency_response_requirement_partial_mw[z,
                                                                          tmp]
-            for (z, tmp) in instance.FREQUENCY_RESPONSE_BA_TIMEPOINTS
+            for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
                                               }.items()
                                             )
                                      )

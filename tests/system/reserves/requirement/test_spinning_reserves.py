@@ -100,7 +100,8 @@ class TestSpinningReservesReq(unittest.TestCase):
             list(zip(req_df.LOAD_ZONES, req_df.timepoint))
         )
         actual_ba_tmps = sorted([
-            (z, tmp) for (z, tmp) in instance.SPINNING_RESERVES_ZONE_TIMEPOINTS
+            (z, tmp) for (z, tmp)
+            in instance.SPINNING_RESERVES_ZONES * instance.TMPS
         ])
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
 
@@ -114,7 +115,7 @@ class TestSpinningReservesReq(unittest.TestCase):
         )
         actual_req = OrderedDict(sorted({
             (z, tmp): instance.spinning_reserves_requirement_mw[z, tmp]
-            for (z, tmp) in instance.SPINNING_RESERVES_ZONE_TIMEPOINTS
+            for (z, tmp) in instance.SPINNING_RESERVES_ZONES * instance.TMPS
                                               }.items()
                                             )
                                      )
