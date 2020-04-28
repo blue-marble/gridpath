@@ -27,12 +27,16 @@ def add_model_components(m, d):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "spinning_reserves_tmp_requirement.tab",
-                            "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-                            "spinning_reserves_requirement_mw"
-                            )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_zone_timepoint_set="SPINNING_RESERVES_ZONE_TIMEPOINTS",
+        reserve_requirement_param="spinning_reserves_requirement_mw",
+        reserve_zone_load_zone_set="SPIN_BA_LZ",
+        reserve_requirement_percentage_param="spin_per_req",
+        reserve_type="spinning_reserves"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-import os.path
 from pyomo.environ import Param, NonNegativeReals
 
 from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_get_inputs_from_database, generic_add_model_components, \
-    generic_write_model_inputs
+    generic_write_model_inputs, generic_load_model_data
 
 
 def add_model_components(m, d):
@@ -48,16 +47,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage: 
     :return: 
     """
-    # Don't use generic function from reserve_requirements.py, as we are
-    # importing two columns (total and partial requirement), not just a
-    # single param
-    data_portal.load(filename=os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "frequency_response_tmp_requirement.tab"),
-                     index=m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
-                     param=(m.frequency_response_requirement_mw,
-                            m.frequency_response_requirement_partial_mw)
-                     )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_zone_timepoint_set="FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+        reserve_requirement_param="frequency_response_requirement_mw",
+        reserve_zone_load_zone_set="FR_BA_LZ",
+        reserve_requirement_percentage_param="fr_per_req",
+        reserve_type="frequency_response"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):

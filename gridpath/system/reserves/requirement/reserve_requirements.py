@@ -89,11 +89,12 @@ def generic_add_model_components(
             )
 
 
-def generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            requirement_filename,
-                            reserve_zone_timepoint_set,
-                            reserve_requirement_param):
+def generic_load_model_data(
+        m, d, data_portal, scenario_directory, subproblem, stage,
+        reserve_zone_timepoint_set, reserve_requirement_param,
+        reserve_zone_load_zone_set, reserve_requirement_percentage_param,
+        reserve_type
+):
     """
 
     :param m:
@@ -102,17 +103,50 @@ def generic_load_model_data(m, d, data_portal,
     :param scenario_directory:
     :param subproblem:
     :param stage:
-    :param requirement_filename:
     :param reserve_zone_timepoint_set:
     :param reserve_requirement_param:
+    :param reserve_zone_load_zone_set:
+    :param reserve_requirement_percentage_param
+    :param reserve_type:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs",
-                                           requirement_filename),
-                     index=getattr(m, reserve_zone_timepoint_set),
-                     param=getattr(m, reserve_requirement_param)
-                     )
+    input_dir = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs")
+
+    tmp_params_to_load = \
+        (getattr(m, reserve_requirement_param),
+         m.frequency_response_requirement_partial_mw) \
+        if reserve_type == "frequency_response" \
+        else getattr(m, reserve_requirement_param)
+    data_portal.load(
+        filename=os.path.join(
+            input_dir,
+            "{}_tmp_requirement.tab".format(reserve_type)
+        ),
+        index=getattr(m, reserve_zone_timepoint_set),
+        param=tmp_params_to_load
+    )
+
+    # If we have a RPS zone to load zone map input file, load it and the
+    # percent requirement; otherwise, initialize the set as an empty list (
+    # the param defaults to 0)
+    map_filename = os.path.join(
+        input_dir,
+        "{}_percent_map.tab".format(reserve_type)
+    )
+    if os.path.exists(map_filename):
+        data_portal.load(
+            filename=map_filename,
+            set=getattr(m, reserve_zone_load_zone_set)
+        )
+        data_portal.load(
+            filename=os.path.join(
+                input_dir, "{}_percent_requirement.tab".format(reserve_type)
+            ),
+            param=getattr(m, reserve_requirement_percentage_param)
+        )
+    else:
+        data_portal.data()[reserve_zone_load_zone_set] = {None: []}
 
 
 def generic_get_inputs_from_database(

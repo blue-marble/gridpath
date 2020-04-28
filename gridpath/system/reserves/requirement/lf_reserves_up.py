@@ -27,12 +27,16 @@ def add_model_components(m, d):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "lf_reserves_up_tmp_requirement.tab",
-                            "LF_RESERVES_UP_ZONE_TIMEPOINTS",
-                            "lf_reserves_up_requirement_mw"
-                            )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_zone_timepoint_set="LF_RESERVES_UP_ZONE_TIMEPOINTS",
+        reserve_requirement_param="lf_reserves_up_requirement_mw",
+        reserve_zone_load_zone_set="LF_UP_BA_LZ",
+        reserve_requirement_percentage_param="lf_up_per_req",
+        reserve_type="lf_reserves_up"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
