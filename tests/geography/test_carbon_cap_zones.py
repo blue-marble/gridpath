@@ -107,7 +107,7 @@ class TestCarbonCapZones(unittest.TestCase):
         )
         actual_penalty = OrderedDict(
             sorted(
-                {z: instance.carbon_cap_violation_penalty_per_mmt[z]
+                {z: instance.carbon_cap_violation_penalty_per_emission[z]
                  for z in instance.CARBON_CAP_ZONES}.items()
             )
         )

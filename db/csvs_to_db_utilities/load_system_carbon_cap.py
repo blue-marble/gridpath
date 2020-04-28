@@ -10,7 +10,7 @@ from db.utilities import carbon_cap
 def load_system_carbon_cap_targets(io, c, subscenario_input, data_input):
     """
     System carbon_cap dictionary
-    {carbon_cap_zone: {period: {subproblem: {stage_id: carbon_cap_mmt}}}}
+    {carbon_cap_zone: {period: {subproblem: {stage_id: carbon_cap}}}}
     :param io:
     :param c:
     :param subscenario_input:
@@ -43,7 +43,7 @@ def load_system_carbon_cap_targets(io, c, subscenario_input, data_input):
                         st_id = int(st_id)
                         zone_period_targets[z][p][sub_id][st_id] = dict()
                         zone_period_targets[z][p][sub_id][st_id] = float(zone_period_targets_by_zone_period_subproblem.loc[
-                            zone_period_targets_by_zone_period_subproblem['stage_id'] == st_id, 'carbon_cap_mmt'].iloc[0])
+                            zone_period_targets_by_zone_period_subproblem['stage_id'] == st_id, 'carbon_cap'].iloc[0])
 
         # Load data into GridPath database
         carbon_cap.insert_carbon_cap_targets(
