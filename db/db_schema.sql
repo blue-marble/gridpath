@@ -1594,16 +1594,16 @@ FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percentage;
-CREATE TABLE inputs_system_lf_reserves_up_percentage (
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
+CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percentage_lz_map;
-CREATE TABLE inputs_system_lf_reserves_up_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent_lz_map;
+CREATE TABLE inputs_system_lf_reserves_up_percent_lz_map (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 load_zone VARCHAR(32),
@@ -1635,16 +1635,16 @@ subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
 
-DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percentage;
-CREATE TABLE inputs_system_lf_reserves_down_percentage (
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
+CREATE TABLE inputs_system_lf_reserves_down_percent (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percentage_lz_map;
-CREATE TABLE inputs_system_lf_reserves_down_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent_lz_map;
+CREATE TABLE inputs_system_lf_reserves_down_percent_lz_map (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 load_zone VARCHAR(32),
@@ -1675,16 +1675,16 @@ subscenarios_system_regulation_up (regulation_up_scenario_id)
 );
 
 
-DROP TABLE IF EXISTS inputs_system_regulation_down_percentage;
-CREATE TABLE inputs_system_regulation_down_percentage (
+DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
+CREATE TABLE inputs_system_regulation_down_percent (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_regulation_down_percentage_lz_map;
-CREATE TABLE inputs_system_regulation_down_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_regulation_down_percent_lz_map;
+CREATE TABLE inputs_system_regulation_down_percent_lz_map (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 load_zone VARCHAR(32),
@@ -1715,16 +1715,16 @@ FOREIGN KEY (regulation_down_scenario_id) REFERENCES
 subscenarios_system_regulation_down (regulation_down_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_system_regulation_up_percentage;
-CREATE TABLE inputs_system_regulation_up_percentage (
+DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
+CREATE TABLE inputs_system_regulation_up_percent (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_regulation_up_percentage_lz_map;
-CREATE TABLE inputs_system_regulation_up_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_regulation_up_percent_lz_map;
+CREATE TABLE inputs_system_regulation_up_percent_lz_map (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
 load_zone VARCHAR(32),
@@ -1756,16 +1756,16 @@ FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_system_frequency_response_percentage;
-CREATE TABLE inputs_system_frequency_response_percentage (
+DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
+CREATE TABLE inputs_system_frequency_response_percent (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_frequency_response_percentage_lz_map;
-CREATE TABLE inputs_system_frequency_response_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_frequency_response_percent_lz_map;
+CREATE TABLE inputs_system_frequency_response_percent_lz_map (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 load_zone VARCHAR(32),
@@ -1796,16 +1796,16 @@ FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
 subscenarios_system_spinning_reserves (spinning_reserves_scenario_id)
 );
 
-DROP TABLE IF EXISTS inputs_system_spinning_reserves_percentage;
-CREATE TABLE inputs_system_spinning_reserves_percentage (
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
+CREATE TABLE inputs_system_spinning_reserves_percent (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 percent_load_req FLOAT,
 PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba)
 );
 
-DROP TABLE IF EXISTS inputs_system_spinning_reserves_percentage_lz_map;
-CREATE TABLE inputs_system_spinning_reserves_percentage_lz_map (
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent_lz_map;
+CREATE TABLE inputs_system_spinning_reserves_percent_lz_map (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 load_zone VARCHAR(32),

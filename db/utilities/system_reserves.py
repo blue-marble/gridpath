@@ -12,14 +12,17 @@ from db.utilities.common_functions import \
 def insert_system_reserves(
         conn,
         subscenario_data,
-        input_data,
+        tmp_req,
+        percent_req,
+        percent_map,
         reserve_type
 ):
     """
     :param conn:
-    :param c: 
     :param subscenario_data:
-    :param input_data:
+    :param tmp_req:
+    :param percent_req:
+    :param percent_map:
     :param reserve_type:
     :return: 
     """
@@ -33,21 +36,40 @@ def insert_system_reserves(
         """.format(reserve_type, reserve_type)
     spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
 
-    # Insert data
+    # Insert the by-timepoint requirement
     if reserve_type == "frequency_response":
-        inputs_sql = """
+        tmp_req_sql = """
             INSERT OR IGNORE INTO inputs_system_{}
             ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw, {}_partial_mw)
             VALUES (?, ?, ?, ?, ?, ?);
             """.format(reserve_type, reserve_type, reserve_type,
                        reserve_type, reserve_type)
     else:
-        inputs_sql = """
+        tmp_req_sql = """
             INSERT OR IGNORE INTO inputs_system_{}
             ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw)
             VALUES (?, ?, ?, ?, ?);
             """.format(reserve_type, reserve_type, reserve_type, reserve_type)
-    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=input_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=tmp_req_sql, data=tmp_req)
+
+    # Insert the percent-of-load requirement & map
+    pcnt_req_sql = """
+        INSERT OR IGNORE INTO inputs_system_{}_percent
+        ({}_scenario_id, {}_ba, percent_load_req)
+        VALUES (?, ?, ?);
+        """.format(reserve_type, reserve_type, reserve_type)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=pcnt_req_sql, data=percent_req
+    )
+
+    pcnt_req_map_sql = """
+        INSERT OR IGNORE INTO inputs_system_{}_percent_lz_map
+        ({}_scenario_id, {}_ba, load_zone)
+        VALUES (?, ?, ?);
+        """.format(reserve_type, reserve_type, reserve_type)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=pcnt_req_map_sql, data=percent_map
+    )
 
 
 def load_from_csvs(conn, subscenario_directory, reserve_type):
@@ -76,17 +98,19 @@ def load_from_csvs(conn, subscenario_directory, reserve_type):
         subscenario_id=subscenario_id, csv_file=timepoint_file
     )
 
-    percentage_req_tuples = csv_to_tuples(
+    percent_req_tuples = csv_to_tuples(
         subscenario_id=subscenario_id, csv_file=percentage_file
     )
-    percentage_map_tuples = csv_to_tuples(
+    percent_map_tuples = csv_to_tuples(
         subscenario_id=subscenario_id, csv_file=map_file
     )
 
-    return insert_system_reserves(
+    insert_system_reserves(
         conn=conn,
         subscenario_data=[subscenario_data],
-        input_data=timepoint_req_tuples,
+        tmp_req=timepoint_req_tuples,
+        percent_req=percent_req_tuples,
+        percent_map=percent_map_tuples,
         reserve_type=reserve_type
     )
 

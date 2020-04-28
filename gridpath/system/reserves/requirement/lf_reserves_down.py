@@ -21,7 +21,7 @@ def add_model_components(m, d):
         reserve_zone_set="LF_RESERVES_DOWN_ZONES",
         reserve_zone_timepoint_set="LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
         reserve_requirement_tmp_param="lf_reserves_down_requirement_mw",
-        reserve_requirement_percentage_param="lf_down_per_req",
+        reserve_requirement_percent_param="lf_down_per_req",
         reserve_zone_load_zone_set="LF_DOWN_BA_LZ",
         reserve_requirement_expression="LF_Down_Requirement"
         )
@@ -35,7 +35,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_zone_timepoint_set="LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
         reserve_requirement_param="lf_reserves_down_requirement_mw",
         reserve_zone_load_zone_set="LF_DOWN_BA_LZ",
-        reserve_requirement_percentage_param="lf_down_per_req",
+        reserve_requirement_percent_param="lf_down_per_req",
         reserve_type="lf_reserves_down"
     )
 

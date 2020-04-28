@@ -13,7 +13,7 @@ def generic_add_model_components(
     reserve_zone_set,
     reserve_zone_timepoint_set,
     reserve_requirement_tmp_param,
-    reserve_requirement_percentage_param,
+    reserve_requirement_percent_param,
     reserve_zone_load_zone_set,
     reserve_requirement_expression
 ):
@@ -28,7 +28,7 @@ def generic_add_model_components(
     :param reserve_zone_set:
     :param reserve_zone_timepoint_set:
     :param reserve_requirement_tmp_param:
-    :param reserve_requirement_percentage_param:
+    :param reserve_requirement_percent_param:
     :param reserve_zone_load_zone_set:
     :param reserve_requirement_expression:
     :return:
@@ -49,7 +49,7 @@ def generic_add_model_components(
             )
 
     # Requirement as percentage of load
-    setattr(m, reserve_requirement_percentage_param,
+    setattr(m, reserve_requirement_percent_param,
             Param(getattr(m, reserve_zone_set),
                   within=PercentFraction,
                   default=0)
@@ -67,9 +67,8 @@ def generic_add_model_components(
         # target; if no map provided, the percentage_target is 0
         if getattr(mod, reserve_zone_load_zone_set):
             percentage_target = sum(
-                getattr(mod, reserve_requirement_percentage_param)[
-                    reserve_zone, tmp
-                ] * mod.static_load_mw[lz, tmp]
+                getattr(mod, reserve_requirement_percent_param)[reserve_zone]
+                * mod.static_load_mw[lz, tmp]
                 for (_reserve_zone, lz)
                 in getattr(mod, reserve_zone_load_zone_set)
                 if _reserve_zone == reserve_zone
@@ -92,7 +91,7 @@ def generic_add_model_components(
 def generic_load_model_data(
         m, d, data_portal, scenario_directory, subproblem, stage,
         reserve_zone_timepoint_set, reserve_requirement_param,
-        reserve_zone_load_zone_set, reserve_requirement_percentage_param,
+        reserve_zone_load_zone_set, reserve_requirement_percent_param,
         reserve_type
 ):
     """
@@ -106,7 +105,7 @@ def generic_load_model_data(
     :param reserve_zone_timepoint_set:
     :param reserve_requirement_param:
     :param reserve_zone_load_zone_set:
-    :param reserve_requirement_percentage_param
+    :param reserve_requirement_percent_param
     :param reserve_type:
     :return:
     """
@@ -143,7 +142,7 @@ def generic_load_model_data(
             filename=os.path.join(
                 input_dir, "{}_percent_requirement.tab".format(reserve_type)
             ),
-            param=getattr(m, reserve_requirement_percentage_param)
+            param=getattr(m, reserve_requirement_percent_param)
         )
     else:
         data_portal.data()[reserve_zone_load_zone_set] = {None: []}
@@ -211,7 +210,7 @@ def generic_get_inputs_from_database(
     # Get any percentage requirement
     percentage_req = c2.execute("""
         SELECT {}_ba, percent_load_req
-        FROM inputs_system_{}_percentage
+        FROM inputs_system_{}_percent
         WHERE {}_scenario_id = {}
         """.format(
         reserve_type,
@@ -223,9 +222,9 @@ def generic_get_inputs_from_database(
 
     # Get any reserve zone to load zone mapping for the percent target
     c3 = conn.cursor()
-    lz_mapping = c3.execute(
-        """SELECT {}_ba, load_zone
-        FROM inputs_system_{}_percentage_lz_map
+    lz_mapping = c3.execute("""
+        SELECT {}_ba, load_zone
+        FROM inputs_system_{}_percent_lz_map
         JOIN
         (SELECT {}_ba
         FROM inputs_geography_{}_bas
@@ -264,7 +263,6 @@ def generic_write_model_inputs(
     :param reserve_type:
     :return:
     """
-
     inputs_dir = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs"
     )
@@ -312,8 +310,8 @@ def generic_write_model_inputs(
                                "{}_percent_map.tab".format(reserve_type)
                                ),
                   "w", newline=""
-                  ) as percent_req_file:
-            writer = csv.writer(percent_req_file, delimiter="\t",
+                  ) as percent_map_file:
+            writer = csv.writer(percent_map_file, delimiter="\t",
                                 lineterminator="\n")
 
             # Write header
@@ -321,7 +319,7 @@ def generic_write_model_inputs(
                 ["ba", "load_zone"]
             )
 
-            for row in percent_map:
+            for row in ba_lz_map_list:
                 writer.writerow(row)
     else:
         pass

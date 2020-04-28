@@ -763,6 +763,17 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_aux_cons")
         self.run_and_check_objective("test_aux_cons", 836737625.8990427)
 
+    def test_example_test_w_lf_down_percent_req(self):
+        """
+        Check validation and objective function value of
+        "test_w_lf_down_percent_req" example
+        :return:
+        """
+
+        self.check_validation("test_w_lf_down_percent_req")
+        self.run_and_check_objective("test_w_lf_down_percent_req",
+                                     1516738006.5466032)
+
     @classmethod
     def tearDownClass(cls):
         os.remove("../db/test_examples.db")

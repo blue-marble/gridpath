@@ -20,7 +20,7 @@ def add_model_components(m, d):
         reserve_zone_set="SPINNING_RESERVES_ZONES",
         reserve_zone_timepoint_set="SPINNING_RESERVES_ZONE_TIMEPOINTS",
         reserve_requirement_tmp_param="spinning_reserves_requirement_mw",
-        reserve_requirement_percentage_param="spin_per_req",
+        reserve_requirement_percent_param="spin_per_req",
         reserve_zone_load_zone_set="SPIN_BA_LZ",
         reserve_requirement_expression="Spin_Requirement"
         )
@@ -34,7 +34,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_zone_timepoint_set="SPINNING_RESERVES_ZONE_TIMEPOINTS",
         reserve_requirement_param="spinning_reserves_requirement_mw",
         reserve_zone_load_zone_set="SPIN_BA_LZ",
-        reserve_requirement_percentage_param="spin_per_req",
+        reserve_requirement_percent_param="spin_per_req",
         reserve_type="spinning_reserves"
     )
 
