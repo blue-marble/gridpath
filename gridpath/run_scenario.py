@@ -20,6 +20,7 @@ from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
+import warnings
 
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
@@ -649,9 +650,20 @@ def save_duals(scenario_directory, subproblem, stage, instance):
             duals_writer = writer(duals_results_file)
             duals_writer.writerow(instance.constraint_indices[c])
             for index in constraint_object:
-                duals_writer.writerow(list(index) +
-                                      [instance.dual[constraint_object[index]]]
-                                      )
+                try:
+                    duals_writer.writerow(list(index) +
+                                          [instance.dual[constraint_object[index]]]
+                                          )
+                # We get an error when trying to export duals with CPLEX
+                # when solving MIPs, so catch it here and ignore to avoid
+                # breaking the script, but throw a warning
+                except KeyError:
+                    warnings.warn("""
+                    KeyError caught when saving duals. Duals were not exported.
+                    This is expected if solving a MIP with CPLEX, 
+                    not otherwise.
+                    """)
+                    pass
 
 
 def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
