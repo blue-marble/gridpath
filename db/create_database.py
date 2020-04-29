@@ -278,8 +278,8 @@ def load_mod_units(db, c, custom_units):
     sql = """
         INSERT INTO mod_units
         (metric, type, numerator_core_units, denominator_core_units,
-        abbreviation, unit, description)
-        VALUES (?, ?, ?, ?, ?, ?, ?);"""
+        unit, description)
+        VALUES (?, ?, ?, ?, ?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_units.csv",
                   sql=sql)
 
