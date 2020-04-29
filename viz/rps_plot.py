@@ -109,12 +109,15 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     return df
 
 
-def create_plot(df, title, energy_unit, ylimit=None):
+def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
-    :param energy_unit: string, the unit of energy used in the database/model
+    :param energy_unit: string, the unit of energy used in the database/model,
+    e.g. "MWh"
+    :param cost_unit: string, the unit of cost used in the database/model,
+    e.g. "USD"
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -218,8 +221,8 @@ def create_plot(df, title, energy_unit, ylimit=None):
             ("Period", "@period"),
             ("RPS Target", "@%s{0,0} %s" % (line_col, energy_unit)),
             ("Fraction of RPS Met", "@fraction_of_rps_target_met{0%}"),
-            ("Marginal Cost", "@rps_marginal_cost_per_mwh{0,0} $/%s"
-             % energy_unit)
+            ("Marginal Cost", "@rps_marginal_cost_per_mwh{0,0} %s/%s"
+             % (cost_unit, energy_unit))
         ],
         renderers=[target_renderer],
         toggleable=False)
@@ -249,6 +252,7 @@ def main(args=None):
     )
 
     energy_unit = get_unit(c, "energy")
+    cost_unit = get_unit(c, "cost")
 
     plot_title = \
         "{}RPS Result by Period - {} - Subproblem {} - Stage {}".format(
@@ -270,6 +274,7 @@ def main(args=None):
         df=df,
         title=plot_title,
         energy_unit=energy_unit,
+        cost_unit=cost_unit,
         ylimit=parsed_args.ylimit
     )
 

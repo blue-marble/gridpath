@@ -116,13 +116,15 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     return df
 
 
-def create_plot(df, title, carbon_unit, ylimit=None):
+def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
     :param carbon_unit: string, the unit of carbon emissions used in the
-    database/model
+    database/model, e.g. "tCO2"
+    :param cost_unit: string, the unit of cost used in the database/model,
+    e.g. "USD"
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -226,8 +228,8 @@ def create_plot(df, title, carbon_unit, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Carbon Target", "@%s{0,0} %s" % (line_col, carbon_unit)),
-            ("Marginal Cost", "@carbon_cap_marginal_cost_per_emission{0,0} $/%s"
-             % carbon_unit)
+            ("Marginal Cost", "@carbon_cap_marginal_cost_per_emission{0,0} %s/%s"
+             % (cost_unit, carbon_unit))
         ],
         renderers=[target_renderer],
         toggleable=False)
@@ -257,6 +259,7 @@ def main(args=None):
     )
 
     carbon_unit = get_unit(c, "carbon_emissions")
+    cost_unit = get_unit(c, "cost")
 
     plot_title = "{}Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
         .format(
@@ -279,6 +282,7 @@ def main(args=None):
         df=df,
         title=plot_title,
         carbon_unit=carbon_unit,
+        cost_unit=cost_unit,
         ylimit=parsed_args.ylimit
     )
 
