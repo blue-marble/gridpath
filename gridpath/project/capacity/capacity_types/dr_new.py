@@ -441,8 +441,16 @@ def summarize_module_specific_results(
             (capacity_results_agg_df["new_build_mwh"] > 0)
         ][["new_build_mw", "new_build_mwh"]]
     )
-    new_build_df.columns =["New DR Power Capacity (MW)",
-                           "New DR Energy Capacity (MWh)"]
+
+    # Get the power and energy units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+
+    # Rename column header
+    new_build_df.columns = ["New DR Power Capacity ({})".format(power_unit),
+                            "New DR Energy Capacity ({})".format(energy_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New DR Capacity <--\n")

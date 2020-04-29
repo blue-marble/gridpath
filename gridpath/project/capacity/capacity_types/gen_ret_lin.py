@@ -378,7 +378,13 @@ def summarize_module_specific_results(
         ]["retired_mw"]
     )
 
-    lin_retirement_df.columns = ["Retired Capacity (MW)"]
+    # Get the power units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+
+    # Rename column header
+    lin_retirement_df.columns = ["Retired Capacity ({})".format(power_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Retired Capacity <--\n")
