@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import absolute_import
 
-import csv
-import os.path
-
-from .reserve_requirements import generic_add_model_components, \
-    generic_load_model_data
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
+    generic_load_model_data, generic_write_model_inputs
 
 
 def add_model_components(m, d):
@@ -19,21 +16,26 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "LF_RESERVES_DOWN_ZONES",
-        "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
-        "lf_reserves_down_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="LF_RESERVES_DOWN_ZONES",
+        reserve_requirement_tmp_param="lf_reserves_down_requirement_mw",
+        reserve_requirement_percent_param="lf_down_per_req",
+        reserve_zone_load_zone_set="LF_DOWN_BA_LZ",
+        reserve_requirement_expression="LF_Down_Requirement"
         )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "lf_reserves_down_requirement.tab",
-                            "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
-                            "lf_reserves_down_requirement_mw"
-                            )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_requirement_param="lf_reserves_down_requirement_mw",
+        reserve_zone_load_zone_set="LF_DOWN_BA_LZ",
+        reserve_requirement_percent_param="lf_down_per_req",
+        reserve_type="lf_reserves_down"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -44,37 +46,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    lf_reserves_down = c.execute(
-        """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
-        FROM inputs_system_lf_reserves_down
-        INNER JOIN
-        (SELECT timepoint
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT lf_reserves_down_ba
-        FROM inputs_geography_lf_reserves_down_bas
-        WHERE lf_reserves_down_ba_scenario_id = {}) as relevant_bas
-        USING (lf_reserves_down_ba)
-        WHERE lf_reserves_down_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID,
-            subscenarios.LF_RESERVES_DOWN_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="lf_reserves_down",
+            reserve_type_ba_subscenario_id
+            =subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.LF_RESERVES_DOWN_SCENARIO_ID
         )
-    )
-
-    return lf_reserves_down
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -92,7 +73,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     lf_reserves_down_requirement.tab file.
@@ -104,19 +87,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    lf_reserves_down = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    tmp_req, percent_req, percent_map = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "lf_reserves_down_requirement.tab"), "w", newline="") as \
-            lf_reserves_down_tab_file:
-        writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        # TODO: change these headers
-        writer.writerow(
-            ["LOAD_ZONES", "timepoint", "downward_reserve_requirement"]
-        )
-
-        for row in lf_reserves_down:
-            writer.writerow(row)
+    generic_write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        timepoint_req=tmp_req,
+        percent_req=percent_req, percent_map=percent_map,
+        reserve_type="lf_reserves_down"
+    )

@@ -91,7 +91,7 @@ class TestCosts(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "regulation_up_requirement.tab"
+                    "regulation_up_tmp_requirement.tab"
                 ),
                 sep="\t"
             )
@@ -100,7 +100,8 @@ class TestCosts(unittest.TestCase):
             list(zip(req_df.LOAD_ZONES, req_df.timepoint))
         )
         actual_ba_tmps = sorted([
-            (z, tmp) for (z, tmp) in instance.REGULATION_UP_ZONE_TIMEPOINTS
+            (z, tmp) for (z, tmp)
+            in instance.REGULATION_UP_ZONES * instance.TMPS
         ])
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
 
@@ -114,7 +115,7 @@ class TestCosts(unittest.TestCase):
         )
         actual_req = OrderedDict(sorted({
             (z, tmp): instance.regulation_up_requirement_mw[z, tmp]
-            for (z, tmp) in instance.REGULATION_UP_ZONE_TIMEPOINTS
+            for (z, tmp) in instance.REGULATION_UP_ZONES * instance.TMPS
                                               }.items()
                                             )
                                      )

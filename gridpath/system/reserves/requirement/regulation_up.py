@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import absolute_import
-
-import csv
-import os.path
-
-from .reserve_requirements import generic_add_model_components, \
-    generic_load_model_data
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
+    generic_load_model_data, generic_write_model_inputs
 
 
 def add_model_components(m, d):
@@ -19,21 +15,26 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "REGULATION_UP_ZONES",
-        "REGULATION_UP_ZONE_TIMEPOINTS",
-        "regulation_up_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="REGULATION_UP_ZONES",
+        reserve_requirement_tmp_param="regulation_up_requirement_mw",
+        reserve_requirement_percent_param="reg_up_per_req",
+        reserve_zone_load_zone_set="REG_UP_BA_LZ",
+        reserve_requirement_expression="Reg_Up_Requirement"
         )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "regulation_up_requirement.tab",
-                            "REGULATION_UP_ZONE_TIMEPOINTS",
-                            "regulation_up_requirement_mw"
-                            )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_requirement_param="regulation_up_requirement_mw",
+        reserve_zone_load_zone_set="REG_UP_BA_LZ",
+        reserve_requirement_percent_param="reg_up_per_req",
+        reserve_type="regulation_up"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -44,37 +45,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    regulation_up = c.execute(
-        """SELECT regulation_up_ba, timepoint, regulation_up_mw
-        FROM inputs_system_regulation_up
-        INNER JOIN
-        (SELECT timepoint 
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT regulation_up_ba
-        FROM inputs_geography_regulation_up_bas
-        WHERE regulation_up_ba_scenario_id = {}) as relevant_bas
-        USING (regulation_up_ba)
-        WHERE regulation_up_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.REGULATION_UP_BA_SCENARIO_ID,
-            subscenarios.REGULATION_UP_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="regulation_up",
+            reserve_type_ba_subscenario_id
+            =subscenarios.REGULATION_UP_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.REGULATION_UP_SCENARIO_ID
         )
-    )
-
-    return regulation_up
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -104,19 +84,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    regulation_up = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    tmp_req, percent_req, percent_map = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "regulation_up_requirement.tab"), "w", newline="") as \
-            regulation_up_tab_file:
-        writer = csv.writer(regulation_up_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        # TODO: change these headers
-        writer.writerow(
-            ["LOAD_ZONES", "timepoint", "upward_reserve_requirement"]
-        )
-
-        for row in regulation_up:
-            writer.writerow(row)
+    generic_write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        timepoint_req=tmp_req,
+        percent_req=percent_req, percent_map=percent_map,
+        reserve_type="regulation_up"
+    )

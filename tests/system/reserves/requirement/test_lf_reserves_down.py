@@ -25,7 +25,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_following_down_balancing_areas",
     "project", "project.capacity.capacity", "project.fuels",
     "project.operations",
-    "project.operations.reserves.lf_reserves_down"]
+    "project.operations.reserves.lf_reserves_down",
+    "system.load_balance.static_load_requirement"
+]
 NAME_OF_MODULE_BEING_TESTED = "system.reserves.requirement.lf_reserves_down"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -91,7 +93,7 @@ class TestCosts(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "lf_reserves_down_requirement.tab"
+                    "lf_reserves_down_tmp_requirement.tab"
                 ),
                 sep="\t"
             )
@@ -100,7 +102,8 @@ class TestCosts(unittest.TestCase):
             list(zip(req_df.LOAD_ZONES, req_df.timepoint))
         )
         actual_ba_tmps = sorted([
-            (z, tmp) for (z, tmp) in instance.LF_RESERVES_DOWN_ZONE_TIMEPOINTS
+            (z, tmp) for (z, tmp)
+            in instance.LF_RESERVES_DOWN_ZONES * instance.TMPS
         ])
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
 
@@ -114,11 +117,30 @@ class TestCosts(unittest.TestCase):
         )
         actual_req = OrderedDict(sorted({
             (z, tmp): instance.lf_reserves_down_requirement_mw[z, tmp]
-            for (z, tmp) in instance.LF_RESERVES_DOWN_ZONE_TIMEPOINTS
+            for (z, tmp) in instance.LF_RESERVES_DOWN_ZONES * instance.TMPS
                                               }.items()
                                             )
                                      )
         self.assertDictEqual(expected_req, actual_req)
+
+        # Param: lf_down_per_req
+        expected_perc_req = OrderedDict({"Zone1": 0.03, "Zone2": 0})
+        actual_perc_req = OrderedDict(sorted({
+            z: instance.lf_down_per_req[z]
+            for z in instance.LF_RESERVES_DOWN_ZONES}.items()
+                                            )
+                                     )
+        self.assertDictEqual(expected_perc_req, actual_perc_req)
+
+        # Set: LF_DOWN_BA_LZ
+        expected_ba_lzs = sorted(
+            [("Zone1", "Zone1"), ("Zone1", "Zone2"), ("Zone1", "Zone3")]
+        )
+        actual_ba_lzs = sorted([
+            (ba, lz) for (ba, lz)
+            in instance.LF_DOWN_BA_LZ
+        ])
+        self.assertListEqual(expected_ba_lzs, actual_ba_lzs)
 
 
 if __name__ == "__main__":

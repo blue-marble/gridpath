@@ -25,6 +25,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project", "project.capacity.capacity", "project.fuels",
     "project.operations",
     "project.operations.reserves.lf_reserves_down",
+    "system.load_balance.static_load_requirement",
     "system.reserves.requirement.lf_reserves_down"
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.reserves.aggregation.lf_reserves_down"

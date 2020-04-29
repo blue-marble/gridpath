@@ -22,7 +22,7 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+        "FREQUENCY_RESPONSE_BAS",
         "Frequency_Response_Violation_MW_Expression",
         "frequency_response_violation_penalty_per_mw",
         "Frequency_Response_Penalty_Costs"
@@ -40,7 +40,7 @@ def add_model_components(m, d):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (ba, tmp)
-                   in mod.FREQUENCY_RESPONSE_BA_TIMEPOINTS
+                   in mod.FREQUENCY_RESPONSE_BAS * mod.TMPS
                    )
     m.Frequency_Response_Partial_Penalty_Costs = \
         Expression(rule=partial_frequency_response_penalty_costs_rule)

@@ -18,7 +18,7 @@ def add_model_components(m, d):
         m,
         d,
         "lf_reserves_down_zone",
-        "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
+        "LF_RESERVES_DOWN_ZONES",
         "LF_RESERVES_DOWN_PROJECTS",
         "Provide_LF_Reserves_Down_MW",
         "Total_LF_Reserves_Down_Provision_MW"

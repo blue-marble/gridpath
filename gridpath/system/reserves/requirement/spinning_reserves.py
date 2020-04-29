@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import absolute_import
-
-import csv
-import os.path
-
-from .reserve_requirements import generic_add_model_components, \
-    generic_load_model_data
+from gridpath.system.reserves.requirement.reserve_requirements import \
+    generic_get_inputs_from_database, generic_add_model_components, \
+    generic_load_model_data, generic_write_model_inputs
 
 
 def add_model_components(m, d):
@@ -19,21 +15,26 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "SPINNING_RESERVES_ZONES",
-        "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-        "spinning_reserves_requirement_mw"
+        m=m,
+        d=d,
+        reserve_zone_set="SPINNING_RESERVES_ZONES",
+        reserve_requirement_tmp_param="spinning_reserves_requirement_mw",
+        reserve_requirement_percent_param="spin_per_req",
+        reserve_zone_load_zone_set="SPIN_BA_LZ",
+        reserve_requirement_expression="Spin_Requirement"
         )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "spinning_reserves_requirement.tab",
-                            "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-                            "spinning_reserves_requirement_mw"
-                            )
+    generic_load_model_data(
+        m=m, d=d, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage,
+        reserve_requirement_param="spinning_reserves_requirement_mw",
+        reserve_zone_load_zone_set="SPIN_BA_LZ",
+        reserve_requirement_percent_param="spin_per_req",
+        reserve_type="spinning_reserves"
+    )
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -44,37 +45,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    subproblem = 1 if subproblem == "" else subproblem
-    stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    spinning_reserves = c.execute(
-        """SELECT spinning_reserves_ba, timepoint, spinning_reserves_mw
-        FROM inputs_system_spinning_reserves
-        INNER JOIN
-        (SELECT timepoint
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
-        INNER JOIN
-        (SELECT spinning_reserves_ba
-        FROM inputs_geography_spinning_reserves_bas
-        WHERE spinning_reserves_ba_scenario_id = {}) as relevant_bas
-        USING (spinning_reserves_ba)
-        WHERE spinning_reserves_scenario_id = {}
-        AND stage_id = {}
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID,
-            subscenarios.SPINNING_RESERVES_SCENARIO_ID,
-            stage
+    return \
+        generic_get_inputs_from_database(
+            subscenarios=subscenarios,
+            subproblem=subproblem, stage=stage, conn=conn,
+            reserve_type="spinning_reserves",
+            reserve_type_ba_subscenario_id
+            =subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID,
+            reserve_type_req_subscenario_id
+            =subscenarios.SPINNING_RESERVES_SCENARIO_ID
         )
-    )
-
-    return spinning_reserves
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -104,19 +84,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    spinning_reserves = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    tmp_req, percent_req, percent_map = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    # spinning_reserves_requirement.tab
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "spinning_reserves_requirement.tab"), "w", newline="") as \
-            spinning_reserves_tab_file:
-        writer = csv.writer(spinning_reserves_tab_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["bas", "timepoints", "spinning_reserve_requirement"]
-        )
-
-        for row in spinning_reserves:
-            writer.writerow(row)
+    generic_write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        timepoint_req=tmp_req,
+        percent_req=percent_req, percent_map=percent_map,
+        reserve_type="spinning_reserves"
+    )
