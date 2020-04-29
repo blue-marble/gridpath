@@ -106,6 +106,8 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     # Change period type from int to string (required for categorical bar chart)
     df["period"] = df["period"].map(str)
 
+    # TODO: division will fail if total_emissions_degen is NULL, e.g. when
+    #  there are no carbon transmission lines.
     # Add project/import fractions
     df["fraction_of_project_emissions"] = df["in_zone_project_emissions"] \
         / df["total_emissions_degen"]
