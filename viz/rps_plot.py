@@ -80,7 +80,7 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     sql = """
         SELECT 
             period, 
-            rps_target_mwh 
+            rps_target_mwh, 
             delivered_rps_energy_mwh, 
             curtailed_rps_energy_mwh, 
             fraction_of_rps_target_met, 
