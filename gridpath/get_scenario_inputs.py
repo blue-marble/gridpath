@@ -355,6 +355,21 @@ def write_scenario_description(
                          subscenarios.TUNING_SCENARIO_ID])
 
 
+def write_units_csv(scenario_directory, conn):
+    """
+
+    :param scenario_directory:
+    :param conn:
+    :return:
+    """
+    sql = """
+        SELECT metric, unit
+        FROM mod_units;
+        """
+    df = pd.read_sql(sql, conn)
+    df.to_csv(os.path.join(scenario_directory, "units.csv"), index=False)
+
+
 def write_solver_options(scenario_directory, solver_options):
     """
     :param scenario_directory:
@@ -477,6 +492,9 @@ def main(args=None):
         scenario_id=scenario_id, scenario_name=scenario_name,
         optional_features=optional_features, subscenarios=subscenarios
     )
+
+    # Write the units used for all metrics
+    write_units_csv(scenario_directory, conn)
 
     # Write the solver options file if needed
     write_solver_options(

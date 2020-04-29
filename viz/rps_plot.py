@@ -6,8 +6,9 @@ Create plot of rps by period for a given zone/subproblem/stage.
 """
 
 # TODO: maybe create a generic rescale function that checks dataframe and
-#    rescales anything with mw or mwh in it to appropriate metric (could be
-#    GWh, kWh, ... depending one results.
+#    rescales the annaul data to a more appropriate scale depending on results
+#    and the energy unit. Would use a separate database table that lists the
+#    energy units and their relative magnitudes (e.g. 1 MW = 1000 kW)
 
 
 from argparse import ArgumentParser
@@ -22,7 +23,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_unit
 
 
 def create_parser():
@@ -78,9 +80,9 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     sql = """
         SELECT 
             period, 
-            rps_target_mwh/1000000 AS rps_target_twh, 
-            delivered_rps_energy_mwh/1000000 AS delivered_rps_energy_twh, 
-            curtailed_rps_energy_mwh/1000000 AS curtailed_rps_energy_twh, 
+            rps_target_mwh, 
+            delivered_rps_energy_mwh, 
+            curtailed_rps_energy_mwh, 
             fraction_of_rps_target_met, 
             fraction_of_rps_energy_curtailed,
             rps_marginal_cost_per_mwh
@@ -107,11 +109,15 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param energy_unit: string, the unit of energy used in the database/model,
+    e.g. "MWh"
+    :param cost_unit: string, the unit of cost used in the database/model,
+    e.g. "USD"
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -125,8 +131,8 @@ def create_plot(df, title, ylimit=None):
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
     x_col = "period"
-    line_col = "rps_target_twh"
-    stacked_cols = ["delivered_rps_energy_twh", "curtailed_rps_energy_twh"]
+    line_col = "rps_target_mwh"
+    stacked_cols = ["delivered_rps_energy_mwh", "curtailed_rps_energy_mwh"]
 
     # Stacked Area Colors
     colors = ["#75968f", "#933b41"]
@@ -179,7 +185,7 @@ def create_plot(df, title, ylimit=None):
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Period"
-    plot.yaxis.axis_label = "Energy (TWh)"
+    plot.yaxis.axis_label = "Energy ({})".format(energy_unit)
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
@@ -189,8 +195,8 @@ def create_plot(df, title, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Delivered RPS Energy",
-             "@%s{0,0} TWh (@fraction_of_rps_energy_delivered{0%%})"
-             % stacked_cols[0]),
+             "@%s{0,0} %s (@fraction_of_rps_energy_delivered{0%%})"
+             % (stacked_cols[0], energy_unit)),
         ],
         renderers=[r_delivered],
         toggleable=False)
@@ -202,8 +208,8 @@ def create_plot(df, title, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Curtailed RPS Energy",
-             "@%s{0,0} TWh (@fraction_of_rps_energy_curtailed{0%%})"
-             % stacked_cols[1]),
+             "@%s{0,0} %s (@fraction_of_rps_energy_curtailed{0%%})"
+             % (stacked_cols[1], energy_unit)),
         ],
         renderers=[r_curtailed],
         toggleable=False)
@@ -213,9 +219,10 @@ def create_plot(df, title, ylimit=None):
     hover = HoverTool(
         tooltips=[
             ("Period", "@period"),
-            ("RPS Target", "@%s{0,0} TWh" % line_col),
+            ("RPS Target", "@%s{0,0} %s" % (line_col, energy_unit)),
             ("Fraction of RPS Met", "@fraction_of_rps_target_met{0%}"),
-            ("Marginal Cost", "@rps_marginal_cost_per_mwh{0,0} $/MWh")
+            ("Marginal Cost", "@rps_marginal_cost_per_mwh{0,0} %s/%s"
+             % (cost_unit, energy_unit))
         ],
         renderers=[target_renderer],
         toggleable=False)
@@ -244,6 +251,9 @@ def main(args=None):
         script="rps_plot"
     )
 
+    energy_unit = get_unit(c, "energy")
+    cost_unit = get_unit(c, "cost")
+
     plot_title = \
         "{}RPS Result by Period - {} - Subproblem {} - Stage {}".format(
             "{} - ".format(scenario)
@@ -263,6 +273,8 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        energy_unit=energy_unit,
+        cost_unit=cost_unit,
         ylimit=parsed_args.ylimit
     )
 

@@ -15,7 +15,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser
+    get_parent_parser, get_unit
 
 
 def create_parser():
@@ -176,7 +176,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         value_vars=['Capacity', 'Fuel', 'Variable_OM',
                     'Startups', 'Shutdowns', 'Hurdle_Rates'],
         var_name='Cost Component',
-        value_name='Cost ($MM)'
+        value_name='Cost (MW)'
     )
 
     return df
@@ -202,6 +202,8 @@ def main(args=None):
         script="cost_plot"
     )
 
+    cost_unit = "million " + get_unit(c, "cost")
+
     plot_title = "{}Total Cost by Period - {} - Stage {}".format(
         "{} - ".format(scenario)
         if parsed_args.scenario_name_in_title else "",
@@ -219,10 +221,11 @@ def main(args=None):
     plot = create_stacked_bar_plot(
         df=df,
         title=plot_title,
-        y_axis_column="Cost ($MM)",
+        y_axis_column="Cost (MW)",
         x_axis_column="period",
         group_column="Cost Component",
-        column_mapper={"period": "Period"},
+        column_mapper={"Cost (MW)": "Cost ({})".format(cost_unit),
+                       "period": "Period"},
         ylimit=parsed_args.ylimit
     )
 

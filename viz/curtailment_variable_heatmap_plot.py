@@ -29,7 +29,7 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_plot, get_parent_parser
+from viz.common_functions import show_plot, get_parent_parser, get_unit
 
 
 def create_parser():
@@ -129,11 +129,12 @@ def get_plotting_data(conn, scenario_id, load_zone, period, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, energy_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param energy_unit: string, the unit of energy used in the database/model
     :param ylimit: float/int, upper limit of heatmap colorbar; optional
     :return:
     """
@@ -207,7 +208,7 @@ def create_plot(df, title, ylimit=None):
         tooltips=[
             ("Month", "@month"),
             ("Hour", "@hour_of_day"),
-            ("Curtailment", "@scheduled_curtailment_mwh{0,0} MWh")
+            ("Curtailment", "@scheduled_curtailment_mwh{0,0} %s" % energy_unit)
         ],
         renderers=[hm],
         toggleable=True)
@@ -236,6 +237,8 @@ def main(args=None):
         script="curtailment_variable_heatmap_plot"
     )
 
+    energy_unit = get_unit(c, "energy")
+
     plot_title = "{}VER Curtailment by Month-Hour - {} - {} - {}".format(
         "{} - ".format(scenario)
         if parsed_args.scenario_name_in_title else "",
@@ -255,6 +258,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        energy_unit=energy_unit,
         ylimit=parsed_args.ylimit
     )
 

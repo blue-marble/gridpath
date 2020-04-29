@@ -555,7 +555,13 @@ def summarize_module_specific_results(
         ]["new_build_mw"]
     )
 
-    new_build_df.columns = ["New Capacity (MW)"]
+    # Get the power units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+
+    # Rename column header
+    new_build_df.columns = ["New Capacity ({})".format(power_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Generation Capacity <--\n")

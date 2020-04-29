@@ -122,6 +122,19 @@ validation_status_id INTEGER PRIMARY KEY,
 validation_status_name VARCHAR(32) UNIQUE
 );
 
+-- Units of measurements and their abbreviations
+-- Core units will be populated with defaults but can be changed by the user
+-- Secondary units are derived from the core units
+DROP TABLE IF EXISTS mod_units;
+CREATE TABLE mod_units (
+metric VARCHAR(32) PRIMARY KEY,
+type VARCHAR(32),  -- 'core' or 'secondary'
+numerator_core_units VARCHAR(32),
+denominator_core_units VARCHAR(32),
+unit VARCHAR(32),  -- this will be derived for secondary units
+description VARCHAR(128)
+);
+
 -- Run status types
 DROP TABLE IF EXISTS mod_run_status_types;
 CREATE TABLE mod_run_status_types (
