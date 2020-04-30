@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 
-from pyomo.environ import Set, Expression, Param, Any
+from pyomo.environ import Set, Expression, Param
 
 from gridpath.auxiliary.auxiliary import join_sets, load_prm_type_modules
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
