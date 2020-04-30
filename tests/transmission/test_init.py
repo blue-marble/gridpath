@@ -18,7 +18,7 @@ TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = []
+PREREQUISITE_MODULE_NAMES = ["geography.load_zones"]
 NAME_OF_MODULE_BEING_TESTED = \
     "transmission"
 IMPORTED_PREREQ_MODULES = list()

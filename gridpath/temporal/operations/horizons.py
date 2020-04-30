@@ -117,6 +117,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`prev_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
+    | | *Within*: :code: `m.TMPS | {None}`                                    |
     |                                                                         |
     | Derived parameter describing the previous timepoint for each timepoint  |
     | in each balancing type; depends on whether horizon is circular or       |
@@ -124,6 +125,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`next_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
+    | | *Within*: :code: `m.TMPS | {None}`                                    |
     |                                                                         |
     | Derived parameter describing the next timepoint for each timepoint in   |
     | each balancing type; depends on whether horizon is circular or linear   |
@@ -192,11 +194,13 @@ def add_model_components(m, d):
 
     m.prev_tmp = Param(
         m.TMPS, m.BLN_TYPES,
+        within=m.TMPS | {None},
         initialize=prev_tmp_init
     )
 
     m.next_tmp = Param(
         m.TMPS, m.BLN_TYPES,
+        within=m.TMPS | {None},
         initialize=next_tmp_init
     )
 

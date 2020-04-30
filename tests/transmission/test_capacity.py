@@ -18,6 +18,7 @@ TEST_DATA_DIRECTORY = \
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "temporal.investment.periods",
+                             "geography.load_zones",
                              "transmission"]
 NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
 IMPORTED_PREREQ_MODULES = list()
