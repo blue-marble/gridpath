@@ -13,7 +13,7 @@ from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
-    NonNegativeReals, value, Any
+    NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
