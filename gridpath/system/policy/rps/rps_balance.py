@@ -164,8 +164,12 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # 2) the marginal RPS cost per MWh based on the RPS constraint duals --
     # to convert back to 'real' dollars, we need to divide by the discount
     # factor and the number of years a period represents
-    results_df["percent_curtailed"] = pd.Series(index=results_df.index)
-    results_df["rps_marginal_cost_per_mwh"] = pd.Series(index=results_df.index)
+    results_df["percent_curtailed"] = pd.Series(
+        index=results_df.index, dtype="float64"
+    )
+    results_df["rps_marginal_cost_per_mwh"] = pd.Series(
+        index=results_df.index, dtype="float64"
+    )
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():

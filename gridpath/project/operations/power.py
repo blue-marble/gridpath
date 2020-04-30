@@ -174,7 +174,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     operational_results_agg_df.columns = ["weighted_power_mwh"]
     # Add a column with the percentage of total power by load zone and tech
     operational_results_agg_df["percent_total_power"] = pd.Series(
-        index=operational_results_agg_df.index
+        index=operational_results_agg_df.index, dtype="float64"
     )
 
     # Calculate the percent of total power for each tech (by load zone
