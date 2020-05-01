@@ -16,7 +16,7 @@ extras_all = extras_ui + extras_doc
 
 
 setup(name="GridPath",
-      version="0.1.0",
+      version="0.2.0",
       description="Software for power-system planning",
       url="https://www.gridpath.io",
       maintainer="Blue Marble Analytics LLC",
