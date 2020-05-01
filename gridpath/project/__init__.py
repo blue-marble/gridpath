@@ -10,7 +10,7 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, NonNegativeReals
+from pyomo.environ import Set, Param, NonNegativeReals, Any
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
@@ -115,6 +115,9 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`capacity_type`                                                 |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["dr_new", "gen_new_bin", "gen_new_lin",`            |
+    | | :code:`"gen_ret_bin", "gen_ret_lin", "gen_spec", "stor_new_bin",`     |
+    | | :code:`"stor_new_lin", "stor_spec"]`                                  |
     |                                                                         |
     | This param describes each project's capacity type, which determines how |
     | the available capacity of the project is defined (depending on the      |
@@ -122,6 +125,10 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`operational_type`                                              |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["dr", "gen_always_on", "gen_commit_bin",`           |
+    | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
+    | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
+    | | :code:`"gen_var", "gen_var_must_take", "stor"]`                       |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
     | how the project operates, e.g. whether it is fuel-based dispatchable    |
@@ -130,6 +137,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`availability_type`                                             |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["binary", "continuous", "exogenous"]`               |
     |                                                                         |
     | This param describes each project's availability type, which determines |
     | how the project availability is determined (exogenously or              |
@@ -145,6 +153,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`technology`                                                    |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`Any`                                                 |
     | | *Default*: :code:`unspecified`                                        |
     |                                                                         |
     | The technology for each project, which is only used for aggregation     |
@@ -165,11 +174,25 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
-    m.capacity_type = Param(m.PROJECTS)
-    m.operational_type = Param(m.PROJECTS)
-    m.availability_type = Param(m.PROJECTS)
+    m.capacity_type = Param(
+        m.PROJECTS,
+        within=["dr_new", "gen_new_bin", "gen_new_lin", "gen_ret_bin",
+                "gen_ret_lin", "gen_spec", "stor_new_bin", "stor_new_lin",
+                "stor_spec"]
+    )
+    m.operational_type = Param(
+        m.PROJECTS,
+        within=["dr", "gen_always_on", "gen_commit_bin", "gen_commit_cap",
+                "gen_commit_lin", "gen_hydro", "gen_hydro_must_take",
+                "gen_must_run", "gen_simple", "gen_var",
+                "gen_var_must_take", "stor"]
+    )
+    m.availability_type = Param(
+        m.PROJECTS,
+        within=["binary", "continuous", "exogenous"]
+    )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
-    m.technology = Param(m.PROJECTS, default="unspecified")
+    m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
 
 
 # Input-Output

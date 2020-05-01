@@ -35,7 +35,7 @@ def add_model_components(m, d):
                     return getattr(d, prm_cost_group_prm_type)[group_set]
 
     m.group_prm_type = Param(
-        m.PRM_COST_GROUPS,
+        m.PRM_COST_GROUPS, within=["energy_only_allowed"],
         initialize=lambda mod, g: group_prm_type_init(mod, g)
     )
 

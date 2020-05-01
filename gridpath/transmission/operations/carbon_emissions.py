@@ -133,7 +133,8 @@ def add_model_components(m, d):
     )
 
     m.carbon_cap_zone_import_direction = Param(
-        m.CRB_TX_LINES
+        m.CRB_TX_LINES,
+        within=["positive", "negative"]
     )
 
     m.tx_co2_intensity_tons_per_mwh = Param(

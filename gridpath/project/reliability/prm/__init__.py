@@ -23,7 +23,11 @@ def add_model_components(m, d):
     # First figure out which projects we need to track for PRM contribution
     m.PRM_PROJECTS = Set(within=m.PROJECTS)
     m.prm_zone = Param(m.PRM_PROJECTS, within=m.PRM_ZONES)
-    m.prm_type = Param(m.PRM_PROJECTS)
+    m.prm_type = Param(
+        m.PRM_PROJECTS,
+        within=["energy_only_allowed", "fully_deliverable",
+                "fully_deliverable_energy_limited"]
+    )
 
     m.PRM_PROJECTS_BY_PRM_ZONE = \
         Set(m.PRM_ZONES, within=m.PRM_PROJECTS,
