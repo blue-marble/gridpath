@@ -1,5 +1,11 @@
 from setuptools import find_packages, setup
 
+# Get version
+version = {}
+with open("./version.py") as fp:
+    exec(fp.read(), version)
+
+# Set up extras
 extras_doc = [
     "Sphinx",
     "sphinx-argparse"
@@ -16,7 +22,7 @@ extras_all = extras_ui + extras_doc
 
 
 setup(name="GridPath",
-      version="0.2.0",
+      version=version["__version__"],
       description="Software for power-system planning",
       url="https://www.gridpath.io",
       maintainer="Blue Marble Analytics LLC",
