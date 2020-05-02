@@ -331,7 +331,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         for row in coefficients:
             writer.writerow(row)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "elcc_surface_normalization_loads.tab"), "w",
               newline="") as \
             coefficients_file:
