@@ -2256,21 +2256,21 @@ def load_module_specific_data(mod, data_portal,
     else:
         pass
 
-    # # Linked timepoint params (by startup type)
-    # linked_startup_inputs_filename = os.path.join(
-    #         scenario_directory, str(subproblem), str(stage), "inputs",
-    #         "gen_commit_lin_linked_timepoint_str_type_params.tab"
-    #     )
-    # if os.path.exists(linked_startup_inputs_filename):
-    #     data_portal.load(
-    #         filename=linked_startup_inputs_filename,
-    #         param=(
-    #             mod.gen_commit_lin_linked_provide_power_startup_mw,
-    #             mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
-    #         )
-    #     )
-    # else:
-    #     pass
+    # Linked timepoint params (by startup type)
+    linked_startup_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "gen_commit_lin_linked_timepoint_str_type_params.tab"
+        )
+    if os.path.exists(linked_startup_inputs_filename):
+        data_portal.load(
+            filename=linked_startup_inputs_filename,
+            param=(
+                mod.gen_commit_lin_linked_provide_power_startup_mw,
+                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
+            )
+        )
+    else:
+        pass
 
 
 def export_module_specific_results(mod, d,
