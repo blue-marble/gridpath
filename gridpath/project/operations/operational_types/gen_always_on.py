@@ -786,9 +786,14 @@ def export_module_specific_results(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.GenAlwaysOn_Provide_Power_MW[p, tmp]),
-                        value(mod.GenAlwaysOn_Upwards_Reserves_MW[p, tmp]),
-                        value(mod.GenAlwaysOn_Downwards_Reserves_MW[p, tmp])
+                        max(value(mod.GenAlwaysOn_Provide_Power_MW[p, tmp]),
+                            0),
+                        max(value(mod.GenAlwaysOn_Upwards_Reserves_MW[p, tmp]),
+                            0),
+                        max(value(mod.GenAlwaysOn_Downwards_Reserves_MW[p,
+                                                                        tmp]),
+                            0
+                            )
                     ])
 
 # Validation

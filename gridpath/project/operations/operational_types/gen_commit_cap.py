@@ -1652,12 +1652,15 @@ def export_module_specific_results(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.Commit_Capacity_MW[p, tmp]),
-                        value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                        value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]),
-                        value(mod.GenCommitCap_Downwards_Reserves_MW[p, tmp]),
-                        value(mod.GenCommitCap_Startup_MW[p, tmp]),
-                        value(mod.GenCommitCap_Shutdown_MW[p, tmp])
+                        max(value(mod.Commit_Capacity_MW[p, tmp]), 0),
+                        max(value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
+                            0),
+                        max(value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]
+                                  ), 0),
+                        max(value(mod.GenCommitCap_Downwards_Reserves_MW[
+                                      p, tmp]), 0),
+                        max(value(mod.GenCommitCap_Startup_MW[p, tmp]), 0),
+                        max(value(mod.GenCommitCap_Shutdown_MW[p, tmp]), 0)
                     ])
 
 

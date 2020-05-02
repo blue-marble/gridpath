@@ -2256,21 +2256,21 @@ def load_module_specific_data(mod, data_portal,
     else:
         pass
 
-    # Linked timepoint params (by startup type)
-    linked_startup_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_lin_linked_timepoint_str_type_params.tab"
-        )
-    if os.path.exists(linked_startup_inputs_filename):
-        data_portal.load(
-            filename=linked_startup_inputs_filename,
-            param=(
-                mod.gen_commit_lin_linked_provide_power_startup_mw,
-                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
-            )
-        )
-    else:
-        pass
+    # # Linked timepoint params (by startup type)
+    # linked_startup_inputs_filename = os.path.join(
+    #         scenario_directory, str(subproblem), str(stage), "inputs",
+    #         "gen_commit_lin_linked_timepoint_str_type_params.tab"
+    #     )
+    # if os.path.exists(linked_startup_inputs_filename):
+    #     data_portal.load(
+    #         filename=linked_startup_inputs_filename,
+    #         param=(
+    #             mod.gen_commit_lin_linked_provide_power_startup_mw,
+    #             mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
+    #         )
+    #     )
+    # else:
+    #     pass
 
 
 def export_module_specific_results(mod, d,
@@ -2368,35 +2368,51 @@ def export_linked_subproblem_inputs(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.GenCommitLin_Commit[p, tmp]),
-                        value(mod.GenCommitLin_Startup[p, tmp]),
-                        value(mod.GenCommitLin_Shutdown[p, tmp]),
-                        value(
+                        max(
+                            min(value(mod.GenCommitLin_Commit[p, tmp]), 1),
+                            0
+                        ),
+                        max(
+                            min(value(mod.GenCommitLin_Startup[p, tmp]), 1),
+                            0
+                        ),
+                        max(
+                            min(value(mod.GenCommitLin_Shutdown[p, tmp]), 1),
+                            0
+                        ),
+                        max(value(
                             mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                                p, tmp]
-                        ),
-                        value(
-                            mod.GenCommitLin_Upwards_Reserves_MW[p, tmp]
-                        ),
-                        value(
-                            mod.GenCommitLin_Downwards_Reserves_MW[p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
+                            mod.GenCommitLin_Upwards_Reserves_MW[p, tmp]),
+                            0
+                            ),
+                        max(value(
+                            mod.GenCommitLin_Downwards_Reserves_MW[p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitLin_Provide_Power_Shutdown_MW[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        )
+                                p, tmp]),
+                            0
+                            )
                     ])
             # Export params by project, timepoint, and startup type
             with open(os.path.join(
