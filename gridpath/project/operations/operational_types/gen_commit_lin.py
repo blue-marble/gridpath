@@ -2415,34 +2415,40 @@ def export_linked_subproblem_inputs(
                             )
                     ])
             # Export params by project, timepoint, and startup type
-            with open(os.path.join(
-                    scenario_directory, next_subproblem, stage, "inputs",
-                    "gen_commit_lin_linked_timepoint_str_type_params.tab"
-            ), "w", newline=""
-            ) as f:
-                writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-                writer.writerow(
-                    ["project", "linked_timepoint", "startup_type",
-                     "linked_provide_power_startup",
-                     "linked_startup_ramp_rate_mw_per_tmp"]
-                )
-                for (p, tmp, s) in sorted(
-                        mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES):
-                    if tmp in tmps_to_link:
-                        writer.writerow([
-                            p,
-                            tmp_linked_tmp_dict[tmp],
-                            s,
-                            value(
-                                mod.GenCommitLin_Provide_Power_Startup_MW[
-                                    p, tmp, s]
-                            ),
-                            value(
-                                mod.
-                                GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                                    p, tmp, s]
-                            )
-                        ])
+            # Only write this file if there are data for these results to
+            # avoid throwing an index error when trying to load these inputs
+            # into the next subproblem
+            if mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES:
+                with open(os.path.join(
+                        scenario_directory, next_subproblem, stage, "inputs",
+                        "gen_commit_lin_linked_timepoint_str_type_params.tab"
+                ), "w", newline=""
+                ) as f:
+                    writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+                    writer.writerow(
+                        ["project", "linked_timepoint", "startup_type",
+                         "linked_provide_power_startup",
+                         "linked_startup_ramp_rate_mw_per_tmp"]
+                    )
+                    for (p, tmp, s) in sorted(
+                            mod.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES):
+                        if tmp in tmps_to_link:
+                            writer.writerow([
+                                p,
+                                tmp_linked_tmp_dict[tmp],
+                                s,
+                                value(
+                                    mod.GenCommitLin_Provide_Power_Startup_MW[
+                                        p, tmp, s]
+                                ),
+                                value(
+                                    mod.
+                                    GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                                        p, tmp, s]
+                                )
+                            ])
+            else:
+                pass
     else:
         pass
 
