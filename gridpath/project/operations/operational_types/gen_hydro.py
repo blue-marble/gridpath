@@ -791,10 +791,12 @@ def export_module_specific_results(mod, d,
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.GenHydro_Provide_Power_MW[p, tmp]),
-                        value(mod.GenHydro_Curtail_MW[p, tmp]),
-                        value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
-                        value(mod.GenHydro_Downwards_Reserves_MW[p, tmp])
+                        max(value(mod.GenHydro_Provide_Power_MW[p, tmp]), 0),
+                        max(value(mod.GenHydro_Curtail_MW[p, tmp]), 0),
+                        max(value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
+                            0),
+                        max(value(mod.GenHydro_Downwards_Reserves_MW[p, tmp]),
+                            0)
                     ])
 
 

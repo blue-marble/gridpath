@@ -718,9 +718,18 @@ def export_module_specific_results(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.GenHydroMustTake_Provide_Power_MW_[p, tmp]),
-                        value(mod.GenHydroMustTake_Upwards_Reserves_MW[p, tmp]),
-                        value(mod.GenHydroMustTake_Downwards_Reserves_MW[p, tmp])
+                        max(value(mod.GenHydroMustTake_Provide_Power_MW_[
+                                      p, tmp]),
+                            0
+                            ),
+                        max(value(mod.GenHydroMustTake_Upwards_Reserves_MW[
+                                      p, tmp]),
+                            0
+                            ),
+                        max(value(mod.GenHydroMustTake_Downwards_Reserves_MW[
+                                      p, tmp]),
+                            0
+                            )
                     ])
 
 # Database

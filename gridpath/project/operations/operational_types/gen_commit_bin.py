@@ -2385,35 +2385,51 @@ def export_linked_subproblem_inputs(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.GenCommitBin_Commit[p, tmp]),
-                        value(mod.GenCommitBin_Startup[p, tmp]),
-                        value(mod.GenCommitBin_Shutdown[p, tmp]),
-                        value(
+                        max(
+                            min(value(mod.GenCommitBin_Commit[p, tmp]), 1),
+                            0
+                        ),
+                        max(
+                            min(value(mod.GenCommitBin_Startup[p, tmp]), 1),
+                            0
+                        ),
+                        max(
+                            min(value(mod.GenCommitBin_Shutdown[p, tmp]), 1),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitBin_Provide_Power_Above_Pmin_MW[
-                                p, tmp]
-                        ),
-                        value(
-                            mod.GenCommitBin_Upwards_Reserves_MW[p, tmp]
-                        ),
-                        value(
-                            mod.GenCommitBin_Downwards_Reserves_MW[p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
+                            mod.GenCommitBin_Upwards_Reserves_MW[p, tmp]),
+                            0
+                            ),
+                        max(value(
+                            mod.GenCommitBin_Downwards_Reserves_MW[p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitBin_Provide_Power_Shutdown_MW[
-                                p, tmp]
-                        ),
-                        value(
+                                p, tmp]),
+                            0
+                            ),
+                        max(value(
                             mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                                p, tmp]
-                        )
+                                p, tmp]),
+                            0
+                            )
                     ])
             # Export params by project, timepoint, and startup type
             with open(os.path.join(
@@ -2434,15 +2450,17 @@ def export_linked_subproblem_inputs(
                             p,
                             tmp_linked_tmp_dict[tmp],
                             s,
-                            value(
+                            max(value(
                                 mod.GenCommitBin_Provide_Power_Startup_MW[
-                                    p, tmp, s]
-                            ),
-                            value(
+                                    p, tmp, s]),
+                                0
+                                ),
+                            max(value(
                                 mod.
                                 GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp[
-                                    p, tmp, s]
-                            )
+                                    p, tmp, s]),
+                                0
+                                )
                         ])
     else:
         pass

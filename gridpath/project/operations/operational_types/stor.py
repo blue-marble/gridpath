@@ -766,7 +766,10 @@ def export_module_specific_results(mod, d,
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
-                        value(mod.Stor_Discharge_MW[p, tmp]),
-                        value(mod.Stor_Charge_MW[p, tmp])
+                        max(value(mod.Stor_Starting_Energy_in_Storage_MWh[
+                                      p, tmp]),
+                            0
+                            ),
+                        max(value(mod.Stor_Discharge_MW[p, tmp]), 0),
+                        max(value(mod.Stor_Charge_MW[p, tmp]), 0)
                     ])
