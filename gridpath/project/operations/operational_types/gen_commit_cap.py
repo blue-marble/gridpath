@@ -1647,18 +1647,18 @@ def export_module_specific_results(
                  "linked_startup",
                  "linked_shutdown"]
             )
-        for (p, tmp) in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
-            if tmp in tmps_to_link:
-                writer.writerow([
-                    p,
-                    tmp_linked_tmp_dict[tmp],
-                    value(mod.Commit_Capacity_MW[p, tmp]),
-                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                    value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]),
-                    value(mod.GenCommitCap_Downwards_Reserves_MW[p, tmp]),
-                    value(mod.GenCommitCap_Startup_MW[p, tmp]),
-                    value(mod.GenCommitCap_Shutdown_MW[p, tmp])
-                ])
+            for (p, tmp) in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        value(mod.Commit_Capacity_MW[p, tmp]),
+                        value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
+                        value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]),
+                        value(mod.GenCommitCap_Downwards_Reserves_MW[p, tmp]),
+                        value(mod.GenCommitCap_Startup_MW[p, tmp]),
+                        value(mod.GenCommitCap_Shutdown_MW[p, tmp])
+                    ])
 
 
 # Database
