@@ -786,16 +786,16 @@ def export_module_specific_results(mod, d,
                  "linked_upward_reserves",
                  "linked_downward_reserves"]
             )
-        for (p, tmp) in sorted(mod.GEN_HYDRO_OPR_TMPS):
-            if tmp in tmps_to_link:
-                writer.writerow([
-                    p,
-                    tmp_linked_tmp_dict[tmp],
-                    value(mod.GenHydro_Provide_Power_MW[p, tmp]),
-                    value(mod.GenHydro_Curtail_MW[p, tmp]),
-                    value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
-                    value(mod.GenHydro_Downwards_Reserves_MW[p, tmp])
-                ])
+            for (p, tmp) in sorted(mod.GEN_HYDRO_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        value(mod.GenHydro_Provide_Power_MW[p, tmp]),
+                        value(mod.GenHydro_Curtail_MW[p, tmp]),
+                        value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
+                        value(mod.GenHydro_Downwards_Reserves_MW[p, tmp])
+                    ])
 
 
 # Database

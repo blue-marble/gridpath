@@ -761,12 +761,12 @@ def export_module_specific_results(mod, d,
                  "linked_discharge",
                  "linked_charge"]
             )
-        for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
-            if tmp in tmps_to_link:
-                writer.writerow([
-                    p,
-                    tmp_linked_tmp_dict[tmp],
-                    value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
-                    value(mod.Stor_Discharge_MW[p, tmp]),
-                    value(mod.Stor_Charge_MW[p, tmp])
-                ])
+            for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
+                        value(mod.Stor_Discharge_MW[p, tmp]),
+                        value(mod.Stor_Charge_MW[p, tmp])
+                    ])
