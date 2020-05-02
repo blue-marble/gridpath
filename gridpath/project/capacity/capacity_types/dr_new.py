@@ -342,7 +342,7 @@ def load_module_specific_data(
         max_fraction = dict()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type", "minimum_duration_hours"]
@@ -363,8 +363,10 @@ def load_module_specific_data(
     data_portal.data()["dr_new_min_duration"] = determine_projects()[1]
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
-                              "new_shiftable_load_supply_curve.tab"),
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs",
+            "new_shiftable_load_supply_curve.tab")
+        ,
         index=m.DR_NEW_PTS,
         select=("project", "point", "slope", "intercept"),
         param=(m.dr_new_supply_curve_slope,
@@ -372,8 +374,10 @@ def load_module_specific_data(
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
-                              "new_shiftable_load_supply_curve_potential.tab"),
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs",
+            "new_shiftable_load_supply_curve_potential.tab"
+        ),
         param=(m.dr_new_min_cumulative_new_build_mwh,
                m.dr_new_max_cumulative_new_build_mwh)
     )
@@ -391,7 +395,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_dr_new.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -421,7 +425,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "capacity_dr_new.csv")
     )
 
@@ -430,8 +434,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -439,15 +441,23 @@ def summarize_module_specific_results(
             (capacity_results_agg_df["new_build_mwh"] > 0)
         ][["new_build_mw", "new_build_mwh"]]
     )
-    new_build_df.columns =["New DR Power Capacity (MW)",
-                           "New DR Energy Capacity (MWh)"]
+
+    # Get the power and energy units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+
+    # Rename column header
+    new_build_df.columns = ["New DR Power Capacity ({})".format(power_unit),
+                            "New DR Energy Capacity ({})".format(energy_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New DR Capacity <--\n")
         if new_build_df.empty:
             outfile.write("No new DR was built.\n")
         else:
-            new_build_df.to_string(outfile)
+            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
@@ -536,7 +546,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -546,7 +556,7 @@ def write_module_specific_model_inputs(
     Max potential is required for this module, so
     PROJECT_NEW_POTENTIAL_SCENARIO_ID can't be NULL
 
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -558,7 +568,7 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve_potential.tab"),
               "w", newline="") as potentials_tab_file:
         writer = csv.writer(potentials_tab_file, delimiter="\t", lineterminator="\n")
@@ -575,7 +585,7 @@ def write_module_specific_model_inputs(
     # Supply curve
     # No supply curve periods for now, so check that we have only specified
     # a single supply curve for all periods in inputs_project_new_cost
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve.tab"),
               "w", newline="") as supply_curve_tab_file:
         writer = csv.writer(supply_curve_tab_file, delimiter="\t", lineterminator="\n")

@@ -122,6 +122,19 @@ validation_status_id INTEGER PRIMARY KEY,
 validation_status_name VARCHAR(32) UNIQUE
 );
 
+-- Units of measurements and their abbreviations
+-- Core units will be populated with defaults but can be changed by the user
+-- Secondary units are derived from the core units
+DROP TABLE IF EXISTS mod_units;
+CREATE TABLE mod_units (
+metric VARCHAR(32) PRIMARY KEY,
+type VARCHAR(32),  -- 'core' or 'secondary'
+numerator_core_units VARCHAR(32),
+denominator_core_units VARCHAR(32),
+unit VARCHAR(32),  -- this will be derived for secondary units
+description VARCHAR(128)
+);
+
 -- Run status types
 DROP TABLE IF EXISTS mod_run_status_types;
 CREATE TABLE mod_run_status_types (
@@ -205,6 +218,20 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 );
 
 -- Timepoints
+-- Note on linked timepoints: the user can designate timepoints from the last
+-- horizon of the subproblem to be linked to the first horizon of the next
+-- subproblem -- it is up to the user to ensure that only the last horizon
+-- of a subproblem and the first horizon of the next subproblem are linked
+-- like this
+-- Linked timepoints should be non-positive integers, ordered, and the most
+-- recent linked timepoint should be 0, i.e. the linked timepoint indexed 0
+-- will be the previous timepoint for the first timepoint of the first
+-- horizon of the next subproblem. The previous timepoint for linked
+-- timepoint 0 will be -1, and so on.
+-- If linked timepoints are specified for a subproblem, GP will use those as
+-- the previous timepoints for the first horizon of the next subproblem
+-- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
+-- a 'linked' boundary
 DROP TABLE IF EXISTS inputs_temporal_timepoints;
 CREATE TABLE inputs_temporal_timepoints (
 temporal_scenario_id INTEGER,
@@ -216,6 +243,7 @@ number_of_hours_in_timepoint INTEGER,
 timepoint_weight FLOAT,
 previous_stage_timepoint_map INTEGER,
 spinup_or_lookahead INTEGER,
+linked_timepoint INTEGER, -- should be non-positive
 month INTEGER,
 hour_of_day FLOAT,  -- FLOAT to accommodate subhourly timepoints
 timestamp DATETIME,
@@ -472,7 +500,7 @@ CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
-violation_penalty_per_mmt FLOAT DEFAULT 0,
+violation_penalty_per_emission FLOAT DEFAULT 0,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
@@ -592,8 +620,8 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-annual_fixed_cost_per_kw_year FLOAT,
-annual_fixed_cost_per_kwh_year FLOAT,
+annual_fixed_cost_per_mw_year FLOAT,
+annual_fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
@@ -618,8 +646,8 @@ project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 lifetime_yrs INTEGER,
-annualized_real_cost_per_kw_yr FLOAT,
-annualized_real_cost_per_kwh_yr FLOAT,
+annualized_real_cost_per_mw_yr FLOAT,
+annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, period),
@@ -707,6 +735,7 @@ balancing_type_project VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
+variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
 startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
@@ -723,6 +752,8 @@ charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
+aux_consumption_frac_capacity FLOAT,
+aux_consumption_frac_power FLOAT,
 last_commitment_stage INTEGER,
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max
@@ -747,6 +778,9 @@ inputs_temporal_subproblems_stages (stage_id),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
 (project, heat_rate_curves_scenario_id),
+FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
+subscenarios_project_variable_om_curves
+(project, variable_om_curves_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -772,11 +806,38 @@ DROP TABLE IF EXISTS inputs_project_heat_rate_curves;
 CREATE TABLE inputs_project_heat_rate_curves (
 project VARCHAR(64),
 heat_rate_curves_scenario_id INTEGER,
+period INTEGER, -- 0 means it's the same for all periods
 load_point_fraction FLOAT,
 average_heat_rate_mmbtu_per_mwh FLOAT,
-PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_fraction),
+PRIMARY KEY (project, heat_rate_curves_scenario_id, period,
+load_point_fraction),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
+);
+
+-- Variable O&M curves
+-- TODO: see comments variable profiles
+DROP TABLE IF EXISTS subscenarios_project_variable_om_curves;
+CREATE TABLE subscenarios_project_variable_om_curves (
+project VARCHAR(32),
+variable_om_curves_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, variable_om_curves_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_variable_om_curves;
+CREATE TABLE inputs_project_variable_om_curves (
+project VARCHAR(64),
+variable_om_curves_scenario_id INTEGER,
+period INTEGER,  -- 0 means it's the same for all periods
+load_point_fraction FLOAT,
+average_variable_om_cost_per_mwh FLOAT,
+PRIMARY KEY (project, variable_om_curves_scenario_id, period,
+load_point_fraction),
+FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
+subscenarios_project_variable_om_curves (project,
+variable_om_curves_scenario_id)
 );
 
 -- Startup characteristics
@@ -1570,6 +1631,26 @@ FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
+CREATE TABLE inputs_system_lf_reserves_up_percent (
+lf_reserves_up_scenario_id INTEGER,
+lf_reserves_up_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent_lz_map;
+CREATE TABLE inputs_system_lf_reserves_up_percent_lz_map (
+lf_reserves_up_scenario_id INTEGER,
+lf_reserves_up_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, load_zone)
+);
+
 -- LF reserves down
 DROP TABLE IF EXISTS subscenarios_system_lf_reserves_down;
 CREATE TABLE subscenarios_system_lf_reserves_down (
@@ -1592,6 +1673,26 @@ PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id,
 timepoint),
 FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
+);
+
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
+CREATE TABLE inputs_system_lf_reserves_down_percent (
+lf_reserves_down_scenario_id INTEGER,
+lf_reserves_down_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent_lz_map;
+CREATE TABLE inputs_system_lf_reserves_down_percent_lz_map (
+lf_reserves_down_scenario_id INTEGER,
+lf_reserves_down_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, load_zone)
 );
 
 -- Regulation up
@@ -1617,6 +1718,26 @@ FOREIGN KEY (regulation_up_scenario_id) REFERENCES
 subscenarios_system_regulation_up (regulation_up_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
+CREATE TABLE inputs_system_regulation_down_percent (
+regulation_down_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_regulation_down_percent_lz_map;
+CREATE TABLE inputs_system_regulation_down_percent_lz_map (
+regulation_down_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, load_zone)
+);
+
 -- Regulation down
 DROP TABLE IF EXISTS subscenarios_system_regulation_down;
 CREATE TABLE subscenarios_system_regulation_down (
@@ -1639,6 +1760,26 @@ PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id,
 timepoint),
 FOREIGN KEY (regulation_down_scenario_id) REFERENCES
 subscenarios_system_regulation_down (regulation_down_scenario_id)
+);
+
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
+CREATE TABLE inputs_system_regulation_up_percent (
+regulation_up_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_regulation_up_percent_lz_map;
+CREATE TABLE inputs_system_regulation_up_percent_lz_map (
+regulation_up_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, load_zone)
 );
 
 -- Frequency response
@@ -1666,6 +1807,26 @@ FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
+CREATE TABLE inputs_system_frequency_response_percent (
+frequency_response_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_frequency_response_percent_lz_map;
+CREATE TABLE inputs_system_frequency_response_percent_lz_map (
+frequency_response_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, load_zone)
+);
+
 -- Spinning reserves
 DROP TABLE IF EXISTS subscenarios_system_spinning_reserves;
 CREATE TABLE subscenarios_system_spinning_reserves (
@@ -1690,6 +1851,26 @@ FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
 subscenarios_system_spinning_reserves (spinning_reserves_scenario_id)
 );
 
+-- The requirement may be specified as percent of load, in which case we also
+-- need to specify which load, i.e. specify a mapping between the reserve BA
+-- and the load zones whose load should be part of the requirement
+-- calculation (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
+CREATE TABLE inputs_system_spinning_reserves_percent (
+spinning_reserves_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+percent_load_req FLOAT,
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba)
+);
+
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent_lz_map;
+CREATE TABLE inputs_system_spinning_reserves_percent_lz_map (
+spinning_reserves_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+load_zone VARCHAR(32),
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, load_zone)
+);
+
 -- -- Policy -- --
 
 -- RPS requirements
@@ -1712,11 +1893,21 @@ period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 rps_target_mwh FLOAT,
-rps_zone_scenario_id INTEGER,
+rps_target_percentage FLOAT,
 PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
-stage_id),
-FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
-inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
+stage_id)
+);
+
+-- If the RPS target is specified as percentage of load, we need to also
+-- specify which load, i.e. specify a mapping between the RPS zone and the
+-- load zones whose load should be part of the target calculation (mapping
+-- should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_rps_target_load_zone_map;
+CREATE TABLE inputs_system_rps_target_load_zone_map (
+rps_target_scenario_id INTEGER,
+rps_zone VARCHAR(32),
+load_zone VARCHAR(64),
+PRIMARY KEY (rps_target_scenario_id, rps_zone, load_zone)
 );
 
 -- Carbon cap
@@ -1737,7 +1928,7 @@ carbon_cap_zone VARCHAR(32),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-carbon_cap_mmt FLOAT,
+carbon_cap FLOAT,
 PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
 subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
@@ -1838,7 +2029,6 @@ run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_process_id INTEGER DEFAULT NULL,
 run_start_time TIME,
 run_end_time TIME,
-of_multi_stage INTEGER,
 of_transmission INTEGER,
 of_transmission_hurdle_rates INTEGER,
 of_simultaneous_flow_limits INTEGER,
@@ -2143,7 +2333,7 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-power_mw FLOAT,
+power_mw FLOAT,  -- net power in case there's auxiliary consumption
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,
@@ -2154,6 +2344,8 @@ started_units INTEGER,
 stopped_units INTEGER,
 synced_units INTEGER,
 active_startup_type INTEGER,
+auxiliary_consumption_mw FLOAT,
+gross_power_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
@@ -2485,7 +2677,9 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
-fuel_burn_mmbtu FLOAT,
+operations_fuel_burn_mmbtu FLOAT,
+startup_fuel_burn_mmbtu FLOAT,
+total_fuel_burn_mmbtu FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
@@ -2799,15 +2993,15 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-carbon_cap_mmt FLOAT,
-in_zone_project_emissions_mmt FLOAT,
-import_emissions_mmt FLOAT,
-total_emissions_mmt FLOAT,
-carbon_cap_overage_mmt FLOAT,
-import_emissions_mmt_degen FLOAT,
-total_emissions_mmt_degen FLOAT,
+carbon_cap FLOAT,
+in_zone_project_emissions FLOAT,
+import_emissions FLOAT,
+total_emissions FLOAT,
+carbon_cap_overage FLOAT,
+import_emissions_degen FLOAT,
+total_emissions_degen FLOAT,
 dual FLOAT,
-carbon_cap_marginal_cost_per_mmt FLOAT,
+carbon_cap_marginal_cost_per_emission FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
@@ -2904,7 +3098,6 @@ scenario_name,
 scenario_description,
 mod_validation_status_types.validation_status_name as validation_status,
 mod_run_status_types.run_status_name as run_status,
-CASE WHEN of_multi_stage THEN 'yes' ELSE 'no' END AS feature_multi_stage,
 CASE WHEN of_transmission THEN 'yes' ELSE 'no' END AS feature_transmission,
 CASE WHEN of_transmission_hurdle_rates=1 THEN 'yes' ELSE 'no' END
     AS feature_transmission_hurdle_rates,

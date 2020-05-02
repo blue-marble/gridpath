@@ -26,9 +26,10 @@ as annual emissions, energy, or cost.
 
 import csv
 import os.path
+import pandas as pd
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
-    PositiveIntegers
+    PositiveIntegers, NonPositiveIntegers
 
 
 def add_model_components(m, d):
@@ -39,7 +40,7 @@ def add_model_components(m, d):
     | Sets                                                                    |
     +=========================================================================+
     | | :code:`TMPS`                                                          |
-    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Within*: :code:`PositiveIntegers`                                    |
     |                                                                         |
     | The list of timepoints being modeled; timepoints are ordered and must   |
     | be non-negative integers.                                               |
@@ -105,13 +106,20 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.TMPS = Set(
-        within=NonNegativeIntegers,
+        within=PositiveIntegers,
         ordered=True
     )
 
     m.MONTHS = Set(
         within=PositiveIntegers,
         initialize=list(range(1, 12 + 1))
+    )
+
+    # These are the timepoints from the previous subproblem for which we'll
+    # have parameters to constrain the current subproblem
+    m.LINKED_TMPS = Set(
+        within=NonPositiveIntegers,
+        ordered=True
     )
 
     # Required Params
@@ -137,13 +145,35 @@ def add_model_components(m, d):
         within=m.MONTHS
     )
 
+    # Optional Params
+    ###########################################################################
+
+    m.hrs_in_linked_tmp = Param(
+        m.LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.furthest_linked_tmp = Param(
+        within=NonPositiveIntegers
+    )
+
 
 # Input-Output
 ###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m: Pyomo AbstractModel
+    :param d: class
+    :param data_portal: Pyomo DataPortal
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
+    :return:
+    """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "timepoints.tab"),
         index=m.TMPS,
         param=(m.tmp_weight,
@@ -157,6 +187,38 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 "month")
     )
 
+    # Load in any timepoints to link to the next subproblem and linked
+    # timepoints from a previous subproblem
+    # Try to load in the map CSV
+    try:
+        map_df = pd.read_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            sep=","
+        )
+        # Get the linked timepoints for the current subproblem and stage
+        linked_tmps_df = map_df.loc[
+            (map_df["subproblem_to_link"] == int(subproblem)) &
+            (map_df["stage"] == (1 if stage == "" else int(stage)))
+            ]
+        linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
+        # Load in the data
+        data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
+        hrs_in_linked_tmp_dict = dict(
+            zip(linked_tmps, linked_tmps_df["number_of_hours_in_timepoint"])
+        )
+        data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
+        if linked_tmps:
+            data_portal.data()["furthest_linked_tmp"] = \
+                {None: min(linked_tmps)}
+        else:
+            pass
+
+    # If the file is not there, there were no linked subproblems and the
+    # file was not written, so load in empty components
+    except FileNotFoundError:
+        data_portal.data()["LINKED_TMPS"] = {None: []}
+        data_portal.data()["hrs_in_linked_tmp"] = {}
+
 
 # Database
 ###############################################################################
@@ -169,6 +231,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
@@ -186,11 +251,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return timepoints
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     timepoints.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -201,7 +266,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "timepoints.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t",
                             lineterminator="\n")

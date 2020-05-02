@@ -100,7 +100,7 @@ def generic_load_model_data(
     columns_to_import = ("project",)
     params_to_import = ()
     projects_file_header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]

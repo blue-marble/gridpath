@@ -22,7 +22,7 @@ def add_model_components(m, d):
 
     m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP = \
         Set(dimen=2, within=m.CARBON_CAP_ZONES * m.PERIODS)
-    m.carbon_cap_target_mmt = Param(
+    m.carbon_cap_target = Param(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         within=NonNegativeReals)
 
@@ -38,12 +38,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "carbon_cap.tab"),
                      index=m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
-                     param=m.carbon_cap_target_mmt,
+                     param=m.carbon_cap_target,
                      select=("carbon_cap_zone", "period",
-                             "carbon_cap_target_mmt")
+                             "carbon_cap_target")
                      )
 
 
@@ -55,9 +55,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     carbon_cap_targets = c.execute(
-        """SELECT carbon_cap_zone, period, carbon_cap_mmt
+        """SELECT carbon_cap_zone, period, carbon_cap
         FROM inputs_system_carbon_cap_targets
         JOIN
         (SELECT period
@@ -99,11 +101,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     carbon_cap.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -114,14 +116,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     carbon_cap_targets = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "carbon_cap.tab"), "w", newline="") as \
             carbon_cap_file:
         writer = csv.writer(carbon_cap_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
+            ["carbon_cap_zone", "period", "carbon_cap_target"]
         )
 
         for row in carbon_cap_targets:

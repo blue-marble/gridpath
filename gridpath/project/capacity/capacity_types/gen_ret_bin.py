@@ -231,7 +231,7 @@ def load_module_specific_data(
         gen_ret_bin_projects = list()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
+            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                          "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type"]
@@ -251,7 +251,7 @@ def load_module_specific_data(
         gen_ret_bin_capacity_mw_dict = dict()
         gen_ret_bin_fixed_cost_per_mw_yr_dict = dict()
         df = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
+            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                          "specified_generation_period_params.tab"),
             sep="\t"
         )
@@ -294,7 +294,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_gen_ret_bin.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -326,7 +326,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "results",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                      "capacity_gen_ret_bin.csv")
     )
 
@@ -335,9 +335,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
-
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -345,14 +342,20 @@ def summarize_module_specific_results(
             ]["retired_mw"]
     )
 
-    bin_retirement_df.columns = ["Retired Capacity (MW)"]
+    # Get the power units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+
+    # Rename column header
+    bin_retirement_df.columns = ["Retired Capacity ({})".format(power_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Retired Capacity <--\n")
         if bin_retirement_df.empty:
             outfile.write("No retirements.\n")
         else:
-            bin_retirement_df.to_string(outfile)
+            bin_retirement_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
@@ -387,7 +390,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         LEFT OUTER JOIN
         (SELECT project, period, 
-        annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year
+        annual_fixed_cost_per_mw_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
@@ -406,12 +409,12 @@ def get_module_specific_inputs_from_database(
 
 # TODO: untested
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     specified_generation_period_params.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -424,10 +427,10 @@ def write_module_specific_model_inputs(
 
     # If specified_generation_period_params.tab file already exists, append
     # rows to it
-    if os.path.isfile(os.path.join(inputs_directory,
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                    "specified_generation_period_params.tab")
                       ):
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "specified_generation_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
@@ -437,7 +440,7 @@ def write_module_specific_model_inputs(
     # If specified_generation_period_params.tab file does not exist,
     # write header first, then add input data
     else:
-        with open(os.path.join(inputs_directory,
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                "specified_generation_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,

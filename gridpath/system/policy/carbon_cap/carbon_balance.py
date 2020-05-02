@@ -26,15 +26,15 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.Carbon_Cap_Overage_MMt = Var(
+    m.Carbon_Cap_Overage = Var(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.Carbon_Cap_Overage_MMt[z, p] * \
+        return mod.Carbon_Cap_Overage[z, p] * \
                mod.carbon_cap_allow_violation[z]
 
-    m.Carbon_Cap_Overage_MMt_Expression = Expression(
+    m.Carbon_Cap_Overage_Expression = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=violation_expression_rule
     )
@@ -56,8 +56,8 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_Carbon_Emissions_from_All_Sources_Expression[z, p] \
-            - mod.Carbon_Cap_Overage_MMt_Expression[z, p] * 10**6 \
-            <= mod.carbon_cap_target_mmt[z, p] * 10**6  # convert to tons
+            - mod.Carbon_Cap_Overage_Expression[z, p] \
+            <= mod.carbon_cap_target[z, p]
 
     m.Carbon_Cap_Constraint = Constraint(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
@@ -75,24 +75,24 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "carbon_cap.csv"), "w", newline="") as carbon_cap_results_file:
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "carbon_cap.csv"),
+              "w", newline="") as carbon_cap_results_file:
         writer = csv.writer(carbon_cap_results_file)
         writer.writerow(["carbon_cap_zone", "period",
                          "discount_factor", "number_years_represented",
-                         "carbon_cap_target_mmt",
-                         "carbon_emissions_mmt",
-                         "carbon_cap_overage_mmt"])
+                         "carbon_cap_target",
+                         "carbon_emissions",
+                         "carbon_cap_overage"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
                 p,
                 m.discount_factor[p],
                 m.number_years_represented[p],
-                float(m.carbon_cap_target_mmt[z, p]),
-                value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
-                      / 10**6),
-                value(m.Carbon_Cap_Overage_MMt_Expression[z, p])# MMT
+                float(m.carbon_cap_target[z, p]),
+                value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]),
+                value(m.Carbon_Cap_Overage_Expression[z, p])
             ])
 
 
@@ -123,8 +123,8 @@ def import_results_into_database(
     # clearing prior results)
     nullify_sql = """
         UPDATE results_system_carbon_emissions
-        SET total_emissions_mmt = NULL,
-        carbon_cap_overage_mmt = NULL
+        SET total_emissions = NULL,
+        carbon_cap_overage = NULL
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
@@ -145,19 +145,19 @@ def import_results_into_database(
             period = row[1]
             discount_factor = row[2]
             number_years = row[3]
-            total_emissions_mmt = row[5]
+            total_emissions = row[5]
             overage = row[6]
             
             results.append(
-                (total_emissions_mmt, overage, discount_factor, number_years,
+                (total_emissions, overage, discount_factor, number_years,
                  scenario_id, carbon_cap_zone, period,
                  subproblem, stage)
             )
 
     total_sql = """
         UPDATE results_system_carbon_emissions
-        SET total_emissions_mmt = ?,
-        carbon_cap_overage_mmt = ?,
+        SET total_emissions = ?,
+        carbon_cap_overage = ?,
         discount_factor = ?,
         number_years_represented = ?
         WHERE scenario_id = ?
@@ -190,10 +190,10 @@ def import_results_into_database(
         AND stage_id = ?;"""
     spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
-    # Calculate marginal carbon cost per MMt
+    # Calculate marginal carbon cost per emission
     mc_sql = """
         UPDATE results_system_carbon_emissions
-        SET carbon_cap_marginal_cost_per_mmt = 
+        SET carbon_cap_marginal_cost_per_emission = 
         dual / (discount_factor * number_years_represented)
         WHERE scenario_id = ?
         AND subproblem_id = ?

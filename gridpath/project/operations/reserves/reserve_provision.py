@@ -122,7 +122,7 @@ def generic_determine_dynamic_components(
     # 'ba_column_name'); add the variable name for the current reserve type
     # to the list of variables in the headroom/footroom dictionary for the
     # project
-    with open(os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"),
               "r") as projects_file:
         projects_file_reader = csv.reader(projects_file, delimiter="\t", lineterminator="\n")
         headers = next(projects_file_reader)
@@ -271,7 +271,7 @@ def generic_load_model_data(
     columns_to_import = ("project", ba_column_name,)
     params_to_import = (getattr(m, reserve_balancing_area_param),)
     projects_file_header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
@@ -286,7 +286,7 @@ def generic_load_model_data(
         pass
 
     # Load the needed data
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "projects.tab"),
                      select=columns_to_import,
                      param=params_to_import
@@ -300,14 +300,14 @@ def generic_load_model_data(
     # state of charge adjustment or delivered variable RPS energy adjustment)
     # if specified; otherwise it will default to 0
     ba_file_header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      reserve_balancing_areas_input_file),
         sep="\t", header=None, nrows=1
     ).values[0]
 
     if "reserve_to_energy_adjustment" in ba_file_header:
         data_portal.load(
-            filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+            filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                                   reserve_balancing_areas_input_file),
             select=("balancing_area",
                     "reserve_to_energy_adjustment"),
@@ -334,7 +334,7 @@ def generic_export_module_specific_results(
     :param reserve_ba_param_name:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "reserves_provision_" + module_name + ".csv"),
               "w", newline="") as f:
         writer = csv.writer(f)

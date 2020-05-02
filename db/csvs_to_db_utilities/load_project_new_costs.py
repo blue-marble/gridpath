@@ -10,7 +10,7 @@ from db.utilities import project_new_costs
 
 def load_project_new_costs(io, c, subscenario_input, data_input):
     """
-    Data output dictionary is {project:{period: (lifetime_yrs, annualized_real_cost_per_kw_year, annualized_real_cost_per_kwh_year)}}
+    Data output dictionary is {project:{period: (lifetime_yrs, annualized_real_cost_per_mw_year, annualized_real_cost_per_mwh_year)}}
     Convert values to floats else they show up as blobs in sql db
     :param io:
     :param c:
@@ -41,22 +41,22 @@ def load_project_new_costs(io, c, subscenario_input, data_input):
                 if project_lifetime_yrs != None:
                     project_lifetime_yrs = int(project_lifetime_yrs)
 
-                annual_real_cost_kw = data_input_subscenario.loc[
+                annual_real_cost_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annualized_real_cost_per_kw_yr'].iloc[0]
-                if annual_real_cost_kw != None:
-                    annual_real_cost_kw = float(annual_real_cost_kw)
+                                                                       'period'] == p), 'annualized_real_cost_per_mw_yr'].iloc[0]
+                if annual_real_cost_mw != None:
+                    annual_real_cost_mw = float(annual_real_cost_mw)
 
-                annual_real_cost_kwh = data_input_subscenario.loc[
+                annual_real_cost_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annualized_real_cost_per_kwh_yr'].iloc[0]
-                if annual_real_cost_kwh != None:
-                    annual_real_cost_kwh = float(annual_real_cost_kwh)
+                                                                       'period'] == p), 'annualized_real_cost_per_mwh_yr'].iloc[0]
+                if annual_real_cost_mwh != None:
+                    annual_real_cost_mwh = float(annual_real_cost_mwh)
 
                 # TODO: Add the levelized_cost_per_mwh and supply_curve_scenario_id fields
-                project_new_lifetime_costs[prj][p] = (project_lifetime_yrs, annual_real_cost_kw, annual_real_cost_kwh)
+                project_new_lifetime_costs[prj][p] = (project_lifetime_yrs, annual_real_cost_mw, annual_real_cost_mwh)
 
 
         project_new_costs.update_project_new_costs(

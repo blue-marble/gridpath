@@ -14,7 +14,8 @@ from pandas import read_csv
 from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
+    check_for_integer_subdirectories
 
 
 def add_model_components(m, d):
@@ -170,10 +171,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
 
-    stages = read_csv(
-        os.path.join(scenario_directory, subproblem, "subproblems.csv"),
-        dtype={"subproblems": str}
-    )['subproblems'].tolist()
+    stages = check_for_integer_subdirectories(
+        os.path.join(scenario_directory, subproblem)
+    )
 
     fixed_commitment_df = read_csv(
         os.path.join(scenario_directory, subproblem,
@@ -191,7 +191,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         """
         fnl_commit_prjs = list()
         df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "last_commitment_stage"],
@@ -249,7 +249,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
     """
 
     df = read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "last_commitment_stage"]

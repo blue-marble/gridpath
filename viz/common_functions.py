@@ -137,6 +137,28 @@ def get_tech_plotting_order(c):
     return dict(order)
 
 
+def get_unit(c, metric):
+    """
+    Get the unit of measurement for a given metric
+
+    :param c:
+    :param metric: str, the metric for which we want the unit of measurement
+    :return:
+    """
+
+    unit = c.execute("SELECT unit FROM mod_units WHERE metric=?", (metric,))
+
+    if unit.rowcount == 0:
+        raise ValueError(
+            """
+            Error! The metric '{}' does not exists in the mod_units table.
+            Please specify an existing metric. 
+            """.format(metric)
+        )
+    else:
+        return unit.fetchone()[0]
+
+
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
                             group_column, column_mapper={}, group_colors={},
                             group_order={}, ylimit=None):
@@ -251,7 +273,7 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
         group = r.name
-        if "$" in y_axis_column:
+        if "$" in y_axis_column or "USD" in y_axis_column:
             y_axis_formatter = "@%s{$0,0}" % group
         else:
             y_axis_formatter = "@%s{0,0}" % group

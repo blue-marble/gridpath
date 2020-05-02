@@ -1,0 +1,6 @@
+project	period	load_point_fraction	average_variable_om_cost_per_mwh
+Disp_Binary_Commit	2020	0.5	2
+Disp_Binary_Commit	2020	1	1.5
+Disp_Binary_Commit	2030	0.5	2
+Disp_Binary_Commit	2030	1	1.5
+Disp_Cont_Commit	0	1	1

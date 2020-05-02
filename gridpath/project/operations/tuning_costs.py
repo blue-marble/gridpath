@@ -17,7 +17,7 @@ from pyomo.environ import Param, Var, Expression, Constraint, \
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_boundary_type_and_first_timepoint
 
 
 def add_model_components(m, d):
@@ -155,8 +155,9 @@ def ramp_up_rule(mod, g, tmp):
     tuning_cost = mod.ramp_tuning_cost_per_mw \
         if gen_op_type in ["gen_hydro", "gen_hydro_must_take", "stor"] \
         else 0
-    if check_if_linear_horizon_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     elif tuning_cost == 0:
@@ -177,8 +178,9 @@ def ramp_down_rule(mod, g, tmp):
     tuning_cost = mod.ramp_tuning_cost_per_mw \
         if gen_op_type in ["gen_hydro", "gen_hydro_must_take"] \
         else 0
-    if check_if_linear_horizon_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     elif tuning_cost == 0:
@@ -228,6 +230,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     ramp_tuning_cost = c.execute(
         """SELECT ramp_tuning_cost_per_mw
@@ -241,11 +245,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return ramp_tuning_cost
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file (to be precise, amend it).
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -257,8 +261,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
-    if os.path.isfile(os.path.join(inputs_directory, "tuning_params.tab")):
-        with open(os.path.join(inputs_directory, "tuning_params.tab"),
+    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab")):
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
                   "r") as projects_file_in:
             reader = csv.reader(projects_file_in, delimiter="\t",
                                 lineterminator="\n")
@@ -275,14 +279,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             param_value.append(ramp_tuning_cost)
             new_rows.append(param_value)
 
-        with open(os.path.join(inputs_directory, "tuning_params.tab"),
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
                   "w", newline="") as tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t",
                                 lineterminator="\n")
             writer.writerows(new_rows)
 
     else:
-        with open(os.path.join(inputs_directory, "tuning_params.tab"),
+        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
                   "w", newline="") as tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t",
                                 lineterminator="\n")

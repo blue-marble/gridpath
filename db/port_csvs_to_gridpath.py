@@ -45,16 +45,17 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
+import db.utilities.common_functions as db_util_common
 from db.utilities import temporal, simultaneous_flows, \
-    simultaneous_flow_groups, project_prm, system_reserves, project_zones
+    simultaneous_flow_groups, project_prm, system_reserves, project_zones, rps
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
     load_project_new_potentials, load_project_local_capacity_chars, \
     load_project_prm, load_transmission_zones, load_transmission_portfolios, \
     load_transmission_hurdle_rates, load_transmission_operational_chars, \
-    load_system_rps, load_scenarios, load_fuels, load_project_availability, \
-    load_system_reserves, load_project_zones, load_solver_options, \
+    load_scenarios, load_fuels, load_project_availability, \
+    load_project_zones, load_solver_options, \
     load_system_carbon_cap, load_transmission_new_cost, load_project_list, \
     load_project_operational_chars, load_system_prm, load_project_portfolios, \
     load_transmission_capacities, load_system_load, load_system_local_capacity
@@ -154,24 +155,12 @@ def load_csv_data(conn, csv_path, quiet):
         temporal_directory = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'temporal', 'path'].iloc[
             0])
-    # Get list of subdirectories (which are the names of our subscenarios)
-    # Each temporal subscenario is a directory, with the scenario ID,
-    # underscore, and the scenario name as the name of the directory (already
-    # passed here).
-    temporal_subscenarios = sorted(next(os.walk(temporal_directory))[1])
-    for temporal_subscenario in temporal_subscenarios:
-        if not quiet:
-            print(temporal_subscenario)
-        if not temporal_subscenario.split("_")[0].isdigit():
-            warnings.warn(
-                "Temporal subfolder `{}` does not start with an integer to "
-                "indicate the subscenario ID and CSV import script will fail. "
-                "Please follow the required folder naming structure "
-                "<subscenarioID_subscenarioName>, e.g. "
-                "'1_default4periods'.".format(temporal_subscenario)
-            )
-        subscenario_directory = os.path.join(
-            temporal_directory, temporal_subscenario)
+    temporal_subscenario_directories = \
+        db_util_common.get_directory_subscenarios(
+            main_directory=temporal_directory,
+            quiet=quiet
+        )
+    for subscenario_directory in temporal_subscenario_directories:
         temporal.load_from_csvs(
             conn=conn, subscenario_directory=subscenario_directory
         )
@@ -357,6 +346,25 @@ def load_csv_data(conn, csv_path, quiet):
             conn, c2, csv_subscenario_input, csv_data_input
         )
 
+    #### LOAD PROJECT VARIALE OM DATA ####
+
+    ## PROJECT VARIABLE OM ##
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'project_variable_om_curves', 'include'
+    ].iloc[0] == 1:
+        data_folder_path = os.path.join(
+            folder_path,
+            csv_data_master.loc[
+                csv_data_master['table'] == 'project_variable_om_curves',
+                'path'
+            ].iloc[0]
+        )
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(data_folder_path, quiet)
+        load_project_operational_chars.load_project_vom_curves(
+            conn, c2, csv_subscenario_input, csv_data_input
+        )
+
     #### LOAD PROJECT STARTUP CHARS DATA ####
 
     ## PROJECT STARTUP CHARS ##
@@ -457,9 +465,15 @@ def load_csv_data(conn, csv_path, quiet):
     if csv_data_master.loc[csv_data_master['table'] == 'system_rps_targets', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_rps_targets', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
-        load_system_rps.load_system_rps_targets(conn, c2, csv_subscenario_input, csv_data_input)
-
+        rps_target_subscenario_directories = \
+            db_util_common.get_directory_subscenarios(
+                main_directory=data_folder_path,
+                quiet=quiet
+            )
+        for subscenario_directory in rps_target_subscenario_directories:
+            rps.load_from_csvs(
+                conn=conn, subscenario_directory=subscenario_directory
+            )
     #### LOAD RESERVES DATA ####
 
     ## GEOGRAPHY BAS ##
@@ -485,15 +499,26 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## SYSTEM RESERVES ##
     for reserve_type in reserves_list:
-        subscenario, inputs = read_data_for_insertion_into_db(
-            csv_data_master=csv_data_master,
-            folder_path=folder_path,
-            quiet=quiet,
-            table="system_{}".format(reserve_type)
-        )
-        system_reserves.insert_system_reserves(
-            conn, c2, subscenario, inputs, reserve_type
-        )
+        if csv_data_master.loc[
+            csv_data_master['table'] == "system_" + reserve_type,
+            'include'
+        ].iloc[0] == 1:
+            data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+                csv_data_master['table']
+                == "system_" + reserve_type, 'path'
+            ].iloc[0])
+
+            reserve_subscenario_directories = \
+                db_util_common.get_directory_subscenarios(
+                    main_directory=data_folder_path,
+                    quiet=quiet
+                )
+
+            for subscenario_directory in reserve_subscenario_directories:
+                system_reserves.load_from_csvs(
+                    conn, subscenario_directory=subscenario_directory,
+                    reserve_type=reserve_type
+                )
 
     #### LOAD TRANSMISSION DATA ####
 
@@ -584,25 +609,12 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master['table'] == 'system_prm_zone_elcc_surface',
             'path'
         ].iloc[0])
-        # Get list of subdirectories (which are the names of our subscenarios)
-        # Each temporal subscenario is a directory, with the scenario ID,
-        # underscore, and the scenario name as the name of the directory (
-        # already passed here).
-        elcc_surface_subscenarios = \
-            sorted(next(os.walk(elcc_surface_directory))[1])
-        for subscenario in elcc_surface_subscenarios:
-            if not quiet:
-                print(subscenario)
-            if not subscenario.split("_")[0].isdigit():
-                warnings.warn(
-                    "ELCC surface subfolder `{}` does not start with an "
-                    "integer to indicate the subscenario ID and CSV import "
-                    "script will fail. Please follow the required folder "
-                    "naming structure <subscenarioID_subscenarioName>, e.g. "
-                    "'1_default'.".format(subscenario)
-                )
-            subscenario_directory = os.path.join(
-                elcc_surface_directory, subscenario)
+        elcc_surface_subscenario_directories = \
+            db_util_common.get_directory_subscenarios(
+                main_directory=elcc_surface_directory,
+                quiet=quiet
+            )
+        for subscenario_directory in elcc_surface_subscenario_directories:
             project_prm.elcc_surface_load_from_csvs(
                 conn=conn, subscenario_directory=subscenario_directory
             )

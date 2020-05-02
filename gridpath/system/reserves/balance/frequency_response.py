@@ -24,19 +24,19 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
-        reserve_zone_timepoint_set="FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+        reserve_zone_set="FREQUENCY_RESPONSE_BAS",
         reserve_violation_variable="Frequency_Response_Violation_MW",
         reserve_violation_expression
         ="Frequency_Response_Violation_MW_Expression",
         reserve_violation_allowed_param="frequency_response_allow_violation",
-        reserve_requirement_param="frequency_response_requirement_mw",
+        reserve_requirement_expression="Frequency_Response_Requirement",
         total_reserve_provision_expression
         ="Total_Frequency_Response_Provision_MW",
         meet_reserve_constraint="Meet_Frequency_Response_Constraint"
         )
 
     m.Frequency_Response_Partial_Violation_MW = Var(
-        m.FREQUENCY_RESPONSE_BA_TIMEPOINTS, within=NonNegativeReals
+        m.FREQUENCY_RESPONSE_BAS, m.TMPS, within=NonNegativeReals
     )
 
     # Partial frequency response requirement constraint
@@ -46,7 +46,7 @@ def add_model_components(m, d):
             == mod.frequency_response_requirement_partial_mw[ba, tmp]
 
     m.Meet_Frequency_Response_Partial_Constraint = \
-        Constraint(m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
+        Constraint(m.FREQUENCY_RESPONSE_BAS, m.TMPS,
                    rule=meet_partial_frequency_response_rule)
 
 
@@ -63,14 +63,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "frequency_response_violation.csv",
                            "frequency_response_violation_mw",
-                           "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+                           "FREQUENCY_RESPONSE_BAS",
                            "Frequency_Response_Violation_MW_Expression"
                            )
 
     generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "frequency_response_partial_violation.csv",
                            "frequency_response_partial_violation_mw",
-                           "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
+                           "FREQUENCY_RESPONSE_BAS",
                            "Frequency_Response_Partial_Violation_MW"
                            )
 

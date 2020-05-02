@@ -80,6 +80,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     fuels = c1.execute(
         """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu
@@ -331,11 +333,11 @@ def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
     return results
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     fuels.tab and fuel_prices.tab files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -346,7 +348,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     fuels, fuel_prices = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "fuels.tab"), "w", newline="") as \
             fuels_tab_file:
         writer = csv.writer(fuels_tab_file, delimiter="\t", lineterminator="\n")
@@ -359,7 +361,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         for row in fuels:
             writer.writerow(row)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "fuel_prices.tab"), "w", newline="") as \
             fuel_prices_tab_file:
         writer = csv.writer(fuel_prices_tab_file, delimiter="\t", lineterminator="\n")

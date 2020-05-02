@@ -66,22 +66,22 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "carbon_cap_total_project.csv"), "w", newline="") as \
-            rps_results_file:
-        writer = csv.writer(rps_results_file)
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "carbon_cap_total_project.csv"),
+              "w", newline="") as carbon_results_file:
+        writer = csv.writer(carbon_results_file)
         writer.writerow(["carbon_cap_zone", "period",
                          "discount_factor", "number_years_represented",
-                         "carbon_cap_target_mmt",
-                         "project_carbon_emissions_mmt"])
+                         "carbon_cap_target",
+                         "project_carbon_emissions"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
                 p,
                 m.discount_factor[p],
                 m.number_years_represented[p],
-                float(m.carbon_cap_target_mmt[z, p]),
-                value(m.Total_Carbon_Emissions_Tons[z, p]/10**6)  # MMT
+                float(m.carbon_cap_target[z, p]),
+                value(m.Total_Carbon_Emissions_Tons[z, p])
             ])
 
 
@@ -119,19 +119,19 @@ def import_results_into_database(
         for row in reader:
             carbon_cap_zone = row[0]
             period = row[1]
-            carbon_cap_mmt = row[4]
-            project_carbon_emissions_mmt = row[5]
+            carbon_cap = row[4]
+            project_carbon_emissions = row[5]
             
             results.append(
                 (scenario_id, carbon_cap_zone, period, subproblem, stage,
-                 carbon_cap_mmt, project_carbon_emissions_mmt)
+                 carbon_cap, project_carbon_emissions)
             )
 
     insert_temp_sql = """
         INSERT INTO 
         temp_results_system_carbon_emissions{}
          (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
-         carbon_cap_mmt, in_zone_project_emissions_mmt)
+         carbon_cap, in_zone_project_emissions)
          VALUES (?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
@@ -140,10 +140,10 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_system_carbon_emissions
         (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
-        carbon_cap_mmt, in_zone_project_emissions_mmt)
+        carbon_cap, in_zone_project_emissions)
         SELECT
         scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
-        carbon_cap_mmt, in_zone_project_emissions_mmt
+        carbon_cap, in_zone_project_emissions
         FROM temp_results_system_carbon_emissions{}
          ORDER BY scenario_id, carbon_cap_zone, period, subproblem_id, 
         stage_id;

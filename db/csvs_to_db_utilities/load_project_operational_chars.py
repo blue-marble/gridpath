@@ -18,6 +18,7 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
     """
 
     operational_chars_integers = ['heat_rate_curves_scenario_id',
+                                  'variable_om_curves_scenario_id',
                                   'startup_chars_scenario_id',
                                   'min_up_time_hours', 'min_down_time_hours',
                                   'variable_generator_profile_scenario_id',
@@ -184,8 +185,9 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
     ]
 
     # Change the order of the columns before creating the list of tuples
+    # (move subscenario_id and project to the front)
     cols = data_input.columns.tolist()
-    cols = [cols[2], cols[3], cols[0], cols[1]]
+    cols = [cols[3], cols[4], cols[0], cols[1], cols[2]]
     data_input = data_input[cols]
 
     project_hr_chars = [
@@ -196,6 +198,37 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
         io=io, c=c,
         subs_data=project_hr_scenarios,
         proj_hr_chars=project_hr_chars
+    )
+
+
+def load_project_vom_curves(io, c, subscenario_input, data_input):
+    """
+    Data output dictionary is {project:{variable_om_curves_scenario_id:{
+    load_point: average_variable_om_cost_per_mwh}}}
+    :param io:
+    :param c:
+    :param subscenario_input:
+    :param data_input:
+    :return:
+    """
+    project_vom_scenarios = [
+        tuple(x) for x in subscenario_input.to_records(index=False)
+    ]
+
+    # Change the order of the columns before creating the list of tuples
+    # (move subscenario_id and project to the front)
+    cols = data_input.columns.tolist()
+    cols = [cols[3], cols[4], cols[0], cols[1], cols[2]]
+    data_input = data_input[cols]
+
+    project_vom_chars = [
+        tuple(x) for x in data_input.to_records(index=False)
+    ]
+
+    project_operational_chars.update_project_vom_curves(
+        io=io, c=c,
+        subs_data=project_vom_scenarios,
+        proj_vom_chars=project_vom_chars
     )
 
 

@@ -20,11 +20,11 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
-        reserve_zone_timepoint_set="REGULATION_DOWN_ZONE_TIMEPOINTS",
+        reserve_zone_set="REGULATION_DOWN_ZONES",
         reserve_violation_variable="Regulation_Down_Violation_MW",
         reserve_violation_expression="Regulation_Down_Violation_MW_Expression",
         reserve_violation_allowed_param="regulation_down_allow_violation",
-        reserve_requirement_param="regulation_down_requirement_mw",
+        reserve_requirement_expression="Reg_Down_Requirement",
         total_reserve_provision_expression
         ="Total_Regulation_Down_Provision_MW",
         meet_reserve_constraint="Meet_Regulation_Down_Constraint"
@@ -44,7 +44,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "regulation_down_violation.csv",
                            "regulation_down_violation_mw",
-                           "REGULATION_DOWN_ZONE_TIMEPOINTS",
+                           "REGULATION_DOWN_ZONES",
                            "Regulation_Down_Violation_MW_Expression"
                            )
 

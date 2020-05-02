@@ -15,10 +15,8 @@ Costs for this operational type include variable O&M costs.
 
 from __future__ import print_function
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, \
     Expression, NonNegativeReals, PercentFraction, value
 
@@ -27,9 +25,12 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_boundary_type_and_first_timepoint, check_if_first_timepoint, \
+    check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    update_dispatch_results_table
+    update_dispatch_results_table, load_optype_module_specific_data, \
+    load_hydro_opchars, get_hydro_inputs_from_database, \
+    write_tab_file_model_inputs, check_for_tmps_to_link
 
 
 def add_module_specific_components(m, d):
@@ -52,6 +53,11 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_hydro`            |
     | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_LINKED_TMPS`                                         |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_hydro`            |
+    | operational type and their linked timepoints.                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -87,7 +93,7 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_hydro_ramp_up_rate`                                        |
+    | | :code:`gen_hydro_ramp_up_when_on_rate`                                |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -95,7 +101,7 @@ def add_module_specific_components(m, d):
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_hydro_ramp_down_rate`                                      |
+    | | :code:`gen_hydro_ramp_down_when_on_rate`                              |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -104,6 +110,35 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
 
+    |
+
+    +-------------------------------------------------------------------------+
+    | Linked Input Params                                                     |
+    +=========================================================================+
+    | | :code:`gen_hydro_linked_power`                                        |
+    | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power provision in the linked timepoints.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_linked_curtailment`                                  |
+    | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's curtailment in the linked timepoints.                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_linked_upwards_reserves`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's upward reserve provision in the linked timepoints.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_linked_downwards_reserves`                           |
+    | | *Defined over*: :code:`GEN_HYDRO_LINKED_TMPS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's downward reserve provision in the linked timepoints.      |
+    +-------------------------------------------------------------------------+
     |
 
     +-------------------------------------------------------------------------+
@@ -157,13 +192,13 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     |                                                                         |
     | Limits the allowed project upward ramp based on the                     |
-    | :code:`gen_hydro_ramp_up_rate`.                                         |
+    | :code:`gen_hydro_ramp_up_when_on_rate`.                                 |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Ramp_Down_Constraint`                                 |
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     |                                                                         |
     | Limits the allowed project downward ramp based on the                   |
-    | :code:`gen_hydro_ramp_down_rate`.                                       |
+    | :code:`gen_hydro_ramp_down_when_on_rate`.                               |
     +-------------------------------------------------------------------------+
 
     """
@@ -183,6 +218,8 @@ def add_module_specific_components(m, d):
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_HYDRO)
     )
+
+    m.GEN_HYDRO_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
     ###########################################################################
@@ -205,14 +242,37 @@ def add_module_specific_components(m, d):
     # Optional Params
     ###########################################################################
 
-    m.gen_hydro_ramp_up_rate = Param(
+    m.gen_hydro_ramp_up_when_on_rate = Param(
         m.GEN_HYDRO,
         within=PercentFraction, default=1
     )
 
-    m.gen_hydro_ramp_down_rate = Param(
+    m.gen_hydro_ramp_down_when_on_rate = Param(
         m.GEN_HYDRO,
         within=PercentFraction, default=1
+    )
+
+    # Linked Params
+    ###########################################################################
+
+    m.gen_hydro_linked_power = Param(
+        m.GEN_HYDRO_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_hydro_linked_curtailment = Param(
+        m.GEN_HYDRO_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_hydro_linked_upwards_reserves = Param(
+        m.GEN_HYDRO_LINKED_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.gen_hydro_linked_downwards_reserves = Param(
+        m.GEN_HYDRO_LINKED_TMPS,
+        within=NonNegativeReals
     )
 
     # Variables
@@ -378,34 +438,56 @@ def ramp_up_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
-    # If you can ramp up the the total project's capacity within the
-    # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_ramp_up_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            >= 1:
-        return Constraint.Skip
     else:
-        return (mod.GenHydro_Provide_Power_MW[g, tmp]
-                + mod.GenHydro_Curtail_MW[g, tmp]
-                + mod.GenHydro_Upwards_Reserves_MW[g, tmp]) \
-            - (mod.GenHydro_Provide_Power_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               + mod.GenHydro_Curtail_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               - mod.GenHydro_Downwards_Reserves_MW[
-                    g, mod.prev_tmp[
-                        tmp, mod.balancing_type_project[g]]]) \
-            <= \
-            mod.gen_hydro_ramp_up_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_hydro_linked_power[g, 0]
+            prev_tmp_curtailment = \
+                mod.gen_hydro_linked_curtailment[g, 0]
+            prev_tmp_downwards_reserves = \
+                mod.gen_hydro_linked_downwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenHydro_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_curtailment = \
+                mod.GenHydro_Curtail_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_downwards_reserves = \
+                mod.GenHydro_Downwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+        # If you can ramp up the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        if mod.gen_hydro_ramp_up_when_on_rate[g] * 60 \
+            * prev_tmp_hrs_in_tmp \
+                >= 1:
+            return Constraint.Skip
+        else:
+            return (mod.GenHydro_Provide_Power_MW[g, tmp]
+                    + mod.GenHydro_Curtail_MW[g, tmp]
+                    + mod.GenHydro_Upwards_Reserves_MW[g, tmp]) \
+                - (prev_tmp_power + prev_tmp_curtailment
+                   - prev_tmp_downwards_reserves) \
+                <= \
+                mod.gen_hydro_ramp_up_when_on_rate[g] * 60 \
+                * prev_tmp_hrs_in_tmp \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.Availability_Derate[g, tmp]
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -422,33 +504,56 @@ def ramp_down_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
-    # If you can ramp down the the total project's capacity within the
-    # previous timepoint, skip the constraint (it won't bind)
-    elif mod.gen_hydro_ramp_down_rate[g] * 60 \
-        * mod.hrs_in_tmp[
-        mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            >= 1:
-        return Constraint.Skip
     else:
-        return (mod.GenHydro_Provide_Power_MW[g, tmp]
-                + mod.GenHydro_Curtail_MW[g, tmp]
-                - mod.GenHydro_Downwards_Reserves_MW[g, tmp]) \
-            - (mod.GenHydro_Provide_Power_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               + mod.GenHydro_Curtail_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-               + mod.GenHydro_Upwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
-            >= \
-            - mod.gen_hydro_ramp_down_rate[g] * 60 \
-            * mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+        if check_if_boundary_type_and_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        ):
+            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+            prev_tmp_power = \
+                mod.gen_hydro_linked_power[g, 0]
+            prev_tmp_curtailment = \
+                mod.gen_hydro_linked_curtailment[g, 0]
+            prev_tmp_upwards_reserves = \
+                mod.gen_hydro_linked_upwards_reserves[g, 0]
+        else:
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = \
+                mod.GenHydro_Provide_Power_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_curtailment = \
+                mod.GenHydro_Curtail_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            prev_tmp_upwards_reserves = \
+                mod.GenHydro_Upwards_Reserves_MW[
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+        # If you can ramp down the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        if mod.gen_hydro_ramp_down_when_on_rate[g] * 60 \
+            * prev_tmp_hrs_in_tmp \
+                >= 1:
+            return Constraint.Skip
+        else:
+            return (mod.GenHydro_Provide_Power_MW[g, tmp]
+                    + mod.GenHydro_Curtail_MW[g, tmp]
+                    - mod.GenHydro_Downwards_Reserves_MW[g, tmp]) \
+                - (prev_tmp_power + prev_tmp_curtailment
+                   + prev_tmp_upwards_reserves) \
+                >= \
+                - mod.gen_hydro_ramp_down_when_on_rate[g] * 60 \
+                * prev_tmp_hrs_in_tmp \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.Availability_Derate[g, tmp]
 
 
 # Operational Type Methods
@@ -508,6 +613,13 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.GenHydro_Provide_Power_MW[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.
@@ -531,9 +643,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked"
+        )
     ):
         pass
     else:
@@ -548,6 +673,7 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
+
 def load_module_specific_data(m, data_portal,
                               scenario_directory, subproblem, stage):
     """
@@ -559,95 +685,40 @@ def load_module_specific_data(m, data_portal,
     :param stage:
     :return:
     """
-    # Determine list of projects
-    projects = list()
 
-    prj_op_type_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"]
+    # Determine list of projects load params from projects.tab (optional
+    # ramp rates)
+    projects = load_optype_module_specific_data(
+        mod=m, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_hydro"
     )
 
-    for row in zip(prj_op_type_df["project"],
-                   prj_op_type_df["operational_type"]):
-        if row[1] == 'gen_hydro':
-            projects.append(row[0])
-        else:
-            pass
-
-    # Determine subset of project-horizons in hydro budgets file
-    project_horizons = list()
-    avg = dict()
-    min = dict()
-    max = dict()
-
-    prj_hor_opchar_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
-                     "hydro_conventional_horizon_params.tab"),
-        sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_fraction",
-                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
-    )
-    for row in zip(prj_hor_opchar_df["project"],
-                   prj_hor_opchar_df["horizon"],
-                   prj_hor_opchar_df["hydro_average_power_fraction"],
-                   prj_hor_opchar_df["hydro_min_power_fraction"],
-                   prj_hor_opchar_df["hydro_max_power_fraction"]):
-        if row[0] in projects:
-            project_horizons.append((row[0], row[1]))
-            avg[(row[0], row[1])] = float(row[2])
-            min[(row[0], row[1])] = float(row[3])
-            max[(row[0], row[1])] = float(row[4])
-        else:
-            pass
-
-    # Load data
-    data_portal.data()["GEN_HYDRO_OPR_HRZS"] = {None: project_horizons}
-    data_portal.data()["gen_hydro_average_power_fraction"] = avg
-    data_portal.data()["gen_hydro_min_power_fraction"] = min
-    data_portal.data()["gen_hydro_max_power_fraction"] = max
-
-    # Ramp rate limits are optional; will default to 1 if not specified
-    ramp_up_rate = dict()
-    ramp_down_rate = dict()
-    header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t", header=None, nrows=1
-    ).values[0]
-
-    optional_columns = ["ramp_up_when_on_rate", "ramp_down_when_on_rate"]
-    used_columns = [c for c in optional_columns if c in header]
-
-    dynamic_components = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "operational_type"] + used_columns
+    # Load hydro operational data from hydro-specific input files
+    load_hydro_opchars(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_hydro", projects=projects
     )
 
-    if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]
-                       ):
-            if row[1] == "gen_hydro" and row[2] != ".":
-                ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_hydro_ramp_up_rate"] = ramp_up_rate
-
-    if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]
-                       ):
-            if row[1] == "gen_hydro" and row[2] != ".":
-                ramp_down_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_hydro_ramp_down_rate"] = ramp_down_rate
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "gen_hydro_linked_timepoint_params.tab"
+        )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=m.GEN_HYDRO_LINKED_TMPS,
+            param=(
+                m.gen_hydro_linked_power,
+                m.gen_hydro_linked_curtailment,
+                m.gen_hydro_linked_upwards_reserves,
+                m.gen_hydro_linked_downwards_reserves
+            )
+        )
+    else:
+        pass
 
 
 def export_module_specific_results(mod, d,
@@ -661,7 +732,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -687,6 +758,45 @@ def export_module_specific_results(mod, d,
                 value(mod.GenHydro_Curtail_MW[p, tmp])
             ])
 
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage
+    )
+
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
+
+        # Export params by project and timepoint
+        with open(os.path.join(
+                scenario_directory, next_subproblem, stage, "inputs",
+                "gen_hydro_linked_timepoint_params.tab"
+        ), "w", newline=""
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+            writer.writerow(
+                ["project", "linked_timepoint",
+                 "linked_provide_power",
+                 "linked_provide_curtailment",
+                 "linked_upward_reserves",
+                 "linked_downward_reserves"]
+            )
+        for (p, tmp) in sorted(mod.GEN_HYDRO_OPR_TMPS):
+            if tmp in tmps_to_link:
+                writer.writerow([
+                    p,
+                    tmp_linked_tmp_dict[tmp],
+                    value(mod.GenHydro_Provide_Power_MW[p, tmp]),
+                    value(mod.GenHydro_Curtail_MW[p, tmp]),
+                    value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
+                    value(mod.GenHydro_Downwards_Reserves_MW[p, tmp])
+                ])
+
 
 # Database
 ###############################################################################
@@ -699,119 +809,35 @@ def get_module_specific_inputs_from_database(
     :param subproblem:
     :param stage:
     :param conn: database connection
-    :return:
+    :return: cursor object with query results
     """
-    c = conn.cursor()
-    # Select only budgets/min/max of projects in the portfolio
-    # Select only budgets/min/max of projects with 'gen_hydro'
-    # Select only budgets/min/max for horizons from the correct temporal
-    # scenario and subproblem
-    # Select only horizons on periods when the project is operational
-    # (periods with existing project capacity for existing projects or
-    # with costs specified for new projects)
-    # TODO: should we ensure that the project balancing type and the horizon
-    #  length type match (e.g. by joining on them being equal here)
-    hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_fraction, min_power_fraction,
-        max_power_fraction
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, hydro_operational_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'gen_hydro') AS op_char
-        USING (project)
-        CROSS JOIN
-        (SELECT horizon
-        FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {})
-        LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, horizon)
-        INNER JOIN
-        (SELECT project, period
-        FROM
-        (SELECT project, period
-        FROM inputs_project_specified_capacity
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_specified_capacity_scenario_id = {}) as existing
-        UNION
-        SELECT project, period
-        FROM inputs_project_new_cost
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_new_cost_scenario_id = {})
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
-    )
 
-    return hydro_chars
+    return get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type="gen_hydro"
+    )
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     hydro_conventional_horizon_params.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
     :param conn: database connection
     :return:
     """
-    hydro_chars = get_module_specific_inputs_from_database(
+
+    data = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
+    fname = "hydro_conventional_horizon_params.tab"
 
-    # If hydro_conventional_horizon_params.tab file already exists,
-    # append rows to it
-    if os.path.isfile(os.path.join(inputs_directory,
-                                   "hydro_conventional_horizon_params.tab")
-                      ):
-        with open(os.path.join(inputs_directory,
-                               "hydro_conventional_horizon_params.tab"),
-                  "a") as \
-                hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
-            for row in hydro_chars:
-                writer.writerow(row)
-    # If hydro_conventional_horizon_params.tab does not exist, write header
-    # first, then add inputs data
-    else:
-        with open(os.path.join(inputs_directory,
-                               "hydro_conventional_horizon_params.tab"),
-                  "w", newline="") as \
-                hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                ["project", "horizon",
-                 "hydro_average_power_fraction",
-                 "hydro_min_power_fraction",
-                 "hydro_max_power_fraction"]
-            )
-            for row in hydro_chars:
-                writer.writerow(row)
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, fname, data
+    )
 
 
 def import_module_specific_results_to_database(

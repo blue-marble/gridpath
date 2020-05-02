@@ -17,12 +17,6 @@ class OptionalFeatures(object):
 
         self.SCENARIO_ID = scenario_id
 
-        self.OPTIONAL_FEATURE_MULTI_STAGE = cursor.execute(
-            """SELECT of_multi_stage
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
         self.OPTIONAL_FEATURE_TRANSMISSION = cursor.execute(
             """SELECT of_transmission
                FROM scenarios
@@ -126,8 +120,6 @@ class OptionalFeatures(object):
         """
         feature_list = list()
 
-        if self.OPTIONAL_FEATURE_MULTI_STAGE:
-            feature_list.append("multi_stage")
         if self.OPTIONAL_FEATURE_TRANSMISSION:
             feature_list.append("transmission")
         if self.OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES:
@@ -705,7 +697,6 @@ class SubScenarios(object):
         return required_capacity_type_modules
 
 
-# TODO: perhaps this is not the right place to define this data structure?
 class SubProblems(object):
     def __init__(self, cursor, scenario_id):
         """
@@ -739,12 +730,6 @@ class SubProblems(object):
             ).fetchall()
             stages = [stage[0] for stage in stages]  # convert to simple list
             self.SUBPROBLEM_STAGE_DICT[s] = stages
-
-        # TODO: you might want to save the subproblem.csv files here and
-        #   generally deal with the subproblem_stage config here
-        #   (note stages also require you to save subproblem.csv files)
-        #    subproblem.csv file might not be best way to specify that there are
-        #    subproblems
 
 
 class SolverOptions(object):

@@ -10,7 +10,7 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, NonNegativeReals
+from pyomo.environ import Set, Param, NonNegativeReals, Any
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
@@ -51,7 +51,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "projects.tab"),
         sep="\t"
     )
@@ -115,6 +115,9 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`capacity_type`                                                 |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["dr_new", "gen_new_bin", "gen_new_lin",`            |
+    | | :code:`"gen_ret_bin", "gen_ret_lin", "gen_spec", "stor_new_bin",`     |
+    | | :code:`"stor_new_lin", "stor_spec"]`                                  |
     |                                                                         |
     | This param describes each project's capacity type, which determines how |
     | the available capacity of the project is defined (depending on the      |
@@ -122,6 +125,10 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`operational_type`                                              |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["dr", "gen_always_on", "gen_commit_bin",`           |
+    | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
+    | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
+    | | :code:`"gen_var", "gen_var_must_take", "stor"]`                       |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
     | how the project operates, e.g. whether it is fuel-based dispatchable    |
@@ -130,6 +137,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`availability_type`                                             |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`["binary", "continuous", "exogenous"]`               |
     |                                                                         |
     | This param describes each project's availability type, which determines |
     | how the project availability is determined (exogenously or              |
@@ -143,15 +151,9 @@ def add_model_components(m, d):
     | how timepoints are grouped in horizons for that project. See            |
     | :code:`horizons` module for more info.                                  |
     +-------------------------------------------------------------------------+
-    | | :code:`variable_om_cost_per_mwh`                                      |
-    | | *Defined over*: :code:`PROJECTS`                                      |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`technology`                                                    |
     | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`Any`                                                 |
     | | *Default*: :code:`unspecified`                                        |
     |                                                                         |
     | The technology for each project, which is only used for aggregation     |
@@ -172,12 +174,25 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
-    m.capacity_type = Param(m.PROJECTS)
-    m.operational_type = Param(m.PROJECTS)
-    m.availability_type = Param(m.PROJECTS)
+    m.capacity_type = Param(
+        m.PROJECTS,
+        within=["dr_new", "gen_new_bin", "gen_new_lin", "gen_ret_bin",
+                "gen_ret_lin", "gen_spec", "stor_new_bin", "stor_new_lin",
+                "stor_spec"]
+    )
+    m.operational_type = Param(
+        m.PROJECTS,
+        within=["dr", "gen_always_on", "gen_commit_bin", "gen_commit_cap",
+                "gen_commit_lin", "gen_hydro", "gen_hydro_must_take",
+                "gen_must_run", "gen_simple", "gen_var",
+                "gen_var_must_take", "stor"]
+    )
+    m.availability_type = Param(
+        m.PROJECTS,
+        within=["binary", "continuous", "exogenous"]
+    )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
-    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
-    m.technology = Param(m.PROJECTS, default="unspecified")
+    m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
 
 
 # Input-Output
@@ -187,28 +202,26 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "projects.tab"),
         index=m.PROJECTS,
         select=("project", "load_zone", "capacity_type",
                 "availability_type", "operational_type",
-                "variable_om_cost_per_mwh",
                 "balancing_type_project"),
         param=(m.load_zone, m.capacity_type, m.availability_type,
-               m.operational_type, m.variable_om_cost_per_mwh,
-               m.balancing_type_project)
+               m.operational_type, m.balancing_type_project)
     )
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
 
     if "technology" in header:
         data_portal.load(
-            filename=os.path.join(scenario_directory, subproblem, stage,
+            filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                   "inputs", "projects.tab"),
             select=("project", "technology"),
             param=m.technology
@@ -226,79 +239,57 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
 
-    # TODO: for now, will require project_availability_scenario_id to be
-    #  defined; however, we should break down this query and have the
-    #  subtype modules write to projects.tab instead of getting everything
-    #  in one go here; this will help in a situation when, for example,
-    #  we don't have startup costs, so we don't need to have the associated
-    #  columns in projects.tab
     projects = c.execute(
         """SELECT project, capacity_type, availability_type, operational_type, 
-        balancing_type_project, technology,
-        load_zone, fuel, variable_cost_per_mwh,
-        min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours,
-        last_commitment_stage
+        balancing_type_project, technology, load_zone
+        FROM
+        -- Get only the subset of projects in the portfolio with their 
+        -- capacity types based on the project_portfolio_scenario_id 
+        (SELECT project, capacity_type
         FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+        -- Get the load_zones for these projects depending on the
+        -- project_load_zone_scenario_id
         LEFT OUTER JOIN
         (SELECT project, load_zone
         FROM inputs_project_load_zones
         WHERE project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
+        -- Get the availability types for these projects depending on the
+        -- project_availability_scenario_id
         (SELECT project, availability_type
         FROM inputs_project_availability_types
         WHERE project_availability_scenario_id = {}) as prj_av_types
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, operational_type, balancing_type_project, technology,
-        fuel, variable_cost_per_mwh,
-        min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours,
-        last_commitment_stage
+        -- Get the operational type, balancing_type, technology, 
+        -- and variable cost for these projects depending ont the 
+        -- project_operational_chars_scenario_id
+        (SELECT project, operational_type, balancing_type_project, technology
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
-        WHERE project_portfolio_scenario_id = {}""".format(
+        ;""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
     )
-
-    # TODO: change all these queries to return dataframes directly using pandas
-    #   functions. Then we can also write out the results easier using pandas
-    #   to.csv functionality
-    # projects_df = pd.read_sql_query(query, conn)
-    # return projects_df
 
     return projects
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -308,22 +299,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
-    # TODO: decide how to deal with projects.tab -- currently, a large table
-    #  is created with NULL values for projects that don't have certain
-    #  params, so we can just get it all here without having to iterate
-    #  through the modules that actually need these params
-    #  This file could also potentially be split up into smaller files with
-    #  just a subset of the params, which would mean that the submodules
-    #  won't have to parse the large file
-
     # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
     #   columns and tab file column names are the same everywhere
     #   projects.fillna(".", inplace=True)
-    #   filename = os.path.join(inputs_directory, "projects.tab")
+    #   filename = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab")
     #   projects.to_csv(filename, sep="\t", mode="w", newline="")
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
               newline="") as projects_tab_file:
         writer = csv.writer(projects_tab_file,
                             delimiter="\t",
@@ -333,19 +316,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer.writerow(
             ["project", "capacity_type", "availability_type",
              "operational_type", "balancing_type_project", "technology",
-             "load_zone", "fuel", "variable_om_cost_per_mwh",
-             "min_stable_level_fraction", "unit_size_mw",
-             "startup_cost_per_mw", "shutdown_cost_per_mw",
-             "startup_fuel_mmbtu_per_mw",
-             "startup_plus_ramp_up_rate",
-             "shutdown_plus_ramp_down_rate",
-             "ramp_up_when_on_rate",
-             "ramp_down_when_on_rate",
-             "min_up_time_hours", "min_down_time_hours",
-             "charging_efficiency", "discharging_efficiency",
-             "minimum_duration_hours", "maximum_duration_hours",
-             "last_commitment_stage"
-             ]
+             "load_zone"]
         )
 
         for row in projects:
@@ -419,23 +390,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check 0 < min stable fraction <= 1
-    if "min_stable_level" not in error_columns:
-        validation_errors = validate_min_stable_level(df)
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "High",
-                 "Invalid min_stable_level",
-                 error
-                 )
-            )
-
     # Check that we're not combining incompatible cap-types and op-types
     invalid_combos = c.execute(
         """SELECT capacity_type, operational_type 
@@ -500,27 +454,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-
-
-def validate_min_stable_level(df):
-    """
-    Check 0 < min stable fraction <= 1
-    :param df:
-    :return:
-    """
-    results = []
-
-    invalids = ((df["min_stable_level"] <= 0) |
-                (df["min_stable_level"] > 1))
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 < min_stable_level <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results
 
 
 def validate_op_cap_combos(df, invalid_combos):

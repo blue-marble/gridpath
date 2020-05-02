@@ -657,7 +657,7 @@ def load_module_specific_data(
         stor_max_duration = dict()
 
         _df = pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type",
@@ -688,7 +688,7 @@ def load_module_specific_data(
     # TODO: throw an error when a project of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "new_build_storage_vintage_costs.tab"),
         index=m.STOR_NEW_LIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
@@ -710,7 +710,7 @@ def load_module_specific_data(
     max_cumulative_mwh = dict()
 
     header = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
@@ -722,7 +722,7 @@ def load_module_specific_data(
     used_columns = [c for c in dynamic_columns if c in header]
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t",
         usecols=["project", "vintage"] + used_columns
@@ -832,7 +832,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_stor_new_lin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -862,7 +862,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "capacity_stor_new_lin.csv")
     )
 
@@ -871,8 +871,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -880,15 +878,25 @@ def summarize_module_specific_results(
             (capacity_results_agg_df["new_build_mwh"] > 0)
         ][["new_build_mw", "new_build_mwh"]]
     )
-    new_build_df.columns =["New Storage Power Capacity (MW)",
-                           "New Storage Energy Capacity (MWh)"]
+
+    # Get the power and energy units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+
+    # Rename column header
+    new_build_df.columns = [
+        "New Storage Power Capacity ({})".format(power_unit),
+        "New Storage Energy Capacity ({})".format(energy_unit)
+    ]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Storage Capacity <--\n")
         if new_build_df.empty:
             outfile.write("No new storage was built.\n")
         else:
-            new_build_df.to_string(outfile)
+            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
@@ -926,8 +934,8 @@ def get_module_specific_inputs_from_database(
 
     new_stor_costs = c.execute(
         """SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000,
-        annualized_real_cost_per_kwh_yr * 1000"""
+        annualized_real_cost_per_mw_yr,
+        annualized_real_cost_per_mwh_yr"""
         + get_potentials[0] +
         """FROM inputs_project_portfolios
         CROSS JOIN
@@ -936,7 +944,7 @@ def get_module_specific_inputs_from_database(
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
+        annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)""".format(
@@ -954,12 +962,12 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     new_build_storage_vintage_costs.tab file
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -970,7 +978,7 @@ def write_module_specific_model_inputs(
     new_stor_costs = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_build_storage_vintage_costs.tab"),
               "w", newline="") as new_storage_costs_tab_file:
         writer = csv.writer(new_storage_costs_tab_file, delimiter="\t", lineterminator="\n")

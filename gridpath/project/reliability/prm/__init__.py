@@ -23,7 +23,11 @@ def add_model_components(m, d):
     # First figure out which projects we need to track for PRM contribution
     m.PRM_PROJECTS = Set(within=m.PROJECTS)
     m.prm_zone = Param(m.PRM_PROJECTS, within=m.PRM_ZONES)
-    m.prm_type = Param(m.PRM_PROJECTS)
+    m.prm_type = Param(
+        m.PRM_PROJECTS,
+        within=["energy_only_allowed", "fully_deliverable",
+                "fully_deliverable_energy_limited"]
+    )
 
     m.PRM_PROJECTS_BY_PRM_ZONE = \
         Set(m.PRM_ZONES, within=m.PRM_PROJECTS,
@@ -51,7 +55,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "projects.tab"),
                      select=("project", "prm_zone", "prm_type"),
                      param=(m.prm_zone, m.prm_type)
@@ -70,6 +74,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, prm_zone, prm_type
@@ -123,11 +129,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -145,7 +151,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         prj_zone_type_dict[str(prj)] = \
             (".", ".") if zone is None else (str(zone), str(prm_type))
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
@@ -173,7 +179,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                     row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

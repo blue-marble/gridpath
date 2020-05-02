@@ -378,7 +378,7 @@ def load_module_specific_data(m, data_portal,
     #   because binary storage and generator use same build size param name
     #   in the columns.
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_binary_build_storage_vintage_costs.tab"),
         index=m.STOR_NEW_BIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
@@ -390,7 +390,7 @@ def load_module_specific_data(m, data_portal,
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_binary_build_storage_size.tab"),
         index=m.STOR_NEW_BIN,
         select=("project", "binary_build_size_mw", "binary_build_size_mwh"),
@@ -408,7 +408,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_stor_new_bin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -441,7 +441,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "capacity_stor_new_bin.csv")
     )
 
@@ -450,8 +450,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -459,15 +457,25 @@ def summarize_module_specific_results(
             (capacity_results_agg_df["new_build_mwh"] > 0)
         ][["new_build_mw", "new_build_mwh"]]
     )
-    new_build_df.columns =["New Binary Storage Power Capacity (MW)",
-                           "New Binary Storage Energy Capacity (MWh)"]
+
+    # Get the power and energy units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+    energy_unit = units_df.loc["energy", "unit"]
+
+    # Rename column header
+    new_build_df.columns = [
+        "New Binary Storage Power Capacity ({})".format(power_unit),
+        "New Binary Storage Energy Capacity ({})".format(energy_unit)
+    ]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Binary Storage Capacity <--\n")
         if new_build_df.empty:
             outfile.write("No new storage was built.\n")
         else:
-            new_build_df.to_string(outfile)
+            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
@@ -485,15 +493,12 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
-    # TODO: remove "as annualized_real_cost_per_kw_yr" statement
-    #  once database columns and tab file columns are aligned
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
         """
         SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000 as annualized_real_cost_per_kw_yr,
-        annualized_real_cost_per_kwh_yr * 1000 as 
-        annualized_real_cost_per_kwh_yr
+        annualized_real_cost_per_mw_yr,
+        annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
@@ -503,7 +508,7 @@ def get_module_specific_inputs_from_database(
         
         INNER JOIN
             (SELECT project, period, lifetime_yrs,
-            annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
+            annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)
@@ -539,13 +544,13 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     new_binary_build_storage_vintage_costs.tab file and the
     new_binary_build_storage_size.tab file
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -557,7 +562,7 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_binary_build_storage_vintage_costs.tab"),
               "w", newline="") as new_storage_costs_tab_file:
         writer = csv.writer(new_storage_costs_tab_file, delimiter="\t", lineterminator="\n")
@@ -573,7 +578,7 @@ def write_module_specific_model_inputs(
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_binary_build_storage_size.tab"),
               "w", newline="") as new_build_size_tab_file:
         writer = csv.writer(new_build_size_tab_file, delimiter="\t", lineterminator="\n")

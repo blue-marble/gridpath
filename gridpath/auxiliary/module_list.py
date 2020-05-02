@@ -19,6 +19,8 @@ import os.path
 import pandas as pd
 import sys
 
+from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
+
 
 def all_modules_list():
     """
@@ -155,8 +157,6 @@ def optional_modules_list():
     one feature.
     """
     optional_modules = {
-        "multi_stage":
-            ["project.operations.fix_commitment"],
         "transmission":
             ["transmission",
              "transmission.capacity.capacity_types",
@@ -293,7 +293,9 @@ def cross_feature_modules_list():
     return cross_modules
 
 
-def determine_modules(features=None, scenario_directory=None,):
+def determine_modules(
+        features=None, scenario_directory=None, multi_stage=None,
+):
     """
     :param features: List of requested features. Optional input; if
         not specified, function will try to load 'features.csv' file to
@@ -301,6 +303,11 @@ def determine_modules(features=None, scenario_directory=None,):
     :param scenario_directory: the scenario directory, where we will look
         for the list of requested features. Optional input; if not specified,
         function will look for the 'features' input parameter
+    :param multi_stage: Boolean. Optional input that determines whether the
+        fix_commitment module is used (yes if True, no if False); if not
+        specified, this function will check the scenario_directory to
+        determine whether there are stage subdirectories (if there are not,
+        the fix_commitment module is removed).
     :return: the list of modules -- a subset of all GridPath modules -- needed
         for a scenario. These are the module names, not the actual modules.
 
@@ -336,8 +343,41 @@ def determine_modules(features=None, scenario_directory=None,):
             sys.exit(1)
 
     # Remove any modules not requested by user
+    # Start with the list of all modules
     modules_to_use = all_modules_list()
 
+    # If we haven't explicitly specified whether this is a multi-stages
+    # scenario, check the scenario directory to determine whether we have
+    # multiple stages and remove the fix_commitment module from the
+    # modules_to_use list if not
+    # Also remove the fix_commitment if the multi_stage argument is False
+    if multi_stage is None:
+        subproblems = check_for_integer_subdirectories(scenario_directory)
+        # Check if we have subproblems
+        if subproblems:
+            # If so, check if there are stages in the subproblem
+            for subproblem in subproblems:
+                stages = check_for_integer_subdirectories(
+                    os.path.join(scenario_directory, subproblem)
+                )
+                # If we find stages in any subproblem, break out of the loop
+                # and keep the fix_commitment module
+                if stages:
+                    break
+            else:
+                modules_to_use.remove("project.operations.fix_commitment")
+        # If we make it here, we didn't find subproblems so we'll remove the
+        # fix_commitment module
+        else:
+            modules_to_use.remove("project.operations.fix_commitment")
+    # If multi_stages has been specified explicitly, decide whether to
+    # remove the fix_commitment module based on the value specified
+    elif multi_stage is False:
+        modules_to_use.remove("project.operations.fix_commitment")
+    else:
+        pass
+
+    # Remove modules associated with features that are not requested
     optional_modules = optional_modules_list()
     for feature in list(optional_modules.keys()):
         if feature in requested_features:

@@ -92,7 +92,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # First power
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -142,7 +142,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     # Get the results CSV as dataframe
     operational_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "dispatch_all.csv")
     )
 
@@ -174,7 +174,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     operational_results_agg_df.columns = ["weighted_power_mwh"]
     # Add a column with the percentage of total power by load zone and tech
     operational_results_agg_df["percent_total_power"] = pd.Series(
-        index=operational_results_agg_df.index
+        index=operational_results_agg_df.index, dtype="float64"
     )
 
     # Calculate the percent of total power for each tech (by load zone
@@ -188,13 +188,20 @@ def summarize_results(d, scenario_directory, subproblem, stage):
                 * 100.0
         operational_results_agg_df.percent_total_power[indx] = pct
 
+    # Get the energy units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    energy_unit = units_df.loc["energy", "unit"]
+    # units_dict = dict(zip(units_df["metric"], units_df["unit"]))
+
     # Rename the columns for the final table
-    operational_results_agg_df.columns = (["Annual Energy (MWh)",
-                                           "% Total Power"])
+    operational_results_agg_df.columns = \
+        (["Annual Energy ({})".format(energy_unit), "% Total Power"])
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Energy Production <--\n")
-        operational_results_agg_df.to_string(outfile)
+        operational_results_agg_df.to_string(outfile,
+                                             float_format="{:,.2f}".format)
         outfile.write("\n")
 
 

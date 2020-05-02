@@ -16,6 +16,7 @@ from builtins import str
 from argparse import ArgumentParser
 import csv
 import os.path
+import pandas as pd
 import sys
 
 from db.common_functions import connect_to_database
@@ -45,35 +46,24 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
     :return:
     """
     subproblems_list = subproblems.SUBPROBLEMS
-    # create subproblem.csv file for subproblems if appropriate:
-    if len(subproblems_list) > 1:
-        write_subproblems_csv(scenario_directory, subproblems_list)
 
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
-        # create subproblem.csv file for stages if appropriate:
-        if len(stages) > 1:
-            target_directory = os.path.join(scenario_directory, str(subproblem))
-            write_subproblems_csv(target_directory, stages)
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(subproblem),
-                                                str(stage),
-                                                "inputs")
+                pass
             elif len(subproblems.SUBPROBLEMS) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(subproblem),
-                                                "inputs")
+                stage = ""
             elif len(stages) > 1:
-                inputs_directory = os.path.join(scenario_directory,
-                                                str(stage),
-                                                "inputs")
+                subproblem = ""
             else:
-                inputs_directory = os.path.join(scenario_directory,
-                                                "inputs")
+                subproblem = ""
+                stage = ""
+            inputs_directory = os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs"
+            )
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
 
@@ -86,12 +76,12 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
             # appropriate. Note that all input files are saved in the
             # input_directory, even the non-temporal inputs that are not
             # dependent on the subproblem or stage. This simplifies the file
-            # structure at the expense of unnecessarily duplicating non-temporal
-            # input files such as projects.tab.
+            # structure at the expense of unnecessarily duplicating
+            # non-temporal input files such as projects.tab.
             for m in loaded_modules:
                 if hasattr(m, "write_model_inputs"):
                     m.write_model_inputs(
-                        inputs_directory=inputs_directory,
+                        scenario_directory=scenario_directory,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
@@ -108,7 +98,8 @@ def delete_prior_aux_files(scenario_directory):
     :return:
     """
     prior_aux_files = [
-        "features.csv", "scenario_description.csv", "solver_options.csv"
+        "features.csv", "scenario_description.csv", "solver_options.csv",
+        "linked_subproblems_map.csv"
     ]
 
     for f in prior_aux_files:
@@ -149,28 +140,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def write_subproblems_csv(scenario_directory, subproblems):
-    """
-    Write the subproblems.csv file that will be used when solving multiple
-    subproblems/stages in 'production cost' mode.
-    :return:
-    """
-
-    if not os.path.exists(scenario_directory):
-        os.makedirs(scenario_directory)
-    with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
-            subproblems_csv_file:
-        writer = csv.writer(
-            subproblems_csv_file, delimiter=",", lineterminator="\n"
-        )
-
-        # Write header
-        writer.writerow(["subproblems"])
-
-        for subproblem in subproblems:
-            writer.writerow([subproblem])
-
-
 def write_features_csv(scenario_directory, feature_list):
     """
     Write the features.csv file that will be used to determine which
@@ -206,7 +175,8 @@ def write_scenario_description(
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w", newline="") as \
             scenario_description_file:
-        writer = csv.writer(scenario_description_file, delimiter=",")
+        writer = csv.writer(scenario_description_file, delimiter=",",
+                            lineterminator="\n")
 
         # Scenario ID and scenario name
         writer.writerow(
@@ -217,9 +187,6 @@ def write_scenario_description(
         )
 
         # Optional features
-        writer.writerow(
-            ["of_multi_stage", optional_features.OPTIONAL_FEATURE_MULTI_STAGE]
-        )
         writer.writerow(
             ["of_transmission",
              optional_features.OPTIONAL_FEATURE_TRANSMISSION]
@@ -388,6 +355,21 @@ def write_scenario_description(
                          subscenarios.TUNING_SCENARIO_ID])
 
 
+def write_units_csv(scenario_directory, conn):
+    """
+
+    :param scenario_directory:
+    :param conn:
+    :return:
+    """
+    sql = """
+        SELECT metric, unit
+        FROM mod_units;
+        """
+    df = pd.read_sql(sql, conn)
+    df.to_csv(os.path.join(scenario_directory, "units.csv"), index=False)
+
+
 def write_solver_options(scenario_directory, solver_options):
     """
     :param scenario_directory:
@@ -405,6 +387,28 @@ def write_solver_options(scenario_directory, solver_options):
             writer.writerow(["solver", solver_options.SOLVER])
             for opt in solver_options.SOLVER_OPTIONS.keys():
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
+
+
+def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
+    sql = """
+        SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
+        subproblem_id + 1 as subproblem_to_link, 
+        linked_timepoint, number_of_hours_in_timepoint
+        FROM inputs_temporal_timepoints
+        WHERE linked_timepoint IS NOT NULL
+        AND temporal_scenario_id = ?;
+        """
+
+    df = pd.read_sql(
+        sql=sql, con=conn, params=(subscenarios.TEMPORAL_SCENARIO_ID, )
+    )
+
+    # Only write this file if there are any linked problems
+    if not df.empty:
+        df.to_csv(
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
+            index=False
+        )
 
 
 def main(args=None):
@@ -454,7 +458,18 @@ def main(args=None):
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.determine_feature_list()
-    modules_to_use = determine_modules(features=feature_list)
+    # If any subproblem's stage list is non-empty, we have stages, so set
+    # the stages_flag to True to pass to determine_modules below
+    # This tells the determine_modules function to include the
+    # stages-related modules
+    stages_flag = any([
+        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
+        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+    ])
+
+    # Figure out which modules to use and load the modules
+    modules_to_use = determine_modules(features=feature_list,
+                                       multi_stage=stages_flag)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Get appropriate inputs from database and write the .tab file model inputs
@@ -478,10 +493,18 @@ def main(args=None):
         optional_features=optional_features, subscenarios=subscenarios
     )
 
+    # Write the units used for all metrics
+    write_units_csv(scenario_directory, conn)
+
     # Write the solver options file if needed
     write_solver_options(
         scenario_directory=scenario_directory,
         solver_options=solver_options
+    )
+
+    # Write the subproblem linked timepoints map file if needed
+    write_linked_subproblems_map(
+        scenario_directory, conn, subscenarios
     )
 
     # Close the database connection

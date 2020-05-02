@@ -52,9 +52,10 @@ class TestFixCommitment(unittest.TestCase):
         """
         create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
                               module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
+                              test_data_dir=
+                              os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
                               subproblem="202001",
-                              stage="ha"
+                              stage="2"
                               )
 
     def test_load_model_data(self):
@@ -64,9 +65,10 @@ class TestFixCommitment(unittest.TestCase):
         """
         add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
                                      module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     test_data_dir=
+                                     os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
                                      subproblem="202001",
-                                     stage="ha"
+                                     stage="2"
                                      )
 
     def test_data_loaded_correctly(self):
@@ -77,9 +79,9 @@ class TestFixCommitment(unittest.TestCase):
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
+            test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
             subproblem="202001",
-            stage="ha"
+            stage="2"
         )
         instance = m.create_instance(data)
 

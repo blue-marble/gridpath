@@ -22,7 +22,7 @@ from gridpath.project.availability.availability_types.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
 from gridpath.project.common_functions import determine_project_subset,\
-    check_if_linear_horizon_first_timepoint
+    check_if_boundary_type_and_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -244,8 +244,9 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
     timepoint and was down in the previous timepoint, then the RHS is -1
     and AvlBin_Stop_Unavailability must be set to 1.
     """
-    if check_if_linear_horizon_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear"
     ):
         return Constraint.Skip
     else:
@@ -265,7 +266,7 @@ def event_min_duration_rule(mod, g, tmp):
     from the current timepoint, it must still be unavailable in the current
     timepoint.
     """
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.avl_bin_min_unavl_hrs_per_event[g]
     )
     if relevant_tmps == [tmp]:
@@ -285,7 +286,7 @@ def min_time_between_events_rule(mod, g, tmp):
     from the current timepoint, it must still be available in the current
     timepoint.
     """
-    relevant_tmps = determine_relevant_timepoints(
+    relevant_tmps, _ = determine_relevant_timepoints(
         mod, g, tmp, mod.avl_bin_min_avl_hrs_between_events[g]
     )
     if relevant_tmps == [tmp]:
@@ -332,7 +333,7 @@ def load_module_specific_data(
     avl_bin_min_unavl_hrs_per_event_dict = {}
     avl_bin_min_avl_hrs_between_events_dict = {}
 
-    with open(os.path.join(scenario_directory, subproblem, stage,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
                            "inputs", "project_availability_endogenous.tab"),
               "r") as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -364,7 +365,7 @@ def export_module_specific_results(
     :return: Nothing
     """
 
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "project_availability_endogenous_binary.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -437,11 +438,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
 
-    :param inputs_directory:
+    :param scenario_directory:
     :param subscenarios:
     :param subproblem:
     :param stage:
@@ -457,7 +458,8 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        inputs_directory, "project_availability_endogenous.tab"
+        scenario_directory, subproblem, stage, "inputs",
+        "project_availability_endogenous.tab"
     )
 
     if not os.path.exists(availability_file):

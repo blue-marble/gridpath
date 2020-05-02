@@ -14,11 +14,12 @@ from pandas import read_csv
 import numpy as np
 import pandas as pd
 import os.path
-from pyomo.environ import Set, Param, PositiveReals, Reals
+from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
     write_validation_to_database, load_operational_type_modules
+from gridpath.project.common_functions import append_to_input_file
 
 
 # TODO: should we take this out of __init__.py
@@ -35,11 +36,12 @@ def add_model_components(m, d):
     |                                                                         |
     | The list projects that consume fuel.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_PRJ_SGMS`                                                 |
+    | | :code:`FUEL_PRJ_PRD_SGMS`                                             |
     |                                                                         |
-    | Two-dimensional set describing fuel projects and their heat rate curve  |
-    | segment IDs. Unless the project's heat rate is constant, the heat rate  |
-    | can be defined by multiple piecewise linear segments.                   |
+    | Three-dimensional set describing fuel projects and their heat rate      |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | heat rate is constant, the heat rate can be defined by multiple         |
+    | piecewise linear segments.                                              |
     +-------------------------------------------------------------------------+
     | | :code:`FUEL_PRJ_OPR_TMPS`                                             |
     |                                                                         |
@@ -52,12 +54,32 @@ def add_model_components(m, d):
     | segment IDs, and the timepoints in which the project could be           |
     | operational. The fuel burn constraint is applied over this set.         |
     +-------------------------------------------------------------------------+
+    | | :code:`VOM_PRJS_PRDS_SGMS`                                            |
+    |                                                                         |
+    | Three-dimensional set describing projects and their variable O&M cost   |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | variable O&M is constant, the variable O&M cost can be defined by       |
+    | multiple piecewise linear segments.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`VOM_PRJS_OPR_TMPS_SGMS`                                        |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the timepoints in which the project could be     |
+    | operational. The variable O&M cost constraint is applied over this set. |
+    +-------------------------------------------------------------------------+
 
     |
 
     +-------------------------------------------------------------------------+
     | Input Params                                                            |
     +=========================================================================+
+    | | :code:`variable_om_cost_per_mwh`                                      |
+    | | *Defined over*: :code:`PROJECTS`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`fuel`                                                          |
     | | *Defined over*: :code:`FUEL_PRJS`                                     |
     | | *Within*: :code:`FUELS`                                               |
@@ -65,21 +87,41 @@ def add_model_components(m, d):
     | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_slope_mmbtu_per_mwh`                                 |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                             |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment. The units are MMBtu of fuel burn per  |
-    | MWh of electricity generation.                                          |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
-    | | *Defined over*: :code:`FUEL_PRJ_SGMS`                                 |
+    | | *Defined over*: :code:`FUEL_PRJ_PRD_SGMS`                             |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear fuel burn    |
-    | for each project's heat rate segment. The units are MMBtu of fuel burn  |
-    | per MW of operational capacity per hour (multiply by operational        |
-    | capacity and timepoint duration to get fuel burn in MMBtu).             |
+    | for each project's heat rate segment in each operational period. The    |
+    | units are MMBtu of fuel burn per MW of operational capacity per hour    |
+    | (multiply by operational capacity and timepoint duration to get fuel    |
+    | burn in MMBtu).                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_slope_cost_per_mwh`                                        |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                            |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear variable O&M     |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MWh of electricity       |
+    | generation.                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_intercept_cost_per_mw_hr`                                  |
+    | | *Defined over*: :code:`VOM_PRJS_PRDS_SGMS`                            |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear variable O&M |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MW of operational        |
+    | capacity per hour (multiply by operational capacity and timepoint       |
+    | duration to get actual cost).                                           |
     +-------------------------------------------------------------------------+
 
     """
@@ -95,8 +137,8 @@ def add_model_components(m, d):
         within=m.PROJECTS
     )
 
-    m.FUEL_PRJ_SGMS = Set(
-        dimen=2
+    m.FUEL_PRJ_PRD_SGMS = Set(
+        dimen=3
     )
 
     m.FUEL_PRJ_OPR_TMPS = Set(
@@ -110,12 +152,27 @@ def add_model_components(m, d):
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.FUEL_PRJ_SGMS
-            if g in mod.FUEL_PRJS and g == _g)
+            for _g, p, s in mod.FUEL_PRJ_PRD_SGMS
+            if g in mod.FUEL_PRJS and g == _g and mod.period[tmp] == p)
+    )
+
+    m.VOM_PRJS_PRDS_SGMS = Set(
+        dimen=3,
+        ordered=True
+    )
+
+    m.VOM_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.VOM_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
     )
 
     # Input Params
     ###########################################################################
+
+    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
 
     m.fuel = Param(
         m.FUEL_PRJS,
@@ -123,12 +180,22 @@ def add_model_components(m, d):
     )
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
         within=PositiveReals
     )
 
     m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
-        m.FUEL_PRJ_SGMS,
+        m.FUEL_PRJ_PRD_SGMS,
+        within=Reals
+    )
+
+    m.vom_slope_cost_per_mwh = Param(
+        m.VOM_PRJS_PRDS_SGMS,
+        within=PositiveReals
+    )
+
+    m.vom_intercept_cost_per_mw_hr = Param(
+        m.VOM_PRJS_PRDS_SGMS,
         within=Reals
     )
 
@@ -136,78 +203,185 @@ def add_model_components(m, d):
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-
     # Get column names as a few columns will be optional;
     # won't load data if column does not exist
-    with open(os.path.join(scenario_directory, subproblem, stage, "inputs",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "projects.tab")
               ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
         headers = next(reader)
 
-    def determine_fuel_prj_sgms():
+    # Get modelled periods
+    # TODO: could we simply use m.PRJ_OPR_PRDS?
+    periods = read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "periods.tab"),
+        sep="\t"
+    )
+    periods = set(periods["period"])
+
+    # variable_om_cost_per_mwh (all projects have it, so it's defined here)
+    var_cost_df = read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "variable_om_cost_per_mwh"]
+    )
+    var_cost_dict = dict(
+        zip(var_cost_df["project"], var_cost_df["variable_om_cost_per_mwh"])
+    )
+    data_portal.data()["variable_om_cost_per_mwh"] = var_cost_dict
+
+    # Heat Rate Curves
+    if "fuel" in headers:
         # TODO: read_csv seems to fail silently if file not found; check and
         #  implement validation
         hr_df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "heat_rate_curves.tab"),
             sep="\t"
         )
 
         pr_df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
+            os.path.join(scenario_directory, str(subproblem), str(stage),
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "fuel"]
         )
         pr_df = pr_df[pr_df["fuel"] != "."]
+        projects = pr_df["project"].tolist()
 
-        fuels_dict = dict(zip(pr_df["project"], pr_df["fuel"]))
-        slope_dict = {}
-        intercept_dict = {}
-        for project in fuels_dict.keys():
-            # read in the power setpoints and average heat rates
-            hr_slice = hr_df[hr_df["project"] == project]
-            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-            load_points = hr_slice["load_point_fraction"].values
-            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+        fuels_dict = dict(zip(projects, pr_df["fuel"]))
 
-            slopes, intercepts = calculate_heat_rate_slope_intercept(
-                project, load_points, heat_rates
-            )
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                hr_df, "average_heat_rate_mmbtu_per_mwh", projects, periods)
 
-            slope_dict.update(slopes)
-            intercept_dict.update(intercepts)
-
-        return fuels_dict, slope_dict, intercept_dict
-
-    if "fuel" in headers:
-        fuels_dict, slope_dict, intercept_dict = determine_fuel_prj_sgms()
-        fuel_projects = list(fuels_dict.keys())
         fuel_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["FUEL_PRJS"] = {None: fuel_projects}
-        data_portal.data()["FUEL_PRJ_SGMS"] = {None: fuel_project_segments}
+        data_portal.data()["FUEL_PRJS"] = {None: projects}
+        data_portal.data()["FUEL_PRJ_PRD_SGMS"] = {None: fuel_project_segments}
         data_portal.data()["fuel"] = fuels_dict
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
             intercept_dict
 
+    # Variable O7M curves
+    vom_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "variable_om_curves.tab"),
+        sep="\t"
+    )
+    vom_projects = vom_df["project"].unique().tolist()
 
-def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
+    slope_dict, intercept_dict = \
+        get_slopes_intercept_by_project_period_segment(
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods)
+
+    vom_project_segments = list(slope_dict.keys())
+
+    data_portal.data()["VOM_PRJS_PRDS_SGMS"] = {None: vom_project_segments}
+    data_portal.data()["vom_slope_cost_per_mwh"] = slope_dict
+    data_portal.data()["vom_intercept_cost_per_mw_hr"] = intercept_dict
+
+
+def get_slopes_intercept_by_project_period_segment(
+        df, input_col, projects, periods):
+    """
+    Given a DataFrame with the average heat rates or variable O&M curves by
+    load point fraction for each project in each period, calculate the slope
+    and intercept for the fuel burn or variable O&M cost curves for the
+    segments defined by the load points (for each project and period). If the
+    period in the DataFrame is zero, set the same slope and intercept for each
+    of the modeling periods.
+    fractions.
+
+    :param df: DataFrame with columns [project, period, load_point_fraction,
+        input_col]
+    :param input_col: string with the name of the column in the DataFrame that
+        has the average heat rate or variable O&M rate.
+    :param projects: list of all the projects to be included
+    :param periods: set of all the modeling periods to  be included
+    :return: (slope_dict, intercept_dict), with slope_dict and
+        intercept_dict a dictionary of the fuel burn / variable O&M cost slope
+        and intercept by (project, period, segment).
+
+    """
+
+    slope_dict = {}
+    intercept_dict = {}
+
+    for project in projects:
+        df_slice = df[df["project"] == project]
+        slice_periods = set(df_slice["period"])
+
+        if slice_periods == set([0]):
+            p_iterable = [0]
+        elif periods.issubset(slice_periods):
+            p_iterable = periods
+        else:
+            raise ValueError(
+                """{} for project '{}' isn't specified for all 
+                modelled periods. Set period to 0 if inputs are the 
+                same for each period or make sure all modelled periods 
+                are included.""".format(input_col, project)
+            )
+
+        for period in p_iterable:
+            df_slice_p = df_slice[df_slice["period"] == period]
+            df_slice_p = df_slice_p.sort_values(by=["load_point_fraction"])
+            load_points = df_slice_p["load_point_fraction"].values
+            averages = df_slice_p[input_col].values
+
+            slopes, intercepts = calculate_slope_intercept(
+                project, load_points, averages
+            )
+            sgms = range(len(slopes))
+
+            # If period is 0, create same inputs for all periods
+            if period == 0:
+                slope_dict.update(
+                    {(project, p, sgms[i]): slope
+                     for i, slope in enumerate(slopes)
+                     for p in periods}
+                )
+                intercept_dict.update(
+                    {(project, p, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)
+                     for p in periods}
+                )
+            # If not, create inputs for just this period
+            else:
+                slope_dict.update(
+                    {(project, period, sgms[i]): slope
+                     for i, slope in enumerate(slopes)}
+                )
+                intercept_dict.update(
+                    {(project, period, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)}
+                )
+
+    return slope_dict, intercept_dict
+
+
+def calculate_slope_intercept(project, load_points, heat_rates):
     """
     Calculates slope and intercept for a set of load points and corresponding
-    average heat rates. Note that the intercept will be normalized to the
+    average heat rates or variable O&M rates.
+    Note that the intercept will be normalized to the
     operational capacity (Pmax) and the timepoint duration.
-    :param project: the project name
+    :param project: the project name (for error messages)
     :param load_points: NumPy array with the loading points in fraction of Pmax
     :param heat_rates: NumPy array with the corresponding *average* heat rates
-    in MMBtu per MWh
-    :return: (slope_dict, intercept_dict): Tuple with dictionary containing
-    resp. the slope and intercepts, with (project, segement_ID) as the key.
+    in MMBtu per MWh or variable O&M in cost/MWh
+    :return: slopes, intercepts: tuple with the array of slopes and intercepts
+    for each segment. If more than one loading point, the array will have
+    one less element than the amount of load points.
+
     """
 
     n_points = len(load_points)
@@ -230,13 +404,10 @@ def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
             """.format(project)
         )
 
-    # calculate the slope and intercept for each pair of load points
-    slope_dict = {}
-    intercept_dict = {}
     # if just one point, assume constant heat rate (no intercept)
     if n_points == 1:
-        slope_dict[(project, 0)] = heat_rates[0]
-        intercept_dict[(project, 0)] = 0
+        slopes = np.array([heat_rates[0]])
+        intercepts = np.array([0])
     else:
         fuel_burn = load_points * heat_rates
         incr_loads = np.diff(load_points)
@@ -248,32 +419,30 @@ def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
         if np.any(incr_loads <= 0):
             raise ValueError(
                 """
-                Load points in heat rate curve should be strictly
-                increasing. Check heat rate curve inputs for project '{}'.
+                Load points in curve should be strictly
+                increasing. Check curve inputs for project '{}'.
                 """.format(project)
             )
         if np.any(incr_fuel_burn <= 0):
             raise ValueError(
                 """
-                Total fuel burn should be strictly increasing between
-                load points. Check heat rate curve inputs for project '{}'.
+                Total fuel burn or variable O&M cost should be strictly 
+                increasing between load points. Check heat rate curve inputs
+                for project '{}'.
                 """.format(project)
             )
         if np.any(np.diff(slopes) <= 0):
             raise ValueError(
                 """
-                The fuel burn as a function of power output should be
-                a convex function, i.e. the incremental heat rate should
-                be positive and strictly increasing. Check heat rate
-                curve inputs for project '{}'.
+                The fuel burn or variable O&M cost as a function of power 
+                output should be a convex function, i.e. the incremental 
+                heat rate or variable O&M rate should
+                be positive and strictly increasing. Check curve inputs for 
+                project '{}'.
                 """.format(project)
             )
 
-        for i in range(n_points - 1):
-            slope_dict[(project, i)] = slopes[i]
-            intercept_dict[(project, i)] = intercepts[i]
-
-    return slope_dict, intercept_dict
+    return slopes, intercepts
 
 
 # Database
@@ -287,13 +456,50 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+    c = conn.cursor()
+    proj_opchar = c.execute("""
+        SELECT project, fuel, variable_cost_per_mwh,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        ramp_up_when_on_rate,
+        ramp_down_when_on_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours, maximum_duration_hours,
+        aux_consumption_frac_capacity, aux_consumption_frac_power,
+        last_commitment_stage
+        -- Get only the subset of projects in the portfolio with their 
+        -- capacity types based on the project_portfolio_scenario_id 
+        FROM
+        (SELECT project, capacity_type
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}) as portfolio_tbl
+        LEFT OUTER JOIN
+        -- Select the operational characteristics based on the 
+        -- project_operational_chars_scenario_id
+        inputs_project_operational_chars
+        USING (project)
+        WHERE project_operational_chars_scenario_id = {}
+        ;
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        )
+    )
 
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
-    c = conn.cursor()
-    heat_rates = c.execute(
+    # Use left outer join so we include all projects, even those without a
+    # heat rate scenario_id match (for input validation)
+    c1 = conn.cursor()
+    heat_rates = c1.execute(
         """
-        SELECT project, fuel, heat_rate_curves_scenario_id, 
+        SELECT project, fuel, heat_rate_curves_scenario_id, period,
         load_point_fraction, average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
@@ -309,43 +515,122 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return heat_rates
+    # Get variable O&M curves;
+    # Select only variable OM curves of projects in the portfolio
+    # Use left outer join so we include all projects, even those without a
+    # variable O&M scenario_id match (for input validation)
+    c3 = conn.cursor()
+    variable_om = c3.execute(
+        """
+        SELECT project, variable_om_curves_scenario_id, period,  
+        load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        ) AS op_char
+        USING(project)
+        -- only select variable OM curves inputs with matching projects
+        -- (will return all projects in portfolio with Nulls if no scenario_id 
+        -- match)
+        LEFT OUTER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND variable_om_curves_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return proj_opchar, heat_rates, variable_om
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
-    heat_rate_curves.tab files
-    :param inputs_directory: local directory where .tab files will be saved
+    heat_rate_curves.tab and variable_om_curves.tab files
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
     :param conn: database connection
     :return:
     """
-    heat_rates = get_inputs_from_database(
+    proj_opchar, heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # Convert heat rates to dataframes and pre-process data
-    # (filter out only projects with fuel; select columns)
+    # Update the projects.tab file
+    new_columns = [
+        "fuel", "variable_om_cost_per_mwh",
+        "min_stable_level_fraction",
+        "unit_size_mw",
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate",
+        "shutdown_plus_ramp_down_rate",
+        "ramp_up_when_on_rate",
+        "ramp_down_when_on_rate",
+        "min_up_time_hours", "min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours", "maximum_duration_hours",
+        "aux_consumption_frac_capacity", "aux_consumption_frac_power",
+        "last_commitment_stage"
+    ]
+    append_to_input_file(
+        inputs_directory=os.path.join(scenario_directory, str(subproblem), str(stage),
+                                      "inputs"),
+        input_file="projects.tab",
+        query_results=proj_opchar,
+        index_n_columns=1,
+        new_column_names=new_columns
+    )
+
+    # Convert heat rates to dataframe and pre-process data
+    # (filter out only projects with fuel; select columns, convert periods
+    # type to integer)
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
     fuel_mask = pd.notna(hr_df["fuel"])
-    columns = ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
-    heat_rates = hr_df[columns][fuel_mask].values
+    columns = ["project", "period", "load_point_fraction",
+               "average_heat_rate_mmbtu_per_mwh"]
+    hr_df = hr_df[columns][fuel_mask].astype({"period": int})
+    heat_rates = hr_df.values
 
-    with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "heat_rate_curves.tab"),
               "w", newline="") as \
             heat_rate_tab_file:
         writer = csv.writer(heat_rate_tab_file, delimiter="\t",
                             lineterminator="\n")
 
-        writer.writerow(["project", "load_point_fraction",
+        writer.writerow(["project", "period", "load_point_fraction",
                          "average_heat_rate_mmbtu_per_mwh"])
 
         for row in heat_rates:
+            writer.writerow(row)
+
+    # Convert variable O&M curves to dataframe and pre-process data
+    # (remove the variable O&M scenario ID column)
+    vom_df = pd.DataFrame(
+        data=variable_om.fetchall(),
+        columns=[s[0] for s in variable_om.description]
+    )
+    columns = ["project", "period", "load_point_fraction",
+               "average_variable_om_cost_per_mwh"]
+    variable_om = vom_df[columns].values
+
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "variable_om_curves.tab"),
+              "w", newline="") as variable_om_tab_file:
+        writer = csv.writer(variable_om_tab_file, delimiter="\t",
+                            lineterminator="\n")
+
+        writer.writerow(["project", "period", "load_point_fraction",
+                         "average_variable_om_cost_per_mwh"])
+
+        for row in variable_om:
             writer.writerow(row)
 
 
@@ -365,24 +650,93 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Get the project input data
-    heat_rates = get_inputs_from_database(
+    proj_opchar, heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
+    prj_df = pd.DataFrame(
+        data=proj_opchar.fetchall(),
+        columns=[s[0] for s in proj_opchar.description]
+    )
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
+    vom_df = pd.DataFrame(
+        data=variable_om.fetchall(),
+        columns=[s[0] for s in variable_om.description]
+    )
 
-    # Check data types heat_rates:
+    # Check data types operational chars:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_operational_chars"]
+    )
+
+    dtype_errors, error_columns = check_dtypes(prj_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "High",
+             "Invalid data type",
+             error
+             )
+        )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in prj_df.columns if expected_dtypes[c] ==
+                       "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    sign_errors = check_column_sign_positive(prj_df, valid_numeric_columns)
+    for error in sign_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "High",
+             "Invalid numeric sign",
+             error
+             )
+        )
+
+    # Check 0 < min stable fraction <= 1
+    if "min_stable_level" not in error_columns:
+        validation_errors = validate_min_stable_level(prj_df)
+        for error in validation_errors:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 subproblem,
+                 stage,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "High",
+                 "Invalid min_stable_level",
+                 error
+                 )
+            )
+
+    # Check data types heat_rates and variable_om:
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     sub_hr_df = hr_df[hr_curve_mask][
         ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
     ]
+    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
+    sub_vom_df = vom_df[vom_curve_mask][
+        ["project", "load_point_fraction", "average_variable_om_cost_per_mwh"]
+    ]
 
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_portfolios", "inputs_project_operational_chars",
-               "inputs_project_heat_rate_curves"]
+               "inputs_project_heat_rate_curves",
+               "inputs_project_variable_om_curves"]
     )
     dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
     for error in dtype_errors:
@@ -393,6 +747,20 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
+             "Invalid data type",
+             error
+             )
+        )
+    dtype_errors, error_columns = check_dtypes(sub_vom_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
              "High",
              "Invalid data type",
              error
@@ -412,6 +780,25 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
+             "Invalid numeric sign",
+             error
+             )
+        )
+
+    # Check valid numeric columns in variable OM are non-negative
+    numeric_columns = [c for c in sub_vom_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    sign_errors = check_column_sign_positive(sub_vom_df, valid_numeric_columns)
+    for error in sign_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
              "High",
              "Invalid numeric sign",
              error
@@ -453,8 +840,49 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
+    # Check that specified vom scenarios actually have inputs in the vom table
+    # and check that specified vom curves inputs are valid:
+    validation_errors = validate_vom_curves(vom_df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_VARIABLE_OM_CURVES",
+             "inputs_project_variable_om_curves",
+             "High",
+             "Invalid/Missing variable O&M curves inputs",
+             error
+             )
+        )
+
+    # TODO: check that if there is a "0" for the period for a given
+    #  project there are zeroes everywhere for that project.
+
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
+
+
+def validate_min_stable_level(df):
+    """
+    Check 0 < min stable fraction <= 1
+    :param df:
+    :return:
+    """
+    results = []
+
+    invalids = ((df["min_stable_level"] <= 0) |
+                (df["min_stable_level"] > 1))
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': expected 0 < min_stable_level <= 1"
+            .format(print_bad_projects)
+        )
+
+    return results
 
 
 def validate_fuel_vs_heat_rates(hr_df):
@@ -520,41 +948,112 @@ def validate_heat_rate_curves(hr_df):
 
     # Check that each project has convex heat rates etc.
     relevant_mask = fuel_mask & load_point_mask
-    for project in pd.unique(hr_df["project"][relevant_mask]):
-        # read in the power setpoints and average heat rates
-        hr_slice = hr_df[hr_df["project"] == project]
-        hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-        load_points = hr_slice["load_point_fraction"].values
-        heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+    hr_df = hr_df[relevant_mask]
+    for project in hr_df["project"].unique():
+        for period in hr_df[hr_df["project"] == project]["period"].unique():
+            # read in the power setpoints and average heat rates
+            hr_slice = hr_df[(hr_df["project"] == project)
+                             & (hr_df["period"] == period)]
+            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
+            load_points = hr_slice["load_point_fraction"].values
+            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
-        if len(load_points) > 1:
-            incr_loads = np.diff(load_points)
+            if len(load_points) > 1:
+                incr_loads = np.diff(load_points)
 
-            if np.any(incr_loads == 0):
-                # note: primary key should already prohibit this
-                results.append(
-                    "Project(s) '{}': load points can not be identical"
-                    .format(project)
-                )
-
-            else:
-                fuel_burn = load_points * heat_rates
-                incr_fuel_burn = np.diff(fuel_burn)
-                slopes = incr_fuel_burn / incr_loads
-
-                if np.any(incr_fuel_burn <= 0):
+                if np.any(incr_loads == 0):
+                    # note: primary key should already prohibit this
                     results.append(
-                        "Project(s) '{}': Total fuel burn should increase "
-                        "with increasing load"
+                        "Project(s) '{}': load points can not be identical"
                         .format(project)
                     )
-                if np.any(np.diff(slopes) <= 0):
-                    results.append(
-                        "Project(s) '{}': Fuel burn should be convex, "
-                        "i.e. marginal heat rate should increase with "
-                        "increading load"
-                        .format(project)
-                    )
+
+                else:
+                    fuel_burn = load_points * heat_rates
+                    incr_fuel_burn = np.diff(fuel_burn)
+                    slopes = incr_fuel_burn / incr_loads
+
+                    if np.any(incr_fuel_burn <= 0):
+                        results.append(
+                            "Project(s) '{}': Total fuel burn should increase "
+                            "with increasing load"
+                            .format(project)
+                        )
+                    if np.any(np.diff(slopes) <= 0):
+                        results.append(
+                            "Project(s) '{}': Fuel burn should be convex, "
+                            "i.e. marginal heat rate should increase with "
+                            "increading load"
+                            .format(project)
+                        )
 
     return results
 
+
+def validate_vom_curves(vom_df):
+    """
+    1. Check that specified variable O&M scenarios actually have inputs in the
+       variable O&M curves table
+    2. Check that specified variable O&M curves inputs are valid:
+        - strictly increasing load points
+        - increasing total variable O&M cost
+        - convex variable O&M curve
+    :param vom_df:
+    :return:
+    """
+    results = []
+
+    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
+    load_point_mask = pd.notna(vom_df["load_point_fraction"])
+
+    # Check for missing inputs in heat rates curves table
+    invalids = vom_curve_mask & ~load_point_mask
+    if invalids.any():
+        bad_projects = vom_df["project"][invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Expected at least one load point"
+            .format(print_bad_projects)
+        )
+
+    # Check that each project has convex variable O&M rates etc.
+    vom_df = vom_df[load_point_mask]
+    for project in vom_df["project"].unique():
+        for period in vom_df[vom_df["project"] == project]["period"].unique():
+            # read in the power setpoints and average variable O&M
+            vom_slice = vom_df[(vom_df["project"] == project)
+                               & (vom_df["period"] == period)]
+            vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
+            load_points = vom_slice["load_point_fraction"].values
+            vom = vom_slice["average_variable_om_cost_per_mwh"].values
+
+            if len(load_points) > 1:
+                incr_loads = np.diff(load_points)
+
+                if np.any(incr_loads == 0):
+                    # note: primary key should already prohibit this
+                    results.append(
+                        "Project(s) '{}': load points can not be identical"
+                        .format(project)
+                    )
+
+                else:
+                    vom_cost = load_points * vom
+                    incr_vom_cost = np.diff(vom_cost)
+                    slopes = incr_vom_cost / incr_loads
+
+                    if np.any(incr_vom_cost <= 0):
+                        results.append(
+                            "Project(s) '{}': Total variable O&M cost should "
+                            "increase with increasing load"
+                            .format(project)
+                        )
+                    if np.any(np.diff(slopes) <= 0):
+                        results.append(
+                            "Project(s) '{}': Variable O&M cost should be "
+                            "convex, i.e. variable O&M rate should increase "
+                            "with increasing load"
+                            .format(project)
+                        )
+
+    return results

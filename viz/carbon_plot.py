@@ -18,7 +18,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_unit
 
 
 def create_parser():
@@ -75,11 +76,11 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     sql = """
         SELECT 
             period, 
-            carbon_cap_mmt, 
-            in_zone_project_emissions_mmt, 
-            import_emissions_mmt_degen, 
-            total_emissions_mmt_degen,
-            carbon_cap_marginal_cost_per_mmt
+            carbon_cap, 
+            in_zone_project_emissions, 
+            import_emissions_degen, 
+            total_emissions_degen,
+            carbon_cap_marginal_cost_per_emission
         FROM results_system_carbon_emissions
         WHERE scenario_id = ?
         AND carbon_cap_zone = ?
@@ -97,29 +98,35 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     # df = pd.DataFrame(
     #     data=[[2018, 50, 40, 5, 45, 0],
     #           [2020, 20, 15, 5, 20, 100]],
-    #     columns=["period", "carbon_cap_mmt", "in_zone_project_emissions_mmt",
-    #              "import_emissions_mmt_degen", "total_emissions_mmt_degen",
-    #              "carbon_cap_marginal_cost_per_mmt"]
+    #     columns=["period", "carbon_cap", "in_zone_project_emissions",
+    #              "import_emissions_degen", "total_emissions_degen",
+    #              "carbon_cap_marginal_cost_per_emission"]
     # )
 
     # Change period type from int to string (required for categorical bar chart)
     df["period"] = df["period"].map(str)
 
+    # TODO: division will fail if total_emissions_degen is NULL, e.g. when
+    #  there are no carbon transmission lines.
     # Add project/import fractions
-    df["fraction_of_project_emissions"] = df["in_zone_project_emissions_mmt"] \
-        / df["total_emissions_mmt_degen"]
+    df["fraction_of_project_emissions"] = df["in_zone_project_emissions"] \
+        / df["total_emissions_degen"]
 
-    df["fraction_of_import_emissions"] = df["import_emissions_mmt_degen"] \
-        / df["total_emissions_mmt_degen"]
+    df["fraction_of_import_emissions"] = df["import_emissions_degen"] \
+        / df["total_emissions_degen"]
 
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param carbon_unit: string, the unit of carbon emissions used in the
+    database/model, e.g. "tCO2"
+    :param cost_unit: string, the unit of cost used in the database/model,
+    e.g. "USD"
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -133,9 +140,9 @@ def create_plot(df, title, ylimit=None):
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
     x_col = "period"
-    line_col = "carbon_cap_mmt"
-    stacked_cols = ["in_zone_project_emissions_mmt",
-                    "import_emissions_mmt_degen"]
+    line_col = "carbon_cap"
+    stacked_cols = ["in_zone_project_emissions",
+                    "import_emissions_degen"]
 
     # Stacked Area Colors
     colors = ['#666666', "#999999"]
@@ -188,7 +195,7 @@ def create_plot(df, title, ylimit=None):
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Period"
-    plot.yaxis.axis_label = "Emissions (MMT)"
+    plot.yaxis.axis_label = "Emissions ({})".format(carbon_unit)
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
@@ -198,8 +205,8 @@ def create_plot(df, title, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Project Emissions",
-             "@%s{0,0} MMT (@fraction_of_project_emissions{0%%})"
-             % stacked_cols[0]),
+             "@%s{0,0} %s (@fraction_of_project_emissions{0%%})"
+             % (stacked_cols[0], carbon_unit)),
         ],
         renderers=[r_delivered],
         toggleable=False)
@@ -211,8 +218,8 @@ def create_plot(df, title, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Import Emissions",
-             "@%s{0,0} MMT (@fraction_of_import_emissions{0%%})"
-             % stacked_cols[1]),
+             "@%s{0,0} %s (@fraction_of_import_emissions{0%%})"
+             % (stacked_cols[1], carbon_unit)),
         ],
         renderers=[r_curtailed],
         toggleable=False)
@@ -222,8 +229,9 @@ def create_plot(df, title, ylimit=None):
     hover = HoverTool(
         tooltips=[
             ("Period", "@period"),
-            ("Carbon Target", "@%s{0,0} MMT" % line_col),
-            ("Marginal Cost", "@carbon_cap_marginal_cost_per_mmt{0,0} $/MMT")
+            ("Carbon Target", "@%s{0,0} %s" % (line_col, carbon_unit)),
+            ("Marginal Cost", "@carbon_cap_marginal_cost_per_emission{0,0} %s/%s"
+             % (cost_unit, carbon_unit))
         ],
         renderers=[target_renderer],
         toggleable=False)
@@ -252,6 +260,9 @@ def main(args=None):
         script="carbon_plot"
     )
 
+    carbon_unit = get_unit(c, "carbon_emissions")
+    cost_unit = get_unit(c, "cost")
+
     plot_title = "{}Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
         .format(
             "{} - ".format(scenario)
@@ -272,6 +283,8 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        carbon_unit=carbon_unit,
+        cost_unit=cost_unit,
         ylimit=parsed_args.ylimit
     )
 

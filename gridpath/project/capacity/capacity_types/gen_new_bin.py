@@ -331,7 +331,7 @@ def load_module_specific_data(
     """
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_binary_build_generator_vintage_costs.tab"),
         index=m.GEN_NEW_BIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
@@ -341,7 +341,7 @@ def load_module_specific_data(
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_binary_build_generator_size.tab"),
         index=m.GEN_NEW_BIN,
         select=("project", "binary_build_size_mw"),
@@ -359,7 +359,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_gen_new_bin.csv"),
               "w", newline="") as f:
 
@@ -391,7 +391,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
+        os.path.join(scenario_directory, str(subproblem), str(stage),
                      "results", "capacity_gen_new_bin.csv")
     )
 
@@ -400,9 +400,6 @@ def summarize_module_specific_results(
         as_index=True
     ).sum()
 
-    # Set the formatting of float to be readable
-    pd.options.display.float_format = "{:,.0f}".format
-
     # Get all technologies with the new binary build capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -410,14 +407,21 @@ def summarize_module_specific_results(
         ]["new_build_mw"]
     )
 
-    new_build_df.columns = ["New Binary Build Capacity (MW)"]
+    # Get the power units from the units.csv file
+    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
+                           index_col="metric")
+    power_unit = units_df.loc["power", "unit"]
+
+    # Rename column header
+    new_build_df.columns = ["New Binary Build Capacity ({})".format(
+        power_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Binary Build Generation Capacity <--\n")
         if new_build_df.empty:
             outfile.write("No new generation was built.\n")
         else:
-            new_build_df.to_string(outfile)
+            new_build_df.to_string(outfile, float_format="{:,.2f}".format)
             outfile.write("\n")
 
 
@@ -435,12 +439,10 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
-    # TODO: remove "as annualized_real_cost_per_kw_yr" statement
-    #  once database columns and tab file columns are aligned
     c1 = conn.cursor()
     new_gen_costs = c1.execute(
         """SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000 as annualized_real_cost_per_kw_yr
+        annualized_real_cost_per_mw_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
@@ -450,7 +452,7 @@ def get_module_specific_inputs_from_database(
         
         INNER JOIN
         (SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr
+        annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)
@@ -485,13 +487,13 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
     new_binary_build_generator_vintage_costs.tab file and the
     new_binary_build_generator_size.tab file
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -502,7 +504,7 @@ def write_module_specific_model_inputs(
     new_gen_costs, new_gen_build_size = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_binary_build_generator_vintage_costs.tab"),
               "w", newline="") as new_gen_costs_tab_file:
         writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")
@@ -517,7 +519,7 @@ def write_module_specific_model_inputs(
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_binary_build_generator_size.tab"),
               "w", newline="") as new_build_size_tab_file:
         writer = csv.writer(new_build_size_tab_file, delimiter="\t", lineterminator="\n")

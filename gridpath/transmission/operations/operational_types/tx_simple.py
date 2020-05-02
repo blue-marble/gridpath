@@ -357,7 +357,7 @@ def load_module_specific_data(m, data_portal, scenario_directory,
 
     # Get the simple transport model lines
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_operational_type",

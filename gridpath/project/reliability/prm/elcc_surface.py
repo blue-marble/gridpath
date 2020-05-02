@@ -148,7 +148,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "prm_project_elcc_surface_contribution.csv"),
               "w", newline="") as \
             results_file:
@@ -181,6 +181,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     # Which projects will contribute to the surface and their cap factors
     # TODO: only get portfolio projects
@@ -257,12 +259,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and
     project_elcc_surface_coefficients.tab files.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -277,7 +279,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     for (prj, contr, cf) in project_contr_cf:
         prj_contr_cf_dict[str(prj)] = (contr, cf)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
@@ -311,12 +313,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
-    with open(os.path.join(inputs_directory,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "project_elcc_surface_coefficients.tab"), "w", newline="") as \
             coefficients_file:
         writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")

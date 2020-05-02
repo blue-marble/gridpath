@@ -32,7 +32,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
 
     # Get the capacity and operational type of each transmission line
     df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -69,6 +69,7 @@ def add_model_components(m, d):
     +=========================================================================+
     | | :code:`tx_capacity_type`                                              |
     | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`["tx_new_lin", "tx_spec"]`                           |
     |                                                                         |
     | The transmission line's capacity type. This will determine how the      |
     | capacity of the line is modeled, e.g. as a specified number or as a     |
@@ -76,6 +77,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`tx_operational_type`                                           |
     | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`["tx_dcopf", "tx_simple"]`                           |
     |                                                                         |
     | The transmission line's operational type. This will determine how the   |
     | operations of the line are modeled, e.g. through a simple linear        |
@@ -83,12 +85,14 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`load_zone_from`                                                |
     | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`LOAD_ZONES`                                          |
     |                                                                         |
     | The transmission line's starting load zone (the power flow can go both  |
     | directions, but each line has a defined direction).                     |
     +-------------------------------------------------------------------------+
     | | :code:`load_zone_to`                                                  |
     | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`LOAD_ZONES`                                          |
     |                                                                         |
     | The transmission line's ending load zone (the power flow can go both    |
     | directions, but each line has a defined direction).                     |
@@ -105,10 +109,16 @@ def add_model_components(m, d):
     # Required Input Params
     ###########################################################################
 
-    m.tx_capacity_type = Param(m.TX_LINES)
-    m.tx_operational_type = Param(m.TX_LINES)
-    m.load_zone_from = Param(m.TX_LINES)
-    m.load_zone_to = Param(m.TX_LINES)
+    m.tx_capacity_type = Param(
+        m.TX_LINES,
+        within=["tx_new_lin", "tx_spec"]
+    )
+    m.tx_operational_type = Param(
+        m.TX_LINES,
+        within=["tx_dcopf", "tx_simple"]
+    )
+    m.load_zone_from = Param(m.TX_LINES, within=m.LOAD_ZONES)
+    m.load_zone_to = Param(m.TX_LINES, within=m.LOAD_ZONES)
 
     # Dynamic Components
     ###########################################################################
@@ -155,6 +165,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
 
     # TODO: we might want to get the reactance in the tx_dcopf
     #  tx_operational_type rather than here (see also comment in project/init)
@@ -187,11 +199,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return transmission_lines
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     transmission_lines.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -202,7 +214,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     transmission_lines = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
               "w", newline="") as \
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t", lineterminator="\n")

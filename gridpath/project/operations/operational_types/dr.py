@@ -17,7 +17,7 @@ from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.project.common_functions import \
-    check_if_linear_horizon_first_timepoint
+    check_if_first_timepoint, check_boundary_type
 
 
 def add_module_specific_components(m, d):
@@ -160,8 +160,9 @@ def max_shift_up_rule(mod, p, tmp):
     Limits the added load to the available power capacity.
     """
     return mod.DR_Shift_Up_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]]
-    
+        mod.Capacity_MW[p, mod.period[tmp]] \
+        * mod.Availability_Derate[p, tmp]
+
 
 def max_shift_down_rule(mod, p, tmp):
     """
@@ -171,7 +172,8 @@ def max_shift_down_rule(mod, p, tmp):
     Limits the removed load to the available power capacity.
     """
     return mod.DR_Shift_Down_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]]
+        mod.Capacity_MW[p, mod.period[tmp]] \
+        * mod.Availability_Derate[p, tmp]
 
 
 def energy_balance_rule(mod, p, h):
@@ -233,6 +235,14 @@ def fuel_burn_rule(mod, p, tmp, error_message):
         return 0
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable O&M costs are applied only to the down-shift, i.e. when the
+    project is "providing power" to the system.
+    """
+    return mod.DR_Shift_Down_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+
+
 def startup_cost_rule(mod, g, tmp):
     """
     Since there is no commitment, there is no concept of starting up.
@@ -256,9 +266,22 @@ def startup_fuel_burn_rule(mod, g, tmp):
 
 def power_delta_rule(mod, p, tmp):
     """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
     """
-    if check_if_linear_horizon_first_timepoint(
+    if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[p]
+    ) and (
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[p],
+            boundary_type="linear"
+        ) or
+        check_boundary_type(
+            mod=mod, tmp=tmp,
+            balancing_type=mod.balancing_type_project[p],
+            boundary_type="linked"
+        )
     ):
         pass
     else:

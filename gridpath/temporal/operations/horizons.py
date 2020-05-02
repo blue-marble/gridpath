@@ -19,12 +19,16 @@ on each of the 365 'day' *horizons* whereas one of the *balancing type*
 'year' would only have a single energy budget constraint grouping all 8760
 timepoints.
 
-Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
-the 'circular' approach, the last timepoint of the horizon is considered the
-previous timepoint for the first timepoint of the horizon (for the purposes
-of functionality such as ramp constraints or tracking storage state of
-charge). If the boundary is 'linear,' then we ignore constraints relating to
-the previous timepoint in the first timepoint of a horizon.
+Each *horizon* has boundary condition that can be 'circular,' 'linear,'
+or 'linked.' With the 'circular' approach, the last timepoint of the
+horizon is considered the previous timepoint for the first timepoint of the
+horizon (for the purposes of functionality such as ramp constraints or
+tracking storage state of charge). If the boundary is 'linear,' then we
+ignore constraints relating to the previous timepoint in the first timepoint
+of a horizon. If the boundary is 'linked,' then we use the last timepoint of
+the previous horizon as the previous timepoint for the first timepoint of a
+horizon (this can only be done when running multiple subproblems and inputs
+must be specified appropriately).
 """
 
 import csv
@@ -113,6 +117,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`prev_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
+    | | *Within*: :code: `m.TMPS | {None}`                                    |
     |                                                                         |
     | Derived parameter describing the previous timepoint for each timepoint  |
     | in each balancing type; depends on whether horizon is circular or       |
@@ -120,6 +125,7 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`next_tmp`                                                      |
     | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
+    | | *Within*: :code: `m.TMPS | {None}`                                    |
     |                                                                         |
     | Derived parameter describing the next timepoint for each timepoint in   |
     | each balancing type; depends on whether horizon is circular or linear   |
@@ -166,7 +172,7 @@ def add_model_components(m, d):
 
     m.boundary = Param(
         m.BLN_TYPE_HRZS,
-        within=['circular', 'linear']
+        within=['circular', 'linear', 'linked']
     )
 
     # Derived Params
@@ -188,11 +194,13 @@ def add_model_components(m, d):
 
     m.prev_tmp = Param(
         m.TMPS, m.BLN_TYPES,
+        within=m.TMPS | {None},
         initialize=prev_tmp_init
     )
 
     m.next_tmp = Param(
         m.TMPS, m.BLN_TYPES,
+        within=m.TMPS | {None},
         initialize=next_tmp_init
     )
 
@@ -255,7 +263,7 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
             if tmp == mod.first_hrz_tmp[bt, hrz]:
                 if mod.boundary[bt, hrz] == "circular":
                     prev_tmp_dict[tmp, bt] = mod.last_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] == "linear":
+                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
                     prev_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(
@@ -263,8 +271,8 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
                         "horizon '{} {}'".
                         format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
+                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "or 'linked.'"
                     )
             else:
                 prev_tmp_dict[tmp, bt] = list(
@@ -292,7 +300,7 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
             if tmp == mod.last_hrz_tmp[bt, hrz]:
                 if mod.boundary[bt, hrz] == "circular":
                     next_tmp_dict[tmp, bt] = mod.first_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] == "linear":
+                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
                     next_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(
@@ -300,8 +308,8 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
                         "type horizon '{} {}'".
                         format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
+                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "or 'linked.'"
                     )
             else:
                 next_tmp_dict[tmp, bt] = list(
@@ -318,14 +326,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "horizons.tab"),
         select=("balancing_type_horizon", "horizon", "boundary"),
         index=m.BLN_TYPE_HRZS,
         param=m.boundary
     )
 
-    with open(os.path.join(scenario_directory, subproblem, stage,
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
                            "inputs", "horizon_timepoints.tab")
               ) as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -355,6 +363,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     horizons = c1.execute(
         """SELECT horizon, balancing_type_horizon, boundary
@@ -386,11 +396,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return horizons, timepoint_horizons
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     horizons.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -401,7 +411,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     horizons, timepoint_horizons = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "horizons.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
               "w", newline="") as horizons_tab_file:
         hwriter = csv.writer(horizons_tab_file, delimiter="\t",
                              lineterminator="\n")
@@ -412,7 +422,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         for row in horizons:
             hwriter.writerow(row)
 
-    with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizon_timepoints.tab"), "w",
               newline="") as timepoint_horizons_tab_file:
         thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t",
                               lineterminator="\n")

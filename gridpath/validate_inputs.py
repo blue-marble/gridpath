@@ -263,57 +263,6 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     return not bool(validation_results)
 
 
-def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
-                                  conn):
-    """
-
-    :param optional_features:
-    :param subscenarios:
-    :param subproblems:
-    :param conn:
-    :return:
-    """
-
-    multi_stage = optional_features.OPTIONAL_FEATURE_MULTI_STAGE
-
-    # Check whether multi_stage setting is consistent with actual inputs
-    max_stages = max([len(stages) for subproblem, stages in
-                      subproblems.SUBPROBLEM_STAGE_DICT.items()])
-    if max_stages > 1 and not multi_stage:
-        validation_results = [(
-            subscenarios.SCENARIO_ID,
-            "N/A",
-            "N/A",
-            "N/A",
-            "temporal_scenario_id",
-            "scenarios and inputs_temporal_subproblems_stages",
-            "Low",
-            "Invalid multi-stage settings",
-            "The inputs contain multiple dispatch stages while the multi-stage "
-            "optional feature is not selected. Please select the multi-stage "
-            "feature or remove the extra stages."
-        )]
-    elif max_stages <= 1 and multi_stage:
-        validation_results = [(
-            subscenarios.SCENARIO_ID,
-            "N/A",
-            "N/A",
-            "N/A",
-            "temporal_scenario_id",
-            "scenarios and inputs_temporal_subproblems_stages",
-            "Low",
-            "Invalid multi-stage settings",
-            "The inputs contain only a single dispatch stage so the multi-stage"
-            " optional feature should not be selected. Please turn off the "
-            "multi-stage feature or add additional stages."
-        )]
-    else:
-        validation_results = []
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
-
-
 def reset_input_validation(conn, scenario_id):
     """
     Reset input validation: delete old input validation outputs and reset the
@@ -381,6 +330,10 @@ def parse_arguments(args):
         parents=[get_db_parser()]
     )
 
+    # Add quiet flag which can suppress run output
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print run output.")
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -391,12 +344,14 @@ def main(args=None):
 
     :return:
     """
-    print("Validating inputs...")
 
-    # Retrieve scenario_id and/or name from args
+    # Retrieve scenario_id and/or name from args + "quiet" flag
     if args is None:
         args = sys.argv[1:]
     parsed_arguments = parse_arguments(args=args)
+
+    if not parsed_arguments.quiet:
+        print("Validating inputs...")
 
     db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
@@ -416,14 +371,12 @@ def main(args=None):
     # Reset input validation status and results
     reset_input_validation(conn, scenario_id)
 
+    # TODO: this is very similar to what's in get_scenario_inputs.py,
+    #  so we should consolidate
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-
-    # Validate multi-stage settings
-    validate_multi_stage_settings(optional_features, subscenarios, subproblems,
-                                  conn)
 
     # Check whether subscenario_ids are valid
     is_valid = validate_subscenario_ids(subscenarios, optional_features, conn)
@@ -433,13 +386,24 @@ def main(args=None):
     if is_valid:
         # Load modules for all requested features
         feature_list = optional_features.determine_feature_list()
-        modules_to_use = determine_modules(features=feature_list)
+        # If any subproblem's stage list is non-empty, we have stages, so set
+        # the stages_flag to True to pass to determine_modules below
+        # This tells the determine_modules function to include the
+        # stages-related modules
+        stages_flag = any([
+            len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
+            subproblems.SUBPROBLEM_STAGE_DICT.keys()
+        ])
+        modules_to_use = determine_modules(
+            features=feature_list, multi_stage=stages_flag
+        )
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
         validate_inputs(subproblems, loaded_modules, subscenarios, conn)
     else:
-        print("Invalid subscenario ID(s). Skipped detailed input validation.")
+        if not parsed_arguments.quiet:
+            print("Invalid subscenario ID(s). Skipped detailed input validation.")
 
     # Update validation status:
     update_validation_status(conn, subscenarios.SCENARIO_ID)

@@ -27,7 +27,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
 
 
 def create_parser():
@@ -344,12 +344,13 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, tech_colors={}, tech_plotting_order={},
+def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
                 ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param power_unit: string, the unit of power used in the database/model
     :param tech_colors: optional dict that maps technologies to colors.
         Technologies without a specified color map will use a default palette
     :param tech_plotting_order: optional dict that maps technologies to their
@@ -470,7 +471,7 @@ def create_plot(df, title, tech_colors={}, tech_plotting_order={},
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Hour Ending"
-    plot.yaxis.axis_label = "Dispatch (MW)"
+    plot.yaxis.axis_label = "Dispatch ({})".format(power_unit)
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
@@ -481,7 +482,7 @@ def create_plot(df, title, tech_colors={}, tech_plotting_order={},
             tooltips=[
                 ("Hour Ending", "@x"),
                 ("Source", power_source),
-                ("Dispatch", "@%s{0,0} MW" % power_source)
+                ("Dispatch", "@%s{0,0} %s" % (power_source, power_unit))
             ],
             renderers=[r],
             toggleable=False)
@@ -493,7 +494,7 @@ def create_plot(df, title, tech_colors={}, tech_plotting_order={},
         hover = HoverTool(
             tooltips=[
                 ("Hour Ending", "@x"),
-                (load_type, "@y{0,0} MW"),
+                (load_type, "@y{0,0} %s" % power_unit),
             ],
             renderers=[r],
             toggleable=False)
@@ -524,6 +525,7 @@ def main(args=None):
 
     tech_colors = get_tech_colors(c)
     tech_plotting_order = get_tech_plotting_order(c)
+    power_unit = get_unit(c, "power")
 
     plot_title = "{}Dispatch Plot - {} - Stage {} - Horizon {}".format(
         "{} - ".format(scenario)
@@ -543,6 +545,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        power_unit=power_unit,
         tech_colors=tech_colors,
         tech_plotting_order=tech_plotting_order,
         ylimit=parsed_args.ylimit,

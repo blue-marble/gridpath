@@ -23,7 +23,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_unit
 
 
 def create_parser():
@@ -227,11 +228,12 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, power_unit, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param power_unit: string, the unit of power used in the database/model
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -321,7 +323,7 @@ def create_plot(df, title, ylimit=None):
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Hour"
-    plot.yaxis.axis_label = "MW"
+    plot.yaxis.axis_label = power_unit
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
@@ -332,7 +334,7 @@ def create_plot(df, title, ylimit=None):
         [commitment_renderer, power_renderer, stable_level_renderer]
     for r in hover_renderers:
         tooltips = [("Hour", "@%s" % x_col),
-                    (r.name, "@$name{0,0} MW")]
+                    (r.name, "@$name{0,0} %s" % power_unit)]
         if r.name == "Power":
             tooltips.append(
                 ("% of Committed", "@power_pct_of_committed{0%}")
@@ -367,6 +369,8 @@ def main(args=None):
         script="project_operations_plot"
     )
 
+    power_unit = get_unit(c, "power")
+
     plot_title = "{}Operations Plot - {} - {} - Stage {}".format(
         "{} - ".format(scenario)
         if parsed_args.scenario_name_in_title else "",
@@ -400,6 +404,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        power_unit=power_unit,
         ylimit=parsed_args.ylimit
     )
 

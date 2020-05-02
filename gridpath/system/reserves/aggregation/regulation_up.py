@@ -18,7 +18,7 @@ def add_model_components(m, d):
         m,
         d,
         "regulation_up_zone",
-        "REGULATION_UP_ZONE_TIMEPOINTS",
+        "REGULATION_UP_ZONES",
         "REGULATION_UP_PROJECTS",
         "Provide_Regulation_Up_MW",
         "Total_Regulation_Up_Provision_MW"

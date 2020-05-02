@@ -6,11 +6,11 @@ Make temporal subscenarios.
 """
 
 from copy import deepcopy
-import os.path
 import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+from db.utilities.common_functions import parse_subscenario_directory_contents
 
 
 def insert_into_database(
@@ -95,9 +95,9 @@ def insert_into_database(
         INSERT OR IGNORE INTO inputs_temporal_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint,
         period, number_of_hours_in_timepoint, timepoint_weight, 
-        previous_stage_timepoint_map, 
-        spinup_or_lookahead, month, hour_of_day, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        previous_stage_timepoint_map, spinup_or_lookahead, 
+        linked_timepoint, month, hour_of_day, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
     
     spin_on_database_lock(conn=conn, cursor=c, sql=timepoints_sql,
@@ -127,12 +127,11 @@ def load_from_csvs(conn, subscenario_directory):
     underscore, and the scenario name as the name of the directory (already
     passed here), so we get this to import from the subscenario_directory path.
 
-    Within each subscenario directory there are four required files:
-    description.txt, structure.csv, period_params.csv, and horizon_params.csv.
+    Within each subscenario directory there are three required files:
+    structure.csv, period_params.csv, and horizon_params.csv. A file
+    containing the subscenario description (description.txt) is optional.
 
-    1. *description.txt*: contains the description of the subscenario.
-
-    2. *structure.csv*: contains all timepoint-level information for the
+    1. *structure.csv*: contains all timepoint-level information for the
     temporal subscenario, including
     subproblem_id, stage_id, timepoint, period, number_of_hours_in_timepoint,
     timepoint_weight, previous_stage_timepoint_map, spinup_or_lookahead,
@@ -144,31 +143,27 @@ def load_from_csvs(conn, subscenario_directory):
     the subscenarios, stages, timepoints, and horizon_timepoints tables based
     on the information in structure.csv.
 
-    3. *horizon_params.csv*: contains the balancing_type-horizon-level
+    2. *horizon_params.csv*: contains the balancing_type-horizon-level
     information for the temporal subscenario, including subproblem_id,
     balancing_type_horizon, horizon, boundary (must be in this order).
     
-    4. *period_params.csv*: contains the period-level information for the
+    3. *period_params.csv*: contains the period-level information for the
     temporal subscenario, including period, discount_factor,
     number_years_represented (must be in this order).
     """
 
-    # Required input files
-    description_file = os.path.join(subscenario_directory, "description.txt")
-    timepoints_file = os.path.join(subscenario_directory, "structure.csv")
-    periods_file = os.path.join(subscenario_directory, "period_params.csv")
-    horizons_file = os.path.join(subscenario_directory, "horizon_params.csv")
+    # Get the subscenario (id, name, description) data for insertion into the
+    # subscenario table and the paths to the required input files
+    subscenario_data, [timepoints_file, periods_file, horizons_file] = \
+        parse_subscenario_directory_contents(
+            subscenario_directory=subscenario_directory,
+            csv_file_names=[
+                "structure.csv", "period_params.csv", "horizon_params.csv"
+            ]
+        )
 
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
-    with open(description_file, "r") as f:
-        subscenario_description = f.read()
+    # Get the subscenario_id from the subscenario_data tuple
+    subscenario_id = subscenario_data[0]
 
     # Load timepoints data into Pandas dataframe
     # The subproblem, stage, and horizon information is also contained here
@@ -253,8 +248,8 @@ def load_from_csvs(conn, subscenario_directory):
     timepoints_tmp_df = tmp_df[
         ["subproblem_id", "stage_id", "timepoint", "period",
          "number_of_hours_in_timepoint", "timepoint_weight",
-         "previous_stage_timepoint_map", "spinup_or_lookahead", "month",
-         "hour_of_day", "timestamp"]
+         "previous_stage_timepoint_map", "spinup_or_lookahead",
+         "linked_timepoint", "month", "hour_of_day", "timestamp"]
     ]
     subproblem_stage_timepoints = [
         (subscenario_id,) + tuple(x)
@@ -296,8 +291,7 @@ def load_from_csvs(conn, subscenario_directory):
     # INSERT OR IGNORE INTO THE DATABASE
     insert_into_database(
         conn=conn,
-        subscenario_data=(subscenario_id, subscenario_name,
-                          subscenario_description),
+        subscenario_data=subscenario_data,
         subproblems=subproblems,
         subproblem_stages=subproblem_stages,
         periods=periods,

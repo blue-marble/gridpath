@@ -48,7 +48,7 @@ def add_model_components(m, d):
         """
         return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
             + mod.RPS_Shortage_MWh_Expression[z, p] \
-            >= mod.rps_target_mwh[z, p]
+            >= mod.RPS_Target[z, p]
 
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
@@ -64,7 +64,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "rps.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period",
@@ -130,13 +130,13 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     # Get the main RPS results file
     rps_df = \
-        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "results",
+        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                                  "rps.csv")
                     )
 
     # Get the RPS dual results
     rps_duals_df = \
-        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "results",
+        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                                  "RPS_Target_Constraint.csv")
                     )
 
@@ -164,8 +164,12 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # 2) the marginal RPS cost per MWh based on the RPS constraint duals --
     # to convert back to 'real' dollars, we need to divide by the discount
     # factor and the number of years a period represents
-    results_df["percent_curtailed"] = pd.Series(index=results_df.index)
-    results_df["rps_marginal_cost_per_mwh"] = pd.Series(index=results_df.index)
+    results_df["percent_curtailed"] = pd.Series(
+        index=results_df.index, dtype="float64"
+    )
+    results_df["rps_marginal_cost_per_mwh"] = pd.Series(
+        index=results_df.index, dtype="float64"
+    )
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
@@ -183,9 +187,6 @@ def summarize_results(d, scenario_directory, subproblem, stage):
             / (results_df.discount_factor[indx] *
                results_df.number_years_represented[indx])
 
-    # Set float format options
-    pd.options.display.float_format = "{:,.0f}".format
-
     # Drop unnecessary columns before exporting
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
@@ -200,7 +201,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     results_df = results_df[cols]
     results_df.sort_index(inplace=True)
     with open(summary_results_file, "a") as outfile:
-        results_df.to_string(outfile)
+        results_df.to_string(outfile, float_format="{:,.2f}".format)
         outfile.write("\n")
 
 

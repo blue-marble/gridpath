@@ -109,12 +109,12 @@ class TestGenSimple(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: gen_simple_ramp_up_rate
+        # Param: gen_simple_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Disp_No_Commit": 1  # default value
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.gen_simple_ramp_up_rate[
+            prj: instance.gen_simple_ramp_up_when_on_rate[
                 prj]
             for prj in instance.GEN_SIMPLE
         }
@@ -122,12 +122,12 @@ class TestGenSimple(unittest.TestCase):
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: gen_simple_ramp_down_rate
+        # Param: gen_simple_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {
             "Disp_No_Commit": 1  # default value
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.gen_simple_ramp_down_rate[
+            prj: instance.gen_simple_ramp_down_when_on_rate[
                 prj]
             for prj in instance.GEN_SIMPLE
         }

@@ -139,7 +139,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     project_fr_partial_list = list()
     projects = \
         pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
+            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                          "projects.tab"),
             sep="\t"
         )
@@ -177,7 +177,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "reserves_provision_frequency_response.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -208,6 +208,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     # Get project BA
     _, prj_derates = generic_get_inputs_from_database(
         subscenarios=subscenarios,
@@ -270,11 +272,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -297,7 +299,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file
-    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
@@ -333,7 +335,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             # Add resulting row to new_rows list
             new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

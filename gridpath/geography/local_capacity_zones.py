@@ -40,7 +40,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs",
                                            "local_capacity_zones.tab"),
                      index=m.LOCAL_CAPACITY_ZONES,
@@ -57,6 +57,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
     c = conn.cursor()
     local_capacity_zones = c.execute(
         """SELECT local_capacity_zone, allow_violation,
@@ -86,11 +88,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     local_capacity_zones.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
+    :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -101,7 +103,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     local_capacity_zones = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "local_capacity_zones.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "local_capacity_zones.tab"),
               "w", newline="") as \
             local_capacity_zones_file:
         writer = csv.writer(local_capacity_zones_file, delimiter="\t", lineterminator="\n")

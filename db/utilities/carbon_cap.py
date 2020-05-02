@@ -51,7 +51,7 @@ def insert_carbon_cap_targets(
         INSERT OR IGNORE INTO inputs_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, carbon_cap_zone, period,
         subproblem_id, stage_id,
-        carbon_cap_mmt)
+        carbon_cap)
         VALUES (?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
