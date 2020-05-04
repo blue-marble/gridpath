@@ -10,6 +10,8 @@ import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+from db.utilities.common_functions import \
+    parse_subscenario_directory_contents, csv_to_tuples
 
 
 def project_elcc_chars(
@@ -324,68 +326,45 @@ def elcc_surface_load_from_csvs(conn, subscenario_directory):
     description.txt, zone.csv, and projects.csv.
     """
 
-    # Required input files
-    description_file = os.path.join(subscenario_directory, "description.txt")
-    zone_intercepts_file = os.path.join(
-        subscenario_directory, "zone_intercepts.csv"
-    )
-    zone_load_file = os.path.join(
-        subscenario_directory, "zone_peak_and_annual_load.csv"
-    )
-    project_coefficients_file = os.path.join(
-        subscenario_directory, "project_coefficients.csv"
-    )
-    project_cap_factors_file = os.path.join(
-        subscenario_directory, "project_cap_factors.csv"
-    )
+    # Get the subscenario (id, name, description) data for insertion into the
+    # subscenario table and the paths to the required input files
+    subscenario_data, \
+        [zone_intercepts_file, zone_load_file, project_coefficients_file,
+         project_cap_factors_file] = \
+        parse_subscenario_directory_contents(
+            subscenario_directory=subscenario_directory,
+            csv_file_names=[
+                "zone_intercepts.csv", "zone_peak_and_annual_load.csv",
+                "project_coefficients.csv", "project_cap_factors.csv"
+            ]
+        )
 
-    # TODO: this is the same as for the temporal scenarios, so could be
-    #  factored out
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
-    with open(description_file, "r") as f:
-        subscenario_description = f.read()
-    subscenario_data = [
-        (subscenario_id, subscenario_name, subscenario_description)
-    ]
+    # Get the subscenario_id from the subscenario_data tuple
+    subscenario_id = subscenario_data[0]
 
     # Get the ELCC surface intercepts (by zone, period, facet)
-    zone_intercepts_df = pd.read_csv(zone_intercepts_file, delimiter=",")
-    zone_intercepts_tuples_list = [
-        (subscenario_id, )
-        + tuple(x) for x in zone_intercepts_df.to_records(index=False)
-    ]
+    zone_intercepts_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=zone_intercepts_file
+    )
 
     # Get the peak and annual loads for the ELCC surface (by zone and period)
-    zone_loads_df = pd.read_csv(zone_load_file, delimiter=",")
-    zone_loads_tuples_list = [
-        (subscenario_id, )
-        + tuple(x) for x in zone_loads_df.to_records(index=False)
-    ]
+    zone_loads_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=zone_load_file
+    )
 
     # Get the ELCC surface coefficients (by project, period, facet)
-    project_coeffs_df = pd.read_csv(project_coefficients_file, delimiter=",")
-    project_coeffs_tuples_list = [
-        (subscenario_id, ) +
-        tuple(x) for x in project_coeffs_df.to_records(index=False)
-    ]
+    project_coeffs_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=project_coefficients_file
+    )
 
     # Get the cap factors for the ELCC surface (by project)
-    project_capfacs_df = pd.read_csv(project_cap_factors_file, delimiter=",")
-    project_capfacs_df_tuples_list = [
-        (subscenario_id, ) +
-        tuple(x) for x in project_capfacs_df.to_records(index=False)
-    ]
+    project_capfacs_df_tuples_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=project_cap_factors_file
+    )
 
     elcc_surface(
         conn=conn,
-        subscenario_data=subscenario_data,
+        subscenario_data=[subscenario_data],
         zone_intercepts_data=zone_intercepts_tuples_list,
         zone_load_data=zone_loads_tuples_list,
         project_coefficients_data=project_coeffs_tuples_list,
