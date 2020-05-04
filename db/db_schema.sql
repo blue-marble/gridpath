@@ -163,6 +163,17 @@ timestamp TEXT,  -- ISO8601 String
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
+-- Solver status
+DROP TABLE IF EXISTS status_solver_termination_condition;
+CREATE TABLE status_solver_termination_condition (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+solver_termination_condition,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id),
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
+);
+
 
 -------------------------------------------------------------------------------
 ---- SUBSCENARIOS AND INPUTS -----

@@ -25,6 +25,12 @@ from db.common_functions import connect_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
 
+# TODO: we need to make sure all results are cleared before importing
+#  results into database; we currently do that on a module-by-module basis,
+#  but if a module was used previously for a run and is not being used
+#  currently, some phantom results will remain
+#  We already have a function to clear all results in the UI
+
 
 def import_results_into_database(
         loaded_modules, scenario_id, subproblems, cursor, db,
@@ -70,22 +76,44 @@ def import_results_into_database(
             else:
                 results_directory = os.path.join(scenario_directory,
                                                  "results")
+
+            # TODO: why are we creating the results directory here?
             if not os.path.exists(results_directory):
                 os.makedirs(results_directory)
 
-            for m in loaded_modules:
-                if hasattr(m, "import_results_into_database"):
-                    m.import_results_into_database(
-                        scenario_id=scenario_id,
-                        subproblem=subproblem,
-                        stage=stage,
-                        c=cursor,
-                        db=db,
-                        results_directory=results_directory,
-                        quiet=quiet
-                    )
-                else:
-                    pass
+            # Only import results if solver status was "optimal"
+            with open(os.path.join(results_directory, "solver_status.txt"),
+                      "r") as f:
+                solver_status = f.read()
+
+            # Import solver status
+            # TODO: wrap in spin on database lock
+            c = db.cursor()
+            c.execute("""
+            INSERT INTO status_solver_termination_condition
+            (scenario_id, subproblem, stage, solver_termination_condition)
+            VALUES ({}, {}, {}, {})
+            ;""".format(scenario_id, subproblem, stage, solver_status))
+            db.commit()
+
+            if solver_status == "optimal":
+                for m in loaded_modules:
+                    if hasattr(m, "import_results_into_database"):
+                        m.import_results_into_database(
+                            scenario_id=scenario_id,
+                            subproblem=subproblem,
+                            stage=stage,
+                            c=cursor,
+                            db=db,
+                            results_directory=results_directory,
+                            quiet=quiet
+                        )
+                    else:
+                        pass
+            else:
+                if not quiet:
+                    print("Subproblem {}, stage {} was not optimal. Results "
+                          "not imported".format(subproblem, stage))
 
 
 def parse_arguments(args):
