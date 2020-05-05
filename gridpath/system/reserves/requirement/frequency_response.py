@@ -70,7 +70,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         generic_get_inputs_from_database(
             subscenarios=subscenarios,
             subproblem=subproblem, stage=stage, conn=conn,
-            reserve_type="frequency_respose",
+            reserve_type="frequency_response",
             reserve_type_ba_subscenario_id
             =subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
             reserve_type_req_subscenario_id
