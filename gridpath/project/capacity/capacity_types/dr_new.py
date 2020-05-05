@@ -321,6 +321,13 @@ def capacity_cost_rule(mod, g, p):
     return mod.DRNew_Cost[g, p]
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    """
+    return mod.DRNew_Power_Capacity_MW[g, p]
+
+
 # Input-Output
 ###############################################################################
 

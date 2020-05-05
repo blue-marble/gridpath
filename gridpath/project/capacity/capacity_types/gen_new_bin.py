@@ -314,6 +314,15 @@ def capacity_cost_rule(mod, g, p):
     )
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    Returns 0 if we can't build capacity at this project in period p.
+    """
+    return mod.GenNewBin_Build[g, p] * mod.gen_new_bin_build_size_mw[g] \
+        if p in mod.GEN_NEW_BIN_VNTS else 0
+
+
 # Input-Output
 ###############################################################################
 
