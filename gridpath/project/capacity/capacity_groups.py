@@ -55,12 +55,23 @@ def add_model_components(m, d):
 
     def new_capacity_rule(mod, prj, prd):
         gen_cap_type = mod.capacity_type[prj]
+        # The capacity type modules check if this period is a "vintage" for
+        # this project and return 0 if not
         return imported_capacity_modules[gen_cap_type].new_capacity_rule(
             mod, prj, prd)
 
+    def total_capacity_rule(mod, prj, prd):
+        gen_cap_type = mod.capacity_type[prj]
+        # Return the capacity type's capacity rule if the project is
+        # operational in this timepoint; otherwise, return 0
+        return imported_capacity_modules[gen_cap_type].capacity_rule(
+            mod, prj, prd) \
+            if prd in mod.OPR_PRDS_BY_PRJ[prj] \
+            else 0
+
     # Constraints
 
-    # Limit the amount of new build in a period
+    # Limit the min and max amount of new build in a group-period
     def new_capacity_max_rule(mod, grp, prd):
         return sum(
             new_capacity_rule(mod, prj, prd)
@@ -72,6 +83,40 @@ def add_model_components(m, d):
         rule=new_capacity_max_rule
     )
 
+    def new_capacity_min_rule(mod, grp, prd):
+        return sum(
+            new_capacity_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        ) >= mod.capacity_group_new_capacity_min[grp, prd]
+
+    m.Min_Group_Build_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS,
+        rule=new_capacity_min_rule
+    )
+
+    # Limit the min and max amount of total capacity in a group-period
+    def total_capacity_max_rule(mod, grp, prd):
+        return sum(
+            total_capacity_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        ) <= mod.capacity_group_total_capacity_max[grp, prd]
+
+    m.Max_Group_Total_Cap_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS,
+        rule=total_capacity_max_rule
+    )
+
+    def total_capacity_min_rule(mod, grp, prd):
+        return sum(
+            total_capacity_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        ) >= mod.capacity_group_total_capacity_min[grp, prd]
+
+    m.Min_Group_Total_Cap_in_Period_Constraint = Constraint(
+        m.CAPACITY_GROUP_PERIODS,
+        rule=total_capacity_min_rule
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -79,6 +124,9 @@ def add_model_components(m, d):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
+    # Only load data if the input files were written; otehrwise, we won't
+    # initialize the components in this module
+
     req_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs",
         "capacity_group_requirements.tab"
@@ -106,7 +154,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             for g, v in proj_groups_df.groupby("capacity_group")
         }
         data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
-
+    else:
+        pass
 
 
 # Database
