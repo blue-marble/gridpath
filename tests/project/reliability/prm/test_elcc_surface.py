@@ -174,3 +174,39 @@ class TestProjELCCSurface(unittest.TestCase):
         )
         )
         self.assertDictEqual(expected_coeff, actual_coeff)
+
+        # Param: prm_peak_load_mw
+        expected_prm_peak_load = OrderedDict(sorted(
+            {("PRM_Zone1", 2020): 49406.65942,
+             ("PRM_Zone1", 2030): 49406.65942,
+             ("PRM_Zone2", 2020): 49913.83791,
+             ("PRM_Zone2", 2030): 49913.83791,
+             }.items()
+        )
+        )
+
+        actual_prm_peak_load = OrderedDict(sorted(
+            {(z, p): instance.prm_peak_load_mw[z, p]
+             for (z, p) in instance.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE
+             }.items()
+        )
+        )
+        self.assertDictEqual(expected_prm_peak_load, actual_prm_peak_load)
+
+        # Param: prm_peak_load_mw
+        expected_annua_load = OrderedDict(sorted(
+            {("PRM_Zone1", 2020): 242189141,
+             ("PRM_Zone1", 2030): 242189141,
+             ("PRM_Zone2", 2020): 244545760.8,
+             ("PRM_Zone2", 2030): 244545760.8,
+             }.items()
+        )
+        )
+
+        actual_annual_load = OrderedDict(sorted(
+            {(z, p): instance.prm_annual_load_mwh[z, p]
+             for (z, p) in instance.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE
+             }.items()
+        )
+        )
+        self.assertDictEqual(expected_annua_load, actual_annual_load)
