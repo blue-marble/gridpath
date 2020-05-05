@@ -442,7 +442,7 @@ def write_module_specific_model_inputs(
 
     if group_threshold_costs:
         with open(os.path.join(
-                scenario_directory, subproblem, stage,
+                scenario_directory, subproblem, stage, "inputs",
                 "deliverability_group_params.tab"), "w", newline="") as \
                 elcc_eligibility_thresholds_file:
             writer = csv.writer(elcc_eligibility_thresholds_file,
@@ -461,7 +461,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
         with open(os.path.join(
-                scenario_directory, subproblem, stage,
+                scenario_directory, subproblem, stage, "inputs",
                 "deliverability_group_projects.tab"), "w"
         ) as group_projects_file:
             writer = csv.writer(group_projects_file, delimiter="\t", lineterminator="\n")

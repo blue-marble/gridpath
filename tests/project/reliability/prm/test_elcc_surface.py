@@ -138,6 +138,23 @@ class TestProjELCCSurface(unittest.TestCase):
 
         self.assertListEqual(expected_prj_p_f, actual_prj_p_f)
 
+        # Param: elcc_surface_cap_factor
+        expected_elcc_cf = OrderedDict(
+            sorted(
+                {"Nuclear": 0.123, "Wind": 0.123,
+                 "Wind_z2": 0.123, }.items()
+            )
+        )
+
+        actual_elcc_cf = OrderedDict(
+            sorted(
+                {p: instance.elcc_surface_cap_factor[p]
+                 for p in instance.ELCC_SURFACE_PROJECTS}.items()
+            )
+        )
+
+        self.assertDictEqual(expected_elcc_cf, actual_elcc_cf)
+
         # Param: elcc_surface_coefficient
         expected_coeff = OrderedDict(sorted(
             {("Nuclear", 2020, 1): 0.9, ("Nuclear", 2020, 2): 0.9,

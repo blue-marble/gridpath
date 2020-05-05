@@ -11,11 +11,14 @@ from builtins import str
 from builtins import range
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Binary, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.project.operations.operational_types.common_functions import \
+    get_param_dict
 
 
 def add_model_components(m, d):
@@ -115,9 +118,24 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory, subproblem, stage, "inputs", "projects.tab"),
-        select=("project", "contributes_to_elcc_surface",
-                "elcc_surface_cap_factor"),
-        param=(m.contributes_to_elcc_surface, m.elcc_surface_cap_factor,)
+        select=("project", "contributes_to_elcc_surface"),
+        param=(m.contributes_to_elcc_surface,)
+    )
+
+    elcc_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "projects.tab"),
+        sep="\t",
+        usecols=["project", "contributes_to_elcc_surface",
+                 "elcc_surface_cap_factor"],
+        dtype=object  # we'll be checking for objects later
+    )
+
+    elcc_proj_df = elcc_df[elcc_df["contributes_to_elcc_surface"] == "1"]
+
+    data_portal.data()["elcc_surface_cap_factor"] = get_param_dict(
+        df=elcc_proj_df, column_name="elcc_surface_cap_factor",
+        cast_as_type=float
     )
 
     # Project-period-facet
@@ -326,7 +344,8 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
             prj = row[0]
             # If project specified add the values
             if prj in list(prj_contr_cf_dict.keys()):
-                row.append(prj_contr_cf_dict[prj][0])
+                row.append(prj_contr_cf_dict[prj][0] if prj_contr_cf_dict[
+                    prj][0] is not None else ".")
                 row.append(prj_contr_cf_dict[prj][1] if prj_contr_cf_dict[
                     prj][1] is not None else ".")
                 new_rows.append(row)

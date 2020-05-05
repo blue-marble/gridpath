@@ -181,7 +181,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
-            scenario_directory, subproblem, stage,
+            scenario_directory, subproblem, stage, "inputs",
             "prm_zone_surface_facets_and_intercept.tab"
     ), "w", newline="") as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
