@@ -642,7 +642,7 @@ def new_capacity_rule(mod, g, p):
     Returns 0 if we can't build capacity at this project in period p.
     """
     return mod.StorNewLin_Build_MW[g, p] \
-        if p in mod.STOR_NEW_LIN_VNTS else 0
+        if (g, p) in mod.STOR_NEW_LIN_VNTS else 0
 
 
 # Input-Output

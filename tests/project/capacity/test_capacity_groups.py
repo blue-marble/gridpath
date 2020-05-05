@@ -120,8 +120,8 @@ class TestCapacityGroups(unittest.TestCase):
 
         # Params: capacity_group_new_capacity_min
         expected_new_min = {
-            ("Capacity_Group1", 2020): 100,
-            ("Capacity_Group1", 2030): 100,
+            ("Capacity_Group1", 2020): 1,
+            ("Capacity_Group1", 2030): 1,
         }
         actual_new_min = {
             (g, p): instance.capacity_group_new_capacity_min[g, p]
@@ -131,8 +131,8 @@ class TestCapacityGroups(unittest.TestCase):
 
         # Params: capacity_group_new_capacity_max
         expected_new_max = {
-            ("Capacity_Group1", 2020): 1000,
-            ("Capacity_Group1", 2030): 1000,
+            ("Capacity_Group1", 2020): 10,
+            ("Capacity_Group1", 2030): 10,
         }
         actual_new_max = {
             (g, p): instance.capacity_group_new_capacity_max[g, p]
@@ -142,8 +142,8 @@ class TestCapacityGroups(unittest.TestCase):
         
         # Params: capacity_group_total_capacity_min
         expected_total_min = {
-            ("Capacity_Group1", 2020): 200,
-            ("Capacity_Group1", 2030): 500,
+            ("Capacity_Group1", 2020): 2,
+            ("Capacity_Group1", 2030): 5,
         }
         actual_total_min = {
             (g, p): instance.capacity_group_total_capacity_min[g, p]
@@ -153,8 +153,8 @@ class TestCapacityGroups(unittest.TestCase):
 
         # Params: capacity_group_total_capacity_max
         expected_total_max = {
-            ("Capacity_Group1", 2020): 2000,
-            ("Capacity_Group1", 2030): 5000,
+            ("Capacity_Group1", 2020): 20,
+            ("Capacity_Group1", 2030): 50,
         }
         actual_total_max = {
             (g, p): instance.capacity_group_total_capacity_max[g, p]

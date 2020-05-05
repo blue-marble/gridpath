@@ -5,6 +5,7 @@
 Minimum and maximum capacity by period and project group.
 """
 
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals
@@ -60,7 +61,7 @@ def add_model_components(m, d):
     # Constraints
 
     # Limit the amount of new build in a period
-    def new_capacity_limits_rule(mod, grp, prd):
+    def new_capacity_max_rule(mod, grp, prd):
         return sum(
             new_capacity_rule(mod, prj, prd)
             for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
@@ -68,31 +69,126 @@ def add_model_components(m, d):
 
     m.Max_Group_Build_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS,
-        rule=new_capacity_limits_rule
+        rule=new_capacity_max_rule
     )
 
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    data_portal.load(filename=os.path.join(
+    req_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs",
         "capacity_group_requirements.tab"
-    ),
-        index=m.CAPACITY_GROUP_PERIODS,
-        param=(m.capacity_group_new_capacity_min,
-               m.capacity_group_new_capacity_max,
-               m.capacity_group_total_capacity_min,
-               m.capacity_group_total_capacity_max)
+    )
+    if os.path.exists(req_file):
+        data_portal.load(
+            filename=req_file,
+            index=m.CAPACITY_GROUP_PERIODS,
+            param=(m.capacity_group_new_capacity_min,
+                   m.capacity_group_new_capacity_max,
+                   m.capacity_group_total_capacity_min,
+                   m.capacity_group_total_capacity_max)
+        )
+    else:
+        pass
+
+    prj_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs",
+        "capacity_group_projects.tab"
+    )
+    if os.path.exists(prj_file):
+        proj_groups_df = pd.read_csv(prj_file, delimiter="\t")
+        proj_groups_dict = {
+            g: v["project"].tolist()
+            for g, v in proj_groups_df.groupby("capacity_group")
+        }
+        data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
+
+
+
+# Database
+###############################################################################
+
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+
+    c1 = conn.cursor()
+    cap_grp_reqs = c1.execute(
+        """
+        SELECT capacity_group,
+        capacity_group_new_capacity_min, capacity_group_new_capacity_max,
+        capacity_group_total_capacity_min, capacity_group_total_capacity_max
+        FROM inputs_project_capacity_group_requirements
+        WHERE project_capacity_group_requirement_scenario_id = {}
+        """.format(subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID)
     )
 
-    proj_groups_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
-                     "capacity_group_projects.tab"),
-        delimiter="\t"
+    c2 = conn.cursor()
+    cap_grp_prj = c2.execute(
+        """
+        SELECT capacity_group, project
+        FROM inputs_project_capacity_group_requirements
+        WHERE inputs_project_capacity_groups = {}
+        """.format(subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID)
     )
-    proj_groups_dict = {
-        g: v["project"].tolist()
-        for g, v in proj_groups_df.groupby("capacity_group")
-    }
-    data_portal.data()["PROJECTS_IN_CAPACITY_GROUP"] = proj_groups_dict
+
+    return cap_grp_reqs, cap_grp_prj
+
+
+def write_module_specific_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    """
+    cap_grp_reqs, cap_grp_prj = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    # Write the input files only if a subscenario is specified
+    if subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID is not None:
+        with open(os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs",
+                "capacity_group_requirements.tab"
+        ), "w", newline="") as req_file:
+            writer = csv.writer(req_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["capacity_group", "period", "lifetime_yrs",
+                 "capacity_group_new_capacity_min",
+                 "capacity_group_new_capacity_max",
+                 "capacity_group_total_capacity_min",
+                 "capacity_group_total_capacity_max"]
+            )
+
+            for row in cap_grp_reqs:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+
+    if subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID is not None:
+        with open(os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs",
+                "capacity_group_projects.tab"
+        ), "w", newline="") as prj_file:
+            writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["capacity_group", "project"]
+            )
+
+            for row in cap_grp_prj:
+                writer.writerow(row)
