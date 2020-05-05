@@ -713,15 +713,24 @@ def export_module_specific_results(
                  "linked_upward_reserves",
                  "linked_downward_reserves"]
             )
-        for (p, tmp) in sorted(mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS):
-            if tmp in tmps_to_link:
-                writer.writerow([
-                    p,
-                    tmp_linked_tmp_dict[tmp],
-                    value(mod.GenHydroMustTake_Provide_Power_MW_[p, tmp]),
-                    value(mod.GenHydroMustTake_Upwards_Reserves_MW[p, tmp]),
-                    value(mod.GenHydroMustTake_Downwards_Reserves_MW[p, tmp])
-                ])
+            for (p, tmp) in sorted(mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        max(value(mod.GenHydroMustTake_Provide_Power_MW_[
+                                      p, tmp]),
+                            0
+                            ),
+                        max(value(mod.GenHydroMustTake_Upwards_Reserves_MW[
+                                      p, tmp]),
+                            0
+                            ),
+                        max(value(mod.GenHydroMustTake_Downwards_Reserves_MW[
+                                      p, tmp]),
+                            0
+                            )
+                    ])
 
 # Database
 ###############################################################################

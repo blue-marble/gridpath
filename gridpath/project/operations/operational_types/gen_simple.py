@@ -591,15 +591,19 @@ def export_module_specific_results(
                  "linked_upward_reserves",
                  "linked_downward_reserves"]
             )
-        for (p, tmp) in sorted(mod.GEN_ALWAYS_ON_OPR_TMPS):
-            if tmp in tmps_to_link:
-                writer.writerow([
-                    p,
-                    tmp_linked_tmp_dict[tmp],
-                    value(mod.GenSimple_Provide_Power_MW[p, tmp]),
-                    value(mod.GenSimple_Upwards_Reserves_MW[p, tmp]),
-                    value(mod.GenSimple_Downwards_Reserves_MW[p, tmp])
-                ])
+            for (p, tmp) in sorted(mod.GEN_ALWAYS_ON_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow([
+                        p,
+                        tmp_linked_tmp_dict[tmp],
+                        max(value(mod.GenSimple_Provide_Power_MW[p, tmp]), 0),
+                        max(value(mod.GenSimple_Upwards_Reserves_MW[p,tmp]),
+                            0
+                            ),
+                        max(value(mod.GenSimple_Downwards_Reserves_MW[p, tmp]),
+                            0
+                            )
+                    ])
 
 # Validation
 ###############################################################################
