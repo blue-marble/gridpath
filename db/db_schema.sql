@@ -163,13 +163,14 @@ timestamp TEXT,  -- ISO8601 String
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
--- Solver status
-DROP TABLE IF EXISTS status_solver_termination_condition;
-CREATE TABLE status_solver_termination_condition (
+-- Scenario results: objective function, solver status
+DROP TABLE IF EXISTS results_scenario;
+CREATE TABLE results_scenario (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-solver_termination_condition,
+objective_function_value FLOAT,
+solver_termination_condition VARCHAR(128),
 PRIMARY KEY (scenario_id, subproblem_id, stage_id),
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );

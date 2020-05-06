@@ -21,16 +21,10 @@ import sys
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
-from db.common_functions import connect_to_database
+from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
-
-# TODO: we need to make sure all results are cleared before importing
-#  results into database; we currently do that on a module-by-module basis,
-#  but if a module was used previously for a run and is not being used
-#  currently, some phantom results will remain
-#  We already have a function to clear all results in the UI
 
 
 def import_results_into_database(
@@ -82,22 +76,53 @@ def import_results_into_database(
             if not os.path.exists(results_directory):
                 os.makedirs(results_directory)
 
-            # Only import results if solver status was "optimal"
+            # Import results_scenario data
+            c = db.cursor()
             with open(os.path.join(results_directory, "solver_status.txt"),
                       "r") as f:
                 solver_status = f.read()
 
-            # Import solver status
-            # TODO: wrap in spin on database lock
-            c = db.cursor()
-            c.execute("""
-            INSERT INTO status_solver_termination_condition
-            (scenario_id, subproblem, stage, solver_termination_condition)
-            VALUES ({}, {}, {}, {})
-            ;""".format(scenario_id, subproblem, stage, solver_status))
-            db.commit()
 
+            solver_status_sql = """
+                INSERT INTO results_scenario
+                (scenario_id, subproblem_id, stage_id, 
+                solver_termination_condition)
+                VALUES (?, ?, ?, ?)
+            ;"""
+            solver_status_data = \
+                (scenario_id, subproblem, stage, solver_status)
+            spin_on_database_lock(
+                conn=db, cursor=c, sql=solver_status_sql,
+                data=solver_status_data, many=False
+            )
+
+            # Only import other results if solver status was "optimal"
+            # If there's no solution, variables remain uninitialized,
+            # throwing an error at some point during results-export,
+            # so we don't attempt importing missing results into the database
             if solver_status == "optimal":
+                # TODO: implement this in a separate commit
+                # # Import the objective function value
+                # with open(os.path.join(results_directory,
+                #                        "objective_function_value.txt"),
+                #           "r") as f:
+                #     objective_function = f.read()
+                #
+                # obj_sql = """
+                #     UPDATE results_scenario
+                #     SET objective_function_value = ?
+                #     WHERE scenario_id = ?
+                #     AND subproblem_id = ?
+                #     AND stage_id = ?
+                # ;"""
+                #
+                # obj_data = \
+                #     (objective_function, scenario_id, subproblem,  stage)
+                # spin_on_database_lock(
+                #     conn=db, cursor=c, sql=obj_sql,
+                #     data=obj_data, many=False
+                # )
+
                 for m in loaded_modules:
                     if hasattr(m, "import_results_into_database"):
                         m.import_results_into_database(

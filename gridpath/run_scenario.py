@@ -671,6 +671,9 @@ def save_objective_function_value(scenario_directory, subproblem, stage,
         objective_file.write(
             "Objective function: " + str(objective_function_value)
         )
+        # TODO: change to writing the value only when we implement importing
+        #  the objective function value into the results_scenario table
+        # objective_file.write(str(objective_function_value))
 
 
 def save_duals(scenario_directory, subproblem, stage, instance):
