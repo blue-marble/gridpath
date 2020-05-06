@@ -17,10 +17,62 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`CAPACITY_GROUP_PERIODS`                                        |
+    |                                                                         |
+    | A two-dimensional set of group-period combinations for which there may  |
+    | be group capacity requirements.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`CAPACITY_GROUPS`                                               |
+    |                                                                         |
+    | The groups of projects for which there may be group capacity            |
+    | requirements.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`PROJECTS_IN_CAPACITY_GROUP`                                    |
+    |                                                                         |
+    | The list of projects by capacity group.                                 |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`capacity_group_new_capacity_min`                               |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of capacity (in MW) that must be built at projects   |
+    | in this group in a given period.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`capacity_group_new_capacity_max`                               |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum amount of capacity (in MW) that may be built at projects    |
+    | in this group in a given period.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`capacity_group_total_capacity_min`                             |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of capacity (in MW) that must exist at projects      |
+    | in this group in a given period.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`capacity_group_total_capacity_max`                             |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`inf`                                                |
+    |                                                                         |
+    | The maximum amount of capacity (in MW) that may exist at projects       |
+    | in this group in a given period.                                        |
+    +-------------------------------------------------------------------------+
+
     """
 
     # Sets
