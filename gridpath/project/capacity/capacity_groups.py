@@ -8,7 +8,8 @@ Minimum and maximum new and total capacity by period and project group.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression
+from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
+    Expression, value
 
 from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules
@@ -277,6 +278,44 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     else:
         pass
 
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    """
+    req_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs",
+        "capacity_group_requirements.tab"
+    )
+    prj_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs",
+        "capacity_group_projects.tab"
+    )
+
+    if os.path.exists(req_file) and os.path.exists(prj_file):
+        with open(os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "capacity_groups.csv"
+        ), "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                ["capacity_group", "period",
+                 "new_capacity", "total_capacity",
+                 "capacity_group_new_capacity_min",
+                 "capacity_group_new_capacity_max",
+                 "capacity_group_total_capacity_min",
+                 "capacity_group_total_capacity_max"
+                 ])
+            for (grp, prd) in m.CAPACITY_GROUP_PERIODS:
+                writer.writerow([
+                    grp,
+                    prd,
+                    value(m.Group_New_Capacity_in_Period[grp, prd]),
+                    value(m.Group_Total_Capacity_in_Period[grp, prd]),
+                    m.capacity_group_new_capacity_min[grp, prd],
+                    m.capacity_group_new_capacity_max[grp, prd],
+                    m.capacity_group_total_capacity_min[grp, prd],
+                    m.capacity_group_total_capacity_max[grp, prd]
+                ])
 
 # Database
 ###############################################################################
