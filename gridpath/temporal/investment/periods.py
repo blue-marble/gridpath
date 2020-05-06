@@ -21,7 +21,8 @@ differently depending on when they are incurred.
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
+from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals, \
+    NonNegativeIntegers
 
 
 def add_model_components(m, d):
@@ -32,7 +33,7 @@ def add_model_components(m, d):
     | Sets                                                                    |
     +=========================================================================+
     | | :code:`PERIODS`                                                       |
-    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Within*: :code:`PositiveIntegers`                                    |
     |                                                                         |
     | The list of all periods being modeled. Periods must be non-negative     |
     | integers and the set is ordered.                                        |
@@ -107,7 +108,7 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.PERIODS = Set(
-        within=NonNegativeIntegers,
+        within=PositiveIntegers,
         ordered=True
     )
 
