@@ -2323,6 +2323,23 @@ retired_binary INTEGER,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
+DROP TABLE IF EXISTS results_project_group_capacity;
+CREATE TABLE results_project_group_capacity (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+capacity_group VARCHAR(64),
+period INTEGER,
+group_new_capacity FLOAT,
+group_total_capacity FLOAT,
+capacity_group_new_capacity_min FLOAT,
+capacity_group_new_capacity_max FLOAT,
+capacity_group_total_capacity_min FLOAT,
+capacity_group_total_capacity_max FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, capacity_group, period)
+);
+
+
 DROP TABLE IF EXISTS results_project_availability_endogenous;
 CREATE TABLE results_project_availability_endogenous (
 scenario_id INTEGER,

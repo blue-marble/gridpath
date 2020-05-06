@@ -11,8 +11,9 @@ import pandas as pd
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules
+    load_gen_storage_capacity_type_modules, setup_results_import
 from gridpath.auxiliary.dynamic_components import required_capacity_modules
 
 
@@ -317,6 +318,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.capacity_group_total_capacity_max[grp, prd]
                 ])
 
+
 # Database
 ###############################################################################
 
@@ -398,3 +400,70 @@ def write_model_inputs(
 
             for row in cap_grp_prj:
                 writer.writerow(row)
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    # Import only if a results-file was exported
+    results_file = os.path.join(results_directory, "capacity_groups.csv")
+    if os.path.exists(results_file):
+        if not quiet:
+            print("group capacity")
+
+        # Delete prior results and create temporary import table for ordering
+        setup_results_import(
+            conn=db, cursor=c,
+            table="results_project_group_capacity",
+            scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        )
+
+        # Load results into the temporary table
+        results = []
+        with open(results_file, "r") as f:
+            reader = csv.reader(f)
+
+            next(reader)  # skip header
+            for row in reader:
+                results.append(
+                    (scenario_id, subproblem, stage) + tuple(row)
+                )
+
+        insert_temp_sql = """
+            INSERT INTO temp_results_project_group_capacity{}
+            (scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """.format(scenario_id)
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql,
+                              data=results)
+
+        # Insert sorted results into permanent results table
+        insert_sql = """
+            INSERT INTO results_project_group_capacity
+            (scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max)
+            SELECT
+            scenario_id, subproblem_id, stage_id, 
+            capacity_group, period, 
+            group_new_capacity, group_total_capacity,
+            capacity_group_new_capacity_min, 
+            capacity_group_new_capacity_max, 
+            capacity_group_total_capacity_min, 
+            capacity_group_total_capacity_max
+            FROM temp_results_project_group_capacity{}
+             ORDER BY scenario_id, subproblem_id, stage_id,
+             capacity_group, period;
+            """.format(scenario_id)
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                              many=False)
