@@ -2,7 +2,7 @@
 # Copyright 2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Minimum and maximum capacity by period and project group.
+Minimum and maximum new and total capacity by period and project group.
 """
 
 import csv
@@ -36,16 +36,20 @@ def add_model_components(m, d):
 
     # Params
     m.capacity_group_new_capacity_min = Param(
-        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals,
+        default=0
     )
     m.capacity_group_new_capacity_max = Param(
-        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals,
+        default=float('inf')
     )
     m.capacity_group_total_capacity_min = Param(
-        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals,
+        default=0
     )
     m.capacity_group_total_capacity_max = Param(
-        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals
+        m.CAPACITY_GROUP_PERIODS, within=NonNegativeReals,
+        default=float('inf')
     )
 
     # Import needed capacity type modules
@@ -161,9 +165,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
-):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -176,7 +178,7 @@ def get_module_specific_inputs_from_database(
     c1 = conn.cursor()
     cap_grp_reqs = c1.execute(
         """
-        SELECT capacity_group,
+        SELECT capacity_group, period,
         capacity_group_new_capacity_min, capacity_group_new_capacity_max,
         capacity_group_total_capacity_min, capacity_group_total_capacity_max
         FROM inputs_project_capacity_group_requirements
@@ -188,25 +190,25 @@ def get_module_specific_inputs_from_database(
     cap_grp_prj = c2.execute(
         """
         SELECT capacity_group, project
-        FROM inputs_project_capacity_group_requirements
-        WHERE inputs_project_capacity_groups = {}
+        FROM inputs_project_capacity_groups
+        WHERE project_capacity_group_scenario_id = {}
         """.format(subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID)
     )
 
     return cap_grp_reqs, cap_grp_prj
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, subscenarios, subproblem, stage, conn
 ):
     """
     """
-    cap_grp_reqs, cap_grp_prj = get_module_specific_inputs_from_database(
+    cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
         subscenarios, subproblem, stage, conn
     )
 
     # Write the input files only if a subscenario is specified
-    if subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID is not None:
+    if subscenarios.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID != "NULL":
         with open(os.path.join(
                 scenario_directory, str(subproblem), str(stage), "inputs",
                 "capacity_group_requirements.tab"
@@ -215,7 +217,7 @@ def write_module_specific_model_inputs(
 
             # Write header
             writer.writerow(
-                ["capacity_group", "period", "lifetime_yrs",
+                ["capacity_group", "period",
                  "capacity_group_new_capacity_min",
                  "capacity_group_new_capacity_max",
                  "capacity_group_total_capacity_min",
@@ -227,7 +229,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(replace_nulls)
 
 
-    if subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID is not None:
+    if subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID != "NULL":
         with open(os.path.join(
                 scenario_directory, str(subproblem), str(stage), "inputs",
                 "capacity_group_projects.tab"
