@@ -8,7 +8,7 @@ Minimum and maximum new and total capacity by period and project group.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Constraint, NonNegativeReals
+from pyomo.environ import Set, Param, Constraint, NonNegativeReals, Expression
 
 from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules
@@ -73,6 +73,48 @@ def add_model_components(m, d):
     | in this group in a given period.                                        |
     +-------------------------------------------------------------------------+
 
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Group_New_Capacity_in_Period`                                  |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | The new capacity built at projects in this group in this period.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Group_Total_Capacity_in_Period`                                |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | The new capacity of at projects in this group in this period.           |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Max_Group_Build_in_Period_Constraint`                          |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | Limits the amount of new build in each group in each period.            |
+    +-------------------------------------------------------------------------+
+    | | :code:`Min_Group_Build_in_Period_Constraint`                          |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | Requires a certain amount of new build in each group in each period.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Group_Total_Cap_in_Period_Constraint`                      |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | Limits the total amount of capacity in each group in each period        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Min_Group_Build_in_Period_Constraint`                          |
+    | | *Defined over*: :code:`CAPACITY_GROUP_PERIODS`                        |
+    |                                                                         |
+    | Requires a certain amount of capacity in each group in each period.     |
+    +-------------------------------------------------------------------------+
+
     """
 
     # Sets
@@ -109,6 +151,8 @@ def add_model_components(m, d):
         getattr(d, required_capacity_modules)
     )
 
+    # Get the new and total capacity in the group for the respective
+    # expressions
     def new_capacity_rule(mod, prj, prd):
         gen_cap_type = mod.capacity_type[prj]
         # The capacity type modules check if this period is a "vintage" for
@@ -125,25 +169,35 @@ def add_model_components(m, d):
             if prd in mod.OPR_PRDS_BY_PRJ[prj] \
             else 0
 
-    # Constraints
-
-    # Limit the min and max amount of new build in a group-period
-    def new_capacity_max_rule(mod, grp, prd):
+    # Expressions
+    def group_new_capacity_rule(mod, grp, prd):
         return sum(
             new_capacity_rule(mod, prj, prd)
             for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
-        ) <= mod.capacity_group_new_capacity_max[grp, prd]
+        )
 
+    m.Group_New_Capacity_in_Period = Expression(
+        m.CAPACITY_GROUP_PERIODS,
+        rule=group_new_capacity_rule
+    )
+
+    def group_total_capacity_rule(mod, grp, prd):
+        return sum(
+            total_capacity_rule(mod, prj, prd)
+            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
+        )
+
+    m.Group_Total_Capacity_in_Period = Expression(
+        m.CAPACITY_GROUP_PERIODS,
+        rule=group_total_capacity_rule
+    )
+
+    # Constraints
+    # Limit the min and max amount of new build in a group-period
     m.Max_Group_Build_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS,
         rule=new_capacity_max_rule
     )
-
-    def new_capacity_min_rule(mod, grp, prd):
-        return sum(
-            new_capacity_rule(mod, prj, prd)
-            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
-        ) >= mod.capacity_group_new_capacity_min[grp, prd]
 
     m.Min_Group_Build_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS,
@@ -151,27 +205,37 @@ def add_model_components(m, d):
     )
 
     # Limit the min and max amount of total capacity in a group-period
-    def total_capacity_max_rule(mod, grp, prd):
-        return sum(
-            total_capacity_rule(mod, prj, prd)
-            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
-        ) <= mod.capacity_group_total_capacity_max[grp, prd]
-
     m.Max_Group_Total_Cap_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS,
         rule=total_capacity_max_rule
     )
 
-    def total_capacity_min_rule(mod, grp, prd):
-        return sum(
-            total_capacity_rule(mod, prj, prd)
-            for prj in mod.PROJECTS_IN_CAPACITY_GROUP[grp]
-        ) >= mod.capacity_group_total_capacity_min[grp, prd]
-
     m.Min_Group_Total_Cap_in_Period_Constraint = Constraint(
         m.CAPACITY_GROUP_PERIODS,
         rule=total_capacity_min_rule
     )
+
+
+# Constraint Formulation Rules
+###############################################################################
+def new_capacity_max_rule(mod, grp, prd):
+    return mod.Group_New_Capacity_in_Period[grp, prd] \
+       <= mod.capacity_group_new_capacity_max[grp, prd]
+
+
+def new_capacity_min_rule(mod, grp, prd):
+    return mod.Group_New_Capacity_in_Period[grp, prd] \
+       >= mod.capacity_group_new_capacity_min[grp, prd]
+
+
+def total_capacity_max_rule(mod, grp, prd):
+    return mod.Group_Total_Capacity_in_Period[grp, prd] \
+       <= mod.capacity_group_total_capacity_max[grp, prd]
+
+
+def total_capacity_min_rule(mod, grp, prd):
+    return mod.Group_Total_Capacity_in_Period[grp, prd] \
+       >= mod.capacity_group_total_capacity_min[grp, prd]
 
 
 # Input-Output
