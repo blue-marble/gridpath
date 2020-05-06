@@ -22,6 +22,7 @@ from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
 from db.common_functions import connect_to_database
+from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
 
@@ -149,6 +150,12 @@ def main(args=None):
     scenario_id_saved = int(sc_df.loc["scenario_id", 1])
     if scenario_id_saved != scenario_id:
         raise AssertionError("ERROR: saved scenario_id does not match")
+
+    # Delete all previous results for this scenario_id
+    # Each module also makes sure results are deleted, but this step ensures
+    # that if a scenario_id was run with different modules before, we also
+    # delete previously imported "phantom" results
+    delete_scenario_results(conn=conn, scenario_id=scenario_id)
 
     # Go through modules
     modules_to_use = determine_modules(scenario_directory=scenario_directory)

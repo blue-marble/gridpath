@@ -529,7 +529,7 @@ def delete_scenario(conn, scenario_id):
     tables, and the scenarios table.
     """
     # Delete results and statuses
-    delete_scenario_results(conn=conn, scenario_id=scenario_id)
+    delete_scenario_results_and_status(conn=conn, scenario_id=scenario_id)
 
     # Delete from scenarios table
     c = conn.cursor()
@@ -539,7 +539,7 @@ def delete_scenario(conn, scenario_id):
                           many=False)
 
 
-def delete_scenario_results(conn, scenario_id):
+def delete_scenario_results_and_status(conn, scenario_id):
     """
     :param conn:
     :param scenario_id:
@@ -578,3 +578,29 @@ def delete_scenario_results(conn, scenario_id):
     """
     spin_on_database_lock(conn=conn, cursor=c, sql=status_sql,
                           data=(scenario_id,), many=False)
+
+
+def delete_scenario_results(conn, scenario_id):
+    """
+    :param conn:
+    :param scenario_id:
+    :return:
+
+    Delete scenario from all results tables.
+    """
+    c = conn.cursor()
+    all_tables = c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table';"
+    ).fetchall()
+
+    results_tables = [
+        tbl[0] for tbl in all_tables if tbl[0].startswith("results")
+    ]
+
+    # Delete from all results tables
+    for tbl in results_tables:
+        sql = """
+            DELETE FROM {} WHERE scenario_id = ?;
+            """.format(tbl)
+        spin_on_database_lock(conn=conn, cursor=c, sql=sql,
+                              data=(scenario_id,), many=False)
