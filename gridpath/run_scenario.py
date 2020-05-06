@@ -355,9 +355,9 @@ def save_results(scenario_directory, subproblem, stage,
 
         save_duals(scenario_directory, subproblem, stage, instance)
 
-    # Problem was infeasible; if we're running non-linked subproblems,
-    # continue with the next subproblem; otherwise, exit
+    # If solver status wasn't optimal record that
     else:
+        # Problem is infeasible
         if results.solver.termination_condition \
                 == TerminationCondition.infeasible:
             if not parsed_arguments.quiet:
