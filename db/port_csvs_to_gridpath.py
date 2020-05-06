@@ -47,7 +47,8 @@ from db.create_database import get_database_file_path
 
 import db.utilities.common_functions as db_util_common
 from db.utilities import temporal, simultaneous_flows, \
-    simultaneous_flow_groups, project_prm, system_reserves, project_zones, rps
+    simultaneous_flow_groups, project_prm, system_reserves, project_zones, \
+    rps, project_capacity_groups
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
@@ -268,6 +269,45 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master['table'] == 'project_new_cost', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
         load_project_new_costs.load_project_new_costs(conn, c2, csv_subscenario_input, csv_data_input)
+
+    ## PROJECT GROUP CAPACITY REQUIREMENTS ##
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'project_capacity_group_requirements',
+        'include'
+    ].iloc[0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_capacity_group_requirements',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_data(data_folder_path, quiet)
+        sub_tuples = [
+            tuple(x) for x in csv_subscenario_input.to_records(index=False)
+        ]
+        inputs_tuples = [
+            tuple(x) for x in csv_data_input.to_records(index=False)
+        ]
+        project_capacity_groups.insert_capacity_group_requirements(
+            conn, sub_tuples, inputs_tuples
+        )
+
+    if csv_data_master.loc[
+        csv_data_master['table'] == 'project_capacity_groups',
+        'include'
+    ].iloc[0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_capacity_groups',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_data(data_folder_path, quiet)
+        sub_tuples = [
+            tuple(x) for x in csv_subscenario_input.to_records(index=False)
+        ]
+        inputs_tuples = [
+            tuple(x) for x in csv_data_input.to_records(index=False)
+        ]
+        project_capacity_groups.insert_capacity_group_projects(
+            conn, sub_tuples, inputs_tuples
+        )
 
     ## PROJECT ELCC CHARS ##
     if csv_data_master.loc[csv_data_master['table'] ==

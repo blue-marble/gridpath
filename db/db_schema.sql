@@ -711,24 +711,6 @@ subscenarios_project_new_potential (project_new_potential_scenario_id)
 
 
 -- Group capacity requirements
--- Group project mapping
-DROP TABLE IF EXISTS subscenarios_project_capacity_groups;
-CREATE TABLE subscenarios_project_capacity_groups (
-project_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-name VARCHAR(32),
-description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_project_capacity_groups;
-CREATE TABLE inputs_project_capacity_groups (
-project_capacity_group_scenario_id INTEGER,
-capacity_group VARCHAR(64),
-project VARCHAR(64),
-PRIMARY KEY (project_capacity_group_scenario_id, capacity_group, project),
-FOREIGN KEY (project_capacity_group_scenario_id) REFERENCES
-subscenarios_project_capacity_groups (project_capacity_group_scenario_id)
-);
-
 -- Requirements
 DROP TABLE IF EXISTS subscenarios_project_capacity_group_requirements;
 CREATE TABLE subscenarios_project_capacity_group_requirements (
@@ -752,6 +734,25 @@ PRIMARY KEY (project_capacity_group_requirement_scenario_id,
 FOREIGN KEY (project_capacity_group_requirement_scenario_id) REFERENCES
 subscenarios_project_capacity_group_requirements
     (project_capacity_group_requirement_scenario_id)
+);
+
+
+-- Group project mapping
+DROP TABLE IF EXISTS subscenarios_project_capacity_groups;
+CREATE TABLE subscenarios_project_capacity_groups (
+project_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_capacity_groups;
+CREATE TABLE inputs_project_capacity_groups (
+project_capacity_group_scenario_id INTEGER,
+capacity_group VARCHAR(64),
+project VARCHAR(64),
+PRIMARY KEY (project_capacity_group_scenario_id, capacity_group, project),
+FOREIGN KEY (project_capacity_group_scenario_id) REFERENCES
+subscenarios_project_capacity_groups (project_capacity_group_scenario_id)
 );
 
 
@@ -2101,8 +2102,8 @@ fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
 project_new_binary_build_size_scenario_id INTEGER,
-project_capacity_group_scenario_id INTEGER,
 project_capacity_group_requirement_scenario_id INTEGER,
+project_capacity_group_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_specified_capacity_scenario_id INTEGER,

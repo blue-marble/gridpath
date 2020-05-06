@@ -64,6 +64,8 @@ def create_scenario_all_args(
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
+        project_capacity_group_requirement_scenario_id,
+        project_capacity_group_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_specified_capacity_scenario_id,
@@ -147,6 +149,8 @@ def create_scenario_all_args(
     :param project_new_cost_scenario_id:
     :param project_new_potential_scenario_id:
     :param project_new_binary_build_size_scenario_id:
+    :param project_capacity_group_requirement_scenario_id:
+    :param project_capacity_group_scenario_id:
     :param transmission_portfolio_scenario_id:
     :param transmission_load_zone_scenario_id:
     :param transmission_specified_capacity_scenario_id:
@@ -226,6 +230,8 @@ def create_scenario_all_args(
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
+        project_capacity_group_requirement_scenario_id,
+        project_capacity_group_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_specified_capacity_scenario_id,
@@ -304,6 +310,8 @@ def create_scenario_all_args(
         project_new_cost_scenario_id,
         project_new_potential_scenario_id,
         project_new_binary_build_size_scenario_id,
+        project_capacity_group_requirement_scenario_id,
+        project_capacity_group_scenario_id,
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_specified_capacity_scenario_id,
@@ -328,6 +336,8 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id
         ) VALUES (
+        ?,
+        ?,
         ?,
         ?,
         ?,
