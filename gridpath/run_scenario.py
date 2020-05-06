@@ -736,8 +736,10 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     Summarize results (after results export)
     """
     # Only summarize results if solver status was "optimal"
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-        "solver_status.txt"), "r") as f:
+    with open(os.path.join(
+            scenario_directory, subproblem, stage, "results",
+            "solver_status.txt"
+    ), "r") as f:
         solver_status = f.read()
 
     if solver_status == "optimal":
