@@ -58,6 +58,7 @@ def all_modules_list():
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
+        "project.capacity.capacity_groups",
         "project.capacity.costs",
         "project.availability.availability",
         "project.fuels",

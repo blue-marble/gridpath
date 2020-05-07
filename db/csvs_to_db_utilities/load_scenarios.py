@@ -105,6 +105,10 @@ def load_scenarios(io, c, data_input):
             scenarios["project_new_potential_scenario_id"],
             project_new_binary_build_size_scenario_id=
             scenarios["project_new_binary_build_size_scenario_id"],
+            project_capacity_group_scenario_id=
+            scenarios["project_capacity_group_scenario_id"],
+            project_capacity_group_requirement_scenario_id=
+            scenarios["project_capacity_group_requirement_scenario_id"],
             transmission_portfolio_scenario_id=
             scenarios["transmission_portfolio_scenario_id"],
             transmission_load_zone_scenario_id=

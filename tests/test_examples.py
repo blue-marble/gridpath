@@ -774,6 +774,15 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective("test_w_lf_down_percent_req",
                                      1516738006.5466032)
 
+    def test_example_2periods_new_build_capgroups(self):
+        """
+        Check validation and objective function value of "2periods_new_build" example
+        """
+
+        self.check_validation("2periods_new_build_capgroups")
+        self.run_and_check_objective("2periods_new_build_capgroups",
+                                     1316538600.926)
+
     @classmethod
     def tearDownClass(cls):
         os.remove("../db/test_examples.db")

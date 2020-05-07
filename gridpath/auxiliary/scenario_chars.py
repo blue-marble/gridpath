@@ -417,6 +417,22 @@ class SubScenarios(object):
         self.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID = \
             "NULL" if p_nbbsize_sid is None else p_nbbsize_sid
 
+        p_capgrp_sid = cursor.execute(
+            """SELECT project_capacity_group_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.PROJECT_CAPACITY_GROUP_SCENARIO_ID = \
+            "NULL" if p_capgrp_sid is None else p_capgrp_sid
+
+        p_capgrp_req_sid = cursor.execute(
+            """SELECT project_capacity_group_requirement_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID = \
+            "NULL" if p_capgrp_req_sid is None else p_capgrp_req_sid
+
         prm_en_only_sid = cursor.execute(
             """SELECT prm_energy_only_scenario_id
                FROM scenarios

@@ -395,6 +395,14 @@ def capacity_cost_rule(mod, g, p):
                if gen == g)
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    """
+    return mod.GenNewLin_Build_MW[g, p] \
+        if (g, p) in mod.GEN_NEW_LIN_VNTS else 0
+
+
 # Input-Output
 ###############################################################################
 
