@@ -324,7 +324,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master['table'] == 'project_capacity_group_requirements',
         'include'
     ].iloc[0] == 1:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        data_folder_path = os.path.join(csv_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_capacity_group_requirements',
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = \
@@ -343,7 +343,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master['table'] == 'project_capacity_groups',
         'include'
     ].iloc[0] == 1:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        data_folder_path = os.path.join(csv_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_capacity_groups',
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = \
