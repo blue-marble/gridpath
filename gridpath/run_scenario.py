@@ -16,7 +16,8 @@ import argparse
 from csv import reader, writer
 import datetime
 import os.path
-from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
+from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory, \
+    SolverStatus, TerminationCondition
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
@@ -176,9 +177,9 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
-    solve(instance, parsed_arguments)
+    results = solve(instance, parsed_arguments)
 
-    return instance
+    return instance, results
 
 
 def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
@@ -240,13 +241,13 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
             print("--- stage {}".format(stage))
 
     # Create problem instance and solve it
-    solved_instance = \
+    solved_instance, results = \
         create_and_solve_problem(scenario_directory, subproblem, stage,
                                  parsed_arguments)
 
     # Save the scenario results to disk
     save_results(
-        scenario_directory, subproblem, stage, solved_instance,
+        scenario_directory, subproblem, stage, solved_instance, results,
         parsed_arguments
     )
 
@@ -305,7 +306,7 @@ def run_scenario(structure, parsed_arguments):
 
 
 def save_results(scenario_directory, subproblem, stage,
-                 instance, parsed_arguments):
+                 instance, results, parsed_arguments):
     """
     :param scenario_directory:
     :param subproblem:
@@ -329,15 +330,68 @@ def save_results(scenario_directory, subproblem, stage,
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    export_results(scenario_directory, subproblem, stage, instance)
+    # Check if a solution was found and only export results if so; save the
+    # solver status, which will be used to determine the behavior of other
+    # scripts
+    if (results.solver.status == SolverStatus.ok) and (
+            results.solver.termination_condition
+            == TerminationCondition.optimal):
+        if not parsed_arguments.quiet:
+            print("Optimal solution found.")
 
-    export_pass_through_inputs(scenario_directory, subproblem, stage, instance)
+        with open(
+                os.path.join(results_directory, "solver_status.txt"),
+                "w", newline="") as f:
+            f.write("optimal")
 
-    save_objective_function_value(
-        scenario_directory, subproblem, stage, instance
-    )
+        export_results(scenario_directory, subproblem, stage, instance)
 
-    save_duals(scenario_directory, subproblem, stage, instance)
+        export_pass_through_inputs(scenario_directory, subproblem, stage,
+                                   instance)
+
+        save_objective_function_value(
+            scenario_directory, subproblem, stage, instance
+        )
+
+        save_duals(scenario_directory, subproblem, stage, instance)
+
+    # If solver status wasn't optimal record that
+    else:
+        # Problem is infeasible
+        if results.solver.termination_condition \
+                == TerminationCondition.infeasible:
+            if not parsed_arguments.quiet:
+                print("Problem was infeasible. Results not exported for "
+                      "subproblem {}, stage {}.".format(subproblem, stage))
+            with open(
+                    os.path.join(results_directory, "solver_status.txt"),
+                    "w", newline="") as f:
+                f.write("infeasible")
+        # Something else is wrong
+        else:
+            if not parsed_arguments.quiet:
+                print(
+                    "Solver status: {}. Results not exported for "
+                    "subproblem {}, stage {}.".format(
+                      results.solver.status, subproblem, stage
+                    )
+                )
+            with open(
+                    os.path.join(results_directory, "solver_status.txt"),
+                    "w", newline="") as f:
+                f.write(str(results.solver.status))
+        # If subproblems are linked, exit since we don't have linked inputs
+        # for the next subproblem; otherwise, move on to the next subproblem
+        if os.path.exists(
+                os.path.join(scenario_directory, "linked_subproblems_map.csv")
+        ):
+            raise Exception("Subproblem {}, stage {} was infeasible. "
+                            "Exiting linked subproblem run.".format(
+                                subproblem, stage
+                            )
+            )
+        else:
+            pass
 
 
 def populate_dynamic_components(dynamic_components, loaded_modules,
@@ -523,7 +577,7 @@ def solve(instance, parsed_arguments):
     # load_solutions argument to False:
     # >>> results = solver.solve(instance, load_solutions=False)
 
-    solver.solve(
+    results = solver.solve(
         instance,
         tee=not parsed_arguments.mute_solver_output,
         keepfiles=parsed_arguments.keepfiles,
@@ -534,6 +588,8 @@ def solve(instance, parsed_arguments):
     # positives due to rounding errors larger than the default tolerance
     # of 1E-6.
     # log_infeasible_constraints(instance)
+
+    return results
 
 
 def export_results(scenario_directory, subproblem, stage, instance):
@@ -615,6 +671,9 @@ def save_objective_function_value(scenario_directory, subproblem, stage,
         objective_file.write(
             "Objective function: " + str(objective_function_value)
         )
+        # TODO: change to writing the value only when we implement importing
+        #  the objective function value into the results_scenario table
+        # objective_file.write(str(objective_function_value))
 
 
 def save_duals(scenario_directory, subproblem, stage, instance):
@@ -676,33 +735,43 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
 
     Summarize results (after results export)
     """
-    if not parsed_arguments.quiet:
-        print("Summarizing results...")
+    # Only summarize results if solver status was "optimal"
+    with open(os.path.join(
+            scenario_directory, subproblem, stage, "results",
+            "solver_status.txt"
+    ), "r") as f:
+        solver_status = f.read()
 
-    # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules, dynamic_components = \
-        set_up_gridpath_modules_and_components(
-            scenario_directory=scenario_directory,
-            subproblem=subproblem, stage=stage
+    if solver_status == "optimal":
+        if not parsed_arguments.quiet:
+            print("Summarizing results...")
+
+        # Determine/load modules and dynamic components
+        modules_to_use, loaded_modules, dynamic_components = \
+            set_up_gridpath_modules_and_components(
+                scenario_directory=scenario_directory,
+                subproblem=subproblem, stage=stage
+            )
+
+        # Make the summary results file
+        summary_results_file = os.path.join(
+            scenario_directory, subproblem, stage, "results", "summary_results.txt"
         )
 
-    # Make the summary results file
-    summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
-    )
+        # TODO: how to handle results from previous runs
+        # Overwrite prior results
+        with open(summary_results_file, "w", newline="") as outfile:
+            outfile.write("##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
+                parsed_arguments.scenario)
+            )
 
-    # TODO: how to handle results from previous runs
-    # Overwrite prior results
-    with open(summary_results_file, "w", newline="") as outfile:
-        outfile.write("##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-            parsed_arguments.scenario)
-        )
-
-    # Go through the modules and get the appropriate results
-    for m in loaded_modules:
-        if hasattr(m, "summarize_results"):
-            m.summarize_results(dynamic_components, scenario_directory, subproblem,
-                                stage)
+        # Go through the modules and get the appropriate results
+        for m in loaded_modules:
+            if hasattr(m, "summarize_results"):
+                m.summarize_results(dynamic_components, scenario_directory, subproblem,
+                                    stage)
+        else:
+            pass
     else:
         pass
 
