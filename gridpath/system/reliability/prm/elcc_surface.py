@@ -60,7 +60,8 @@ def add_model_components(m, d):
                 # extra safety
                 if period in mod.OPR_PRDS_BY_PRJ[prj]
                 ) \
-            + mod.elcc_surface_intercept[prm_zone, period, facet]
+            + mod.elcc_surface_intercept[prm_zone, period, facet] \
+            * mod.prm_peak_load_mw[prm_zone, period]
 
     # Dynamic ELCC piecewise constraint
     m.Dynamic_ELCC_Constraint = Constraint(
@@ -180,7 +181,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
-            scenario_directory, subproblem, stage,
+            scenario_directory, subproblem, stage, "inputs",
             "prm_zone_surface_facets_and_intercept.tab"
     ), "w", newline="") as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")

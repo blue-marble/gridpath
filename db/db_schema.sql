@@ -1206,6 +1206,7 @@ project VARCHAR(64),
 prm_type VARCHAR(32),
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
+cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
 deliverability_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
@@ -1223,7 +1224,7 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
--- ELCC surface intercept by PRM zone
+-- ELCC surface intercept by PRM zone, period, and facet
 DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface;
 CREATE TABLE inputs_system_prm_zone_elcc_surface (
 elcc_surface_scenario_id INTEGER,
@@ -1236,6 +1237,20 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_elcc_surface (elcc_surface_scenario_id)
 );
 
+-- Peak and annual load for ELCC surface by PRM zone and period
+DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface_prm_load;
+CREATE TABLE inputs_system_prm_zone_elcc_surface_prm_load (
+elcc_surface_scenario_id INTEGER,
+prm_zone VARCHAR(32),
+period INTEGER,
+prm_peak_load_mw FLOAT,
+prm_annual_load_mwh FLOAT,
+PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period),
+FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
+    subscenarios_system_elcc_surface (elcc_surface_scenario_id)
+);
+
+-- ELCC coefficients by project, period, and facet
 DROP TABLE IF EXISTS inputs_project_elcc_surface;
 CREATE TABLE inputs_project_elcc_surface (
 elcc_surface_scenario_id INTEGER,
@@ -1244,6 +1259,15 @@ period INTEGER,
 facet INTEGER,
 elcc_surface_coefficient FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, project, period, facet)
+);
+
+-- Project cap factors for the ELCC surface
+DROP TABLE IF EXISTS inputs_project_elcc_surface_cap_factors;
+CREATE TABLE inputs_project_elcc_surface_cap_factors (
+elcc_surface_scenario_id INTEGER,
+project VARCHAR(64),
+elcc_surface_cap_factor FLOAT,
+PRIMARY KEY (elcc_surface_scenario_id, project)
 );
 
 -- Energy-only parameters
@@ -1928,6 +1952,8 @@ prm_requirement_scenario_id INTEGER,
 prm_zone VARCHAR(32),
 period INTEGER,
 prm_requirement_mw FLOAT,
+prm_peak_load_mw FLOAT,  -- for ELCC surface
+prm_annual_load_mwh FLOAT,  -- for ELCC surface
 prm_zone_scenario_id INTEGER,
 PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period),
 FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
