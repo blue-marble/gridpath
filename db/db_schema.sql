@@ -712,10 +712,10 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-minimum_cumulative_new_build_mw FLOAT,
-maximum_cumulative_new_build_mw FLOAT,
-minimum_cumulative_new_build_mwh FLOAT,
-maximum_cumulative_new_build_mwh FLOAT,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+min_cumulative_new_build_mwh FLOAT,
+max_cumulative_new_build_mwh FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)

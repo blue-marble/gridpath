@@ -52,10 +52,10 @@ def update_project_potentials(
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_new_potential
         (project_new_potential_scenario_id, project, period,
-        minimum_cumulative_new_build_mw,
-        minimum_cumulative_new_build_mwh,
-        maximum_cumulative_new_build_mw, 
-        maximum_cumulative_new_build_mwh)
+        min_cumulative_new_build_mw,
+        min_cumulative_new_build_mwh,
+        max_cumulative_new_build_mw, 
+        max_cumulative_new_build_mwh)
         VALUES (?, ?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

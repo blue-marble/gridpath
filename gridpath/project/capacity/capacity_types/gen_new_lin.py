@@ -598,11 +598,11 @@ def get_module_specific_inputs_from_database(
     get_potentials = \
         (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
         else (
-            """, minimum_cumulative_new_build_mw, 
-            maximum_cumulative_new_build_mw """,
+            """, min_cumulative_new_build_mw, 
+            max_cumulative_new_build_mw """,
             """LEFT OUTER JOIN
-            (SELECT project, period, minimum_cumulative_new_build_mw,
-            maximum_cumulative_new_build_mw
+            (SELECT project, period, min_cumulative_new_build_mw,
+            max_cumulative_new_build_mw
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {}) as potential
             USING (project, period) """.format(
