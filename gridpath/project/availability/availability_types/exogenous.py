@@ -200,7 +200,7 @@ def get_inputs_from_database(
                 FROM inputs_project_specified_capacity
                 WHERE project_specified_capacity_scenario_id = {}
                 UNION
-                SELECT project, period
+                SELECT project, vintage AS period
                 FROM inputs_project_new_cost
                 WHERE project_new_cost_scenario_id = {}
                 ) as all_operational_project_periods

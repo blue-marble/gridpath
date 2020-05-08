@@ -192,6 +192,8 @@ def add_module_specific_components(m, d):
         dimen=2, within=m.PROJECTS*m.PERIODS
     )
 
+    # TODO: rename vintage to period since the constraint is by
+    #  project-period, not project-vintage?
     m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(
         dimen=2, within=m.GEN_NEW_LIN_VNTS
     )
@@ -520,7 +522,7 @@ def export_module_specific_results(
                            "capacity_gen_new_lin.csv"), "w", newline="") as f:
 
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "vintage", "technology", "load_zone",
                          "new_build_mw"])
         for (prj, p) in m.GEN_NEW_LIN_VNTS:
             writer.writerow([
@@ -550,11 +552,10 @@ def summarize_module_specific_results(
                      "results", "capacity_gen_new_lin.csv")
     )
 
-    capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", "vintage"],
+        as_index=True
+    ).sum()
 
     # Get all technologies with the new build capacity
     new_build_df = pd.DataFrame(
@@ -595,36 +596,39 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
 
+    # TODO: the fact that cumulative new build is specified by period whereas
+    #  the costs are by vintage can be confusing and could be a reason not to
+    #  combine both tables in one input table/file
     get_potentials = \
         (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
         else (
             """, min_cumulative_new_build_mw, 
             max_cumulative_new_build_mw """,
             """LEFT OUTER JOIN
-            (SELECT project, period, min_cumulative_new_build_mw,
-            max_cumulative_new_build_mw
+            (SELECT project, period AS vintage, 
+            min_cumulative_new_build_mw, max_cumulative_new_build_mw
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {}) as potential
-            USING (project, period) """.format(
+            USING (project, vintage) """.format(
                 subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID
             )
         )
 
     new_gen_costs = c.execute(
-        """SELECT project, period, lifetime_yrs,
+        """SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr"""
         + get_potentials[0] +
         """FROM inputs_project_portfolios
         CROSS JOIN
-        (SELECT period
+        (SELECT period AS vintage
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
-        (SELECT project, period, lifetime_yrs,
+        (SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)""".format(
+        USING (project, vintage)""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )
@@ -697,6 +701,7 @@ def import_module_specific_results_into_database(
         scenario_id=scenario_id, subproblem=subproblem, stage=stage,
         results_file="capacity_gen_new_lin.csv"
     )
+
 
 # Validation
 ###############################################################################

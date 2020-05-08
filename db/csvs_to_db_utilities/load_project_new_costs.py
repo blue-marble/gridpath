@@ -10,7 +10,7 @@ from db.utilities import project_new_costs
 
 def load_project_new_costs(io, c, subscenario_input, data_input):
     """
-    Data output dictionary is {project:{period: (lifetime_yrs, annualized_real_cost_per_mw_year, annualized_real_cost_per_mwh_year)}}
+    Data output dictionary is {project:{vintage: (lifetime_yrs, annualized_real_cost_per_mw_year, annualized_real_cost_per_mwh_year)}}
     Convert values to floats else they show up as blobs in sql db
     :param io:
     :param c:
@@ -31,32 +31,34 @@ def load_project_new_costs(io, c, subscenario_input, data_input):
         for prj in data_input_subscenario['project'].unique():
             project_new_lifetime_costs[prj] = OrderedDict()
 
-            for p in data_input_subscenario.loc[data_input_subscenario['project'] == prj]['period'].to_list():
-                project_new_lifetime_costs[prj][p] = OrderedDict()
+            for v in data_input_subscenario.loc[data_input_subscenario[
+                                                    'project'] == prj]['vintage'].to_list():
+                project_new_lifetime_costs[prj][v] = OrderedDict()
 
                 project_lifetime_yrs = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'lifetime_yrs'].iloc[0]
+                                                                       'vintage'] == v), 'lifetime_yrs'].iloc[0]
                 if project_lifetime_yrs != None:
                     project_lifetime_yrs = int(project_lifetime_yrs)
 
                 annual_real_cost_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annualized_real_cost_per_mw_yr'].iloc[0]
+                                                                       'vintage'] == v), 'annualized_real_cost_per_mw_yr'].iloc[0]
                 if annual_real_cost_mw != None:
                     annual_real_cost_mw = float(annual_real_cost_mw)
 
                 annual_real_cost_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'annualized_real_cost_per_mwh_yr'].iloc[0]
+                                                                       'vintage'] == v), 'annualized_real_cost_per_mwh_yr'].iloc[0]
                 if annual_real_cost_mwh != None:
                     annual_real_cost_mwh = float(annual_real_cost_mwh)
 
                 # TODO: Add the levelized_cost_per_mwh and supply_curve_scenario_id fields
-                project_new_lifetime_costs[prj][p] = (project_lifetime_yrs, annual_real_cost_mw, annual_real_cost_mwh)
+                project_new_lifetime_costs[prj][v] = (project_lifetime_yrs,
+                                                      annual_real_cost_mw, annual_real_cost_mwh)
 
 
         project_new_costs.update_project_new_costs(
@@ -64,6 +66,6 @@ def load_project_new_costs(io, c, subscenario_input, data_input):
             project_new_cost_scenario_id=sc_id,
             scenario_name=sc_name,
             scenario_description=sc_description,
-            project_period_lifetimes_costs=project_new_lifetime_costs
+            project_vintage_lifetimes_costs=project_new_lifetime_costs
         )
 

@@ -844,16 +844,16 @@ def export_module_specific_results(
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_stor_new_lin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "vintage", "technology", "load_zone",
                          "new_build_mw", "new_build_mwh"])
-        for (prj, p) in m.STOR_NEW_LIN_VNTS:
+        for (prj, v) in m.STOR_NEW_LIN_VNTS:
             writer.writerow([
                 prj,
-                p,
+                v,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.StorNewLin_Build_MW[prj, p]),
-                value(m.StorNewLin_Build_MWh[prj, p])
+                value(m.StorNewLin_Build_MW[prj, v]),
+                value(m.StorNewLin_Build_MWh[prj, v])
             ])
 
 
@@ -876,7 +876,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "vintage"],
         as_index=True
     ).sum()
 
@@ -923,6 +923,10 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
+
+    # TODO: the fact that cumulative new build is specified by period whereas
+    #  the costs are by vintage can be confusing and could be a reason not to
+    #  combine both tables in one input table/file
     get_potentials = \
         (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
         else (
@@ -931,32 +935,32 @@ def get_module_specific_inputs_from_database(
             max_cumulative_new_build_mw, 
             max_cumulative_new_build_mwh """,
             """LEFT OUTER JOIN
-            (SELECT project, period,
+            (SELECT project, period AS vintage,
             min_cumulative_new_build_mw, min_cumulative_new_build_mwh,
             max_cumulative_new_build_mw, max_cumulative_new_build_mwh
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {}) as potential
-            USING (project, period) """.format(
+            USING (project, vintage) """.format(
                 subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID
             )
         )
 
     new_stor_costs = c.execute(
-        """SELECT project, period, lifetime_yrs,
+        """SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr"""
         + get_potentials[0] +
         """FROM inputs_project_portfolios
         CROSS JOIN
-        (SELECT period
+        (SELECT period AS vintage
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
-        (SELECT project, period, lifetime_yrs,
+        (SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)""".format(
+        USING (project, vintage)""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )

@@ -15,7 +15,7 @@ def update_project_new_costs(
         project_new_cost_scenario_id,
         scenario_name,
         scenario_description,
-        project_period_lifetimes_costs
+        project_vintage_lifetimes_costs
 ):
     # Subscenarios
     subs_data = [(project_new_cost_scenario_id, scenario_name, scenario_description)]
@@ -28,21 +28,21 @@ def update_project_new_costs(
 
     # Insert inputs
     inputs_data = []
-    for project in list(project_period_lifetimes_costs.keys()):
-        for period in list(project_period_lifetimes_costs[project].keys()):
+    for project in list(project_vintage_lifetimes_costs.keys()):
+        for vintage in list(project_vintage_lifetimes_costs[project].keys()):
             inputs_data.append(
                 (project_new_cost_scenario_id,
                  project,
-                 period,
-                 project_period_lifetimes_costs[project][period][0],
-                 project_period_lifetimes_costs[project][period][1],
+                 vintage,
+                 project_vintage_lifetimes_costs[project][vintage][0],
+                 project_vintage_lifetimes_costs[project][vintage][1],
                  'NULL'
-                 if project_period_lifetimes_costs[project][period][2] is None
-                 else project_period_lifetimes_costs[project][period][2])
+                 if project_vintage_lifetimes_costs[project][vintage][2] is None
+                 else project_vintage_lifetimes_costs[project][vintage][2])
             )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_new_cost
-        (project_new_cost_scenario_id, project, period, lifetime_yrs,
+        (project_new_cost_scenario_id, project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr)
         VALUES (?, ?, ?, ?, ?, ?);
