@@ -52,7 +52,7 @@ def transmision_new_cost(
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_transmission_new_cost
         (transmission_new_cost_scenario_id,
-        transmission_line, vintage, tx_lifetime_yrs,
+        transmission_line, period, tx_lifetime_yrs,
         tx_annualized_real_cost_per_mw_yr)
         VALUES (?, ?, ?, ?, ?);
         """

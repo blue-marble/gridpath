@@ -289,7 +289,7 @@ def load_module_specific_data(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_build_transmission_vintage_costs.tab"),
         index=m.TX_NEW_LIN_VNTS,
-        select=("transmission_line", "vintage",
+        select=("transmission_line", "period",
                 "tx_lifetime_yrs",
                 "tx_annualized_real_cost_per_mw_yr"),
         param=(m.tx_new_lin_lifetime_yrs,
@@ -345,19 +345,19 @@ def get_module_specific_inputs_from_database(
     c = conn.cursor()
 
     tx_cost = c.execute(
-        """SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        """SELECT transmission_line, period, tx_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr
         FROM inputs_transmission_portfolios
         CROSS JOIN
-        (SELECT period as vintage
+        (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
-        (SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        (SELECT transmission_line, period, tx_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr
         FROM inputs_transmission_new_cost
         WHERE transmission_new_cost_scenario_id = {} ) as cost
-        USING (transmission_line, vintage   )
+        USING (transmission_line, period)
         WHERE transmission_portfolio_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID,
@@ -391,7 +391,7 @@ def write_module_specific_model_inputs(
 
         # Write header
         writer.writerow(
-            ["transmission_line", "vintage",
+            ["transmission_line", "period",
              "tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]
         )
 

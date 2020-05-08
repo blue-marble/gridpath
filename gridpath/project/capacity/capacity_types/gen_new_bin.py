@@ -343,7 +343,7 @@ def load_module_specific_data(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                               "new_binary_build_generator_vintage_costs.tab"),
         index=m.GEN_NEW_BIN_VNTS,
-        select=("project", "vintage", "lifetime_yrs",
+        select=("project", "period", "lifetime_yrs",
                 "annualized_real_cost_per_mw_yr"),
         param=(m.gen_new_bin_lifetime_yrs_by_vintage,
                m.gen_new_bin_annualized_real_cost_per_mw_yr)
@@ -405,7 +405,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "period"],
         as_index=True
     ).sum()
 
@@ -520,7 +520,7 @@ def write_module_specific_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
+            ["project", "period", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr"]
         )
 

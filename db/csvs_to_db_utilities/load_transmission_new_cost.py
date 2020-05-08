@@ -44,7 +44,7 @@ def load_transmission_new_cost(io, c, subscenario_input, data_input):
         data_input_subscenario = data_input.loc[
             data_input['id'] == sc_id]
 
-        key_cols = ["transmission_line", "vintage"]
+        key_cols = ["transmission_line", "period"]
         value_cols = ["tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]
 
         df = data_input_subscenario.groupby(key_cols)[value_cols].apply(

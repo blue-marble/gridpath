@@ -437,7 +437,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "period"],
         as_index=True
     ).sum()
 

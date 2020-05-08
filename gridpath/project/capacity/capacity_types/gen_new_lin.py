@@ -426,7 +426,7 @@ def load_module_specific_data(
                                   "inputs",
                                   "new_build_generator_vintage_costs.tab"),
                      index=m.GEN_NEW_LIN_VNTS,
-                     select=("project", "vintage",
+                     select=("project", "period",
                              "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
                      param=(m.gen_new_lin_lifetime_yrs_by_vintage,
                             m.gen_new_lin_annualized_real_cost_per_mw_yr)
@@ -451,7 +451,7 @@ def load_module_specific_data(
     df = pd.read_csv(
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "new_build_generator_vintage_costs.tab"),
-        sep="\t", usecols=["project", "vintage"] + used_columns
+        sep="\t", usecols=["project", "period"] + used_columns
     )
 
     # min_cumulative_new_build_mw is optional,
@@ -460,7 +460,7 @@ def load_module_specific_data(
     # min_cumulative_new_build_mw does not exist in the input file
     if "min_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_min.append((row[0], row[1]))
@@ -476,7 +476,7 @@ def load_module_specific_data(
     # max_cumulative_new_build_mw does not exist in the input file
     if "max_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_max.append((row[0], row[1]))
@@ -550,11 +550,10 @@ def summarize_module_specific_results(
                      "results", "capacity_gen_new_lin.csv")
     )
 
-    capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", "period"],
+        as_index=True
+    ).sum()
 
     # Get all technologies with the new build capacity
     new_build_df = pd.DataFrame(
@@ -662,7 +661,7 @@ def write_module_specific_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
+            ["project", "period", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr"] +
             ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
              else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]

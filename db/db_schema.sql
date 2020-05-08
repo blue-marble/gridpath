@@ -1537,11 +1537,11 @@ DROP TABLE IF EXISTS inputs_transmission_new_cost;
 CREATE TABLE inputs_transmission_new_cost (
 transmission_new_cost_scenario_id INTEGER,
 transmission_line VARCHAR(64),
-vintage INTEGER,
+period INTEGER,
 tx_lifetime_yrs FLOAT,
 tx_annualized_real_cost_per_mw_yr FLOAT,
 PRIMARY KEY (transmission_new_cost_scenario_id, transmission_line,
-vintage),
+period),
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
 subscenarios_transmission_new_cost
 (transmission_new_cost_scenario_id)

@@ -700,7 +700,7 @@ def load_module_specific_data(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "new_build_storage_vintage_costs.tab"),
         index=m.STOR_NEW_LIN_VNTS,
-        select=("project", "vintage", "lifetime_yrs",
+        select=("project", "period", "lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr"),
         param=(m.stor_new_lin_lifetime_yrs,
@@ -734,7 +734,7 @@ def load_module_specific_data(
         os.path.join(scenario_directory, str(subproblem), str(stage),
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t",
-        usecols=["project", "vintage"] + used_columns
+        usecols=["project", "period"] + used_columns
     )
 
     # stor_new_lin_min_cumulative_new_build_mw and
@@ -744,7 +744,7 @@ def load_module_specific_data(
     # the input file
     if "min_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_min_capacity.append((row[0], row[1]))
@@ -756,7 +756,7 @@ def load_module_specific_data(
 
     if "min_cumulative_new_build_mwh" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["min_cumulative_new_build_mwh"]):
             if row[2] != ".":
                 project_vintages_with_min_energy.append((row[0], row[1]))
@@ -773,7 +773,7 @@ def load_module_specific_data(
     # the input file
     if "max_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_max_capacity.append((row[0], row[1]))
@@ -785,7 +785,7 @@ def load_module_specific_data(
 
     if "max_cumulative_new_build_mwh" in df.columns:
         for row in zip(df["project"],
-                       df["vintage"],
+                       df["period"],
                        df["max_cumulative_new_build_mwh"]):
             if row[2] != ".":
                 project_vintages_with_max_energy.append((row[0], row[1]))
@@ -876,7 +876,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "period"],
         as_index=True
     ).sum()
 
@@ -994,7 +994,7 @@ def write_module_specific_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
+            ["project", "period", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr",
              "annualized_real_cost_per_mwh_yr"] +
             ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None

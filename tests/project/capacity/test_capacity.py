@@ -112,7 +112,7 @@ class TestCapacity(unittest.TestCase):
                     TEST_DATA_DIRECTORY, "inputs",
                     "new_build_generator_vintage_costs.tab"
                 ),
-                usecols=['project', 'vintage'],
+                usecols=['project', 'period'],
                 sep="\t"
             )
         ng = [tuple(x) for x in ng_df.values]
@@ -123,7 +123,7 @@ class TestCapacity(unittest.TestCase):
                     TEST_DATA_DIRECTORY, "inputs",
                     "new_binary_build_generator_vintage_costs.tab"
                 ),
-                usecols=['project', 'vintage'],
+                usecols=['project', 'period'],
                 sep="\t"
             )
         ngb = [tuple(x) for x in ngb_df.values]
@@ -145,7 +145,7 @@ class TestCapacity(unittest.TestCase):
                     TEST_DATA_DIRECTORY, "inputs",
                     "new_build_storage_vintage_costs.tab"
                 ),
-                usecols=['project', 'vintage'],
+                usecols=['project', 'period'],
                 sep="\t"
             )
         ns = [tuple(x) for x in ns_df.values]
@@ -156,7 +156,7 @@ class TestCapacity(unittest.TestCase):
                     TEST_DATA_DIRECTORY, "inputs",
                     "new_binary_build_storage_vintage_costs.tab"
                 ),
-                usecols=['project', 'vintage'],
+                usecols=['project', 'period'],
                 sep="\t"
             )
         nsb = [tuple(x) for x in nsb_df.values]
