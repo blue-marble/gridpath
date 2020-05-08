@@ -259,7 +259,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     projects = c1.execute(
         """SELECT project, operational_type,
-        fuel, min_stable_level, unit_size_mw,
+        fuel, min_stable_level_fraction, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
@@ -272,7 +272,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type,
-        fuel, min_stable_level, unit_size_mw,
+        fuel, min_stable_level_fraction, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
@@ -327,7 +327,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check that there are no unexpected operational inputs
     expected_na_columns = [
-        "min_stable_level",
+        "min_stable_level_fraction",
         "unit_size_mw",
         "startup_cost_per_mw", "shutdown_cost_per_mw",
         "startup_fuel_mmbtu_per_mw",

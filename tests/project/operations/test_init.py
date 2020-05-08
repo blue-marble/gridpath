@@ -525,7 +525,7 @@ class TestOperationsInit(unittest.TestCase):
                                  actual_intercepts.tolist())
 
     def test_project_validations(self):
-        cols = ["project", "min_stable_level"]
+        cols = ["project", "min_stable_level_fraction"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
