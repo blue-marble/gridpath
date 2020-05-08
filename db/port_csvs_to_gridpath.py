@@ -376,7 +376,8 @@ def load_csv_data(conn, csv_path, quiet):
         csvs_main_dir=csv_path,
         quiet=quiet,
         table="project_prm_energy_only",
-        insert_method=project_prm.deliverability_groups
+        insert_method=project_prm.deliverability_groups,
+        none_message=""
     )
 
     ## PROJECT LOCAL CAPACITY CHARS ##
@@ -629,6 +630,7 @@ def load_csv_data(conn, csv_path, quiet):
             quiet=quiet,
             table="project_{}_bas".format(reserve_type),
             insert_method=project_zones.project_reserve_bas,
+            none_message="",
             reserve_type=reserve_type
         )
 
@@ -743,7 +745,8 @@ def load_csv_data(conn, csv_path, quiet):
         csvs_main_dir=csv_path,
         quiet=quiet,
         table="transmission_simultaneous_flow_limits",
-        insert_method=simultaneous_flow_groups.insert_into_database
+        insert_method=simultaneous_flow_groups.insert_into_database,
+        none_message=""
 
     )
 
@@ -753,7 +756,8 @@ def load_csv_data(conn, csv_path, quiet):
         csvs_main_dir=csv_path,
         quiet=quiet,
         table="transmission_simultaneous_flow_limit_line_groups",
-        insert_method=simultaneous_flow_groups.insert_into_database
+        insert_method=simultaneous_flow_groups.insert_into_database,
+        none_message=""
     )
 
 
@@ -825,20 +829,17 @@ def load_csv_data(conn, csv_path, quiet):
 
 def read_data_and_insert_into_db(
         conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
-        **kwargs
+        none_message, **kwargs
 ):
     """
     Read data, convert to tuples, and insert into database.
     """
-    # We'll load empty lists if not including this table
-    subscenario_tuples = []
-    inputs_tuples = []
-
     # Check if we should include the table
     inputs_dir = get_inputs_dir(
         csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
         table=table
     )
+
     # If the table is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     if inputs_dir is not None:
@@ -856,6 +857,9 @@ def read_data_and_insert_into_db(
             inputs_data=inputs_tuples,
             **kwargs
         )
+    # If not included, print the none_message
+    else:
+        print(none_message)
 
 
 def get_inputs_dir(csvs_main_dir, csv_data_master, table):
