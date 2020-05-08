@@ -23,11 +23,12 @@ import pandas as pd
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns, \
-    check_constant_heat_rate, get_projects_by_reserve, \
-    check_projects_for_reserves
+    write_validation_to_database, check_constant_heat_rate, \
+    get_projects_by_reserve, check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+from gridpath.project.operations.operational_types.common_functions import \
+    validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -253,48 +254,15 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
+    # Validate operational chars table inputs
+    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+                                 "gen_must_run")
+
+    # Other module specific validations
     validation_results = []
 
-    # Read in inputs to be validated
-    c1 = conn.cursor()
-    projects = c1.execute(
-        """SELECT project, operational_type,
-        fuel, min_stable_level_fraction, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        fuel, min_stable_level_fraction, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_must_run"
-        )
-    )
-
-    c2 = conn.cursor()
-    heat_rates = c2.execute(
+    c = conn.cursor()
+    heat_rates = c.execute(
         """
         SELECT project, load_point_fraction
         FROM inputs_project_portfolios
@@ -316,44 +284,10 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert inputs to data frame
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "min_stable_level_fraction",
-        "unit_size_mw",
-        "startup_cost_per_mw", "shutdown_cost_per_mw",
-        "startup_fuel_mmbtu_per_mw",
-        "startup_plus_ramp_up_rate",
-        "shutdown_plus_ramp_down_rate",
-        "ramp_up_when_on_rate",
-        "ramp_down_when_on_rate",
-        "min_up_time_hours", "min_down_time_hours",
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                              "Must_run")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
 
     # Check that there is only one load point (constant heat rate)
     validation_errors = check_constant_heat_rate(hr_df, "Must_run")
@@ -379,7 +313,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         project_ba_id = "project_" + reserve + "_ba_scenario_id"
         table = "inputs_project_" + reserve + "_bas"
         validation_errors = check_projects_for_reserves(
-            projects_op_type=df["project"],
+            projects_op_type=opchar_df["project"],
             projects_w_ba=projects,
             operational_type="gen_must_run",
             reserve=reserve

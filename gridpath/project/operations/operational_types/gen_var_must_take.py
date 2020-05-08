@@ -8,8 +8,6 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-import csv
-import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
@@ -22,7 +20,7 @@ from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_var_profile_inputs, get_var_profile_inputs_from_database, \
-    write_tab_file_model_inputs
+    write_tab_file_model_inputs, validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -367,31 +365,17 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
+    # Validate operational chars table inputs
+    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+                                 "gen_var_must_take")
+
+    # Other module specific validations
     validation_results = []
 
     # TODO: validate timepoints: make sure timepoints specified are consistent
     #   with the temporal timepoints (more is okay, less is not)
     # variable_profiles = get_module_specific_inputs_from_database(
     #     subscenarios, subproblem, stage, conn)
-
-    # Get list of gen_var_must_take projects
-    c = conn.cursor()
-    var_projects = c.execute(
-        """SELECT project
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_var_must_take"
-        )
-    )
-    var_projects = [p[0] for p in var_projects.fetchall()]
 
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_var_must_take can't
@@ -401,7 +385,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         project_ba_id = "project_" + reserve + "_ba_scenario_id"
         table = "inputs_project_" + reserve + "_bas"
         validation_errors = check_projects_for_reserves(
-            projects_op_type=var_projects,
+            projects_op_type=opchar_df["project"].tolist(),
             projects_w_ba=projects,
             operational_type="gen_var_must_take",
             reserve=reserve

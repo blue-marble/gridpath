@@ -10,6 +10,9 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
+from gridpath.auxiliary.auxiliary import check_req_prj_columns, \
+    write_validation_to_database, get_expected_dtypes, check_dtypes, \
+    check_column_sign_positive
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -314,12 +317,15 @@ def get_param_dict(df, column_name, cast_as_type):
 def get_optype_param_requirements(op_type):
     """
     :param op_type: string
-    :return: two dictionaries of the required and optional projects.tab
-        columns for the operational type with their types as values
+    :return: three dictionaries of the required, optional, and other
+        projects.tab columns for the operational type with their types as
+        values.
 
-    Read in the required and optional columns for an operational type. Make
-    a dictionary for each with the types for each as values. We need the
-    types to cast when loading into Pyomo.
+    Read in the required, optional, and other columns for an operational
+    type. Make a dictionary for each with the types for each as values. We
+    need the types to cast when loading into Pyomo. "other" columns are columns
+    that are nor required nor optional and for which we don't expect any
+    inputs for for that operational type.
     """
 
     df = pd.read_csv(
@@ -329,18 +335,28 @@ def get_optype_param_requirements(op_type):
         dtype=str
     )
     # df.set_index('ID').T.to_dict('list')
-    required_columns = \
-        df.loc[df[op_type] == "required"][["char", "type"]]
+    required_columns = df.loc[df[op_type] == "required"][["char", "type"]]
     required_columns_dict = dict(
         zip(required_columns["char"], required_columns["type"])
     )
-    optional_columns = \
-        df.loc[df[op_type] == "optional"][["char", "type"]]
+    optional_columns = df.loc[df[op_type] == "optional"][["char", "type"]]
     optional_columns_dict = dict(
         zip(optional_columns["char"], optional_columns["type"])
     )
+    other_columns = df.loc[~df[op_type].isin(["optional", "required"])][[
+        "char", "type"]]
+    other_columns_dict = dict(
+        zip(other_columns["char"], other_columns["type"])
+    )
 
-    return required_columns_dict, optional_columns_dict
+    # TODO: find more elegant solution than having to remove this here
+    #  could add the "optional" flag to all op-types but then these params
+    #  will be read in for each op-type module whereas now they are read in
+    #  in project.init so it would happen twice.
+    del other_columns_dict["fuel"]
+    del other_columns_dict["variable_om_cost_per_mwh"]
+
+    return required_columns_dict, optional_columns_dict, other_columns_dict
 
 
 def get_types_dict():
@@ -370,7 +386,7 @@ def load_optype_module_specific_data(
     types_dict = get_types_dict()
 
     # Get the required and optional columns with their types
-    required_columns_types, optional_columns_types = \
+    required_columns_types, optional_columns_types, _ = \
         get_optype_param_requirements(op_type=op_type)
 
     # Load in the inputs dataframe for the op type module
@@ -883,3 +899,126 @@ def check_for_tmps_to_link(
         return tmps_to_link, tmp_linked_tmp_dict
     except FileNotFoundError:
         return [], {}
+
+
+def get_optype_inputs_from_db(subscenarios, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    c = conn.cursor()
+
+    # TODO: consolidate this with what happens in projects.init so we only
+    #  hard-code the list of project opchars once.
+    #  Also remove min/max duration since not really an opchar?
+    cols = [
+        "project",
+        "fuel",
+        "variable_om_cost_per_mwh",
+        "operational_type",
+        "min_stable_level_fraction",
+        "unit_size_mw",
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate", "shutdown_plus_ramp_down_rate",
+        "ramp_up_when_on_rate", "ramp_down_when_on_rate",
+        "min_up_time_hours, min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours", "maximum_duration_hours",
+        "aux_consumption_frac_capacity", "aux_consumption_frac_power"
+    ]
+
+    projects = c.execute(
+        """SELECT {}
+        FROM inputs_project_portfolios
+        INNER JOIN
+        inputs_project_operational_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_operational_chars_scenario_id = {}
+        AND operational_type = '{}';""".format(
+            ",".join(cols),
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            op_type
+        )
+    )
+
+    # Convert input data to DataFrame
+    df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
+
+    return df
+
+
+def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # TODO: deal with fuel and variable O&M column, which are nor optional nor
+    #  required for any?
+
+    validation_results = []
+
+    # Get the opchar inputs for this operational type
+    df = get_optype_inputs_from_db(subscenarios, conn, op_type)
+
+    # Get the required, optional, and other columns with their types
+    required_columns_types, optional_columns_types, other_columns_types = \
+        get_optype_param_requirements(op_type=op_type)
+    req_cols = required_columns_types.keys()
+    na_cols = other_columns_types.keys()
+
+    # Check that required inputs are present
+    req_errors = check_req_prj_columns(df, req_cols, True, op_type)
+    for error in req_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "High",
+             "Missing inputs",
+             error
+             )
+        )
+
+    # Check that other (not required or optional) inputs are not present
+    na_errors = check_req_prj_columns(df, na_cols, False, op_type)
+    for error in na_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Low",
+             "Unexpected inputs",
+             error
+             )
+        )
+
+    # TODO: do data-type and numeric non-negativity checking here rather than
+    #  in project.init?
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+    # Return the opchar_df (sometimes used for further validations)
+    return df
