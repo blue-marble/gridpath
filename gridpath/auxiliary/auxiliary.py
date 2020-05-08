@@ -673,9 +673,9 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     )
 
     # Calculate (coldest) startup and shutdown duration
-    prj_df["startup_duration"] = prj_df["min_stable_level"] \
+    prj_df["startup_duration"] = prj_df["min_stable_level_fraction"] \
                              / prj_df["startup_plus_ramp_up_rate_cold"] / 60
-    prj_df["shutdown_duration"] = prj_df["min_stable_level"] \
+    prj_df["shutdown_duration"] = prj_df["min_stable_level_fraction"] \
                               / prj_df["shutdown_plus_ramp_down_rate"] / 60
     prj_df["startup_plus_shutdown_duration"] = \
         prj_df["startup_duration"] + prj_df["shutdown_duration"]

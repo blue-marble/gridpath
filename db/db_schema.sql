@@ -796,7 +796,7 @@ fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
 startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
-min_stable_level FLOAT,
+min_stable_level_fraction FLOAT,
 unit_size_mw FLOAT,
 startup_cost_per_mw FLOAT,
 shutdown_cost_per_mw FLOAT,

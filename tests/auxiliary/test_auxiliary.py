@@ -284,14 +284,14 @@ class TestAuxiliary(unittest.TestCase):
         :return:
         """
 
-        df_columns = ["project", "min_stable_level", "unit_size_mw",
+        df_columns = ["project", "min_stable_level_fraction", "unit_size_mw",
                       "startup_cost_per_mw", "shutdown_cost_per_mw"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=df_columns,
                     data=[["nuclear", 0.5, 100, None, None]]),
-                "columns": ["min_stable_level", "unit_size_mw"],
+                "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
                 "result": []
@@ -300,10 +300,11 @@ class TestAuxiliary(unittest.TestCase):
             2: {"df": pd.DataFrame(
                     columns=df_columns,
                     data=[["nuclear", None, 100, None, None]]),
-                "columns": ["min_stable_level", "unit_size_mw"],
+                "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
-                "result": ["Project(s) 'nuclear'; Always_on should have inputs for 'min_stable_level'"]
+                "result": ["Project(s) 'nuclear'; Always_on should have "
+                           "inputs for 'min_stable_level_fraction'"]
                 },
             # Make sure incompatible inputs are flagged
             3: {"df": pd.DataFrame(
@@ -447,7 +448,7 @@ class TestAuxiliary(unittest.TestCase):
         :return:
         """
 
-        prj_df_columns = ["project", "operational_type", "min_stable_level"]
+        prj_df_columns = ["project", "operational_type", "min_stable_level_fraction"]
         su_df_columns = ["project", "down_time_cutoff_hours",
                          "startup_plus_ramp_up_rate"]
         test_cases = {

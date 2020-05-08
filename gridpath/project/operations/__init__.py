@@ -461,7 +461,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     proj_opchar = c.execute("""
         SELECT project, fuel, variable_cost_per_mwh,
-        min_stable_level, unit_size_mw,
+        min_stable_level_fraction, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
@@ -707,7 +707,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check 0 < min stable fraction <= 1
-    if "min_stable_level" not in error_columns:
+    if "min_stable_level_fraction" not in error_columns:
         validation_errors = validate_min_stable_level(prj_df)
         for error in validation_errors:
             validation_results.append(
@@ -718,7 +718,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  "PROJECT_OPERATIONAL_CHARS",
                  "inputs_project_operational_chars",
                  "High",
-                 "Invalid min_stable_level",
+                 "Invalid min_stable_level_fraction",
                  error
                  )
             )
@@ -872,8 +872,8 @@ def validate_min_stable_level(df):
     """
     results = []
 
-    invalids = ((df["min_stable_level"] <= 0) |
-                (df["min_stable_level"] > 1))
+    invalids = ((df["min_stable_level_fraction"] <= 0) |
+                (df["min_stable_level_fraction"] > 1))
     if invalids.any():
         bad_projects = df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)

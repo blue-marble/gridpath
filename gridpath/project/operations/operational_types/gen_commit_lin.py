@@ -2541,7 +2541,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     projects = c1.execute(
         """SELECT project, operational_type,
-        min_stable_level, unit_size_mw,
+        min_stable_level_fraction, unit_size_mw,
         shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
@@ -2552,7 +2552,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, operational_type,
-        min_stable_level, unit_size_mw,
+        min_stable_level_fraction, unit_size_mw,
         shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
@@ -2599,7 +2599,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that min stable level is specified
     # (not all operational types require this input)
     req_columns = [
-        "min_stable_level",
+        "min_stable_level_fraction",
     ]
     validation_errors = check_req_prj_columns(prj_df, req_columns, True,
                                               "gen_commit_lin")
