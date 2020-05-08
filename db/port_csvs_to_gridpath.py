@@ -145,8 +145,8 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     #### LOAD TEMPORAL DATA ####
-    temporal_directory = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master, table="temporal"
+    temporal_directory = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master, table="temporal"
     )
     if temporal_directory is not None:
         temporal_subscenario_directories = \
@@ -373,7 +373,7 @@ def load_csv_data(conn, csv_path, quiet):
     read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
-        folder_path=csv_path,
+        csvs_main_dir=csv_path,
         quiet=quiet,
         table="project_prm_energy_only",
         insert_method=project_prm.deliverability_groups
@@ -544,8 +544,8 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
     for policy_type in policy_list:
-        policy_dir = get_data_folder_path(
-            csv_path=csv_path, csv_data_master=csv_data_master,
+        policy_dir = get_inputs_dir(
+            csvs_main_dir=csv_path, csv_data_master=csv_data_master,
             table="project_{}_zones".format(policy_type)
         )
         if policy_dir is not None:
@@ -590,8 +590,8 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## SYSTEM RPS TARGETS ##
-    rps_target_dir = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master,
+    rps_target_dir = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_rps_targets"
     )
     if rps_target_dir is not None:
@@ -609,8 +609,8 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## GEOGRAPHY BAS ##
     for reserve_type in reserves_list:
-        reserve_dir = get_data_folder_path(
-            csv_path=csv_path, csv_data_master=csv_data_master,
+        reserve_dir = get_inputs_dir(
+            csvs_main_dir=csv_path, csv_data_master=csv_data_master,
             table="geography_{}_bas".format(reserve_type)
         )
         if reserve_dir is not None:
@@ -625,7 +625,7 @@ def load_csv_data(conn, csv_path, quiet):
         read_data_and_insert_into_db(
             conn=conn,
             csv_data_master=csv_data_master,
-            folder_path=csv_path,
+            csvs_main_dir=csv_path,
             quiet=quiet,
             table="project_{}_bas".format(reserve_type),
             insert_method=project_zones.project_reserve_bas,
@@ -740,7 +740,7 @@ def load_csv_data(conn, csv_path, quiet):
     read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
-        folder_path=csv_path,
+        csvs_main_dir=csv_path,
         quiet=quiet,
         table="transmission_simultaneous_flow_limits",
         insert_method=simultaneous_flow_groups.insert_into_database
@@ -750,7 +750,7 @@ def load_csv_data(conn, csv_path, quiet):
     read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
-        folder_path=csv_path,
+        csvs_main_dir=csv_path,
         quiet=quiet,
         table="transmission_simultaneous_flow_limit_line_groups",
         insert_method=simultaneous_flow_groups.insert_into_database
@@ -761,8 +761,8 @@ def load_csv_data(conn, csv_path, quiet):
     # TODO: refactor this to consolidate with temporal inputs loading and
     #  any other subscenarios that are based on a directory
     ## LOAD ELCC SURFACE DATA ##
-    elcc_surface_dir = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master,
+    elcc_surface_dir = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_prm_zone_elcc_surface"
     )
     if elcc_surface_dir is not None:
@@ -777,8 +777,8 @@ def load_csv_data(conn, csv_path, quiet):
             )
 
     #### LOAD SCENARIOS DATA ####
-    scenarios_dir = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master,
+    scenarios_dir = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="scenarios"
     )
     if scenarios_dir is not None:
@@ -799,8 +799,8 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD SOLVER OPTIONS ####
-    solver_dir = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master,
+    solver_dir = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="solver"
     )
     if solver_dir is not None:
@@ -824,7 +824,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
 def read_data_and_insert_into_db(
-        conn, csv_data_master, folder_path, quiet, table, insert_method,
+        conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
         **kwargs
 ):
     """
@@ -834,55 +834,53 @@ def read_data_and_insert_into_db(
     subscenario_tuples = []
     inputs_tuples = []
 
+    # Check if we should include the table
+    inputs_dir = get_inputs_dir(
+        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
+        table=table
+    )
     # If the table is included, make a list of tuples for the subscenario
-    # and inputs
-    if csv_data_master.loc[
-        csv_data_master['table'] == table,
-        'include'
-    ].iloc[0] == 1:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-            csv_data_master['table'] == table,
-            'path'
-        ].iloc[0])
+    # and inputs, and insert into the database via the relevant method
+    if inputs_dir is not None:
         (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_data(data_folder_path, quiet)
+            csvs_read.csv_read_data(inputs_dir, quiet)
         subscenario_tuples = \
             [tuple(x) for x in csv_subscenario_input.to_records(index=False)]
         inputs_tuples = \
             [tuple(x) for x in csv_data_input.to_records(index=False)]
 
-    # Insertion method
-    insert_method(
-        conn=conn,
-        subscenario_data=subscenario_tuples,
-        inputs_data=inputs_tuples,
-        **kwargs
-    )
+        # Insertion method
+        insert_method(
+            conn=conn,
+            subscenario_data=subscenario_tuples,
+            inputs_data=inputs_tuples,
+            **kwargs
+        )
 
 
-def get_data_folder_path(csv_path, csv_data_master, table):
+def get_inputs_dir(csvs_main_dir, csv_data_master, table):
     if csv_data_master.loc[
         csv_data_master['table'] == table, 'include'
     ].iloc[0] == 1:
-        data_folder_path = os.path.join(
-            csv_path,
+        inputs_dir = os.path.join(
+            csvs_main_dir,
             csv_data_master.loc[
                 csv_data_master['table'] == table,
                 'path'
             ].iloc[0]
         )
     else:
-        data_folder_path = None
+        inputs_dir = None
 
-    return data_folder_path
+    return inputs_dir
 
 
 def read_and_load_inputs(
         csv_path, csv_data_master, table, conn, load_method,
         quiet, none_message, use_project_method=False
 ):
-    data_folder_path = get_data_folder_path(
-        csv_path=csv_path, csv_data_master=csv_data_master, table=table
+    data_folder_path = get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master, table=table
     )
     if data_folder_path is not None:
         if not use_project_method:
