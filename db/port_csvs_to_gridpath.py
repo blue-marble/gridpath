@@ -370,15 +370,13 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## DELIVERABILITY GROUPS ##
-    dg_subscenario, dg_inputs = read_data_for_insertion_into_db(
+    read_data_and_insert_into_db(
+        conn=conn,
         csv_data_master=csv_data_master,
         folder_path=csv_path,
         quiet=quiet,
-        table="project_prm_energy_only"
-    )
-
-    project_prm.deliverability_groups(
-        conn, c, dg_subscenario, dg_inputs
+        table="project_prm_energy_only",
+        insert_method=project_prm.deliverability_groups
     )
 
     ## PROJECT LOCAL CAPACITY CHARS ##
@@ -624,16 +622,16 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT RESERVES BAS ##
     for reserve_type in reserves_list:
-        subscenario, inputs = read_data_for_insertion_into_db(
+        read_data_and_insert_into_db(
+            conn=conn,
             csv_data_master=csv_data_master,
             folder_path=csv_path,
             quiet=quiet,
-            table="project_{}_bas".format(reserve_type)
+            table="project_{}_bas".format(reserve_type),
+            insert_method=project_zones.project_reserve_bas,
+            reserve_type=reserve_type
         )
 
-        project_zones.project_reserve_bas(
-            conn, c, reserve_type, subscenario, inputs
-        )
 
     ## SYSTEM RESERVES ##
     for reserve_type in reserves_list:
@@ -739,25 +737,25 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION SIMULTANEOUS FLOW LIMITS ##
-    sfl_subscenario, sfl_inputs = read_data_for_insertion_into_db(
+    read_data_and_insert_into_db(
+        conn=conn,
         csv_data_master=csv_data_master,
         folder_path=csv_path,
         quiet=quiet,
-        table="transmission_simultaneous_flow_limits"
-    )
-    simultaneous_flows.insert_into_database(
-        conn, c, sfl_subscenario, sfl_inputs
+        table="transmission_simultaneous_flow_limits",
+        insert_method=simultaneous_flow_groups.insert_into_database
+
     )
 
-    sflg_subscenario, sflg_inputs = read_data_for_insertion_into_db(
+    read_data_and_insert_into_db(
+        conn=conn,
         csv_data_master=csv_data_master,
         folder_path=csv_path,
         quiet=quiet,
-        table="transmission_simultaneous_flow_limit_line_groups"
+        table="transmission_simultaneous_flow_limit_line_groups",
+        insert_method=simultaneous_flow_groups.insert_into_database
     )
-    simultaneous_flow_groups.insert_into_database(
-        conn, c, sflg_subscenario, sflg_inputs
-    )
+
 
     # TODO: organize all PRM-related data in one place
     # TODO: refactor this to consolidate with temporal inputs loading and
@@ -825,18 +823,19 @@ def load_csv_data(conn, csv_path, quiet):
         print("ERROR: solver tables are required")
 
 
-def read_data_for_insertion_into_db(
-        csv_data_master, folder_path, quiet, table
+def read_data_and_insert_into_db(
+        conn, csv_data_master, folder_path, quiet, table, insert_method,
+        **kwargs
 ):
     """
-    :param csv_data_master:
-    :param folder_path:
-    :param quiet:
-    :param table:
-    :return:
-
-    Read data and convert to tuples for insertion into database.
+    Read data, convert to tuples, and insert into database.
     """
+    # We'll load empty lists if not including this table
+    subscenario_tuples = []
+    inputs_tuples = []
+
+    # If the table is included, make a list of tuples for the subscenario
+    # and inputs
     if csv_data_master.loc[
         csv_data_master['table'] == table,
         'include'
@@ -852,10 +851,13 @@ def read_data_for_insertion_into_db(
         inputs_tuples = \
             [tuple(x) for x in csv_data_input.to_records(index=False)]
 
-        return subscenario_tuples, inputs_tuples
-    # Return empty lists if we're not including this table
-    else:
-        return [], []
+    # Insertion method
+    insert_method(
+        conn=conn,
+        subscenario_data=subscenario_tuples,
+        inputs_data=inputs_tuples,
+        **kwargs
+    )
 
 
 def get_data_folder_path(csv_path, csv_data_master, table):

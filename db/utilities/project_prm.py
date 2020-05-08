@@ -203,23 +203,25 @@ def project_elcc_chars(
 
 
 def deliverability_groups(
-    io, c,
+    conn,
     subscenario_data, inputs_data
 ):
     """
 
-    :param io:
-    :param c:
+    :param conn:
     :param subscenario_data:
     :param inputs_data:
     """
+
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_prm_energy_only
         (prm_energy_only_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
                           data=subscenario_data)
 
     # Insert data
@@ -232,7 +234,9 @@ def deliverability_groups(
         deliverability_group_energy_only_capacity_limit_mw)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=inputs_data)
+
+    c.close()
 
 
 def elcc_surface(

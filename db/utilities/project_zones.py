@@ -74,18 +74,20 @@ def project_load_zones(
 
 
 def project_reserve_bas(
-        io, c,
-        reserve_type,
-        subscenario_data,
-        input_data
+    conn,
+    subscenario_data,
+    inputs_data,
+    reserve_type
 ):
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_{}_bas
         (project_{}_ba_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subscenario_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
 
     # Insert projects with BAs
     if reserve_type == "frequency_response":
@@ -100,7 +102,9 @@ def project_reserve_bas(
             (project_{}_ba_scenario_id, project, {}_ba)
             VALUES (?, ?, ?);
             """.format(reserve_type, reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=input_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=inputs_data)
+
+    c.close()
 
 
 def project_policy_zones(
