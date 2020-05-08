@@ -27,8 +27,8 @@ def recur_dictify(frame):
 
 def load_project_new_potentials(io, c, subscenario_input, data_input):
     """
-    Data output dictionary is {project:{period: (minimum_cumulative_new_build_mw,
-    minimum_cumulative_new_build_mwh, maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh)}}
+    Data output dictionary is {project:{period: (min_cumulative_new_build_mw,
+    min_cumulative_new_build_mwh, max_cumulative_new_build_mw, max_cumulative_new_build_mwh)}}
     Convert values to floats else they show up as blobs in sql db
     :param io:
     :param c:
@@ -55,28 +55,28 @@ def load_project_new_potentials(io, c, subscenario_input, data_input):
                 min_cum_new_build_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'minimum_cumulative_new_build_mw'].iloc[0]
+                                                                       'period'] == p), 'min_cumulative_new_build_mw'].iloc[0]
                 if min_cum_new_build_mw != None:
                     min_cum_new_build_mw = float(min_cum_new_build_mw)
 
                 max_cum_new_build_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'maximum_cumulative_new_build_mw'].iloc[0]
+                                                                       'period'] == p), 'max_cumulative_new_build_mw'].iloc[0]
                 if max_cum_new_build_mw != None:
                     max_cum_new_build_mw = float(max_cum_new_build_mw)
 
                 min_cum_new_build_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'minimum_cumulative_new_build_mwh'].iloc[0]
+                                                                       'period'] == p), 'min_cumulative_new_build_mwh'].iloc[0]
                 if min_cum_new_build_mwh != None:
                     min_cum_new_build_mwh = float(min_cum_new_build_mwh)
 
                 max_cum_new_build_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'maximum_cumulative_new_build_mwh'].iloc[0]
+                                                                       'period'] == p), 'max_cumulative_new_build_mwh'].iloc[0]
                 if max_cum_new_build_mwh != None:
                     max_cum_new_build_mwh = float(max_cum_new_build_mwh)
 
