@@ -791,7 +791,7 @@ project VARCHAR(64),
 technology VARCHAR(32),
 operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
-variable_cost_per_mwh FLOAT,
+variable_om_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
