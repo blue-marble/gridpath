@@ -460,7 +460,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     proj_opchar = c.execute("""
-        SELECT project, fuel, variable_cost_per_mwh,
+        SELECT project, fuel, variable_om_cost_per_mwh,
         min_stable_level_fraction, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
