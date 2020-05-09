@@ -42,7 +42,8 @@ def geography_load_zones(
 
     c.close()
 
-
+# TODO: consolidate reserve functions
+# TODO: consolidate policy and reliability functions
 def geography_lf_reserves_up_bas(
         io, c,
         reserve_ba_scenario_id,
@@ -345,195 +346,141 @@ def geography_frequency_response_bas(
 
 
 def geography_rps_zones(
-        io, c,
-        rps_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        zones,
-        zone_penalties
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param rps_zone_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zones: list of zones
-    :param zone_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether violation is allowed and the
-        violation penalty for the zone
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
     RPS zones and associated params.
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(rps_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_geography_rps_zones
            (rps_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # RPS zones
-    inputs_data = []
-    for zone in zones:
-        inputs_data.append(
-            (rps_zone_scenario_id, zone,
-             zone_penalties[zone][0], zone_penalties[zone][1])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_rps_zones
         (rps_zone_scenario_id, rps_zone, allow_violation, 
         violation_penalty_per_mwh)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
     
 
 def geography_carbon_cap_zones(
-        io, c,
-        carbon_cap_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        zones,
-        zone_penalties
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param carbon_cap_zone_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zones: list of zones
-    :param zone_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether violation is allowed and the
-        violation penalty for the zone
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
     Carbon cap zones and associated params.
     """
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(carbon_cap_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_geography_carbon_cap_zones
            (carbon_cap_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # RPS zones
-    inputs_data = []
-    for zone in zones:
-        inputs_data.append(
-            (carbon_cap_zone_scenario_id, zone,
-             zone_penalties[zone][0], zone_penalties[zone][1])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_carbon_cap_zones
         (carbon_cap_zone_scenario_id, carbon_cap_zone, allow_violation, 
         violation_penalty_per_emission)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 def geography_prm_zones(
-        io, c,
-        prm_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        zones,
-        zone_penalties
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param prm_zone_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zones: list of zones
-    :param zone_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether violation is allowed and the
-        violation penalty for the zone
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
     PRM zones and associated params.
     """
 
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(prm_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_geography_prm_zones
            (prm_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # PRM zones
-    inputs_data = []
-    for zone in zones:
-        inputs_data.append(
-            (prm_zone_scenario_id, zone,
-             zone_penalties[zone][0], zone_penalties[zone][1])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_prm_zones
         (prm_zone_scenario_id, prm_zone, allow_violation, 
         violation_penalty_per_mw)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 def geography_local_capacity_zones(
-        io, c,
-        local_capacity_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        zones,
-        zone_penalties
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param local_capacity_zone_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zones: list of zones
-    :param zone_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether violation is allowed and the
-        violation penalty for the zone
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
     Local capacity zones and associated params.
     """
 
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(local_capacity_zone_scenario_id, scenario_name,
-                  scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_geography_local_capacity_zones
            (local_capacity_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Local capacity zones
-    inputs_data = []
-    for zone in zones:
-        inputs_data.append(
-            (local_capacity_zone_scenario_id, zone,
-             zone_penalties[zone][0], zone_penalties[zone][1])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_local_capacity_zones
         (local_capacity_zone_scenario_id, local_capacity_zone, 
         allow_violation, violation_penalty_per_mw)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 if __name__ == "__main__":

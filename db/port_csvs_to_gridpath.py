@@ -473,71 +473,71 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD FUELS DATA ####
 
     ## FUEL CHARS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_fuels",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_fuels.load_fuels,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_fuels",
+        insert_method=fuels.update_fuels,
+        none_message=""
     )
 
     ## FUEL PRICES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_fuel_prices",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_fuels.load_fuel_prices,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_fuel_prices",
+        insert_method=fuels.update_fuel_prices,
+        none_message=""
     )
 
     #### LOAD POLICY DATA ####
 
     ## GEOGRAPHY CARBON CAP ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="geography_carbon_cap_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_geography.load_geography_carbon_cap_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="geography_carbon_cap_zones",
+        insert_method=geography.geography_carbon_cap_zones,
+        none_message=""
     )
 
     ## GEOGRAPHY LOCAL CAPACITY ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="geography_local_capacity_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_geography.load_geography_local_capacity_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="geography_local_capacity_zones",
+        insert_method=geography.geography_local_capacity_zones,
+        none_message=""
     )
 
     ## GEOGRAPHY PRM ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="geography_prm_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_geography.load_geography_prm_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="geography_prm_zones",
+        insert_method=geography.geography_prm_zones,
+        none_message=""
     )
 
     ## GEOGRAPHY RPS ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="geography_rps_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_geography.load_geography_rps_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="geography_rps_zones",
+        insert_method=geography.geography_rps_zones,
+        none_message=""
     )
 
     ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
