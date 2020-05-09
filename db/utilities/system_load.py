@@ -8,47 +8,34 @@ from db.common_functions import spin_on_database_lock
 
 
 def insert_system_static_loads(
-        io, c,
-        load_scenario_id,
-        scenario_name,
-        scenario_description,
-        zone_stage_timepoint_static_loads
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io: 
-    :param c: 
-    :param load_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param zone_stage_timepoint_static_loads:
-    :return: 
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
     """
+    c = conn.cursor()
+
     # Subscenario
-    subs_data = [(load_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_system_load
         (load_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for z in list(zone_stage_timepoint_static_loads.keys()):
-        for stage in list(zone_stage_timepoint_static_loads[z].keys()):
-            for tmp in list(
-                    zone_stage_timepoint_static_loads[z][stage].keys()
-            ):
-                inputs_data.append(
-                    (load_scenario_id, z, stage, tmp,
-                        zone_stage_timepoint_static_loads[z][stage][tmp])
-                )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_system_load
         (load_scenario_id, load_zone, stage_id, timepoint, load_mw)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 if __name__ == "__main__":

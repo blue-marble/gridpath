@@ -9,43 +9,26 @@ from db.common_functions import spin_on_database_lock
 
 
 def make_scenario_and_insert_types_and_ids(
-        io, c,
-        project_availability_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_types_and_char_ids
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param project_availability_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param project_types_and_char_ids:
-    :return:
     """
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(project_availability_scenario_id, scenario_name,
-                  scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_availability (
         project_availability_scenario_id, name,
         description) VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert all projects into project availability types table
-    inputs_data = []
-    for prj in list(project_types_and_char_ids.keys()):
-        inputs_data.append(
-            (project_availability_scenario_id,
-             prj,
-             project_types_and_char_ids[prj]["type"],
-             project_types_and_char_ids[prj]["exogenous_availability_id"],
-             project_types_and_char_ids[prj]["endogenous_availability_id"])
-        )
-
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_availability_types
         (project_availability_scenario_id, project, availability_type,
@@ -53,17 +36,20 @@ def make_scenario_and_insert_types_and_ids(
         endogenous_availability_scenario_id)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 def insert_project_availability_exogenous(
         io, c, project_avail_scenarios, project_avail
 ):
     """
-    :param io: 
+    :param io:
     :param c:
-    :param project_avail_scenarios: two-level dictionary by project and 
-        subscenario id, with the subscenario name and description as a tuple 
+    :param project_avail_scenarios: two-level dictionary by project and
+        subscenario id, with the subscenario name and description as a tuple
         value
     :param project_avail: four-level dictionary with availability derate by
         project, exogenous_availability_scenario_id, stage, and timepoint
@@ -74,7 +60,7 @@ def insert_project_availability_exogenous(
     for prj in project_avail_scenarios.keys():
         for scenario_id in project_avail_scenarios[prj].keys():
             subs_data.append(
-                (prj, scenario_id, 
+                (prj, scenario_id,
                  project_avail_scenarios[prj][scenario_id][0],
                  project_avail_scenarios[prj][scenario_id][1])
             )
@@ -110,10 +96,10 @@ def insert_project_availability_endogenous(
         io, c, project_avail_scenarios, project_avail
 ):
     """
-    :param io: 
+    :param io:
     :param c:
-    :param project_avail_scenarios: two-level dictionary by project and 
-        subscenario id, with the subscenario name and description as a tuple 
+    :param project_avail_scenarios: two-level dictionary by project and
+        subscenario id, with the subscenario name and description as a tuple
         value
     :param project_avail: {project: {scenario_id: (
         unavailable_hours_per_period,
@@ -126,7 +112,7 @@ def insert_project_availability_endogenous(
     for prj in project_avail_scenarios.keys():
         for scenario_id in project_avail_scenarios[prj].keys():
             subs_data.append(
-                (prj, scenario_id, 
+                (prj, scenario_id,
                  project_avail_scenarios[prj][scenario_id][0],
                  project_avail_scenarios[prj][scenario_id][1])
             )
@@ -158,3 +144,72 @@ def insert_project_availability_endogenous(
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+
+
+def insert_project_availability_exogenous_(
+    conn, subscenario_data, inputs_data
+):
+    """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
+    """
+    c = conn.cursor()
+
+    # Subscenario
+    subs_sql = """
+        INSERT OR IGNORE INTO subscenarios_project_availability_exogenous
+        (project, exogenous_availability_scenario_id, name, description)
+        VALUES (?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
+
+    # Inputs
+    inputs_sql = """
+        INSERT OR IGNORE INTO inputs_project_availability_exogenous
+        (project, exogenous_availability_scenario_id, stage_id, timepoint, 
+        availability_derate)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
+
+
+def insert_project_availability_endogenous_(
+    conn, subscenario_data, inputs_data
+):
+    """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
+    """
+    c = conn.cursor()
+
+    # Subscenario
+    subs_sql = """
+        INSERT OR IGNORE INTO subscenarios_project_availability_endogenous
+        (project, endogenous_availability_scenario_id, name, description)
+        VALUES (?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
+
+    # Inputs
+    inputs_sql = """
+        INSERT OR IGNORE INTO inputs_project_availability_endogenous
+        (project, 
+        endogenous_availability_scenario_id, 
+        unavailable_hours_per_period,
+        unavailable_hours_per_event_min,
+        available_hours_between_events_min)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()

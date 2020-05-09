@@ -8,25 +8,20 @@ from db.common_functions import spin_on_database_lock
 
 
 def project_load_zones(
-        io, c,
-        project_load_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_load_zones
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
     Assign load zones to all projects
-    :param io: 
-    :param c:
-    :param project_load_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param project_load_zones: 
-    :return: 
+
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(project_load_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_load_zones
         (project_load_zone_scenario_id, name, description)
@@ -34,24 +29,20 @@ def project_load_zones(
         """.format(
 
         )
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert all projects with their modeled load_zones
-    inputs_data = []
-    for p in list(project_load_zones.keys()):
-        inputs_data.append(
-            (project_load_zone_scenario_id,
-             p, project_load_zones[p])
-        )
-
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_load_zones
         (project_load_zone_scenario_id, project, load_zone)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
     # Check that all projects got assigned a load zone
+    subscenario_id = subscenario_data[0][0]
     all_projects = [
         prj[0] for prj in c.execute(
             """SELECT * FROM inputs_project_all"""
@@ -65,12 +56,14 @@ def project_load_zones(
             WHERE project_load_zone_scenario_id = ?
             AND project = ?;
         """,
-            (project_load_zone_scenario_id, prj)
+            (subscenario_id, prj)
         ).fetchall()
 
         if lz is None:
             raise ValueError("Project ?".format(prj)
                              + " has not been assigned a load_zone")
+
+    c.close()
 
 
 def project_reserve_bas(

@@ -9,7 +9,7 @@ from db.common_functions import spin_on_database_lock
 
 
 def insert_capacity_group_requirements(
-    conn, subscenario_data, input_data
+    conn, subscenario_data, inputs_data
 ):
     c = conn.cursor()
 
@@ -30,11 +30,11 @@ def insert_capacity_group_requirements(
         VALUES (?, ?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
-                          data=input_data)
+                          data=inputs_data)
 
 
 def insert_capacity_group_projects(
-        conn, subscenario_data, input_data
+        conn, subscenario_data, inputs_data
 ):
     c = conn.cursor()
 
@@ -53,4 +53,4 @@ def insert_capacity_group_projects(
         VALUES (?, ?, ?);
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
-                          data=input_data)
+                          data=inputs_data)

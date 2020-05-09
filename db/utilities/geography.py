@@ -9,48 +9,27 @@ from db.common_functions import spin_on_database_lock
 
 
 def geography_load_zones(
-        io, c,
-        load_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        zones,
-        zone_overgen_penalties,
-        zone_unserved_energy_penalties
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param load_zone_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zones: list of the zones
-    :param zone_overgen_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether overgen is allowed and the
-        overgen penalty for the zone
-    :param zone_unserved_energy_penalties: dictionary with the zone as key and a
-        tuple containing a boolean for whether unserved energy is allowed and
-        the unserved energy penalty for the zone
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
     Load zones and associated params
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(load_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_geography_load_zones
            (load_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
-    inputs_data = []
-    for lz in zones:
-        inputs_data.append((load_zone_scenario_id, lz, 
-                            zone_overgen_penalties[lz][0],
-                            zone_overgen_penalties[lz][1],
-                            zone_unserved_energy_penalties[lz][0],
-                            zone_unserved_energy_penalties[lz][1]))
+    # Inputs
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_geography_load_zones
         (load_zone_scenario_id, load_zone,
@@ -58,7 +37,10 @@ def geography_load_zones(
         allow_unserved_energy, unserved_energy_penalty_per_mw)
         VALUES (?, ?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 def geography_lf_reserves_up_bas(

@@ -45,9 +45,15 @@ from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
 import db.utilities.common_functions as db_util_common
-from db.utilities import temporal, simultaneous_flows, \
-    simultaneous_flow_groups, project_prm, system_reserves, project_zones, \
-    rps, project_capacity_groups
+from db.utilities import carbon_cap, fuels, geography, project_availability,\
+    project_capacity_groups, project_list, project_local_capacity_chars, \
+    project_new_costs, project_new_potentials, project_operational_chars, \
+    project_portfolios, project_prm, project_specified_params, \
+    project_zones, rps, scenario, simultaneous_flows, \
+    simultaneous_flow_groups, system_load, system_local_capacity, \
+    system_reserves, temporal, transmission_capacities, \
+    transmission_hurdle_rates, transmission_new_cost, \
+    transmission_operational_chars, transmission_portfolios, transmission_zones
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_specified_params, load_project_new_costs, \
@@ -165,41 +171,47 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD LOAD (DEMAND) DATA ####
 
     ## GEOGRAPHY ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="geography_load_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_geography.load_geography_load_zones,
-        none_message="ERROR: geography_load_zones table is required",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="geography_load_zones",
+        insert_method=geography.geography_load_zones,
+        none_message="ERROR: geography_load_zones table is required"
+
     )
 
     ## PROJECT LOAD ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_load_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_zones.load_project_load_zones,
-        none_message="ERROR: project_load_zones table is required",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_load_zones",
+        insert_method=project_zones.project_load_zones,
+        none_message="ERROR: project_load_zones table is required"
+
     )
 
     ## SYSTEM LOAD ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="system_load",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_system_load.load_system_static_load,
-        none_message="ERROR: system_load table is required",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="system_load",
+        insert_method=system_load.insert_system_static_loads,
+        none_message="ERROR: system_load table is required"
+
     )
+
 
     #### LOAD PROJECTS DATA ####
 
-    ## PROJECT LIST AND OPERATIONAL CHARS ##
+    ## TODO: opchars work differently, so track what the load functions are
+    #   doing
+    ## PROJECT LIST
     # Note projects list is pulled from the project_operational_chars table
     # TODO: this shouldn't get pulled from the operational chars table but
     #  from a separate table; the only reason it works is that we have
@@ -214,6 +226,7 @@ def load_csv_data(conn, csv_path, quiet):
         quiet=quiet
     )
 
+    # PROJECT OPERATIONAL CHARS
     read_and_load_inputs(
         csv_path=csv_path,
         csv_data_master=csv_data_master,
@@ -251,113 +264,96 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT PORTFOLIOS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_portfolios",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_portfolios.load_project_portfolios,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_portfolios",
+        insert_method=project_portfolios.update_project_portfolios,
+        none_message=""
+
     )
 
-
     ## PROJECT EXISTING CAPACITIES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_specified_capacity",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_specified_params.load_project_specified_capacities,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_specified_capacity",
+        insert_method=project_specified_params.update_project_capacities,
+        none_message=""
     )
 
     ## PROJECT EXISTING FIXED COSTS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_specified_fixed_cost",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_specified_params.load_project_specified_fixed_costs,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_specified_fixed_cost",
+        insert_method=project_specified_params.update_project_fixed_costs,
+        none_message=""
     )
 
     ## PROJECT NEW POTENTIAL ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_new_potential",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_new_potentials.load_project_new_potentials,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_new_potential",
+        insert_method=project_new_potentials.update_project_potentials,
+        none_message=""
     )
 
     ## PROJECT NEW BINARY BUILD SIZE ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_new_binary_build_size",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_new_potentials.load_project_new_binary_build_sizes,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_new_binary_build_size",
+        insert_method=project_new_potentials.update_project_binary_build_sizes,
+        none_message=""
     )
 
     ## PROJECT NEW COSTS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_new_cost",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_new_costs.load_project_new_costs,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_new_cost",
+        insert_method=project_new_costs.update_project_new_costs,
+        none_message=""
     )
 
     ## PROJECT GROUP CAPACITY REQUIREMENTS ##
-    if csv_data_master.loc[
-        csv_data_master['table'] == 'project_capacity_group_requirements',
-        'include'
-    ].iloc[0] == 1:
-        data_folder_path = os.path.join(csv_path, csv_data_master.loc[
-            csv_data_master['table'] == 'project_capacity_group_requirements',
-            'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_data(data_folder_path, quiet)
-        sub_tuples = [
-            tuple(x) for x in csv_subscenario_input.to_records(index=False)
-        ]
-        inputs_tuples = [
-            tuple(x) for x in csv_data_input.to_records(index=False)
-        ]
-        project_capacity_groups.insert_capacity_group_requirements(
-            conn, sub_tuples, inputs_tuples
-        )
+    read_data_and_insert_into_db(
+        conn=conn,
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_capacity_group_requirements",
+        insert_method=
+        project_capacity_groups.insert_capacity_group_requirements,
+        none_message=""
+    )
 
-    if csv_data_master.loc[
-        csv_data_master['table'] == 'project_capacity_groups',
-        'include'
-    ].iloc[0] == 1:
-        data_folder_path = os.path.join(csv_path, csv_data_master.loc[
-            csv_data_master['table'] == 'project_capacity_groups',
-            'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_data(data_folder_path, quiet)
-        sub_tuples = [
-            tuple(x) for x in csv_subscenario_input.to_records(index=False)
-        ]
-        inputs_tuples = [
-            tuple(x) for x in csv_data_input.to_records(index=False)
-        ]
-        project_capacity_groups.insert_capacity_group_projects(
-            conn, sub_tuples, inputs_tuples
-        )
+    read_data_and_insert_into_db(
+        conn=conn,
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_capacity_groups",
+        insert_method=
+        project_capacity_groups.insert_capacity_group_projects,
+        none_message=""
+    )
 
+    # TODO: this seems complicated, so keeping old method for now
     ## PROJECT ELCC CHARS ##
     read_and_load_inputs(
         csv_path=csv_path,
@@ -381,28 +377,29 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT LOCAL CAPACITY CHARS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_local_capacity_chars",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_local_capacity_chars.load_project_local_capacity_chars,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_local_capacity_chars",
+        insert_method=
+        project_local_capacity_chars.insert_project_local_capacity_chars,
+        none_message=""
     )
 
     #### LOAD PROJECT AVAILABILITY DATA ####
 
     ## PROJECT AVAILABILITY TYPES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_availability_types",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_availability.load_project_availability_types,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_availability_types",
+        insert_method=
+        project_availability.make_scenario_and_insert_types_and_ids,
+        none_message=""
     )
 
     ## PROJECT AVAILABILITY EXOGENOUS ##
