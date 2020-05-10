@@ -325,7 +325,8 @@ def get_optype_param_requirements(op_type):
     df = pd.read_csv(
         os.path.join(os.path.dirname(__file__),
                      "opchar_param_requirements.csv"),
-        sep=","
+        sep=",",
+        dtype=str
     )
     # df.set_index('ID').T.to_dict('list')
     required_columns = \
