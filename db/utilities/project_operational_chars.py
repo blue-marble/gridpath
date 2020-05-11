@@ -289,5 +289,76 @@ def update_project_startup_chars(
                           data=inputs_data)
 
 
+def load_from_csv(io, c, subscenario_input, data_input):
+    """
+    :param io:
+    :param c:
+    :param subscenario_input:
+    :param data_input:
+    :return:
+    """
+
+    # TODO: why is this needed? We're missing documentation
+    # TODO: can this be handled differently without having to hard code?
+    operational_chars_integers = ['heat_rate_curves_scenario_id',
+                                  'variable_om_curves_scenario_id',
+                                  'startup_chars_scenario_id',
+                                  'min_up_time_hours', 'min_down_time_hours',
+                                  'variable_generator_profile_scenario_id',
+                                  'hydro_operational_chars_scenario_id']
+    operational_chars_non_integers = data_input.columns.difference(
+        operational_chars_integers + ['id', 'project']).tolist()
+
+    for i in subscenario_input.index:
+        sc_id = int(subscenario_input['id'][i])
+        sc_name = subscenario_input['name'][i]
+        sc_description = subscenario_input['description'][i]
+
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
+        # Make subscenario and insert all projects into operational
+        # characteristics table; we'll then update that table with the
+        # operational characteristics each project needs
+        make_scenario_and_insert_all_projects(
+            io=io, c=c,
+            project_operational_chars_scenario_id=sc_id,
+            scenario_name=sc_name,
+            scenario_description=sc_description
+        )
+
+        # ### Operational chars integers ### #
+        for op_chars in operational_chars_integers:
+            if data_input_subscenario[op_chars].notnull().sum() != 0:
+                operational_chars_df = \
+                    data_input_subscenario.loc[
+                        :, ['project', op_chars]
+                    ].dropna()
+                operational_chars_df[[op_chars]] = operational_chars_df[
+                    [op_chars]].astype(int)  # Otherwise they could be floats or numpy ints
+                operational_chars_dict = operational_chars_df.set_index(
+                    'project')[op_chars].to_dict()
+
+                update_project_opchar_column(
+                    io=io, c=c,
+                    project_operational_chars_scenario_id=sc_id,
+                    column=op_chars,
+                    project_char=operational_chars_dict
+                )
+
+        # ### Operational chars non-integers (strings and floats) ### #
+        for op_chars in operational_chars_non_integers:
+            if data_input_subscenario[op_chars].notnull().sum() != 0:
+                operational_chars_dict = \
+                    data_input_subscenario.loc[
+                        :, ['project', op_chars]
+                    ].dropna().set_index('project')[op_chars].to_dict()
+
+                update_project_opchar_column(
+                    io=io, c=c,
+                    project_operational_chars_scenario_id=sc_id,
+                    column=op_chars,
+                    project_char=operational_chars_dict
+                )
+
+
 if __name__ == "__main__":
     pass

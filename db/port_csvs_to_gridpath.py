@@ -58,8 +58,7 @@ from db.utilities import carbon_cap, fuels, geography, project_availability,\
 from db.csvs_to_db_utilities import csvs_read, \
     load_scenarios, \
     load_solver_options, \
-    load_project_list, \
-    load_project_operational_chars
+    load_project_list
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -146,8 +145,10 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     #### LOAD TEMPORAL DATA ####
+    # Handled differently, as a temporal_scenario_id involves multiple files
     temporal_directory = get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master, table="temporal"
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
+        table="temporal"
     )
     if temporal_directory is not None:
         temporal_subscenario_directories = \
@@ -227,8 +228,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         table="project_operational_chars",
         conn=conn,
-        load_method=
-        load_project_operational_chars.load_project_operational_chars,
+        load_method=project_operational_chars.load_from_csv,
         none_message="ERROR: project_operational_chars table is required",
         quiet=quiet
     )
@@ -582,6 +582,8 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## SYSTEM RPS TARGETS ##
+    # Handled differently since an rps_target_scenario_id requires multiple
+    # files
     rps_target_dir = get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_rps_targets"
@@ -627,6 +629,8 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     ## SYSTEM RESERVES ##
+    # Handled differently since a reserve_type_scenario_id requires multiple
+    # files
     for reserve_type in reserves_list:
         if csv_data_master.loc[
             csv_data_master['table'] == "system_" + reserve_type,
@@ -758,6 +762,8 @@ def load_csv_data(conn, csv_path, quiet):
     # TODO: refactor this to consolidate with temporal inputs loading and
     #  any other subscenarios that are based on a directory
     ## LOAD ELCC SURFACE DATA ##
+    # Handled differently since an elcc_surface_scenario_id requires multiple
+    # files
     elcc_surface_dir = get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_prm_zone_elcc_surface"
