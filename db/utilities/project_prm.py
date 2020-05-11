@@ -15,191 +15,44 @@ from db.utilities.common_functions import \
 
 
 def project_elcc_chars(
-        io, c,
-        project_elcc_chars_scenario_id,
-        scenario_name,
-        scenario_description,
-        proj_prm_type,
-        proj_elcc_simple_fraction,
-        proj_elcc_surface,
-        proj_min_duration_for_full,
-        proj_deliv_group
-
+    conn, subscenario_data, inputs_data
 ):
     """
-
-    :param io:
-    :param c:
-    :param project_elcc_chars_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param proj_prm_type:
-    :param proj_elcc_simple_fraction:
-    :param proj_elcc_surface:
-    :param proj_min_duration_for_full:
-    :param proj_deliv_group:
-    :return:
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [
-        (project_elcc_chars_scenario_id, scenario_name, scenario_description)
-    ]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_elcc_chars
         (project_elcc_chars_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for proj in list(proj_prm_type.keys()):
-        inputs_data.append(
-            (project_elcc_chars_scenario_id, proj, proj_prm_type[proj])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_elcc_chars 
-        (project_elcc_chars_scenario_id, project, prm_type)
-        VALUES (?, ?, ?);
+        (project_elcc_chars_scenario_id, project, prm_type, 
+        elcc_simple_fraction, contributes_to_elcc_surface,
+        min_duration_for_full_capacity_credit_hours, deliverability_group)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
-    # Update the rest of the data and warn for inconsistencies
-    # ELCC simple fraction
-    update_data = []
-    for proj in list(proj_elcc_simple_fraction.keys()):
-        update_data.append(
-            (proj_elcc_simple_fraction[proj], proj,
-             project_elcc_chars_scenario_id)
-        )
-    update_sql = """
-        UPDATE inputs_project_elcc_chars
-        SET elcc_simple_fraction = ?
-        WHERE project = ?
-        AND project_elcc_chars_scenario_id = ?;
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
+    c.close()
 
-    # ELCC surface
-    surf_data = []
-    for proj in list(proj_elcc_surface.keys()):
-        surf_data.append(
-            (proj_elcc_surface[proj], proj, project_elcc_chars_scenario_id)
-        )
-    surf_sql = """
-        UPDATE inputs_project_elcc_chars
-        SET contributes_to_elcc_surface = ?
-        WHERE project = ?
-        AND project_elcc_chars_scenario_id = ?;
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=surf_sql, data=surf_data)
-
-    # Min duration for full capacity credit
-    energy_limited_projects = [p[0] for p in c.execute(
-        """SELECT project
-        FROM inputs_project_elcc_chars
-        WHERE prm_type = 'fully_deliverable_energy_limited'
-        AND project_elcc_chars_scenario_id = {};
-        """.format(
-            project_elcc_chars_scenario_id
-        )
-    ).fetchall()]
-
-    # Check if all of these projects will be assigned a min duration
-    for proj in energy_limited_projects:
-        if proj not in list(proj_min_duration_for_full.keys()):
-            warnings.warn(
-                """Project {} is of the 'fully_deliverable_energy_limited' 
-                PRM type in project_elcc_chars_scenario_id {}, so should be 
-                assigned a value for the 
-                'min_duration_for_full_capacity_credit_hours' parameter. 
-                Add this project to the proj_min_duration_for_full 
-                dictionary.""".format(
-                    proj, project_elcc_chars_scenario_id
-                )
-            )
-
-    min_dur_data = []
-    for proj in list(proj_min_duration_for_full.keys()):
-        # Check if proj is actually energy-limited, as it doesn't require
-        # this param otherwise
-        # TODO: handle this differently because now we woul get redundant
-        #  warnings when there are no entries in the project_elcc_chars
-        #  table for the min_duration (column is there so best you can do is
-        #  leave it empty)
-        if proj not in energy_limited_projects:
-            # warnings.warn(
-            #     """Project {} is not of the
-            #     'fully_deliverable_energy_limited' PRM type in
-            #     project_elcc_chars_scenario_id {}, so does not
-            #     need the 'min_duration_for_full_capacity_credit_hours'
-            #     parameter.""".format(proj, project_elcc_chars_scenario_id)
-            # )
-            pass
-        min_dur_data.append(
-            (proj_min_duration_for_full[proj], proj,
-             project_elcc_chars_scenario_id)
-        )
-    min_dur_sql = """
-        UPDATE inputs_project_elcc_chars
-        SET min_duration_for_full_capacity_credit_hours = ?
-        WHERE project = ?
-        AND project_elcc_chars_scenario_id = ?;
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=min_dur_sql,
-                          data=min_dur_data)
-
-    # Deliverability group
-    energy_only_projects = [p[0] for p in c.execute(
-        """SELECT project
-        FROM inputs_project_elcc_chars
-        WHERE prm_type = 'energy_only_allowed'
-        AND project_elcc_chars_scenario_id = {};
-        """.format(
-            project_elcc_chars_scenario_id
-        )
-    ).fetchall()]
-
-    # Check if all of these projects will be assigned a deliverability group
-    for proj in energy_only_projects:
-        if proj not in list(proj_deliv_group.keys()):
-            warnings.warn(
-                """Project {} is of the 'energy_only_allowed' 
-                PRM type in project_elcc_chars_scenario_id {}, so should be 
-                assigned a value for the 
-                'deliverability_group' parameter. 
-                Add this project to the proj_deliv_group 
-                dictionary.""".format(
-                    proj, project_elcc_chars_scenario_id
-                )
-            )
-
-    del_g_data = []
-    for proj in list(proj_deliv_group.keys()):
-        # Check if proj is actually energy-only, as it doesn't require
-        # this param otherwise
-        # TODO: commenting out the warning for now, but figure out how to
-        #  handle this situation
-        if proj not in energy_only_projects:
-            # warnings.warn(
-            #     """Project {} is not of the
-            #     'energy_only_allowed' PRM type in
-            #     project_elcc_chars_scenario_id {}, so does not
-            #     need the 'deliverability_group'
-            #     parameter.""".format(proj, project_elcc_chars_scenario_id)
-            # )
-            pass
-
-        del_g_data.append(
-            (proj_deliv_group[proj], proj, project_elcc_chars_scenario_id)
-        )
-    del_g_sql = """
-        UPDATE inputs_project_elcc_chars
-        SET deliverability_group = ?
-        WHERE project = ?
-        AND project_elcc_chars_scenario_id = ?;
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=del_g_sql, data=del_g_data)
+    # TODO: validations to add, as they have been removed here (some were
+    #  already commented out)
+    #  1. Check that all 'fully_deliverable_energy_limited' projects are
+    #  assigned a min_duration_for_full_capacity_credit_hours
+    #  2. Check if all ''energy_only_allowed' projects are assigned a
+    #  'deliverability group' and that other types are not assigned one
 
 
 def deliverability_groups(

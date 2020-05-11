@@ -56,15 +56,10 @@ from db.utilities import carbon_cap, fuels, geography, project_availability,\
     transmission_operational_chars, transmission_portfolios, transmission_zones
 
 from db.csvs_to_db_utilities import csvs_read, \
-    load_geography, load_project_specified_params, load_project_new_costs, \
-    load_project_new_potentials, load_project_local_capacity_chars, \
-    load_project_prm, load_transmission_zones, load_transmission_portfolios, \
-    load_transmission_hurdle_rates, load_transmission_operational_chars, \
-    load_scenarios, load_fuels, load_project_availability, \
-    load_project_zones, load_solver_options, \
-    load_system_carbon_cap, load_transmission_new_cost, load_project_list, \
-    load_project_operational_chars, load_system_prm, load_project_portfolios, \
-    load_transmission_capacities, load_system_load, load_system_local_capacity
+    load_scenarios, \
+    load_solver_options, \
+    load_project_list, \
+    load_project_operational_chars
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -353,16 +348,15 @@ def load_csv_data(conn, csv_path, quiet):
         none_message=""
     )
 
-    # TODO: this seems complicated, so keeping old method for now
     ## PROJECT ELCC CHARS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_elcc_chars",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_prm.load_project_prm,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="project_elcc_chars",
+        insert_method=project_prm.project_elcc_chars,
+        none_message=""
     )
 
     ## DELIVERABILITY GROUPS ##
@@ -543,16 +537,16 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
     for policy_type in policy_list:
-        policy_dir = get_inputs_dir(
-            csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-            table="project_{}_zones".format(policy_type)
+        read_data_and_insert_into_db(
+            conn=conn,
+            csv_data_master=csv_data_master,
+            csvs_main_dir=csv_path,
+            quiet=quiet,
+            table="project_{}_zones".format(policy_type),
+            insert_method=project_zones.project_policy_zones,
+            none_message="",
+            policy_type=policy_type
         )
-        if policy_dir is not None:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_data(policy_dir, quiet)
-            load_project_zones.load_project_policy_zones(
-                conn, c, csv_subscenario_input, csv_data_input, policy_type
-            )
 
     ## SYSTEM CARBON CAP TARGETS ##
     read_data_and_insert_into_db(
@@ -607,16 +601,16 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## GEOGRAPHY BAS ##
     for reserve_type in reserves_list:
-        reserve_dir = get_inputs_dir(
-            csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-            table="geography_{}_bas".format(reserve_type)
+        read_data_and_insert_into_db(
+            conn=conn,
+            csv_data_master=csv_data_master,
+            csvs_main_dir=csv_path,
+            quiet=quiet,
+            table="geography_{}_bas".format(reserve_type),
+            insert_method=geography.geography_reserve_bas,
+            none_message="",
+            reserve_type=reserve_type
         )
-        if reserve_dir is not None:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_data(reserve_dir, quiet)
-            load_geography.load_geography_reserves_bas(
-                conn, c, csv_subscenario_input, csv_data_input, reserve_type
-            )
 
     ## PROJECT RESERVES BAS ##
     for reserve_type in reserves_list:

@@ -101,47 +101,36 @@ def project_reserve_bas(
 
 
 def project_policy_zones(
-        io, c,
-        project_policy_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_zones,
-        policy_type
+    conn, subscenario_data, inputs_data, policy_type
 ):
     """
-    Can be used for RPS (rps), PRM (prm) and carbon cap (carbon_cap) policy 
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
+    Can be used for RPS (rps), PRM (prm) and carbon cap (carbon_cap) policy
     types.
-    :param io: 
-    :param c:
-    :param project_policy_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param project_zones: 
-    :param policy_type: 
-    :return: 
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(project_policy_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_{}_zones
         (project_{}_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Project zones data
-    inputs_data = []
-    for project in list(project_zones.keys()):
-        inputs_data.append(
-            (project_policy_zone_scenario_id, project, project_zones[project])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_{}_zones
         (project_{}_zone_scenario_id, project, {}_zone)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type, policy_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 if __name__ == "__main__":
