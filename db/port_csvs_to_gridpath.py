@@ -50,7 +50,7 @@ from db.utilities import carbon_cap, fuels, geography, project_availability,\
     project_new_costs, project_new_potentials, project_operational_chars, \
     project_portfolios, project_prm, project_specified_params, \
     project_zones, rps, scenario, simultaneous_flows, \
-    simultaneous_flow_groups, system_load, system_local_capacity, \
+    simultaneous_flow_groups, system_load, system_local_capacity, system_prm, \
     system_reserves, temporal, transmission_capacities, \
     transmission_hurdle_rates, transmission_new_cost, \
     transmission_operational_chars, transmission_portfolios, transmission_zones
@@ -555,37 +555,36 @@ def load_csv_data(conn, csv_path, quiet):
             )
 
     ## SYSTEM CARBON CAP TARGETS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="system_carbon_cap_targets",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_system_carbon_cap.load_system_carbon_cap_targets,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="system_carbon_cap_targets",
+        insert_method=carbon_cap.insert_carbon_cap_targets,
+        none_message=""
     )
 
     ## SYSTEM LOCAL CAPACITY TARGETS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="system_local_capacity_requirement",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_system_local_capacity.load_system_local_capacity_requirement,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="system_local_capacity_requirement",
+        insert_method=system_local_capacity.local_capacity_requirement,
+        none_message=""
     )
 
     ## SYSTEM PRM TARGETS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="system_prm_requirement",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_system_prm.load_system_prm_requirement,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="system_prm_requirement",
+        insert_method=system_prm.prm_requirement,
+        none_message=""
     )
 
     ## SYSTEM RPS TARGETS ##
@@ -659,81 +658,83 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD TRANSMISSION DATA ####
 
     ## LOAD TANSMISSION EXISTING CAPACITIES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_specified_capacity",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_capacities.load_transmission_capacities,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_specified_capacity",
+        insert_method=transmission_capacities.insert_transmission_capacities,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION PORTFOLIOS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_portfolios",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_portfolios.load_transmission_portfolios,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_portfolios",
+        insert_method=transmission_portfolios.insert_transmission_portfolio,
+        none_message=""
     )
 
+
     ## LOAD TRANSMISSION ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_load_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_zones.load_transmission_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_load_zones",
+        insert_method=transmission_zones.insert_transmission_load_zones,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION CARBON_CAP_ZONES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_carbon_cap_zones",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_zones.load_transmission_carbon_cap_zones,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_carbon_cap_zones",
+        insert_method=transmission_zones.insert_transmission_carbon_cap_zones,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION OPERATIONAL CHARS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_operational_chars",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_transmission_operational_chars.load_transmission_operational_chars,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_operational_chars",
+        insert_method=
+        transmission_operational_chars.transmission_operational_chars,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION NEW COST ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_new_cost",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_new_cost.load_transmission_new_cost,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_new_cost",
+        insert_method=transmission_new_cost.transmision_new_cost,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION HURDLE RATES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="transmission_hurdle_rates",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_transmission_hurdle_rates.load_transmission_hurdle_rates,
-        none_message="",
-        quiet=quiet
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
+        quiet=quiet,
+        table="transmission_hurdle_rates",
+        insert_method=
+        transmission_hurdle_rates.insert_transmission_hurdle_rates,
+        none_message=""
     )
 
     ## LOAD TRANSMISSION SIMULTANEOUS FLOW LIMITS ##
@@ -743,9 +744,9 @@ def load_csv_data(conn, csv_path, quiet):
         csvs_main_dir=csv_path,
         quiet=quiet,
         table="transmission_simultaneous_flow_limits",
-        insert_method=simultaneous_flow_groups.insert_into_database,
+        insert_method=
+        simultaneous_flows.insert_into_database,
         none_message=""
-
     )
 
     read_data_and_insert_into_db(

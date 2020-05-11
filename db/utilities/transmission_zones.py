@@ -9,94 +9,57 @@ from db.common_functions import spin_on_database_lock
 
 
 def insert_transmission_load_zones(
-        io, c,
-        transmission_load_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        tx_line_load_zones
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io: 
-    :param c:
-    :param transmission_load_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param tx_line_load_zones: 
-    Dictionary with the names of the transmission line as keys and tuples 
-    containing the 'load zone from' and 'load zone to' as values
-    :return: 
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(transmission_load_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_transmission_load_zones
         (transmission_load_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for tx_line in list(tx_line_load_zones.keys()):
-        inputs_data.append(
-            (transmission_load_zone_scenario_id,
-             tx_line,
-             tx_line_load_zones[tx_line][0],
-             tx_line_load_zones[tx_line][1])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_transmission_load_zones
         (transmission_load_zone_scenario_id,
         transmission_line, load_zone_from, load_zone_to)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 def insert_transmission_carbon_cap_zones(
-        io, c,
-        transmission_carbon_cap_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        tx_line_carbon_cap_zones
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io: 
-    :param c: 
-    :param transmission_carbon_cap_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param tx_line_carbon_cap_zones: 
-    Dictionary with the names of the transmission line as keys and tuples 
-    containing the carbon_cap_zone, direction, and emissions intensity as 
-    values
-    :return: 
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(transmission_carbon_cap_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for tx_line in list(tx_line_carbon_cap_zones.keys()):
-        inputs_data.append(
-            (transmission_carbon_cap_zone_scenario_id,
-             tx_line,
-             tx_line_carbon_cap_zones[tx_line][0],
-             tx_line_carbon_cap_zones[tx_line][1],
-             tx_line_carbon_cap_zones[tx_line][2])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id,
@@ -104,4 +67,5 @@ def insert_transmission_carbon_cap_zones(
         tx_co2_intensity_tons_per_mwh)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
