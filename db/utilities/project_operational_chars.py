@@ -134,108 +134,57 @@ def update_project_opchar_hydro_opchar_scenario_id(
 
 
 def update_project_variable_profiles(
-        io, c,
-        proj_profile_names,
-        proj_tmp_profiles
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param proj_profile_names: nested dictionary; top level is the project
-        name, second-level is the scenario id; the value is a tuple with the
-        scenario name and the scenario description
-    :param proj_tmp_profiles:
-        Nested dictionary: top-level key is the project name, second-level key
-        is the scenario id, third-level key is the stage, fourth level
-        key is the timepoint, and the value is the capacity factor for that
-        project-timepoint.
-    :return:
     """
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = []
-    for prj in proj_profile_names.keys():
-        for scenario_id in proj_profile_names[prj].keys():
-            subs_data.append(
-                (prj, scenario_id, proj_profile_names[prj][scenario_id][0],
-                 proj_profile_names[prj][scenario_id][1])
-            )
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for prj in list(proj_tmp_profiles.keys()):
-        for scenario in list(proj_tmp_profiles[prj].keys()):
-            for stage in proj_tmp_profiles[prj][scenario].keys():
-                for tmp in list(
-                        proj_tmp_profiles[prj][scenario][stage].keys()
-                ):
-                    inputs_data.append(
-                        (prj, scenario, stage, tmp,
-                            proj_tmp_profiles[prj][scenario][stage][tmp])
-                    )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, stage_id,
         timepoint, cap_factor)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 def update_project_hydro_opchar(
-        io, c,
-        proj_opchar_names,
-        proj_horizon_chars
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param proj_opchar_names: nested dictionary; top level is the project
-        name, second-level is the scenario id; the value is a tuple with the
-        scenario name and the scenario description
-    :param proj_horizon_chars:
-        Nested dictionary: top-level key is the project name, second key is
-        the balancing type, third key is the horizon, fourth-level keys are
-        'period' (the period of the horizon), 'avg' (the energy budget in avg
-        fraction of capacity), min (minimum as fraction of capacity) and max
-        (maximum as fraction of capacity), with a value for each
-    :return:
     """
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = []
-    for prj in proj_opchar_names.keys():
-        for scenario_id in proj_opchar_names[prj].keys():
-            subs_data.append(
-                (prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
-                 proj_opchar_names[prj][scenario_id][1])
-            )
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for p in list(proj_horizon_chars.keys()):
-        for scenario in list(proj_horizon_chars[p].keys()):
-            for bt in list(proj_horizon_chars[p][scenario].keys()):
-                for h in list(proj_horizon_chars[p][scenario][bt].keys()):
-                    inputs_data.append(
-                        (p, scenario, bt, h,
-                         proj_horizon_chars[p][scenario][bt][h]["period"],
-                         proj_horizon_chars[p][scenario][bt][h]["avg"],
-                         proj_horizon_chars[p][scenario][bt][h]["min"],
-                         proj_horizon_chars[p][scenario][bt][h]["max"])
-                    )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, 
@@ -243,33 +192,29 @@ def update_project_hydro_opchar(
         average_power_fraction, min_power_fraction, max_power_fraction)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 def update_project_hr_curves(
-        io, c,
-        subs_data,
-        proj_hr_chars
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param subs_data: list of tuples with (project,
-        heat_rate_curve_scenario_id, name, description) for each
-        project-subscenario
-    :param proj_hr_chars: list of tuples with (project, period,
-        heat_rate_curves_scenario_id, hr_curve_point, load_point_fraction,
-        average_heat_rate_mmbtu_per_mwh)
-    :return:
     """
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
     inputs_sql = """
@@ -278,33 +223,29 @@ def update_project_hr_curves(
         average_heat_rate_mmbtu_per_mwh)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=proj_hr_chars)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 def update_project_vom_curves(
-        io, c,
-        subs_data,
-        proj_vom_chars
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param subs_data: list of tuples with (project,
-        variable_om_curve_scenario_id, name, description) for each
-        project-subscenario
-    :param proj_vom_chars: list of tuples with (project, period,
-        variable_om_curves_scenario_id, load_point_fraction,
-        average_variable_om_cost_per_mwh)
-    :return:
     """
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_variable_om_curves
         (project, variable_om_curves_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
     inputs_sql = """
@@ -313,26 +254,20 @@ def update_project_vom_curves(
         average_variable_om_cost_per_mwh)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql,
-                          data=proj_vom_chars)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 def update_project_startup_chars(
-        io, c,
-        subscenario_data,
-        project_startup_chars
+    conn, subscenario_data, inputs_data
 ):
     """
-    :param io:
-    :param c:
-    :param subscenario_data: list of tuples with (project,
-    startup_chars_scenario_id, name, description) for each subscenario.
-    :param project_startup_chars: list of tuples with (project,
-    startup_chars_scenario_id, down_time_cutoff_hours,
-    startup_plus_ramp_up_rate, startup_cost_per_mw).
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :return:
     """
+    c = conn.cursor()
 
     # Subscenarios
     subs_sql = """
@@ -340,7 +275,7 @@ def update_project_startup_chars(
         (project, startup_chars_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
                           data=subscenario_data)
 
     # Insert data
@@ -350,8 +285,8 @@ def update_project_startup_chars(
         down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql,
-                          data=project_startup_chars)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
 
 if __name__ == "__main__":

@@ -239,27 +239,27 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT HYDRO GENERATOR PROFILES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_hydro_operational_chars",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_operational_chars.load_project_hydro_opchar,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_hydro_operational_chars",
+        insert_method=project_operational_chars.update_project_hydro_opchar,
+        none_message="",
         use_project_method=True
     )
 
     ## PROJECT VARIABLE GENERATOR PROFILES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_variable_generator_profiles",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_operational_chars.load_project_variable_profiles,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_variable_generator_profiles",
+        insert_method=
+        project_operational_chars.update_project_variable_profiles,
+        none_message="",
         use_project_method=True
     )
 
@@ -403,70 +403,71 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT AVAILABILITY EXOGENOUS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_availability_exogenous",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_availability.load_project_availability_exogenous,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_availability_exogenous",
+        insert_method=
+        project_availability.insert_project_availability_exogenous,
+        none_message="",
         use_project_method=True
     )
 
     ## PROJECT AVAILABILITY ENDOGENOUS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_availability_endogenous",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=
-        load_project_availability.load_project_availability_endogenous,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_availability_endogenous",
+        insert_method=
+        project_availability.insert_project_availability_endogenous,
+        none_message="",
         use_project_method=True
     )
 
     #### LOAD PROJECT HEAT RATE DATA ####
 
     ## PROJECT HEAT RATES ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_heat_rate_curves",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_operational_chars.load_project_hr_curves,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_heat_rate_curves",
+        insert_method=project_operational_chars.update_project_hr_curves,
+        none_message="",
         use_project_method=True
     )
 
     #### LOAD PROJECT VARIALE OM DATA ####
 
     ## PROJECT VARIABLE OM ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_variable_om_curves",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_operational_chars.load_project_vom_curves,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_variable_om_curves",
+        insert_method=project_operational_chars.update_project_vom_curves,
+        none_message="",
         use_project_method=True
     )
+
 
     #### LOAD PROJECT STARTUP CHARS DATA ####
 
     ## PROJECT STARTUP CHARS ##
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_startup_chars",
+    read_data_and_insert_into_db(
         conn=conn,
-        load_method=load_project_operational_chars.load_project_startup_chars,
-        none_message="",
+        csv_data_master=csv_data_master,
+        csvs_main_dir=csv_path,
         quiet=quiet,
+        table="project_startup_chars",
+        insert_method=project_operational_chars.update_project_startup_chars,
+        none_message="",
         use_project_method=True
     )
 
@@ -826,7 +827,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 def read_data_and_insert_into_db(
         conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
-        none_message, **kwargs
+        none_message, use_project_method=False, **kwargs
 ):
     """
     Read data, convert to tuples, and insert into database.
@@ -840,12 +841,21 @@ def read_data_and_insert_into_db(
     # If the table is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     if inputs_dir is not None:
-        (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_data(inputs_dir, quiet)
-        subscenario_tuples = \
-            [tuple(x) for x in csv_subscenario_input.to_records(index=False)]
-        inputs_tuples = \
-            [tuple(x) for x in csv_data_input.to_records(index=False)]
+        if not use_project_method:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_data(inputs_dir, quiet)
+        else:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_project_data(
+                    inputs_dir, quiet
+                )
+
+        subscenario_tuples = [
+            tuple(x) for x in csv_subscenario_input.to_records(index=False)
+        ]
+        inputs_tuples = [
+            tuple(x) for x in csv_data_input.to_records(index=False)
+         ]
 
         # Insertion method
         insert_method(

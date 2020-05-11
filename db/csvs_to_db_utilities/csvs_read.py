@@ -167,6 +167,11 @@ def csv_read_project_data(folder_path, quiet):
         subscenario_data_df["project"] = project
         subscenario_data_df["id"] = subscenario_id
 
+        # Make the project and id the first two columns
+        cols = subscenario_data_df.columns.tolist()
+        cols = cols[-2:] + cols[:-2]
+        subscenario_data_df = subscenario_data_df[cols]
+
         # Append dat to the all-scenarios dataframe
         data_df = data_df.append(subscenario_data_df)
 
