@@ -239,37 +239,6 @@ class TestProjectInit(unittest.TestCase):
 
         self.assertDictEqual(expected_op_type, actual_op_type)
 
-    def test_project_validations(self):
-        cols = ["project", "capacity_type", "operational_type"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["gas_ct", "gen_new_lin",
-                           "gen_commit_cap"]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
-                "combo_error": [],
-                },
-            # Make sure invalid combo is flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct1", "cap1", "op2"],
-                      ["gas_ct2", "cap1", "op3"]
-                      ]),
-                "invalid_combos": [("cap1", "op2")],
-                "combo_error": ["Project(s) 'gas_ct1': 'cap1' and 'op2'"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["combo_error"]
-            actual_list = MODULE_BEING_TESTED.validate_op_cap_combos(
-                df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
 
 if __name__ == "__main__":
     unittest.main()

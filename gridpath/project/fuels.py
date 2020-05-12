@@ -9,8 +9,10 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
-from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
-    write_validation_to_database
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    check_dtypes, get_expected_dtypes
+from gridpath.auxiliary.validations import validate_fuel_projects, \
+    validate_fuel_prices
 
 
 def add_model_components(m, d):
@@ -267,51 +269,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         severity="High",
         errors=validate_fuel_prices(fuels_df, fuel_prices_df, periods_months)
     )
-
-
-def validate_fuel_projects(prj_df, fuels_df):
-    """
-    Check that fuels specified for projects exist in fuels table
-    :param prj_df:
-    :param fuels_df:
-    :return:
-    """
-    results = []
-    fuel_mask = pd.notna(prj_df["fuel"])
-    existing_fuel_mask = prj_df["fuel"].isin(fuels_df["fuel"])
-    invalids = fuel_mask & ~existing_fuel_mask
-    if invalids.any():
-        bad_projects = prj_df["project"][invalids].values
-        bad_fuels = prj_df["fuel"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        print_bad_fuels = ", ".join(bad_fuels)
-        results.append(
-            "Project(s) '{}': Specified fuel(s) '{}' do(es) not exist"
-            .format(print_bad_projects, print_bad_fuels)
-        )
-
-    return results
-
-
-def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
-    """
-    Check that fuel prices exist for the period and month
-    :param fuels_df:
-    :param fuel_prices_df:
-    :param periods_months:
-    :return:
-    """
-    results = []
-    for f in fuels_df["fuel"].values:
-        df = fuel_prices_df[fuel_prices_df["fuel"] == f]
-        for period, month in periods_months:
-            if not ((df.period == period) & (df.month == month)).any():
-                results.append(
-                    "Fuel '{}': Missing price for period '{}', month '{}'"
-                    .format(f, str(period), str(month))
-                )
-
-    return results
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

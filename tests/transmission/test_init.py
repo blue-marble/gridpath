@@ -128,46 +128,6 @@ class TestTransmissionInit(unittest.TestCase):
                                               )
         self.assertDictEqual(expected_load_zone_to, actual_load_zone_to)
 
-    def test_tx_validations(self):
-        cols = ["transmission_line", "capacity_type", "operational_type",
-                "reactance_ohms"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["tx1", "tx_spec",
-                           "tx_simple", 0.5]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
-                "reactance_error": [],
-                "combo_error": [],
-                },
-            # Make sure invalid min_stable_level and invalid combo are flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["tx1", "new_build", "tx_dcopf", -0.5],
-                      ["tx2", "new_build", "tx_simple", None]
-                      ]),
-                "invalid_combos": [("new_build", "tx_dcopf")],
-                "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                "combo_error": ["Line(s) 'tx1': 'new_build' and 'tx_dcopf'"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["reactance_error"]
-            actual_list = MODULE_BEING_TESTED.validate_reactance(
-                df=test_cases[test_case]["df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["combo_error"]
-            actual_list = MODULE_BEING_TESTED.validate_op_cap_combos(
-                df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
 
 if __name__ == "__main__":
     unittest.main()

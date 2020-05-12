@@ -17,10 +17,8 @@ Annual fixed O&M costs are also incurred by binary new-build generation.
 
 from __future__ import print_function
 
-from builtins import next
 from builtins import str
 import csv
-import numpy as np
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
@@ -28,8 +26,9 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
 
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
-from gridpath.auxiliary.auxiliary import check_column_sign_positive, \
-    get_expected_dtypes, check_dtypes, write_validation_to_database
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    check_column_sign_positive, get_expected_dtypes, check_dtypes, \
+    validate_projects, validate_costs
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -676,41 +675,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         severity="High",
         errors=validate_costs(cost_df, prj_vintages)
     )
-
-
-def validate_projects(list1, list2):
-    """
-    Check for projects in list 1 that aren't in list 2
-
-    Note: Function will ignore duplicates in list
-    :param list1:
-    :param list2:
-    :return: list of error messages for each missing project
-    """
-    results = []
-    missing_projects = np.setdiff1d(list1, list2)
-    for prj in missing_projects:
-        results.append(
-            "Missing build size inputs for project '{}'".format(prj)
-        )
-
-    return results
-
-
-def validate_costs(cost_df, prj_vintages):
-    """
-    Check that cost inputs exist for the relevant projects and vintages
-    :param cost_df:
-    :param prj_vintages: list with relevant projects and vintages (tuple)
-    :return: list of error messages for each missing project, vintage
-    combination
-    """
-    results = []
-    for prj, vintage in prj_vintages:
-        if not ((cost_df.project == prj) & (cost_df.period == vintage)).any():
-            results.append(
-                "Missing cost inputs for project '{}', vintage '{}'"
-                .format(prj, str(vintage))
-            )
-
-    return results

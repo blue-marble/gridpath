@@ -10,9 +10,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
-from gridpath.auxiliary.auxiliary import check_req_prj_columns, \
-    write_validation_to_database, get_expected_dtypes, check_dtypes, \
-    check_column_sign_positive
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    check_req_prj_columns
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):

@@ -13,7 +13,8 @@ from pyomo.environ import Set, Param
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
-from gridpath.auxiliary.auxiliary import write_validation_to_database
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_tx_op_cap_combos, validate_reactance
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -272,7 +273,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
         severity="High",
-        errors=validate_op_cap_combos(df, invalid_combos)
+        errors=validate_tx_op_cap_combos(df, invalid_combos)
     )
 
     # Check reactance > 0
@@ -286,46 +287,3 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         severity="High",
         errors=validate_reactance(df)
     )
-
-
-def validate_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
-    :return:
-    """
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_lines = df['transmission_line'][bad_combos].values
-            print_bad_lines = ", ".join(bad_lines)
-            results.append(
-                "Line(s) '{}': '{}' and '{}'"
-                .format(print_bad_lines, combo[0], combo[1])
-            )
-
-    return results
-
-
-def validate_reactance(df):
-    """
-    Check reactance > 1 for tx_dcopf lines
-    :param df:
-    :return:
-    """
-    results = []
-
-    # df = df[df["operational_type"] == "tx_dcopf"]
-    invalids = (df["reactance_ohms"] <= 0)
-    if invalids.any():
-        bad_lines = df["transmission_line"][invalids].values
-        print_bad_lines = ", ".join(bad_lines)
-        results.append(
-            "Line(s) '{}': expected reactance_ohms > 0"
-            .format(print_bad_lines)
-        )
-
-    return results
