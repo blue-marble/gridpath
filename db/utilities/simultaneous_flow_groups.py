@@ -10,22 +10,23 @@ from db.common_functions import spin_on_database_lock
 
 
 def insert_into_database(
-        io, c,
+        conn,
         subscenario_data,
-        input_data
+        inputs_data
 ):
     """
-    :param io: 
-    :param c: 
+    :param conn:
     :param subscenario_data: list of tuples with subscenario data
         (transmission_simultaneous_flow_limit_line_group_scenario_id, name,
         description)
-    :param input_data: list of tuples with data for all subscenarios
+    :param inputs_data: list of tuples with data for all subscenarios
         (transmission_simultaneous_flow_limit_line_group_scenario_id,
         transmission_simultaneous_flow_limit,
         transmission_line, simultaneous_flow_direction)
 
     """
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO
@@ -35,7 +36,7 @@ def insert_into_database(
         VALUES (?, ?, ?);
         """
     spin_on_database_lock(
-        conn=io, cursor=c, sql=subs_sql, data=subscenario_data
+        conn=conn, cursor=c, sql=subs_sql, data=subscenario_data
     )
 
     # Insert data
@@ -47,4 +48,6 @@ def insert_into_database(
         transmission_line, simultaneous_flow_direction)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=input_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=inputs_data)
+
+    c.close()

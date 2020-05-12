@@ -8,25 +8,20 @@ from db.common_functions import spin_on_database_lock
 
 
 def project_load_zones(
-        io, c,
-        project_load_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_load_zones
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
     Assign load zones to all projects
-    :param io: 
-    :param c:
-    :param project_load_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param project_load_zones: 
-    :return: 
+
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(project_load_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_load_zones
         (project_load_zone_scenario_id, name, description)
@@ -34,24 +29,20 @@ def project_load_zones(
         """.format(
 
         )
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert all projects with their modeled load_zones
-    inputs_data = []
-    for p in list(project_load_zones.keys()):
-        inputs_data.append(
-            (project_load_zone_scenario_id,
-             p, project_load_zones[p])
-        )
-
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_load_zones
         (project_load_zone_scenario_id, project, load_zone)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
 
     # Check that all projects got assigned a load zone
+    subscenario_id = subscenario_data[0][0]
     all_projects = [
         prj[0] for prj in c.execute(
             """SELECT * FROM inputs_project_all"""
@@ -65,27 +56,31 @@ def project_load_zones(
             WHERE project_load_zone_scenario_id = ?
             AND project = ?;
         """,
-            (project_load_zone_scenario_id, prj)
+            (subscenario_id, prj)
         ).fetchall()
 
         if lz is None:
             raise ValueError("Project ?".format(prj)
                              + " has not been assigned a load_zone")
 
+    c.close()
+
 
 def project_reserve_bas(
-        io, c,
-        reserve_type,
-        subscenario_data,
-        input_data
+    conn,
+    subscenario_data,
+    inputs_data,
+    reserve_type
 ):
+    c = conn.cursor()
+
     # Subscenarios
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_{}_bas
         (project_{}_ba_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subscenario_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql, data=subscenario_data)
 
     # Insert projects with BAs
     if reserve_type == "frequency_response":
@@ -100,51 +95,44 @@ def project_reserve_bas(
             (project_{}_ba_scenario_id, project, {}_ba)
             VALUES (?, ?, ?);
             """.format(reserve_type, reserve_type, reserve_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=input_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql, data=inputs_data)
+
+    c.close()
 
 
 def project_policy_zones(
-        io, c,
-        project_policy_zone_scenario_id,
-        scenario_name,
-        scenario_description,
-        project_zones,
-        policy_type
+    conn, subscenario_data, inputs_data, policy_type
 ):
     """
-    Can be used for RPS (rps), PRM (prm) and carbon cap (carbon_cap) policy 
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
+
+    Can be used for RPS (rps), PRM (prm) and carbon cap (carbon_cap) policy
     types.
-    :param io: 
-    :param c:
-    :param project_policy_zone_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param project_zones: 
-    :param policy_type: 
-    :return: 
     """
+
+    c = conn.cursor()
+
     # Subscenarios
-    subs_data = [(project_policy_zone_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_project_{}_zones
         (project_{}_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Project zones data
-    inputs_data = []
-    for project in list(project_zones.keys()):
-        inputs_data.append(
-            (project_policy_zone_scenario_id, project, project_zones[project])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_project_{}_zones
         (project_{}_zone_scenario_id, project, {}_zone)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type, policy_type)
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
 
 
 if __name__ == "__main__":

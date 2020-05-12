@@ -55,6 +55,8 @@ def insert_rps_targets(
     spin_on_database_lock(conn=conn, cursor=c, sql=mapping_sql,
                           data=rps_zone_load_zone_map)
 
+    c.close()
+
 
 def load_from_csvs(conn, subscenario_directory):
 

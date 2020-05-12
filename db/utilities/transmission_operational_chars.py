@@ -8,47 +8,27 @@ Transmission operational chars
 from db.common_functions import spin_on_database_lock
 
 
-def transmision_operational_chars(
-        io, c,
-        transmission_operational_chars_scenario_id,
-        scenario_name,
-        scenario_description,
-        tx_line_chars
+def transmission_operational_chars(
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io: 
-    :param c: 
-    :param transmission_portfolio_scenario_id: 
-    :param scenario_name: 
-    :param scenario_description: 
-    :param tx_line_chars:
-        Dictionary with the names of the transmission line as keys and tuples
-        containing the operational type, simple loss factor, and the reactance in
-        ohms
-    :return: 
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(transmission_operational_chars_scenario_id,
-                  scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for tx_line in list(tx_line_chars.keys()):
-        inputs_data.append(
-            (transmission_operational_chars_scenario_id,
-             tx_line,
-             tx_line_chars[tx_line][0],
-             tx_line_chars[tx_line][1],
-             tx_line_chars[tx_line][2])
-        )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_transmission_operational_chars
         (transmission_operational_chars_scenario_id,
@@ -56,4 +36,7 @@ def transmision_operational_chars(
         tx_simple_loss_factor, reactance_ohms)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()

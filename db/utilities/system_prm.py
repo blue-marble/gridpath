@@ -11,45 +11,33 @@ from db.common_functions import spin_on_database_lock
 
 
 def prm_requirement(
-        io, c,
-        prm_requirement_scenario_id,
-        scenario_name,
-        scenario_description,
-        zone_period_requirement
+    conn, subscenario_data, inputs_data
 ):
     """
+    :param conn:
+    :param subscenario_data:
+    :param inputs_data:
 
-    :param io:
-    :param c:
-    :param prm_requirement_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
-    :param zone_period_requirement:
-    :param prm_zone_scenario_id:
-    :return:
     """
+    c = conn.cursor()
 
     # Subscenarios
-    subs_data = [(prm_requirement_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
         INSERT OR IGNORE INTO subscenarios_system_prm_requirement
         (prm_requirement_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
 
     # Insert data
-    inputs_data = []
-    for zone in list(zone_period_requirement.keys()):
-        for period in list(zone_period_requirement[zone].keys()):
-            inputs_data.append(
-                (prm_requirement_scenario_id, zone, period,
-                    zone_period_requirement[zone][period])
-            )
     inputs_sql = """
         INSERT OR IGNORE INTO inputs_system_prm_requirement
         (prm_requirement_scenario_id, 
         prm_zone, period, prm_requirement_mw)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
