@@ -18,6 +18,8 @@ from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
+from gridpath.project.operations.operational_types.common_functions import \
+    validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -293,3 +295,20 @@ def power_delta_rule(mod, p, tmp):
                 - mod.DR_Shift_Down_MW[
                  p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
              ])
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "dr")

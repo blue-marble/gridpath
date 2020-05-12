@@ -26,15 +26,14 @@ from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     PercentFraction, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    check_req_prj_columns, write_validation_to_database,\
-    validate_startup_shutdown_rate_inputs
+    write_validation_to_database, validate_startup_shutdown_rate_inputs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
     get_startup_chars_inputs_from_database, write_tab_file_model_inputs, \
-    check_for_tmps_to_link
+    check_for_tmps_to_link, validate_opchars
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_last_timepoint, \
     check_boundary_type
@@ -2524,7 +2523,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
 
-    TODO: could add data type checking here
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -2532,50 +2530,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
+    # Validate operational chars table inputs
+    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+                                "gen_commit_lin")
+
+    # Other module specific validations
     validation_results = []
 
     # Get startup chars and project inputs
     startup_chars = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    c1 = conn.cursor()
-    projects = c1.execute(
-        """SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_commit_lin"
-        )
-    )
-
     # Convert input data to DataFrame
-    prj_df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
     su_df = pd.DataFrame(
         data=startup_chars.fetchall(),
         columns=[s[0] for s in startup_chars.description]
@@ -2596,52 +2562,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     ).fetchall()
     hrs_in_tmp = min(tmp_durations)
 
-    # Check that min stable level is specified
-    # (not all operational types require this input)
-    req_columns = [
-        "min_stable_level_fraction",
-    ]
-    validation_errors = check_req_prj_columns(prj_df, req_columns, True,
-                                              "gen_commit_lin")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Missing inputs",
-             error
-             )
-        )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "unit_size_mw",
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(prj_df, expected_na_columns,
-                                              False,
-                                              "gen_commit_lin")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
-
     # Check startup shutdown rate inputs
-    validation_errors = validate_startup_shutdown_rate_inputs(prj_df,
+    validation_errors = validate_startup_shutdown_rate_inputs(opchar_df,
                                                               su_df,
                                                               hrs_in_tmp)
     for error in validation_errors:

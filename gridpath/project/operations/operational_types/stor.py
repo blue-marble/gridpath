@@ -19,12 +19,11 @@ and/or downward reserves.
 Costs for this operational type include variable O&M costs.
 
 """
+
 from __future__ import division
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, Expression, \
     NonNegativeReals, PercentFraction, value
 
@@ -34,7 +33,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, check_for_tmps_to_link
+    load_optype_module_specific_data, check_for_tmps_to_link, validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -773,3 +772,17 @@ def export_module_specific_results(mod, d,
                         max(value(mod.Stor_Discharge_MW[p, tmp]), 0),
                         max(value(mod.Stor_Charge_MW[p, tmp]), 0)
                     ])
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "stor")
