@@ -29,8 +29,6 @@ def project_list(
         """
     spin_on_database_lock(conn=io, cursor=c, sql=sql, data=data)
 
-    c.close()
-
 
 if __name__ == "__main__":
     pass
@@ -50,5 +48,3 @@ def load_from_csv(io, c, subscenario_input, data_input):
         io=io, c=c,
         projects=projects
     )
-
-    c.close()
