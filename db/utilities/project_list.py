@@ -32,3 +32,19 @@ def project_list(
 
 if __name__ == "__main__":
     pass
+
+
+# TODO: revisit role of project list
+def load_from_csv(io, c, subscenario_input, data_input):
+
+    """
+    Insert list of all projects
+    :return:
+    """
+
+    projects = data_input['project'].unique().tolist()
+
+    project_list(
+        io=io, c=c,
+        projects=projects
+    )

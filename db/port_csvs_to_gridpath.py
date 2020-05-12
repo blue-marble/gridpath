@@ -46,7 +46,7 @@ from db.create_database import get_database_file_path
 
 import db.utilities.common_functions as db_util_common
 from db.utilities import carbon_cap, fuels, geography, project_availability, \
-    project_capacity_groups, project_local_capacity_chars, \
+    project_capacity_groups, project_list, project_local_capacity_chars, \
     project_new_costs, project_new_potentials, project_operational_chars, \
     project_portfolios, project_prm, project_specified_params, \
     project_zones, rps, simultaneous_flows, \
@@ -54,11 +54,9 @@ from db.utilities import carbon_cap, fuels, geography, project_availability, \
     system_reserves, temporal, transmission_capacities, \
     transmission_hurdle_rates, transmission_new_cost, \
     transmission_operational_chars, transmission_portfolios, \
-    transmission_zones, solver_options
+    transmission_zones, scenario, solver_options
 
-from db.csvs_to_db_utilities import csvs_read, \
-    load_scenarios, \
-    load_project_list
+from db.csvs_to_db_utilities import csvs_read
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -204,20 +202,16 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD PROJECTS DATA ####
-
-    ## TODO: opchars work differently, so track what the load functions are
-    #   doing
     ## PROJECT LIST
     # Note projects list is pulled from the project_operational_chars table
     # TODO: this shouldn't get pulled from the operational chars table but
-    #  from a separate table; the only reason it works is that we have
-    #  INSERT OR IGNORE and can cause issues
+    #  from a separate table; need to determine appropriate method
     read_and_load_inputs(
         csv_path=csv_path,
         csv_data_master=csv_data_master,
         table="project_operational_chars",
         conn=conn,
-        load_method=load_project_list.load_project_list,
+        load_method=project_list.load_from_csv,
         none_message="",
         quiet=quiet
     )
@@ -796,7 +790,7 @@ def load_csv_data(conn, csv_path, quiet):
                 if f_number > 1:
                     print('Error: More than one scenario csv input files')
 
-        load_scenarios.load_scenarios(conn, c, csv_data_input)
+        scenario.load_scenarios_from_csv(conn, c, csv_data_input)
     else:
         print("ERROR: scenarios table is required")
 
