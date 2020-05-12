@@ -37,12 +37,10 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
 
 
 def read_inputs(
-    csvs_main_dir, csv_data_master, subscenario, quiet, use_project_method=False
+    inputs_dir, quiet, use_project_method=False
 ):
     """
-    :param csvs_main_dir:
-    :param csv_data_master:
-    :param subscenario:
+    :param inputs_dir:
     :param quiet:
     :param use_project_method:
     :return:
@@ -50,21 +48,13 @@ def read_inputs(
     Check if subscenario is included in the CSV master file and read the
     data from the specified directory. If not included, return False, False.
     """
-    data_folder_path = get_inputs_dir(
-        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
-        subscenario=subscenario
-    )
-    if data_folder_path is not None:
+    if inputs_dir is not None:
         if not use_project_method:
             (csv_subscenario_input, csv_data_input) = \
-                csv_read_data(
-                    folder_path=data_folder_path, quiet=quiet
-                )
+                csv_read_data(folder_path=inputs_dir, quiet=quiet)
         else:
             (csv_subscenario_input, csv_data_input) = \
-                csv_read_project_data(
-                    folder_path=data_folder_path, quiet=quiet
-                )
+                csv_read_project_data(folder_path=inputs_dir, quiet=quiet)
 
         return csv_subscenario_input, csv_data_input
     else:
@@ -275,9 +265,7 @@ def read_data_and_insert_into_db(
     # Get the subscenario info and data; this will return False, False if
     # the subscenario is not included
     csv_subscenario_input, csv_data_input = read_inputs(
-        csvs_main_dir=csvs_main_dir,
-        csv_data_master=csv_data_master,
-        subscenario=subscenario,
+        inputs_dir=inputs_dir,
         quiet=quiet,
         use_project_method=use_project_method
     )
@@ -285,15 +273,6 @@ def read_data_and_insert_into_db(
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     if csv_subscenario_input is not False and csv_data_input is not False:
-        if not use_project_method:
-            (csv_subscenario_input, csv_data_input) = \
-                csv_read_data(inputs_dir, quiet)
-        else:
-            (csv_subscenario_input, csv_data_input) = \
-                csv_read_project_data(
-                    inputs_dir, quiet
-                )
-
         subscenario_tuples = [
             tuple(x) for x in csv_subscenario_input.to_records(index=False)
         ]
