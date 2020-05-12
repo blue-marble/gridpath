@@ -54,9 +54,7 @@ from db.utilities import carbon_cap, fuels, geography, project_availability, \
     system_reserves, temporal, transmission_capacities, \
     transmission_hurdle_rates, transmission_new_cost, \
     transmission_operational_chars, transmission_portfolios, \
-    transmission_zones, scenario, solver_options
-
-from db.csvs_to_db_utilities import csvs_read
+    transmission_zones, scenario, solver_options, csvs_read
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
