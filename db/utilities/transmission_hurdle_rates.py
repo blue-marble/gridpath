@@ -42,3 +42,5 @@ def insert_transmission_hurdle_rates(
 
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
+
+    c.close()

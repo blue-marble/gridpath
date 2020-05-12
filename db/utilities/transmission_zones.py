@@ -38,6 +38,8 @@ def insert_transmission_load_zones(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 def insert_transmission_carbon_cap_zones(
     conn, subscenario_data, inputs_data
@@ -69,3 +71,5 @@ def insert_transmission_carbon_cap_zones(
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
+
+    c.close()

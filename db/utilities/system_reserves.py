@@ -71,6 +71,8 @@ def insert_system_reserves(
         conn=conn, cursor=c, sql=pcnt_req_map_sql, data=percent_map
     )
 
+    c.close()
+
 
 def load_from_csvs(conn, subscenario_directory, reserve_type):
     """

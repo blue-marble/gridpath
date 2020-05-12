@@ -32,6 +32,8 @@ def insert_capacity_group_requirements(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 def insert_capacity_group_projects(
         conn, subscenario_data, inputs_data
@@ -54,3 +56,5 @@ def insert_capacity_group_projects(
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
+
+    c.close()

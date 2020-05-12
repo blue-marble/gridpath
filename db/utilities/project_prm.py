@@ -168,6 +168,8 @@ def elcc_surface(
     spin_on_database_lock(conn=conn, cursor=c, sql=capfac_sql,
                           data=project_cap_factors_data)
 
+    c.close()
+
 
 def elcc_surface_load_from_csvs(conn, subscenario_directory):
     """

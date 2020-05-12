@@ -132,6 +132,8 @@ def project_policy_zones(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 if __name__ == "__main__":
     pass

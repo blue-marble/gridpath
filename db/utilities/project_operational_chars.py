@@ -163,6 +163,8 @@ def update_project_variable_profiles(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 def update_project_hydro_opchar(
     conn, subscenario_data, inputs_data
@@ -195,6 +197,8 @@ def update_project_hydro_opchar(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 def update_project_hr_curves(
     conn, subscenario_data, inputs_data
@@ -225,6 +229,8 @@ def update_project_hr_curves(
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
+
+    c.close()
 
 
 def update_project_vom_curves(
@@ -257,6 +263,8 @@ def update_project_vom_curves(
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
 
+    c.close()
+
 
 def update_project_startup_chars(
     conn, subscenario_data, inputs_data
@@ -287,6 +295,8 @@ def update_project_startup_chars(
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
                           data=inputs_data)
+
+    c.close()
 
 
 def load_from_csv(io, c, subscenario_input, data_input):
