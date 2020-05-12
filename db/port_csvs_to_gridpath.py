@@ -45,19 +45,19 @@ from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
 import db.utilities.common_functions as db_util_common
-from db.utilities import carbon_cap, fuels, geography, project_availability,\
-    project_capacity_groups, project_list, project_local_capacity_chars, \
+from db.utilities import carbon_cap, fuels, geography, project_availability, \
+    project_capacity_groups, project_local_capacity_chars, \
     project_new_costs, project_new_potentials, project_operational_chars, \
     project_portfolios, project_prm, project_specified_params, \
-    project_zones, rps, scenario, simultaneous_flows, \
+    project_zones, rps, simultaneous_flows, \
     simultaneous_flow_groups, system_load, system_local_capacity, system_prm, \
     system_reserves, temporal, transmission_capacities, \
     transmission_hurdle_rates, transmission_new_cost, \
-    transmission_operational_chars, transmission_portfolios, transmission_zones
+    transmission_operational_chars, transmission_portfolios, \
+    transmission_zones, solver_options
 
 from db.csvs_to_db_utilities import csvs_read, \
     load_scenarios, \
-    load_solver_options, \
     load_project_list
 
 # Policy and reserves list
@@ -819,7 +819,7 @@ def load_csv_data(conn, csv_path, quiet):
                 csv_solver_descriptions = \
                     pd.read_csv(os.path.join(solver_dir, f))
 
-        load_solver_options.load_solver_options(
+        solver_options.load_solver_options(
             conn, c, csv_solver_options, csv_solver_descriptions
         )
     else:

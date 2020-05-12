@@ -5,16 +5,21 @@
 Load solver options and descriptions data
 """
 
+# TODO: refactor this, so that it's the same as the subscenarios, i.e. get
+#  the IDs from the filename, etc.
+# TODO: solver options might require a more general rethinking, though
+
 from db.common_functions import spin_on_database_lock
+
 
 def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
     """
-    solver options and decriptions
     :param io:
     :param c:
     :param solver_options_input:
     :param solver_descriptions_input:
-    :return:
+
+    Solver options and descriptions.
     """
 
     solver_options_input_data = []
@@ -31,7 +36,8 @@ def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
             (solver_options_id, solver, solver_option_name, solver_option_value) 
             VALUES (?, ?, ?, ?)
             """
-        spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=solver_options_input_data)
+        spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql,
+                              data=solver_options_input_data)
 
     solver_descriptions_input_data = []
     for i in solver_descriptions_input.index:
@@ -46,4 +52,5 @@ def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
             (solver_options_id, name, description) 
             VALUES (?, ?, ?)
             """
-        spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=solver_descriptions_input_data)
+        spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql,
+                              data=solver_descriptions_input_data)
