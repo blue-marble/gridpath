@@ -10,23 +10,23 @@ import pandas as pd
 import warnings
 
 
-def get_inputs_dir(csvs_main_dir, csv_data_master, table):
+def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     """
     :param csvs_main_dir:
     :param csv_data_master:
-    :param table:
+    :param subscenario:
     :return:
 
     Get the inputs directory listed in the CSV master file for a particular
     subscenario (for now, "table").
     """
     if csv_data_master.loc[
-        csv_data_master['table'] == table, 'include'
+        csv_data_master["subscenario"] == subscenario, 'include'
     ].iloc[0] == 1:
         inputs_dir = os.path.join(
             csvs_main_dir,
             csv_data_master.loc[
-                csv_data_master['table'] == table,
+                csv_data_master["subscenario"] == subscenario,
                 'path'
             ].iloc[0]
         )
@@ -37,12 +37,12 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, table):
 
 
 def read_inputs(
-    csvs_main_dir, csv_data_master, table, quiet, use_project_method=False
+    csvs_main_dir, csv_data_master, subscenario, quiet, use_project_method=False
 ):
     """
     :param csvs_main_dir:
     :param csv_data_master:
-    :param table:
+    :param subscenario:
     :param quiet:
     :param use_project_method:
     :return:
@@ -52,7 +52,7 @@ def read_inputs(
     """
     data_folder_path = get_inputs_dir(
         csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
-        table=table
+        subscenario=subscenario
     )
     if data_folder_path is not None:
         if not use_project_method:
@@ -260,8 +260,8 @@ def csv_to_tuples(subscenario_id, csv_file):
 
 
 def read_data_and_insert_into_db(
-        conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
-        none_message, use_project_method=False, **kwargs
+        conn, csv_data_master, csvs_main_dir, quiet, subscenario,
+        insert_method, none_message, use_project_method=False, **kwargs
 ):
     """
     Read data from CSVs, convert to tuples, and insert into database.
@@ -269,7 +269,7 @@ def read_data_and_insert_into_db(
     # Check if we should include the table
     inputs_dir = get_inputs_dir(
         csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
-        table=table
+        subscenario=subscenario
     )
 
     # Get the subscenario info and data; this will return False, False if
@@ -277,7 +277,7 @@ def read_data_and_insert_into_db(
     csv_subscenario_input, csv_data_input = read_inputs(
         csvs_main_dir=csvs_main_dir,
         csv_data_master=csv_data_master,
-        table=table,
+        subscenario=subscenario,
         quiet=quiet,
         use_project_method=use_project_method
     )
