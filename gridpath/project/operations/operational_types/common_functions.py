@@ -987,8 +987,6 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
     # TODO: deal with fuel and variable O&M column, which are nor optional nor
     #  required for any?
 
-    validation_results = []
-
     # Get the opchar inputs for this operational type
     df = get_optype_inputs_from_db(subscenarios, conn, op_type)
 
@@ -999,42 +997,31 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
     na_cols = other_columns_types.keys()
 
     # Check that required inputs are present
-    req_errors = check_req_prj_columns(df, req_cols, True, op_type)
-    for error in req_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Missing inputs",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=check_req_prj_columns(df, req_cols, True, op_type)
+    )
 
     # Check that other (not required or optional) inputs are not present
-    na_errors = check_req_prj_columns(df, na_cols, False, op_type)
-    for error in na_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="Low",
+        errors=check_req_prj_columns(df, na_cols, False, op_type)
+    )
 
     # TODO: do data-type and numeric non-negativity checking here rather than
     #  in project.init?
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
-
-    # Return the opchar_df (sometimes used for further validations)
+    # Return the opchar df (sometimes used for further validations)
     return df
