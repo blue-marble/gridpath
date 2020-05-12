@@ -198,32 +198,37 @@ def load_csv_data(conn, csv_path, quiet):
 
     )
 
-
     #### LOAD PROJECTS DATA ####
-    ## PROJECT LIST
+    ## PROJECT LIST AND OPERATIONAL CHARS
     # Note projects list is pulled from the project_operational_chars table
-    # TODO: this shouldn't get pulled from the operational chars table but
-    #  from a separate table; need to determine appropriate method
-    read_and_load_inputs(
-        csv_path=csv_path,
+    # TODO: project list shouldn't get pulled from the operational chars table
+    #  but from a separate table; need to determine appropriate method
+    # Note that we use a separate method for loading operational
+    # characteristics, as the opchar table is too wide to rely on column
+    # order (so we don't create a list of tuples to insert, but rely on the
+    # headers to match the column names in the database and rely on update
+    # statements instead)
+    opchar_subsc_input, opchar_data_input = read_inputs(
+        csvs_main_dir=csv_path,
         csv_data_master=csv_data_master,
         table="project_operational_chars",
-        conn=conn,
-        load_method=project_list.load_from_csv,
-        none_message="",
         quiet=quiet
     )
 
-    # PROJECT OPERATIONAL CHARS
-    read_and_load_inputs(
-        csv_path=csv_path,
-        csv_data_master=csv_data_master,
-        table="project_operational_chars",
-        conn=conn,
-        load_method=project_operational_chars.load_from_csv,
-        none_message="ERROR: project_operational_chars table is required",
-        quiet=quiet
-    )
+    # If the opchar subscenarios are included, make a list of tuples for the
+    # subscenario and inputs, and insert into the database via the relevant
+    # method
+    if opchar_subsc_input is not False and opchar_data_input is not False:
+        project_list.load_from_csv(
+            io=conn, c=c, subscenario_input=opchar_subsc_input,
+            data_input=opchar_data_input
+        )
+        project_operational_chars.load_from_csv(
+            io=conn, c=c, subscenario_input=opchar_subsc_input,
+            data_input=opchar_data_input
+        )
+    else:
+        print("ERROR: project_operational_chars table is required")
 
     ## PROJECT HYDRO GENERATOR PROFILES ##
     read_data_and_insert_into_db(
@@ -784,11 +789,11 @@ def load_csv_data(conn, csv_path, quiet):
                 if not quiet:
                     print(f)
                 f_number = f_number + 1
-                csv_data_input = pd.read_csv(os.path.join(scenarios_dir, f))
+                opchar_data_input = pd.read_csv(os.path.join(scenarios_dir, f))
                 if f_number > 1:
                     print('Error: More than one scenario csv input files')
 
-        scenario.load_scenarios_from_csv(conn, c, csv_data_input)
+        scenario.load_scenarios_from_csv(conn, c, opchar_data_input)
     else:
         print("ERROR: scenarios table is required")
 
@@ -831,9 +836,19 @@ def read_data_and_insert_into_db(
         table=table
     )
 
-    # If the table is included, make a list of tuples for the subscenario
+    # Get the subscenario info and data; this will return False, False if
+    # the subscenario is not included
+    csv_subscenario_input, csv_data_input = read_inputs(
+        csvs_main_dir=csvs_main_dir,
+        csv_data_master=csv_data_master,
+        table=table,
+        quiet=quiet,
+        use_project_method=use_project_method
+    )
+
+    # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
-    if inputs_dir is not None:
+    if csv_subscenario_input is not False and csv_data_input is not False:
         if not use_project_method:
             (csv_subscenario_input, csv_data_input) = \
                 csvs_read.csv_read_data(inputs_dir, quiet)
@@ -879,12 +894,11 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, table):
     return inputs_dir
 
 
-def read_and_load_inputs(
-        csv_path, csv_data_master, table, conn, load_method,
-        quiet, none_message, use_project_method=False
+def read_inputs(
+    csvs_main_dir, csv_data_master, table, quiet, use_project_method=False
 ):
     data_folder_path = get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master, table=table
+        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master, table=table
     )
     if data_folder_path is not None:
         if not use_project_method:
@@ -897,10 +911,10 @@ def read_and_load_inputs(
                 csvs_read.csv_read_project_data(
                     folder_path=data_folder_path, quiet=quiet
                 )
-        c = conn.cursor()
-        load_method(conn, c, csv_subscenario_input, csv_data_input)
+
+        return csv_subscenario_input, csv_data_input
     else:
-        print(none_message)
+        return False, False
 
 
 def main(args=None):
