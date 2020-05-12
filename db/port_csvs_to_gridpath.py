@@ -43,7 +43,6 @@ from argparse import ArgumentParser
 # Data-import modules
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
-
 import db.utilities.common_functions as db_util_common
 from db.utilities import carbon_cap, fuels, geography, project_availability, \
     project_capacity_groups, project_list, project_local_capacity_chars, \
@@ -54,7 +53,7 @@ from db.utilities import carbon_cap, fuels, geography, project_availability, \
     system_reserves, temporal, transmission_capacities, \
     transmission_hurdle_rates, transmission_new_cost, \
     transmission_operational_chars, transmission_portfolios, \
-    transmission_zones, scenario, solver_options, csvs_read
+    transmission_zones, scenario, solver_options
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -142,7 +141,7 @@ def load_csv_data(conn, csv_path, quiet):
 
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
-    temporal_directory = get_inputs_dir(
+    temporal_directory = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="temporal"
     )
@@ -163,7 +162,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD LOAD (DEMAND) DATA ####
 
     ## GEOGRAPHY ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -175,7 +174,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT LOAD ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -187,7 +186,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## SYSTEM LOAD ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -208,7 +207,7 @@ def load_csv_data(conn, csv_path, quiet):
     # order (so we don't create a list of tuples to insert, but rely on the
     # headers to match the column names in the database and rely on update
     # statements instead)
-    opchar_subsc_input, opchar_data_input = read_inputs(
+    opchar_subsc_input, opchar_data_input = db_util_common.read_inputs(
         csvs_main_dir=csv_path,
         csv_data_master=csv_data_master,
         table="project_operational_chars",
@@ -231,7 +230,7 @@ def load_csv_data(conn, csv_path, quiet):
         print("ERROR: project_operational_chars table is required")
 
     ## PROJECT HYDRO GENERATOR PROFILES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -243,7 +242,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT VARIABLE GENERATOR PROFILES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -256,7 +255,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT PORTFOLIOS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -268,7 +267,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT EXISTING CAPACITIES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -279,7 +278,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT EXISTING FIXED COSTS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -290,7 +289,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT NEW POTENTIAL ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -301,7 +300,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT NEW BINARY BUILD SIZE ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -312,7 +311,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT NEW COSTS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -323,7 +322,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT GROUP CAPACITY REQUIREMENTS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -334,7 +333,7 @@ def load_csv_data(conn, csv_path, quiet):
         none_message=""
     )
 
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -346,7 +345,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT ELCC CHARS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -357,7 +356,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## DELIVERABILITY GROUPS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -368,7 +367,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT LOCAL CAPACITY CHARS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -382,7 +381,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD PROJECT AVAILABILITY DATA ####
 
     ## PROJECT AVAILABILITY TYPES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -394,7 +393,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT AVAILABILITY EXOGENOUS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -407,7 +406,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## PROJECT AVAILABILITY ENDOGENOUS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -422,7 +421,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD PROJECT HEAT RATE DATA ####
 
     ## PROJECT HEAT RATES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -436,7 +435,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD PROJECT VARIALE OM DATA ####
 
     ## PROJECT VARIABLE OM ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -451,7 +450,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD PROJECT STARTUP CHARS DATA ####
 
     ## PROJECT STARTUP CHARS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -465,7 +464,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD FUELS DATA ####
 
     ## FUEL CHARS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -476,7 +475,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## FUEL PRICES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -489,7 +488,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD POLICY DATA ####
 
     ## GEOGRAPHY CARBON CAP ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -500,7 +499,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## GEOGRAPHY LOCAL CAPACITY ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -511,7 +510,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## GEOGRAPHY PRM ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -522,7 +521,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## GEOGRAPHY RPS ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -534,7 +533,7 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
     for policy_type in policy_list:
-        read_data_and_insert_into_db(
+        db_util_common.read_data_and_insert_into_db(
             conn=conn,
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
@@ -546,7 +545,7 @@ def load_csv_data(conn, csv_path, quiet):
         )
 
     ## SYSTEM CARBON CAP TARGETS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -557,7 +556,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## SYSTEM LOCAL CAPACITY TARGETS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -568,7 +567,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## SYSTEM PRM TARGETS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -581,7 +580,7 @@ def load_csv_data(conn, csv_path, quiet):
     ## SYSTEM RPS TARGETS ##
     # Handled differently since an rps_target_scenario_id requires multiple
     # files
-    rps_target_dir = get_inputs_dir(
+    rps_target_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_rps_targets"
     )
@@ -600,7 +599,7 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## GEOGRAPHY BAS ##
     for reserve_type in reserves_list:
-        read_data_and_insert_into_db(
+        db_util_common.read_data_and_insert_into_db(
             conn=conn,
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
@@ -613,7 +612,7 @@ def load_csv_data(conn, csv_path, quiet):
 
     ## PROJECT RESERVES BAS ##
     for reserve_type in reserves_list:
-        read_data_and_insert_into_db(
+        db_util_common.read_data_and_insert_into_db(
             conn=conn,
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
@@ -653,7 +652,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD TRANSMISSION DATA ####
 
     ## LOAD TANSMISSION EXISTING CAPACITIES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -664,7 +663,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION PORTFOLIOS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -676,7 +675,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     ## LOAD TRANSMISSION ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -687,7 +686,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION CARBON_CAP_ZONES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -698,7 +697,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION OPERATIONAL CHARS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -710,7 +709,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION NEW COST ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -721,7 +720,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION HURDLE RATES ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -733,7 +732,7 @@ def load_csv_data(conn, csv_path, quiet):
     )
 
     ## LOAD TRANSMISSION SIMULTANEOUS FLOW LIMITS ##
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -744,7 +743,7 @@ def load_csv_data(conn, csv_path, quiet):
         none_message=""
     )
 
-    read_data_and_insert_into_db(
+    db_util_common.read_data_and_insert_into_db(
         conn=conn,
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
@@ -761,7 +760,7 @@ def load_csv_data(conn, csv_path, quiet):
     ## LOAD ELCC SURFACE DATA ##
     # Handled differently since an elcc_surface_scenario_id requires multiple
     # files
-    elcc_surface_dir = get_inputs_dir(
+    elcc_surface_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="system_prm_zone_elcc_surface"
     )
@@ -777,7 +776,7 @@ def load_csv_data(conn, csv_path, quiet):
             )
 
     #### LOAD SCENARIOS DATA ####
-    scenarios_dir = get_inputs_dir(
+    scenarios_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="scenarios"
     )
@@ -799,7 +798,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD SOLVER OPTIONS ####
-    solver_dir = get_inputs_dir(
+    solver_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         table="solver"
     )
@@ -821,100 +820,6 @@ def load_csv_data(conn, csv_path, quiet):
         )
     else:
         print("ERROR: solver tables are required")
-
-
-def read_data_and_insert_into_db(
-        conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
-        none_message, use_project_method=False, **kwargs
-):
-    """
-    Read data, convert to tuples, and insert into database.
-    """
-    # Check if we should include the table
-    inputs_dir = get_inputs_dir(
-        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
-        table=table
-    )
-
-    # Get the subscenario info and data; this will return False, False if
-    # the subscenario is not included
-    csv_subscenario_input, csv_data_input = read_inputs(
-        csvs_main_dir=csvs_main_dir,
-        csv_data_master=csv_data_master,
-        table=table,
-        quiet=quiet,
-        use_project_method=use_project_method
-    )
-
-    # If the subscenario is included, make a list of tuples for the subscenario
-    # and inputs, and insert into the database via the relevant method
-    if csv_subscenario_input is not False and csv_data_input is not False:
-        if not use_project_method:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_data(inputs_dir, quiet)
-        else:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_project_data(
-                    inputs_dir, quiet
-                )
-
-        subscenario_tuples = [
-            tuple(x) for x in csv_subscenario_input.to_records(index=False)
-        ]
-        inputs_tuples = [
-            tuple(x) for x in csv_data_input.to_records(index=False)
-         ]
-
-        # Insertion method
-        insert_method(
-            conn=conn,
-            subscenario_data=subscenario_tuples,
-            inputs_data=inputs_tuples,
-            **kwargs
-        )
-    # If not included, print the none_message
-    else:
-        print(none_message)
-
-
-def get_inputs_dir(csvs_main_dir, csv_data_master, table):
-    if csv_data_master.loc[
-        csv_data_master['table'] == table, 'include'
-    ].iloc[0] == 1:
-        inputs_dir = os.path.join(
-            csvs_main_dir,
-            csv_data_master.loc[
-                csv_data_master['table'] == table,
-                'path'
-            ].iloc[0]
-        )
-    else:
-        inputs_dir = None
-
-    return inputs_dir
-
-
-def read_inputs(
-    csvs_main_dir, csv_data_master, table, quiet, use_project_method=False
-):
-    data_folder_path = get_inputs_dir(
-        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master, table=table
-    )
-    if data_folder_path is not None:
-        if not use_project_method:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_data(
-                    folder_path=data_folder_path, quiet=quiet
-                )
-        else:
-            (csv_subscenario_input, csv_data_input) = \
-                csvs_read.csv_read_project_data(
-                    folder_path=data_folder_path, quiet=quiet
-                )
-
-        return csv_subscenario_input, csv_data_input
-    else:
-        return False, False
 
 
 def main(args=None):

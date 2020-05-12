@@ -9,6 +9,8 @@ import os
 import pandas as pd
 import warnings
 
+from db.utilities import csvs_read
+
 
 def get_directory_subscenarios(main_directory, quiet):
     # Get list of subdirectories (which are the names of our subscenarios)
@@ -93,3 +95,97 @@ def csv_to_tuples(subscenario_id, csv_file):
     ]
 
     return tuples_for_import
+
+
+def read_data_and_insert_into_db(
+        conn, csv_data_master, csvs_main_dir, quiet, table, insert_method,
+        none_message, use_project_method=False, **kwargs
+):
+    """
+    Read data, convert to tuples, and insert into database.
+    """
+    # Check if we should include the table
+    inputs_dir = get_inputs_dir(
+        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
+        table=table
+    )
+
+    # Get the subscenario info and data; this will return False, False if
+    # the subscenario is not included
+    csv_subscenario_input, csv_data_input = read_inputs(
+        csvs_main_dir=csvs_main_dir,
+        csv_data_master=csv_data_master,
+        table=table,
+        quiet=quiet,
+        use_project_method=use_project_method
+    )
+
+    # If the subscenario is included, make a list of tuples for the subscenario
+    # and inputs, and insert into the database via the relevant method
+    if csv_subscenario_input is not False and csv_data_input is not False:
+        if not use_project_method:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_data(inputs_dir, quiet)
+        else:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_project_data(
+                    inputs_dir, quiet
+                )
+
+        subscenario_tuples = [
+            tuple(x) for x in csv_subscenario_input.to_records(index=False)
+        ]
+        inputs_tuples = [
+            tuple(x) for x in csv_data_input.to_records(index=False)
+         ]
+
+        # Insertion method
+        insert_method(
+            conn=conn,
+            subscenario_data=subscenario_tuples,
+            inputs_data=inputs_tuples,
+            **kwargs
+        )
+    # If not included, print the none_message
+    else:
+        print(none_message)
+
+
+def get_inputs_dir(csvs_main_dir, csv_data_master, table):
+    if csv_data_master.loc[
+        csv_data_master['table'] == table, 'include'
+    ].iloc[0] == 1:
+        inputs_dir = os.path.join(
+            csvs_main_dir,
+            csv_data_master.loc[
+                csv_data_master['table'] == table,
+                'path'
+            ].iloc[0]
+        )
+    else:
+        inputs_dir = None
+
+    return inputs_dir
+
+
+def read_inputs(
+    csvs_main_dir, csv_data_master, table, quiet, use_project_method=False
+):
+    data_folder_path = get_inputs_dir(
+        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master, table=table
+    )
+    if data_folder_path is not None:
+        if not use_project_method:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_data(
+                    folder_path=data_folder_path, quiet=quiet
+                )
+        else:
+            (csv_subscenario_input, csv_data_input) = \
+                csvs_read.csv_read_project_data(
+                    folder_path=data_folder_path, quiet=quiet
+                )
+
+        return csv_subscenario_input, csv_data_input
+    else:
+        return False, False
