@@ -712,10 +712,10 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-minimum_cumulative_new_build_mw FLOAT,
-maximum_cumulative_new_build_mw FLOAT,
-minimum_cumulative_new_build_mwh FLOAT,
-maximum_cumulative_new_build_mwh FLOAT,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+min_cumulative_new_build_mwh FLOAT,
+max_cumulative_new_build_mwh FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
@@ -791,7 +791,7 @@ project VARCHAR(64),
 technology VARCHAR(32),
 operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
-variable_cost_per_mwh FLOAT,
+variable_om_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve

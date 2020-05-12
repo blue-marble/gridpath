@@ -489,7 +489,7 @@ def get_module_specific_inputs_from_database(
     c1 = conn.cursor()
     min_max_builds = c1.execute(
         """SELECT project, period, 
-        minimum_cumulative_new_build_mwh, maximum_cumulative_new_build_mwh
+        min_cumulative_new_build_mwh, max_cumulative_new_build_mwh
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
@@ -497,8 +497,8 @@ def get_module_specific_inputs_from_database(
         WHERE temporal_scenario_id = {}) as relevant_periods
         LEFT OUTER JOIN
         (SELECT project, period,
-        minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
-        maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh
+        min_cumulative_new_build_mw, min_cumulative_new_build_mwh,
+        max_cumulative_new_build_mw, max_cumulative_new_build_mwh
         FROM inputs_project_new_potential
         WHERE project_new_potential_scenario_id = {}) as potential
         USING (project, period) 
