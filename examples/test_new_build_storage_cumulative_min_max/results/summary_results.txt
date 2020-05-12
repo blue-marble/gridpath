@@ -3,10 +3,10 @@
 ### CAPACITY RESULTS ###
 
 --> New Storage Capacity <--
-                             New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
-load_zone technology period                                                                    
-Zone1     Storage    2020                               4.32                               7.00
-                     2030                              10.00                              15.00
+                              New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
+load_zone technology vintage                                                                    
+Zone1     Storage    2020                                4.32                               7.00
+                     2030                               10.00                              15.00
 
 ### OPERATIONAL RESULTS ###
 

@@ -656,13 +656,13 @@ DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
-period INTEGER,
+vintage INTEGER,
 lifetime_yrs INTEGER,
 annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
-PRIMARY KEY (project_new_cost_scenario_id, project, period),
+PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
 );

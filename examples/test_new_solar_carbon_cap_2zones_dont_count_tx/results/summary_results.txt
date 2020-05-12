@@ -3,9 +3,9 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                             New Capacity (MW)
-load_zone technology period                   
-Zone1     Solar      2020                 2.00
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Solar      2020                  2.00
 
 ### OPERATIONAL RESULTS ###
 

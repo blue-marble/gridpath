@@ -420,18 +420,18 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "capacity_stor_new_bin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "vintage", "technology", "load_zone",
                          "new_build_binary", "new_build_mw", "new_build_mwh"])
-        for (prj, p) in m.STOR_NEW_BIN_VNTS:
+        for (prj, v) in m.STOR_NEW_BIN_VNTS:
             writer.writerow([
                 prj,
-                p,
+                v,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.StorNewBin_Build[prj, p]),
-                value(m.StorNewBin_Build[prj, p] *
+                value(m.StorNewBin_Build[prj, v]),
+                value(m.StorNewBin_Build[prj, v] *
                       m.stor_new_bin_build_size_mw[prj]),
-                value(m.StorNewBin_Build[prj, p] *
+                value(m.StorNewBin_Build[prj, v] *
                       m.stor_new_bin_build_size_mwh[prj])
             ])
 
@@ -455,7 +455,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "vintage"],
         as_index=True
     ).sum()
 
@@ -505,22 +505,22 @@ def get_module_specific_inputs_from_database(
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
         """
-        SELECT project, period, lifetime_yrs,
+        SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
-            (SELECT period
+            (SELECT period AS vintage
             FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {}) as relevant_periods
+            WHERE temporal_scenario_id = {}) as relevant_vintages
         
         INNER JOIN
-            (SELECT project, period, lifetime_yrs,
+            (SELECT project, vintage, lifetime_yrs,
             annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)
+        USING (project, vintage)
         
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'stor_new_bin'
@@ -654,8 +654,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    # Get the relevant projects and periods
-    prj_periods = c.execute(
+    # Get the relevant projects and vintages
+    prj_vintages = c.execute(
         """SELECT project, period
         FROM inputs_project_portfolios
 
@@ -683,7 +683,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # get the project lists
-    projects = [p[0] for p in prj_periods]  # will have duplicates if >1 periods
+    projects = [p[0] for p in prj_vintages]  # will have duplicates if >1
+    # vintages
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -748,7 +749,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check that all binary new build storage projects have costs specified
     # for each period
-    validation_errors = validate_costs(cost_df, prj_periods)
+    validation_errors = validate_costs(cost_df, prj_vintages)
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -785,19 +786,19 @@ def validate_projects(list1, list2):
     return results
 
 
-def validate_costs(cost_df, prj_periods):
+def validate_costs(cost_df, prj_vintages):
     """
-    Check that cost inputs exist for the relevant projects and periods
+    Check that cost inputs exist for the relevant projects and vintages
     :param cost_df:
-    :param prj_periods: list with relevant projects and periods (tuple)
+    :param prj_vintages: list with relevant projects and vintages (tuple)
     :return: list of error messages for each missing project, period combination
     """
     results = []
-    for prj, period in prj_periods:
-        if not ((cost_df.project == prj) & (cost_df.period == period)).any():
+    for prj, vintage in prj_vintages:
+        if not ((cost_df.project == prj) & (cost_df.period == vintage)).any():
             results.append(
-                "Missing cost inputs for project '{}', period '{}'"
-                .format(prj, str(period))
+                "Missing cost inputs for project '{}', vintage '{}'"
+                .format(prj, str(vintage))
             )
 
     return results

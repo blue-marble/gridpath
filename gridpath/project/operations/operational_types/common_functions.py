@@ -582,7 +582,7 @@ def get_var_profile_inputs_from_database(
                 FROM inputs_project_specified_capacity
                 WHERE project_specified_capacity_scenario_id = {}
                 UNION
-                SELECT project, period
+                SELECT project, vintage AS period
                 FROM inputs_project_new_cost
                 WHERE project_new_cost_scenario_id = {}
                 ) as all_operational_project_periods
@@ -690,53 +690,69 @@ def get_hydro_inputs_from_database(
     hydro_chars = c.execute(
         """SELECT project, horizon, average_power_fraction, min_power_fraction,
         max_power_fraction
-        FROM inputs_project_portfolios
+        FROM (
+            -- Select only projects from the relevant portfolio
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as portfolio_tbl
+        -- Of the projects in the portfolio, select only those that are in 
+        -- this project_operational_chars_scenario_id and have 'op_type' as 
+        -- their operational_type
         INNER JOIN
-        (SELECT project, hydro_operational_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
+            (SELECT project, hydro_operational_chars_scenario_id
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {}
+            AND operational_type = '{}') AS op_char
         USING (project)
+        -- Cross join to the horizons in the relevant 
+        -- temporal_scenario_id, and subproblem_id
         CROSS JOIN
-        (SELECT horizon
-        FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {})
+            (SELECT horizon
+            FROM inputs_temporal_horizons
+            WHERE temporal_scenario_id = {}
+            AND subproblem_id = {})
+        -- Now that we have the relevant projects and horizons, get the 
+        -- respective hydro opchars (and no others) from 
+        -- inputs_project_hydro_operational_chars through a LEFT OUTER JOIN
         LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
+            inputs_project_hydro_operational_chars
         USING (hydro_operational_chars_scenario_id, project, horizon)
+        -- We also only want horizons in periods when the project actually 
+        -- exists, so we figure out the operational periods for each of the  
+        -- projects below and INNER JOIN to that
         INNER JOIN
-        (SELECT project, period
-        FROM
-        (SELECT project, period
-        FROM inputs_project_specified_capacity
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_specified_capacity_scenario_id = {}) as existing
-        UNION
-        SELECT project, period
-        FROM inputs_project_new_cost
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_new_cost_scenario_id = {})
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
+            -- Get the operational periods for each 'existing' and 
+            -- 'new' project
+            (SELECT project, period
+            FROM (
+                SELECT project, period
+                FROM inputs_project_specified_capacity
+                WHERE project_specified_capacity_scenario_id = {}
+                UNION
+                SELECT project, vintage AS period
+                FROM inputs_project_new_cost                
+                WHERE project_new_cost_scenario_id = {}
+            ) as all_operational_project_periods
+            -- Only use the periods in temporal_scenario_id via an INNER JOIN
+            INNER JOIN
+                (SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {}
+                ) as relevant_periods_tbl
+            USING (period)
+            ) as relevant_op_periods_tbl
+        using (project, period);
         """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             op_type,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
-            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.TEMPORAL_SCENARIO_ID,
+
         )
     )
 
