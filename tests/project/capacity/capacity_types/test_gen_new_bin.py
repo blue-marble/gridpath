@@ -195,7 +195,7 @@ class TestGenNewBin(unittest.TestCase):
                 "bld_size_df": pd.DataFrame(
                     columns=bld_size_df_columns,
                     data=[["gas_ct", 1000]]),
-                "prj_periods": [("gas_ct", 2018), ("gas_ct", 2022)],
+                "prj_vintages": [("gas_ct", 2018), ("gas_ct", 2022)],
                 "project_error": [],
                 "cost_error": []
                 },
@@ -206,14 +206,14 @@ class TestGenNewBin(unittest.TestCase):
                 "bld_size_df": pd.DataFrame(
                     columns=bld_size_df_columns,
                     data=[]),
-                "prj_periods": [("gas_ct", 2018), ("gas_ct", 2022)],
+                "prj_vintages": [("gas_ct", 2018), ("gas_ct", 2022)],
                 "project_error": ["Missing build size inputs for project 'gas_ct'"],
-                "cost_error": ["Missing cost inputs for project 'gas_ct', period '2022'"]
+                "cost_error": ["Missing cost inputs for project 'gas_ct', vintage '2022'"]
                 }
         }
 
         for test_case in test_cases.keys():
-            projects = [p[0] for p in test_cases[test_case]["prj_periods"]]
+            projects = [p[0] for p in test_cases[test_case]["prj_vintages"]]
             bld_size_projects = test_cases[test_case]["bld_size_df"]["project"]
 
             expected_list = test_cases[test_case]["project_error"]
@@ -226,7 +226,7 @@ class TestGenNewBin(unittest.TestCase):
             expected_list = test_cases[test_case]["cost_error"]
             actual_list = MODULE_BEING_TESTED.validate_costs(
                 cost_df=test_cases[test_case]["cost_df"],
-                prj_periods=test_cases[test_case]["prj_periods"]
+                prj_vintages=test_cases[test_case]["prj_vintages"]
             )
             self.assertListEqual(expected_list, actual_list)
 

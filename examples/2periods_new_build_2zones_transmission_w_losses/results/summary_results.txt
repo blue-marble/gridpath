@@ -3,10 +3,10 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                             New Capacity (MW)
-load_zone technology period                   
-Zone1     Gas        2020                36.20
-                     2030                 2.80
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Gas        2020                 36.20
+                     2030                  2.80
 
 ### OPERATIONAL RESULTS ###
 
