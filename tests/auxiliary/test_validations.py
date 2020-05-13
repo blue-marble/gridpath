@@ -283,7 +283,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_req_prj_columns(self):
+    def test_validate_req_prj_cols(self):
         """
 
         :return:
@@ -324,7 +324,7 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_req_prj_columns(
+            actual_list = module_to_test.validate_req_prj_cols(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 required=test_cases[test_case]["required"],

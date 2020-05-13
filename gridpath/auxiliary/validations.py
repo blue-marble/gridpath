@@ -12,6 +12,17 @@ import pandas as pd
 from db.common_functions import spin_on_database_lock
 
 
+def _get_idx_col(df):
+    if "project" in df.columns:
+        return "project"
+    elif "transmission_line" in df.columns:
+        return "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
+
 def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
                                  gridpath_module, db_table, severity, errors):
     """
@@ -200,24 +211,16 @@ def validate_nonnegatives(df, columns):
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
-    if "project" in df.columns:
-        category = "project"
-    elif "transmission_line" in df.columns:
-        category = "transmission_line"
-    else:
-        raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
-        )
-
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         is_negative = (df[column] < 0)
         if is_negative.any():
-            bad_categories = df[category][is_negative].values
-            print_bad_categories = ", ".join(bad_categories)
+            bad_idxs = df[idx_col][is_negative].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
                  "{}}(s) '{}': Expected '{}' >= 0"
-                 .format(category, print_bad_categories, column)
+                 .format(idx_col, print_bad_idxs, column)
                  )
 
     return result
@@ -234,24 +237,16 @@ def validate_positives(df, columns):
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
-    if "project" in df.columns:
-        category = "project"
-    elif "transmission_line" in df.columns:
-        category = "transmission_line"
-    else:
-        raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
-        )
-
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         invalids = (df[column] <= 0)
         if invalids.any():
-            bad_categories = df[category][invalids].values
-            print_bad_categories = ", ".join(bad_categories)
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
                  "{}(s) '{}': Expected '{}' > 0"
-                 .format(category, print_bad_categories, column)
+                 .format(idx_col, print_bad_idxs, column)
                  )
 
     return result
@@ -270,30 +265,22 @@ def validate_pctfraction(df, columns):
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
-    if "project" in df.columns:
-        category = "project"
-    elif "transmission_line" in df.columns:
-        category = "transmission_line"
-    else:
-        raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
-        )
-
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         invalids = ((df[column] < 0) | (df[column] > 1))
         if invalids.any():
-            bad_categories = df[category][invalids].values
-            print_bad_categories = ", ".join(bad_categories)
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
                  "{}(s) '{}': Expected 0 <= '{}' <= 1"
-                 .format(category, print_bad_categories, column)
+                 .format(idx_col, print_bad_idxs, column)
                  )
 
     return result
 
 
-def check_req_prj_columns(df, columns, required, category):
+def validate_req_prj_cols(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
     whether the incompatible columns are None/NA. If required columns are
@@ -447,27 +434,18 @@ def validate_op_cap_combos(df, invalid_combos):
         combinations
     :return:
     """
-
-    if "project" in df.columns:
-        category = "project"
-    elif "transmission_line" in df.columns:
-        category = "transmission_line"
-    else:
-        raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
-        )
-
+    idx_col = _get_idx_col(df)
     results = []
     for combo in invalid_combos:
         bad_combos = ((df["capacity_type"] == combo[0]) &
                       (df["operational_type"] == combo[1]))
         if bad_combos.any():
-            bad_categories = df[category][bad_combos].values
-            print_bad_categories = ", ".join(bad_categories)
+            bad_idxs = df[idx_col][bad_combos].values
+            print_bad_idxs = ", ".join(bad_idxs)
             results.append(
                 "{}(s) '{}': capacity type '{}' and operational type '{}' "
                 "cannot be combined"
-                .format(category, print_bad_categories, combo[0], combo[1])
+                .format(idx_col, print_bad_idxs, combo[0], combo[1])
             )
 
     return results
