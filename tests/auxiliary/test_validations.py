@@ -779,7 +779,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_constant_heat_rate(self):
+    def test_validate_constant_heat_rate(self):
         """
 
         :return:
@@ -808,13 +808,13 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_constant_heat_rate(
+            actual_list = module_to_test.validate_constant_heat_rate(
                 df=test_cases[test_case]["df"],
                 op_type=test_cases[test_case]["op_type"]
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_projects_for_reserves(self):
+    def test_validate_projects_for_reserves(self):
         """
 
         :return:
@@ -847,7 +847,7 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_projects_for_reserves(
+            actual_list = module_to_test.validate_projects_for_reserves(
                 projects_op_type=test_cases[test_case]["projects_op_type"],
                 projects_w_ba=test_cases[test_case]["projects_w_ba"],
                 operational_type=test_cases[test_case]["operational_type"],

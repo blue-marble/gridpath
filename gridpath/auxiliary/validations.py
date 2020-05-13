@@ -865,10 +865,10 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     return results
 
 
-def check_constant_heat_rate(df, op_type):
+def validate_constant_heat_rate(df, op_type):
     """
     Check whether the projects in the DataFrame have a constant heat rate
-    based on the number of load points per project in the DAtaFrame
+    based on the number of load points per project in the DataFrame
     :param df: DataFrame for which to check constant heat rate. Must have
         "project", "load_point_fraction" columns
     :param op_type: Operational type (used in error message)
@@ -890,8 +890,8 @@ def check_constant_heat_rate(df, op_type):
     return results
 
 
-def check_projects_for_reserves(projects_op_type, projects_w_ba,
-                                operational_type, reserve):
+def validate_projects_for_reserves(projects_op_type, projects_w_ba,
+                                   operational_type, reserve):
     """
     Check that a list of projects of a given operational_type does not show up
     in a a list of projects that can provide a given type of reserve. This is
