@@ -17,7 +17,7 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
-    check_prj_column, validate_op_cap_combos
+    validate_column, validate_op_cap_combos
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -416,7 +416,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=check_prj_column(df, "capacity_type", valid_cap_types)
+        errors=validate_column(df, "capacity_type", valid_cap_types)
     )
 
     # Check that operational type is valid
@@ -434,6 +434,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=check_prj_column(df, "operational_type", valid_op_types)
+        errors=validate_column(df, "operational_type", valid_op_types)
     )
 

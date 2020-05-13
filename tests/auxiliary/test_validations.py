@@ -312,7 +312,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_req_prj_cols(self):
+    def test_validate_req_cols(self):
         """
 
         :return:
@@ -337,7 +337,7 @@ class TestAuxiliary(unittest.TestCase):
                 "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
-                "result": ["Project(s) 'nuclear'; Always_on should have "
+                "result": ["project(s) 'nuclear'; Always_on should have "
                            "inputs for 'min_stable_level_fraction'"]
                 },
             # Make sure incompatible inputs are flagged
@@ -347,13 +347,13 @@ class TestAuxiliary(unittest.TestCase):
                 "columns": ["startup_cost_per_mw", "shutdown_cost_per_mw"],
                 "required": False,
                 "category": "Always_on",
-                "result": ["Project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
+                "result": ["project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_req_prj_cols(
+            actual_list = module_to_test.validate_req_cols(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 required=test_cases[test_case]["required"],
@@ -361,7 +361,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_prj_column(self):
+    def test_validate_column(self):
         """
 
         :return:
@@ -387,13 +387,13 @@ class TestAuxiliary(unittest.TestCase):
                       ]),
                 "column": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
-                "result": ["Project(s) 'gas_ct2': Invalid entry for capacity_type"]
+                "result": ["project(s) 'gas_ct2': Invalid entry for capacity_type"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_prj_column(
+            actual_list = module_to_test.validate_column(
                 df=test_cases[test_case]["df"],
                 column=test_cases[test_case]["column"],
                 valids=test_cases[test_case]["valids"]

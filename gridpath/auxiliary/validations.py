@@ -308,15 +308,16 @@ def validate_pctfraction_nonzero(df, columns):
     return result
 
 
-def validate_req_prj_cols(df, columns, required, category):
+def validate_req_cols(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
     whether the incompatible columns are None/NA. If required columns are
     None/NA, or if incompatible columns are not None/NA, an error message
     is returned.
     Helper function for input validation.
-    :param df: DataFrame for which to check columns. Must have a "project"
-        column, and columns param must be a subset of the columns in df
+    :param df: DataFrame for which to check columns. Must have a "project" or
+        "transmission_line" column, and columns param must be a subset of
+        the columns in df
     :param columns: list of columns to check
     :param required: Boolean, whether the listed columns are required or
         incompatible
@@ -325,6 +326,7 @@ def validate_req_prj_cols(df, columns, required, category):
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         if required:
@@ -334,17 +336,17 @@ def validate_req_prj_cols(df, columns, required, category):
             invalids = pd.notna(df[column])
             error_str = "should not have inputs for"
         if invalids.any():
-            bad_projects = df["project"][invalids].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
-                "Project(s) '{}'; {} {} '{}'"
-                .format(print_bad_projects, category, error_str, column)
+                "{}(s) '{}'; {} {} '{}'"
+                .format(idx_col, print_bad_idxs, category, error_str, column)
                  )
 
     return result
 
 
-def check_prj_column(df, column, valids):
+def validate_column(df, column, valids):
     """
     Check that the specified column only has entries within the list of valid
     entries ("valids"). If not, an error message is returned.
@@ -352,20 +354,21 @@ def check_prj_column(df, column, valids):
 
     Note: could be expanded to check multiple columns
     :param df: DataFrame for which to check columns. Must have a "project"
-        column, and a column equal to the column param.
+        or "transmission_line" column, and a column equal to the column param.
     :param column: string, column to check
     :param valids: list of valid entries
-    :return:
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
     """
+    idx_col = _get_idx_col(df)
     results = []
-
     invalids = ~df[column].isin(valids)
     if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
+        bad_idxs = df["project"][invalids].values
+        print_bad_idxs = ", ".join(bad_idxs)
         results.append(
-            "Project(s) '{}': Invalid entry for {}"
-            .format(print_bad_projects, column)
+            "{}(s) '{}': Invalid entry for {}"
+            .format(idx_col, print_bad_idxs, column)
         )
 
     return results
