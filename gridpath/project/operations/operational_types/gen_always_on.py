@@ -23,22 +23,19 @@ Costs for this operational type include fuel costs and variable O&M costs.
 
 from __future__ import division
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_first_timepoint, \
     check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, check_for_tmps_to_link
+    load_optype_module_specific_data, check_for_tmps_to_link, validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -796,6 +793,7 @@ def export_module_specific_results(
                             )
                     ])
 
+
 # Validation
 ###############################################################################
 
@@ -809,93 +807,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
-
-    c = conn.cursor()
-    projects = c.execute(
-        """SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_always_on"
-        )
-    )
-
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
-
-    # Check that unit size and min stable level are specified
-    # (not all operational types require this input)
-    req_columns = [
-        "min_stable_level_fraction",
-        "unit_size_mw"
-    ]
-    validation_errors = check_req_prj_columns(df, req_columns, True,
-                                              "gen_always_on")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Missing inputs",
-             error
-             )
-        )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "startup_cost_per_mw", "shutdown_cost_per_mw",
-        "startup_fuel_mmbtu_per_mw",
-        "startup_plus_ramp_up_rate",
-        "shutdown_plus_ramp_down_rate",
-        "min_up_time_hours", "min_down_time_hours",
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                              "gen_always_on")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "gen_always_on")

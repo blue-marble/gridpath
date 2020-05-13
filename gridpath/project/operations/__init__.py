@@ -16,9 +16,9 @@ import pandas as pd
 import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
+from gridpath.auxiliary.auxiliary import check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
-    write_validation_to_database, load_operational_type_modules
+    write_validation_to_database
 from gridpath.project.common_functions import append_to_input_file
 
 
@@ -647,8 +647,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
-
     # Get the project input data
     proj_opchar, heat_rates, variable_om = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
@@ -667,63 +665,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in variable_om.description]
     )
 
-    # Check data types operational chars:
-    expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_operational_chars"]
-    )
-
-    dtype_errors, error_columns = check_dtypes(prj_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
-
-    # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in prj_df.columns if expected_dtypes[c] ==
-                       "numeric"]
-    valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    sign_errors = check_column_sign_positive(prj_df, valid_numeric_columns)
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Invalid numeric sign",
-             error
-             )
-        )
-
-    # Check 0 < min stable fraction <= 1
-    if "min_stable_level_fraction" not in error_columns:
-        validation_errors = validate_min_stable_level(prj_df)
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "High",
-                 "Invalid min_stable_level_fraction",
-                 error
-                 )
-            )
-
-    # Check data types heat_rates and variable_om:
+    # Filter out NA values and select appropriate columns
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     sub_hr_df = hr_df[hr_curve_mask][
         ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
@@ -733,135 +675,153 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         ["project", "load_point_fraction", "average_variable_om_cost_per_mwh"]
     ]
 
+    # Check data types operational chars:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_operational_chars"]
+    )
+
+    dtype_errors, error_columns = check_dtypes(prj_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in prj_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=check_column_sign_positive(prj_df, valid_numeric_columns)
+    )
+
+    # Check 0 < min stable fraction <= 1
+    if "min_stable_level_fraction" not in error_columns:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_operational_chars",
+            severity="High",
+            errors=validate_min_stable_level(prj_df)
+        )
+
+    # Check data types heat_rates and variable_om:
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_portfolios", "inputs_project_operational_chars",
                "inputs_project_heat_rate_curves",
                "inputs_project_variable_om_curves"]
     )
     dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
     dtype_errors, error_columns = check_dtypes(sub_vom_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_VARIABLE_OM_CURVES",
-             "inputs_project_variable_om_curves",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=dtype_errors
+    )
 
     # Check valid numeric columns in heat rates are non-negative
     numeric_columns = [c for c in sub_hr_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    sign_errors = check_column_sign_positive(sub_hr_df, valid_numeric_columns)
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "High",
-             "Invalid numeric sign",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=check_column_sign_positive(sub_hr_df, valid_numeric_columns)
+    )
 
     # Check valid numeric columns in variable OM are non-negative
     numeric_columns = [c for c in sub_vom_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    sign_errors = check_column_sign_positive(sub_vom_df, valid_numeric_columns)
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_VARIABLE_OM_CURVES",
-             "inputs_project_variable_om_curves",
-             "High",
-             "Invalid numeric sign",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=check_column_sign_positive(sub_vom_df, valid_numeric_columns)
+    )
 
     # Check for consistency between fuel and heat rate curve inputs
     # 1. Make sure projects with fuel have a heat rate scenario specified
     # 2. Make sure projects without fuel have no heat rate scenario specified
-    validation_errors = validate_fuel_vs_heat_rates(hr_df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High"
-             "Missing/Unnecessary heat rate scenario inputs",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=validate_fuel_vs_heat_rates(hr_df)
+    )
 
     # Check that specified hr scenarios actually have inputs in the hr table
     # and check that specified heat rate curves inputs are valid:
-    validation_errors = validate_heat_rate_curves(hr_df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "High",
-             "Invalid/Missing heat rate curves inputs",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=validate_heat_rate_curves(hr_df)
+    )
 
     # Check that specified vom scenarios actually have inputs in the vom table
     # and check that specified vom curves inputs are valid:
-    validation_errors = validate_vom_curves(vom_df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_VARIABLE_OM_CURVES",
-             "inputs_project_variable_om_curves",
-             "High",
-             "Invalid/Missing variable O&M curves inputs",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_vom_curves(vom_df)
+    )
 
     # TODO: check that if there is a "0" for the period for a given
     #  project there are zeroes everywhere for that project.
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
 
 
 def validate_min_stable_level(df):

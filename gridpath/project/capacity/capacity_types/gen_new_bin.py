@@ -26,13 +26,10 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
     Constraint, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.auxiliary import check_column_sign_positive, \
-    get_expected_dtypes, check_dtypes, write_validation_to_database, \
-    setup_results_import
-
+    get_expected_dtypes, check_dtypes, write_validation_to_database
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -582,7 +579,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     c = conn.cursor()
-    validation_results = []
 
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
@@ -630,75 +626,56 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check dtypes
     dtype_errors, error_columns = check_dtypes(cost_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
 
     # Check valid numeric columns are non-negative
     numeric_columns = [c for c in cost_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-
-    sign_errors = check_column_sign_positive(
-        df=cost_df,
-        columns=valid_numeric_columns
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=check_column_sign_positive(cost_df, valid_numeric_columns)
     )
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Invalid numeric sign",
-             error)
-        )
 
     # Check that all binary new build projects have build size specified
-    validation_errors = validate_projects(projects, bld_size_projects)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID",
-             "inputs_project_new_binary_build_size",
-             "High",
-             "Missing Project",
-             error)
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=validate_projects(projects, bld_size_projects)
+    )
 
     # Check that all binary new build projects have costs specified for each
     # period
-    validation_errors = validate_costs(cost_df, prj_vintages)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Missing Costs",
-             error)
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_costs(cost_df, prj_vintages)
+    )
 
 
 def validate_projects(list1, list2):

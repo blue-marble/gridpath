@@ -247,7 +247,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     c = conn.cursor()
-    validation_results = []
 
     # Get the transmission inputs
     transmission_lines = get_inputs_from_database(
@@ -265,39 +264,28 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         """SELECT capacity_type, operational_type 
         FROM mod_tx_capacity_and_tx_operational_type_invalid_combos"""
     ).fetchall()
-    validation_errors = validate_op_cap_combos(df, invalid_combos)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "TRANSMISSION_OPERATIONAL_CHARS, TRANSMISSION_PORTFOLIOS",
-             "inputs_transmission_operational_chars, inputs_tranmission_portfolios",
-             "High",
-             "Invalid combination of capacity type and operational type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
+        severity="High",
+        errors=validate_op_cap_combos(df, invalid_combos)
+    )
 
     # Check reactance > 0
-    validation_errors = validate_reactance(df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "TRANSMISSION_OPERATIONAL_CHARS",
-             "inputs_transmission_operational_chars",
-             "High",
-             "Invalid reactance inputs",
-             error
-             )
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_reactance(df)
+    )
 
 
 def validate_op_cap_combos(df, invalid_combos):

@@ -647,7 +647,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     #   hard to maintain. Is there a way to generalize this?
 
     c = conn.cursor()
-    validation_results = []
 
     # Get the binary build generator inputs
     new_stor_costs, new_stor_build_size = \
@@ -696,75 +695,56 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check dtypes
     dtype_errors, error_columns = check_dtypes(cost_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High"
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
 
     # Check valid numeric columns are non-negative
     numeric_columns = [c for c in cost_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-
-    sign_errors = check_column_sign_positive(
-        df=cost_df,
-        columns=valid_numeric_columns
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=check_column_sign_positive(cost_df, valid_numeric_columns)
     )
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High"
-             "Invalid numeric sign",
-             error)
-        )
 
     # Check that all binary new build projects have build size specified
-    validation_errors = validate_projects(projects, bld_size_projects)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID",
-             "inputs_project_new_binary_build_size",
-             "High"
-             "Missing Project",
-             error)
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=validate_projects(projects, bld_size_projects)
+    )
 
     # Check that all binary new build storage projects have costs specified
     # for each period
-    validation_errors = validate_costs(cost_df, prj_vintages)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High"
-             "Missing Costs",
-             error)
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_costs(cost_df, prj_vintages)
+    )
 
 
 def validate_projects(list1, list2):

@@ -276,31 +276,44 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     return scenario_id, scenario_name
 
 
-def write_validation_to_database(validation_results, conn):
+def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
+                                 gridpath_module, db_table, severity, errors):
     """
-    Writes the validation results to database. Helper function for input
-    validation.
-    :param validation_results: list of tuples with results from input validation.
-        Each row represents an identified input validation issue.
-    :param conn: database connection
+    Write all validations in the `errors` list and the associated meta-data
+    (scenario_id, subproblem, stage, etc.) to the status_validation
+    database table.
+
+    :param conn: The database connection
+    :param scenario_id: The scenario ID of the scenario that is being validated
+    :param subproblem_id: The active subproblem ID that is being validated
+    :param stage_id: The active stage ID that is being validated
+    :param gridpath_module: The gridpath_module that performed the validation
+    :param db_table: The database table that contains the validation errors
+    :param severity: The severity of the validation error
+    :param errors: The list of validation errors to be written to database,
+    with each error a string describing the issue.
     :return:
     """
+
+    # If there are no validation errors to write, simply exit here
+    if not errors:
+        return
+
     # add timestamp (ISO8601 strings, so truncate to ms)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    validation_results = [row + (timestamp,) for row in validation_results]
+    rows = [(scenario_id, subproblem_id, stage_id, gridpath_module, db_table,
+             severity, error, timestamp) for error in errors]
     c = conn.cursor()
-    for row in validation_results:
-        query = """
+    for row in rows:
+        sql = """
         INSERT INTO status_validation
         (scenario_id, subproblem_id, stage_id, 
-        gridpath_module, related_subscenario, related_database_table, 
-        issue_severity, issue_type, issue_description, timestamp)
+        gridpath_module, db_table, severity, description, time_stamp)
         VALUES ({});
-        """.format(','.join(['?' for item in row]))
+        """.format(','.join(['?' for i in row]))
 
-        c.execute(query, row)
-
-    conn.commit()
+        spin_on_database_lock(conn, c, sql, rows)
+    c.close()
 
 
 def get_expected_dtypes(conn, tables):

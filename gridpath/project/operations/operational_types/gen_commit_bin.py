@@ -51,7 +51,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
     get_startup_chars_inputs_from_database, write_tab_file_model_inputs, \
-    check_for_tmps_to_link
+    check_for_tmps_to_link, validate_opchars
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, \
     check_if_first_timepoint, check_if_last_timepoint, \
@@ -2543,7 +2543,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
 
-    TODO: could add data type checking here
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -2551,58 +2550,25 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
+    # Validate operational chars table inputs
+    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+                                 "gen_commit_bin")
+
+    # Other module specific validations
 
     # Get startup chars and project inputs
     startup_chars = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    c1 = conn.cursor()
-    projects = c1.execute(
-        """SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_commit_bin"
-        )
-    )
-
     # Convert input data to DataFrame
-    prj_df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
     su_df = pd.DataFrame(
         data=startup_chars.fetchall(),
         columns=[s[0] for s in startup_chars.description]
     )
 
     # Get the number of hours in the timepoint (take min if it varies)
-    c2 = conn.cursor()
-    tmp_durations = c2.execute(
+    c = conn.cursor()
+    tmp_durations = c.execute(
         """SELECT number_of_hours_in_timepoint
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
@@ -2615,67 +2581,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     ).fetchall()
     hrs_in_tmp = min(tmp_durations)
 
-    # Check that min stable level is specified
-    # (not all operational types require this input)
-    req_columns = [
-        "min_stable_level_fraction",
-    ]
-    validation_errors = check_req_prj_columns(prj_df, req_columns, True,
-                                              "gen_commit_bin")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Missing inputs",
-             error
-             )
-        )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "unit_size_mw",
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(prj_df, expected_na_columns,
-                                              False,
-                                              "gen_commit_bin")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
-
     # Check startup shutdown rate inputs
-    validation_errors = validate_startup_shutdown_rate_inputs(prj_df,
-                                                              su_df,
-                                                              hrs_in_tmp)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS, PROJECT_STARTUP_CHARS",
-             "inputs_project_operational_chars, inputs_project_startup_chars",
-             "High",
-             "Invalid startup/shutdown ramp inputs",
-             error
-             )
-        )
+    su_errors = validate_startup_shutdown_rate_inputs(
+        opchar_df, su_df, hrs_in_tmp
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars, inputs_project_startup_chars",
+        severity="High",
+        errors=su_errors
+    )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)

@@ -338,7 +338,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     c = conn.cursor()
-    validation_results = []
 
     # Get the project inputs
     projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
@@ -358,57 +357,48 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     dtype_errors, error_columns = check_dtypes(df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
-             "inputs_project_operational_chars, inputs_project_portfolios",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars, inputs_project_portfolios",
+        severity="High",
+        errors=dtype_errors
+    )
 
     # Check valid numeric columns are non-negative
     numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    sign_errors = check_column_sign_positive(df, valid_numeric_columns)
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Invalid numeric sign",
-             error
-             )
-        )
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=check_column_sign_positive(df, valid_numeric_columns)
+    )
 
     # Check that we're not combining incompatible cap-types and op-types
     invalid_combos = c.execute(
         """SELECT capacity_type, operational_type 
         FROM mod_capacity_and_operational_type_invalid_combos"""
     ).fetchall()
-    validation_errors = validate_op_cap_combos(df, invalid_combos)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
-             "inputs_project_operational_chars, inputs_project_portfolios",
-             "High",
-             "Invalid combination of capacity type and operational type",
-             error
-             )
-        )
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars, inputs_project_portfolios",
+        severity="High",
+        errors=validate_op_cap_combos(df, invalid_combos)
+    )
 
     # Check that capacity type is valid
     # Note: foreign key already ensures this!
@@ -416,20 +406,17 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         """SELECT capacity_type from mod_capacity_types"""
     ).fetchall()
     valid_cap_types = [v[0] for v in valid_cap_types]
-    validation_errors = check_prj_column(df, "capacity_type", valid_cap_types)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_PORTFOLIO",
-             "inputs_project_portfolios",
-             "High",
-             "Invalid capacity type",
-             error
-             )
-        )
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_portfolios",
+        severity="High",
+        errors=check_prj_column(df, "capacity_type", valid_cap_types)
+    )
 
     # Check that operational type is valid
     # Note: foreign key already ensures this!
@@ -437,23 +424,17 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         """SELECT operational_type from mod_operational_types"""
     ).fetchall()
     valid_op_types = [v[0] for v in valid_op_types]
-    validation_errors = check_prj_column(df, "operational_type", valid_op_types)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Invalid operational type",
-             error
-             )
-        )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_portfolios",
+        severity="High",
+        errors=check_prj_column(df, "operational_type", valid_op_types)
+    )
 
 
 def validate_op_cap_combos(df, invalid_combos):

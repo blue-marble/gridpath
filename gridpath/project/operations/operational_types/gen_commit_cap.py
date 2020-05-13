@@ -37,22 +37,19 @@ startup and shutdown costs.
 from __future__ import division
 from __future__ import print_function
 
-from builtins import zip
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
     NonPositiveReals, PercentFraction, Reals, value, Expression
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, check_for_tmps_to_link
+    load_optype_module_specific_data, check_for_tmps_to_link, validate_opchars
 from gridpath.project.common_functions import \
-    check_if_boundary_type_and_first_timepoint, check_boundary_type
+    check_if_boundary_type_and_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -1692,6 +1689,7 @@ def import_module_specific_results_to_database(
 
 # Validation
 ###############################################################################
+
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
@@ -1702,78 +1700,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
-
-    c = conn.cursor()
-    projects = c.execute(
-        """SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        min_stable_level_fraction, unit_size_mw,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_commit_cap"
-        )
-    )
-
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
-
-    # Check that unit size and min stable level are specified
-    # (not all operational types require this input)
-    req_columns = [
-        "min_stable_level_fraction",
-        "unit_size_mw"
-    ]
-    validation_errors = check_req_prj_columns(df, req_columns, True,
-                                              "gen_commit_cap")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Missing inputs",
-             error
-             )
-        )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                              "gen_commit_cap")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "gen_commit_cap")
