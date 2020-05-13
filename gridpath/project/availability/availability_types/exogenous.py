@@ -16,8 +16,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
-from gridpath.auxiliary.validations import validate_dtypes, get_expected_dtypes, \
-    validate_pctfraction
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_pctfraction
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -276,36 +276,31 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in availabilities.description]
     )
 
-    validation_results = []
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_availability_types",
                "inputs_project_availability_exogenous"])
     dtype_errors, error_columns = validate_dtypes(av_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_AVAILABILITY",
-             "inputs_project_availability_exogenous",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_exogenous",
+        severity="High",
+        errors=dtype_errors
+    )
 
     if "availability" not in error_columns:
-        validation_errors = validate_pctfraction(av_df, ["availability_derate"])
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_AVAILABILITY",
-                 "inputs_project_availability_exogenous",
-                 "Invalid availability (exogenous)",
-                 error
-                 )
-            )
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_availability_exogenous",
+            severity="High",
+            errors=validate_pctfraction(av_df, ["availability_derate"])
+        )
+
