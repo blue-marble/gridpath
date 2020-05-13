@@ -219,7 +219,7 @@ def validate_nonnegatives(df, columns):
             bad_idxs = df[idx_col][is_negative].values
             print_bad_idxs = ", ".join(bad_idxs)
             result.append(
-                 "{}}(s) '{}': Expected '{}' >= 0"
+                 "{}(s) '{}': Expected '{}' >= 0"
                  .format(idx_col, print_bad_idxs, column)
                  )
 
