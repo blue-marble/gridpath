@@ -257,6 +257,42 @@ def validate_positives(df, columns):
     return result
 
 
+def validate_pctfraction(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are a percent fraction
+    (0 <= x <= 1).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be a percent
+        fraction
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    if "project" in df.columns:
+        category = "project"
+    elif "transmission_line" in df.columns:
+        category = "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
+    result = []
+    for column in columns:
+        invalids = ((df[column] < 0) | (df[column] > 1))
+        if invalids.any():
+            bad_categories = df[category][invalids].values
+            print_bad_categories = ", ".join(bad_categories)
+            result.append(
+                 "{}(s) '{}': Expected 0 <= '{}' <= 1"
+                 .format(category, print_bad_categories, column)
+                 )
+
+    return result
+
+
 def check_req_prj_columns(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
@@ -900,25 +936,5 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
              )
     return results
 
-
-def validate_availability(av_df):
-    """
-    Check 0 <= availability <= 1
-    :param av_df:
-    :return:
-    """
-    results = []
-
-    invalids = ((av_df["availability_derate"] < 0) |
-                (av_df["availability_derate"] > 1))
-    if invalids.any():
-        bad_projects = av_df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 <= avl_exog_derate <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results
 
 

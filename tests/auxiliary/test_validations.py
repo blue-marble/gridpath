@@ -233,6 +233,56 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_pctfraction(self):
+        df_columns = ["project", "horizon", "availability_derate"]
+        cols_to_check = ["availability_derate"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": []
+                },
+            # Negative inputs are flagged
+            2: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, -1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": ["project(s) 'gas_ct': Expected 0 <= 'availability_derate' <= 1"]
+                },
+            # Inputs > 1 are flagged
+            3: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["project(s) 'coal_plant': Expected 0 <= 'availability_derate' <= 1"]
+                },
+            # Make sure multiple errors are flagged correctly
+            4: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1.5],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["project(s) 'gas_ct, coal_plant': Expected 0 <= 'availability_derate' <= 1"]
+                },
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["error"]
+            actual_list = module_to_test.validate_pctfraction(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
     def test_check_req_prj_columns(self):
         """
 
@@ -800,54 +850,6 @@ class TestAuxiliary(unittest.TestCase):
                 projects_w_ba=test_cases[test_case]["projects_w_ba"],
                 operational_type=test_cases[test_case]["operational_type"],
                 reserve=test_cases[test_case]["reserve"],
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_availability(self):
-        av_df_columns = ["project", "horizon", "availability_derate"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative availabilities are flagged
-            2: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Availabilities > 1 are flagged
-            3: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = module_to_test.validate_availability(
-                av_df=test_cases[test_case]["av_df"],
             )
             self.assertListEqual(expected_list, actual_list)
 
