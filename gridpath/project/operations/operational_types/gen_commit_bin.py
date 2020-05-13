@@ -42,8 +42,8 @@ import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Binary, PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    check_req_prj_columns, write_validation_to_database,\
+from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_startup_shutdown_rate_inputs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables

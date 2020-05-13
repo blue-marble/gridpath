@@ -16,7 +16,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
-from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes
+from gridpath.auxiliary.validations import check_dtypes, get_expected_dtypes, \
+    validate_availability
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -308,24 +309,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                  error
                  )
             )
-
-
-def validate_availability(av_df):
-    """
-    Check 0 <= availability <= 1
-    :param av_df:
-    :return:
-    """
-    results = []
-
-    invalids = ((av_df["availability_derate"] < 0) |
-                (av_df["availability_derate"] > 1))
-    if invalids.any():
-        bad_projects = av_df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 <= avl_exog_derate <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results

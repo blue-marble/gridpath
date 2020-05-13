@@ -22,8 +22,9 @@ import pandas as pd
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals, Param, \
     PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init,\
-    write_validation_to_database, check_constant_heat_rate
+from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    check_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -621,7 +622,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     validate_opchars(subscenarios, subproblem, stage, conn, "gen_simple")
 
     # Other module specific validations
-    validation_results = []
 
     c = conn.cursor()
     heat_rates = c.execute(

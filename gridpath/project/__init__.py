@@ -10,13 +10,14 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, NonNegativeReals, Any
+from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
-from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
-    check_column_sign_positive, write_validation_to_database, check_prj_column
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    check_dtypes, get_expected_dtypes, check_column_sign_positive, \
+    check_prj_column, validate_op_cap_combos
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -436,24 +437,3 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=check_prj_column(df, "operational_type", valid_op_types)
     )
 
-
-def validate_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
-    :return:
-    """
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_projects = df['project'][bad_combos].values
-            print_bad_projects = ", ".join(bad_projects)
-            results.append(
-                "Project(s) '{}': '{}' and '{}'"
-                .format(print_bad_projects, combo[0], combo[1])
-            )
-
-    return results

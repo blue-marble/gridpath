@@ -22,9 +22,10 @@ import warnings
 import pandas as pd
 from pyomo.environ import Constraint, Set
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_constant_heat_rate, \
-    get_projects_by_reserve, check_projects_for_reserves
+from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_projects_by_reserve, check_projects_for_reserves, \
+    check_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -259,7 +260,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                                  "gen_must_run")
 
     # Other module specific validations
-    validation_results = []
 
     c = conn.cursor()
     heat_rates = c.execute(
