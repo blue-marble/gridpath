@@ -16,8 +16,8 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_dtypes, get_expected_dtypes, check_column_sign_positive, \
-    check_prj_column, validate_op_cap_combos
+    validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
+    validate_column, validate_op_cap_combos
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -357,7 +357,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                "inputs_project_operational_chars"]
     )
 
-    dtype_errors, error_columns = check_dtypes(df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -381,7 +381,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=check_column_sign_positive(df, valid_numeric_columns)
+        errors=validate_nonnegatives(df, valid_numeric_columns)
     )
 
     # Check that we're not combining incompatible cap-types and op-types
@@ -416,7 +416,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=check_prj_column(df, "capacity_type", valid_cap_types)
+        errors=validate_column(df, "capacity_type", valid_cap_types)
     )
 
     # Check that operational type is valid
@@ -434,6 +434,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=check_prj_column(df, "operational_type", valid_op_types)
+        errors=validate_column(df, "operational_type", valid_op_types)
     )
 

@@ -65,7 +65,7 @@ class TestAuxiliary(unittest.TestCase):
         # Tear down: close connection
         conn.close()
 
-    def test_check_dtypes(self):
+    def test_validate_dtypes(self):
         """
 
         :return:
@@ -158,13 +158,13 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_tuple = test_cases[test_case]["result"]
-            actual_tuple = module_to_test.check_dtypes(
+            actual_tuple = module_to_test.validate_dtypes(
                 df=test_cases[test_case]["df"],
                 expected_dtypes=test_cases[test_case]["expected_dtypes"]
             )
             self.assertTupleEqual(expected_tuple, actual_tuple)
 
-    def test_check_column_sign_positive(self):
+    def test_validate_nonnegatives(self):
         """
 
         :return:
@@ -191,20 +191,128 @@ class TestAuxiliary(unittest.TestCase):
                           ["coal_plant", -100, 10]
                           ]),
                 "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
-                "result": ["Project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
-                           "Project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
+                "result": ["project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
+                           "project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_column_sign_positive(
+            actual_list = module_to_test.validate_nonnegatives(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"]
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_req_prj_columns(self):
+    def test_validate_positives(self):
+        cols = ["transmission_line", "reactance_ohms"]
+        cols_to_check = ["reactance_ohms"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["tx1", 0.5]]),
+                "result": [],
+                },
+            # Make sure invalid inputs are flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["tx1", -0.5],
+                      ["tx2", None]
+                      ]),
+                "result": ["transmission_line(s) 'tx1': Expected "
+                           "'reactance_ohms' > 0"],
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_positives(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_validate_pctfraction(self):
+        df_columns = ["project", "horizon", "availability_derate"]
+        cols_to_check = ["availability_derate"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": []
+                },
+            # Negative inputs are flagged
+            2: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, -1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": ["project(s) 'gas_ct': Expected 0 <= 'availability_derate' <= 1"]
+                },
+            # Inputs > 1 are flagged
+            3: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["project(s) 'coal_plant': Expected 0 <= 'availability_derate' <= 1"]
+                },
+            # Make sure multiple errors are flagged correctly
+            4: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 201801, 1.5],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["project(s) 'gas_ct, coal_plant': Expected 0 <= 'availability_derate' <= 1"]
+                },
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["error"]
+            actual_list = module_to_test.validate_pctfraction(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_validate_pctfraction_nonzero(self):
+        cols = ["project", "min_stable_level_fraction"]
+        cols_to_check = ["min_stable_level_fraction"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.5]
+                          ]),
+                "result": [],
+                },
+            # Make sure invalid input is flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct1", 1.5],
+                      ["gas_ct2", 0]
+                      ]),
+                "result": ["project(s) 'gas_ct1, gas_ct2': Expected 0 < 'min_stable_level_fraction' <= 1"],
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_pctfraction_nonzero(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_validate_req_cols(self):
         """
 
         :return:
@@ -229,7 +337,7 @@ class TestAuxiliary(unittest.TestCase):
                 "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
-                "result": ["Project(s) 'nuclear'; Always_on should have "
+                "result": ["project(s) 'nuclear'; Always_on should have "
                            "inputs for 'min_stable_level_fraction'"]
                 },
             # Make sure incompatible inputs are flagged
@@ -239,13 +347,13 @@ class TestAuxiliary(unittest.TestCase):
                 "columns": ["startup_cost_per_mw", "shutdown_cost_per_mw"],
                 "required": False,
                 "category": "Always_on",
-                "result": ["Project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
+                "result": ["project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_req_prj_columns(
+            actual_list = module_to_test.validate_req_cols(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 required=test_cases[test_case]["required"],
@@ -253,7 +361,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_prj_column(self):
+    def test_validate_column(self):
         """
 
         :return:
@@ -279,13 +387,13 @@ class TestAuxiliary(unittest.TestCase):
                       ]),
                 "column": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
-                "result": ["Project(s) 'gas_ct2': Invalid entry for capacity_type"]
+                "result": ["project(s) 'gas_ct2': Invalid entry for capacity_type"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_prj_column(
+            actual_list = module_to_test.validate_column(
                 df=test_cases[test_case]["df"],
                 column=test_cases[test_case]["column"],
                 valids=test_cases[test_case]["valids"]
@@ -433,25 +541,47 @@ class TestAuxiliary(unittest.TestCase):
             self.assertListEqual(expected_list, actual_list)
 
     def test_validate_op_cap_combos(self):
-        cols = ["project", "capacity_type", "operational_type"]
+        cols1 = ["project", "capacity_type", "operational_type"]
+        cols2 = ["transmission_line", "capacity_type", "operational_type"]
         test_cases = {
-            # Make sure correct inputs don't throw error
+            # Make sure correct inputs don't throw error for projcts
             1: {"df": pd.DataFrame(
-                    columns=cols,
+                    columns=cols1,
                     data=[["gas_ct", "gen_new_lin",
                            "gen_commit_cap"]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "combo_error": [],
                 },
-            # Make sure invalid combo is flagged
+            # Make sure invalid combo is flagged for projects
             2: {"df": pd.DataFrame(
-                columns=cols,
+                columns=cols1,
                 data=[["gas_ct1", "cap1", "op2"],
                       ["gas_ct2", "cap1", "op3"]
                       ]),
                 "invalid_combos": [("cap1", "op2")],
-                "combo_error": ["Project(s) 'gas_ct1': 'cap1' and 'op2'"],
+                "combo_error": ["project(s) 'gas_ct1': capacity type 'cap1' "
+                                "and operational type 'op2' cannot be "
+                                "combined"],
+                },
+            # Make sure correct inputs don't throw error for tx lines
+            3: {"df": pd.DataFrame(
+                    columns=cols2,
+                    data=[["tx1", "tx_spec", "tx_simple"]
+                          ]),
+                "invalid_combos": [("invalid1", "invalid2")],
+                "combo_error": [],
+                },
+            # Make sure invalid combos are flagged for tx lines
+            4: {"df": pd.DataFrame(
+                columns=cols2,
+                data=[["tx1", "new_build", "tx_dcopf"],
+                      ["tx2", "new_build", "tx_simple"]
+                      ]),
+                "invalid_combos": [("new_build", "tx_dcopf")],
+                "combo_error": ["transmission_line(s) 'tx1': capacity type "
+                                "'new_build' and operational type 'tx_dcopf' "
+                                "cannot be combined"],
                 }
         }
 
@@ -460,33 +590,6 @@ class TestAuxiliary(unittest.TestCase):
             actual_list = module_to_test.validate_op_cap_combos(
                 df=test_cases[test_case]["df"],
                 invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_min_stable_level(self):
-        cols = ["project", "min_stable_level_fraction"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["gas_ct", 0.5]
-                          ]),
-                "min_stable_level_error": [],
-                },
-            # Make sure invalid min_stable_level is flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct1", 1.5],
-                      ["gas_ct2", 0]
-                      ]),
-                "min_stable_level_error": ["Project(s) 'gas_ct1, gas_ct2': expected 0 < min_stable_level <= 1"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["min_stable_level_error"]
-            actual_list = module_to_test.validate_min_stable_level(
-                df=test_cases[test_case]["df"]
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -676,7 +779,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_constant_heat_rate(self):
+    def test_validate_constant_heat_rate(self):
         """
 
         :return:
@@ -705,13 +808,13 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_constant_heat_rate(
+            actual_list = module_to_test.validate_constant_heat_rate(
                 df=test_cases[test_case]["df"],
                 op_type=test_cases[test_case]["op_type"]
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_projects_for_reserves(self):
+    def test_validate_projects_for_reserves(self):
         """
 
         :return:
@@ -744,99 +847,11 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_projects_for_reserves(
+            actual_list = module_to_test.validate_projects_for_reserves(
                 projects_op_type=test_cases[test_case]["projects_op_type"],
                 projects_w_ba=test_cases[test_case]["projects_w_ba"],
                 operational_type=test_cases[test_case]["operational_type"],
                 reserve=test_cases[test_case]["reserve"],
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_tx_validations(self):
-        cols = ["transmission_line", "capacity_type", "operational_type",
-                "reactance_ohms"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["tx1", "tx_spec",
-                           "tx_simple", 0.5]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
-                "reactance_error": [],
-                "combo_error": [],
-                },
-            # Make sure invalid min_stable_level and invalid combo are flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["tx1", "new_build", "tx_dcopf", -0.5],
-                      ["tx2", "new_build", "tx_simple", None]
-                      ]),
-                "invalid_combos": [("new_build", "tx_dcopf")],
-                "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                "combo_error": ["Line(s) 'tx1': 'new_build' and 'tx_dcopf'"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["reactance_error"]
-            actual_list = module_to_test.validate_reactance(
-                df=test_cases[test_case]["df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["combo_error"]
-            actual_list = module_to_test.validate_tx_op_cap_combos(
-                df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_availability(self):
-        av_df_columns = ["project", "horizon", "availability_derate"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative availabilities are flagged
-            2: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Availabilities > 1 are flagged
-            3: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = module_to_test.validate_availability(
-                av_df=test_cases[test_case]["av_df"],
             )
             self.assertListEqual(expected_list, actual_list)
 

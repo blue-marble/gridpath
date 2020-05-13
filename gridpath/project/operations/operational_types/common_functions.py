@@ -11,7 +11,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_req_prj_columns
+    validate_req_cols
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -1004,7 +1004,7 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=check_req_prj_columns(df, req_cols, True, op_type)
+        errors=validate_req_cols(df, req_cols, True, op_type)
     )
 
     # Check that other (not required or optional) inputs are not present
@@ -1016,7 +1016,7 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="Low",
-        errors=check_req_prj_columns(df, na_cols, False, op_type)
+        errors=validate_req_cols(df, na_cols, False, op_type)
     )
 
     # TODO: do data-type and numeric non-negativity checking here rather than

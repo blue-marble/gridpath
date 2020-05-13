@@ -13,7 +13,7 @@ import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_projects_by_reserve, check_projects_for_reserves
+    get_projects_by_reserve, validate_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -382,7 +382,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
     for reserve, projects in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
-        reserve_errors = check_projects_for_reserves(
+        reserve_errors = validate_projects_for_reserves(
             projects_op_type=opchar_df["project"].tolist(),
             projects_w_ba=projects,
             operational_type="gen_var_must_take",

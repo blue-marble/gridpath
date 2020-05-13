@@ -12,6 +12,17 @@ import pandas as pd
 from db.common_functions import spin_on_database_lock
 
 
+def _get_idx_col(df):
+    if "project" in df.columns:
+        return "project"
+    elif "transmission_line" in df.columns:
+        return "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
+
 def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
                                  gridpath_module, db_table, severity, errors):
     """
@@ -143,7 +154,7 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
-def check_dtypes(df, expected_dtypes):
+def validate_dtypes(df, expected_dtypes):
     """
     Checks whether the inputs for a DataFrame are in the expected datatype.
     Helper function for input validation.
@@ -189,39 +200,124 @@ def check_dtypes(df, expected_dtypes):
     return result, columns
 
 
-def check_column_sign_positive(df, columns):
+def validate_nonnegatives(df, columns):
     """
-    Checks whether the selected columns of a DataFrame are non-negative.
+    Checks whether the selected columns of a DataFrame are non-negative (>=0).
     Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a "project"
-        column, and columns param must be a subset of the columns in df
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
     :param columns: list with columns that are expected to be non-negative
-    :return: List of error messages for each column with invalid signs.
+    :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         is_negative = (df[column] < 0)
         if is_negative.any():
-            bad_projects = df["project"][is_negative].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_idxs = df[idx_col][is_negative].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
-                 "Project(s) '{}': Expected '{}' >= 0"
-                 .format(print_bad_projects, column)
+                 "{}(s) '{}': Expected '{}' >= 0"
+                 .format(idx_col, print_bad_idxs, column)
                  )
 
     return result
 
 
-def check_req_prj_columns(df, columns, required, category):
+def validate_positives(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are positive (>0).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be positive
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    idx_col = _get_idx_col(df)
+    result = []
+    for column in columns:
+        invalids = (df[column] <= 0)
+        if invalids.any():
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
+            result.append(
+                 "{}(s) '{}': Expected '{}' > 0"
+                 .format(idx_col, print_bad_idxs, column)
+                 )
+
+    return result
+
+
+def validate_pctfraction(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are a percent fraction
+    (0 <= x <= 1).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be a percent
+        fraction
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    idx_col = _get_idx_col(df)
+    result = []
+    for column in columns:
+        invalids = ((df[column] < 0) | (df[column] > 1))
+        if invalids.any():
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
+            result.append(
+                 "{}(s) '{}': Expected 0 <= '{}' <= 1"
+                 .format(idx_col, print_bad_idxs, column)
+                 )
+
+    return result
+
+
+def validate_pctfraction_nonzero(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are a non-zero percent
+    fraction (0 < x <= 1).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be a non-zero
+        percent fraction
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    idx_col = _get_idx_col(df)
+    result = []
+    for column in columns:
+        invalids = ((df[column] <= 0) | (df[column] > 1))
+        if invalids.any():
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
+            result.append(
+                 "{}(s) '{}': Expected 0 < '{}' <= 1"
+                 .format(idx_col, print_bad_idxs, column)
+                 )
+
+    return result
+
+
+def validate_req_cols(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
     whether the incompatible columns are None/NA. If required columns are
     None/NA, or if incompatible columns are not None/NA, an error message
     is returned.
     Helper function for input validation.
-    :param df: DataFrame for which to check columns. Must have a "project"
-        column, and columns param must be a subset of the columns in df
+    :param df: DataFrame for which to check columns. Must have a "project" or
+        "transmission_line" column, and columns param must be a subset of
+        the columns in df
     :param columns: list of columns to check
     :param required: Boolean, whether the listed columns are required or
         incompatible
@@ -230,6 +326,7 @@ def check_req_prj_columns(df, columns, required, category):
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
+    idx_col = _get_idx_col(df)
     result = []
     for column in columns:
         if required:
@@ -239,17 +336,17 @@ def check_req_prj_columns(df, columns, required, category):
             invalids = pd.notna(df[column])
             error_str = "should not have inputs for"
         if invalids.any():
-            bad_projects = df["project"][invalids].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
             result.append(
-                "Project(s) '{}'; {} {} '{}'"
-                .format(print_bad_projects, category, error_str, column)
+                "{}(s) '{}'; {} {} '{}'"
+                .format(idx_col, print_bad_idxs, category, error_str, column)
                  )
 
     return result
 
 
-def check_prj_column(df, column, valids):
+def validate_column(df, column, valids):
     """
     Check that the specified column only has entries within the list of valid
     entries ("valids"). If not, an error message is returned.
@@ -257,20 +354,21 @@ def check_prj_column(df, column, valids):
 
     Note: could be expanded to check multiple columns
     :param df: DataFrame for which to check columns. Must have a "project"
-        column, and a column equal to the column param.
+        or "transmission_line" column, and a column equal to the column param.
     :param column: string, column to check
     :param valids: list of valid entries
-    :return:
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
     """
+    idx_col = _get_idx_col(df)
     results = []
-
     invalids = ~df[column].isin(valids)
     if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
+        bad_idxs = df["project"][invalids].values
+        print_bad_idxs = ", ".join(bad_idxs)
         results.append(
-            "Project(s) '{}': Invalid entry for {}"
-            .format(print_bad_projects, column)
+            "{}(s) '{}': Invalid entry for {}"
+            .format(idx_col, print_bad_idxs, column)
         )
 
     return results
@@ -361,42 +459,25 @@ def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
 def validate_op_cap_combos(df, invalid_combos):
     """
     Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
+    :param df: pandas DataFrame, should contain columns 'capacity_type', 
+        'operational_type', and 'project' or 'transmission_line'
+    :param invalid_combos: list of tuples with the invalid cap-type op-type
+        combinations
     :return:
     """
+    idx_col = _get_idx_col(df)
     results = []
     for combo in invalid_combos:
         bad_combos = ((df["capacity_type"] == combo[0]) &
                       (df["operational_type"] == combo[1]))
         if bad_combos.any():
-            bad_projects = df['project'][bad_combos].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_idxs = df[idx_col][bad_combos].values
+            print_bad_idxs = ", ".join(bad_idxs)
             results.append(
-                "Project(s) '{}': '{}' and '{}'"
-                .format(print_bad_projects, combo[0], combo[1])
+                "{}(s) '{}': capacity type '{}' and operational type '{}' "
+                "cannot be combined"
+                .format(idx_col, print_bad_idxs, combo[0], combo[1])
             )
-
-    return results
-
-
-def validate_min_stable_level(df):
-    """
-    Check 0 < min stable fraction <= 1
-    :param df:
-    :return:
-    """
-    results = []
-
-    invalids = ((df["min_stable_level_fraction"] <= 0) |
-                (df["min_stable_level_fraction"] > 1))
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 < min_stable_level <= 1"
-            .format(print_bad_projects)
-        )
 
     return results
 
@@ -784,10 +865,10 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     return results
 
 
-def check_constant_heat_rate(df, op_type):
+def validate_constant_heat_rate(df, op_type):
     """
     Check whether the projects in the DataFrame have a constant heat rate
-    based on the number of load points per project in the DAtaFrame
+    based on the number of load points per project in the DataFrame
     :param df: DataFrame for which to check constant heat rate. Must have
         "project", "load_point_fraction" columns
     :param op_type: Operational type (used in error message)
@@ -809,8 +890,8 @@ def check_constant_heat_rate(df, op_type):
     return results
 
 
-def check_projects_for_reserves(projects_op_type, projects_w_ba,
-                                operational_type, reserve):
+def validate_projects_for_reserves(projects_op_type, projects_w_ba,
+                                   operational_type, reserve):
     """
     Check that a list of projects of a given operational_type does not show up
     in a a list of projects that can provide a given type of reserve. This is
@@ -843,68 +924,5 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
              )
     return results
 
-
-def validate_tx_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
-    :return:
-    """
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_lines = df['transmission_line'][bad_combos].values
-            print_bad_lines = ", ".join(bad_lines)
-            results.append(
-                "Line(s) '{}': '{}' and '{}'"
-                .format(print_bad_lines, combo[0], combo[1])
-            )
-
-    return results
-
-
-def validate_reactance(df):
-    """
-    Check reactance > 1 for tx_dcopf lines
-    :param df:
-    :return:
-    """
-    results = []
-
-    # df = df[df["operational_type"] == "tx_dcopf"]
-    invalids = (df["reactance_ohms"] <= 0)
-    if invalids.any():
-        bad_lines = df["transmission_line"][invalids].values
-        print_bad_lines = ", ".join(bad_lines)
-        results.append(
-            "Line(s) '{}': expected reactance_ohms > 0"
-            .format(print_bad_lines)
-        )
-
-    return results
-
-
-def validate_availability(av_df):
-    """
-    Check 0 <= availability <= 1
-    :param av_df:
-    :return:
-    """
-    results = []
-
-    invalids = ((av_df["availability_derate"] < 0) |
-                (av_df["availability_derate"] > 1))
-    if invalids.any():
-        bad_projects = av_df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 <= avl_exog_derate <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results
 
 

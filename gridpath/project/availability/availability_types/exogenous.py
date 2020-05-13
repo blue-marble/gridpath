@@ -16,8 +16,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
-from gridpath.auxiliary.validations import check_dtypes, get_expected_dtypes, \
-    validate_availability
+from gridpath.auxiliary.validations import validate_dtypes, get_expected_dtypes, \
+    validate_pctfraction
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -281,7 +281,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_availability_types",
                "inputs_project_availability_exogenous"])
-    dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(av_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -296,7 +296,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         )
 
     if "availability" not in error_columns:
-        validation_errors = validate_availability(av_df)
+        validation_errors = validate_pctfraction(av_df, ["availability_derate"])
         for error in validation_errors:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
