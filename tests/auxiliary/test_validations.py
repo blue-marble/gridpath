@@ -204,6 +204,35 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_positives(self):
+        cols = ["transmission_line", "reactance_ohms"]
+        cols_to_check = ["reactance_ohms"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["tx1", 0.5]]),
+                "result": [],
+                },
+            # Make sure invalid inputs are flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["tx1", -0.5],
+                      ["tx2", None]
+                      ]),
+                "result": ["transmission_line(s) 'tx1': Expected "
+                           "'reactance_ohms' > 0"],
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_positives(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
     def test_check_req_prj_columns(self):
         """
 
@@ -771,32 +800,6 @@ class TestAuxiliary(unittest.TestCase):
                 projects_w_ba=test_cases[test_case]["projects_w_ba"],
                 operational_type=test_cases[test_case]["operational_type"],
                 reserve=test_cases[test_case]["reserve"],
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_reactance(self):
-        cols = ["transmission_line", "reactance_ohms"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["tx1", 0.5]]),
-                "reactance_error": [],
-                },
-            # Make sure invalid min_stable_level and invalid combo are flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["tx1", -0.5],
-                      ["tx2", None]
-                      ]),
-                "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["reactance_error"]
-            actual_list = module_to_test.validate_reactance(
-                df=test_cases[test_case]["df"]
             )
             self.assertListEqual(expected_list, actual_list)
 

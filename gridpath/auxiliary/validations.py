@@ -191,7 +191,7 @@ def validate_dtypes(df, expected_dtypes):
 
 def validate_nonnegatives(df, columns):
     """
-    Checks whether the selected columns of a DataFrame are non-negative.
+    Checks whether the selected columns of a DataFrame are non-negative (>=0).
     Helper function for input validation.
     :param df: DataFrame for which to check signs. Must have a 'project'
         or 'transmission_line' column, and 'columns' param must be a subset
@@ -218,6 +218,40 @@ def validate_nonnegatives(df, columns):
             result.append(
                  "project(s) '{}': Expected '{}' >= 0"
                  .format(print_bad_categories, column)
+                 )
+
+    return result
+
+
+def validate_positives(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are positive (>0).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be positive
+    :return: List of error messages for each column with invalid signs.
+        Error message specifies the column.
+    """
+    if "project" in df.columns:
+        category = "project"
+    elif "transmission_line" in df.columns:
+        category = "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
+    result = []
+    for column in columns:
+        invalids = (df[column] <= 0)
+        if invalids.any():
+            bad_categories = df[category][invalids].values
+            print_bad_categories = ", ".join(bad_categories)
+            result.append(
+                 "{}(s) '{}': Expected '{}' > 0"
+                 .format(category, print_bad_categories, column)
                  )
 
     return result
@@ -864,26 +898,6 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
              "Project(s) '{}'; {} cannot provide {}".format(
                  print_bad_projects, operational_type, reserve)
              )
-    return results
-
-
-def validate_reactance(df):
-    """
-    Check reactance > 0 for tx_dcopf lines
-    :param df:
-    :return:
-    """
-    results = []
-
-    invalids = (df["reactance_ohms"] <= 0)
-    if invalids.any():
-        bad_lines = df["transmission_line"][invalids].values
-        print_bad_lines = ", ".join(bad_lines)
-        results.append(
-            "Line(s) '{}': expected reactance_ohms > 0"
-            .format(print_bad_lines)
-        )
-
     return results
 
 
