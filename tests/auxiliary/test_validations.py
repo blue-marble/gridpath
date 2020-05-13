@@ -387,7 +387,9 @@ class TestAuxiliary(unittest.TestCase):
                       ]),
                 "column": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
-                "result": ["project(s) 'gas_ct2': Invalid entry for capacity_type"]
+                "result": ["project(s) 'gas_ct2': Invalid entry for "
+                           "capacity_type. Options are 'gen_new_lin, "
+                           "stor_new_lin'"]
                 }
         }
 

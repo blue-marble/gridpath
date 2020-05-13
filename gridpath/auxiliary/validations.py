@@ -352,7 +352,6 @@ def validate_column(df, column, valids):
     entries ("valids"). If not, an error message is returned.
     Helper function for input validation.
 
-    Note: could be expanded to check multiple columns
     :param df: DataFrame for which to check columns. Must have a "project"
         or "transmission_line" column, and a column equal to the column param.
     :param column: string, column to check
@@ -364,11 +363,12 @@ def validate_column(df, column, valids):
     results = []
     invalids = ~df[column].isin(valids)
     if invalids.any():
-        bad_idxs = df["project"][invalids].values
+        bad_idxs = df[idx_col][invalids].values
         print_bad_idxs = ", ".join(bad_idxs)
+        print_valids = ", ".join(valids)
         results.append(
-            "{}(s) '{}': Invalid entry for {}"
-            .format(idx_col, print_bad_idxs, column)
+            "{}(s) '{}': Invalid entry for {}. Options are '{}'"
+            .format(idx_col, print_bad_idxs, column, print_valids)
         )
 
     return results
