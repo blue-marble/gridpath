@@ -433,25 +433,47 @@ class TestAuxiliary(unittest.TestCase):
             self.assertListEqual(expected_list, actual_list)
 
     def test_validate_op_cap_combos(self):
-        cols = ["project", "capacity_type", "operational_type"]
+        cols1 = ["project", "capacity_type", "operational_type"]
+        cols2 = ["transmission_line", "capacity_type", "operational_type"]
         test_cases = {
-            # Make sure correct inputs don't throw error
+            # Make sure correct inputs don't throw error for projcts
             1: {"df": pd.DataFrame(
-                    columns=cols,
+                    columns=cols1,
                     data=[["gas_ct", "gen_new_lin",
                            "gen_commit_cap"]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "combo_error": [],
                 },
-            # Make sure invalid combo is flagged
+            # Make sure invalid combo is flagged for projects
             2: {"df": pd.DataFrame(
-                columns=cols,
+                columns=cols1,
                 data=[["gas_ct1", "cap1", "op2"],
                       ["gas_ct2", "cap1", "op3"]
                       ]),
                 "invalid_combos": [("cap1", "op2")],
-                "combo_error": ["Project(s) 'gas_ct1': 'cap1' and 'op2'"],
+                "combo_error": ["project(s) 'gas_ct1': capacity type 'cap1' "
+                                "and operational type 'op2' cannot be "
+                                "combined"],
+                },
+            # Make sure correct inputs don't throw error for tx lines
+            3: {"df": pd.DataFrame(
+                    columns=cols2,
+                    data=[["tx1", "tx_spec", "tx_simple"]
+                          ]),
+                "invalid_combos": [("invalid1", "invalid2")],
+                "combo_error": [],
+                },
+            # Make sure invalid combos are flagged for tx lines
+            4: {"df": pd.DataFrame(
+                columns=cols2,
+                data=[["tx1", "new_build", "tx_dcopf"],
+                      ["tx2", "new_build", "tx_simple"]
+                      ]),
+                "invalid_combos": [("new_build", "tx_dcopf")],
+                "combo_error": ["transmission_line(s) 'tx1': capacity type "
+                                "'new_build' and operational type 'tx_dcopf' "
+                                "cannot be combined"],
                 }
         }
 
@@ -752,29 +774,22 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_tx_validations(self):
-        cols = ["transmission_line", "capacity_type", "operational_type",
-                "reactance_ohms"]
+    def test_validate_reactance(self):
+        cols = ["transmission_line", "reactance_ohms"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["tx1", "tx_spec",
-                           "tx_simple", 0.5]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
+                    data=[["tx1", 0.5]]),
                 "reactance_error": [],
-                "combo_error": [],
                 },
             # Make sure invalid min_stable_level and invalid combo are flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["tx1", "new_build", "tx_dcopf", -0.5],
-                      ["tx2", "new_build", "tx_simple", None]
+                data=[["tx1", -0.5],
+                      ["tx2", None]
                       ]),
-                "invalid_combos": [("new_build", "tx_dcopf")],
                 "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                "combo_error": ["Line(s) 'tx1': 'new_build' and 'tx_dcopf'"],
                 }
         }
 
@@ -782,13 +797,6 @@ class TestAuxiliary(unittest.TestCase):
             expected_list = test_cases[test_case]["reactance_error"]
             actual_list = module_to_test.validate_reactance(
                 df=test_cases[test_case]["df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["combo_error"]
-            actual_list = module_to_test.validate_tx_op_cap_combos(
-                df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
             )
             self.assertListEqual(expected_list, actual_list)
 

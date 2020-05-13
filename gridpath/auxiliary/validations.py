@@ -361,20 +361,33 @@ def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
 def validate_op_cap_combos(df, invalid_combos):
     """
     Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
+    :param df: pandas DataFrame, should contain columns 'capacity_type', 
+        'operational_type', and 'project' or 'transmission_line'
+    :param invalid_combos: list of tuples with the invalid cap-type op-type
+        combinations
     :return:
     """
+
+    if "project" in df.columns:
+        category = "project"
+    elif "transmission_line" in df.columns:
+        category = "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
     results = []
     for combo in invalid_combos:
         bad_combos = ((df["capacity_type"] == combo[0]) &
                       (df["operational_type"] == combo[1]))
         if bad_combos.any():
-            bad_projects = df['project'][bad_combos].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_categories = df[category][bad_combos].values
+            print_bad_categories = ", ".join(bad_categories)
             results.append(
-                "Project(s) '{}': '{}' and '{}'"
-                .format(print_bad_projects, combo[0], combo[1])
+                "{}(s) '{}': capacity type '{}' and operational type '{}' "
+                "cannot be combined"
+                .format(category, print_bad_categories, combo[0], combo[1])
             )
 
     return results
@@ -844,37 +857,14 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
     return results
 
 
-def validate_tx_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
-    :return:
-    """
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_lines = df['transmission_line'][bad_combos].values
-            print_bad_lines = ", ".join(bad_lines)
-            results.append(
-                "Line(s) '{}': '{}' and '{}'"
-                .format(print_bad_lines, combo[0], combo[1])
-            )
-
-    return results
-
-
 def validate_reactance(df):
     """
-    Check reactance > 1 for tx_dcopf lines
+    Check reactance > 0 for tx_dcopf lines
     :param df:
     :return:
     """
     results = []
 
-    # df = df[df["operational_type"] == "tx_dcopf"]
     invalids = (df["reactance_ohms"] <= 0)
     if invalids.any():
         bad_lines = df["transmission_line"][invalids].values

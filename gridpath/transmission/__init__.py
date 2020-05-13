@@ -14,7 +14,7 @@ from pyomo.environ import Set, Param
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_tx_op_cap_combos, validate_reactance
+    validate_op_cap_combos, validate_reactance
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -273,7 +273,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
         severity="High",
-        errors=validate_tx_op_cap_combos(df, invalid_combos)
+        errors=validate_op_cap_combos(df, invalid_combos)
     )
 
     # Check reactance > 0
