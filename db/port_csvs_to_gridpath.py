@@ -4,25 +4,22 @@
 """
 The *port_csvs_to_gridpath.py* script ports the input data provided through
 csvs to the sql database, which is created using the create_database.py
-script. The csv_data_master.csv has the list of all the tables in the
+script. The csv_data_master.csv has the list of all the subscenarios in the
 gridpath database. The 'required' column in this csv indicates whether the
-table is required [1] or optional [0]. The 'include' column indicates
-whether the user would like to include this table and import the csv data
-into this table [1] or omit the table [0]. The paths to the csv data
-subfolders that house the csv scenario data for each table are also proided
+subscenario is required [1] or optional [0]. The 'include' column indicates
+whether the user would like to include this subscenario and import the csv data
+into this subscenario [1] or omit the subscenario [0]. The paths to the csv data
+subfolders that house the csv scenario data for each subscenario are also proided
 in this master csv.
 
-Input csvs for tables required for optional features are under the
-'features' subfolder
-
-The script will look for CSV files in each table's subfolder. It is
+The script will look for CSV files in each subscenario's subfolder. It is
 expecting that the CSV filenames will conform to a certain structure
 indicating the ID and name for the subscenarios, and contain the data for
 the subscenarios. See csvs_to_db_utilities.csvs_read for the  specific
 requirements depending on the function called from that module.
 
 The scenario.csv under the scenario folder holds the input data for the
-scenario table, which indicates which subscenarios should be included in a
+subscenario, which indicates which subscenarios should be included in a
 particular scenario by providing the subscenario_id. Each scenario has a
 separate column. The user-defined name of the scenario should be entered as
 the name of the scenario column.
@@ -133,7 +130,7 @@ def load_csv_data(conn, csv_path, quiet):
     c = conn.cursor()
 
     #### MASTER CSV DATA ####
-    # If include flag is 1, then read the feature, subscenario_id, table, and
+    # If include flag is 1, then read the feature, subscenario_id, and
     # path into a dictionary and call the specific function for the feature
     csv_data_master = pd.read_csv(
         os.path.join(csv_path, 'csv_data_master.csv')
@@ -143,7 +140,7 @@ def load_csv_data(conn, csv_path, quiet):
     # Handled differently, as a temporal_scenario_id involves multiple files
     temporal_directory = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        table="temporal"
+        subscenario="temporal_scenario_id"
     )
     if temporal_directory is not None:
         temporal_subscenario_directories = \
@@ -156,7 +153,7 @@ def load_csv_data(conn, csv_path, quiet):
                 conn=conn, subscenario_directory=subscenario_directory
             )
     else:
-        print("ERROR: inputs_temporal table is required")
+        print("ERROR: temporal_scenario_id is required")
         sys.exit()
 
     #### LOAD LOAD (DEMAND) DATA ####
@@ -167,9 +164,9 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="geography_load_zones",
+        subscenario="load_zone_scenario_id",
         insert_method=geography.geography_load_zones,
-        none_message="ERROR: geography_load_zones table is required"
+        none_message="ERROR: load_zone_scenario_id is required"
 
     )
 
@@ -179,9 +176,9 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_load_zones",
+        subscenario="project_load_zone_scenario_id",
         insert_method=project_zones.project_load_zones,
-        none_message="ERROR: project_load_zones table is required"
+        none_message="ERROR: project_load_zone_scenario_id is required"
 
     )
 
@@ -191,17 +188,17 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="system_load",
+        subscenario="load_scenario_id",
         insert_method=system_load.insert_system_static_loads,
-        none_message="ERROR: system_load table is required"
+        none_message="ERROR: load_scenario_id subscenario is required"
 
     )
 
     #### LOAD PROJECTS DATA ####
     ## PROJECT LIST AND OPERATIONAL CHARS
-    # Note projects list is pulled from the project_operational_chars table
-    # TODO: project list shouldn't get pulled from the operational chars table
-    #  but from a separate table; need to determine appropriate method
+    # Note projects list is pulled from the project_operational_chars
+    # TODO: project list shouldn't get pulled from the operational chars
+    #  but from a separate CSV; need to determine appropriate approach
     # Note that we use a separate method for loading operational
     # characteristics, as the opchar table is too wide to rely on column
     # order (so we don't create a list of tuples to insert, but rely on the
@@ -210,7 +207,7 @@ def load_csv_data(conn, csv_path, quiet):
     opchar_subsc_input, opchar_data_input = db_util_common.read_inputs(
         csvs_main_dir=csv_path,
         csv_data_master=csv_data_master,
-        table="project_operational_chars",
+        subscenario="project_operational_chars_scenario_id",
         quiet=quiet
     )
 
@@ -227,7 +224,7 @@ def load_csv_data(conn, csv_path, quiet):
             data_input=opchar_data_input
         )
     else:
-        print("ERROR: project_operational_chars table is required")
+        print("ERROR: project_operational_chars_scenario_id is required")
 
     ## PROJECT HYDRO GENERATOR PROFILES ##
     db_util_common.read_data_and_insert_into_db(
@@ -235,7 +232,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_hydro_operational_chars",
+        subscenario="hydro_operational_chars_scenario_id",
         insert_method=project_operational_chars.update_project_hydro_opchar,
         none_message="",
         use_project_method=True
@@ -247,7 +244,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_variable_generator_profiles",
+        subscenario="variable_generator_profile_scenario_id",
         insert_method=
         project_operational_chars.update_project_variable_profiles,
         none_message="",
@@ -260,7 +257,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_portfolios",
+        subscenario="project_portfolio_scenario_id",
         insert_method=project_portfolios.update_project_portfolios,
         none_message=""
 
@@ -272,7 +269,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_specified_capacity",
+        subscenario="project_specified_capacity_scenario_id",
         insert_method=project_specified_params.update_project_capacities,
         none_message=""
     )
@@ -283,7 +280,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_specified_fixed_cost",
+        subscenario="project_specified_fixed_cost_scenario_id",
         insert_method=project_specified_params.update_project_fixed_costs,
         none_message=""
     )
@@ -294,7 +291,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_new_potential",
+        subscenario="project_new_potential_scenario_id",
         insert_method=project_new_potentials.update_project_potentials,
         none_message=""
     )
@@ -305,7 +302,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_new_binary_build_size",
+        subscenario="project_new_binary_build_size_scenario_id",
         insert_method=project_new_potentials.update_project_binary_build_sizes,
         none_message=""
     )
@@ -316,7 +313,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_new_cost",
+        subscenario="project_new_cost_scenario_id",
         insert_method=project_new_costs.update_project_new_costs,
         none_message=""
     )
@@ -327,7 +324,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_capacity_group_requirements",
+        subscenario="project_capacity_group_requirement_scenario_id",
         insert_method=
         project_capacity_groups.insert_capacity_group_requirements,
         none_message=""
@@ -338,7 +335,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_capacity_groups",
+        subscenario="project_capacity_group_scenario_id",
         insert_method=
         project_capacity_groups.insert_capacity_group_projects,
         none_message=""
@@ -350,7 +347,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_elcc_chars",
+        subscenario="project_elcc_chars_scenario_id",
         insert_method=project_prm.project_elcc_chars,
         none_message=""
     )
@@ -361,7 +358,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_prm_energy_only",
+        subscenario="prm_energy_only_scenario_id",
         insert_method=project_prm.deliverability_groups,
         none_message=""
     )
@@ -372,7 +369,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_local_capacity_chars",
+        subscenario="project_local_capacity_chars_scenario_id",
         insert_method=
         project_local_capacity_chars.insert_project_local_capacity_chars,
         none_message=""
@@ -386,7 +383,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_availability_types",
+        subscenario="project_availability_scenario_id",
         insert_method=
         project_availability.make_scenario_and_insert_types_and_ids,
         none_message=""
@@ -398,7 +395,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_availability_exogenous",
+        subscenario="exogenous_availability_scenario_id",
         insert_method=
         project_availability.insert_project_availability_exogenous,
         none_message="",
@@ -411,7 +408,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_availability_endogenous",
+        subscenario="endogenous_availability_scenario_id",
         insert_method=
         project_availability.insert_project_availability_endogenous,
         none_message="",
@@ -426,7 +423,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_heat_rate_curves",
+        subscenario="heat_rate_curves_scenario_id",
         insert_method=project_operational_chars.update_project_hr_curves,
         none_message="",
         use_project_method=True
@@ -440,7 +437,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_variable_om_curves",
+        subscenario="variable_om_curves_scenario_id",
         insert_method=project_operational_chars.update_project_vom_curves,
         none_message="",
         use_project_method=True
@@ -455,7 +452,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_startup_chars",
+        subscenario="startup_chars_scenario_id",
         insert_method=project_operational_chars.update_project_startup_chars,
         none_message="",
         use_project_method=True
@@ -469,7 +466,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_fuels",
+        subscenario="fuel_scenario_id",
         insert_method=fuels.update_fuels,
         none_message=""
     )
@@ -480,7 +477,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="project_fuel_prices",
+        subscenario="fuel_price_scenario_id",
         insert_method=fuels.update_fuel_prices,
         none_message=""
     )
@@ -493,7 +490,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="geography_carbon_cap_zones",
+        subscenario="carbon_cap_zone_scenario_id",
         insert_method=geography.geography_carbon_cap_zones,
         none_message=""
     )
@@ -504,7 +501,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="geography_local_capacity_zones",
+        subscenario="local_capacity_zone_scenario_id",
         insert_method=geography.geography_local_capacity_zones,
         none_message=""
     )
@@ -515,7 +512,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="geography_prm_zones",
+        subscenario="prm_zone_scenario_id",
         insert_method=geography.geography_prm_zones,
         none_message=""
     )
@@ -526,7 +523,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="geography_rps_zones",
+        subscenario="rps_zone_scenario_id",
         insert_method=geography.geography_rps_zones,
         none_message=""
     )
@@ -538,7 +535,7 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
             quiet=quiet,
-            table="project_{}_zones".format(policy_type),
+            subscenario="project_{}_zone_scenario_id".format(policy_type),
             insert_method=project_zones.project_policy_zones,
             none_message="",
             policy_type=policy_type
@@ -550,7 +547,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="system_carbon_cap_targets",
+        subscenario="carbon_cap_target_scenario_id",
         insert_method=carbon_cap.insert_carbon_cap_targets,
         none_message=""
     )
@@ -561,7 +558,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="system_local_capacity_requirement",
+        subscenario="local_capacity_requirement_scenario_id",
         insert_method=system_local_capacity.local_capacity_requirement,
         none_message=""
     )
@@ -572,7 +569,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="system_prm_requirement",
+        subscenario="prm_requirement_scenario_id",
         insert_method=system_prm.prm_requirement,
         none_message=""
     )
@@ -582,7 +579,7 @@ def load_csv_data(conn, csv_path, quiet):
     # files
     rps_target_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        table="system_rps_targets"
+        subscenario="rps_target_scenario_id"
     )
     if rps_target_dir is not None:
         rps_target_subscenario_directories = \
@@ -604,7 +601,7 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
             quiet=quiet,
-            table="geography_{}_bas".format(reserve_type),
+            subscenario="{}_ba_scenario_id".format(reserve_type),
             insert_method=geography.geography_reserve_bas,
             none_message="",
             reserve_type=reserve_type
@@ -617,7 +614,7 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master=csv_data_master,
             csvs_main_dir=csv_path,
             quiet=quiet,
-            table="project_{}_bas".format(reserve_type),
+            subscenario="project_{}_ba_scenario_id".format(reserve_type),
             insert_method=project_zones.project_reserve_bas,
             none_message="",
             reserve_type=reserve_type
@@ -629,12 +626,13 @@ def load_csv_data(conn, csv_path, quiet):
     # files
     for reserve_type in reserves_list:
         if csv_data_master.loc[
-            csv_data_master['table'] == "system_" + reserve_type,
+            csv_data_master["subscenario"] ==
+            "{}_scenario_id".format(reserve_type),
             'include'
         ].iloc[0] == 1:
             data_folder_path = os.path.join(csv_path, csv_data_master.loc[
-                csv_data_master['table']
-                == "system_" + reserve_type, 'path'
+                csv_data_master["subscenario"]
+                == "{}_scenario_id".format(reserve_type), 'path'
             ].iloc[0])
 
             reserve_subscenario_directories = \
@@ -657,7 +655,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_specified_capacity",
+        subscenario="transmission_specified_capacity_scenario_id",
         insert_method=transmission_capacities.insert_transmission_capacities,
         none_message=""
     )
@@ -668,7 +666,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_portfolios",
+        subscenario="transmission_portfolio_scenario_id",
         insert_method=transmission_portfolios.insert_transmission_portfolio,
         none_message=""
     )
@@ -680,7 +678,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_load_zones",
+        subscenario="transmission_load_zone_scenario_id",
         insert_method=transmission_zones.insert_transmission_load_zones,
         none_message=""
     )
@@ -691,7 +689,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_carbon_cap_zones",
+        subscenario="transmission_carbon_cap_zone_scenario_id",
         insert_method=transmission_zones.insert_transmission_carbon_cap_zones,
         none_message=""
     )
@@ -702,7 +700,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_operational_chars",
+        subscenario="transmission_operational_chars_scenario_id",
         insert_method=
         transmission_operational_chars.transmission_operational_chars,
         none_message=""
@@ -714,7 +712,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_new_cost",
+        subscenario="transmission_new_cost_scenario_id",
         insert_method=transmission_new_cost.transmision_new_cost,
         none_message=""
     )
@@ -725,7 +723,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_hurdle_rates",
+        subscenario="transmission_hurdle_rate_scenario_id",
         insert_method=
         transmission_hurdle_rates.insert_transmission_hurdle_rates,
         none_message=""
@@ -737,7 +735,7 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_simultaneous_flow_limits",
+        subscenario="transmission_simultaneous_flow_limit_scenario_id",
         insert_method=
         simultaneous_flows.insert_into_database,
         none_message=""
@@ -748,7 +746,8 @@ def load_csv_data(conn, csv_path, quiet):
         csv_data_master=csv_data_master,
         csvs_main_dir=csv_path,
         quiet=quiet,
-        table="transmission_simultaneous_flow_limit_line_groups",
+        subscenario=
+        "transmission_simultaneous_flow_limit_line_group_scenario_id",
         insert_method=simultaneous_flow_groups.insert_into_database,
         none_message=""
     )
@@ -762,7 +761,7 @@ def load_csv_data(conn, csv_path, quiet):
     # files
     elcc_surface_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        table="system_prm_zone_elcc_surface"
+        subscenario="elcc_surface_scenario_id"
     )
     if elcc_surface_dir is not None:
         elcc_surface_subscenario_directories = \
@@ -778,7 +777,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD SCENARIOS DATA ####
     scenarios_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        table="scenarios"
+        subscenario="scenarios"
     )
     if scenarios_dir is not None:
         f_number = 0
@@ -800,7 +799,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD SOLVER OPTIONS ####
     solver_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        table="solver"
+        subscenario="solver_options_id"
     )
     if solver_dir is not None:
         for f in os.listdir(solver_dir):
@@ -818,8 +817,6 @@ def load_csv_data(conn, csv_path, quiet):
         solver_options.load_solver_options(
             conn, c, csv_solver_options, csv_solver_descriptions
         )
-    else:
-        print("ERROR: solver tables are required")
 
 
 def main(args=None):

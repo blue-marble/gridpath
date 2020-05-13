@@ -1,5 +1,5 @@
-feature,subscenario_id,table,required,include,path,notes
-core,,scenarios,1,1,scenarios,
+feature,subscenario,table,required,include,path,notes
+core,scenarios,scenarios,1,1,scenarios,
 core,solver_options_id,solver,1,1,solver,requires both solver options and description csvs
 core,temporal_scenario_id,temporal,1,1,temporal,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,project_portfolio_scenario_id,project_portfolios,1,1,project/project_portfolios,
@@ -59,7 +59,7 @@ carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,0,1,poli
 carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,0,1,policy/carbon_cap/system_carbon_cap_targets,
 track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,0,1,policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones,
 prm,prm_zone_scenario_id,geography_prm_zones,0,1,reliability/prm/geography_prm_zones,
-prm,project__prm_zone_scenario_id,project_prm_zones,0,1,reliability/prm/project_prm_zones,
+prm,project_prm_zone_scenario_id,project_prm_zones,0,1,reliability/prm/project_prm_zones,
 prm,project_elcc_chars_scenario_id,project_elcc_chars,0,1,reliability/prm/project_elcc_chars,
 prm,prm_energy_only_scenario_id,project_prm_energy_only,0,1,reliability/prm/project_prm_energy_only,
 prm,prm_requirement_scenario_id,system_prm_requirement,0,1,reliability/prm/system_prm_requirement,
