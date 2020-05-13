@@ -189,25 +189,35 @@ def check_dtypes(df, expected_dtypes):
     return result, columns
 
 
-def check_column_sign_positive(df, columns):
+def validate_nonnegatives(df, columns):
     """
     Checks whether the selected columns of a DataFrame are non-negative.
     Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a "project"
-        column, and columns param must be a subset of the columns in df
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
     :param columns: list with columns that are expected to be non-negative
     :return: List of error messages for each column with invalid signs.
         Error message specifies the column.
     """
+    if "project" in df.columns:
+        category = "project"
+    elif "transmission_line" in df.columns:
+        category = "transmission_line"
+    else:
+        raise IOError(
+            "df should contain 'project' or 'transmission_line' column"
+        )
+
     result = []
     for column in columns:
         is_negative = (df[column] < 0)
         if is_negative.any():
-            bad_projects = df["project"][is_negative].values
-            print_bad_projects = ", ".join(bad_projects)
+            bad_categories = df[category][is_negative].values
+            print_bad_categories = ", ".join(bad_categories)
             result.append(
-                 "Project(s) '{}': Expected '{}' >= 0"
-                 .format(print_bad_projects, column)
+                 "project(s) '{}': Expected '{}' >= 0"
+                 .format(print_bad_categories, column)
                  )
 
     return result

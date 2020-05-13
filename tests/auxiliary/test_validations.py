@@ -164,7 +164,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertTupleEqual(expected_tuple, actual_tuple)
 
-    def test_check_column_sign_positive(self):
+    def test_validate_nonnegatives(self):
         """
 
         :return:
@@ -191,14 +191,14 @@ class TestAuxiliary(unittest.TestCase):
                           ["coal_plant", -100, 10]
                           ]),
                 "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
-                "result": ["Project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
-                           "Project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
+                "result": ["project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
+                           "project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.check_column_sign_positive(
+            actual_list = module_to_test.validate_nonnegatives(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"]
             )

@@ -27,7 +27,7 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_column_sign_positive, get_expected_dtypes, check_dtypes, \
+    validate_nonnegatives, get_expected_dtypes, check_dtypes, \
     validate_projects, validate_costs
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
@@ -648,7 +648,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=check_column_sign_positive(cost_df, valid_numeric_columns)
+        errors=validate_nonnegatives(cost_df, valid_numeric_columns)
     )
 
     # Check that all binary new build projects have build size specified

@@ -17,7 +17,7 @@ import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_dtypes, get_expected_dtypes, check_column_sign_positive, \
+    check_dtypes, get_expected_dtypes, validate_nonnegatives, \
     validate_fuel_vs_heat_rates, validate_heat_rate_curves, \
     validate_vom_curves, validate_min_stable_level
 from gridpath.project.common_functions import append_to_input_file
@@ -705,7 +705,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=check_column_sign_positive(prj_df, valid_numeric_columns)
+        errors=validate_nonnegatives(prj_df, valid_numeric_columns)
     )
 
     # Check 0 < min stable fraction <= 1
@@ -763,7 +763,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="High",
-        errors=check_column_sign_positive(sub_hr_df, valid_numeric_columns)
+        errors=validate_nonnegatives(sub_hr_df, valid_numeric_columns)
     )
 
     # Check valid numeric columns in variable OM are non-negative
@@ -778,7 +778,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_variable_om_curves",
         severity="High",
-        errors=check_column_sign_positive(sub_vom_df, valid_numeric_columns)
+        errors=validate_nonnegatives(sub_vom_df, valid_numeric_columns)
     )
 
     # Check for consistency between fuel and heat rate curve inputs
