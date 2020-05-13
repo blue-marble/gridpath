@@ -197,7 +197,7 @@ def validate_nonnegatives(df, columns):
         or 'transmission_line' column, and 'columns' param must be a subset
         of the columns in df
     :param columns: list with columns that are expected to be non-negative
-    :return: List of error messages for each column with invalid signs.
+    :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
     if "project" in df.columns:
@@ -216,8 +216,8 @@ def validate_nonnegatives(df, columns):
             bad_categories = df[category][is_negative].values
             print_bad_categories = ", ".join(bad_categories)
             result.append(
-                 "project(s) '{}': Expected '{}' >= 0"
-                 .format(print_bad_categories, column)
+                 "{}}(s) '{}': Expected '{}' >= 0"
+                 .format(category, print_bad_categories, column)
                  )
 
     return result
@@ -231,7 +231,7 @@ def validate_positives(df, columns):
         or 'transmission_line' column, and 'columns' param must be a subset
         of the columns in df
     :param columns: list with columns that are expected to be positive
-    :return: List of error messages for each column with invalid signs.
+    :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
     if "project" in df.columns:
