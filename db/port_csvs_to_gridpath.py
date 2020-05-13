@@ -204,11 +204,13 @@ def load_csv_data(conn, csv_path, quiet):
     # order (so we don't create a list of tuples to insert, but rely on the
     # headers to match the column names in the database and rely on update
     # statements instead)
+    opchar_inputs_dir = db_util_common.get_inputs_dir(
+        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
+        subscenario="project_operational_chars_scenario_id"
+    )
+
     opchar_subsc_input, opchar_data_input = db_util_common.read_inputs(
-        csvs_main_dir=csv_path,
-        csv_data_master=csv_data_master,
-        subscenario="project_operational_chars_scenario_id",
-        quiet=quiet
+        inputs_dir=opchar_inputs_dir, quiet=quiet
     )
 
     # If the opchar subscenarios are included, make a list of tuples for the
