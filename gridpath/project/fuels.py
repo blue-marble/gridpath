@@ -10,7 +10,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_dtypes, get_expected_dtypes
+    validate_dtypes, get_expected_dtypes
 from gridpath.auxiliary.validations import validate_fuel_projects, \
     validate_fuel_prices
 
@@ -222,7 +222,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         conn, ["inputs_project_fuels", "inputs_project_fuel_prices"]
     )
 
-    dtype_errors, error_columns = check_dtypes(fuels_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(fuels_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -234,7 +234,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
-    dtype_errors, error_columns = check_dtypes(fuel_prices_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(fuel_prices_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,

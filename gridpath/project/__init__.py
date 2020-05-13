@@ -16,7 +16,7 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_dtypes, get_expected_dtypes, validate_nonnegatives, \
+    validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
     check_prj_column, validate_op_cap_combos
 
 
@@ -357,7 +357,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                "inputs_project_operational_chars"]
     )
 
-    dtype_errors, error_columns = check_dtypes(df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,

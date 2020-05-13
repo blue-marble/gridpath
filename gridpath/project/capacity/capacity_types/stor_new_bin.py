@@ -29,7 +29,7 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, check_dtypes, validate_nonnegatives, \
+    get_expected_dtypes, validate_dtypes, validate_nonnegatives, \
     validate_projects, validate_costs
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
@@ -691,7 +691,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check dtypes
-    dtype_errors, error_columns = check_dtypes(cost_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,

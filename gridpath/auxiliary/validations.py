@@ -143,7 +143,7 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
-def check_dtypes(df, expected_dtypes):
+def validate_dtypes(df, expected_dtypes):
     """
     Checks whether the inputs for a DataFrame are in the expected datatype.
     Helper function for input validation.

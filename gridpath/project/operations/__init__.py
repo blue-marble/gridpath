@@ -17,7 +17,7 @@ import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    check_dtypes, get_expected_dtypes, validate_nonnegatives, \
+    validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
     validate_fuel_vs_heat_rates, validate_heat_rate_curves, \
     validate_vom_curves, validate_min_stable_level
 from gridpath.project.common_functions import append_to_input_file
@@ -681,7 +681,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         conn, ["inputs_project_operational_chars"]
     )
 
-    dtype_errors, error_columns = check_dtypes(prj_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(prj_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -727,7 +727,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                "inputs_project_heat_rate_curves",
                "inputs_project_variable_om_curves"]
     )
-    dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(sub_hr_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -739,7 +739,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
-    dtype_errors, error_columns = check_dtypes(sub_vom_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(sub_vom_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,

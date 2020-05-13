@@ -65,7 +65,7 @@ class TestAuxiliary(unittest.TestCase):
         # Tear down: close connection
         conn.close()
 
-    def test_check_dtypes(self):
+    def test_validate_dtypes(self):
         """
 
         :return:
@@ -158,7 +158,7 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_tuple = test_cases[test_case]["result"]
-            actual_tuple = module_to_test.check_dtypes(
+            actual_tuple = module_to_test.validate_dtypes(
                 df=test_cases[test_case]["df"],
                 expected_dtypes=test_cases[test_case]["expected_dtypes"]
             )
