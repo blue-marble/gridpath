@@ -280,6 +280,34 @@ def validate_pctfraction(df, columns):
     return result
 
 
+def validate_pctfraction_nonzero(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are a non-zero percent
+    fraction (0 < x <= 1).
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a 'project'
+        or 'transmission_line' column, and 'columns' param must be a subset
+        of the columns in df
+    :param columns: list with columns that are expected to be a non-zero
+        percent fraction
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    idx_col = _get_idx_col(df)
+    result = []
+    for column in columns:
+        invalids = ((df[column] <= 0) | (df[column] > 1))
+        if invalids.any():
+            bad_idxs = df[idx_col][invalids].values
+            print_bad_idxs = ", ".join(bad_idxs)
+            result.append(
+                 "{}(s) '{}': Expected 0 < '{}' <= 1"
+                 .format(idx_col, print_bad_idxs, column)
+                 )
+
+    return result
+
+
 def validate_req_prj_cols(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
@@ -447,27 +475,6 @@ def validate_op_cap_combos(df, invalid_combos):
                 "cannot be combined"
                 .format(idx_col, print_bad_idxs, combo[0], combo[1])
             )
-
-    return results
-
-
-def validate_min_stable_level(df):
-    """
-    Check 0 < min stable fraction <= 1
-    :param df:
-    :return:
-    """
-    results = []
-
-    invalids = ((df["min_stable_level_fraction"] <= 0) |
-                (df["min_stable_level_fraction"] > 1))
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 < min_stable_level <= 1"
-            .format(print_bad_projects)
-        )
 
     return results
 

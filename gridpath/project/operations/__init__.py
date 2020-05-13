@@ -19,7 +19,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
     validate_fuel_vs_heat_rates, validate_heat_rate_curves, \
-    validate_vom_curves, validate_min_stable_level
+    validate_vom_curves, validate_pctfraction_nonzero
 from gridpath.project.common_functions import append_to_input_file
 
 
@@ -717,8 +717,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             stage_id=stage,
             gridpath_module=__name__,
             db_table="inputs_project_operational_chars",
-            severity="High",
-            errors=validate_min_stable_level(prj_df)
+            severity="Mid",
+            errors=validate_pctfraction_nonzero(prj_df,
+                                                ["min_stable_level_fraction"])
         )
 
     # Check data types heat_rates and variable_om:

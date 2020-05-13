@@ -283,6 +283,35 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_pctfraction_nonzero(self):
+        cols = ["project", "min_stable_level_fraction"]
+        cols_to_check = ["min_stable_level_fraction"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.5]
+                          ]),
+                "result": [],
+                },
+            # Make sure invalid input is flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct1", 1.5],
+                      ["gas_ct2", 0]
+                      ]),
+                "result": ["project(s) 'gas_ct1, gas_ct2': Expected 0 < 'min_stable_level_fraction' <= 1"],
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_pctfraction_nonzero(
+                df=test_cases[test_case]["df"],
+                columns=cols_to_check
+            )
+            self.assertListEqual(expected_list, actual_list)
+
     def test_validate_req_prj_cols(self):
         """
 
@@ -561,33 +590,6 @@ class TestAuxiliary(unittest.TestCase):
             actual_list = module_to_test.validate_op_cap_combos(
                 df=test_cases[test_case]["df"],
                 invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_min_stable_level(self):
-        cols = ["project", "min_stable_level_fraction"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["gas_ct", 0.5]
-                          ]),
-                "min_stable_level_error": [],
-                },
-            # Make sure invalid min_stable_level is flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct1", 1.5],
-                      ["gas_ct2", 0]
-                      ]),
-                "min_stable_level_error": ["Project(s) 'gas_ct1, gas_ct2': expected 0 < min_stable_level <= 1"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["min_stable_level_error"]
-            actual_list = module_to_test.validate_min_stable_level(
-                df=test_cases[test_case]["df"]
             )
             self.assertListEqual(expected_list, actual_list)
 
