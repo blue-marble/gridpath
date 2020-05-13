@@ -169,8 +169,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
-
     # Get the fuel input data
     fuels, fuel_prices = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
@@ -223,69 +221,52 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     dtype_errors, error_columns = check_dtypes(fuels_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_FUELS",
-             "inputs_project_fuels",
-             "High,"
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_fuels",
+        severity="High",
+        errors=dtype_errors
+    )
 
     dtype_errors, error_columns = check_dtypes(fuel_prices_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_FUEL_PRICES",
-             "inputs_project_fuel_prices",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_fuel_prices",
+        severity="High",
+        errors=dtype_errors
+    )
 
     # Check that fuels specified for projects exist in fuels table
-    validation_errors = validate_fuel_projects(prj_df, fuels_df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "High",
-             "Non existent fuel",
-             error)
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=validate_fuel_projects(prj_df, fuels_df)
+    )
 
     # Check that fuel prices exist for the period and month
-    validation_errors = validate_fuel_prices(fuels_df, fuel_prices_df,
-                                             periods_months)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_FUEL_PRICES",
-             "inputs_project_fuel_prices",
-             "High",
-             "Missing fuel price",
-             error
-             )
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_fuel_prices",
+        severity="High",
+        errors=validate_fuel_prices(fuels_df, fuel_prices_df, periods_months)
+    )
 
 
 def validate_fuel_projects(prj_df, fuels_df):

@@ -113,7 +113,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
     subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
     feature_list = optional_features.determine_feature_list()
 
-    validation_results = []
+    errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
         if feature not in ["core", "optional", "data_dependent"]:
             for sc_id in subscenario_ids:
@@ -121,42 +121,33 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                 # are not specified, raise a validation error
                 if feature in feature_list and \
                         getattr(subscenarios, sc_id) == "NULL":
-                    validation_results.append(
-                        (subscenarios.SCENARIO_ID,
-                         "N/A",
-                         "N/A",
-                         "N/A",
-                         sc_id,
-                         "scenarios",
-                         "High",
-                         "Missing subscenario ID",
-                         "Requested feature '{}' requires an input for '{}'"
-                         .format(feature, sc_id)
-                         )
+                    errors["High"].append(
+                        "Requested feature '{}' requires an input for '{}'"
+                        .format(feature, sc_id)
                     )
+
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
                 elif feature not in feature_list and \
                         getattr(subscenarios, sc_id) != "NULL":
-                    validation_results.append(
-                        (subscenarios.SCENARIO_ID,
-                         "N/A",
-                         "N/A",
-                         "N/A",
-                         sc_id,
-                         "scenarios",
-                         "Low",
-                         "Unnecessary subscenario ID",
-                         "Detected inputs for '{}' while related feature '{}' "
+                    errors["Low"].append(
+                        "Detected inputs for '{}' while related feature '{}' "
                          "is not requested".format(sc_id, feature)
-                         )
                     )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    for severity, error_list in errors.items():
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id="N/A",
+            stage_id="N/A",
+            gridpath_module="N/A",
+            db_table="scenarios",
+            severity=severity,
+            errors=error_list
+        )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(sum(errors.values(), []))
 
 
 def validate_required_subscenario_ids(subscenarios, conn):
@@ -169,29 +160,27 @@ def validate_required_subscenario_ids(subscenarios, conn):
 
     required_subscenario_ids = subscenarios.subscenario_ids_by_feature["core"]
 
-    validation_results = []
+    errors = []
     for sc_id in required_subscenario_ids:
         if getattr(subscenarios, sc_id) is None:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 "N/A",
-                 "N/A",
-                 "N/A",
-                 sc_id,
-                 "scenarios",
-                 "High",
-                 "Missing required subscenario ID",
-                 "'{}' is a required input in the 'scenarios' table".format(
-                     sc_id
-                 )
-                 )
+            errors.append(
+                "'{}' is a required input in the 'scenarios' table"
+                .format(sc_id)
             )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="scenarios",
+        severity="High",
+        errors=errors
+    )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(errors)
 
 
 def validate_data_dependent_subscenario_ids(subscenarios, conn):
@@ -238,29 +227,27 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
                            "Demand Response (DR)"))
 
     # Check whether required subscenario_ids are present
-    validation_results = []
+    errors = []
     for sc_id, build_type in sc_id_type:
         if getattr(subscenarios, sc_id) is None:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 "N/A",
-                 "N/A",
-                 "N/A",
-                 sc_id,
-                 "scenarios",
-                 "High",
-                 "Missing data dependent subscenario ID",
+            errors.append(
                  "'{}' is a required input in the 'scenarios' table if there "
-                 "are '{}' resources in the portfolio"
-                 .format(sc_id, build_type)
-                 )
+                 "are '{}' resources in the portfolio".format(sc_id, build_type)
             )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="scenarios",
+        severity="High",
+        errors=errors
+    )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(errors)
 
 
 def reset_input_validation(conn, scenario_id):

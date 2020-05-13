@@ -290,47 +290,38 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check that there is only one load point (constant heat rate)
-    validation_errors = check_constant_heat_rate(hr_df, "Must_run")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "Mid",
-             "Too many load points",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="Mid",
+        errors=check_constant_heat_rate(hr_df, "gen_must_run")
+    )
 
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_must_run can't provide any
     # reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
     for reserve, projects in projects_by_reserve.items():
-        project_ba_id = "project_" + reserve + "_ba_scenario_id"
         table = "inputs_project_" + reserve + "_bas"
-        validation_errors = check_projects_for_reserves(
+        reserve_errors = check_projects_for_reserves(
             projects_op_type=opchar_df["project"],
             projects_w_ba=projects,
             operational_type="gen_must_run",
             reserve=reserve
         )
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 project_ba_id.upper(),
-                 table,
-                 "Mid",
-                 "Invalid {} BA inputs".format(reserve),
-                 error
-                 )
-            )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table=table,
+            severity="Mid",
+            errors=reserve_errors
+        )
+

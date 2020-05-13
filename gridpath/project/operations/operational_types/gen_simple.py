@@ -652,21 +652,14 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check that there is only one load point (constant heat rate)
-    validation_errors = check_constant_heat_rate(hr_df,
-                                                 "gen_simple")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "Mid",
-             "Too many load points",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="Mid",
+        errors=check_constant_heat_rate(hr_df, "gen_simple")
+    )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)

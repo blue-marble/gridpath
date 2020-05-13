@@ -154,12 +154,10 @@ scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 gridpath_module VARCHAR(64),
-related_subscenario VARCHAR(64),
-related_database_table VARCHAR(64),
-issue_severity VARCHAR(32),
-issue_type VARCHAR(32),
-issue_description VARCHAR(64),
-timestamp TEXT,  -- ISO8601 String
+db_table VARCHAR(64),
+severity VARCHAR(32),
+description VARCHAR(64),
+time_stamp TEXT,  -- ISO8601 String
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 

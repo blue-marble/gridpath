@@ -2535,7 +2535,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                                 "gen_commit_lin")
 
     # Other module specific validations
-    validation_results = []
 
     # Get startup chars and project inputs
     startup_chars = get_module_specific_inputs_from_database(
@@ -2563,22 +2562,17 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     hrs_in_tmp = min(tmp_durations)
 
     # Check startup shutdown rate inputs
-    validation_errors = validate_startup_shutdown_rate_inputs(opchar_df,
-                                                              su_df,
-                                                              hrs_in_tmp)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS, PROJECT_STARTUP_CHARS",
-             "inputs_project_operational_chars, inputs_project_startup_chars",
-             "High",
-             "Invalid startup/shutdown ramp inputs",
-             error
-             )
-        )
+    su_errors = validate_startup_shutdown_rate_inputs(
+        opchar_df, su_df, hrs_in_tmp
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars, inputs_project_startup_chars",
+        severity="High",
+        errors=su_errors
+    )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
