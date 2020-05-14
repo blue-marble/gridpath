@@ -11,7 +11,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes
-from gridpath.auxiliary.validations import validate_fuel_projects, \
+from gridpath.auxiliary.validations import validate_column, \
     validate_fuel_prices
 
 
@@ -183,7 +183,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         INNER JOIN
         (SELECT project, fuel
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) AS op_char
+        WHERE project_operational_chars_scenario_id = {}
+        AND fuel IS NOT NULL) AS op_char
         USING (project)
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
@@ -210,7 +211,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
     fuel_prices_df = pd.DataFrame(
         data=fuel_prices.fetchall(),
-        columns = [s[0] for s in fuel_prices.description]
+        columns=[s[0] for s in fuel_prices.description]
     )
     prj_df = pd.DataFrame(
         data=projects.fetchall(),
@@ -246,7 +247,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
-    # Check that fuels specified for projects exist in fuels table
+    # TODO: couldn't this be a simple foreign key or is NULL not allowed then?
+    # Check that fuels specified for projects are valid fuels
+    valid_fuels = fuels_df["fuel"].to_list()
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -255,7 +258,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_fuel_projects(prj_df, fuels_df)
+        errors=validate_column(prj_df, "fuel", valid_fuels)
     )
 
     # Check that fuel prices exist for the period and month

@@ -408,30 +408,6 @@ def validate_projects_for_reserves(projects_op_type, projects_w_ba,
     return results
 
 
-def validate_fuel_projects(prj_df, fuels_df):
-    """
-    Check that fuels specified for projects exist in fuels table
-    :param prj_df:
-    :param fuels_df:
-    :return:
-    """
-    results = []
-    fuel_mask = pd.notna(prj_df["fuel"])
-    existing_fuel_mask = prj_df["fuel"].isin(fuels_df["fuel"])
-    invalids = fuel_mask & ~existing_fuel_mask
-    if invalids.any():
-        bad_projects = prj_df["project"][invalids].values
-        bad_fuels = prj_df["fuel"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        print_bad_fuels = ", ".join(bad_fuels)
-        results.append(
-            "Project(s) '{}': Specified fuel(s) '{}' do(es) not exist"
-            .format(print_bad_projects, print_bad_fuels)
-        )
-
-    return results
-
-
 def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
     """
     Check that fuel prices exist for the period and month

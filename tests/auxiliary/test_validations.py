@@ -390,17 +390,13 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_fuel_validations(self):
-        prj_df_columns = ["project", "fuel"]
+    def test_validate_fuel_prices(self):
         fuels_df_columns = ["fuel", "co2_intensity_tons_per_mmbtu"]
         fuel_prices_df_columns = ["fuel", "period", "month",
                                   "fuel_price_per_mmbtu"]
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["gas_ct", "gas"], ["coal_plant", "coal"]]),
-                "fuels_df": pd.DataFrame(
+            1: {"fuels_df": pd.DataFrame(
                     columns=fuels_df_columns,
                     data=[["gas", 0.4], ["coal", 0.8]]),
                 "fuel_prices_df": pd.DataFrame(
@@ -408,16 +404,11 @@ class TestValidations(unittest.TestCase):
                     data=[["gas", 2018, 1, 3], ["gas", 2018, 2, 4],
                           ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
                 "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_project_error": [],
                 "fuel_prices_error": []
                 },
-            # If a project's fuel in prj_df does not exist in the fuels_df,
-            # there should be an error. Similarly, if a fuel price is missing
-            # for a certain month/period, there should be an error.
-            2: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["gas_ct", "invalid_fuel"], ["coal_plant", "coal"]]),
-                "fuels_df": pd.DataFrame(
+            # If a fuel price is missing for a certain month/period,
+            # there should be an error.
+            2: {"fuels_df": pd.DataFrame(
                     columns=fuels_df_columns,
                     data=[["gas", 0.4], ["coal", 0.8]]),
                 "fuel_prices_df": pd.DataFrame(
@@ -425,17 +416,12 @@ class TestValidations(unittest.TestCase):
                     data=[["gas", 2018, 1, 3],
                           ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
                 "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_project_error": [
-                    "Project(s) 'gas_ct': Specified fuel(s) 'invalid_fuel' do(es) not exist"],
                 "fuel_prices_error": [
                     "Fuel 'gas': Missing price for period '2018', month '2'"]
                 },
             # It's okay if there are more fuels and fuels prices specified than
             # needed for the active projects
-            3: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["gas_ct", "gas"]]),
-                "fuels_df": pd.DataFrame(
+            3: {"fuels_df": pd.DataFrame(
                     columns=fuels_df_columns,
                     data=[["gas", 0.4], ["coal", 0.8]]),
                 "fuel_prices_df": pd.DataFrame(
@@ -443,14 +429,10 @@ class TestValidations(unittest.TestCase):
                     data=[["gas", 2018, 1, 3], ["gas", 2018, 2, 4],
                           ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
                 "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_project_error": [],
                 "fuel_prices_error": []
                 },
             # Test for multiple errors in a column
-            4: {"prj_df": pd.DataFrame(
-                columns=prj_df_columns,
-                data=[["gas_ct", "invalid_fuel1"], ["coal_plant", "invalid_fuel2"]]),
-                "fuels_df": pd.DataFrame(
+            4: {"fuels_df": pd.DataFrame(
                     columns=fuels_df_columns,
                     data=[["gas", 0.4], ["coal", 0.8]]),
                 "fuel_prices_df": pd.DataFrame(
@@ -458,8 +440,6 @@ class TestValidations(unittest.TestCase):
                     data=[["gas", 2018, 1, 3],
                           ["coal", 2018, 1, 2]]),
                 "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_project_error":
-                    ["Project(s) 'gas_ct, coal_plant': Specified fuel(s) 'invalid_fuel1, invalid_fuel2' do(es) not exist"],
                 "fuel_prices_error":
                     ["Fuel 'gas': Missing price for period '2018', month '2'",
                      "Fuel 'coal': Missing price for period '2018', month '2'"]
@@ -467,13 +447,6 @@ class TestValidations(unittest.TestCase):
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["fuel_project_error"]
-            actual_list = module_to_test.validate_fuel_projects(
-                prj_df=test_cases[test_case]["prj_df"],
-                fuels_df=test_cases[test_case]["fuels_df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
             expected_list = test_cases[test_case]["fuel_prices_error"]
             actual_list = module_to_test.validate_fuel_prices(
                 fuels_df=test_cases[test_case]["fuels_df"],
