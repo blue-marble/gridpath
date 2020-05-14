@@ -987,8 +987,8 @@ description VARCHAR(128)
 -- Define availability type and IDs for type characteristics
 -- TODO: implement check that there are exogenous IDs only for exogenous
 --  types and endogenous IDs only for endogenous types
-DROP TABLE IF EXISTS inputs_project_availability_types;
-CREATE TABLE inputs_project_availability_types (
+DROP TABLE IF EXISTS inputs_project_availability;
+CREATE TABLE inputs_project_availability (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
 availability_type VARCHAR(32),
@@ -2011,10 +2011,7 @@ period INTEGER,
 prm_requirement_mw FLOAT,
 prm_peak_load_mw FLOAT,  -- for ELCC surface
 prm_annual_load_mwh FLOAT,  -- for ELCC surface
-prm_zone_scenario_id INTEGER,
-PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period),
-FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
-inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
+PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period)
 );
 
 -- Local capacity requirements
@@ -2034,12 +2031,8 @@ local_capacity_requirement_scenario_id INTEGER,
 local_capacity_zone VARCHAR(32),
 period INTEGER,
 local_capacity_requirement_mw FLOAT,
-local_capacity_zone_scenario_id INTEGER,
 PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
-period),
-FOREIGN KEY (local_capacity_zone_scenario_id, local_capacity_zone) REFERENCES
-inputs_geography_local_capacity_zones (local_capacity_zone_scenario_id,
-local_capacity_zone)
+period)
 );
 
 -- Case tuning

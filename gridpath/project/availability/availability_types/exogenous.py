@@ -164,7 +164,7 @@ def get_inputs_from_database(
         -- inputs_project_availability_exogenous table
         INNER JOIN (
             SELECT project, exogenous_availability_scenario_id
-            FROM inputs_project_availability_types
+            FROM inputs_project_availability
             WHERE project_availability_scenario_id = {}
             AND availability_type = 'exogenous'
             AND exogenous_availability_scenario_id IS NOT NULL
@@ -278,7 +278,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_availability_types",
+        conn, ["inputs_project_availability",
                "inputs_project_availability_exogenous"])
     dtype_errors, error_columns = validate_dtypes(av_df, expected_dtypes)
     write_validation_to_database(

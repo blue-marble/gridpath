@@ -41,19 +41,10 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util_common
-from db.utilities import carbon_cap, fuels, geography, project_availability, \
-    project_capacity_groups, project_list, project_local_capacity_chars, \
-    project_new_costs, project_new_potentials, project_operational_chars, \
-    project_portfolios, project_prm, project_specified_params, \
-    project_zones, rps, simultaneous_flows, \
-    simultaneous_flow_groups, system_load, system_local_capacity, system_prm, \
-    system_reserves, temporal, transmission_capacities, \
-    transmission_hurdle_rates, transmission_new_cost, \
-    transmission_operational_chars, transmission_portfolios, \
-    transmission_zones, scenario, solver_options
+from db.utilities import project_list, project_operational_chars, \
+    project_prm, rps, system_reserves, temporal, scenario, solver_options
 
-# Policy and reserves list
-policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
+# Reserves list
 reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
                  'regulation_down', 'regulation_up', 'spinning_reserves']
 
@@ -136,6 +127,26 @@ def load_csv_data(conn, csv_path, quiet):
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
+    #### LOAD ALL SUBSCENARIOS WITH SIMPLE (I.E. SINGLE FILE) INPUTS ####
+    csv_subscenarios_simple = csv_data_master.loc[
+        csv_data_master["subscenario_type"] == "simple"
+    ]
+    for index, row in csv_subscenarios_simple.iterrows():
+        if row["subscenario_type"] == "simple" and row["include"] == 1:
+            subscenario = row["subscenario"]
+            table = row["table"]
+            inputs_dir = os.path.join(csv_path, row["path"])
+            project_flag = True if int(row["project_input"]) else False
+            db_util_common.read_data_and_insert_into_db(
+                conn=conn,
+                quiet=quiet,
+                subscenario=subscenario,
+                table=table,
+                inputs_dir=inputs_dir,
+                use_project_method=project_flag
+            )
+
+    ### CUSTOM LOADING TO BE REFACTORED LATER ###
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
     temporal_directory = db_util_common.get_inputs_dir(
@@ -156,43 +167,6 @@ def load_csv_data(conn, csv_path, quiet):
         print("ERROR: temporal_scenario_id is required")
         sys.exit()
 
-    #### LOAD LOAD (DEMAND) DATA ####
-
-    ## GEOGRAPHY ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="load_zone_scenario_id",
-        insert_method=geography.geography_load_zones,
-        none_message="ERROR: load_zone_scenario_id is required"
-
-    )
-
-    ## PROJECT LOAD ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_load_zone_scenario_id",
-        insert_method=project_zones.project_load_zones,
-        none_message="ERROR: project_load_zone_scenario_id is required"
-
-    )
-
-    ## SYSTEM LOAD ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="load_scenario_id",
-        insert_method=system_load.insert_system_static_loads,
-        none_message="ERROR: load_scenario_id subscenario is required"
-
-    )
 
     #### LOAD PROJECTS DATA ####
     ## PROJECT LIST AND OPERATIONAL CHARS
@@ -228,353 +202,6 @@ def load_csv_data(conn, csv_path, quiet):
     else:
         print("ERROR: project_operational_chars_scenario_id is required")
 
-    ## PROJECT HYDRO GENERATOR PROFILES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="hydro_operational_chars_scenario_id",
-        insert_method=project_operational_chars.update_project_hydro_opchar,
-        none_message="",
-        use_project_method=True
-    )
-
-    ## PROJECT VARIABLE GENERATOR PROFILES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="variable_generator_profile_scenario_id",
-        insert_method=
-        project_operational_chars.update_project_variable_profiles,
-        none_message="",
-        use_project_method=True
-    )
-
-    ## PROJECT PORTFOLIOS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_portfolio_scenario_id",
-        insert_method=project_portfolios.update_project_portfolios,
-        none_message=""
-
-    )
-
-    ## PROJECT EXISTING CAPACITIES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_specified_capacity_scenario_id",
-        insert_method=project_specified_params.update_project_capacities,
-        none_message=""
-    )
-
-    ## PROJECT EXISTING FIXED COSTS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_specified_fixed_cost_scenario_id",
-        insert_method=project_specified_params.update_project_fixed_costs,
-        none_message=""
-    )
-
-    ## PROJECT NEW POTENTIAL ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_new_potential_scenario_id",
-        insert_method=project_new_potentials.update_project_potentials,
-        none_message=""
-    )
-
-    ## PROJECT NEW BINARY BUILD SIZE ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_new_binary_build_size_scenario_id",
-        insert_method=project_new_potentials.update_project_binary_build_sizes,
-        none_message=""
-    )
-
-    ## PROJECT NEW COSTS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_new_cost_scenario_id",
-        insert_method=project_new_costs.update_project_new_costs,
-        none_message=""
-    )
-
-    ## PROJECT GROUP CAPACITY REQUIREMENTS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_capacity_group_requirement_scenario_id",
-        insert_method=
-        project_capacity_groups.insert_capacity_group_requirements,
-        none_message=""
-    )
-
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_capacity_group_scenario_id",
-        insert_method=
-        project_capacity_groups.insert_capacity_group_projects,
-        none_message=""
-    )
-
-    ## PROJECT ELCC CHARS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_elcc_chars_scenario_id",
-        insert_method=project_prm.project_elcc_chars,
-        none_message=""
-    )
-
-    ## DELIVERABILITY GROUPS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="prm_energy_only_scenario_id",
-        insert_method=project_prm.deliverability_groups,
-        none_message=""
-    )
-
-    ## PROJECT LOCAL CAPACITY CHARS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_local_capacity_chars_scenario_id",
-        insert_method=
-        project_local_capacity_chars.insert_project_local_capacity_chars,
-        none_message=""
-    )
-
-    #### LOAD PROJECT AVAILABILITY DATA ####
-
-    ## PROJECT AVAILABILITY TYPES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="project_availability_scenario_id",
-        insert_method=
-        project_availability.make_scenario_and_insert_types_and_ids,
-        none_message=""
-    )
-
-    ## PROJECT AVAILABILITY EXOGENOUS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="exogenous_availability_scenario_id",
-        insert_method=
-        project_availability.insert_project_availability_exogenous,
-        none_message="",
-        use_project_method=True
-    )
-
-    ## PROJECT AVAILABILITY ENDOGENOUS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="endogenous_availability_scenario_id",
-        insert_method=
-        project_availability.insert_project_availability_endogenous,
-        none_message="",
-        use_project_method=True
-    )
-
-    #### LOAD PROJECT HEAT RATE DATA ####
-
-    ## PROJECT HEAT RATES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="heat_rate_curves_scenario_id",
-        insert_method=project_operational_chars.update_project_hr_curves,
-        none_message="",
-        use_project_method=True
-    )
-
-    #### LOAD PROJECT VARIALE OM DATA ####
-
-    ## PROJECT VARIABLE OM ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="variable_om_curves_scenario_id",
-        insert_method=project_operational_chars.update_project_vom_curves,
-        none_message="",
-        use_project_method=True
-    )
-
-
-    #### LOAD PROJECT STARTUP CHARS DATA ####
-
-    ## PROJECT STARTUP CHARS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="startup_chars_scenario_id",
-        insert_method=project_operational_chars.update_project_startup_chars,
-        none_message="",
-        use_project_method=True
-    )
-
-    #### LOAD FUELS DATA ####
-
-    ## FUEL CHARS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="fuel_scenario_id",
-        insert_method=fuels.update_fuels,
-        none_message=""
-    )
-
-    ## FUEL PRICES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="fuel_price_scenario_id",
-        insert_method=fuels.update_fuel_prices,
-        none_message=""
-    )
-
-    #### LOAD POLICY DATA ####
-
-    ## GEOGRAPHY CARBON CAP ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="carbon_cap_zone_scenario_id",
-        insert_method=geography.geography_carbon_cap_zones,
-        none_message=""
-    )
-
-    ## GEOGRAPHY LOCAL CAPACITY ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="local_capacity_zone_scenario_id",
-        insert_method=geography.geography_local_capacity_zones,
-        none_message=""
-    )
-
-    ## GEOGRAPHY PRM ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="prm_zone_scenario_id",
-        insert_method=geography.geography_prm_zones,
-        none_message=""
-    )
-
-    ## GEOGRAPHY RPS ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="rps_zone_scenario_id",
-        insert_method=geography.geography_rps_zones,
-        none_message=""
-    )
-
-    ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
-    for policy_type in policy_list:
-        db_util_common.read_data_and_insert_into_db(
-            conn=conn,
-            csv_data_master=csv_data_master,
-            csvs_main_dir=csv_path,
-            quiet=quiet,
-            subscenario="project_{}_zone_scenario_id".format(policy_type),
-            insert_method=project_zones.project_policy_zones,
-            none_message="",
-            policy_type=policy_type
-        )
-
-    ## SYSTEM CARBON CAP TARGETS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="carbon_cap_target_scenario_id",
-        insert_method=carbon_cap.insert_carbon_cap_targets,
-        none_message=""
-    )
-
-    ## SYSTEM LOCAL CAPACITY TARGETS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="local_capacity_requirement_scenario_id",
-        insert_method=system_local_capacity.local_capacity_requirement,
-        none_message=""
-    )
-
-    ## SYSTEM PRM TARGETS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="prm_requirement_scenario_id",
-        insert_method=system_prm.prm_requirement,
-        none_message=""
-    )
 
     ## SYSTEM RPS TARGETS ##
     # Handled differently since an rps_target_scenario_id requires multiple
@@ -593,35 +220,6 @@ def load_csv_data(conn, csv_path, quiet):
             rps.load_from_csvs(
                 conn=conn, subscenario_directory=subscenario_directory
             )
-
-    #### LOAD RESERVES DATA ####
-
-    ## GEOGRAPHY BAS ##
-    for reserve_type in reserves_list:
-        db_util_common.read_data_and_insert_into_db(
-            conn=conn,
-            csv_data_master=csv_data_master,
-            csvs_main_dir=csv_path,
-            quiet=quiet,
-            subscenario="{}_ba_scenario_id".format(reserve_type),
-            insert_method=geography.geography_reserve_bas,
-            none_message="",
-            reserve_type=reserve_type
-        )
-
-    ## PROJECT RESERVES BAS ##
-    for reserve_type in reserves_list:
-        db_util_common.read_data_and_insert_into_db(
-            conn=conn,
-            csv_data_master=csv_data_master,
-            csvs_main_dir=csv_path,
-            quiet=quiet,
-            subscenario="project_{}_ba_scenario_id".format(reserve_type),
-            insert_method=project_zones.project_reserve_bas,
-            none_message="",
-            reserve_type=reserve_type
-        )
-
 
     ## SYSTEM RESERVES ##
     # Handled differently since a reserve_type_scenario_id requires multiple
@@ -648,112 +246,6 @@ def load_csv_data(conn, csv_path, quiet):
                     conn, subscenario_directory=subscenario_directory,
                     reserve_type=reserve_type
                 )
-
-    #### LOAD TRANSMISSION DATA ####
-
-    ## LOAD TANSMISSION EXISTING CAPACITIES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_specified_capacity_scenario_id",
-        insert_method=transmission_capacities.insert_transmission_capacities,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION PORTFOLIOS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_portfolio_scenario_id",
-        insert_method=transmission_portfolios.insert_transmission_portfolio,
-        none_message=""
-    )
-
-
-    ## LOAD TRANSMISSION ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_load_zone_scenario_id",
-        insert_method=transmission_zones.insert_transmission_load_zones,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION CARBON_CAP_ZONES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_carbon_cap_zone_scenario_id",
-        insert_method=transmission_zones.insert_transmission_carbon_cap_zones,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION OPERATIONAL CHARS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_operational_chars_scenario_id",
-        insert_method=
-        transmission_operational_chars.transmission_operational_chars,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION NEW COST ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_new_cost_scenario_id",
-        insert_method=transmission_new_cost.transmision_new_cost,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION HURDLE RATES ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_hurdle_rate_scenario_id",
-        insert_method=
-        transmission_hurdle_rates.insert_transmission_hurdle_rates,
-        none_message=""
-    )
-
-    ## LOAD TRANSMISSION SIMULTANEOUS FLOW LIMITS ##
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario="transmission_simultaneous_flow_limit_scenario_id",
-        insert_method=
-        simultaneous_flows.insert_into_database,
-        none_message=""
-    )
-
-    db_util_common.read_data_and_insert_into_db(
-        conn=conn,
-        csv_data_master=csv_data_master,
-        csvs_main_dir=csv_path,
-        quiet=quiet,
-        subscenario=
-        "transmission_simultaneous_flow_limit_line_group_scenario_id",
-        insert_method=simultaneous_flow_groups.insert_into_database,
-        none_message=""
-    )
-
 
     # TODO: organize all PRM-related data in one place
     # TODO: refactor this to consolidate with temporal inputs loading and
