@@ -14,14 +14,6 @@ from db.utilities.common_functions import \
     parse_subscenario_directory_contents, csv_to_tuples
 
 
-# TODO: validations to add, as they have been removed here (some were
-#  already commented out)
-#  1. Check that all 'fully_deliverable_energy_limited' projects are
-#  assigned a min_duration_for_full_capacity_credit_hours
-#  2. Check if all ''energy_only_allowed' projects are assigned a
-#  'deliverability group' and that other types are not assigned one
-
-
 def elcc_surface(
     conn,
     subscenario_data,
