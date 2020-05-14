@@ -264,7 +264,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         -- Get the availability types for these projects depending on the
         -- project_availability_scenario_id
         (SELECT project, availability_type
-        FROM inputs_project_availability_types
+        FROM inputs_project_availability
         WHERE project_availability_scenario_id = {}) as prj_av_types
         USING (project)
         LEFT OUTER JOIN
@@ -352,7 +352,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check data types:
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_portfolios",
-               "inputs_project_availability_types",
+               "inputs_project_availability",
                "inputs_project_load_zones",
                "inputs_project_operational_chars"]
     )

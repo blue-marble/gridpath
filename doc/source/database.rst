@@ -535,7 +535,7 @@ Project Availability
 +--------------------------------+----------------------------------------------+
 |:code:`subscenario_` table      |:code:`subscenarios_project_availability`     |
 +--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_availability_types`     |
+|:code:`input_` tables           |:code:`inputs_project_availability`           |
 +--------------------------------+----------------------------------------------+
 
 All projects in a GridPath scenario must be a assigned an *availability
@@ -544,14 +544,14 @@ timepoint in which the capacity exists. All implemented availability types are
 listed in the :code:`mod_availability_types` table.
 
 Each project's availability type are given in the
-:code:`inputs_project_availability_types`. The availability types currently
+:code:`inputs_project_availability`. The availability types currently
 implemented include :code:`exogenous` (availability is determined outside of
 a GridPath model via the data fed into it) and two endogenous types:
 :code:`binary` and :code:`continuous` that require certain inputs that
 determine how availability is constrained in the GridPath model. See the
 :ref:`project-availability-type-section-ref` section for more info. In
 addition to the project availability types, the
-:code:`inputs_project_availability_types` table contains the information for
+:code:`inputs_project_availability` table contains the information for
 how to find any additional data needed to determine project availability with
 the :code:`exogenous_availability_scenario_id` and
 :code:`endogenous_availability_scenario` columns for the endogenous and

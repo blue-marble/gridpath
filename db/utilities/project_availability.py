@@ -30,7 +30,7 @@ def make_scenario_and_insert_types_and_ids(
 
     # Insert all projects into project availability types table
     inputs_sql = """
-        INSERT OR IGNORE INTO inputs_project_availability_types
+        INSERT OR IGNORE INTO inputs_project_availability
         (project_availability_scenario_id, project, availability_type,
         exogenous_availability_scenario_id, 
         endogenous_availability_scenario_id)

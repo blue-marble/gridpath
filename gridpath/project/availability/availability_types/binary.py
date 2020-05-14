@@ -419,7 +419,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             ) as portfolio_tbl
             INNER JOIN (
                 SELECT project, endogenous_availability_scenario_id
-                FROM inputs_project_availability_types
+                FROM inputs_project_availability
                 WHERE project_availability_scenario_id = {}
                 AND availability_type = 'binary'
                 AND endogenous_availability_scenario_id IS NOT NULL

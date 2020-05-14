@@ -256,7 +256,7 @@ def get_required_availability_type_modules(scenario_id, c):
             WHERE project_portfolio_scenario_id = {}) as prj_tbl
             LEFT OUTER JOIN 
             (SELECT project, availability_type
-            FROM inputs_project_availability_types
+            FROM inputs_project_availability
             WHERE project_availability_scenario_id = {}) as av_type_tbl
             USING (project)""".format(
                 project_portfolio_scenario_id,

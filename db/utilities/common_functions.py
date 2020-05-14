@@ -9,6 +9,8 @@ import os
 import pandas as pd
 import warnings
 
+from db.common_functions import spin_on_database_lock
+
 
 def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     """
@@ -20,6 +22,11 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     Get the inputs directory listed in the CSV master file for a particular
     subscenario (for now, "table").
     """
+    table = csv_data_master.loc[
+        csv_data_master["subscenario"] == subscenario,
+        "table"
+    ].iloc[0]
+
     if csv_data_master.loc[
         csv_data_master["subscenario"] == subscenario, 'include'
     ].iloc[0] == 1:
@@ -27,13 +34,13 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
             csvs_main_dir,
             csv_data_master.loc[
                 csv_data_master["subscenario"] == subscenario,
-                'path'
+                "path"
             ].iloc[0]
         )
     else:
         inputs_dir = None
 
-    return inputs_dir
+    return table, inputs_dir
 
 
 def read_inputs(
@@ -250,14 +257,14 @@ def csv_to_tuples(subscenario_id, csv_file):
 
 
 def read_data_and_insert_into_db(
-        conn, csv_data_master, csvs_main_dir, quiet, subscenario,
-        insert_method, none_message, use_project_method=False, **kwargs
+    conn, csv_data_master, csvs_main_dir, quiet, subscenario,
+    insert_method, none_message, use_project_method=False, **kwargs
 ):
     """
     Read data from CSVs, convert to tuples, and insert into database.
     """
     # Check if we should include the table
-    inputs_dir = get_inputs_dir(
+    table, inputs_dir = get_inputs_dir(
         csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
         subscenario=subscenario
     )
@@ -280,12 +287,20 @@ def read_data_and_insert_into_db(
             tuple(x) for x in csv_data_input.to_records(index=False)
          ]
 
-        # Insertion method
-        insert_method(
+        # # Insertion method
+        # insert_method(
+        #     conn=conn,
+        #     subscenario_data=subscenario_tuples,
+        #     inputs_data=inputs_tuples,
+        #     **kwargs
+        # )
+        generic_insert_subscenario(
             conn=conn,
+            subscenario=subscenario,
+            table=table,
             subscenario_data=subscenario_tuples,
             inputs_data=inputs_tuples,
-            **kwargs
+            project_flag=use_project_method
         )
     # If not included, print the none_message
     else:
@@ -411,3 +426,47 @@ def check_ids_are_unique(folder_path, csv_files, project_bool):
                 "project-" if project_bool else "", folder_path
             )
         )
+
+
+# TODO: subscenario-table combinations should be a data config
+def generic_insert_subscenario(
+    conn, subscenario, table, subscenario_data, inputs_data, project_flag
+):
+    c = conn.cursor()
+
+    # Subscenario
+    if not project_flag:
+        subs_sql = """
+            INSERT OR IGNORE INTO subscenarios_{}
+            ({}, name, description)
+            VALUES (?, ?, ?);
+            """.format(table, subscenario)
+    else:
+        subs_sql = """
+            INSERT OR IGNORE INTO subscenarios_{}
+            (project, {}, name, description)
+            VALUES (?, ?, ?, ?);
+            """.format(table, subscenario)
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                          data=subscenario_data)
+
+    # Insert data
+    # Get column names for this table
+    table_data_query = c.execute(
+      """SELECT * FROM inputs_{};""".format(table)
+    )
+
+    column_names = [s[0] for s in table_data_query.description]
+
+    column_string = ", ".join(column_names)
+    values_string = ", ".join(["?"] * len(column_names))
+
+    inputs_sql = """
+        INSERT OR IGNORE INTO inputs_{} ({}) VALUES ({});
+        """.format(table, column_string, values_string)
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
+                          data=inputs_data)
+
+    c.close()
