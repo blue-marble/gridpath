@@ -154,6 +154,34 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
+# TODO: further generalize this so we join on opchars so we can select fuel
+#  projects for instance?
+def get_projects(conn, subscenarios, col, col_value):
+    """
+    Get projects for which the column value of "col" is equal to "col_value".
+    E.g. "get the projects of operational type gen_commit_lin".
+    :param conn: database connection
+    :param subscenarios: Subscenarios class objects
+    :param col: str
+    :param col_value: str
+    :return: List of projects that meet the criteria
+    """
+
+    c = conn.cursor()
+    projects = c.execute(
+        """SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        AND {} = '{}';""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            col,
+            col_value
+        )
+    )
+    projects = [p[0] for p in projects]  # convert to list
+    return projects
+
+
 def validate_dtypes(df, expected_dtypes):
     """
     Checks whether the inputs for a DataFrame are in the expected datatype.

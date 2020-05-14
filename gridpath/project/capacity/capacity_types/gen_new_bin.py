@@ -27,7 +27,7 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_signs, get_expected_dtypes, validate_dtypes, \
+    validate_signs, get_expected_dtypes, get_projects, validate_dtypes, \
     validate_setdiff
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
@@ -577,24 +577,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    c = conn.cursor()
-
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # TODO: generalize this?
-    # Get the relevant projects
-    projects = c.execute(
-        """SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = '{}';""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_new_bin"
-        )
-    )
-    projects = [p[0] for p in projects]  # convert to list
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_bin")
 
     # Convert input data into pandas DataFrame
     cost_df = pd.DataFrame(

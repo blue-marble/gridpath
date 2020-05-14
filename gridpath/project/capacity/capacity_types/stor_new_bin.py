@@ -29,7 +29,7 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_signs, \
+    get_expected_dtypes, get_projects, validate_dtypes, validate_signs, \
     validate_setdiff
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
@@ -643,24 +643,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     #   --> see example in gen_must_run operational_type. Seems very verbose and
     #   hard to maintain. Is there a way to generalize this?
 
-    c = conn.cursor()
-
     # Get the binary build generator inputs
     new_stor_costs, new_stor_build_size = \
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    # Get the relevant projects
-    projects = c.execute(
-        """SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = '{}';""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "stor_new_bin"
-        )
-    )
-    projects = [p[0] for p in projects]  # convert to list
+    projects = get_projects(conn, subscenarios, "capacity_type",
+                            "stor_new_bin")
 
     # Convert input data into pandas DataFrame
     cost_df = pd.DataFrame(
