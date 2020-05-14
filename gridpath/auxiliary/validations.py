@@ -291,7 +291,13 @@ def validate_req_cols(df, columns, required, category):
 
 # TODO: can this be more general, e.g. if comparing 2 lists of projects
 #  valids could be the first list of projects, and column could be project
-#  however that would make reporting meaningfull messages harder
+#  however that would make reporting meaningfull messages harder, especially
+#  if we are really just checking the projects
+# Can really see this either as checking that the column only contains valid
+# entries (error would mean invalid entry)
+# OR checking that df[column] is a subset of valids (error would mean that
+# there are missing inputs for valids)
+
 def validate_column(df, column, valids):
     """
     Check that the specified column only has entries within the list of valid
@@ -324,20 +330,25 @@ def validate_consistent_inputs(df1, column, inputs):
     pass
 
 
-def validate_projects(list1, list2):
+def validate_setdiff(list1, list2, input_name, idx="project"):
     """
-    Check for projects in list 1 that aren't in list 2
+    Check that all items in list1 are also in list 2. If not, report the
+    missing items.
 
     Note: Function will ignore duplicates in list
     :param list1:
     :param list2:
-    :return: list of error messages for each missing project
+    :param input_name: str, specifies what inputs are indexed by list2
+    :param idx: the index label for the values that list1 and list2 represent.
+        Defaults to "project".
+    :return: list of error messages for each missing idx
     """
     results = []
-    missing_projects = np.setdiff1d(list1, list2)
-    for prj in missing_projects:
+    missing_idxs = np.setdiff1d(list1, list2)
+    for missing_idx in missing_idxs:
         results.append(
-            "Missing build size inputs for project '{}'".format(prj)
+            "Missing {} inputs for {} '{}'"
+            .format(input_name, idx, missing_idx)
         )
 
     return results

@@ -373,20 +373,23 @@ class TestValidations(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"list1": ["gas_ct"],
                 "list2": ["gas_ct"],
+                "input_name": "inputs_project_new_binary_build_size",
                 "project_error": [],
                 },
             # Make sure missing bld size or cost is detected
             2: {"list1": ["gas_ct"],
                 "list2": [],
-                "project_error": ["Missing build size inputs for project 'gas_ct'"],
+                "input_name": "inputs_project_new_binary_build_size",
+                "project_error": ["Missing inputs_project_new_binary_build_size inputs for project 'gas_ct'"],
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["project_error"]
-            actual_list = module_to_test.validate_projects(
+            actual_list = module_to_test.validate_setdiff(
                 list1=test_cases[test_case]["list1"],
-                list2=test_cases[test_case]["list2"]
+                list2=test_cases[test_case]["list2"],
+                input_name=test_cases[test_case]["input_name"],
             )
             self.assertListEqual(expected_list, actual_list)
 

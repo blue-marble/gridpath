@@ -30,7 +30,7 @@ from gridpath.auxiliary.dynamic_components import \
     storage_only_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, validate_signs, \
-    validate_projects
+    validate_setdiff
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -720,7 +720,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_binary_build_size",
         severity="High",
-        errors=validate_projects(projects, bld_size_projects)
+        errors=validate_setdiff(projects, bld_size_projects,
+                                "inputs_project_new_binary_build_size")
     )
 
 
