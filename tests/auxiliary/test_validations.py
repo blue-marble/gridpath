@@ -9,7 +9,7 @@ import unittest
 import gridpath.auxiliary.validations as module_to_test
 
 
-class TestAuxiliary(unittest.TestCase):
+class TestValidations(unittest.TestCase):
     """
 
     """
@@ -402,51 +402,25 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_new_binary_build_inputs(self):
-        cost_df_columns = ["project", "vintage", "lifetime_yrs",
-                           "annualized_real_cost_per_mw_yr"]
-        bld_size_df_columns = ["project", "gen_new_bin_build_size_mw"]
+    def test_validate_projects(self):
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"cost_df": pd.DataFrame(
-                    columns=cost_df_columns,
-                    data=[["gas_ct", 2018, 20, 100],
-                          ["gas_ct", 2022, 20, 120]]),
-                "bld_size_df": pd.DataFrame(
-                    columns=bld_size_df_columns,
-                    data=[["gas_ct", 1000]]),
-                "prj_vintages": [("gas_ct", 2018), ("gas_ct", 2022)],
+            1: {"list1": ["gas_ct"],
+                "list2": ["gas_ct"],
                 "project_error": [],
-                "cost_error": []
                 },
             # Make sure missing bld size or cost is detected
-            2: {"cost_df": pd.DataFrame(
-                    columns=cost_df_columns,
-                    data=[["gas_ct", 2018, 20, 100]]),
-                "bld_size_df": pd.DataFrame(
-                    columns=bld_size_df_columns,
-                    data=[]),
-                "prj_vintages": [("gas_ct", 2018), ("gas_ct", 2022)],
+            2: {"list1": ["gas_ct"],
+                "list2": [],
                 "project_error": ["Missing build size inputs for project 'gas_ct'"],
-                "cost_error": ["Missing cost inputs for project 'gas_ct', vintage '2022'"]
                 }
         }
 
         for test_case in test_cases.keys():
-            projects = [p[0] for p in test_cases[test_case]["prj_vintages"]]
-            bld_size_projects = test_cases[test_case]["bld_size_df"]["project"]
-
             expected_list = test_cases[test_case]["project_error"]
             actual_list = module_to_test.validate_projects(
-                list1=projects,
-                list2=bld_size_projects
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["cost_error"]
-            actual_list = module_to_test.validate_costs(
-                cost_df=test_cases[test_case]["cost_df"],
-                prj_vintages=test_cases[test_case]["prj_vintages"]
+                list1=test_cases[test_case]["list1"],
+                list2=test_cases[test_case]["list2"]
             )
             self.assertListEqual(expected_list, actual_list)
 

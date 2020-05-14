@@ -30,7 +30,7 @@ from gridpath.auxiliary.dynamic_components import \
     storage_only_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, validate_nonnegatives, \
-    validate_projects, validate_costs
+    validate_projects
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -650,22 +650,17 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    # Get the relevant projects and vintages
-    prj_vintages = c.execute(
-        """SELECT project, period
+    # Get the relevant projects
+    projects = c.execute(
+        """SELECT project
         FROM inputs_project_portfolios
-
-        CROSS JOIN    
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'stor_new_bin';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        AND capacity_type = '{}';""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "stor_new_bin"
         )
     )
+    projects = [p[0] for p in projects]  # convert to list
 
     # Convert input data into pandas DataFrame
     cost_df = pd.DataFrame(
@@ -679,8 +674,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # get the project lists
-    projects = [p[0] for p in prj_vintages]  # will have duplicates if >1
-    # vintages
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -730,16 +723,4 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         errors=validate_projects(projects, bld_size_projects)
     )
 
-    # Check that all binary new build storage projects have costs specified
-    # for each period
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_new_cost",
-        severity="High",
-        errors=validate_costs(cost_df, prj_vintages)
-    )
 

@@ -393,24 +393,6 @@ def validate_projects(list1, list2):
     return results
 
 
-def validate_costs(cost_df, prj_vintages):
-    """
-    Check that cost inputs exist for the relevant projects and vintages
-    :param cost_df:
-    :param prj_vintages: list with relevant projects and vintages (tuple)
-    :return: list of error messages for each missing project, period combination
-    """
-    results = []
-    for prj, vintage in prj_vintages:
-        if not ((cost_df.project == prj) & (cost_df.vintage == vintage)).any():
-            results.append(
-                "Missing cost inputs for project '{}', vintage '{}'"
-                .format(prj, str(vintage))
-            )
-
-    return results
-
-
 def validate_fuel_projects(prj_df, fuels_df):
     """
     Check that fuels specified for projects exist in fuels table
