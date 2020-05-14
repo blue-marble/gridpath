@@ -136,27 +136,29 @@ def load_csv_data(conn, csv_path, quiet):
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
+    #### LOAD ALL SUBSCENARIOS WITH SIMPLE INPUTS ####
     csv_subscenarios_simple = csv_data_master.loc[
         csv_data_master["subscenario_type"] == "simple"
     ]
     for index, row in csv_subscenarios_simple.iterrows():
-        if row["subscenario_type"] == "simple":
+        if row["subscenario_type"] == "simple" and row["include"] == 1:
             subscenario = row["subscenario"]
+            table = row["table"]
+            inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
             db_util_common.read_data_and_insert_into_db(
                 conn=conn,
-                csv_data_master=csv_data_master,
-                csvs_main_dir=csv_path,
                 quiet=quiet,
                 subscenario=subscenario,
-                insert_method=None,
-                none_message="",
+                table=table,
+                inputs_dir=inputs_dir,
                 use_project_method=project_flag
             )
 
+    ### CUSTOM LOADING TO BE REFACTORED LATER ###
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
-    _, temporal_directory, = db_util_common.get_inputs_dir(
+    temporal_directory = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="temporal_scenario_id"
     )
@@ -185,7 +187,7 @@ def load_csv_data(conn, csv_path, quiet):
     # order (so we don't create a list of tuples to insert, but rely on the
     # headers to match the column names in the database and rely on update
     # statements instead)
-    _, opchar_inputs_dir = db_util_common.get_inputs_dir(
+    opchar_inputs_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="project_operational_chars_scenario_id"
     )
@@ -213,7 +215,7 @@ def load_csv_data(conn, csv_path, quiet):
     ## SYSTEM RPS TARGETS ##
     # Handled differently since an rps_target_scenario_id requires multiple
     # files
-    _, rps_target_dir = db_util_common.get_inputs_dir(
+    rps_target_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="rps_target_scenario_id"
     )
@@ -260,7 +262,7 @@ def load_csv_data(conn, csv_path, quiet):
     ## LOAD ELCC SURFACE DATA ##
     # Handled differently since an elcc_surface_scenario_id requires multiple
     # files
-    _, elcc_surface_dir = db_util_common.get_inputs_dir(
+    elcc_surface_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="elcc_surface_scenario_id"
     )
@@ -276,7 +278,7 @@ def load_csv_data(conn, csv_path, quiet):
             )
 
     #### LOAD SCENARIOS DATA ####
-    _, scenarios_dir = db_util_common.get_inputs_dir(
+    scenarios_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="scenarios"
     )
@@ -298,7 +300,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD SOLVER OPTIONS ####
-    _, solver_dir = db_util_common.get_inputs_dir(
+    solver_dir = db_util_common.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="solver_options_id"
     )

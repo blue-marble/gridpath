@@ -22,11 +22,6 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     Get the inputs directory listed in the CSV master file for a particular
     subscenario (for now, "table").
     """
-    table = csv_data_master.loc[
-        csv_data_master["subscenario"] == subscenario,
-        "table"
-    ].iloc[0]
-
     if csv_data_master.loc[
         csv_data_master["subscenario"] == subscenario, 'include'
     ].iloc[0] == 1:
@@ -40,7 +35,7 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     else:
         inputs_dir = None
 
-    return table, inputs_dir
+    return inputs_dir
 
 
 def read_inputs(
@@ -257,18 +252,11 @@ def csv_to_tuples(subscenario_id, csv_file):
 
 
 def read_data_and_insert_into_db(
-    conn, csv_data_master, csvs_main_dir, quiet, subscenario,
-    insert_method, none_message, use_project_method=False, **kwargs
+    conn, quiet, subscenario, table, inputs_dir, use_project_method,
 ):
     """
     Read data from CSVs, convert to tuples, and insert into database.
     """
-    # Check if we should include the table
-    table, inputs_dir = get_inputs_dir(
-        csvs_main_dir=csvs_main_dir, csv_data_master=csv_data_master,
-        subscenario=subscenario
-    )
-
     # Get the subscenario info and data; this will return False, False if
     # the subscenario is not included
     csv_subscenario_input, csv_data_input = read_inputs(
@@ -287,13 +275,6 @@ def read_data_and_insert_into_db(
             tuple(x) for x in csv_data_input.to_records(index=False)
          ]
 
-        # # Insertion method
-        # insert_method(
-        #     conn=conn,
-        #     subscenario_data=subscenario_tuples,
-        #     inputs_data=inputs_tuples,
-        #     **kwargs
-        # )
         generic_insert_subscenario(
             conn=conn,
             subscenario=subscenario,
@@ -302,9 +283,6 @@ def read_data_and_insert_into_db(
             inputs_data=inputs_tuples,
             project_flag=use_project_method
         )
-    # If not included, print the none_message
-    else:
-        print(none_message)
 
 
 # Functions for subscenarios with multiple files
@@ -428,7 +406,6 @@ def check_ids_are_unique(folder_path, csv_files, project_bool):
         )
 
 
-# TODO: subscenario-table combinations should be a data config
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag
 ):
