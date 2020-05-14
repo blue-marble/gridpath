@@ -393,6 +393,67 @@ def validate_projects(list1, list2):
     return results
 
 
+def validate_op_cap_combos(df, invalid_combos):
+    """
+    Check that there's no mixing of incompatible capacity and operational types
+    :param df: pandas DataFrame, should contain columns 'capacity_type',
+        'operational_type', and 'project' or 'transmission_line'
+    :param invalid_combos: list of tuples with the invalid cap-type op-type
+        combinations
+    :return:
+    """
+    idx_col = _get_idx_col(df)
+    results = []
+    for combo in invalid_combos:
+        bad_combos = ((df["capacity_type"] == combo[0]) &
+                      (df["operational_type"] == combo[1]))
+        if bad_combos.any():
+            bad_idxs = df[idx_col][bad_combos].values
+            print_bad_idxs = ", ".join(bad_idxs)
+            results.append(
+                "{}(s) '{}': capacity type '{}' and operational type '{}' "
+                "cannot be combined"
+                .format(idx_col, print_bad_idxs, combo[0], combo[1])
+            )
+
+    return results
+
+
+def validate_projects_for_reserves(projects_op_type, projects_w_ba,
+                                   operational_type, reserve):
+    """
+    Check that a list of projects of a given operational_type does not show up
+    in a a list of projects that can provide a given type of reserve. This is
+    used when checking that a certain operational type (e.g. gen_must_run) is not
+    providing a certain type of reserve (e..g regulation_up) which it shouldn't
+    be able to provide.
+
+    :param projects_op_type: list of projects with specified operational type
+    :param projects_w_ba: list of projects with specified reserve ba
+    :param operational_type: string, specified operational_type (e.g. gen_must_run)
+        that is not able to provide the specified reserve
+    :param reserve: string, specified reserve product (e.g. regulation_up)
+    :return:
+    """
+
+    results = []
+
+    # Convert list of projects to sets and check set intersection
+    projects_op_type = set(projects_op_type)
+    projects_w_ba = set(projects_w_ba)
+    bad_projects = sorted(list(projects_w_ba & projects_op_type))
+
+    # If there are any projects of the specified operaitonal type
+    # with a reserve BA specified, create a validation error
+    if bad_projects:
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+             "Project(s) '{}'; {} cannot provide {}".format(
+                 print_bad_projects, operational_type, reserve)
+             )
+    return results
+
+
 def validate_fuel_projects(prj_df, fuels_df):
     """
     Check that fuels specified for projects exist in fuels table
@@ -434,32 +495,6 @@ def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
                     "Fuel '{}': Missing price for period '{}', month '{}'"
                     .format(f, str(period), str(month))
                 )
-
-    return results
-
-
-def validate_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df: pandas DataFrame, should contain columns 'capacity_type', 
-        'operational_type', and 'project' or 'transmission_line'
-    :param invalid_combos: list of tuples with the invalid cap-type op-type
-        combinations
-    :return:
-    """
-    idx_col = _get_idx_col(df)
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_idxs = df[idx_col][bad_combos].values
-            print_bad_idxs = ", ".join(bad_idxs)
-            results.append(
-                "{}(s) '{}': capacity type '{}' and operational type '{}' "
-                "cannot be combined"
-                .format(idx_col, print_bad_idxs, combo[0], combo[1])
-            )
 
     return results
 
@@ -634,6 +669,31 @@ def validate_vom_curves(vom_df):
                             "with increasing load"
                             .format(project)
                         )
+
+    return results
+
+
+def validate_constant_heat_rate(df, op_type):
+    """
+    Check whether the projects in the DataFrame have a constant heat rate
+    based on the number of load points per project in the DataFrame
+    :param df: DataFrame for which to check constant heat rate. Must have
+        "project", "load_point_fraction" columns
+    :param op_type: Operational type (used in error message)
+    :return:
+    """
+
+    results = []
+
+    n_load_points = df.groupby(["project"]).size()
+    invalids = (n_load_points > 1)
+    if invalids.any():
+        bad_projects = invalids.index[invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': {} should have only 1 load point"
+            .format(print_bad_projects, op_type)
+        )
 
     return results
 
@@ -845,66 +905,5 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     #  for a fast-start unit might not need this input).
 
     return results
-
-
-def validate_constant_heat_rate(df, op_type):
-    """
-    Check whether the projects in the DataFrame have a constant heat rate
-    based on the number of load points per project in the DataFrame
-    :param df: DataFrame for which to check constant heat rate. Must have
-        "project", "load_point_fraction" columns
-    :param op_type: Operational type (used in error message)
-    :return:
-    """
-
-    results = []
-
-    n_load_points = df.groupby(["project"]).size()
-    invalids = (n_load_points > 1)
-    if invalids.any():
-        bad_projects = invalids.index[invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': {} should have only 1 load point"
-            .format(print_bad_projects, op_type)
-        )
-
-    return results
-
-
-def validate_projects_for_reserves(projects_op_type, projects_w_ba,
-                                   operational_type, reserve):
-    """
-    Check that a list of projects of a given operational_type does not show up
-    in a a list of projects that can provide a given type of reserve. This is
-    used when checking that a certain operational type (e.g. gen_must_run) is not
-    providing a certain type of reserve (e..g regulation_up) which it shouldn't
-    be able to provide.
-
-    :param projects_op_type: list of projects with specified operational type
-    :param projects_w_ba: list of projects with specified reserve ba
-    :param operational_type: string, specified operational_type (e.g. gen_must_run)
-        that is not able to provide the specified reserve
-    :param reserve: string, specified reserve product (e.g. regulation_up)
-    :return:
-    """
-
-    results = []
-
-    # Convert list of projects to sets and check set intersection
-    projects_op_type = set(projects_op_type)
-    projects_w_ba = set(projects_w_ba)
-    bad_projects = sorted(list(projects_w_ba & projects_op_type))
-
-    # If there are any projects of the specified operaitonal type
-    # with a reserve BA specified, create a validation error
-    if bad_projects:
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-             "Project(s) '{}'; {} cannot provide {}".format(
-                 print_bad_projects, operational_type, reserve)
-             )
-    return results
-
 
 
