@@ -41,19 +41,10 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util_common
-from db.utilities import carbon_cap, fuels, geography, project_availability, \
-    project_capacity_groups, project_list, project_local_capacity_chars, \
-    project_new_costs, project_new_potentials, project_operational_chars, \
-    project_portfolios, project_prm, project_specified_params, \
-    project_zones, rps, simultaneous_flows, \
-    simultaneous_flow_groups, system_load, system_local_capacity, system_prm, \
-    system_reserves, temporal, transmission_capacities, \
-    transmission_hurdle_rates, transmission_new_cost, \
-    transmission_operational_chars, transmission_portfolios, \
-    transmission_zones, scenario, solver_options
+from db.utilities import project_list, project_operational_chars, \
+    project_prm, rps, system_reserves, temporal, scenario, solver_options
 
-# Policy and reserves list
-policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
+# Reserves list
 reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
                  'regulation_down', 'regulation_up', 'spinning_reserves']
 
