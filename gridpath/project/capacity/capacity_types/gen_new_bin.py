@@ -583,6 +583,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
+    # TODO: generalize this?
     # Get the relevant projects
     projects = c.execute(
         """SELECT project

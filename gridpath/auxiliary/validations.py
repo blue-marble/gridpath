@@ -289,6 +289,9 @@ def validate_req_cols(df, columns, required, category):
     return result
 
 
+# TODO: can this be more general, e.g. if comparing 2 lists of projects
+#  valids could be the first list of projects, and column could be project
+#  however that would make reporting meaningfull messages harder
 def validate_column(df, column, valids):
     """
     Check that the specified column only has entries within the list of valid
@@ -317,6 +320,10 @@ def validate_column(df, column, valids):
     return results
 
 
+def validate_consistent_inputs(df1, column, inputs):
+    pass
+
+
 def validate_projects(list1, list2):
     """
     Check for projects in list 1 that aren't in list 2
@@ -336,6 +343,10 @@ def validate_projects(list1, list2):
     return results
 
 
+# TODO: can this be more general where we check if one list exists in
+#  a column of a df? (or if a list of tuples exists in a set of columns)
+#  problem is that we can't easily vectorize checking 2 columns so we need to
+#  loop over the invalid combos
 def validate_op_cap_combos(df, invalid_combos):
     """
     Check that there's no mixing of incompatible capacity and operational types
@@ -476,6 +487,9 @@ def validate_fuel_vs_heat_rates(hr_df):
     return results
 
 
+# TODO: consolidate with VOM curves (generalize?)
+# TODO: no longer do left outer join and do consistency check somewhere else
+#  so here we only do the project heat rates check (after for loop)
 def validate_heat_rate_curves(hr_df):
     """
     1. Check that specified heat rate scenarios actually have inputs in the
