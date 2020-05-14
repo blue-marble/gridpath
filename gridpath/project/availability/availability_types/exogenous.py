@@ -17,7 +17,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_pctfraction
+    get_expected_dtypes, validate_dtypes, validate_signs
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -271,7 +271,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn
     )
 
-    av_df = pd.DataFrame(
+    df = pd.DataFrame(
         data=availabilities.fetchall(),
         columns=[s[0] for s in availabilities.description]
     )
@@ -280,7 +280,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_project_availability_types",
                "inputs_project_availability_exogenous"])
-    dtype_errors, error_columns = validate_dtypes(av_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -301,6 +301,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_project_availability_exogenous",
             severity="High",
-            errors=validate_pctfraction(av_df, ["availability_derate"])
+            errors=validate_signs(df, ["availability_derate"], "pctfraction")
         )
 

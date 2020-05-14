@@ -164,151 +164,117 @@ class TestValidations(unittest.TestCase):
             )
             self.assertTupleEqual(expected_tuple, actual_tuple)
 
-    def test_validate_nonnegatives(self):
+    def test_validate_signs(self):
         """
 
         :return:
         """
-        df_columns = ["project", "load_point_fraction",
-                      "average_heat_rate_mmbtu_per_mwh"]
+        cols = ["project", "load_point_fraction",
+                "average_heat_rate_mmbtu_per_mwh"]
+        cols_to_check = ["load_point_fraction",
+                         "average_heat_rate_mmbtu_per_mwh"]
         test_cases = {
-            # Make sure correct inputs don't throw error
+            # Make sure correct nonnegative inputs don't throw error
             1: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 10, 10.5],
-                      ["gas_ct", 20, 9],
-                      ["coal_plant", 100, 10]
-                      ]),
-                "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
+                    columns=cols,
+                    data=[["gas_ct", 10, 10.5],
+                          ["gas_ct", 20, 9],
+                          ["coal_plant", 100, 10]
+                          ]),
+                "sign": "nonnegative",
                 "result": []
                 },
-            # Sign errors are flagged; Errors are grouped by column. If >1 error
-            # in different columns, a separate error msgs will be created
+            # Make sure nonnegative errors are flagged; Errors are grouped by
+            # column. If >1 error in different columns, a separate error
+            # msgs will be created.
             2: {"df": pd.DataFrame(
-                    columns=df_columns,
+                    columns=cols,
                     data=[["gas_ct", 10, -10.5],
                           ["gas_ct", -20, 9],
                           ["coal_plant", -100, 10]
                           ]),
-                "columns": ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"],
+                "sign": "nonnegative",
                 "result": ["project(s) 'gas_ct, coal_plant': Expected 'load_point_fraction' >= 0",
                            "project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_nonnegatives(
-                df=test_cases[test_case]["df"],
-                columns=test_cases[test_case]["columns"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_positives(self):
-        cols = ["transmission_line", "reactance_ohms"]
-        cols_to_check = ["reactance_ohms"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[["tx1", 0.5]]),
-                "result": [],
                 },
-            # Make sure invalid inputs are flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["tx1", -0.5],
-                      ["tx2", None]
-                      ]),
-                "result": ["transmission_line(s) 'tx1': Expected "
-                           "'reactance_ohms' > 0"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_positives(
-                df=test_cases[test_case]["df"],
-                columns=cols_to_check
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_pctfraction(self):
-        df_columns = ["project", "horizon", "availability_derate"]
-        cols_to_check = ["availability_derate"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative inputs are flagged
-            2: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["project(s) 'gas_ct': Expected 0 <= 'availability_derate' <= 1"]
-                },
-            # Inputs > 1 are flagged
+            # Make sure correct positive inputs don't throw error
             3: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["project(s) 'coal_plant': Expected 0 <= 'availability_derate' <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["project(s) 'gas_ct, coal_plant': Expected 0 <= 'availability_derate' <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = module_to_test.validate_pctfraction(
-                df=test_cases[test_case]["df"],
-                columns=cols_to_check
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_pctfraction_nonzero(self):
-        cols = ["project", "min_stable_level_fraction"]
-        cols_to_check = ["min_stable_level_fraction"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 0.5]
-                          ]),
-                "result": [],
+                    data=[["gas_ct", 10, 10.5]]),
+                "sign": "positive",
+                "result": []
                 },
-            # Make sure invalid input is flagged
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct1", 1.5],
-                      ["gas_ct2", 0]
-                      ]),
-                "result": ["project(s) 'gas_ct1, gas_ct2': Expected 0 < 'min_stable_level_fraction' <= 1"],
-                }
+            # Make sure positive errors are flagged
+            4: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 10, 0]]),
+                "sign": "positive",
+                "result": ["project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' > 0"]
+                },
+            # Make sure correct pctfraction_nonzero inputs don't throw error
+            5: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.2, 0.5]]),
+                "sign": "pctfraction_nonzero",
+                "result": []
+                },
+            # Make sure pctfraction_nonzero errors are flagged
+            6: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct1", 0.2, 1.5],
+                          ["gas_ct2", 0.2, 0]
+                          ]),
+                "sign": "pctfraction_nonzero",
+                "result": ["project(s) 'gas_ct1, gas_ct2': Expected 'average_heat_rate_mmbtu_per_mwh' within (0, 1]"]
+                },
+            # Make sure correct pctfraction inputs don't throw error
+            7: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.2, 1],
+                          ["gas_ct", 0.5, 0.9],
+                          ["coal_plant", 1, 0]
+                          ]),
+                "sign": "pctfraction",
+                "result": []
+                },
+            # Make sure negative inputs are flagged for pctraction
+            8: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.2, -1],
+                          ["gas_ct", 0.5, 0.9],
+                          ["coal_plant", 1, 0]
+                          ]),
+                "sign": "pctfraction",
+                "result": ["project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' within [0, 1]"]
+                },
+            # Make sure inputs > 1 are flagged for pctfraction
+            9: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.2, 1],
+                          ["gas_ct", 0.5, 0.9],
+                          ["coal_plant", 1, 1.9]
+                          ]),
+                "sign": "pctfraction",
+                "result": ["project(s) 'coal_plant': Expected 'average_heat_rate_mmbtu_per_mwh' within [0, 1]"]
+                },
+            # Make sure multiple pctfraction errors are flagged
+            10: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 0.2, -1],
+                          ["gas_ct", 0.5, 0.9],
+                          ["coal_plant", 1, 1.9]
+                          ]),
+                 "sign": "pctfraction",
+                 "result": ["project(s) 'gas_ct, coal_plant': Expected 'average_heat_rate_mmbtu_per_mwh' within [0, 1]"]
+                 },
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_pctfraction_nonzero(
+            actual_list = module_to_test.validate_signs(
                 df=test_cases[test_case]["df"],
-                columns=cols_to_check
+                columns=cols_to_check,
+                sign=test_cases[test_case]["sign"]
             )
             self.assertListEqual(expected_list, actual_list)
 

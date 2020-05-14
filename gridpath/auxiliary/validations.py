@@ -200,110 +200,53 @@ def validate_dtypes(df, expected_dtypes):
     return result, columns
 
 
-def validate_nonnegatives(df, columns):
+def validate_signs(df, columns, sign):
     """
-    Checks whether the selected columns of a DataFrame are non-negative (>=0).
+    Checks whether the selected columns of a DataFrame have the correct sign,
+    e.g. whether all entries are positive numbers.
     Helper function for input validation.
     :param df: DataFrame for which to check signs. Must have a 'project'
         or 'transmission_line' column, and 'columns' param must be a subset
         of the columns in df
     :param columns: list with columns that are expected to be non-negative
+    :param sign: str, specifies the expected sign for the columns. Option are
+        'positive', 'nonnegative', 'negative', 'nonpositive', 'pctfraction',
+        'pctfraction_nonzero'.
     :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column.
+        Error message specifies the column and the expected sign.
     """
+    assert sign in ["positive", "nonnegative", "negative", "nonpositive",
+                    "pctfraction", "pctfraction_nonzero"]
+
     idx_col = _get_idx_col(df)
     result = []
     for column in columns:
-        is_negative = (df[column] < 0)
-        if is_negative.any():
-            bad_idxs = df[idx_col][is_negative].values
-            print_bad_idxs = ", ".join(bad_idxs)
-            result.append(
-                 "{}(s) '{}': Expected '{}' >= 0"
-                 .format(idx_col, print_bad_idxs, column)
-                 )
+        if sign == "positive":
+            invalids = (df[column] <= 0)
+            expected = "> 0"
+        elif sign == "nonnegative":
+            invalids = (df[column] < 0)
+            expected = ">= 0"
+        elif sign == "negative":
+            invalids = (df[column] >= 0)
+            expected = "< 0"
+        elif sign == "nonpositive":
+            invalids = (df[column] > 0)
+            expected = "<= 0"
+        elif sign == "pctfraction":
+            invalids = (df[column] < 0) | (df[column] > 1)
+            expected = "within [0, 1]"
+        elif sign == "pctfraction_nonzero":
+            invalids = (df[column] <= 0) | (df[column] > 1)
+            expected = "within (0, 1]"
 
-    return result
-
-
-def validate_positives(df, columns):
-    """
-    Checks whether the selected columns of a DataFrame are positive (>0).
-    Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a 'project'
-        or 'transmission_line' column, and 'columns' param must be a subset
-        of the columns in df
-    :param columns: list with columns that are expected to be positive
-    :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column.
-    """
-    idx_col = _get_idx_col(df)
-    result = []
-    for column in columns:
-        invalids = (df[column] <= 0)
         if invalids.any():
             bad_idxs = df[idx_col][invalids].values
             print_bad_idxs = ", ".join(bad_idxs)
             result.append(
-                 "{}(s) '{}': Expected '{}' > 0"
-                 .format(idx_col, print_bad_idxs, column)
-                 )
-
-    return result
-
-
-def validate_pctfraction(df, columns):
-    """
-    Checks whether the selected columns of a DataFrame are a percent fraction
-    (0 <= x <= 1).
-    Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a 'project'
-        or 'transmission_line' column, and 'columns' param must be a subset
-        of the columns in df
-    :param columns: list with columns that are expected to be a percent
-        fraction
-    :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column.
-    """
-    idx_col = _get_idx_col(df)
-    result = []
-    for column in columns:
-        invalids = ((df[column] < 0) | (df[column] > 1))
-        if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
-            print_bad_idxs = ", ".join(bad_idxs)
-            result.append(
-                 "{}(s) '{}': Expected 0 <= '{}' <= 1"
-                 .format(idx_col, print_bad_idxs, column)
-                 )
-
-    return result
-
-
-def validate_pctfraction_nonzero(df, columns):
-    """
-    Checks whether the selected columns of a DataFrame are a non-zero percent
-    fraction (0 < x <= 1).
-    Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a 'project'
-        or 'transmission_line' column, and 'columns' param must be a subset
-        of the columns in df
-    :param columns: list with columns that are expected to be a non-zero
-        percent fraction
-    :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column.
-    """
-    idx_col = _get_idx_col(df)
-    result = []
-    for column in columns:
-        invalids = ((df[column] <= 0) | (df[column] > 1))
-        if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
-            print_bad_idxs = ", ".join(bad_idxs)
-            result.append(
-                 "{}(s) '{}': Expected 0 < '{}' <= 1"
-                 .format(idx_col, print_bad_idxs, column)
-                 )
+                "{}(s) '{}': Expected '{}' {}"
+                .format(idx_col, print_bad_idxs, column, expected)
+            )
 
     return result
 

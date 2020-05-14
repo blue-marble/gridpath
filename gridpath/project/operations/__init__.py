@@ -17,9 +17,9 @@ import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
+    validate_dtypes, get_expected_dtypes, validate_signs, \
     validate_fuel_vs_heat_rates, validate_heat_rate_curves, \
-    validate_vom_curves, validate_pctfraction_nonzero
+    validate_vom_curves
 from gridpath.project.common_functions import append_to_input_file
 
 
@@ -705,10 +705,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_nonnegatives(prj_df, valid_numeric_columns)
+        errors=validate_signs(prj_df, valid_numeric_columns, "nonnegative")
     )
 
-    # Check 0 < min stable fraction <= 1
+    # Check min_stable_level_fraction within (0, 1]
     if "min_stable_level_fraction" not in error_columns:
         write_validation_to_database(
             conn=conn,
@@ -718,8 +718,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_project_operational_chars",
             severity="Mid",
-            errors=validate_pctfraction_nonzero(prj_df,
-                                                ["min_stable_level_fraction"])
+            errors=validate_signs(prj_df, ["min_stable_level_fraction"],
+                                  "pctfraction_nonzero")
         )
 
     # Check data types heat_rates and variable_om:
@@ -764,7 +764,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="High",
-        errors=validate_nonnegatives(sub_hr_df, valid_numeric_columns)
+        errors=validate_signs(sub_hr_df, valid_numeric_columns, "nonnegative")
     )
 
     # Check valid numeric columns in variable OM are non-negative
@@ -779,7 +779,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_variable_om_curves",
         severity="High",
-        errors=validate_nonnegatives(sub_vom_df, valid_numeric_columns)
+        errors=validate_signs(sub_vom_df, valid_numeric_columns, "nonnegative")
     )
 
     # Check for consistency between fuel and heat rate curve inputs
