@@ -354,13 +354,6 @@ def validate_column(df, column, valids):
     return results
 
 
-def validate_consistent_inputs(df1, column, inputs):
-    pass
-
-# other things we might check:
-    # 1. list of new build projects should appear in new build table
-    # 2. List of projects
-
 def validate_setdiff(list1, list2, input_name, idx="project"):
     """
     Check that all items in list1 are also in list2. If not, report the
@@ -521,6 +514,7 @@ def validate_fuel_vs_heat_rates(hr_df):
 # TODO: consolidate with VOM curves (generalize?)
 # TODO: no longer do left outer join and do consistency check somewhere else
 #  so here we only do the project heat rates check (after for loop)
+# TODO: can we use check_req_columns to check for NA values?
 def validate_heat_rate_curves(hr_df):
     """
     1. Check that specified heat rate scenarios actually have inputs in the
