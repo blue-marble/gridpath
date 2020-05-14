@@ -127,7 +127,7 @@ def load_csv_data(conn, csv_path, quiet):
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
-    #### LOAD ALL SUBSCENARIOS WITH SIMPLE INPUTS ####
+    #### LOAD ALL SUBSCENARIOS WITH SIMPLE (I.E. SINGLE FILE) INPUTS ####
     csv_subscenarios_simple = csv_data_master.loc[
         csv_data_master["subscenario_type"] == "simple"
     ]
