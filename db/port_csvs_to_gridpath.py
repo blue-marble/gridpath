@@ -129,22 +129,52 @@ def load_csv_data(conn, csv_path, quiet):
 
     #### LOAD ALL SUBSCENARIOS WITH SIMPLE (I.E. SINGLE FILE) INPUTS ####
     csv_subscenarios_simple = csv_data_master.loc[
-        csv_data_master["subscenario_type"] == "simple"
+        csv_data_master["subscenario_type"] != "custom"
     ]
     for index, row in csv_subscenarios_simple.iterrows():
-        if row["subscenario_type"] == "simple" and row["include"] == 1:
+        if row["include"] == 1:
             subscenario = row["subscenario"]
             table = row["table"]
             inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
-            db_util_common.read_data_and_insert_into_db(
-                conn=conn,
-                quiet=quiet,
-                subscenario=subscenario,
-                table=table,
-                inputs_dir=inputs_dir,
-                use_project_method=project_flag
-            )
+            if row["subscenario_type"] == "simple":
+                db_util_common.read_simple_csvs_and_insert_into_db(
+                    conn=conn,
+                    quiet=quiet,
+                    subscenario=subscenario,
+                    table=table,
+                    inputs_dir=inputs_dir,
+                    use_project_method=project_flag
+                )
+            elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
+                filename = row["filename"]
+                subscenario_directories = \
+                    db_util_common.get_directory_subscenarios(
+                        main_directory=inputs_dir,
+                        quiet=quiet
+                    )
+                for subscenario_directory in subscenario_directories:
+                    if row["subscenario_type"] == "dir_main":
+                        db_util_common.read_dir_main_data_and_insert_into_db(
+                            conn=conn,
+                            quiet=quiet,
+                            subscenario=subscenario,
+                            table=table,
+                            subscenario_directory=subscenario_directory,
+                            main_filename=filename
+                        )
+                    else:
+                        db_util_common.read_dir_aux_data_and_insert_into_db(
+                            conn=conn,
+                            quiet=quiet,
+                            subscenario=subscenario,
+                            table=table,
+                            subscenario_directory=subscenario_directory,
+                            aux_filename=filename
+                        )
+
+        else:
+            pass
 
     ### CUSTOM LOADING TO BE REFACTORED LATER ###
     #### LOAD TEMPORAL DATA ####
@@ -203,23 +233,23 @@ def load_csv_data(conn, csv_path, quiet):
         print("ERROR: project_operational_chars_scenario_id is required")
 
 
-    ## SYSTEM RPS TARGETS ##
-    # Handled differently since an rps_target_scenario_id requires multiple
-    # files
-    rps_target_dir = db_util_common.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="rps_target_scenario_id"
-    )
-    if rps_target_dir is not None:
-        rps_target_subscenario_directories = \
-            db_util_common.get_directory_subscenarios(
-                main_directory=rps_target_dir,
-                quiet=quiet
-            )
-        for subscenario_directory in rps_target_subscenario_directories:
-            rps.load_from_csvs(
-                conn=conn, subscenario_directory=subscenario_directory
-            )
+    # ## SYSTEM RPS TARGETS ##
+    # # Handled differently since an rps_targets_scenario_id requires multiple
+    # # files
+    # rps_target_dir = db_util_common.get_inputs_dir(
+    #     csvs_main_dir=csv_path, csv_data_master=csv_data_master,
+    #     subscenario="rps_targets_scenario_id"
+    # )
+    # if rps_target_dir is not None:
+    #     rps_target_subscenario_directories = \
+    #         db_util_common.get_directory_subscenarios(
+    #             main_directory=rps_target_dir,
+    #             quiet=quiet
+    #         )
+    #     for subscenario_directory in rps_target_subscenario_directories:
+    #         rps.load_from_csvs(
+    #             conn=conn, subscenario_directory=subscenario_directory
+    #         )
 
     ## SYSTEM RESERVES ##
     # Handled differently since a reserve_type_scenario_id requires multiple
