@@ -329,11 +329,18 @@ def validate_column(df, column, valids):
 def validate_consistent_inputs(df1, column, inputs):
     pass
 
+# other things we might check:
+    # 1. list of new build projects should appear in new build table
+    # 2. List of projects
 
 def validate_setdiff(list1, list2, input_name, idx="project"):
     """
-    Check that all items in list1 are also in list 2. If not, report the
-    missing items.
+    Check that all items in list1 are also in list2. If not, report the
+    missing items in list1.
+
+    Example: check that the projects in list1, which is the list of all
+    binary new build projects, are also in list2, which is the list of projects
+    with binary build size inputs
 
     Note: Function will ignore duplicates in list
     :param list1:
@@ -345,10 +352,11 @@ def validate_setdiff(list1, list2, input_name, idx="project"):
     """
     results = []
     missing_idxs = np.setdiff1d(list1, list2)
-    for missing_idx in missing_idxs:
+    if missing_idxs.size > 0:
+        print_missing_idxs = ", ".join(missing_idxs)
         results.append(
-            "Missing {} inputs for {} '{}'"
-            .format(input_name, idx, missing_idx)
+            "Missing {} inputs for {}(s) '{}'"
+            .format(input_name, idx, print_missing_idxs)
         )
 
     return results
@@ -440,6 +448,14 @@ def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
     return results
 
 
+# TODO: if we don't do left outer join, we won't get projects with no
+#  fuel so we can't do the second check easily.
+# TODO: can't we just do this by looking at the opchars?
+#  No because opchars don't contain the heat rate scenario ID...
+# todo: We'd have to add in both hr_df and pr_df (with and without fuel). and
+#  compare the projects in both. If projects are in hr_df but not in pr df
+#  with fuel there is an issue. Also if projects are in pr df with fuel but
+#  not in hr df there is an issue too
 def validate_fuel_vs_heat_rates(hr_df):
     """
     Make sure projects with fuel have a heat rate scenario specified.

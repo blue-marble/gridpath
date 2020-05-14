@@ -380,7 +380,7 @@ class TestValidations(unittest.TestCase):
             2: {"list1": ["gas_ct"],
                 "list2": [],
                 "input_name": "inputs_project_new_binary_build_size",
-                "project_error": ["Missing inputs_project_new_binary_build_size inputs for project 'gas_ct'"],
+                "project_error": ["Missing inputs_project_new_binary_build_size inputs for project(s) 'gas_ct'"]
                 }
         }
 
