@@ -317,38 +317,35 @@ def validate_req_cols(df, columns, required, category):
     return result
 
 
-# TODO: can this be more general, e.g. if comparing 2 lists of projects
-#  valids could be the first list of projects, and column could be project
-#  however that would make reporting meaningfull messages harder, especially
-#  if we are really just checking the projects
-# Can really see this either as checking that the column only contains valid
-# entries (error would mean invalid entry)
-# OR checking that df[column] is a subset of valids (error would mean that
-# there are missing inputs for valids)
-
-def validate_column(df, column, valids):
+def validate_column(df, column, valids=[], invalids=[]):
     """
     Check that the specified column only has entries within the list of valid
-    entries ("valids"). If not, an error message is returned.
-    Helper function for input validation.
+    entries and no entries within the list of invalids. If not, an error
+    message is returned.
+
+    Example: check that a DataFrame with project and fuels only has valid fuels
+    specified for each project.
 
     :param df: DataFrame for which to check columns. Must have a "project"
         or "transmission_line" column, and a column equal to the column param.
     :param column: string, column to check
-    :param valids: list of valid entries
+    :param valids: list of valid entries, defaults to []
+    :param invalids: list of valid entries, defaults to []
     :return: List of error messages for each column with invalid inputs.
         Error message specifies the column.
     """
     idx_col = _get_idx_col(df)
     results = []
-    invalids = ~df[column].isin(valids)
-    if invalids.any():
-        bad_idxs = df[idx_col][invalids].values
+    mask = (~df[column].isin(valids)) | (df[column].isin(invalids))
+    if mask.any():
+        bad_idxs = df[idx_col][mask].values
         print_bad_idxs = ", ".join(bad_idxs)
-        print_valids = ", ".join(valids)
+        print_valid = " Valid options are {}.".format(valids) if valids else ""
+        print_invalid = " Invalid options are {}.".format(invalids) if invalids else ""
+        end_msg = print_valid + print_invalid
         results.append(
-            "{}(s) '{}': Invalid entry for {}. Options are '{}'"
-            .format(idx_col, print_bad_idxs, column, print_valids)
+            "{}(s) '{}': Invalid entry for {}.{}"
+            .format(idx_col, print_bad_idxs, column, end_msg)
         )
 
     return results
@@ -374,6 +371,7 @@ def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
     """
     results = []
     missing_idxs = set(required_idxs) - set(actual_idxs)
+    missing_idxs = sorted(list(missing_idxs))
     if len(missing_idxs) > 0:
         results.append(
             "Missing inputs for {}: {}"
@@ -414,6 +412,7 @@ def validate_op_cap_combos(df, invalid_combos):
     return results
 
 
+# TODO: this is same as validate_missing_idxs so generalize
 def validate_projects_for_reserves(projects_op_type, projects_w_ba,
                                    operational_type, reserve):
     """

@@ -354,8 +354,8 @@ class TestValidations(unittest.TestCase):
                 "column": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
                 "result": ["project(s) 'gas_ct2': Invalid entry for "
-                           "capacity_type. Options are 'gen_new_lin, "
-                           "stor_new_lin'"]
+                           "capacity_type. Valid options are ['gen_new_lin', "
+                           "'stor_new_lin']."]
                 }
         }
 
@@ -380,20 +380,21 @@ class TestValidations(unittest.TestCase):
             2: {"required_idxs": ["gas_ct"],
                 "actual_idxs": [],
                 "idx_label": "project",
-                "result": ["Missing inputs for project: {'gas_ct'}"]
+                "result": ["Missing inputs for project: ['gas_ct']"]
                 },
             # Make sure invalid tuple indexes are properly detected
             3: {"required_idxs": [("gas_ct", 2020)],
                 "actual_idxs": [],
                 "idx_label": "(project, period)",
-                "result": ["Missing inputs for (project, period): {('gas_ct', 2020)}"]
+                "result": ["Missing inputs for (project, period): [('gas_ct', 2020)]"]
                 },
             # Make sure multiple invalid tuple indexes are properly detected
+            # (results are sorted!)
             4: {"required_idxs": [("gas_ct", 2020),
                                   ("coal_plant", 2020)],
                 "actual_idxs": [],
                 "idx_label": "(project, period)",
-                "result": ["Missing inputs for (project, period): {('gas_ct', 2020), ('coal_plant', 2020)}"]
+                "result": ["Missing inputs for (project, period): [('coal_plant', 2020), ('gas_ct', 2020)]"]
                 }
         }
 
