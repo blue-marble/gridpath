@@ -317,6 +317,11 @@ def validate_req_cols(df, columns, required, category):
     return result
 
 
+# TODO: if we provide df[column] as a list (and allow multiple columns),
+#  could this be the same as as validate_idxs?
+#  Answer: no, not really. Here we check that entries are valid but we don't
+#  check that all valids are entry. We are also checking a data column
+#  (e.g. op-type), not an index (e.g. project or fuel-period-month).
 def validate_column(df, column, valids=[], invalids=[]):
     """
     Check that the specified column only has entries within the list of valid
@@ -351,41 +356,50 @@ def validate_column(df, column, valids=[], invalids=[]):
     return results
 
 
+# TODO: generalize validate_req_idx into this
+#       generalize validate_projects_for_reserve into this
 # TODO: could also feed in df instead of actual_idxs, and derive label
 #  somehow?
-def validate_req_idxs(required_idxs, actual_idxs, idx_label="project"):
+def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
+                  idx_label="project", msg=""):
     """
-    Check that all items in required_idxs are also in actual_idxs. If not,
-    report the idxs missing in the actual_idxs.
+    Check that actual list of indexes contains all required indexes and none
+    of the invalid indexes. If any required indexes are missing, or any invalid
+    indexes are present, return an error message specifying the missing or
+    invalid index, its label, and an optional clarifying message. The indexes
+    can be lists of anything, but generally a list of strings or tuples.
 
-    Example: check that the required_idxs, which is the list of all binary
-    new build projects, are also in actual_idxs, which is the list of
-    projects with binary build size inputs.
+    Example: check that the list of projects with binary build size inputs
+    (actual_idxs) contains all binary new build projects (required_idxs)
 
-    Note: Function will ignore duplicates in list
-    :param required_idxs: list of indexes (index can be a string or a tuple)
-    :param actual_idxs: list of indexes (index can be a string or a tuple)
-    :param idx_label: the labels for the index (e.g. "project" or
-        "(fuel, period, month)". Defaults to "project".
-    :return: single element list of error message for missing indexes
+    :param actual_idxs: list, the indexes to check
+    :param req_idxs: list, the required indexes
+    :param invalid_idxs: list, the invalid indexes
+    :param idx_label: str, the index label
+    :param msg: str, optional error message clarification.
+    :return:
     """
+
     results = []
-    missing_idxs = set(required_idxs) - set(actual_idxs)
-    missing_idxs = sorted(list(missing_idxs))
+
+    missing_idxs = sorted(list(set(req_idxs) - set(actual_idxs)))
     if len(missing_idxs) > 0:
         results.append(
-            "Missing inputs for {}: {}"
-            .format(idx_label, missing_idxs)
+            "Missing required inputs for {}: {}. {}"
+            .format(idx_label, missing_idxs, msg)
+        )
+
+    invalids = sorted(list(set(actual_idxs) & set(invalid_idxs)))
+    if len(invalids) > 0:
+        results.append(
+            "Invalid inputs for {}: {}. {}"
+            .format(idx_label, invalids, msg)
         )
 
     return results
 
 
-# TODO: can this be more general where we check if one list exists in
-#  a column of a df? (or if a list of tuples exists in a set of columns)
-#  problem is that we can't easily vectorize checking 2 columns so we need to
-#  loop over the invalid combos
-# TODO: just generalize it so we check for invalid_ixs, and we giv idx_cols
+# TODO: can we do this with validate_idxs?
 def validate_op_cap_combos(df, invalid_combos):
     """
     Check that there's no mixing of incompatible capacity and operational types
@@ -409,42 +423,6 @@ def validate_op_cap_combos(df, invalid_combos):
                 .format(idx_col, print_bad_idxs, combo[0], combo[1])
             )
 
-    return results
-
-
-# TODO: this is same as validate_req_idxs so generalize
-def validate_projects_for_reserves(projects_op_type, projects_w_ba,
-                                   operational_type, reserve):
-    """
-    Check that a list of projects of a given operational_type does not show up
-    in a a list of projects that can provide a given type of reserve. This is
-    used when checking that a certain operational type (e.g. gen_must_run) is not
-    providing a certain type of reserve (e..g regulation_up) which it shouldn't
-    be able to provide.
-
-    :param projects_op_type: list of projects with specified operational type
-    :param projects_w_ba: list of projects with specified reserve ba
-    :param operational_type: string, specified operational_type (e.g. gen_must_run)
-        that is not able to provide the specified reserve
-    :param reserve: string, specified reserve product (e.g. regulation_up)
-    :return:
-    """
-
-    results = []
-
-    # Convert list of projects to sets and check set intersection
-    projects_op_type = set(projects_op_type)
-    projects_w_ba = set(projects_w_ba)
-    bad_projects = sorted(list(projects_w_ba & projects_op_type))
-
-    # If there are any projects of the specified operaitonal type
-    # with a reserve BA specified, create a validation error
-    if bad_projects:
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-             "Project(s) '{}'; {} cannot provide {}".format(
-                 print_bad_projects, operational_type, reserve)
-             )
     return results
 
 

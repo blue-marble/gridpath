@@ -368,42 +368,68 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_req_idxs(self):
+    def test_validate_idxs(self):
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"required_idxs": ["gas_ct"],
-                "actual_idxs": ["gas_ct", "coal_plant"],
+            1: {"actual_idxs": ["gas_ct", "coal_plant"],
+                "req_idxs": ["gas_ct"],
+                "invalid_idxs": ["gen_gas_ct2"],
                 "idx_label": "project",
+                "msg": "",
                 "result": [],
                 },
-            # Make sure invalid inputs are detected
-            2: {"required_idxs": ["gas_ct"],
-                "actual_idxs": [],
+            # Make sure missing required indexes inputs are detected
+            2: {"actual_idxs": [],
+                "req_idxs": ["gas_ct"],
+                "invalid_idxs": [],
                 "idx_label": "project",
-                "result": ["Missing inputs for project: ['gas_ct']"]
+                "msg": "",
+                "result": ["Missing required inputs for project: ['gas_ct']. "]
                 },
-            # Make sure invalid tuple indexes are properly detected
-            3: {"required_idxs": [("gas_ct", 2020)],
-                "actual_idxs": [],
+            # Make sure missing required tuple indexes are properly detected
+            3: {"actual_idxs": [],
+                "req_idxs": [("gas_ct", 2020)],
+                "invalid_idxs": [],
                 "idx_label": "(project, period)",
-                "result": ["Missing inputs for (project, period): [('gas_ct', 2020)]"]
+                "msg": "",
+                "result": ["Missing required inputs for (project, period): [('gas_ct', 2020)]. "]
                 },
-            # Make sure multiple invalid tuple indexes are properly detected
-            # (results are sorted!)
-            4: {"required_idxs": [("gas_ct", 2020),
-                                  ("coal_plant", 2020)],
-                "actual_idxs": [],
+            # Make sure multiple missing required tuple indexes are properly
+            # detected (results are sorted!)
+            4: {"actual_idxs": [],
+                "req_idxs": [("gas_ct", 2020),
+                             ("coal_plant", 2020)],
+                "invalid_idxs": [],
                 "idx_label": "(project, period)",
-                "result": ["Missing inputs for (project, period): [('coal_plant', 2020), ('gas_ct', 2020)]"]
-                }
+                "msg": "",
+                "result": ["Missing required inputs for (project, period): [('coal_plant', 2020), ('gas_ct', 2020)]. "]
+                },
+            # Make sure invalid idxs are detected and error message is added.
+            5: {"actual_idxs": ["gas_ct", "btm_solar"],
+                "req_idxs": [],
+                "invalid_idxs": ["btm_solar"],
+                "idx_label": "project",
+                "msg": "gen_var_must_take cannot provide lf_down.",
+                "result": ["Invalid inputs for project: ['btm_solar']. gen_var_must_take cannot provide lf_down."]
+                },
+            # Make sure multiple invalid idxs are detected correctly
+            6: {"actual_idxs": ["gas_ct", "btm_solar", "btm_wind"],
+                "req_idxs": [],
+                "invalid_idxs": ["btm_solar", "btm_wind"],
+                "idx_label": "project",
+                "msg": "gen_var_must_take cannot provide lf_down.",
+                "result": ["Invalid inputs for project: ['btm_solar', 'btm_wind']. gen_var_must_take cannot provide lf_down."]
+                },
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_req_idxs(
-                required_idxs=test_cases[test_case]["required_idxs"],
+            actual_list = module_to_test.validate_idxs(
                 actual_idxs=test_cases[test_case]["actual_idxs"],
+                req_idxs=test_cases[test_case]["req_idxs"],
+                invalid_idxs=test_cases[test_case]["invalid_idxs"],
                 idx_label=test_cases[test_case]["idx_label"],
+                msg=test_cases[test_case]["msg"]
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -678,47 +704,6 @@ class TestValidations(unittest.TestCase):
             actual_list = module_to_test.validate_constant_heat_rate(
                 df=test_cases[test_case]["df"],
                 op_type=test_cases[test_case]["op_type"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_projects_for_reserves(self):
-        """
-
-        :return:
-        """
-
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"projects_op_type": ["project1", "project2"],
-                "projects_w_ba": ["project3", "project4"],
-                "operational_type": "gen_must_run",
-                "reserve": "regulation_up",
-                "result": []
-                },
-            # Make sure invalid projects are flagged
-            2: {"projects_op_type": ["project1", "project2"],
-                "projects_w_ba": ["project2", "project3"],
-                "operational_type": "gen_must_run",
-                "reserve": "regulation_up",
-                "result": ["Project(s) 'project2'; gen_must_run cannot provide regulation_up"]
-                },
-            # Make sure multiple invalid projects are flagged correctly
-            3: {"projects_op_type": ["project1", "project2"],
-                "projects_w_ba": ["project1", "project2", "project3"],
-                "operational_type": "gen_must_run",
-                "reserve": "regulation_up",
-                "result": [
-                    "Project(s) 'project1, project2'; gen_must_run cannot provide regulation_up"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_projects_for_reserves(
-                projects_op_type=test_cases[test_case]["projects_op_type"],
-                projects_w_ba=test_cases[test_case]["projects_w_ba"],
-                operational_type=test_cases[test_case]["operational_type"],
-                reserve=test_cases[test_case]["reserve"],
             )
             self.assertListEqual(expected_list, actual_list)
 

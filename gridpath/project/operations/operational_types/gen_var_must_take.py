@@ -13,7 +13,7 @@ import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_projects_by_reserve, validate_projects_for_reserves
+    get_projects_by_reserve, validate_idxs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -380,13 +380,12 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # inputs_project_reserve_bas tables since gen_var_must_take can't
     # provide any reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
-    for reserve, projects in projects_by_reserve.items():
+    for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
-        reserve_errors = validate_projects_for_reserves(
-            projects_op_type=opchar_df["project"].tolist(),
-            projects_w_ba=projects,
-            operational_type="gen_var_must_take",
-            reserve=reserve
+        reserve_errors = validate_idxs(
+            actual_idxs=opchar_df["project"],
+            invalid_idxs=projects_w_ba,
+            msg="gen_var_must_take cannot provide {}.".format(reserve)
         )
 
         write_validation_to_database(

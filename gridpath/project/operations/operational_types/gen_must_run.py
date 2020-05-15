@@ -24,7 +24,7 @@ from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_projects_by_reserve, validate_projects_for_reserves, \
+    get_projects_by_reserve, validate_idxs, \
     validate_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
@@ -305,13 +305,12 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # inputs_project_reserve_bas tables since gen_must_run can't provide any
     # reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
-    for reserve, projects in projects_by_reserve.items():
+    for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
-        reserve_errors = validate_projects_for_reserves(
-            projects_op_type=opchar_df["project"],
-            projects_w_ba=projects,
-            operational_type="gen_must_run",
-            reserve=reserve
+        reserve_errors = validate_idxs(
+            actual_idxs=opchar_df["project"],
+            invalid_idxs=projects_w_ba,
+            msg="gen_must_run cannot provide {}.".format(reserve)
         )
 
         write_validation_to_database(
