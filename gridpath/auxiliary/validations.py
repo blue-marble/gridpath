@@ -387,6 +387,7 @@ def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
 #  a column of a df? (or if a list of tuples exists in a set of columns)
 #  problem is that we can't easily vectorize checking 2 columns so we need to
 #  loop over the invalid combos
+# TODO: just generalize it so we check for invalid_ixs, and we giv idx_cols
 def validate_op_cap_combos(df, invalid_combos):
     """
     Check that there's no mixing of incompatible capacity and operational types
