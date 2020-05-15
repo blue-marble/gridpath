@@ -76,7 +76,10 @@ prm,project_prm_zone_scenario_id,project_prm_zones,simple,0,0,1,reliability/prm/
 prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,0,0,1,reliability/prm/project_elcc_chars,,
 prm,prm_energy_only_scenario_id,project_prm_energy_only,simple,0,0,1,reliability/prm/project_prm_energy_only,,
 prm,prm_requirement_scenario_id,system_prm_requirement,simple,0,0,1,reliability/prm/system_prm_requirement,,
-elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,custom,0,0,1,reliability/prm/elcc_surface,,Tables include inputs_system_prm_zone_elcc_surface and inputs_project_elcc_surface
+elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,dir_main,0,0,1,reliability/prm/elcc_surface,zone_intercepts.csv,Tables include inputs_system_prm_zone_elcc_surface and inputs_project_elcc_surface
+elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface_prm_load,dir_aux,0,0,1,reliability/prm/elcc_surface,zone_peak_and_annual_load.csv,
+elcc_surface,elcc_surface_scenario_id,project_elcc_surface,dir_aux,0,0,1,reliability/prm/elcc_surface,project_coefficients.csv,
+elcc_surface,elcc_surface_scenario_id,project_elcc_surface_cap_factors,dir_aux,0,0,1,reliability/prm/elcc_surface,project_cap_factors.csv,
 local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,simple,0,0,1,reliability/local_capacity/geography_local_capacity_zones,,
 local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,simple,0,0,1,reliability/local_capacity/project_local_capacity_zones,,
 local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,simple,0,0,1,reliability/local_capacity/project_local_capacity_chars,,

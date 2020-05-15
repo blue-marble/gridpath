@@ -45,8 +45,6 @@ from db.utilities import project_list, project_operational_chars, \
     project_prm, rps, system_reserves, temporal, scenario, solver_options
 
 # Reserves list
-reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
-                 'regulation_down', 'regulation_up', 'spinning_reserves']
 
 
 def parse_arguments(args):
@@ -127,7 +125,7 @@ def load_csv_data(conn, csv_path, quiet):
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
-    #### LOAD ALL SUBSCENARIOS WITH SIMPLE (I.E. SINGLE FILE) INPUTS ####
+    #### LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS ####
     csv_subscenarios_simple = csv_data_master.loc[
         csv_data_master["subscenario_type"] != "custom"
     ]
@@ -232,27 +230,6 @@ def load_csv_data(conn, csv_path, quiet):
     else:
         print("ERROR: project_operational_chars_scenario_id is required")
 
-
-    # TODO: organize all PRM-related data in one place
-    # TODO: refactor this to consolidate with temporal inputs loading and
-    #  any other subscenarios that are based on a directory
-    ## LOAD ELCC SURFACE DATA ##
-    # Handled differently since an elcc_surface_scenario_id requires multiple
-    # files
-    elcc_surface_dir = db_util_common.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="elcc_surface_scenario_id"
-    )
-    if elcc_surface_dir is not None:
-        elcc_surface_subscenario_directories = \
-            db_util_common.get_directory_subscenarios(
-                main_directory=elcc_surface_dir,
-                quiet=quiet
-            )
-        for subscenario_directory in elcc_surface_subscenario_directories:
-            project_prm.elcc_surface_load_from_csvs(
-                conn=conn, subscenario_directory=subscenario_directory
-            )
 
     #### LOAD SCENARIOS DATA ####
     scenarios_dir = db_util_common.get_inputs_dir(
