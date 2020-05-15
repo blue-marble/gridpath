@@ -233,50 +233,6 @@ def load_csv_data(conn, csv_path, quiet):
         print("ERROR: project_operational_chars_scenario_id is required")
 
 
-    # ## SYSTEM RPS TARGETS ##
-    # # Handled differently since an rps_targets_scenario_id requires multiple
-    # # files
-    # rps_target_dir = db_util_common.get_inputs_dir(
-    #     csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-    #     subscenario="rps_targets_scenario_id"
-    # )
-    # if rps_target_dir is not None:
-    #     rps_target_subscenario_directories = \
-    #         db_util_common.get_directory_subscenarios(
-    #             main_directory=rps_target_dir,
-    #             quiet=quiet
-    #         )
-    #     for subscenario_directory in rps_target_subscenario_directories:
-    #         rps.load_from_csvs(
-    #             conn=conn, subscenario_directory=subscenario_directory
-    #         )
-
-    ## SYSTEM RESERVES ##
-    # Handled differently since a reserve_type_scenario_id requires multiple
-    # files
-    for reserve_type in reserves_list:
-        if csv_data_master.loc[
-            csv_data_master["subscenario"] ==
-            "{}_scenario_id".format(reserve_type),
-            'include'
-        ].iloc[0] == 1:
-            data_folder_path = os.path.join(csv_path, csv_data_master.loc[
-                csv_data_master["subscenario"]
-                == "{}_scenario_id".format(reserve_type), 'path'
-            ].iloc[0])
-
-            reserve_subscenario_directories = \
-                db_util_common.get_directory_subscenarios(
-                    main_directory=data_folder_path,
-                    quiet=quiet
-                )
-
-            for subscenario_directory in reserve_subscenario_directories:
-                system_reserves.load_from_csvs(
-                    conn, subscenario_directory=subscenario_directory,
-                    reserve_type=reserve_type
-                )
-
     # TODO: organize all PRM-related data in one place
     # TODO: refactor this to consolidate with temporal inputs loading and
     #  any other subscenarios that are based on a directory
