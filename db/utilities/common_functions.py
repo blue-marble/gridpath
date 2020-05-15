@@ -247,7 +247,7 @@ def csv_to_tuples(subscenario_id, csv_file):
     return tuples_for_import
 
 
-def read_data_and_insert_into_db(
+def read_simple_csvs_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method,
 ):
     """
@@ -349,6 +349,74 @@ def parse_subscenario_directory_contents(
     return subscenario_tuple, csv_file_paths
 
 
+def read_dir_data_and_insert_into_db(
+    conn, quiet, subscenario, table, subscenario_directory, filename, main_flag
+):
+    """
+    :param conn:
+    :param quiet:
+    :param subscenario:
+    :param table:
+    :param subscenario_directory:
+    :param filename:
+    :param main_flag:
+
+    Read subscenario info from a directory, with the subscenario ID,
+    underscore, and the subscenario name as the name of the directory.
+
+    A file containing the subscenario description (description.txt) is
+    optional. Each directory also contains CSV files with expected structure
+    based on the table they are loaded into. This function loads the 'main'
+    csv file into the input table that matches with subscenario table. See
+    also the read_dir_aux_data_and_insert_into_db() for loading of auxiliary
+    data for this subscenario.
+    """
+    # Get the paths for the required input files
+    filepath = os.path.join(subscenario_directory, filename)
+
+    # Get subscenario ID, name, and description
+    # The subscenario directory must start with an integer for the
+    # subscenario_id followed by "_" and then the subscenario name
+    # The subscenario description must be in the description.txt file under
+    # the subscenario directory
+    directory_basename = os.path.basename(subscenario_directory)
+    subscenario_id = int(directory_basename.split("_", 1)[0])
+    subscenario_name = directory_basename.split("_", 1)[1]
+
+    # If we're loading the 'main_dir' files, also load in the subscenario info
+    if main_flag:
+        # Check if there's a description file, otherwise the description will be
+        # an empty string
+        description_file = os.path.join(subscenario_directory, "description.txt")
+        if os.path.exists(description_file):
+            with open(description_file, "r") as f:
+                subscenario_description = f.read()
+        else:
+            subscenario_description = ""
+
+        # Make the tuple for insertion into the subscenario table
+        subscenario_tuple_list = [
+            (subscenario_id, subscenario_name, subscenario_description)
+        ]
+    else:
+        subscenario_tuple_list = None
+
+    # Inputs
+    inputs_tuple_list = csv_to_tuples(
+        subscenario_id=subscenario_id, csv_file=filepath
+    )
+
+    generic_insert_subscenario(
+        conn=conn,
+        subscenario=subscenario,
+        table=table,
+        subscenario_data=subscenario_tuple_list,
+        inputs_data=inputs_tuple_list,
+        project_flag=False,
+        main_flag=main_flag
+    )
+
+
 def get_subscenario_description(folder_path, csv_filename):
     """
     :param folder_path:
@@ -402,7 +470,8 @@ def check_ids_are_unique(folder_path, csv_files, project_bool):
 
 
 def generic_insert_subscenario(
-    conn, subscenario, table, subscenario_data, inputs_data, project_flag
+    conn, subscenario, table, subscenario_data, inputs_data, project_flag,
+    main_flag=True
 ):
     """
     :param conn: the database connection object
@@ -411,6 +480,9 @@ def generic_insert_subscenario(
     :param subscenario_data: list of tuples
     :param inputs_data: list of tuples
     :param project_flag: boolean
+    :param main_flag: boolean; True by default; when loading inputs from a
+        directory, we pass True when we want to load the subscenario info
+        with the 'main' inputs and False if we're loading auxiliary inputs only
 
     Generic function that loads subscenario info and inputs data for a
     particular subscenario. The subscenario_data and inputs_data are given
@@ -419,21 +491,22 @@ def generic_insert_subscenario(
     c = conn.cursor()
 
     # Load in the subscenario name and description
-    if not project_flag:
-        subs_sql = """
-            INSERT OR IGNORE INTO subscenarios_{}
-            ({}, name, description)
-            VALUES (?, ?, ?);
-            """.format(table, subscenario)
-    else:
-        subs_sql = """
-            INSERT OR IGNORE INTO subscenarios_{}
-            (project, {}, name, description)
-            VALUES (?, ?, ?, ?);
-            """.format(table, subscenario)
+    if main_flag:
+        if not project_flag:
+            subs_sql = """
+                INSERT OR IGNORE INTO subscenarios_{}
+                ({}, name, description)
+                VALUES (?, ?, ?);
+                """.format(table, subscenario)
+        else:
+            subs_sql = """
+                INSERT OR IGNORE INTO subscenarios_{}
+                (project, {}, name, description)
+                VALUES (?, ?, ?, ?);
+                """.format(table, subscenario)
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
-                          data=subscenario_data)
+        spin_on_database_lock(conn=conn, cursor=c, sql=subs_sql,
+                              data=subscenario_data)
 
     # Insert the subscenario data
     # Get column names for this table

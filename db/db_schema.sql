@@ -1274,8 +1274,8 @@ subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
 
 -- ELCC surface
 -- Depends on how PRM zones are defined
-DROP TABLE IF EXISTS subscenarios_system_elcc_surface;
-CREATE TABLE subscenarios_system_elcc_surface (
+DROP TABLE IF EXISTS subscenarios_system_prm_zone_elcc_surface;
+CREATE TABLE subscenarios_system_prm_zone_elcc_surface (
 elcc_surface_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -1291,7 +1291,7 @@ facet INTEGER,
 elcc_surface_intercept FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period, facet),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface (elcc_surface_scenario_id)
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
 );
 
 -- Peak and annual load for ELCC surface by PRM zone and period
@@ -1304,7 +1304,7 @@ prm_peak_load_mw FLOAT,
 prm_annual_load_mwh FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface (elcc_surface_scenario_id)
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
 );
 
 -- ELCC coefficients by project, period, and facet
@@ -2298,7 +2298,7 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface (elcc_surface_scenario_id),
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
@@ -3264,7 +3264,7 @@ subscenarios_system_frequency_response.name AS frequency_response_profile,
 subscenarios_system_rps_targets.name AS rps_target,
 subscenarios_system_carbon_cap_targets.name AS carbon_cap,
 subscenarios_system_prm_requirement.name AS prm_requirement,
-subscenarios_system_elcc_surface.name AS elcc_surface,
+subscenarios_system_prm_zone_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
@@ -3372,7 +3372,7 @@ LEFT JOIN subscenarios_system_carbon_cap_targets
     USING (carbon_cap_target_scenario_id)
 LEFT JOIN subscenarios_system_prm_requirement
     USING (prm_requirement_scenario_id)
-LEFT JOIN subscenarios_system_elcc_surface
+LEFT JOIN subscenarios_system_prm_zone_elcc_surface
     USING (elcc_surface_scenario_id)
 LEFT JOIN subscenarios_system_local_capacity_requirement
     USING (local_capacity_requirement_scenario_id)

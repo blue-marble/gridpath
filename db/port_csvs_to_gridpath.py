@@ -41,12 +41,10 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util_common
-from db.utilities import project_list, project_operational_chars, \
-    project_prm, rps, system_reserves, temporal, scenario, solver_options
+from db.utilities import project_list, project_operational_chars, temporal, \
+    scenario, solver_options
 
 # Reserves list
-reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
-                 'regulation_down', 'regulation_up', 'spinning_reserves']
 
 
 def parse_arguments(args):
@@ -127,26 +125,51 @@ def load_csv_data(conn, csv_path, quiet):
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
-    #### LOAD ALL SUBSCENARIOS WITH SIMPLE (I.E. SINGLE FILE) INPUTS ####
+    #### LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS ####
     csv_subscenarios_simple = csv_data_master.loc[
-        csv_data_master["subscenario_type"] == "simple"
+        csv_data_master["subscenario_type"] != "custom"
     ]
     for index, row in csv_subscenarios_simple.iterrows():
-        if row["subscenario_type"] == "simple" and row["include"] == 1:
+        if row["include"] == 1:
             subscenario = row["subscenario"]
             table = row["table"]
             inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
-            db_util_common.read_data_and_insert_into_db(
-                conn=conn,
-                quiet=quiet,
-                subscenario=subscenario,
-                table=table,
-                inputs_dir=inputs_dir,
-                use_project_method=project_flag
-            )
+            if row["subscenario_type"] == "simple":
+                db_util_common.read_simple_csvs_and_insert_into_db(
+                    conn=conn,
+                    quiet=quiet,
+                    subscenario=subscenario,
+                    table=table,
+                    inputs_dir=inputs_dir,
+                    use_project_method=project_flag
+                )
+            elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
+                filename = row["filename"]
+                subscenario_directories = \
+                    db_util_common.get_directory_subscenarios(
+                        main_directory=inputs_dir,
+                        quiet=quiet
+                    )
+                for subscenario_directory in subscenario_directories:
+                    if row["subscenario_type"] == "dir_main":
+                        main_flag = True
+                    else:
+                        main_flag = False
+                    db_util_common.read_dir_data_and_insert_into_db(
+                        conn=conn,
+                        quiet=quiet,
+                        subscenario=subscenario,
+                        table=table,
+                        subscenario_directory=subscenario_directory,
+                        filename=filename,
+                        main_flag=main_flag
+                    )
 
-    ### CUSTOM LOADING TO BE REFACTORED LATER ###
+        else:
+            pass
+
+    ### CUSTOM LOADING ###
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
     temporal_directory = db_util_common.get_inputs_dir(
@@ -202,71 +225,6 @@ def load_csv_data(conn, csv_path, quiet):
     else:
         print("ERROR: project_operational_chars_scenario_id is required")
 
-
-    ## SYSTEM RPS TARGETS ##
-    # Handled differently since an rps_target_scenario_id requires multiple
-    # files
-    rps_target_dir = db_util_common.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="rps_target_scenario_id"
-    )
-    if rps_target_dir is not None:
-        rps_target_subscenario_directories = \
-            db_util_common.get_directory_subscenarios(
-                main_directory=rps_target_dir,
-                quiet=quiet
-            )
-        for subscenario_directory in rps_target_subscenario_directories:
-            rps.load_from_csvs(
-                conn=conn, subscenario_directory=subscenario_directory
-            )
-
-    ## SYSTEM RESERVES ##
-    # Handled differently since a reserve_type_scenario_id requires multiple
-    # files
-    for reserve_type in reserves_list:
-        if csv_data_master.loc[
-            csv_data_master["subscenario"] ==
-            "{}_scenario_id".format(reserve_type),
-            'include'
-        ].iloc[0] == 1:
-            data_folder_path = os.path.join(csv_path, csv_data_master.loc[
-                csv_data_master["subscenario"]
-                == "{}_scenario_id".format(reserve_type), 'path'
-            ].iloc[0])
-
-            reserve_subscenario_directories = \
-                db_util_common.get_directory_subscenarios(
-                    main_directory=data_folder_path,
-                    quiet=quiet
-                )
-
-            for subscenario_directory in reserve_subscenario_directories:
-                system_reserves.load_from_csvs(
-                    conn, subscenario_directory=subscenario_directory,
-                    reserve_type=reserve_type
-                )
-
-    # TODO: organize all PRM-related data in one place
-    # TODO: refactor this to consolidate with temporal inputs loading and
-    #  any other subscenarios that are based on a directory
-    ## LOAD ELCC SURFACE DATA ##
-    # Handled differently since an elcc_surface_scenario_id requires multiple
-    # files
-    elcc_surface_dir = db_util_common.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="elcc_surface_scenario_id"
-    )
-    if elcc_surface_dir is not None:
-        elcc_surface_subscenario_directories = \
-            db_util_common.get_directory_subscenarios(
-                main_directory=elcc_surface_dir,
-                quiet=quiet
-            )
-        for subscenario_directory in elcc_surface_subscenario_directories:
-            project_prm.elcc_surface_load_from_csvs(
-                conn=conn, subscenario_directory=subscenario_directory
-            )
 
     #### LOAD SCENARIOS DATA ####
     scenarios_dir = db_util_common.get_inputs_dir(
