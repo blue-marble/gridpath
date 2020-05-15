@@ -153,23 +153,18 @@ def load_csv_data(conn, csv_path, quiet):
                     )
                 for subscenario_directory in subscenario_directories:
                     if row["subscenario_type"] == "dir_main":
-                        db_util_common.read_dir_main_data_and_insert_into_db(
-                            conn=conn,
-                            quiet=quiet,
-                            subscenario=subscenario,
-                            table=table,
-                            subscenario_directory=subscenario_directory,
-                            main_filename=filename
-                        )
+                        main_flag = True
                     else:
-                        db_util_common.read_dir_aux_data_and_insert_into_db(
-                            conn=conn,
-                            quiet=quiet,
-                            subscenario=subscenario,
-                            table=table,
-                            subscenario_directory=subscenario_directory,
-                            aux_filename=filename
-                        )
+                        main_flag = False
+                    db_util_common.read_dir_data_and_insert_into_db(
+                        conn=conn,
+                        quiet=quiet,
+                        subscenario=subscenario,
+                        table=table,
+                        subscenario_directory=subscenario_directory,
+                        filename=filename,
+                        main_flag=main_flag
+                    )
 
         else:
             pass
