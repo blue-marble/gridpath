@@ -354,30 +354,31 @@ def validate_column(df, column, valids):
     return results
 
 
-def validate_setdiff(list1, list2, input_name, idx="project"):
+# TODO: could also feed in df instead of acutal_idxs, and derive label
+#  somehow?
+def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
     """
-    Check that all items in list1 are also in list2. If not, report the
-    missing items in list1.
+    Check that all items in required_idxs are also in actual_idxs. If not,
+    report the idxs missing in the actual_idxs.
 
-    Example: check that the projects in list1, which is the list of all
-    binary new build projects, are also in list2, which is the list of projects
-    with binary build size inputs
+    Example: check that the required_idxs, which is the list of all binary
+    new build projects, are also in actual_idxs, which is the list of
+    projects with binary build size inputs.
 
     Note: Function will ignore duplicates in list
-    :param list1:
-    :param list2:
-    :param input_name: str, specifies what inputs are indexed by list2
-    :param idx: the index label for the values that list1 and list2 represent.
-        Defaults to "project".
+    :param required_idxs:
+    :param actual_idxs:
+    :param idx_label: the labels for the index (e.g. "project" or
+        "(fuel, period, month)". Defaults to "project".
     :return: list of error messages for each missing idx
     """
     results = []
-    missing_idxs = np.setdiff1d(list1, list2)
+    missing_idxs = np.setdiff1d(required_idxs, actual_idxs)
     if missing_idxs.size > 0:
         print_missing_idxs = ", ".join(missing_idxs)
         results.append(
-            "Missing {} inputs for {}(s) '{}'"
-            .format(input_name, idx, print_missing_idxs)
+            "Missing inputs for {}: '{}'"
+            .format(idx_label, print_missing_idxs)
         )
 
     return results

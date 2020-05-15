@@ -368,28 +368,34 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_projects(self):
+    def test_validate_missing_idxs(self):
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"list1": ["gas_ct"],
-                "list2": ["gas_ct"],
-                "input_name": "inputs_project_new_binary_build_size",
-                "project_error": [],
+            1: {"required_idxs": ["gas_ct"],
+                "actual_idxs": ["gas_ct", "coal_plant"],
+                "idx_label": "project",
+                "result": [],
                 },
-            # Make sure missing bld size or cost is detected
-            2: {"list1": ["gas_ct"],
-                "list2": [],
-                "input_name": "inputs_project_new_binary_build_size",
-                "project_error": ["Missing inputs_project_new_binary_build_size inputs for project(s) 'gas_ct'"]
+            # Make sure invalid inputs are detected
+            2: {"required_idxs": ["gas_ct"],
+                "actual_idxs": [],
+                "idx_label": "project",
+                "result": ["Missing inputs for project: 'gas_ct'"]
+                },
+            # Make sure invalid tuple indexes are properly detected
+            2: {"required_idxs": ["(gas_ct, 2020)"],
+                "actual_idxs": [],
+                "idx_label": "(project, period)",
+                "result": ["Missing inputs for (project, period): '(gas_ct, 2020)'"]
                 }
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["project_error"]
-            actual_list = module_to_test.validate_setdiff(
-                list1=test_cases[test_case]["list1"],
-                list2=test_cases[test_case]["list2"],
-                input_name=test_cases[test_case]["input_name"],
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_missing_idxs(
+                required_idxs=test_cases[test_case]["required_idxs"],
+                actual_idxs=test_cases[test_case]["actual_idxs"],
+                idx_label=test_cases[test_case]["idx_label"],
             )
             self.assertListEqual(expected_list, actual_list)
 
