@@ -51,15 +51,13 @@ def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
     rows = [(scenario_id, subproblem_id, stage_id, gridpath_module, db_table,
              severity, error, timestamp) for error in errors]
     c = conn.cursor()
-    for row in rows:
-        sql = """
-        INSERT INTO status_validation
-        (scenario_id, subproblem_id, stage_id, 
-        gridpath_module, db_table, severity, description, time_stamp)
-        VALUES ({});
-        """.format(','.join(['?' for i in row]))
-
-        spin_on_database_lock(conn, c, sql, rows)
+    sql = """
+    INSERT INTO status_validation
+    (scenario_id, subproblem_id, stage_id, 
+    gridpath_module, db_table, severity, description, time_stamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    """
+    spin_on_database_lock(conn, c, sql, rows)
     c.close()
 
 
