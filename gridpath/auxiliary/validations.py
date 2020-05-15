@@ -354,7 +354,7 @@ def validate_column(df, column, valids):
     return results
 
 
-# TODO: could also feed in df instead of acutal_idxs, and derive label
+# TODO: could also feed in df instead of actual_idxs, and derive label
 #  somehow?
 def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
     """
@@ -366,19 +366,18 @@ def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
     projects with binary build size inputs.
 
     Note: Function will ignore duplicates in list
-    :param required_idxs:
-    :param actual_idxs:
+    :param required_idxs: list of indexes (index can be a string or a tuple)
+    :param actual_idxs: list of indexes (index can be a string or a tuple)
     :param idx_label: the labels for the index (e.g. "project" or
         "(fuel, period, month)". Defaults to "project".
-    :return: list of error messages for each missing idx
+    :return: single element list of error message for missing indexes
     """
     results = []
-    missing_idxs = np.setdiff1d(required_idxs, actual_idxs)
-    if missing_idxs.size > 0:
-        print_missing_idxs = ", ".join(missing_idxs)
+    missing_idxs = set(required_idxs) - set(actual_idxs)
+    if len(missing_idxs) > 0:
         results.append(
-            "Missing inputs for {}: '{}'"
-            .format(idx_label, print_missing_idxs)
+            "Missing inputs for {}: {}"
+            .format(idx_label, missing_idxs)
         )
 
     return results
@@ -446,27 +445,6 @@ def validate_projects_for_reserves(projects_op_type, projects_w_ba,
              "Project(s) '{}'; {} cannot provide {}".format(
                  print_bad_projects, operational_type, reserve)
              )
-    return results
-
-
-def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
-    """
-    Check that fuel prices exist for the period and month
-    :param fuels_df:
-    :param fuel_prices_df:
-    :param periods_months:
-    :return:
-    """
-    results = []
-    for f in fuels_df["fuel"].values:
-        df = fuel_prices_df[fuel_prices_df["fuel"] == f]
-        for period, month in periods_months:
-            if not ((df.period == period) & (df.month == month)).any():
-                results.append(
-                    "Fuel '{}': Missing price for period '{}', month '{}'"
-                    .format(f, str(period), str(month))
-                )
-
     return results
 
 

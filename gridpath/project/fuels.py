@@ -12,7 +12,7 @@ from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes
 from gridpath.auxiliary.validations import validate_column, \
-    validate_fuel_prices
+    validate_missing_idxs
 
 
 def add_model_components(m, d):
@@ -202,7 +202,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         AND stage_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
-    ).fetchall()
+    )
 
     # Convert input data into pandas DataFrame
     fuels_df = pd.DataFrame(
@@ -217,6 +217,15 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         data=projects.fetchall(),
         columns=[s[0] for s in projects.description]
     )
+
+    # Get relevant lists
+    fuels = fuels_df["fuel"].to_list()
+    actual_fuel_periods_months = list(
+        fuel_prices_df[["fuel", "period", "month"]]
+        .itertuples(index=False, name=None)
+    )
+    req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months
+                               for f in fuels]
 
     # Check data types
     expected_dtypes = get_expected_dtypes(
@@ -248,8 +257,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # TODO: couldn't this be a simple foreign key or is NULL not allowed then?
+    # TODO: should this check be in projects.init instead?
     # Check that fuels specified for projects are valid fuels
-    valid_fuels = fuels_df["fuel"].to_list()
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -258,7 +267,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_column(prj_df, "fuel", valid_fuels)
+        errors=validate_column(prj_df, "fuel", fuels)
     )
 
     # Check that fuel prices exist for the period and month
@@ -270,7 +279,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuel_prices",
         severity="High",
-        errors=validate_fuel_prices(fuels_df, fuel_prices_df, periods_months)
+        errors=validate_missing_idxs(req_fuel_periods_months,
+                                     actual_fuel_periods_months,
+                                     "(fuel, period, month)")
     )
 
 

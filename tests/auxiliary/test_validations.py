@@ -380,13 +380,20 @@ class TestValidations(unittest.TestCase):
             2: {"required_idxs": ["gas_ct"],
                 "actual_idxs": [],
                 "idx_label": "project",
-                "result": ["Missing inputs for project: 'gas_ct'"]
+                "result": ["Missing inputs for project: {'gas_ct'}"]
                 },
             # Make sure invalid tuple indexes are properly detected
-            2: {"required_idxs": ["(gas_ct, 2020)"],
+            3: {"required_idxs": [("gas_ct", 2020)],
                 "actual_idxs": [],
                 "idx_label": "(project, period)",
-                "result": ["Missing inputs for (project, period): '(gas_ct, 2020)'"]
+                "result": ["Missing inputs for (project, period): {('gas_ct', 2020)}"]
+                },
+            # Make sure multiple invalid tuple indexes are properly detected
+            4: {"required_idxs": [("gas_ct", 2020),
+                                  ("coal_plant", 2020)],
+                "actual_idxs": [],
+                "idx_label": "(project, period)",
+                "result": ["Missing inputs for (project, period): {('gas_ct', 2020), ('coal_plant', 2020)}"]
                 }
         }
 
@@ -396,71 +403,6 @@ class TestValidations(unittest.TestCase):
                 required_idxs=test_cases[test_case]["required_idxs"],
                 actual_idxs=test_cases[test_case]["actual_idxs"],
                 idx_label=test_cases[test_case]["idx_label"],
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_fuel_prices(self):
-        fuels_df_columns = ["fuel", "co2_intensity_tons_per_mmbtu"]
-        fuel_prices_df_columns = ["fuel", "period", "month",
-                                  "fuel_price_per_mmbtu"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"fuels_df": pd.DataFrame(
-                    columns=fuels_df_columns,
-                    data=[["gas", 0.4], ["coal", 0.8]]),
-                "fuel_prices_df": pd.DataFrame(
-                    columns=fuel_prices_df_columns,
-                    data=[["gas", 2018, 1, 3], ["gas", 2018, 2, 4],
-                          ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
-                "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_prices_error": []
-                },
-            # If a fuel price is missing for a certain month/period,
-            # there should be an error.
-            2: {"fuels_df": pd.DataFrame(
-                    columns=fuels_df_columns,
-                    data=[["gas", 0.4], ["coal", 0.8]]),
-                "fuel_prices_df": pd.DataFrame(
-                    columns=fuel_prices_df_columns,
-                    data=[["gas", 2018, 1, 3],
-                          ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
-                "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_prices_error": [
-                    "Fuel 'gas': Missing price for period '2018', month '2'"]
-                },
-            # It's okay if there are more fuels and fuels prices specified than
-            # needed for the active projects
-            3: {"fuels_df": pd.DataFrame(
-                    columns=fuels_df_columns,
-                    data=[["gas", 0.4], ["coal", 0.8]]),
-                "fuel_prices_df": pd.DataFrame(
-                    columns=fuel_prices_df_columns,
-                    data=[["gas", 2018, 1, 3], ["gas", 2018, 2, 4],
-                          ["coal", 2018, 1, 2], ["coal", 2018, 2, 2]]),
-                "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_prices_error": []
-                },
-            # Test for multiple errors in a column
-            4: {"fuels_df": pd.DataFrame(
-                    columns=fuels_df_columns,
-                    data=[["gas", 0.4], ["coal", 0.8]]),
-                "fuel_prices_df": pd.DataFrame(
-                    columns=fuel_prices_df_columns,
-                    data=[["gas", 2018, 1, 3],
-                          ["coal", 2018, 1, 2]]),
-                "periods_months": [(2018, 1), (2018, 2)],
-                "fuel_prices_error":
-                    ["Fuel 'gas': Missing price for period '2018', month '2'",
-                     "Fuel 'coal': Missing price for period '2018', month '2'"]
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["fuel_prices_error"]
-            actual_list = module_to_test.validate_fuel_prices(
-                fuels_df=test_cases[test_case]["fuels_df"],
-                fuel_prices_df=test_cases[test_case]["fuel_prices_df"],
-                periods_months=test_cases[test_case]["periods_months"]
             )
             self.assertListEqual(expected_list, actual_list)
 
