@@ -56,6 +56,65 @@ def read_inputs(
     return csv_subscenario_input, csv_data_input
 
 
+def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
+
+    csv_file_path = os.path.join(inputs_dir, csv_file)
+
+    # Description of the subscenario can be provided in file with same
+    # name as the CSV subscenario file but extension .txt
+    subscenario_description = get_subscenario_description(
+        folder_path=inputs_dir, csv_filename=csv_file
+    )
+
+    if not project_flag:
+        # Get the subscenario ID and subscenario name from the file name
+        # We're expecting the file name to start with an integer (the
+        # subscenario ID), followed by an underscore, and then the
+        # subscenario name
+        subscenario_id = int(csv_file.split("_", 1)[0])
+        subscenario_name = csv_file.split("_", 1)[1].split(".csv")[0]
+
+        # Insert the subscenario ID, name, and description into the
+        # subscenario dataframe
+        subsc_tuples = [
+            (subscenario_id, subscenario_name, subscenario_description)
+        ]
+
+        # Create the data tuples
+        data_tuples = csv_to_tuples(
+            csv_file=csv_file_path, subscenario_id=subscenario_id
+        )
+
+    else:
+        # Get the subscenario ID and subscenario name from the file name
+        # We're expecting the file name to start with the project name,
+        # followed by a dash, an integer (the subscenario ID), followed
+        # by a dash, and then the subscenario name
+        # TODO: need a robust method for splitting the filename in case
+        #  the same character as used to delineate (currently a dash)
+        #  exists in the project name
+        #  Split on dash instead of underscore for now to allow for
+        #  underscores in project name
+        project = csv_file.split("-", 1)[0]
+        subscenario_id = int(csv_file.split("-", 2)[1])
+        subscenario_name = csv_file.split("-", 2)[2].split(".csv")[0]
+
+        # Insert the project name, subscenario ID, subscenario name,
+        # and description into the subscenario dataframe
+        subsc_tuples = [
+            (project, subscenario_id, subscenario_name,
+             subscenario_description)
+        ]
+
+        # Create the data tuples
+        data_tuples = csv_to_tuples(
+            csv_file=csv_file_path,
+            project=project, subscenario_id=subscenario_id
+        )
+
+    return subsc_tuples, data_tuples
+
+
 def csv_read_data(folder_path, quiet, project_flag):
     """
     :param folder_path: Path to folder with input csv files
@@ -210,12 +269,9 @@ def read_simple_csvs_and_insert_into_db(
     """
     Read data from CSVs, convert to tuples, and insert into database.
     """
-    # Get the subscenario info and data
-    csv_subscenario_input, csv_data_input = read_inputs(
-        inputs_dir=inputs_dir,
-        quiet=quiet,
-        project_flag=use_project_method
-    )
+    # List all files in directory and look for CSVs
+    csv_files = [f for f in os.listdir(inputs_dir) if f.endswith(".csv")]
+
 
     csv_headers_for_validation = [
         subscenario if x == "id" else x
@@ -224,13 +280,12 @@ def read_simple_csvs_and_insert_into_db(
 
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
-    if csv_subscenario_input is not False and csv_data_input is not False:
-        subscenario_tuples = [
-            tuple(x) for x in csv_subscenario_input.to_records(index=False)
-        ]
-        inputs_tuples = [
-            tuple(x) for x in csv_data_input.to_records(index=False)
-         ]
+    for csv_file in csv_files:
+        subscenario_tuples, inputs_tuples = csv_to_subscenario_tuples(
+            inputs_dir=inputs_dir,
+            csv_file=csv_file,
+            project_flag=use_project_method
+        )
 
         generic_insert_subscenario(
             conn=conn,
