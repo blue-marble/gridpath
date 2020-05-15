@@ -352,6 +352,24 @@ def parse_subscenario_directory_contents(
 def read_dir_main_data_and_insert_into_db(
     conn, quiet, subscenario, table, subscenario_directory, main_filename
 ):
+    """
+    :param conn:
+    :param quiet:
+    :param subscenario:
+    :param table:
+    :param subscenario_directory:
+    :param main_filename:
+
+    Read subscenario info from a directory, with the subscenario ID,
+    underscore, and the subscenario name as the name of the directory.
+
+    A file containing the subscenario description (description.txt) is
+    optional. Each directory also contains CSV files with expected structure
+    based on the table they are loaded into. This function loads the 'main'
+    csv file into the input table that matches with subscenario table. See
+    also the read_dir_aux_data_and_insert_into_db() for loading of auxiliary
+    data for this subscenario.
+    """
     # Get the paths for the required input files
     main_filepath = os.path.join(subscenario_directory, main_filename)
 
@@ -396,6 +414,20 @@ def read_dir_main_data_and_insert_into_db(
 def read_dir_aux_data_and_insert_into_db(
     conn, quiet, subscenario, table, subscenario_directory, aux_filename
 ):
+    """
+    :param conn:
+    :param quiet:
+    :param subscenario:
+    :param table:
+    :param subscenario_directory:
+    :param aux_filename:
+
+    Read subscenario info from a directory, with the subscenario ID,
+    underscore, and the subscenario name as the name of the directory.
+
+    Load the non-main (i.e. auxiliary) CSV files for the subscenario into
+    the database.
+    """
     # Get the paths for the required input files
     aux_filepath = os.path.join(subscenario_directory, aux_filename)
 

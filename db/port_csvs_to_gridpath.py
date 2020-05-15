@@ -41,8 +41,8 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util_common
-from db.utilities import project_list, project_operational_chars, \
-    project_prm, rps, system_reserves, temporal, scenario, solver_options
+from db.utilities import project_list, project_operational_chars, temporal, \
+    scenario, solver_options
 
 # Reserves list
 
@@ -174,7 +174,7 @@ def load_csv_data(conn, csv_path, quiet):
         else:
             pass
 
-    ### CUSTOM LOADING TO BE REFACTORED LATER ###
+    ### CUSTOM LOADING ###
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
     temporal_directory = db_util_common.get_inputs_dir(
