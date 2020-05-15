@@ -368,7 +368,7 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_missing_idxs(self):
+    def test_validate_req_idxs(self):
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"required_idxs": ["gas_ct"],
@@ -400,7 +400,7 @@ class TestValidations(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_missing_idxs(
+            actual_list = module_to_test.validate_req_idxs(
                 required_idxs=test_cases[test_case]["required_idxs"],
                 actual_idxs=test_cases[test_case]["actual_idxs"],
                 idx_label=test_cases[test_case]["idx_label"],

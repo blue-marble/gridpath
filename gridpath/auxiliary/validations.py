@@ -353,7 +353,7 @@ def validate_column(df, column, valids=[], invalids=[]):
 
 # TODO: could also feed in df instead of actual_idxs, and derive label
 #  somehow?
-def validate_missing_idxs(required_idxs, actual_idxs, idx_label="project"):
+def validate_req_idxs(required_idxs, actual_idxs, idx_label="project"):
     """
     Check that all items in required_idxs are also in actual_idxs. If not,
     report the idxs missing in the actual_idxs.
@@ -412,7 +412,7 @@ def validate_op_cap_combos(df, invalid_combos):
     return results
 
 
-# TODO: this is same as validate_missing_idxs so generalize
+# TODO: this is same as validate_req_idxs so generalize
 def validate_projects_for_reserves(projects_op_type, projects_w_ba,
                                    operational_type, reserve):
     """

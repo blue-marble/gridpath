@@ -12,7 +12,7 @@ from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes
 from gridpath.auxiliary.validations import validate_column, \
-    validate_missing_idxs
+    validate_req_idxs
 
 
 def add_model_components(m, d):
@@ -279,7 +279,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuel_prices",
         severity="High",
-        errors=validate_missing_idxs(req_fuel_periods_months,
+        errors=validate_req_idxs(req_fuel_periods_months,
                                      actual_fuel_periods_months,
                                      "(fuel, period, month)")
     )
