@@ -233,7 +233,7 @@ def csv_to_tuples(subscenario_id, csv_file):
     """
     :param subscenario_id: int
     :param csv_file: str, path to CSV file
-    :return: list of tuples
+    :return: list of tuples, list of header strings
 
     Convert the data from a CSV into a list of tuples for insertion into an
     input table.
@@ -244,7 +244,7 @@ def csv_to_tuples(subscenario_id, csv_file):
         for x in df.to_records(index=False)
     ]
 
-    return tuples_for_import
+    return tuples_for_import, df.columns.tolist()
 
 
 def read_simple_csvs_and_insert_into_db(
@@ -259,6 +259,11 @@ def read_simple_csvs_and_insert_into_db(
         quiet=quiet,
         use_project_method=use_project_method
     )
+
+    csv_headers_for_validation = [
+        subscenario if x == "id" else x
+        for x in csv_data_input.columns.tolist()
+    ]
 
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
@@ -276,7 +281,8 @@ def read_simple_csvs_and_insert_into_db(
             table=table,
             subscenario_data=subscenario_tuples,
             inputs_data=inputs_tuples,
-            project_flag=use_project_method
+            project_flag=use_project_method,
+            headers_for_validation=csv_headers_for_validation
         )
 
 
@@ -402,9 +408,10 @@ def read_dir_data_and_insert_into_db(
         subscenario_tuple_list = None
 
     # Inputs
-    inputs_tuple_list = csv_to_tuples(
+    inputs_tuple_list, csv_headers = csv_to_tuples(
         subscenario_id=subscenario_id, csv_file=filepath
     )
+    headers_for_validation = [subscenario] + csv_headers
 
     generic_insert_subscenario(
         conn=conn,
@@ -413,7 +420,8 @@ def read_dir_data_and_insert_into_db(
         subscenario_data=subscenario_tuple_list,
         inputs_data=inputs_tuple_list,
         project_flag=False,
-        main_flag=main_flag
+        main_flag=main_flag,
+        headers_for_validation=headers_for_validation
     )
 
 
@@ -471,7 +479,7 @@ def check_ids_are_unique(folder_path, csv_files, project_bool):
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    main_flag=True
+    main_flag=True, headers_for_validation=None
 ):
     """
     :param conn: the database connection object
@@ -483,6 +491,7 @@ def generic_insert_subscenario(
     :param main_flag: boolean; True by default; when loading inputs from a
         directory, we pass True when we want to load the subscenario info
         with the 'main' inputs and False if we're loading auxiliary inputs only
+    :param headers_for_validation: list of strings
 
     Generic function that loads subscenario info and inputs data for a
     particular subscenario. The subscenario_data and inputs_data are given
@@ -514,8 +523,23 @@ def generic_insert_subscenario(
       """SELECT * FROM inputs_{};""".format(table)
     )
 
-    # Create the appropriate strings needed for the insert query
+    # If we have passed headers, check that they are as expected (i.e.
+    # the same as in the table we're inserting into)
     column_names = [s[0] for s in table_data_query.description]
+    if headers_for_validation is not None:
+        if headers_for_validation != column_names:
+            raise AssertionError(
+                """
+                Headers and table column names don't match.
+                Column names are {}.
+                Header names are {}.
+                Please ensure that your header names are the same as the 
+                database column names.
+                """.format(column_names, headers_for_validation)
+            )
+
+
+    # Create the appropriate strings needed for the insert query
     column_string = ", ".join(column_names)
     values_string = ", ".join(["?"] * len(column_names))
 
