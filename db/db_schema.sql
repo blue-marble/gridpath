@@ -563,12 +563,6 @@ subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
 -- -- PROJECT -- --
 -------------------
 
--- All projects: a list of all projects we may model
-DROP TABLE IF EXISTS inputs_project_all;
-CREATE TABLE inputs_project_all (
-project VARCHAR(64) PRIMARY KEY
-);
-
 -- -- Capacity -- --
 
 -- Project portfolios
