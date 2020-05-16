@@ -152,8 +152,8 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
-# TODO: further generalize this so we join on opchars so we can select fuel
-#  projects for instance?
+# TODO: further generalize this by joining on opchars so "col" can also be
+#  any column in opchars, e.g. so we can select fuel projects for instance?
 def get_projects(conn, subscenarios, col, col_value):
     """
     Get projects for which the column value of "col" is equal to "col_value".
@@ -315,31 +315,50 @@ def validate_req_cols(df, columns, required, category):
     return result
 
 
-# TODO: if we provide df[column] as a list (and allow multiple columns),
-#  could this be the same as as validate_idxs?
-#  Answer: no, not really. Here we check that entries are valid but we don't
-#  check that all valids are entry. We are also checking a data column
-#  (e.g. op-type), not an index (e.g. project or fuel-period-month).
-def validate_column(df, column, valids=[], invalids=[]):
+def validate_columns(df, columns, valids=[], invalids=[]):
     """
-    Check that the specified column only has entries within the list of valid
-    entries and no entries within the list of invalids. If not, an error
-    message is returned.
+    Check that the specified column(s) only have entries within the list of
+    valid entries and no entries within the list of invalids. If not, an error
+    message is returned, specifying which column indexes are in violation.
 
-    Example: check that a DataFrame with project and fuels only has valid fuels
-    specified for each project.
+    Examples:
+     - check that a DataFrame with project and fuels only has valid fuels
+       specified for each project.
+     - check that a DataFrame with project, cap-type, and op-type does not have
+       any incompatible combinations of cap-type and op-type.
+
+    Note: this function differs from validate_idxs() in that we are checking
+    data column(s) (e.g. op-type), not an index (e.g. project). validate_idxs()
+    also checks that entries contain a set of required entries, which is
+    different from checking that all entries are within a set of valid entries.
 
     :param df: DataFrame for which to check columns. Must have a "project"
-        or "transmission_line" column, and a column equal to the column param.
-    :param column: string, column to check
-    :param valids: list of valid entries, defaults to []
-    :param invalids: list of valid entries, defaults to []
-    :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column.
+        or "transmission_line" column, and contain the specified column(s).
+    :param columns: str or list of str, columns to check
+    :param valids: list of valid entries, defaults to []. If multiple columns
+        specified, should be list of tuples.
+    :param invalids: list of valid entries, defaults to []. If multiple columns
+        specified, should be list of tuples.
+    :return: List of error messages for each entry with invalid inputs.
     """
     idx_col = _get_idx_col(df)
     results = []
-    mask = (~df[column].isin(valids)) | (df[column].isin(invalids))
+
+    # If checking for combination of columns, combine into tuple for lookup
+    if isinstance(columns, list):
+        df["lookup"] = list(zip(*[df[c] for c in columns]))
+    elif isinstance(columns, str):
+        df["lookup"] = df[columns]
+    else:
+        raise ValueError("Columns should be string or list of strings")
+
+    # Entries are invalid if they are either not in the provided list of valid
+    # entries (if any), or if they are in the provided list of invalid entries
+    falses = pd.Series([False] * len(df))
+    valids_mask = ~df["lookup"].isin(valids) if valids else falses
+    invalids_mask = df["lookup"].isin(invalids) if invalids else falses
+    mask = valids_mask | invalids_mask
+
     if mask.any():
         bad_idxs = df[idx_col][mask].values
         print_bad_idxs = ", ".join(bad_idxs)
@@ -348,14 +367,11 @@ def validate_column(df, column, valids=[], invalids=[]):
         end_msg = print_valid + print_invalid
         results.append(
             "{}(s) '{}': Invalid entry for {}.{}"
-            .format(idx_col, print_bad_idxs, column, end_msg)
+            .format(idx_col, print_bad_idxs, columns, end_msg)
         )
-
     return results
 
 
-# TODO: generalize validate_req_idx into this
-#       generalize validate_projects_for_reserve into this
 # TODO: could also feed in df instead of actual_idxs, and derive label
 #  somehow?
 def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
@@ -393,33 +409,6 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
             "Invalid inputs for {}: {}. {}"
             .format(idx_label, invalids, msg)
         )
-
-    return results
-
-
-# TODO: can we do this with validate_idxs?
-def validate_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df: pandas DataFrame, should contain columns 'capacity_type',
-        'operational_type', and 'project' or 'transmission_line'
-    :param invalid_combos: list of tuples with the invalid cap-type op-type
-        combinations
-    :return:
-    """
-    idx_col = _get_idx_col(df)
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_idxs = df[idx_col][bad_combos].values
-            print_bad_idxs = ", ".join(bad_idxs)
-            results.append(
-                "{}(s) '{}': capacity type '{}' and operational type '{}' "
-                "cannot be combined"
-                .format(idx_col, print_bad_idxs, combo[0], combo[1])
-            )
 
     return results
 

@@ -11,8 +11,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes
-from gridpath.auxiliary.validations import validate_column, \
-    validate_idxs
+from gridpath.auxiliary.validations import validate_columns, validate_idxs
 
 
 def add_model_components(m, d):
@@ -267,7 +266,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_column(prj_df, "fuel", fuels)
+        errors=validate_columns(prj_df, "fuel", valids=fuels)
     )
 
     # Check that fuel prices exist for the period and month

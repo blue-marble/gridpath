@@ -327,44 +327,93 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_column(self):
-        """
-
-        :return:
-        """
-
-        cols = ["project", "capacity_type"]
+    def test_validate_columns(self):
+        cols1 = ["project", "capacity_type", "operational_type"]
+        cols2 = ["transmission_line", "capacity_type", "operational_type"]
         test_cases = {
-            # Make sure correct inputs don't throw error
+            # Make sure matching valids don't throw errors
             1: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", "gen_new_lin"]
-                      ]),
-                "column": "capacity_type",
+                    columns=cols1,
+                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+                "columns": "capacity_type",
                 "valids": ["gen_new_lin"],
+                "invalids": [],
                 "result": []
                 },
-            # Make sure invalid column entry is flagged
+            # Make sure non-matching invalids don't throw errors
+            # and test out multiple columns
             2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct1", "gen_new_lin"],
-                      ["gas_ct2", "invalid_cap_type"],
-                      ["storage_plant", "stor_new_lin"]
-                      ]),
-                "column": "capacity_type",
+                    columns=cols1,
+                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+                "columns": ["capacity_type", "operational_type"],
+                "valids": [],
+                "invalids": [("invalid1", "invalid2")],
+                "result": [],
+                },
+            # Make sure non-matching valids are detected
+            3: {"df": pd.DataFrame(
+                    columns=cols1,
+                    data=[["gas_ct1", "gen_new_lin", "gen_commit_cap"],
+                          ["gas_ct2", "invalid_cap_type", "gen_commit_cap"],
+                          ["storage_plant", "stor_new_lin", "stor"]
+                          ]),
+                "columns": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
+                "invalids": [],
                 "result": ["project(s) 'gas_ct2': Invalid entry for "
                            "capacity_type. Valid options are ['gen_new_lin', "
                            "'stor_new_lin']."]
+                },
+            # Make sure matching invalids are detected
+            4: {"df": pd.DataFrame(
+                    columns=cols1,
+                    data=[["gas_ct1", "cap1", "op2"],
+                          ["gas_ct2", "cap1", "op3"]
+                          ]),
+                "columns": ["capacity_type", "operational_type"],
+                "valids": [],
+                "invalids": [("cap1", "op2")],
+                "result": ["project(s) 'gas_ct1': Invalid entry for "
+                           "['capacity_type', 'operational_type']. Invalid "
+                           "options are [('cap1', 'op2')]."]
+                },
+            # Make sure non-matching valids and matching invalids and are
+            # detected
+            5: {"df": pd.DataFrame(
+                columns=cols1,
+                data=[["gas_ct1", "cap1", "op2"],
+                      ["gas_ct2", "cap1", "op3"],
+                      ]),
+                "columns": ["capacity_type", "operational_type"],
+                "valids": [("cap1", "op1")],
+                "invalids": [("cap1", "op2")],
+                "result": ["project(s) 'gas_ct1, gas_ct2': Invalid entry for "
+                           "['capacity_type', 'operational_type']. Valid "
+                           "options are [('cap1', 'op1')]. Invalid "
+                           "options are [('cap1', 'op2')]."]
+                },
+            # Test idx_col lookup for transmission lines
+            6: {"df": pd.DataFrame(
+                columns=cols2,
+                data=[["tx1", "new_build", "tx_dcopf"],
+                      ["tx2", "new_build", "tx_simple"]
+                      ]),
+                "columns": ["capacity_type", "operational_type"],
+                "valids": [],
+                "invalids": [("new_build", "tx_dcopf")],
+                "result": ["transmission_line(s) 'tx1': Invalid entry for "
+                           "['capacity_type', 'operational_type']. Invalid "
+                           "options are [('new_build', 'tx_dcopf')]."]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_column(
+            actual_list = module_to_test.validate_columns(
                 df=test_cases[test_case]["df"],
-                column=test_cases[test_case]["column"],
-                valids=test_cases[test_case]["valids"]
+                columns=test_cases[test_case]["columns"],
+                valids=test_cases[test_case]["valids"],
+                invalids=test_cases[test_case]["invalids"]
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -430,59 +479,6 @@ class TestValidations(unittest.TestCase):
                 invalid_idxs=test_cases[test_case]["invalid_idxs"],
                 idx_label=test_cases[test_case]["idx_label"],
                 msg=test_cases[test_case]["msg"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_op_cap_combos(self):
-        cols1 = ["project", "capacity_type", "operational_type"]
-        cols2 = ["transmission_line", "capacity_type", "operational_type"]
-        test_cases = {
-            # Make sure correct inputs don't throw error for projcts
-            1: {"df": pd.DataFrame(
-                    columns=cols1,
-                    data=[["gas_ct", "gen_new_lin",
-                           "gen_commit_cap"]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
-                "combo_error": [],
-                },
-            # Make sure invalid combo is flagged for projects
-            2: {"df": pd.DataFrame(
-                columns=cols1,
-                data=[["gas_ct1", "cap1", "op2"],
-                      ["gas_ct2", "cap1", "op3"]
-                      ]),
-                "invalid_combos": [("cap1", "op2")],
-                "combo_error": ["project(s) 'gas_ct1': capacity type 'cap1' "
-                                "and operational type 'op2' cannot be "
-                                "combined"],
-                },
-            # Make sure correct inputs don't throw error for tx lines
-            3: {"df": pd.DataFrame(
-                    columns=cols2,
-                    data=[["tx1", "tx_spec", "tx_simple"]
-                          ]),
-                "invalid_combos": [("invalid1", "invalid2")],
-                "combo_error": [],
-                },
-            # Make sure invalid combos are flagged for tx lines
-            4: {"df": pd.DataFrame(
-                columns=cols2,
-                data=[["tx1", "new_build", "tx_dcopf"],
-                      ["tx2", "new_build", "tx_simple"]
-                      ]),
-                "invalid_combos": [("new_build", "tx_dcopf")],
-                "combo_error": ["transmission_line(s) 'tx1': capacity type "
-                                "'new_build' and operational type 'tx_dcopf' "
-                                "cannot be combined"],
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["combo_error"]
-            actual_list = module_to_test.validate_op_cap_combos(
-                df=test_cases[test_case]["df"],
-                invalid_combos=test_cases[test_case]["invalid_combos"]
             )
             self.assertListEqual(expected_list, actual_list)
 
