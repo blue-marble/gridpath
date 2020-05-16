@@ -413,14 +413,6 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     return results
 
 
-# TODO: if we don't do left outer join, we won't get projects with no
-#  fuel so we can't do the second check easily.
-# TODO: can't we just do this by looking at the opchars?
-#  No because opchars don't contain the heat rate scenario ID...
-# todo: We'd have to add in both hr_df and pr_df (with and without fuel). and
-#  compare the projects in both. If projects are in hr_df but not in pr df
-#  with fuel there is an issue. Also if projects are in pr df with fuel but
-#  not in hr df there is an issue too
 def validate_fuel_vs_heat_rates(hr_df):
     """
     Make sure projects with fuel have a heat rate scenario specified.
@@ -455,10 +447,6 @@ def validate_fuel_vs_heat_rates(hr_df):
     return results
 
 
-# TODO: consolidate with VOM curves (generalize?)
-# TODO: no longer do left outer join and do consistency check somewhere else
-#  so here we only do the project heat rates check (after for loop)
-# TODO: can we use check_req_columns to check for NA values?
 def validate_heat_rate_curves(hr_df):
     """
     1. Check that specified heat rate scenarios actually have inputs in the
