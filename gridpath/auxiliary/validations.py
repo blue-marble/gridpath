@@ -440,40 +440,6 @@ def validate_single_input(df, idx_col="project", msg=""):
     return results
 
 
-def validate_fuel_vs_heat_rates(hr_df):
-    """
-    Make sure projects with fuel have a heat rate scenario specified.
-    Conversely, if no fuel is specified, make sure there is no heat rate
-    scenario specified.
-    :param hr_df:
-    :return:
-    """
-    results = []
-
-    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    fuel_mask = pd.notna(hr_df["fuel"])
-
-    invalids = fuel_mask & ~hr_curve_mask
-    if invalids.any():
-        bad_projects = hr_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': Missing heat_rate_curves_scenario_id"
-            .format(print_bad_projects)
-        )
-
-    invalids = ~fuel_mask & hr_curve_mask
-    if invalids.any():
-        bad_projects = pd.unique(hr_df["project"][invalids])
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-             "Project(s) '{}': No fuel specified so no heat rate expected"
-             .format(print_bad_projects)
-        )
-
-    return results
-
-
 def validate_heat_rate_curves(hr_df):
     """
     1. Check that specified heat rate scenarios actually have inputs in the

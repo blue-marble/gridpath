@@ -18,7 +18,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_signs, \
-    validate_fuel_vs_heat_rates, validate_heat_rate_curves, \
+    validate_idxs, validate_heat_rate_curves, \
     validate_vom_curves
 from gridpath.project.common_functions import append_to_input_file
 
@@ -494,23 +494,24 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     )
 
     # Get heat rate curves;
-    # Select only heat rate curves of projects in the portfolio
-    # Use left outer join so we include all projects, even those without a
-    # heat rate scenario_id match (for input validation)
     c1 = conn.cursor()
     heat_rates = c1.execute(
         """
-        SELECT project, fuel, heat_rate_curves_scenario_id, period,
+        SELECT project, period,
         load_point_fraction, average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
         INNER JOIN
-        (SELECT project, fuel, heat_rate_curves_scenario_id
+        (SELECT project, heat_rate_curves_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) AS op_char
         USING(project)
-        LEFT OUTER JOIN
+        -- select only heat curves of matching projects
+        INNER JOIN
         inputs_project_heat_rate_curves
         USING(project, heat_rate_curves_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
         WHERE project_portfolio_scenario_id = {}
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
@@ -588,19 +589,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         new_column_names=new_columns
     )
 
-    # Convert heat rates to dataframe and pre-process data
-    # (filter out only projects with fuel; select columns, convert periods
-    # type to integer)
-    hr_df = pd.DataFrame(
-        data=heat_rates.fetchall(),
-        columns=[s[0] for s in heat_rates.description]
-    )
-    fuel_mask = pd.notna(hr_df["fuel"])
-    columns = ["project", "period", "load_point_fraction",
-               "average_heat_rate_mmbtu_per_mwh"]
-    hr_df = hr_df[columns][fuel_mask].astype({"period": int})
-    heat_rates = hr_df.values
-
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "heat_rate_curves.tab"),
               "w", newline="") as \
             heat_rate_tab_file:
@@ -665,12 +653,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         data=variable_om.fetchall(),
         columns=[s[0] for s in variable_om.description]
     )
-
+    # TODO: deal with new inputs format
     # Filter out NA values and select appropriate columns
-    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    sub_hr_df = hr_df[hr_curve_mask][
-        ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
-    ]
     vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
     sub_vom_df = vom_df[vom_curve_mask][
         ["project", "load_point_fraction", "average_variable_om_cost_per_mwh"]
@@ -728,7 +712,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                "inputs_project_heat_rate_curves",
                "inputs_project_variable_om_curves"]
     )
-    dtype_errors, error_columns = validate_dtypes(sub_hr_df, expected_dtypes)
+    dtype_errors, error_columns = validate_dtypes(hr_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -753,7 +737,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check valid numeric columns in heat rates are non-negative
-    numeric_columns = [c for c in sub_hr_df.columns
+    numeric_columns = [c for c in hr_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
@@ -764,7 +748,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="High",
-        errors=validate_signs(sub_hr_df, valid_numeric_columns, "nonnegative")
+        errors=validate_signs(hr_df, valid_numeric_columns, "nonnegative")
     )
 
     # Check valid numeric columns in variable OM are non-negative
@@ -782,18 +766,30 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=validate_signs(sub_vom_df, valid_numeric_columns, "nonnegative")
     )
 
-    # Check for consistency between fuel and heat rate curve inputs
-    # 1. Make sure projects with fuel have a heat rate scenario specified
-    # 2. Make sure projects without fuel have no heat rate scenario specified
+    # Check for consistency between fuel and heat rate curve inputs:
+    # Projects with fuel should have a heat rate scenario specified with
+    # associated inputs in the hr curves table, and vice versa for projects
+    # with no fuel.
+    fuel_mask = pd.notna(prj_df["fuel"])
+    prjs_w_fuel = prj_df[["project"]][fuel_mask]
+    prjs_wo_fuel = prj_df["project"][~fuel_mask]
+    prjs_w_hr = hr_df["project"].unique()  # prjs w hr inputs and matching hr id
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_operational_chars",
+        db_table="inputs_project_operational_chars, inputs_project_heat_rate_curves",
         severity="High",
-        errors=validate_fuel_vs_heat_rates(hr_df)
+        errors=validate_idxs(actual_idxs=prjs_w_hr,
+                             req_idxs=prjs_w_fuel,
+                             invalid_idxs=prjs_wo_fuel,
+                             msg="Projects with(out) fuel should (not) have "
+                                 "heat rate scenario specified, and should "
+                                 "(not) have inputs for that project-scenario "
+                                 "in the heat rate curves inputs table."
+                             )
     )
 
     # Check that specified hr scenarios actually have inputs in the hr table

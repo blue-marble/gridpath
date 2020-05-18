@@ -520,7 +520,7 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_heat_rate_validations(self):
+    def test_validate_heat_rate_curves(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
                       "period",
                       "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
@@ -532,7 +532,6 @@ class TestValidations(unittest.TestCase):
                           ["gas_ct", "gas", 1, 2020, 20, 9],
                           ["coal_plant", "coal", 1, 2020, 100, 10]
                           ]),
-                "fuel_vs_hr_error": [],
                 "hr_curves_error": []
                 },
             # Check fuel vs heat rate curve errors
@@ -541,8 +540,6 @@ class TestValidations(unittest.TestCase):
                 data=[["gas_ct", "gas", None, None, None, None],
                       ["coal_plant", None, 1, 2020, 100, 10]
                       ]),
-                "fuel_vs_hr_error": ["Project(s) 'gas_ct': Missing heat_rate_curves_scenario_id",
-                                     "Project(s) 'coal_plant': No fuel specified so no heat rate expected"],
                 "hr_curves_error": []
                 },
             # Check heat rate curves validations
@@ -557,7 +554,6 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct4", "gas", 1, 2020, 20, 10],
                       ["gas_ct4", "gas", 1, 2020, 30, 9]
                       ]),
-                "fuel_vs_hr_error": [],
                 "hr_curves_error": ["Project(s) 'gas_ct1': Expected at least one load point",
                                     "Project(s) 'gas_ct2': load points can not be identical",
                                     "Project(s) 'gas_ct3': Total fuel burn should increase with increasing load",
@@ -567,12 +563,6 @@ class TestValidations(unittest.TestCase):
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["fuel_vs_hr_error"]
-            actual_list = module_to_test.validate_fuel_vs_heat_rates(
-                hr_df=test_cases[test_case]["hr_df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
             expected_list = test_cases[test_case]["hr_curves_error"]
             actual_list = module_to_test.validate_heat_rate_curves(
                 hr_df=test_cases[test_case]["hr_df"]
