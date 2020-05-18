@@ -10,7 +10,6 @@ from __future__ import print_function
 from builtins import str
 from importlib import import_module
 import os.path
-import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 

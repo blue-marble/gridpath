@@ -14,7 +14,7 @@ from pyomo.environ import Set, Param
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_op_cap_combos, validate_positives
+    validate_columns, validate_signs
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -261,9 +261,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Ensure we're not combining incompatible capacity and operational types
+    cols = ["capacity_type", "operational_type"]
     invalid_combos = c.execute(
-        """SELECT capacity_type, operational_type 
-        FROM mod_tx_capacity_and_tx_operational_type_invalid_combos"""
+        """
+        SELECT {} FROM mod_tx_capacity_and_tx_operational_type_invalid_combos
+        """.format(",".join(cols))
     ).fetchall()
     write_validation_to_database(
         conn=conn,
@@ -273,7 +275,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
         severity="High",
-        errors=validate_op_cap_combos(df, invalid_combos)
+        errors=validate_columns(df, cols, invalids=invalid_combos)
     )
 
     # Check reactance > 0
@@ -285,5 +287,5 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_positives(df, ["reactance_ohms"])
+        errors=validate_signs(df, ["reactance_ohms"], "positive")
     )

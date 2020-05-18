@@ -11,8 +11,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes
-from gridpath.auxiliary.validations import validate_fuel_projects, \
-    validate_fuel_prices
+from gridpath.auxiliary.validations import validate_columns, validate_idxs
 
 
 def add_model_components(m, d):
@@ -183,7 +182,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         INNER JOIN
         (SELECT project, fuel
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) AS op_char
+        WHERE project_operational_chars_scenario_id = {}
+        AND fuel IS NOT NULL) AS op_char
         USING (project)
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
@@ -201,7 +201,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         AND stage_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
-    ).fetchall()
+    )
 
     # Convert input data into pandas DataFrame
     fuels_df = pd.DataFrame(
@@ -210,12 +210,21 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
     fuel_prices_df = pd.DataFrame(
         data=fuel_prices.fetchall(),
-        columns = [s[0] for s in fuel_prices.description]
+        columns=[s[0] for s in fuel_prices.description]
     )
     prj_df = pd.DataFrame(
         data=projects.fetchall(),
         columns=[s[0] for s in projects.description]
     )
+
+    # Get relevant lists
+    fuels = fuels_df["fuel"].to_list()
+    actual_fuel_periods_months = list(
+        fuel_prices_df[["fuel", "period", "month"]]
+        .itertuples(index=False, name=None)
+    )
+    req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months
+                               for f in fuels]
 
     # Check data types
     expected_dtypes = get_expected_dtypes(
@@ -246,7 +255,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
-    # Check that fuels specified for projects exist in fuels table
+    # TODO: couldn't this be a simple foreign key or is NULL not allowed then?
+    # TODO: should this check be in projects.init instead?
+    # Check that fuels specified for projects are valid fuels
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -255,7 +266,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_fuel_projects(prj_df, fuels_df)
+        errors=validate_columns(prj_df, "fuel", valids=fuels)
     )
 
     # Check that fuel prices exist for the period and month
@@ -267,7 +278,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuel_prices",
         severity="High",
-        errors=validate_fuel_prices(fuels_df, fuel_prices_df, periods_months)
+        errors=validate_idxs(actual_idxs=actual_fuel_periods_months,
+                             req_idxs=req_fuel_periods_months,
+                             idx_label="(fuel, period, month)")
     )
 
 

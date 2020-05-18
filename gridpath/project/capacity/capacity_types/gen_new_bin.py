@@ -27,8 +27,8 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_nonnegatives, get_expected_dtypes, validate_dtypes, \
-    validate_projects, validate_costs
+    validate_signs, get_expected_dtypes, get_projects, validate_dtypes, \
+    validate_idxs
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -577,28 +577,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    c = conn.cursor()
-
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # Get the relevant projects and vintages
-    prj_vintages = c.execute(
-        """SELECT project, period
-        FROM inputs_project_portfolios
-
-        CROSS JOIN    
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'gen_new_bin';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
-    )
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_bin")
 
     # Convert input data into pandas DataFrame
     cost_df = pd.DataFrame(
@@ -612,8 +595,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # get the project lists
-    projects = [p[0] for p in prj_vintages]  # will have duplicates if >1
-    # vintages
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -648,7 +629,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=validate_nonnegatives(cost_df, valid_numeric_columns)
+        errors=validate_signs(cost_df, valid_numeric_columns, "nonnegative")
     )
 
     # Check that all binary new build projects have build size specified
@@ -660,18 +641,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_binary_build_size",
         severity="High",
-        errors=validate_projects(projects, bld_size_projects)
+        errors=validate_idxs(actual_idxs=bld_size_projects,
+                             req_idxs=projects,
+                             idx_label="project")
     )
 
-    # Check that all binary new build projects have costs specified for each
-    # period
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_new_cost",
-        severity="High",
-        errors=validate_costs(cost_df, prj_vintages)
-    )

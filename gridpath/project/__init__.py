@@ -16,8 +16,7 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_nonnegatives, \
-    validate_column, validate_op_cap_combos
+    validate_dtypes, get_expected_dtypes, validate_signs, validate_columns
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -381,13 +380,15 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_nonnegatives(df, valid_numeric_columns)
+        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
     )
 
     # Check that we're not combining incompatible cap-types and op-types
+    cols = ["capacity_type", "operational_type"]
     invalid_combos = c.execute(
-        """SELECT capacity_type, operational_type 
-        FROM mod_capacity_and_operational_type_invalid_combos"""
+        """
+        SELECT {} FROM mod_capacity_and_operational_type_invalid_combos
+        """.format(",".join(cols))
     ).fetchall()
 
     write_validation_to_database(
@@ -398,7 +399,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars, inputs_project_portfolios",
         severity="High",
-        errors=validate_op_cap_combos(df, invalid_combos)
+        errors=validate_columns(df, cols, invalids=invalid_combos)
     )
 
     # Check that capacity type is valid
@@ -416,7 +417,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=validate_column(df, "capacity_type", valid_cap_types)
+        errors=validate_columns(df, "capacity_type", valids=valid_cap_types)
     )
 
     # Check that operational type is valid
@@ -434,6 +435,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=validate_column(df, "operational_type", valid_op_types)
+        errors=validate_columns(df, "operational_type", valids=valid_op_types)
     )
 
