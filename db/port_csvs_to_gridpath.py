@@ -41,8 +41,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util_common
-from db.utilities import project_list, project_operational_chars, temporal, \
-    scenario, solver_options
+from db.utilities import temporal, scenario, solver_options
 
 # Reserves list
 
@@ -189,41 +188,6 @@ def load_csv_data(conn, csv_path, quiet):
     else:
         print("ERROR: temporal_scenario_id is required")
         sys.exit()
-
-
-    #### LOAD PROJECTS DATA ####
-    ## PROJECT LIST AND OPERATIONAL CHARS
-    # Note projects list is pulled from the project_operational_chars
-    # TODO: project list shouldn't get pulled from the operational chars
-    #  but from a separate CSV; need to determine appropriate approach
-    # Note that we use a separate method for loading operational
-    # characteristics, as the opchar table is too wide to rely on column
-    # order (so we don't create a list of tuples to insert, but rely on the
-    # headers to match the column names in the database and rely on update
-    # statements instead)
-    opchar_inputs_dir = db_util_common.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="project_operational_chars_scenario_id"
-    )
-
-    opchar_subsc_input, opchar_data_input = db_util_common.read_inputs(
-        inputs_dir=opchar_inputs_dir, quiet=quiet
-    )
-
-    # If the opchar subscenarios are included, make a list of tuples for the
-    # subscenario and inputs, and insert into the database via the relevant
-    # method
-    if opchar_subsc_input is not False and opchar_data_input is not False:
-        project_list.load_from_csv(
-            io=conn, c=c, subscenario_input=opchar_subsc_input,
-            data_input=opchar_data_input
-        )
-        project_operational_chars.load_from_csv(
-            io=conn, c=c, subscenario_input=opchar_subsc_input,
-            data_input=opchar_data_input
-        )
-    else:
-        print("ERROR: project_operational_chars_scenario_id is required")
 
 
     #### LOAD SCENARIOS DATA ####
