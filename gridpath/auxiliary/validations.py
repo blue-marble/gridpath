@@ -494,32 +494,16 @@ def validate_heat_rate_curves(hr_df):
 
 def validate_vom_curves(vom_df):
     """
-    1. Check that specified variable O&M scenarios actually have inputs in the
-       variable O&M curves table
-    2. Check that specified variable O&M curves inputs are valid:
-        - strictly increasing load points
-        - increasing total variable O&M cost
-        - convex variable O&M curve
+    Check that specified variable O&M curves inputs are valid:
+     - strictly increasing load points
+     - increasing total variable O&M cost
+     - convex variable O&M curve
     :param vom_df:
     :return:
     """
     results = []
 
-    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
-    load_point_mask = pd.notna(vom_df["load_point_fraction"])
-
-    # Check for missing inputs in heat rates curves table
-    invalids = vom_curve_mask & ~load_point_mask
-    if invalids.any():
-        bad_projects = vom_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': Expected at least one load point"
-            .format(print_bad_projects)
-        )
-
     # Check that each project has convex variable O&M rates etc.
-    vom_df = vom_df[load_point_mask]
     for project in vom_df["project"].unique():
         for period in vom_df[vom_df["project"] == project]["period"].unique():
             # read in the power setpoints and average variable O&M
