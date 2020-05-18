@@ -25,7 +25,7 @@ from pyomo.environ import Constraint, Set
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_projects_by_reserve, validate_idxs, \
-    validate_constant_heat_rate
+    validate_single_input
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -298,7 +298,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="Mid",
-        errors=validate_constant_heat_rate(hr_df, "gen_must_run")
+        errors=validate_single_input(df=hr_df,
+                                     msg="gen_must_run can only have one load "
+                                         "point (constant heat rate).")
     )
 
     # Check that the project does not show up in any of the

@@ -412,6 +412,34 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     return results
 
 
+def validate_single_input(df, idx_col="project", msg=""):
+    """
+    Check whether there is only 1 input per index.
+
+    Example: check that there is only 1 load point per project in the heat
+    rate inputs DataFrame.
+
+    :param df: DataFrame to check. Must have column idx_col.
+    :param idx_col: str, the index column, defaults to "project".
+    :param msg: str, optional error message clarification.
+    :return: List of error messages for each index with invalid inputs.
+    """
+
+    results = []
+
+    n_inputs = df.groupby([idx_col]).size()
+    invalids = (n_inputs > 1)
+    if invalids.any():
+        bad_idxs = invalids.index[invalids]
+        print_bad_idxs = ", ".join(bad_idxs)
+        results.append(
+            "{}(s) '{}': Too many inputs! Maximum 1 input per {}. {}"
+            .format(idx_col, print_bad_idxs, idx_col, msg)
+        )
+
+    return results
+
+
 def validate_fuel_vs_heat_rates(hr_df):
     """
     Make sure projects with fuel have a heat rate scenario specified.
@@ -582,31 +610,6 @@ def validate_vom_curves(vom_df):
                             "with increasing load"
                             .format(project)
                         )
-
-    return results
-
-
-def validate_constant_heat_rate(df, op_type):
-    """
-    Check whether the projects in the DataFrame have a constant heat rate
-    based on the number of load points per project in the DataFrame
-    :param df: DataFrame for which to check constant heat rate. Must have
-        "project", "load_point_fraction" columns
-    :param op_type: Operational type (used in error message)
-    :return:
-    """
-
-    results = []
-
-    n_load_points = df.groupby(["project"]).size()
-    invalids = (n_load_points > 1)
-    if invalids.any():
-        bad_projects = invalids.index[invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': {} should have only 1 load point"
-            .format(print_bad_projects, op_type)
-        )
 
     return results
 
