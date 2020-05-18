@@ -372,8 +372,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
     return results
 
 
-# TODO: could also feed in df instead of actual_idxs, and derive label
-#  somehow?
+# TODO: could also feed in df instead of actual_idxs, and derive label?
 def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
                   idx_label="project", msg=""):
     """
@@ -387,9 +386,9 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     (actual_idxs) contains all binary new build projects (required_idxs)
 
     :param actual_idxs: list, the indexes to check
-    :param req_idxs: list, the required indexes
-    :param invalid_idxs: list, the invalid indexes
-    :param idx_label: str, the index label
+    :param req_idxs: list, the required indexes, defaults to empty list
+    :param invalid_idxs: list, the invalid indexes, defaults to empty list
+    :param idx_label: str, the index label, defaults to "project"
     :param msg: str, optional error message clarification.
     :return:
     """
