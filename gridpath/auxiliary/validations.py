@@ -442,34 +442,15 @@ def validate_single_input(df, idx_col="project", msg=""):
 
 def validate_heat_rate_curves(hr_df):
     """
-    1. Check that specified heat rate scenarios actually have inputs in the
-       heat rate curves table
-    2. Check that specified heat rate curves inputs are valid:
-        - strictly increasing load points
-        - increasing total fuel burn
-        - convex fuel burn curve
+    Check that specified heat rate curves inputs are valid:
+     - strictly increasing load points
+     - increasing total fuel burn
+     - convex fuel burn curve
     :param hr_df:
     :return:
     """
     results = []
 
-    fuel_mask = pd.notna(hr_df["fuel"])
-    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    load_point_mask = pd.notna(hr_df["load_point_fraction"])
-
-    # Check for missing inputs in heat rates curves table
-    invalids = hr_curve_mask & ~load_point_mask
-    if invalids.any():
-        bad_projects = hr_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': Expected at least one load point"
-            .format(print_bad_projects)
-        )
-
-    # Check that each project has convex heat rates etc.
-    relevant_mask = fuel_mask & load_point_mask
-    hr_df = hr_df[relevant_mask]
     for project in hr_df["project"].unique():
         for period in hr_df[hr_df["project"] == project]["period"].unique():
             # read in the power setpoints and average heat rates

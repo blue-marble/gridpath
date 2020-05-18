@@ -521,41 +521,30 @@ class TestValidations(unittest.TestCase):
             self.assertListEqual(expected_list, actual_list)
 
     def test_validate_heat_rate_curves(self):
-        hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
-                      "period",
+        hr_columns = ["project", "period",
                       "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"hr_df": pd.DataFrame(
                     columns=hr_columns,
-                    data=[["gas_ct", "gas", 1, 2020, 10, 10.5],
-                          ["gas_ct", "gas", 1, 2020, 20, 9],
-                          ["coal_plant", "coal", 1, 2020, 100, 10]
+                    data=[["gas_ct", 2020, 10, 10.5],
+                          ["gas_ct", 2020, 20, 9],
+                          ["coal_plant", 2020, 100, 10]
                           ]),
                 "hr_curves_error": []
                 },
-            # Check fuel vs heat rate curve errors
+            # Check heat rate curves validations
             2: {"hr_df": pd.DataFrame(
                 columns=hr_columns,
-                data=[["gas_ct", "gas", None, None, None, None],
-                      ["coal_plant", None, 1, 2020, 100, 10]
+                data=[["gas_ct2", 2020, 10, 11],
+                      ["gas_ct2", 2020, 10, 12],
+                      ["gas_ct3", 2020, 10, 11],
+                      ["gas_ct3", 2020, 20, 5],
+                      ["gas_ct4", 2020, 10, 11],
+                      ["gas_ct4", 2020, 20, 10],
+                      ["gas_ct4", 2020, 30, 9]
                       ]),
-                "hr_curves_error": []
-                },
-            # Check heat rate curves validations
-            3: {"hr_df": pd.DataFrame(
-                columns=hr_columns,
-                data=[["gas_ct1", "gas", 1, None, None, None],
-                      ["gas_ct2", "gas", 1, 2020, 10, 11],
-                      ["gas_ct2", "gas", 1, 2020, 10, 12],
-                      ["gas_ct3", "gas", 1, 2020, 10, 11],
-                      ["gas_ct3", "gas", 1, 2020, 20, 5],
-                      ["gas_ct4", "gas", 1, 2020, 10, 11],
-                      ["gas_ct4", "gas", 1, 2020, 20, 10],
-                      ["gas_ct4", "gas", 1, 2020, 30, 9]
-                      ]),
-                "hr_curves_error": ["Project(s) 'gas_ct1': Expected at least one load point",
-                                    "Project(s) 'gas_ct2': load points can not be identical",
+                "hr_curves_error": ["Project(s) 'gas_ct2': load points can not be identical",
                                     "Project(s) 'gas_ct3': Total fuel burn should increase with increasing load",
                                     "Project(s) 'gas_ct4': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"]
                 },

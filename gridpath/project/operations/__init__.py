@@ -771,7 +771,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # associated inputs in the hr curves table, and vice versa for projects
     # with no fuel.
     fuel_mask = pd.notna(prj_df["fuel"])
-    prjs_w_fuel = prj_df[["project"]][fuel_mask]
+    prjs_w_fuel = prj_df["project"][fuel_mask]
     prjs_wo_fuel = prj_df["project"][~fuel_mask]
     prjs_w_hr = hr_df["project"].unique()  # prjs w hr inputs and matching hr id
     write_validation_to_database(
@@ -792,8 +792,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                              )
     )
 
-    # Check that specified hr scenarios actually have inputs in the hr table
-    # and check that specified heat rate curves inputs are valid:
+    # Check that specified heat rate curves inputs are valid:
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
