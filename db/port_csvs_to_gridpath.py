@@ -135,7 +135,7 @@ def load_csv_data(conn, csv_path, quiet):
             inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
             if row["subscenario_type"] == "simple":
-                db_util_common.read_simple_csvs_and_insert_into_db(
+                db_util_common.read_csv_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,
                     subscenario=subscenario,
@@ -155,7 +155,7 @@ def load_csv_data(conn, csv_path, quiet):
                         main_flag = True
                     else:
                         main_flag = False
-                    db_util_common.read_dir_data_and_insert_into_db(
+                    db_util_common.read_dir_subscenario_and_insert_into_db(
                         conn=conn,
                         quiet=quiet,
                         subscenario=subscenario,
