@@ -81,7 +81,7 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
         ]
 
         # Create the data tuples
-        data_tuples = csv_to_tuples(
+        data_tuples, csv_headers = csv_to_tuples(
             csv_file=csv_file_path, subscenario_id=subscenario_id
         )
 
@@ -107,12 +107,12 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
         ]
 
         # Create the data tuples
-        data_tuples = csv_to_tuples(
+        data_tuples, csv_headers = csv_to_tuples(
             csv_file=csv_file_path,
             project=project, subscenario_id=subscenario_id
         )
 
-    return subsc_tuples, data_tuples
+    return subsc_tuples, data_tuples, csv_headers
 
 
 def csv_read_data(folder_path, quiet, project_flag):
@@ -272,20 +272,17 @@ def read_simple_csvs_and_insert_into_db(
     # List all files in directory and look for CSVs
     csv_files = [f for f in os.listdir(inputs_dir) if f.endswith(".csv")]
 
-
-    csv_headers_for_validation = [
-        subscenario if x == "id" else x
-        for x in csv_data_input.columns.tolist()
-    ]
-
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     for csv_file in csv_files:
-        subscenario_tuples, inputs_tuples = csv_to_subscenario_tuples(
-            inputs_dir=inputs_dir,
-            csv_file=csv_file,
-            project_flag=use_project_method
-        )
+        print(csv_file)
+        subscenario_tuples, inputs_tuples, csv_headers = \
+            csv_to_subscenario_tuples(
+                inputs_dir=inputs_dir,
+                csv_file=csv_file,
+                project_flag=use_project_method
+            )
+        headers_for_validation = [subscenario] + csv_headers
 
         generic_insert_subscenario(
             conn=conn,
@@ -294,7 +291,7 @@ def read_simple_csvs_and_insert_into_db(
             subscenario_data=subscenario_tuples,
             inputs_data=inputs_tuples,
             project_flag=use_project_method,
-            headers_for_validation=csv_headers_for_validation
+            headers_for_validation=headers_for_validation
         )
 
 
