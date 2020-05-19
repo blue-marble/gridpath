@@ -182,18 +182,22 @@ def csv_read_data(folder_path, quiet, project_flag):
     return subscenario_df, data_df
 
 
-def csv_to_tuples(subscenario_id, csv_file):
+def csv_to_tuples(csv_file, **kwargs):
     """
-    :param subscenario_id: int
     :param csv_file: str, path to CSV file
     :return: list of tuples, list of header strings
 
     Convert the data from a CSV into a list of tuples for insertion into an
     input table.
     """
+
+    kwd_tuple = tuple()
+    for kwd in kwargs.keys():
+        kwd_tuple += (kwargs[kwd], )
+
     df = pd.read_csv(csv_file, delimiter=",")
     tuples_for_import = [
-        (subscenario_id,) + tuple(x)
+        kwd_tuple + tuple(x)
         for x in df.to_records(index=False)
     ]
 
