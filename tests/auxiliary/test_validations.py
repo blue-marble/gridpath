@@ -520,22 +520,25 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_heat_rate_curves(self):
-        hr_columns = ["project", "period",
+    def test_validate_piecewise_curves(self):
+        df_columns = ["project", "period",
                       "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+        x_col = "load_point_fraction"
+        slope_col = "average_heat_rate_mmbtu_per_mwh"
+        y_name = "fuel burn"
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"hr_df": pd.DataFrame(
-                    columns=hr_columns,
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
                     data=[["gas_ct", 2020, 10, 10.5],
                           ["gas_ct", 2020, 20, 9],
                           ["coal_plant", 2020, 100, 10]
                           ]),
-                "hr_curves_error": []
+                "result": []
                 },
-            # Check heat rate curves validations
-            2: {"hr_df": pd.DataFrame(
-                columns=hr_columns,
+            # Make sure all different error types are detected
+            2: {"df": pd.DataFrame(
+                columns=df_columns,
                 data=[["gas_ct2", 2020, 10, 11],
                       ["gas_ct2", 2020, 10, 12],
                       ["gas_ct3", 2020, 10, 11],
@@ -544,17 +547,21 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct4", 2020, 20, 10],
                       ["gas_ct4", 2020, 30, 9]
                       ]),
-                "hr_curves_error": ["Project(s) 'gas_ct2': load points can not be identical",
-                                    "Project(s) 'gas_ct3': Total fuel burn should increase with increasing load",
-                                    "Project(s) 'gas_ct4': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"]
+                "result": ["project-period 'gas_ct2-2020': load_point_fraction values can not be identical",
+                           "project-period 'gas_ct3-2020': fuel burn should increase with increasing load",
+                           "project-period 'gas_ct4-2020': fuel burn curve should be convex, i.e. the slope should increase with increasing load_point_fraction"
+                           ]
                 },
 
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["hr_curves_error"]
-            actual_list = module_to_test.validate_heat_rate_curves(
-                hr_df=test_cases[test_case]["hr_df"]
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_piecewise_curves(
+                df=test_cases[test_case]["df"],
+                x_col=x_col,
+                slope_col=slope_col,
+                y_name=y_name
             )
             self.assertListEqual(expected_list, actual_list)
 

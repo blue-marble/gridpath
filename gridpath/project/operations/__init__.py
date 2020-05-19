@@ -18,8 +18,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_signs, \
-    validate_idxs, validate_heat_rate_curves, \
-    validate_vom_curves
+    validate_idxs, validate_piecewise_curves
 from gridpath.project.common_functions import append_to_input_file
 
 
@@ -780,7 +779,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="High",
-        errors=validate_heat_rate_curves(hr_df)
+        errors=validate_piecewise_curves(df=hr_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_heat_rate_mmbtu_per_mwh",
+                                         y_name="fuel burn")
     )
 
     # Check that specified vom curves inputs are valid:
@@ -792,7 +794,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_variable_om_curves",
         severity="High",
-        errors=validate_vom_curves(vom_df)
+        errors=validate_piecewise_curves(df=vom_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_variable_om_cost_per_mwh",
+                                         y_name="variable O&M cost")
     )
 
     # TODO: Check that specified vom scenarios actually have inputs in the vom

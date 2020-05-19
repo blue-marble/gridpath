@@ -440,107 +440,62 @@ def validate_single_input(df, idx_col="project", msg=""):
     return results
 
 
-def validate_heat_rate_curves(hr_df):
+def validate_piecewise_curves(df, x_col, slope_col, y_name):
     """
-    Check that specified heat rate curves inputs are valid:
-     - strictly increasing load points
-     - increasing total fuel burn
-     - convex fuel burn curve
-    :param hr_df:
+    Check that the specified piecewise linear curve inputs are valid:
+     - unique x-axis points
+     - curve is strictly increasing (y goes up with x)
+     - curve is convex (slope strictly increases with x)
+
+     Example:
+        Slope = heat rate, x = loading point fraction, y=fuel burn, i.e.
+        for heat rates by loading point, make sure that the loading points
+        are unique, the total fuel burn is strictly increasing and the
+        marginal heat rate is strictly increasing.
+    :param df:
+    :param x_col: str, column specifying the x values
+    :param slope_col: str, column specifying the average slope at x
+    :param y_name: str, the name of the y value
     :return:
     """
     results = []
+    # TODO: might be able to do this with groupby and a flexible idx
+    #  Or could simply do the validation on x_values, slopes and do
+    #  pre-processing outside of function
+    uniques = df.drop_duplicates(["project", "period"])[["project", "period"]]
+    for project, period in uniques.itertuples(index=False, name=None):
+        df_slice = df[(df["project"] == project) & (df["period"] == period)]
+        df_slice = df_slice.sort_values(by=[x_col])
+        x_values = df_slice[x_col].values
+        avg_slopes = df_slice[slope_col].values
 
-    for project in hr_df["project"].unique():
-        for period in hr_df[hr_df["project"] == project]["period"].unique():
-            # read in the power setpoints and average heat rates
-            hr_slice = hr_df[(hr_df["project"] == project)
-                             & (hr_df["period"] == period)]
-            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-            load_points = hr_slice["load_point_fraction"].values
-            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+        if len(x_values) > 1:
+            incr_x = np.diff(x_values)
 
-            if len(load_points) > 1:
-                incr_loads = np.diff(load_points)
+            if np.any(incr_x == 0):
+                # note: primary key should already prohibit this
+                results.append(
+                    "project-period '{}-{}': {} values can not be "
+                    "identical"
+                    .format(project, period, x_col)
+                )
+            else:
+                y = x_values * avg_slopes
+                incr_y = np.diff(y)
+                incr_slopes = incr_y / incr_x
 
-                if np.any(incr_loads == 0):
-                    # note: primary key should already prohibit this
+                if np.any(incr_y <= 0):
                     results.append(
-                        "Project(s) '{}': load points can not be identical"
-                        .format(project)
+                        "project-period '{}-{}': {} should increase with "
+                        "increasing load"
+                        .format(project, period, y_name)
                     )
-
-                else:
-                    fuel_burn = load_points * heat_rates
-                    incr_fuel_burn = np.diff(fuel_burn)
-                    slopes = incr_fuel_burn / incr_loads
-
-                    if np.any(incr_fuel_burn <= 0):
-                        results.append(
-                            "Project(s) '{}': Total fuel burn should increase "
-                            "with increasing load"
-                            .format(project)
-                        )
-                    if np.any(np.diff(slopes) <= 0):
-                        results.append(
-                            "Project(s) '{}': Fuel burn should be convex, "
-                            "i.e. marginal heat rate should increase with "
-                            "increading load"
-                            .format(project)
-                        )
-
-    return results
-
-
-def validate_vom_curves(vom_df):
-    """
-    Check that specified variable O&M curves inputs are valid:
-     - strictly increasing load points
-     - increasing total variable O&M cost
-     - convex variable O&M curve
-    :param vom_df:
-    :return:
-    """
-    results = []
-
-    # Check that each project has convex variable O&M rates etc.
-    for project in vom_df["project"].unique():
-        for period in vom_df[vom_df["project"] == project]["period"].unique():
-            # read in the power setpoints and average variable O&M
-            vom_slice = vom_df[(vom_df["project"] == project)
-                               & (vom_df["period"] == period)]
-            vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
-            load_points = vom_slice["load_point_fraction"].values
-            vom = vom_slice["average_variable_om_cost_per_mwh"].values
-
-            if len(load_points) > 1:
-                incr_loads = np.diff(load_points)
-
-                if np.any(incr_loads == 0):
-                    # note: primary key should already prohibit this
+                if np.any(np.diff(incr_slopes) <= 0):
                     results.append(
-                        "Project(s) '{}': load points can not be identical"
-                        .format(project)
+                        "project-period '{}-{}': {} curve should be convex, "
+                        "i.e. the slope should increase with increasing {}"
+                        .format(project, period, y_name, x_col)
                     )
-
-                else:
-                    vom_cost = load_points * vom
-                    incr_vom_cost = np.diff(vom_cost)
-                    slopes = incr_vom_cost / incr_loads
-
-                    if np.any(incr_vom_cost <= 0):
-                        results.append(
-                            "Project(s) '{}': Total variable O&M cost should "
-                            "increase with increasing load"
-                            .format(project)
-                        )
-                    if np.any(np.diff(slopes) <= 0):
-                        results.append(
-                            "Project(s) '{}': Variable O&M cost should be "
-                            "convex, i.e. variable O&M rate should increase "
-                            "with increasing load"
-                            .format(project)
-                        )
 
     return results
 
