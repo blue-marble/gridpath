@@ -452,7 +452,8 @@ def validate_piecewise_curves(df, x_col, slope_col, y_name):
         for heat rates by loading point, make sure that the loading points
         are unique, the total fuel burn is strictly increasing and the
         marginal heat rate is strictly increasing.
-    :param df:
+    :param df: DataFrame to be validated. Must have a "project" and "period"
+        column, as well as the x_col and slope_col columns.
     :param x_col: str, column specifying the x values
     :param slope_col: str, column specifying the average slope at x
     :param y_name: str, the name of the y value
