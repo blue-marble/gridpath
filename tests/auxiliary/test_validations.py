@@ -482,62 +482,86 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_heat_rate_validations(self):
-        hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
-                      "period",
-                      "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+    def test_validate_single_input(self):
+        """
+
+        :return:
+        """
+
+        df_columns = ["project", "load_point_fraction"]
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"hr_df": pd.DataFrame(
-                    columns=hr_columns,
-                    data=[["gas_ct", "gas", 1, 2020, 10, 10.5],
-                          ["gas_ct", "gas", 1, 2020, 20, 9],
-                          ["coal_plant", "coal", 1, 2020, 100, 10]
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 100]]),
+                "idx_col": "project",
+                "msg": "test msg",
+                "result": []
+                },
+            # Make sure multiple inputs per index are flagged
+            2: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 100],
+                          ["nuclear", 200],
+                          ["gas_ct", 10]
                           ]),
-                "fuel_vs_hr_error": [],
-                "hr_curves_error": []
+                "idx_col": "project",
+                "msg": "test msg",
+                "result": ["project(s) 'nuclear': Too many inputs! Maximum 1 input per project. test msg"]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_single_input(
+                df=test_cases[test_case]["df"],
+                idx_col=test_cases[test_case]["idx_col"],
+                msg=test_cases[test_case]["msg"],
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_validate_piecewise_curves(self):
+        df_columns = ["project", "period",
+                      "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+        x_col = "load_point_fraction"
+        slope_col = "average_heat_rate_mmbtu_per_mwh"
+        y_name = "fuel burn"
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["gas_ct", 2020, 10, 10.5],
+                          ["gas_ct", 2020, 20, 9],
+                          ["coal_plant", 2020, 100, 10]
+                          ]),
+                "result": []
                 },
-            # Check fuel vs heat rate curve errors
-            2: {"hr_df": pd.DataFrame(
-                columns=hr_columns,
-                data=[["gas_ct", "gas", None, None, None, None],
-                      ["coal_plant", None, 1, 2020, 100, 10]
+            # Make sure all different error types are detected
+            2: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct2", 2020, 10, 11],
+                      ["gas_ct2", 2020, 10, 12],
+                      ["gas_ct3", 2020, 10, 11],
+                      ["gas_ct3", 2020, 20, 5],
+                      ["gas_ct4", 2020, 10, 11],
+                      ["gas_ct4", 2020, 20, 10],
+                      ["gas_ct4", 2020, 30, 9]
                       ]),
-                "fuel_vs_hr_error": ["Project(s) 'gas_ct': Missing heat_rate_curves_scenario_id",
-                                     "Project(s) 'coal_plant': No fuel specified so no heat rate expected"],
-                "hr_curves_error": []
-                },
-            # Check heat rate curves validations
-            3: {"hr_df": pd.DataFrame(
-                columns=hr_columns,
-                data=[["gas_ct1", "gas", 1, None, None, None],
-                      ["gas_ct2", "gas", 1, 2020, 10, 11],
-                      ["gas_ct2", "gas", 1, 2020, 10, 12],
-                      ["gas_ct3", "gas", 1, 2020, 10, 11],
-                      ["gas_ct3", "gas", 1, 2020, 20, 5],
-                      ["gas_ct4", "gas", 1, 2020, 10, 11],
-                      ["gas_ct4", "gas", 1, 2020, 20, 10],
-                      ["gas_ct4", "gas", 1, 2020, 30, 9]
-                      ]),
-                "fuel_vs_hr_error": [],
-                "hr_curves_error": ["Project(s) 'gas_ct1': Expected at least one load point",
-                                    "Project(s) 'gas_ct2': load points can not be identical",
-                                    "Project(s) 'gas_ct3': Total fuel burn should increase with increasing load",
-                                    "Project(s) 'gas_ct4': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"]
+                "result": ["project-period 'gas_ct2-2020': load_point_fraction values can not be identical",
+                           "project-period 'gas_ct3-2020': fuel burn should increase with increasing load",
+                           "project-period 'gas_ct4-2020': fuel burn curve should be convex, i.e. the slope should increase with increasing load_point_fraction"
+                           ]
                 },
 
         }
 
         for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["fuel_vs_hr_error"]
-            actual_list = module_to_test.validate_fuel_vs_heat_rates(
-                hr_df=test_cases[test_case]["hr_df"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["hr_curves_error"]
-            actual_list = module_to_test.validate_heat_rate_curves(
-                hr_df=test_cases[test_case]["hr_df"]
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_piecewise_curves(
+                df=test_cases[test_case]["df"],
+                x_col=x_col,
+                slope_col=slope_col,
+                y_name=y_name
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -665,41 +689,6 @@ class TestValidations(unittest.TestCase):
                 prj_df=test_cases[test_case]["prj_df"],
                 su_df=test_cases[test_case]["su_df"],
                 hrs_in_tmp=1
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-    def test_validate_constant_heat_rate(self):
-        """
-
-        :return:
-        """
-
-        df_columns = ["project", "load_point_fraction"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", 100]]),
-                "op_type": "Always_on",
-                "result": []
-                },
-            # Make sure varying heat rates (>1 load point) is flagged
-            2: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", 100],
-                          ["nuclear", 200],
-                          ["gas_ct", 10]
-                          ]),
-                "op_type": "Always_on",
-                "result": ["Project(s) 'nuclear': Always_on should have only 1 load point"]
-                }
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_constant_heat_rate(
-                df=test_cases[test_case]["df"],
-                op_type=test_cases[test_case]["op_type"]
             )
             self.assertListEqual(expected_list, actual_list)
 

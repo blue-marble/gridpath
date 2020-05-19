@@ -372,8 +372,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
     return results
 
 
-# TODO: could also feed in df instead of actual_idxs, and derive label
-#  somehow?
+# TODO: could also feed in df instead of actual_idxs, and derive label?
 def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
                   idx_label="project", msg=""):
     """
@@ -387,9 +386,9 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     (actual_idxs) contains all binary new build projects (required_idxs)
 
     :param actual_idxs: list, the indexes to check
-    :param req_idxs: list, the required indexes
-    :param invalid_idxs: list, the invalid indexes
-    :param idx_label: str, the index label
+    :param req_idxs: list, the required indexes, defaults to empty list
+    :param invalid_idxs: list, the invalid indexes, defaults to empty list
+    :param idx_label: str, the index label, defaults to "project"
     :param msg: str, optional error message clarification.
     :return:
     """
@@ -413,201 +412,91 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     return results
 
 
-def validate_fuel_vs_heat_rates(hr_df):
+def validate_single_input(df, idx_col="project", msg=""):
     """
-    Make sure projects with fuel have a heat rate scenario specified.
-    Conversely, if no fuel is specified, make sure there is no heat rate
-    scenario specified.
-    :param hr_df:
-    :return:
+    Check whether there is only 1 input per index.
+
+    Example: check that there is only 1 load point per project in the heat
+    rate inputs DataFrame.
+
+    :param df: DataFrame to check. Must have column idx_col.
+    :param idx_col: str, the index column, defaults to "project".
+    :param msg: str, optional error message clarification.
+    :return: List of error messages for each index with invalid inputs.
     """
+
     results = []
 
-    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    fuel_mask = pd.notna(hr_df["fuel"])
-
-    invalids = fuel_mask & ~hr_curve_mask
+    n_inputs = df.groupby([idx_col]).size()
+    invalids = (n_inputs > 1)
     if invalids.any():
-        bad_projects = hr_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
+        bad_idxs = invalids.index[invalids]
+        print_bad_idxs = ", ".join(bad_idxs)
         results.append(
-            "Project(s) '{}': Missing heat_rate_curves_scenario_id"
-            .format(print_bad_projects)
-        )
-
-    invalids = ~fuel_mask & hr_curve_mask
-    if invalids.any():
-        bad_projects = pd.unique(hr_df["project"][invalids])
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-             "Project(s) '{}': No fuel specified so no heat rate expected"
-             .format(print_bad_projects)
+            "{}(s) '{}': Too many inputs! Maximum 1 input per {}. {}"
+            .format(idx_col, print_bad_idxs, idx_col, msg)
         )
 
     return results
 
 
-def validate_heat_rate_curves(hr_df):
+def validate_piecewise_curves(df, x_col, slope_col, y_name):
     """
-    1. Check that specified heat rate scenarios actually have inputs in the
-       heat rate curves table
-    2. Check that specified heat rate curves inputs are valid:
-        - strictly increasing load points
-        - increasing total fuel burn
-        - convex fuel burn curve
-    :param hr_df:
+    Check that the specified piecewise linear curve inputs are valid:
+     - unique x-axis points
+     - curve is strictly increasing (y goes up with x)
+     - curve is convex (slope strictly increases with x)
+
+     Example:
+        Slope = heat rate, x = loading point fraction, y=fuel burn, i.e.
+        for heat rates by loading point, make sure that the loading points
+        are unique, the total fuel burn is strictly increasing and the
+        marginal heat rate is strictly increasing.
+    :param df: DataFrame to be validated. Must have a "project" and "period"
+        column, as well as the x_col and slope_col columns.
+    :param x_col: str, column specifying the x values
+    :param slope_col: str, column specifying the average slope at x
+    :param y_name: str, the name of the y value
     :return:
     """
     results = []
+    # TODO: might be able to do this with groupby and a flexible idx
+    #  Or could simply do the validation on x_values, slopes and do
+    #  pre-processing outside of function
+    uniques = df.drop_duplicates(["project", "period"])[["project", "period"]]
+    for project, period in uniques.itertuples(index=False, name=None):
+        df_slice = df[(df["project"] == project) & (df["period"] == period)]
+        df_slice = df_slice.sort_values(by=[x_col])
+        x_values = df_slice[x_col].values
+        avg_slopes = df_slice[slope_col].values
 
-    fuel_mask = pd.notna(hr_df["fuel"])
-    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
-    load_point_mask = pd.notna(hr_df["load_point_fraction"])
+        if len(x_values) > 1:
+            incr_x = np.diff(x_values)
 
-    # Check for missing inputs in heat rates curves table
-    invalids = hr_curve_mask & ~load_point_mask
-    if invalids.any():
-        bad_projects = hr_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': Expected at least one load point"
-            .format(print_bad_projects)
-        )
+            if np.any(incr_x == 0):
+                # note: primary key should already prohibit this
+                results.append(
+                    "project-period '{}-{}': {} values can not be "
+                    "identical"
+                    .format(project, period, x_col)
+                )
+            else:
+                y = x_values * avg_slopes
+                incr_y = np.diff(y)
+                incr_slopes = incr_y / incr_x
 
-    # Check that each project has convex heat rates etc.
-    relevant_mask = fuel_mask & load_point_mask
-    hr_df = hr_df[relevant_mask]
-    for project in hr_df["project"].unique():
-        for period in hr_df[hr_df["project"] == project]["period"].unique():
-            # read in the power setpoints and average heat rates
-            hr_slice = hr_df[(hr_df["project"] == project)
-                             & (hr_df["period"] == period)]
-            hr_slice = hr_slice.sort_values(by=["load_point_fraction"])
-            load_points = hr_slice["load_point_fraction"].values
-            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
-
-            if len(load_points) > 1:
-                incr_loads = np.diff(load_points)
-
-                if np.any(incr_loads == 0):
-                    # note: primary key should already prohibit this
+                if np.any(incr_y <= 0):
                     results.append(
-                        "Project(s) '{}': load points can not be identical"
-                        .format(project)
+                        "project-period '{}-{}': {} should increase with "
+                        "increasing load"
+                        .format(project, period, y_name)
                     )
-
-                else:
-                    fuel_burn = load_points * heat_rates
-                    incr_fuel_burn = np.diff(fuel_burn)
-                    slopes = incr_fuel_burn / incr_loads
-
-                    if np.any(incr_fuel_burn <= 0):
-                        results.append(
-                            "Project(s) '{}': Total fuel burn should increase "
-                            "with increasing load"
-                            .format(project)
-                        )
-                    if np.any(np.diff(slopes) <= 0):
-                        results.append(
-                            "Project(s) '{}': Fuel burn should be convex, "
-                            "i.e. marginal heat rate should increase with "
-                            "increading load"
-                            .format(project)
-                        )
-
-    return results
-
-
-def validate_vom_curves(vom_df):
-    """
-    1. Check that specified variable O&M scenarios actually have inputs in the
-       variable O&M curves table
-    2. Check that specified variable O&M curves inputs are valid:
-        - strictly increasing load points
-        - increasing total variable O&M cost
-        - convex variable O&M curve
-    :param vom_df:
-    :return:
-    """
-    results = []
-
-    vom_curve_mask = pd.notna(vom_df["variable_om_curves_scenario_id"])
-    load_point_mask = pd.notna(vom_df["load_point_fraction"])
-
-    # Check for missing inputs in heat rates curves table
-    invalids = vom_curve_mask & ~load_point_mask
-    if invalids.any():
-        bad_projects = vom_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': Expected at least one load point"
-            .format(print_bad_projects)
-        )
-
-    # Check that each project has convex variable O&M rates etc.
-    vom_df = vom_df[load_point_mask]
-    for project in vom_df["project"].unique():
-        for period in vom_df[vom_df["project"] == project]["period"].unique():
-            # read in the power setpoints and average variable O&M
-            vom_slice = vom_df[(vom_df["project"] == project)
-                               & (vom_df["period"] == period)]
-            vom_slice = vom_slice.sort_values(by=["load_point_fraction"])
-            load_points = vom_slice["load_point_fraction"].values
-            vom = vom_slice["average_variable_om_cost_per_mwh"].values
-
-            if len(load_points) > 1:
-                incr_loads = np.diff(load_points)
-
-                if np.any(incr_loads == 0):
-                    # note: primary key should already prohibit this
+                if np.any(np.diff(incr_slopes) <= 0):
                     results.append(
-                        "Project(s) '{}': load points can not be identical"
-                        .format(project)
+                        "project-period '{}-{}': {} curve should be convex, "
+                        "i.e. the slope should increase with increasing {}"
+                        .format(project, period, y_name, x_col)
                     )
-
-                else:
-                    vom_cost = load_points * vom
-                    incr_vom_cost = np.diff(vom_cost)
-                    slopes = incr_vom_cost / incr_loads
-
-                    if np.any(incr_vom_cost <= 0):
-                        results.append(
-                            "Project(s) '{}': Total variable O&M cost should "
-                            "increase with increasing load"
-                            .format(project)
-                        )
-                    if np.any(np.diff(slopes) <= 0):
-                        results.append(
-                            "Project(s) '{}': Variable O&M cost should be "
-                            "convex, i.e. variable O&M rate should increase "
-                            "with increasing load"
-                            .format(project)
-                        )
-
-    return results
-
-
-def validate_constant_heat_rate(df, op_type):
-    """
-    Check whether the projects in the DataFrame have a constant heat rate
-    based on the number of load points per project in the DataFrame
-    :param df: DataFrame for which to check constant heat rate. Must have
-        "project", "load_point_fraction" columns
-    :param op_type: Operational type (used in error message)
-    :return:
-    """
-
-    results = []
-
-    n_load_points = df.groupby(["project"]).size()
-    invalids = (n_load_points > 1)
-    if invalids.any():
-        bad_projects = invalids.index[invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': {} should have only 1 load point"
-            .format(print_bad_projects, op_type)
-        )
 
     return results
 
