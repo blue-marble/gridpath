@@ -45,6 +45,9 @@ def get_csv_data(csv_file, **kwargs):
 
     Get the CSV headers and convert the data from a CSV into a list of tuples
     for later insertion into an input table.
+
+    Note that the kwargs must be given in the order in which they appear in
+    the database table we'll be inserting into.
     """
 
     kwd_tuple = tuple()
@@ -124,13 +127,15 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
         ]
 
         # Get the CSV headers and create the data tuples
+        # Make sure to give project as keyword argument first, then the
+        # subscenario ID, as this is the order in the database tables,
+        # so we need to create the correct tuple
         csv_headers, data_tuples = get_csv_data(
-            csv_file=csv_file_path, subscenario_id=subscenario_id,
-            project=project
+            csv_file=csv_file_path,
+            project=project, subscenario_id=subscenario_id,
         )
 
-    return subsc_tuples, data_tuples, csv_headers
-
+    return subsc_tuples, csv_headers, data_tuples
 
 
 # ### Functions for single-CSV subscenarios ### #
@@ -153,12 +158,13 @@ def read_csv_subscenario_and_insert_into_db(
     if not quiet:
         print(csv_file)
 
-    subscenario_tuples, inputs_tuples, csv_headers = \
+    subscenario_tuples, csv_headers, inputs_tuples = \
         csv_to_subscenario_tuples(
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             project_flag=use_project_method
         )
+
     if use_project_method:
         headers_for_validation = \
             ["project", subscenario] + csv_headers
@@ -304,7 +310,7 @@ def read_dir_subscenario_and_insert_into_db(
 
     # Inputs
     csv_headers, inputs_tuple_list = get_csv_data(
-        subscenario_id=subscenario_id, csv_file=filepath
+        csv_file=filepath, subscenario_id=subscenario_id
     )
     headers_for_validation = [subscenario] + csv_headers
 
@@ -405,7 +411,6 @@ def generic_insert_subscenario(
                 database column names.
                 """.format(column_names, headers_for_validation)
             )
-
 
     # Create the appropriate strings needed for the insert query
     column_string = ", ".join(column_names)
