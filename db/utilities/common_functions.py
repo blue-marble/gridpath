@@ -206,6 +206,10 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     # List all files in directory and look for CSVs
     csv_files = [f for f in os.listdir(inputs_dir) if f.endswith(".csv")]
 
+    # Check that the subscenario IDs based on the file names are unique
+    check_ids_are_unique(inputs_dir=inputs_dir, csv_files=csv_files,
+                         use_project_method=use_project_method)
+
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     for csv_file in csv_files:
@@ -213,6 +217,35 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             conn=conn, quiet=quiet, subscenario=subscenario, table=table,
             inputs_dir=inputs_dir, csv_file=csv_file,
             use_project_method=use_project_method
+        )
+
+
+def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
+    """
+    :param inputs_dir: the folder path; just used for the error message
+    :param csv_files: a list of the CSV files in the folder
+    :param use_project_method: boolean; changes behavior depending on whether we're
+        checking in csv_read_data or csv_read_project_data, as subscenario
+        filename structure is different
+    :return:
+    """
+    all_ids = list()
+    for f in csv_files:
+        # Get subscenario ID (differs between csv_read_data and
+        # csv_read_project_data)
+        if use_project_method:
+            use_project_method = f.split("-", 1)[0]
+            subscenario_id = int(f.split("-", 2)[1])
+            all_ids.append((use_project_method, subscenario_id))
+        else:
+            subscenario_id = int(f.split("_", 1)[0])
+            all_ids.append(subscenario_id)
+
+    if len(all_ids) > len(set(all_ids)):
+        warnings.warn(
+            "You have duplicate {}subscenario IDs in {}.".format(
+                "project-" if use_project_method else "", inputs_dir
+            )
         )
 
 
