@@ -40,7 +40,7 @@ from argparse import ArgumentParser
 # Data-import modules
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
-import db.utilities.common_functions as db_util_common
+import db.utilities.common_functions as db_util
 from db.utilities import temporal, scenario, solver_options
 
 # Reserves list
@@ -135,7 +135,7 @@ def load_csv_data(conn, csv_path, quiet):
             inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
             if row["subscenario_type"] == "simple":
-                db_util_common.read_csv_subscenarios_from_dir_and_insert_into_db(
+                db_util.read_all_csv_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,
                     subscenario=subscenario,
@@ -145,25 +145,19 @@ def load_csv_data(conn, csv_path, quiet):
                 )
             elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
                 filename = row["filename"]
-                subscenario_directories = \
-                    db_util_common.get_directory_subscenarios(
-                        main_directory=inputs_dir,
-                        quiet=quiet
-                    )
-                for subscenario_directory in subscenario_directories:
-                    if row["subscenario_type"] == "dir_main":
-                        main_flag = True
-                    else:
-                        main_flag = False
-                    db_util_common.read_dir_subscenario_and_insert_into_db(
-                        conn=conn,
-                        quiet=quiet,
-                        subscenario=subscenario,
-                        table=table,
-                        subscenario_directory=subscenario_directory,
-                        filename=filename,
-                        main_flag=main_flag
-                    )
+                if row["subscenario_type"] == "dir_main":
+                    main_flag = True
+                else:
+                    main_flag = False
+                db_util.read_all_dir_subscenarios_from_dir_and_insert_into_db(
+                    conn=conn,
+                    quiet=quiet,
+                    inputs_dir=inputs_dir,
+                    subscenario=subscenario,
+                    table=table,
+                    filename=filename,
+                    main_flag=main_flag
+                )
 
         else:
             pass
@@ -171,13 +165,13 @@ def load_csv_data(conn, csv_path, quiet):
     ### CUSTOM LOADING ###
     #### LOAD TEMPORAL DATA ####
     # Handled differently, as a temporal_scenario_id involves multiple files
-    temporal_directory = db_util_common.get_inputs_dir(
+    temporal_directory = db_util.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="temporal_scenario_id"
     )
     if temporal_directory is not None:
         temporal_subscenario_directories = \
-            db_util_common.get_directory_subscenarios(
+            db_util.get_directory_subscenarios(
                 main_directory=temporal_directory,
                 quiet=quiet
             )
@@ -191,7 +185,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD SCENARIOS DATA ####
-    scenarios_dir = db_util_common.get_inputs_dir(
+    scenarios_dir = db_util.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="scenarios"
     )
@@ -213,7 +207,7 @@ def load_csv_data(conn, csv_path, quiet):
 
 
     #### LOAD SOLVER OPTIONS ####
-    solver_dir = db_util_common.get_inputs_dir(
+    solver_dir = db_util.get_inputs_dir(
         csvs_main_dir=csv_path, csv_data_master=csv_data_master,
         subscenario="solver_options_id"
     )

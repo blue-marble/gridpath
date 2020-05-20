@@ -12,6 +12,7 @@ import warnings
 from db.common_functions import spin_on_database_lock
 
 
+# This will be deleted once we've dealt with scenarios and solver options
 def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     """
     :param csvs_main_dir:
@@ -38,6 +39,8 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     return inputs_dir
 
 
+# ### Functions for converting CSVs to lists of tuples ### #
+
 def get_csv_data(csv_file, **kwargs):
     """
     :param csv_file: str, path to CSV file
@@ -46,8 +49,10 @@ def get_csv_data(csv_file, **kwargs):
     Get the CSV headers and convert the data from a CSV into a list of tuples
     for later insertion into an input table.
 
-    Note that the kwargs must be given in the order in which they appear in
-    the database table we'll be inserting into.
+    The kwargs determine what values, if any, are added at the beginning of
+    each tuple in the list of tuples to import (e.g. subscenario_id, project
+    and subscenario_id, etc.) Note that the kwargs must be given in the
+    order in which they appear in the database table we'll be inserting into.
     """
 
     kwd_tuple = tuple()
@@ -138,7 +143,7 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
     return subsc_tuples, csv_headers, data_tuples
 
 
-# ### Functions for single-CSV subscenarios ### #
+# ### Functions for loading single-CSV subscenarios ### #
 def read_csv_subscenario_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, csv_file, use_project_method
 ):
@@ -183,7 +188,7 @@ def read_csv_subscenario_and_insert_into_db(
     )
 
 
-def read_csv_subscenarios_from_dir_and_insert_into_db(
+def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method
 ):
     """
@@ -211,7 +216,7 @@ def read_csv_subscenarios_from_dir_and_insert_into_db(
         )
 
 
-# ### Functions for subscenarios with multiple files ### #
+# ### Functions for loading subscenarios with multiple files ### #
 
 def get_directory_subscenarios(main_directory, quiet):
     """
@@ -324,6 +329,40 @@ def read_dir_subscenario_and_insert_into_db(
         main_flag=main_flag,
         headers_for_validation=headers_for_validation
     )
+
+
+def read_all_dir_subscenarios_from_dir_and_insert_into_db(
+    conn, quiet, inputs_dir, subscenario, table, filename, main_flag
+):
+    """
+    :param conn:
+    :param quiet:
+    :param inputs_dir:
+    :param subscenario:
+    :param table:
+    :param filename:
+    :param main_flag:
+    :return:
+
+    Read data from all subscenario directories in a directory and insert them
+    into the database.
+    """
+    subscenario_directories = \
+        get_directory_subscenarios(
+            main_directory=inputs_dir,
+            quiet=quiet
+        )
+
+    for subscenario_directory in subscenario_directories:
+        read_dir_subscenario_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            subscenario_directory=subscenario_directory,
+            filename=filename,
+            main_flag=main_flag
+        )
 
 
 def get_subscenario_description(folder_path, csv_filename):
