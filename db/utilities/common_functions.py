@@ -143,6 +143,88 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
     return subsc_tuples, csv_headers, data_tuples
 
 
+def dir_csv_to_subscenario_tuples(
+    subscenario_directory, filename, main_flag
+):
+    """
+    :param subscenario_directory:
+    :param filename:
+    :param main_flag:
+    :return:
+
+    This function reads in a CSV file from a subscenario directory and
+    converts it into two lists of tuples, the first one containing the
+    subscenario ID, name, and description and the second one containing the
+    data for the subscenario; this also returns the CSV headers as a list
+    for later validating that the CSV structure conforms to the database
+    table structure.
+
+    This function is very similar to csv_to_subscenario_tuples(), but uses
+    the subscenario directory name instead of the filename to determine
+    subscenario info.
+
+    """
+    # Get the paths for the required input files
+    filepath = os.path.join(subscenario_directory, filename)
+
+    # Get subscenario ID, name, and description
+    # The subscenario directory must start with an integer for the
+    # subscenario_id followed by "_" and then the subscenario name
+    # The subscenario description must be in the description.txt file under
+    # the subscenario directory
+    directory_basename = os.path.basename(subscenario_directory)
+    subscenario_id = int(directory_basename.split("_", 1)[0])
+    subscenario_name = directory_basename.split("_", 1)[1]
+
+    # If we're loading the 'main_dir' files, also load in the subscenario info
+    if main_flag:
+        # Check if there's a description file, otherwise the description will
+        # be an empty string
+        # The get_subscenario_description function expects a .txt file with
+        # the same name as the .csv filename passed, so pass description.csv
+        # to get the description.txt file
+        subscenario_description = get_subscenario_description(
+            folder_path=subscenario_directory, csv_filename="description.csv"
+        )
+
+        # Make the tuple for insertion into the subscenario table
+        subsc_tuples = [
+            (subscenario_id, subscenario_name, subscenario_description)
+        ]
+    else:
+        subsc_tuples = None
+
+    # Inputs
+    csv_headers, inputs_tuple_list = get_csv_data(
+        csv_file=filepath, subscenario_id=subscenario_id
+    )
+
+    return subsc_tuples, csv_headers, inputs_tuple_list
+
+
+def get_subscenario_description(folder_path, csv_filename):
+    """
+    :param folder_path:
+    :param csv_filename:
+    :return:
+
+    Get the description for the subscenario from a .txt file with the same
+    name as the CSV file for the subscenario if the .txt file exists.
+
+    """
+    # Description of the subscenario can be provided in file with same
+    # name as the CSV subscenario file but extension .txt
+    description_filename = csv_filename.split(".csv")[0] + ".txt"
+    description_file = os.path.join(folder_path, description_filename)
+    if os.path.isfile(description_file):
+        with open(description_file, "r") as desc_f:
+            subscenario_description = desc_f.read()
+    else:
+        subscenario_description = ""
+
+    return subscenario_description
+
+
 # ### Functions for loading single-CSV subscenarios ### #
 def read_csv_subscenario_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, csv_file, use_project_method
@@ -251,6 +333,87 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 
 # ### Functions for loading subscenarios with multiple files ### #
 
+
+def read_dir_subscenario_csv_and_insert_into_db(
+    conn, quiet, subscenario, table, subscenario_directory, filename, main_flag
+):
+    """
+    :param conn:
+    :param quiet:
+    :param subscenario:
+    :param table:
+    :param subscenario_directory:
+    :param filename:
+    :param main_flag:
+
+    Read subscenario info from a directory, with the subscenario ID,
+    underscore, and the subscenario name as the name of the directory.
+
+    A file containing the subscenario description (description.txt) is
+    optional. Each directory also contains CSV files with expected structure
+    based on the table they are loaded into. This function loads the 'main'
+    csv file into the input table that matches with subscenario table if the
+    'main_flag' is set to True and doesn't load subscenario info otherwise
+    (so that subscenario info is loaded only once).
+    """
+    if not quiet:
+        print(subscenario_directory)
+
+    subscenario_tuple_list, csv_headers, inputs_tuple_list = \
+        dir_csv_to_subscenario_tuples(
+            subscenario_directory=subscenario_directory,
+            filename=filename,
+            main_flag=main_flag
+        )
+
+    headers_for_validation = [subscenario] + csv_headers
+
+    generic_insert_subscenario(
+        conn=conn,
+        subscenario=subscenario,
+        table=table,
+        subscenario_data=subscenario_tuple_list,
+        inputs_data=inputs_tuple_list,
+        project_flag=False,
+        main_flag=main_flag,
+        headers_for_validation=headers_for_validation
+    )
+
+
+def read_all_dir_subscenarios_from_dir_and_insert_into_db(
+    conn, quiet, inputs_dir, subscenario, table, filename, main_flag
+):
+    """
+    :param conn:
+    :param quiet:
+    :param inputs_dir:
+    :param subscenario:
+    :param table:
+    :param filename:
+    :param main_flag:
+    :return:
+
+    Read data from all subscenario directories in a directory and insert them
+    into the database.
+    """
+    subscenario_directories = \
+        get_directory_subscenarios(
+            main_directory=inputs_dir,
+            quiet=quiet
+        )
+
+    for subscenario_directory in subscenario_directories:
+        read_dir_subscenario_csv_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            subscenario_directory=subscenario_directory,
+            filename=filename,
+            main_flag=main_flag
+        )
+
+
 def get_directory_subscenarios(main_directory, quiet):
     """
     :param main_directory:
@@ -289,136 +452,6 @@ def get_directory_subscenarios(main_directory, quiet):
         subscenario_directories.append(subscenario_directory)
 
     return subscenario_directories
-
-
-def read_dir_subscenario_and_insert_into_db(
-    conn, quiet, subscenario, table, subscenario_directory, filename, main_flag
-):
-    """
-    :param conn:
-    :param quiet:
-    :param subscenario:
-    :param table:
-    :param subscenario_directory:
-    :param filename:
-    :param main_flag:
-
-    Read subscenario info from a directory, with the subscenario ID,
-    underscore, and the subscenario name as the name of the directory.
-
-    A file containing the subscenario description (description.txt) is
-    optional. Each directory also contains CSV files with expected structure
-    based on the table they are loaded into. This function loads the 'main'
-    csv file into the input table that matches with subscenario table. See
-    also the read_dir_aux_data_and_insert_into_db() for loading of auxiliary
-    data for this subscenario.
-    """
-    if not quiet:
-        print(subscenario_directory)
-
-    # Get the paths for the required input files
-    filepath = os.path.join(subscenario_directory, filename)
-
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
-
-    # If we're loading the 'main_dir' files, also load in the subscenario info
-    if main_flag:
-        # Check if there's a description file, otherwise the description will be
-        # an empty string
-        description_file = os.path.join(subscenario_directory, "description.txt")
-        if os.path.exists(description_file):
-            with open(description_file, "r") as f:
-                subscenario_description = f.read()
-        else:
-            subscenario_description = ""
-
-        # Make the tuple for insertion into the subscenario table
-        subscenario_tuple_list = [
-            (subscenario_id, subscenario_name, subscenario_description)
-        ]
-    else:
-        subscenario_tuple_list = None
-
-    # Inputs
-    csv_headers, inputs_tuple_list = get_csv_data(
-        csv_file=filepath, subscenario_id=subscenario_id
-    )
-    headers_for_validation = [subscenario] + csv_headers
-
-    generic_insert_subscenario(
-        conn=conn,
-        subscenario=subscenario,
-        table=table,
-        subscenario_data=subscenario_tuple_list,
-        inputs_data=inputs_tuple_list,
-        project_flag=False,
-        main_flag=main_flag,
-        headers_for_validation=headers_for_validation
-    )
-
-
-def read_all_dir_subscenarios_from_dir_and_insert_into_db(
-    conn, quiet, inputs_dir, subscenario, table, filename, main_flag
-):
-    """
-    :param conn:
-    :param quiet:
-    :param inputs_dir:
-    :param subscenario:
-    :param table:
-    :param filename:
-    :param main_flag:
-    :return:
-
-    Read data from all subscenario directories in a directory and insert them
-    into the database.
-    """
-    subscenario_directories = \
-        get_directory_subscenarios(
-            main_directory=inputs_dir,
-            quiet=quiet
-        )
-
-    for subscenario_directory in subscenario_directories:
-        read_dir_subscenario_and_insert_into_db(
-            conn=conn,
-            quiet=quiet,
-            subscenario=subscenario,
-            table=table,
-            subscenario_directory=subscenario_directory,
-            filename=filename,
-            main_flag=main_flag
-        )
-
-
-def get_subscenario_description(folder_path, csv_filename):
-    """
-    :param folder_path:
-    :param csv_filename:
-    :return:
-
-    Get the description for the subscenario from a .txt file with the same
-    name as the CSV file for the subscenario if the .txt file exists.
-
-    """
-    # Description of the subscenario can be provided in file with same
-    # name as the CSV subscenario file but extension .txt
-    description_filename = csv_filename.split(".csv")[0] + ".txt"
-    description_file = os.path.join(folder_path, description_filename)
-    if os.path.isfile(description_file):
-        with open(description_file, "r") as desc_f:
-            subscenario_description = desc_f.read()
-    else:
-        subscenario_description = ""
-
-    return subscenario_description
 
 
 # ### Generic function for inserting subscenario into the database ### #
