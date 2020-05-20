@@ -77,7 +77,7 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
         subscenario data), list of strings (the CSV headers)
 
     This function reads in a CSV file and converts it into two lists of
-    tuples, the one first containing the subscenario ID, name,
+    tuples, the first one containing the subscenario ID, name,
     and description and the second one containing the data for the
     subscenario; this also returns the CSV headers as a list for later
     validating that the CSV structure conforms to the database table structure.
