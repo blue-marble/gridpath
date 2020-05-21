@@ -240,6 +240,7 @@ def read_csv_subscenario_and_insert_into_db(
     :param csv_file:
     :param use_project_method:
     :param main_flag:
+    :param csv_to_subscenario_method:
     :return:
 
     Read data from a single subscenario CSV in a directory and insert it
@@ -256,13 +257,6 @@ def read_csv_subscenario_and_insert_into_db(
             main_flag=main_flag
         )
 
-    if use_project_method:
-        headers_for_validation = \
-            ["project", subscenario] + csv_headers
-    else:
-        headers_for_validation = \
-            [subscenario] + csv_headers
-
     generic_insert_subscenario(
         conn=conn,
         subscenario=subscenario,
@@ -270,7 +264,7 @@ def read_csv_subscenario_and_insert_into_db(
         subscenario_data=subscenario_tuples,
         inputs_data=inputs_tuples,
         project_flag=use_project_method,
-        headers_for_validation=headers_for_validation
+        csv_headers=csv_headers
     )
 
 
@@ -422,7 +416,7 @@ def get_directory_subscenarios(main_directory, quiet):
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    headers_for_validation=None
+    csv_headers=None
 ):
     """
     :param conn: the database connection object
@@ -431,7 +425,7 @@ def generic_insert_subscenario(
     :param subscenario_data: list of tuples
     :param inputs_data: list of tuples
     :param project_flag: boolean
-    :param headers_for_validation: list of strings
+    :param csv_headers: list of strings
 
     Generic function that loads subscenario info and inputs data for a
     particular subscenario. The subscenario_data and inputs_data are given
@@ -466,7 +460,14 @@ def generic_insert_subscenario(
     # If we have passed headers, check that they are as expected (i.e.
     # the same as in the table we're inserting into)
     column_names = [s[0] for s in table_data_query.description]
-    if headers_for_validation is not None:
+
+    if csv_headers is not None:
+        if project_flag:
+            headers_for_validation = \
+                ["project", subscenario] + csv_headers
+        else:
+            headers_for_validation = \
+                [subscenario] + csv_headers
         if headers_for_validation != column_names:
             raise AssertionError(
                 """
