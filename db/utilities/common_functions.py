@@ -239,6 +239,7 @@ def read_csv_subscenario_and_insert_into_db(
     :param inputs_dir:
     :param csv_file:
     :param use_project_method:
+    :param main_flag:
     :return:
 
     Read data from a single subscenario CSV in a directory and insert it
@@ -269,7 +270,6 @@ def read_csv_subscenario_and_insert_into_db(
         subscenario_data=subscenario_tuples,
         inputs_data=inputs_tuples,
         project_flag=use_project_method,
-        main_flag=main_flag,
         headers_for_validation=headers_for_validation
     )
 
@@ -422,7 +422,7 @@ def get_directory_subscenarios(main_directory, quiet):
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    main_flag=True, headers_for_validation=None
+    headers_for_validation=None
 ):
     """
     :param conn: the database connection object
@@ -431,9 +431,6 @@ def generic_insert_subscenario(
     :param subscenario_data: list of tuples
     :param inputs_data: list of tuples
     :param project_flag: boolean
-    :param main_flag: boolean; True by default; when loading inputs from a
-        directory, we pass True when we want to load the subscenario info
-        with the 'main' inputs and False if we're loading auxiliary inputs only
     :param headers_for_validation: list of strings
 
     Generic function that loads subscenario info and inputs data for a
@@ -443,7 +440,7 @@ def generic_insert_subscenario(
     c = conn.cursor()
 
     # Load in the subscenario name and description
-    if main_flag:
+    if subscenario_data is not None:
         if not project_flag:
             subs_sql = """
                 INSERT OR IGNORE INTO subscenarios_{}
