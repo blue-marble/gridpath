@@ -146,9 +146,9 @@ def load_csv_data(conn, csv_path, quiet):
             elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
                 filename = row["filename"]
                 if row["subscenario_type"] == "dir_main":
-                    main_flag = True
+                    skip_subscenario_info = False
                 else:
-                    main_flag = False
+                    skip_subscenario_info = True
                 db_util.read_all_dir_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,
@@ -156,7 +156,7 @@ def load_csv_data(conn, csv_path, quiet):
                     subscenario=subscenario,
                     table=table,
                     filename=filename,
-                    main_flag=main_flag
+                    skip_subscenario_info=skip_subscenario_info
                 )
 
         else:

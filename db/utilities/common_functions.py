@@ -39,12 +39,89 @@ def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
     return inputs_dir
 
 
-# ### Functions for converting CSVs to lists of tuples ### #
+# ### Functions for converting CSVs to lists of tuples for DB insertion ### #
 
-def get_csv_data(csv_file, **kwargs):
+def get_subscenario_info(
+    dir_subsc, inputs_dir, csv_file, project_flag
+):
+    """
+    :param dir_subsc: boolean; whether this is a directory-based
+        subscenario; changes whether we use the inputs_dir or csv_file to
+        determine the scenario info
+    :param inputs_dir: string; the directory in which the CSV is located;
+        this is the subscenario directory for directory-based subscenarios,
+        which we use to determine the scenario info; if we're looking at a
+        CSV-based scenario, we need the directory to find the subscenario
+        description file
+    :param csv_file: string; the name of the CSV file, which we'll use to
+        determine the scenario info if this is a CSV-based subscenario
+    :param project_flag: boolean; whether the CSV file contains project
+        level data
+    :return: tuple; (subscenario_id, subscenario_name,
+        subscenario_description)
+
+    This function determines the subscenario info and returns it as a tuple.
+
+    If this is a directory-based scenario, description of the subscenario
+    can be optionally provided in a file named description.txt in the
+    subscenario directory (inputs_dir); if this is a CSV-based subscenario,
+    description of the subscenario can be optionally provided in file with
+    same name as the CSV subscenario file but with the extension .txt.
+
+    If this is a directory-based scenario, we use the directory name and if
+    this is a CSV-based subscenario, we use the file name to determine the
+    subscenario ID and subscenario name. We're expecting this "base name" to
+    start with an integer (the subscenario ID), followed by an underscore,
+    and then the subscenario name.
+
+    For project-level subscenarios, we're expecting the file name to start
+    with the project name, followed by a dash, an integer (the subscenario
+    ID), followed by a dash, and then the subscenario name
+
+    """
+    # Get the subscenario description
+    if dir_subsc:
+        # The get_subscenario_description function expects a .txt file with
+        # the same name as the .csv filename passed, so pass description.csv
+        # to get the contents of the description.txt file
+        subscenario_description = get_subscenario_description(
+            input_dir=inputs_dir, csv_filename="description.csv"
+        )
+    else:
+        subscenario_description = get_subscenario_description(
+            input_dir=inputs_dir, csv_filename=csv_file
+        )
+
+    # Get the subscenario ID and name
+    if not project_flag:
+        if dir_subsc:
+            basename = os.path.basename(inputs_dir)
+        else:
+            basename = csv_file
+
+        subscenario_id = int(basename.split("_", 1)[0])
+        subscenario_name = basename.split("_", 1)[1].split(".csv")[0]
+
+        subsc_tuples = [
+            (subscenario_id, subscenario_name, subscenario_description)
+        ]
+    else:
+        project = csv_file.split("-", 1)[0]
+        subscenario_id = int(csv_file.split("-", 2)[1])
+        subscenario_name = csv_file.split("-", 2)[2].split(".csv")[0]
+
+        subsc_tuples = [
+            (project, subscenario_id, subscenario_name,
+             subscenario_description)
+        ]
+
+    return subsc_tuples
+
+
+def get_subscenario_data(csv_file, **kwargs):
     """
     :param csv_file: str, path to CSV file
-    :return: list of tuples, list of header strings
+    :return: list of header strings, list of tuples
 
     Get the CSV headers and convert the data from a CSV into a list of tuples
     for later insertion into an input table.
@@ -68,7 +145,9 @@ def get_csv_data(csv_file, **kwargs):
     return df.columns.tolist(), tuples_for_import
 
 
-def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
+def csv_to_subscenario_for_insertion(
+    dir_subsc, inputs_dir, csv_file, project_flag
+):
     """
     :param inputs_dir: string; the directory where the CSV is located
     :param csv_file: string; the name of the CSV file
@@ -83,99 +162,89 @@ def csv_to_subscenario_tuples(inputs_dir, csv_file, project_flag):
     validating that the CSV structure conforms to the database table structure.
     """
 
-    csv_file_path = os.path.join(inputs_dir, csv_file)
-
-    # Description of the subscenario can be provided in file with same
-    # name as the CSV subscenario file but extension .txt
-    subscenario_description = get_subscenario_description(
-        folder_path=inputs_dir, csv_filename=csv_file
+    # Get the subscenario info
+    subsc_tuples = get_subscenario_info(
+        dir_subsc, inputs_dir, csv_file, project_flag
     )
 
+    # Get the CSV headers (for later validation) and subscenario data
+    csv_file_path = os.path.join(inputs_dir, csv_file)
+
     if not project_flag:
-        # Get the subscenario ID and subscenario name from the file name
-        # We're expecting the file name to start with an integer (the
-        # subscenario ID), followed by an underscore, and then the
-        # subscenario name
-        subscenario_id = int(csv_file.split("_", 1)[0])
-        subscenario_name = csv_file.split("_", 1)[1].split(".csv")[0]
-
-        # Insert the subscenario ID, name, and description into the
-        # subscenario dataframe
-        subsc_tuples = [
-            (subscenario_id, subscenario_name, subscenario_description)
-        ]
-
-        # Get the CSV headers and create the data tuples
-        csv_headers, data_tuples = get_csv_data(
-            csv_file=csv_file_path, subscenario_id=subscenario_id
-        )
-
+        # We only need the subscenario ID as keyword argument to
+        # get_subscenario_data()
+        subscenario_id = subsc_tuples[0][0]
+        csv_headers, data_tuples = \
+            get_subscenario_data(
+                csv_file=csv_file_path, subscenario_id=subscenario_id
+            )
     else:
-        # Get the subscenario ID and subscenario name from the file name
-        # We're expecting the file name to start with the project name,
-        # followed by a dash, an integer (the subscenario ID), followed
-        # by a dash, and then the subscenario name
-        # TODO: need a robust method for splitting the filename in case
-        #  the same character as used to delineate (currently a dash)
-        #  exists in the project name
-        #  Split on dash instead of underscore for now to allow for
-        #  underscores in project name
-        project = csv_file.split("-", 1)[0]
-        subscenario_id = int(csv_file.split("-", 2)[1])
-        subscenario_name = csv_file.split("-", 2)[2].split(".csv")[0]
-
-        # Insert the project name, subscenario ID, subscenario name,
-        # and description into the subscenario dataframe
-        subsc_tuples = [
-            (project, subscenario_id, subscenario_name,
-             subscenario_description)
-        ]
-
-        # Get the CSV headers and create the data tuples
+        # We need the project and subscenario ID as keyword arguments to
+        # get_subscenario_data()
+        project = subsc_tuples[0][0]
+        subscenario_id = subsc_tuples[0][1]
         # Make sure to give project as keyword argument first, then the
         # subscenario ID, as this is the order in the database tables,
         # so we need to create the correct tuple
-        csv_headers, data_tuples = get_csv_data(
-            csv_file=csv_file_path,
-            project=project, subscenario_id=subscenario_id,
-        )
+        csv_headers, data_tuples = \
+            get_subscenario_data(
+                csv_file=csv_file_path,
+                project=project, subscenario_id=subscenario_id,
+            )
 
     return subsc_tuples, csv_headers, data_tuples
 
 
-# ### Functions for loading single-CSV subscenarios ### #
-def read_csv_subscenario_and_insert_into_db(
-    conn, quiet, subscenario, table, inputs_dir, csv_file, use_project_method
+def get_subscenario_description(input_dir, csv_filename):
+    """
+    :param input_dir: string
+    :param csv_filename: string
+    :return: string
+
+    Get the description for the subscenario from a .txt file with the same
+    name as the CSV file for the subscenario if the .txt file exists.
+
+    """
+    # Description of the subscenario can be provided in file with same
+    # name as the CSV filename passed but extension .txt
+    description_filename = csv_filename.split(".csv")[0] + ".txt"
+    description_file = os.path.join(input_dir, description_filename)
+    if os.path.isfile(description_file):
+        with open(description_file, "r") as desc_f:
+            subscenario_description = desc_f.read()
+    else:
+        subscenario_description = ""
+
+    return subscenario_description
+
+
+def get_subscenario_data_and_insert_into_db(
+    conn, quiet, subscenario, table, dir_subsc, inputs_dir, csv_file,
+    use_project_method, skip_subscenario_info
 ):
     """
-    :param conn:
-    :param quiet:
-    :param subscenario:
-    :param table:
-    :param inputs_dir:
-    :param csv_file:
-    :param use_project_method:
-    :return:
+    :param conn: database connection object
+    :param quiet: boolean
+    :param subscenario: string
+    :param table: string
+    :param inputs_dir: string
+    :param csv_file: string
+    :param use_project_method: boolean
+    :param skip_subscenario_info: boolean
 
-    Read data from a single subscenario CSV in a directory and insert it
-    into the database.
+    Read the data for a subscenario, convert it to tuples, and insert into the
+    database.
     """
     if not quiet:
         print(csv_file)
 
     subscenario_tuples, csv_headers, inputs_tuples = \
-        csv_to_subscenario_tuples(
+        csv_to_subscenario_for_insertion(
+            dir_subsc=dir_subsc,
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             project_flag=use_project_method
         )
-
-    if use_project_method:
-        headers_for_validation = \
-            ["project", subscenario] + csv_headers
-    else:
-        headers_for_validation = \
-            [subscenario] + csv_headers
 
     generic_insert_subscenario(
         conn=conn,
@@ -184,21 +253,23 @@ def read_csv_subscenario_and_insert_into_db(
         subscenario_data=subscenario_tuples,
         inputs_data=inputs_tuples,
         project_flag=use_project_method,
-        headers_for_validation=headers_for_validation
+        csv_headers=csv_headers,
+        skip_subscenario_info=skip_subscenario_info
     )
 
+
+# ### Functions for loading single-CSV subscenarios ### #
 
 def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method
 ):
     """
-    :param conn:
-    :param quiet:
-    :param subscenario:
-    :param table:
-    :param inputs_dir:
-    :param use_project_method:
-    :return:
+    :param conn: database connection object
+    :param quiet: boolean
+    :param subscenario: string
+    :param table: string
+    :param inputs_dir: string
+    :param use_project_method: boolean
 
     Read data from all subscenario CSVs in a directory and insert them into
     the database.
@@ -213,10 +284,16 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     for csv_file in csv_files:
-        read_csv_subscenario_and_insert_into_db(
-            conn=conn, quiet=quiet, subscenario=subscenario, table=table,
-            inputs_dir=inputs_dir, csv_file=csv_file,
-            use_project_method=use_project_method
+        get_subscenario_data_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            dir_subsc=False,
+            inputs_dir=inputs_dir,
+            csv_file=csv_file,
+            use_project_method=use_project_method,
+            skip_subscenario_info=True
         )
 
 
@@ -250,6 +327,42 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 
 
 # ### Functions for loading subscenarios with multiple files ### #
+
+
+def read_all_dir_subscenarios_from_dir_and_insert_into_db(
+    conn, quiet, inputs_dir, subscenario, table, filename, skip_subscenario_info
+):
+    """
+    :param conn: database connection object
+    :param quiet: boolean
+    :param inputs_dir: string
+    :param subscenario: string
+    :param table: string
+    :param filename: string
+    :param skip_subscenario_info: boolean
+
+    Read data from all subscenario directories in a directory and insert them
+    into the database.
+    """
+    subscenario_directories = \
+        get_directory_subscenarios(
+            main_directory=inputs_dir,
+            quiet=quiet
+        )
+
+    for subscenario_directory in subscenario_directories:
+        get_subscenario_data_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            dir_subsc=True,
+            inputs_dir=subscenario_directory,
+            csv_file=filename,
+            use_project_method=False,
+            skip_subscenario_info=skip_subscenario_info
+        )
+
 
 def get_directory_subscenarios(main_directory, quiet):
     """
@@ -291,141 +404,11 @@ def get_directory_subscenarios(main_directory, quiet):
     return subscenario_directories
 
 
-def read_dir_subscenario_and_insert_into_db(
-    conn, quiet, subscenario, table, subscenario_directory, filename, main_flag
-):
-    """
-    :param conn:
-    :param quiet:
-    :param subscenario:
-    :param table:
-    :param subscenario_directory:
-    :param filename:
-    :param main_flag:
-
-    Read subscenario info from a directory, with the subscenario ID,
-    underscore, and the subscenario name as the name of the directory.
-
-    A file containing the subscenario description (description.txt) is
-    optional. Each directory also contains CSV files with expected structure
-    based on the table they are loaded into. This function loads the 'main'
-    csv file into the input table that matches with subscenario table. See
-    also the read_dir_aux_data_and_insert_into_db() for loading of auxiliary
-    data for this subscenario.
-    """
-    if not quiet:
-        print(subscenario_directory)
-
-    # Get the paths for the required input files
-    filepath = os.path.join(subscenario_directory, filename)
-
-    # Get subscenario ID, name, and description
-    # The subscenario directory must start with an integer for the
-    # subscenario_id followed by "_" and then the subscenario name
-    # The subscenario description must be in the description.txt file under
-    # the subscenario directory
-    directory_basename = os.path.basename(subscenario_directory)
-    subscenario_id = int(directory_basename.split("_", 1)[0])
-    subscenario_name = directory_basename.split("_", 1)[1]
-
-    # If we're loading the 'main_dir' files, also load in the subscenario info
-    if main_flag:
-        # Check if there's a description file, otherwise the description will be
-        # an empty string
-        description_file = os.path.join(subscenario_directory, "description.txt")
-        if os.path.exists(description_file):
-            with open(description_file, "r") as f:
-                subscenario_description = f.read()
-        else:
-            subscenario_description = ""
-
-        # Make the tuple for insertion into the subscenario table
-        subscenario_tuple_list = [
-            (subscenario_id, subscenario_name, subscenario_description)
-        ]
-    else:
-        subscenario_tuple_list = None
-
-    # Inputs
-    csv_headers, inputs_tuple_list = get_csv_data(
-        csv_file=filepath, subscenario_id=subscenario_id
-    )
-    headers_for_validation = [subscenario] + csv_headers
-
-    generic_insert_subscenario(
-        conn=conn,
-        subscenario=subscenario,
-        table=table,
-        subscenario_data=subscenario_tuple_list,
-        inputs_data=inputs_tuple_list,
-        project_flag=False,
-        main_flag=main_flag,
-        headers_for_validation=headers_for_validation
-    )
-
-
-def read_all_dir_subscenarios_from_dir_and_insert_into_db(
-    conn, quiet, inputs_dir, subscenario, table, filename, main_flag
-):
-    """
-    :param conn:
-    :param quiet:
-    :param inputs_dir:
-    :param subscenario:
-    :param table:
-    :param filename:
-    :param main_flag:
-    :return:
-
-    Read data from all subscenario directories in a directory and insert them
-    into the database.
-    """
-    subscenario_directories = \
-        get_directory_subscenarios(
-            main_directory=inputs_dir,
-            quiet=quiet
-        )
-
-    for subscenario_directory in subscenario_directories:
-        read_dir_subscenario_and_insert_into_db(
-            conn=conn,
-            quiet=quiet,
-            subscenario=subscenario,
-            table=table,
-            subscenario_directory=subscenario_directory,
-            filename=filename,
-            main_flag=main_flag
-        )
-
-
-def get_subscenario_description(folder_path, csv_filename):
-    """
-    :param folder_path:
-    :param csv_filename:
-    :return:
-
-    Get the description for the subscenario from a .txt file with the same
-    name as the CSV file for the subscenario if the .txt file exists.
-
-    """
-    # Description of the subscenario can be provided in file with same
-    # name as the CSV subscenario file but extension .txt
-    description_filename = csv_filename.split(".csv")[0] + ".txt"
-    description_file = os.path.join(folder_path, description_filename)
-    if os.path.isfile(description_file):
-        with open(description_file, "r") as desc_f:
-            subscenario_description = desc_f.read()
-    else:
-        subscenario_description = ""
-
-    return subscenario_description
-
-
 # ### Generic function for inserting subscenario into the database ### #
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    main_flag=True, headers_for_validation=None
+    skip_subscenario_info, csv_headers=None
 ):
     """
     :param conn: the database connection object
@@ -434,19 +417,19 @@ def generic_insert_subscenario(
     :param subscenario_data: list of tuples
     :param inputs_data: list of tuples
     :param project_flag: boolean
-    :param main_flag: boolean; True by default; when loading inputs from a
-        directory, we pass True when we want to load the subscenario info
-        with the 'main' inputs and False if we're loading auxiliary inputs only
-    :param headers_for_validation: list of strings
+    :param skip_subscenario_info: boolean
+    :param csv_headers: list of strings
 
     Generic function that loads subscenario info and inputs data for a
-    particular subscenario. The subscenario_data and inputs_data are given
-    as lists of tuples.
+    particular subscenario. The subscenario_data and inputs_data
+    are given as lists of tuples. If csv_headers are passed, this function
+    also validates that they match the columns of the table into which we're
+    inserting.
     """
     c = conn.cursor()
 
     # Load in the subscenario name and description
-    if main_flag:
+    if not skip_subscenario_info:
         if not project_flag:
             subs_sql = """
                 INSERT OR IGNORE INTO subscenarios_{}
@@ -472,7 +455,14 @@ def generic_insert_subscenario(
     # If we have passed headers, check that they are as expected (i.e.
     # the same as in the table we're inserting into)
     column_names = [s[0] for s in table_data_query.description]
-    if headers_for_validation is not None:
+
+    if csv_headers is not None:
+        if project_flag:
+            headers_for_validation = \
+                ["project", subscenario] + csv_headers
+        else:
+            headers_for_validation = \
+                [subscenario] + csv_headers
         if headers_for_validation != column_names:
             raise AssertionError(
                 """
