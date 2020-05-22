@@ -287,7 +287,6 @@ subproblem_id INTEGER,
 balancing_type_horizon VARCHAR(32),
 horizon VARCHAR(32),
 boundary VARCHAR(16),
-period INTEGER,  -- auxiliary, we use the timepoint period
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
              balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
@@ -297,10 +296,7 @@ FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
 (horizon_boundary_type),
 -- Make sure subproblem_id exists in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
-inputs_temporal_subproblems (temporal_scenario_id, subproblem_id),
--- Make sure period exists in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, period) REFERENCES
-inputs_temporal_periods (temporal_scenario_id, period)
+inputs_temporal_subproblems (temporal_scenario_id, subproblem_id)
 );
 
 
