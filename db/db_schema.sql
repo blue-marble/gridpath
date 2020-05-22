@@ -242,8 +242,8 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 -- the previous timepoints for the first horizon of the next subproblem
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
-DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints (
+DROP TABLE IF EXISTS inputs_temporal;
+CREATE TABLE inputs_temporal (
 temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -287,6 +287,8 @@ subproblem_id INTEGER,
 balancing_type_horizon VARCHAR(32),
 horizon VARCHAR(32),
 boundary VARCHAR(16),
+-- tmp_start INTEGER, -- auxiliary for populating temporal_horizon_timepoints
+-- tmp_end INTEGER, -- auxiliary for populating temporal_horizon_timepoints
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
              balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
@@ -314,7 +316,7 @@ FOREIGN KEY (temporal_scenario_id)
     REFERENCES subscenarios_temporal (temporal_scenario_id),
 -- Make sure these are the same timepoints as in the main timepoints table
 FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint)
-    REFERENCES inputs_temporal_timepoints (temporal_scenario_id,
+    REFERENCES inputs_temporal (temporal_scenario_id,
                                            subproblem_id, stage_id, timepoint),
 -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,

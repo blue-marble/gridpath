@@ -83,7 +83,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         
         (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
         spinup_or_lookahead
-        FROM inputs_temporal_timepoints)
+        FROM inputs_temporal)
         USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
         
         WHERE scenario_id = ?

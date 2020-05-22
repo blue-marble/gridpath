@@ -15,10 +15,7 @@ from db.utilities.common_functions import get_subscenario_info
 
 def insert_into_database(
     conn,
-    subscenario_data,
-    subproblems,
-    subproblem_stages,
-    subproblem_stage_timepoints,
+    temporal_scenario_id,
     subproblem_stage_timepoint_horizons
 ):
     """
@@ -38,23 +35,18 @@ def insert_into_database(
 
     c = conn.cursor()
 
-    # Create subscenario
-    subscenario_sql = """
-        INSERT OR IGNORE INTO subscenarios_temporal
-        (temporal_scenario_id, name, description)
-        VALUES (?, ?, ?);
-        """
-    spin_on_database_lock(conn=conn, cursor=c, sql=subscenario_sql,
-                          data=subscenario_data, many=False)
-
     # Subproblems
     subproblems_sql = """
         INSERT OR IGNORE INTO inputs_temporal_subproblems
         (temporal_scenario_id, subproblem_id)
-        VALUES (?, ?);
+        SELECT DISTINCT temporal_scenario_id, subproblem_id
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = ?;
         """
-    spin_on_database_lock(conn=conn, cursor=c, sql=subproblems_sql,
-                          data=subproblems)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=subproblems_sql,
+        data=(temporal_scenario_id,), many=False
+    )
 
     # Stages
     # TODO: stage_name not currently included; decide whether to keep this
@@ -62,25 +54,23 @@ def insert_into_database(
     stages_sql = """
         INSERT OR IGNORE INTO inputs_temporal_subproblems_stages
         (temporal_scenario_id, subproblem_id, stage_id)
-        VALUES (?, ?, ?);
+        SELECT DISTINCT temporal_scenario_id, subproblem_id, stage_id
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = ?;
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=stages_sql,
-                          data=subproblem_stages)
-
-    # Timepoints
-    timepoints_sql = """
-        INSERT OR IGNORE INTO inputs_temporal_timepoints
-        (temporal_scenario_id, subproblem_id, stage_id, timepoint,
-        period, number_of_hours_in_timepoint, timepoint_weight, 
-        previous_stage_timepoint_map, spinup_or_lookahead, 
-        linked_timepoint, month, hour_of_day, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """
-    
-    spin_on_database_lock(conn=conn, cursor=c, sql=timepoints_sql,
-                          data=subproblem_stage_timepoints)
+                          data=(temporal_scenario_id, ), many=False)
 
     # TIMEPOINT HORIZONS
+    sid_bt_hr_sql = """
+        SELECT subproblem_id, balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = ?
+        """
+    sid_bt_hr = c.execute(sid_bt_hr_sql, (temporal_scenario_id, ))
+    print(sid_bt_hr)
+
+
     horizon_timepoints_sql = """
         INSERT OR IGNORE INTO inputs_temporal_horizon_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
@@ -144,19 +134,19 @@ def load_from_csvs(conn, subscenario_directory):
     # The subproblem, stage, and horizon information is also contained here
     tmp_df = pd.read_csv(timepoints_file, delimiter=",")
 
-    # SUBPROBLEMS
-    # Get the data for the inputs_temporal_subproblems table from the
-    # timepoints CSV
-    subproblems_set = set(tmp_df["subproblem_id"])
-    subproblems = [(subscenario_id, x) for x in subproblems_set]
-
-    # STAGES
-    # Get the data for the inputs_temporal_subproblems_stages table from the
-    # timepoints CSV
-    subproblem_stages_set = \
-        set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
-    subproblem_stages = [(subscenario_id, ) + x for x in subproblem_stages_set]
-
+    # # SUBPROBLEMS
+    # # Get the data for the inputs_temporal_subproblems table from the
+    # # timepoints CSV
+    # subproblems_set = set(tmp_df["subproblem_id"])
+    # subproblems = [(subscenario_id, x) for x in subproblems_set]
+    #
+    # # STAGES
+    # # Get the data for the inputs_temporal_subproblems_stages table from the
+    # # timepoints CSV
+    # subproblem_stages_set = \
+    #     set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
+    # subproblem_stages = [(subscenario_id, ) + x for x in subproblem_stages_set]
+    #
     # # PERIODS
     # # Load periods data into Pandas dataframe
     # prd_df = pd.read_csv(periods_file, delimiter=",")
@@ -219,17 +209,6 @@ def load_from_csvs(conn, subscenario_directory):
     #     (subscenario_id,) + tuple(x) for x in hrz_df.to_records(index=False)
     # ]
 
-    # TIMEPOINTS
-    timepoints_tmp_df = tmp_df[
-        ["subproblem_id", "stage_id", "timepoint", "period",
-         "number_of_hours_in_timepoint", "timepoint_weight",
-         "previous_stage_timepoint_map", "spinup_or_lookahead",
-         "linked_timepoint", "month", "hour_of_day", "timestamp"]
-    ]
-    subproblem_stage_timepoints = [
-        (subscenario_id,) + tuple(x)
-        for x in timepoints_tmp_df.to_records(index=False)
-    ]
 
     # TIMEPOINT HORIZONS
     horizon_columns = [
@@ -266,9 +245,6 @@ def load_from_csvs(conn, subscenario_directory):
     # INSERT OR IGNORE INTO THE DATABASE
     insert_into_database(
         conn=conn,
-        subscenario_data=subscenario_data,
-        subproblems=subproblems,
-        subproblem_stages=subproblem_stages,
-        subproblem_stage_timepoints=subproblem_stage_timepoints,
+        temporal_scenario_id=subscenario_id,
         subproblem_stage_timepoint_horizons=subproblem_stage_timepoint_horizons
     )

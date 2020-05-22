@@ -165,7 +165,7 @@ def generic_get_inputs_from_database(
         FROM inputs_system_{}
         INNER JOIN
         (SELECT timepoint
-        FROM inputs_temporal_timepoints
+        FROM inputs_temporal
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
         AND stage_id = {}) as relevant_timepoints

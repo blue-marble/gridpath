@@ -195,7 +195,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     c2 = conn.cursor()
     periods_months = c2.execute(
         """SELECT DISTINCT period, month
-        FROM inputs_temporal_timepoints
+        FROM inputs_temporal
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
         AND stage_id = {};""".format(

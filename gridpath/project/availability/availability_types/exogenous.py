@@ -176,7 +176,7 @@ def get_inputs_from_database(
          -- timepoints for a project via an INNER JOIN below
          CROSS JOIN (
             SELECT stage_id, timepoint, period
-            FROM inputs_temporal_timepoints
+            FROM inputs_temporal
             WHERE temporal_scenario_id = {}
             AND subproblem_id = {}
             AND stage_id = {}
