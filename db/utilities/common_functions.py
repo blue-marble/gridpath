@@ -118,9 +118,10 @@ def get_subscenario_info(
     return subsc_tuples
 
 
-def get_subscenario_data(csv_file, **kwargs):
+def get_subscenario_data(csv_file, cols_to_exclude=None, **kwargs):
     """
     :param csv_file: str, path to CSV file
+    :param cols_to_exclude: list of strings
     :return: list of header strings, list of tuples
 
     Get the CSV headers and convert the data from a CSV into a list of tuples
@@ -131,7 +132,6 @@ def get_subscenario_data(csv_file, **kwargs):
     and subscenario_id, etc.) Note that the kwargs must be given in the
     order in which they appear in the database table we'll be inserting into.
     """
-
     kwd_tuple = tuple()
     for kwd in kwargs.keys():
         kwd_tuple += (kwargs[kwd], )
@@ -142,7 +142,13 @@ def get_subscenario_data(csv_file, **kwargs):
         for x in df.to_records(index=False)
     ]
 
-    return df.columns.tolist(), tuples_for_import
+    csv_columns = df.columns.tolist()
+    if cols_to_exclude is None:
+        cols_to_exclude = []
+    for c in cols_to_exclude:
+        csv_columns.remove(c)
+
+    return csv_columns, tuples_for_import
 
 
 def csv_to_subscenario_for_insertion(
