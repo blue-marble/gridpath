@@ -10,15 +10,16 @@ import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+from db.utilities.common_functions import get_subscenario_info
 
 
 def insert_into_database(
-        conn,
-        subscenario_data,
-        subproblems,
-        subproblem_stages,
-        subproblem_stage_timepoints,
-        subproblem_stage_timepoint_horizons
+    conn,
+    subscenario_data,
+    subproblems,
+    subproblem_stages,
+    subproblem_stage_timepoints,
+    subproblem_stage_timepoint_horizons
 ):
     """
 
@@ -34,6 +35,7 @@ def insert_into_database(
     :param subproblem_stage_timepoints: list of tuples
     :param subproblem_stage_timepoint_horizons: list of tuples
     """
+    print(subscenario_data)
 
     c = conn.cursor()
 
@@ -130,11 +132,11 @@ def load_from_csvs(conn, subscenario_directory):
 
     # Get the subscenario (id, name, description) data for insertion into the
     # subscenario table and the paths to the required input files
-    subscenario_data, [timepoints_file] = \
-        parse_subscenario_directory_contents(
-            subscenario_directory=subscenario_directory,
-            csv_file_names=["structure.csv"]
-        )
+    subscenario_data = get_subscenario_info(
+        dir_subsc=True, inputs_dir=subscenario_directory,
+        csv_file="structure.csv", project_flag=False,
+    )[0]
+    timepoints_file = os.path.join(subscenario_directory, "structure.csv")
 
     # Get the subscenario_id from the subscenario_data tuple
     subscenario_id = subscenario_data[0]
