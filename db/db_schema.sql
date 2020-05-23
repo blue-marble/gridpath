@@ -280,6 +280,9 @@ FOREIGN KEY (month) REFERENCES mod_months (month)
 -- subproblem can be a week and have days as horizons and another one
 -- can be a week and have the week as horizon), but will have to be same for
 -- each stage of a subproblem
+-- TODO: do they?
+-- TODO: we should add stage to this table, as the values of tmp_start and
+--  tmp_end can vary by stage; or should it be a separate auxiliary table
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
@@ -287,8 +290,8 @@ subproblem_id INTEGER,
 balancing_type_horizon VARCHAR(32),
 horizon VARCHAR(32),
 boundary VARCHAR(16),
--- tmp_start INTEGER, -- auxiliary for populating temporal_horizon_timepoints
--- tmp_end INTEGER, -- auxiliary for populating temporal_horizon_timepoints
+tmp_start INTEGER, -- auxiliary for populating temporal_horizon_timepoints
+tmp_end INTEGER, -- auxiliary for populating temporal_horizon_timepoints
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
              balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal

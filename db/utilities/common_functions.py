@@ -133,7 +133,6 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
     and subscenario_id, etc.) Note that the kwargs must be given in the
     order in which they appear in the database table we'll be inserting into.
     """
-    print(cols_to_exclude_str, type(cols_to_exclude_str))
 
     kwd_tuple = tuple()
     for kwd in kwargs.keys():

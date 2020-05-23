@@ -1,2 +1,2 @@
-subproblem_id,balancing_type_horizon,horizon,boundary
-1,day,202001,circular
+subproblem_id,balancing_type_horizon,horizon,boundary,tmp_start,tmp_end
+1,day,202001,circular,20200101,20200112

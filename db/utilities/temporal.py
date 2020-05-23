@@ -15,24 +15,13 @@ from db.utilities.common_functions import get_subscenario_info
 
 def insert_into_database(
     conn,
-    temporal_scenario_id,
-    subproblem_stage_timepoint_horizons
+    temporal_scenario_id
 ):
     """
 
     :param conn:
-    :param subscenario_data: tuple, (temporal_scenario_id, scenario_name,
-        scenario_description)
-    :param subproblems: list of tuples (subscenario_id,
-        subproblem_id)
-    :param subproblem_stages: list of tuples (subscenario_id,
-        subproblem_id, stage_id)
-    :param periods:
-    :param subproblem_horizons: list of tuples
-    :param subproblem_stage_timepoints: list of tuples
-    :param subproblem_stage_timepoint_horizons: list of tuples
+    :param temporal_scenario_id:
     """
-
     c = conn.cursor()
 
     # Subproblems
@@ -62,23 +51,52 @@ def insert_into_database(
                           data=(temporal_scenario_id, ), many=False)
 
     # TIMEPOINT HORIZONS
-    sid_bt_hr_sql = """
-        SELECT subproblem_id, balancing_type_horizon, horizon
+    sid_stg_bt_hr_sql = """
+        SELECT subproblem_id, stage_id, balancing_type_horizon, horizon
         FROM inputs_temporal_horizons
+        JOIN inputs_temporal_subproblems_stages
+        USING (temporal_scenario_id, subproblem_id)
         WHERE temporal_scenario_id = ?
         """
-    sid_bt_hr = c.execute(sid_bt_hr_sql, (temporal_scenario_id, ))
-    print(sid_bt_hr)
+    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (temporal_scenario_id,
+                                                  )).fetchall()
 
+    for (sid, stage, bt, hr) in sid_stg_bt_hr:
+        tmp_start, tmp_end = c.execute(
+            """SELECT tmp_start, tmp_end
+            FROM inputs_temporal_horizons
+            WHERE temporal_scenario_id = ?
+            AND subproblem_id = ?
+            AND balancing_type_horizon = ?
+            AND horizon = ?""",
+            (temporal_scenario_id, sid, bt, hr)
+        ).fetchone()
 
-    horizon_timepoints_sql = """
-        INSERT OR IGNORE INTO inputs_temporal_horizon_timepoints
-        (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
-        balancing_type_horizon, horizon)
-        VALUES (?, ?, ?, ?, ?, ?);
-        """
-    spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
-                          data=subproblem_stage_timepoint_horizons)
+        tmps = [
+            tmp for tmp in c.execute("""
+                SELECT timepoint
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = ?
+                AND subproblem_id = ?
+                AND stage_id = ?
+                AND timepoint >= ?
+                AND timepoint <= ?
+                """, (temporal_scenario_id, sid, stage, tmp_start, tmp_end)
+            ).fetchall()
+                ]
+
+        for tmp_tuple in tmps:
+            tmp = tmp_tuple[0]
+            horizon_timepoints_sql = """
+                INSERT OR IGNORE INTO inputs_temporal_horizon_timepoints
+                (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
+                balancing_type_horizon, horizon)
+                VALUES (?, ?, ?, ?, ?, ?);
+                """
+            spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
+                                  data=(temporal_scenario_id, sid, stage,
+                                        tmp, bt, hr),
+                                  many=False)
 
 
 def load_from_csvs(conn, subscenario_directory):
@@ -125,126 +143,12 @@ def load_from_csvs(conn, subscenario_directory):
         dir_subsc=True, inputs_dir=subscenario_directory,
         csv_file="structure.csv", project_flag=False,
     )[0]
-    timepoints_file = os.path.join(subscenario_directory, "structure.csv")
 
     # Get the subscenario_id from the subscenario_data tuple
     subscenario_id = subscenario_data[0]
 
-    # Load timepoints data into Pandas dataframe
-    # The subproblem, stage, and horizon information is also contained here
-    tmp_df = pd.read_csv(timepoints_file, delimiter=",")
-
-    # # SUBPROBLEMS
-    # # Get the data for the inputs_temporal_subproblems table from the
-    # # timepoints CSV
-    # subproblems_set = set(tmp_df["subproblem_id"])
-    # subproblems = [(subscenario_id, x) for x in subproblems_set]
-    #
-    # # STAGES
-    # # Get the data for the inputs_temporal_subproblems_stages table from the
-    # # timepoints CSV
-    # subproblem_stages_set = \
-    #     set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
-    # subproblem_stages = [(subscenario_id, ) + x for x in subproblem_stages_set]
-    #
-    # # PERIODS
-    # # Load periods data into Pandas dataframe
-    # prd_df = pd.read_csv(periods_file, delimiter=",")
-    #
-    # # Check if the periods are unique
-    # if prd_df["period"].duplicated().any():
-    #     warnings.warn("""Duplicate periods found in period_params.csv in {}.
-    #                       Periods must be unique.""".format(
-    #         subscenario_directory))
-    #
-    # # Check if the set of periods in period_params.csv is the same as the set of
-    # # periods assigned to timepoints in structure.csv.
-    # tmp_periods = set(tmp_df["period"])
-    # period_set = set(prd_df["period"])
-    #
-    # if tmp_periods != period_set:
-    #     warnings.warn("""The set of periods in structure.csv and
-    #                       period_params.csv are not the same in {}. Check your
-    #                       data.""".format(subscenario_directory))
-    #
-    # periods = [
-    #     (subscenario_id,) + tuple(x) for x in prd_df.to_records(index=False)
-    # ]
-
-    # # HORIZONS
-    # # Load horizons data into Pandas dataframe
-    # hrz_df = pd.read_csv(horizons_file, delimiter=",")
-    #
-    # # Check if balancing_type-horizons are unique
-    # if hrz_df.duplicated(["balancing_type_horizon", "horizon"]).any():
-    #     warnings.warn("""Duplicate balancing_type-horizons found in
-    #         horizon_params.csv in {}. Horizons must be unique within each
-    #         balancing type.""".format(subscenario_directory))
-    #
-    # # Check if the set of balancing_type-horizons in horizon_params.csv is the same
-    # # as the set of balancing_type-horizon assigned to timepoints in
-    # # structure.csv.
-    # # Get unique balancing types (which we'll use to find the right columns
-    # # in structure.csv)
-    # balancing_types = hrz_df["balancing_type_horizon"].unique()
-    #
-    # for bt in balancing_types:
-    #     timepoints_csv_column = "horizon_{}".format(bt)
-    #     tmp_horizons = set(tmp_df[timepoints_csv_column])
-    #     horizon_set = set(
-    #         hrz_df.loc[
-    #             hrz_df["balancing_type_horizon"] == bt,
-    #             "horizon"
-    #         ]
-    #     )
-    #
-    #     if tmp_horizons != horizon_set:
-    #         warnings.warn(
-    #             """The set of horizons in structure.csv and
-    #             horizon_params.csv for balancing type {} are not the same in
-    #             {}. Check your data.""".format(bt, subscenario_directory)
-    #         )
-    #
-    # subproblem_horizons = [
-    #     (subscenario_id,) + tuple(x) for x in hrz_df.to_records(index=False)
-    # ]
-
-
-    # TIMEPOINT HORIZONS
-    horizon_columns = [
-        i for i in tmp_df.columns if i.startswith("horizon")
-    ]
-
-    hrz_tmp_dfs_list = list()
-    for hrz_col in horizon_columns:
-        balancing_type = hrz_col.replace("horizon_", "")
-        # Must make bt_df a deepcopy of tmp_df to avoid this error
-        # https://stackoverflow.com/questions/44723183/set-value-to-an-entire-column-of-a-pandas-dataframe
-        bt_df = deepcopy(tmp_df[
-            ["subproblem_id", "stage_id", "timepoint", hrz_col]
-        ])
-        # Create a balancing_type_horizon column and set it to the current
-        # balancing type
-        bt_df["balancing_type_horizon"] = balancing_type
-        # Rename the horizon_balancing-type column of the dataframe
-        bt_df.rename(columns={hrz_col: "horizon"}, inplace=True)
-        # Change the order of the balancing_type_horizon and horizon columns
-        bt_df = bt_df[["subproblem_id", "stage_id", "timepoint",
-                      "balancing_type_horizon", "horizon"]]
-        # Append to the list of DFs we'll concatenate
-        hrz_tmp_dfs_list.append(bt_df)
-
-    hrz_tmp_df = pd.concat(hrz_tmp_dfs_list)
-
-    # Get the list of tuples to insert into the database
-    subproblem_stage_timepoint_horizons = [
-        (subscenario_id,) + tuple(x)
-        for x in hrz_tmp_df.to_records(index=False)
-    ]
-
     # INSERT OR IGNORE INTO THE DATABASE
     insert_into_database(
         conn=conn,
-        temporal_scenario_id=subscenario_id,
-        subproblem_stage_timepoint_horizons=subproblem_stage_timepoint_horizons
+        temporal_scenario_id=subscenario_id
     )
