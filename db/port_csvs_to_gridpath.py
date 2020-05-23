@@ -135,6 +135,7 @@ def load_csv_data(conn, csv_path, quiet):
             inputs_dir = os.path.join(csv_path, row["path"])
             project_flag = True if int(row["project_input"]) else False
             cols_to_exclude_str = str(row["cols_to_exclude_str"])
+            run_finalize = True if int(row["run_finalize"]) else False
             if row["subscenario_type"] == "simple":
                 db_util.read_all_csv_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
@@ -152,7 +153,6 @@ def load_csv_data(conn, csv_path, quiet):
                     skip_subscenario_info = False
                 else:
                     skip_subscenario_info = True
-                run_finalize = True if int(row["run_finalize"]) else False
                 db_util.read_all_dir_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,

@@ -11,7 +11,7 @@ import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
-from db.utilities.temporal import finalize_temporal as tmp_extra
+import db.utilities.custom_functions as custom
 
 
 # This will be deleted once we've dealt with scenarios and solver options
@@ -286,7 +286,7 @@ def get_subscenario_data_and_insert_into_db(
     # TODO: how to know we're done importing the basics for a subscenario
     #  and finalize it
     if subscenario == "temporal_scenario_id" and run_finalize:
-        tmp_extra(
+        getattr(custom, "finalize_temporal")(
             conn=conn,
             temporal_scenario_id=subscenario_tuples[0][0]
         )

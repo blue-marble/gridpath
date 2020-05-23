@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make temporal subscenarios.
+Custom functions for loading data from CSVs.
 """
 
 from db.common_functions import spin_on_database_lock
