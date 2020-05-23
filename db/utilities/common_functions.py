@@ -11,6 +11,7 @@ import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+from db.utilities.temporal import finalize_temporal as tmp_extra
 
 
 # This will be deleted once we've dealt with scenarios and solver options
@@ -243,7 +244,8 @@ def get_subscenario_description(input_dir, csv_filename):
 
 def get_subscenario_data_and_insert_into_db(
     conn, quiet, subscenario, table, dir_subsc, inputs_dir, csv_file,
-    use_project_method, skip_subscenario_info, cols_to_exclude_str
+    use_project_method, skip_subscenario_info, cols_to_exclude_str,
+    run_finalize
 ):
     """
     :param conn: database connection object
@@ -281,12 +283,20 @@ def get_subscenario_data_and_insert_into_db(
         skip_subscenario_info=skip_subscenario_info
     )
 
+    # TODO: how to know we're done importing the basics for a subscenario
+    #  and finalize it
+    if subscenario == "temporal_scenario_id" and run_finalize:
+        tmp_extra(
+            conn=conn,
+            temporal_scenario_id=subscenario_tuples[0][0]
+        )
+
 
 # ### Functions for loading single-CSV subscenarios ### #
 
 def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method,
-    cols_to_exclude_str
+    cols_to_exclude_str, run_finalize
 ):
     """
     :param conn: database connection object
@@ -295,6 +305,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     :param table: string
     :param inputs_dir: string
     :param use_project_method: boolean
+    :param cols_to_exclude_str: string
+    :param run_finalize: boolean
 
     Read data from all subscenario CSVs in a directory and insert them into
     the database.
@@ -319,7 +331,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             csv_file=csv_file,
             use_project_method=use_project_method,
             skip_subscenario_info=True,
-            cols_to_exclude_str=cols_to_exclude_str
+            cols_to_exclude_str=cols_to_exclude_str,
+            run_finalize=run_finalize
         )
 
 
@@ -357,7 +370,7 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 
 def read_all_dir_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, inputs_dir, subscenario, table, filename,
-    skip_subscenario_info, cols_to_exclude_str
+    skip_subscenario_info, cols_to_exclude_str, run_finalize
 ):
     """
     :param conn: database connection object
@@ -388,7 +401,8 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
             csv_file=filename,
             use_project_method=False,
             skip_subscenario_info=skip_subscenario_info,
-            cols_to_exclude_str=cols_to_exclude_str
+            cols_to_exclude_str=cols_to_exclude_str,
+            run_finalize=run_finalize
         )
 
 

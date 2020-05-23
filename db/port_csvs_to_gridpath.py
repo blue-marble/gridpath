@@ -41,7 +41,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util
-from db.utilities import temporal, scenario, solver_options
+from db.utilities import scenario, solver_options
 
 # Reserves list
 
@@ -143,7 +143,8 @@ def load_csv_data(conn, csv_path, quiet):
                     table=table,
                     inputs_dir=inputs_dir,
                     use_project_method=project_flag,
-                    cols_to_exclude_str=cols_to_exclude_str
+                    cols_to_exclude_str=cols_to_exclude_str,
+                    run_finalize=run_finalize
                 )
             elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
                 filename = row["filename"]
@@ -151,6 +152,7 @@ def load_csv_data(conn, csv_path, quiet):
                     skip_subscenario_info = False
                 else:
                     skip_subscenario_info = True
+                run_finalize = True if int(row["run_finalize"]) else False
                 db_util.read_all_dir_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,
@@ -159,33 +161,11 @@ def load_csv_data(conn, csv_path, quiet):
                     table=table,
                     filename=filename,
                     skip_subscenario_info=skip_subscenario_info,
-                    cols_to_exclude_str=cols_to_exclude_str
+                    cols_to_exclude_str=cols_to_exclude_str,
+                    run_finalize=run_finalize
                 )
-
         else:
             pass
-
-    ### CUSTOM LOADING ###
-    #### LOAD TEMPORAL DATA ####
-    # Handled differently, as a temporal_scenario_id involves multiple files
-    temporal_directory = db_util.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="temporal_scenario_id"
-    )
-    if temporal_directory is not None:
-        temporal_subscenario_directories = \
-            db_util.get_directory_subscenarios(
-                main_directory=temporal_directory,
-                quiet=quiet
-            )
-        for subscenario_directory in temporal_subscenario_directories:
-            temporal.load_from_csvs(
-                conn=conn, subscenario_directory=subscenario_directory
-            )
-    else:
-        print("ERROR: temporal_scenario_id is required")
-        sys.exit()
-
 
     #### LOAD SCENARIOS DATA ####
     scenarios_dir = db_util.get_inputs_dir(
