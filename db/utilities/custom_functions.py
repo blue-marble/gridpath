@@ -8,7 +8,7 @@ Custom functions for loading data from CSVs.
 from db.common_functions import spin_on_database_lock
 
 
-def finalize_temporal(
+def temporal(
     conn,
     temporal_scenario_id
 ):
