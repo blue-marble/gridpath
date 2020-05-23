@@ -2,20 +2,17 @@
 # Copyright 2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Custom functions for loading data from CSVs.
+Custom functions to be run after loading data from CSVs.
 """
 
 from db.common_functions import spin_on_database_lock
 
 
-def temporal(
-    conn,
-    temporal_scenario_id
-):
+def temporal(conn, subscenario_id):
     """
 
     :param conn:
-    :param temporal_scenario_id:
+    :param subscenario_id:
     """
     c = conn.cursor()
 
@@ -29,7 +26,7 @@ def temporal(
         """
     spin_on_database_lock(
         conn=conn, cursor=c, sql=subproblems_sql,
-        data=(temporal_scenario_id,), many=False
+        data=(subscenario_id,), many=False
     )
 
     # Stages
@@ -43,7 +40,7 @@ def temporal(
         WHERE temporal_scenario_id = ?;
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=stages_sql,
-                          data=(temporal_scenario_id, ), many=False)
+                          data=(subscenario_id,), many=False)
 
     # TIMEPOINT HORIZONS
     sid_stg_bt_hr_sql = """
@@ -53,7 +50,7 @@ def temporal(
         USING (temporal_scenario_id, subproblem_id)
         WHERE temporal_scenario_id = ?
         """
-    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (temporal_scenario_id,
+    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (subscenario_id,
                                                   )).fetchall()
 
     for (sid, stage, bt, hr) in sid_stg_bt_hr:
@@ -64,7 +61,7 @@ def temporal(
             AND subproblem_id = ?
             AND balancing_type_horizon = ?
             AND horizon = ?""",
-            (temporal_scenario_id, sid, bt, hr)
+            (subscenario_id, sid, bt, hr)
         ).fetchone()
 
         tmps = [
@@ -76,7 +73,7 @@ def temporal(
                 AND stage_id = ?
                 AND timepoint >= ?
                 AND timepoint <= ?
-                """, (temporal_scenario_id, sid, stage, tmp_start, tmp_end)
+                """, (subscenario_id, sid, stage, tmp_start, tmp_end)
             ).fetchall()
                 ]
 
@@ -89,6 +86,6 @@ def temporal(
                 VALUES (?, ?, ?, ?, ?, ?);
                 """
             spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
-                                  data=(temporal_scenario_id, sid, stage,
+                                  data=(subscenario_id, sid, stage,
                                         tmp, bt, hr),
                                   many=False)
