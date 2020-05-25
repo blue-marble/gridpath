@@ -3397,6 +3397,91 @@ LEFT JOIN subscenarios_options_solver USING (solver_options_id)
 ;
 
 
+DROP VIEW IF EXISTS project_new_possible_periods;
+CREATE VIEW project_new_possible_periods as
+-- recursive CTE, see
+-- https://stackoverflow.com/questions/45104717/sql-to-generate-a-number
+-- between-range-specified-by-columns
+WITH main_data (project, project_new_cost_scenario_id, period, highrange)
+    AS (SELECT project, project_new_cost_scenario_id,
+           vintage peirod,
+           (vintage + lifetime_yrs) as highrange
+    FROM   inputs_project_new_cost
+    UNION ALL
+    SELECT project, project_new_cost_scenario_id,
+           period + 1 period,
+           highrange
+    FROM   main_data
+    WHERE  period < highrange - 1)
+SELECT distinct project_new_cost_scenario_id, project, period
+FROM main_data
+ORDER BY project_new_cost_scenario_id, project, period
+;
+
+
+DROP VIEW IF EXISTS project_operational_periods;
+CREATE VIEW project_operational_periods AS
+SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, project, period
+FROM
+    (SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
+    FROM inputs_project_specified_capacity
+    LEFT JOIN project_new_possible_periods USING(project, period)
+    UNION ALL
+    SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id, project, period
+    FROM project_new_possible_periods
+    LEFT JOIN inputs_project_specified_capacity USING(project, period)
+    where project_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_project_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+ORDER BY project_specified_capacity_scenario_id,
+project_new_cost_scenario_id, temporal_scenario_id, project, period
+;
+
+-- TODO: this isn't necessary if the periods column in the
+-- inputs_temporal_horizons table is properly filled out (currently it's not)
+DROP VIEW IF EXISTS periods_horizons;
+CREATE VIEW periods_horizons AS
+SELECT DISTINCT
+temporal_scenario_id, balancing_type_horizon, period, horizon
+FROM inputs_temporal_timepoints
+INNER JOIN
+inputs_temporal_horizon_timepoints
+USING (temporal_scenario_id, timepoint)
+ORDER BY temporal_scenario_id, balancing_type_horizon, period, horizon
+;
+
+
+DROP VIEW IF EXISTS project_portfolio_opchars;
+CREATE VIEW project_portfolio_opchars AS
+SELECT * FROM inputs_project_portfolios
+INNER JOIN
+inputs_project_operational_chars
+USING (project)
+;
+
+
+DROP VIEW IF EXISTS project_periods_horizons;
+CREATE VIEW project_periods_horizons AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+temporal_scenario_id, project, period, horizon
+FROM inputs_project_portfolios
+LEFT OUTER JOIN
+periods_horizons
+ON (project_periods_horizons.balancing_type_project
+= periods_horizons.balancing_type_horizon)
+ORDER BY project_portfolio_scenario_id, project_operational_chars_scenario_id,
+temporal_scenario_id, project, period, horizon
+;
+
+
+
+
 -------------------------------------------------------------------------------
 ------------------------------ User Interface ---------------------------------
 -------------------------------------------------------------------------------
