@@ -2551,7 +2551,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     c2 = conn.cursor()
     tmp_durations = c2.execute(
         """SELECT number_of_hours_in_timepoint
-           FROM inputs_temporal_timepoints
+           FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
            AND stage_id = {};""".format(

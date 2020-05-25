@@ -238,7 +238,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
            number_of_hours_in_timepoint, previous_stage_timepoint_map, month
-           FROM inputs_temporal_timepoints
+           FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
            AND stage_id = {};""".format(

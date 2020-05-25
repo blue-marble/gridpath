@@ -10,6 +10,7 @@ import pandas as pd
 import warnings
 
 from db.common_functions import spin_on_database_lock
+import db.utilities.custom_functions as custom
 
 
 # This will be deleted once we've dealt with scenarios and solver options
@@ -118,9 +119,10 @@ def get_subscenario_info(
     return subsc_tuples
 
 
-def get_subscenario_data(csv_file, **kwargs):
+def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
     """
     :param csv_file: str, path to CSV file
+    :param cols_to_exclude_str:
     :return: list of header strings, list of tuples
 
     Get the CSV headers and convert the data from a CSV into a list of tuples
@@ -136,19 +138,37 @@ def get_subscenario_data(csv_file, **kwargs):
     for kwd in kwargs.keys():
         kwd_tuple += (kwargs[kwd], )
 
+    # Read the CSV
     df = pd.read_csv(csv_file, delimiter=",")
+    csv_columns = df.columns.tolist()
+
+    # Exclude some columns if directed to do so
+    if cols_to_exclude_str == "nan":
+        pass
+    else:
+        cols_to_exclude = [
+            i for i in csv_columns if i.startswith(cols_to_exclude_str)
+        ]
+        for c in cols_to_exclude:
+            csv_columns.remove(c)
+
+    # Make the dataframe with the correct columns
+    df = df[csv_columns]
+
+    # Convert to tuples
     tuples_for_import = [
         kwd_tuple + tuple(x)
         for x in df.to_records(index=False)
     ]
 
-    return df.columns.tolist(), tuples_for_import
+    return csv_columns, tuples_for_import
 
 
 def csv_to_subscenario_for_insertion(
-    dir_subsc, inputs_dir, csv_file, project_flag
+    dir_subsc, inputs_dir, csv_file, project_flag, cols_to_exclude_str
 ):
     """
+    :param dir_subsc: boolean;
     :param inputs_dir: string; the directory where the CSV is located
     :param csv_file: string; the name of the CSV file
     :param project_flag: boolean; whether this is a project-level subscenario
@@ -176,7 +196,9 @@ def csv_to_subscenario_for_insertion(
         subscenario_id = subsc_tuples[0][0]
         csv_headers, data_tuples = \
             get_subscenario_data(
-                csv_file=csv_file_path, subscenario_id=subscenario_id
+                csv_file=csv_file_path,
+                cols_to_exclude_str=cols_to_exclude_str,
+                subscenario_id=subscenario_id
             )
     else:
         # We need the project and subscenario ID as keyword arguments to
@@ -189,6 +211,7 @@ def csv_to_subscenario_for_insertion(
         csv_headers, data_tuples = \
             get_subscenario_data(
                 csv_file=csv_file_path,
+                cols_to_exclude_str=cols_to_exclude_str,
                 project=project, subscenario_id=subscenario_id,
             )
 
@@ -220,7 +243,8 @@ def get_subscenario_description(input_dir, csv_filename):
 
 def get_subscenario_data_and_insert_into_db(
     conn, quiet, subscenario, table, dir_subsc, inputs_dir, csv_file,
-    use_project_method, skip_subscenario_info
+    use_project_method, skip_subscenario_info, cols_to_exclude_str,
+    custom_method
 ):
     """
     :param conn: database connection object
@@ -231,6 +255,7 @@ def get_subscenario_data_and_insert_into_db(
     :param csv_file: string
     :param use_project_method: boolean
     :param skip_subscenario_info: boolean
+    :param custom_method: string
 
     Read the data for a subscenario, convert it to tuples, and insert into the
     database.
@@ -243,7 +268,8 @@ def get_subscenario_data_and_insert_into_db(
             dir_subsc=dir_subsc,
             inputs_dir=inputs_dir,
             csv_file=csv_file,
-            project_flag=use_project_method
+            project_flag=use_project_method,
+            cols_to_exclude_str=cols_to_exclude_str
         )
 
     generic_insert_subscenario(
@@ -257,11 +283,19 @@ def get_subscenario_data_and_insert_into_db(
         skip_subscenario_info=skip_subscenario_info
     )
 
+    # If a custom method is requsted, run it here to finalize the subscenario
+    if custom_method != "nan":
+        getattr(custom, custom_method)(
+            conn=conn,
+            subscenario_id=subscenario_tuples[0][0]
+        )
+
 
 # ### Functions for loading single-CSV subscenarios ### #
 
 def read_all_csv_subscenarios_from_dir_and_insert_into_db(
-    conn, quiet, subscenario, table, inputs_dir, use_project_method
+    conn, quiet, subscenario, table, inputs_dir, use_project_method,
+    cols_to_exclude_str, custom_method
 ):
     """
     :param conn: database connection object
@@ -270,6 +304,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     :param table: string
     :param inputs_dir: string
     :param use_project_method: boolean
+    :param cols_to_exclude_str: string
+    :param custom_method: boolean
 
     Read data from all subscenario CSVs in a directory and insert them into
     the database.
@@ -293,7 +329,9 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             use_project_method=use_project_method,
-            skip_subscenario_info=True
+            skip_subscenario_info=True,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
         )
 
 
@@ -330,7 +368,8 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 
 
 def read_all_dir_subscenarios_from_dir_and_insert_into_db(
-    conn, quiet, inputs_dir, subscenario, table, filename, skip_subscenario_info
+    conn, quiet, inputs_dir, subscenario, table, filename,
+    skip_subscenario_info, cols_to_exclude_str, custom_method
 ):
     """
     :param conn: database connection object
@@ -360,7 +399,9 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=subscenario_directory,
             csv_file=filename,
             use_project_method=False,
-            skip_subscenario_info=skip_subscenario_info
+            skip_subscenario_info=skip_subscenario_info,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
         )
 
 

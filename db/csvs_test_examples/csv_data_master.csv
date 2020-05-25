@@ -1,87 +1,90 @@
-feature,subscenario,table,subscenario_type,project_input,required,include,path,filename,notes
-core,scenarios,scenarios,custom,0,1,1,scenarios,,
-core,solver_options_id,solver,custom,0,1,1,solver,,requires both solver options and description csvs
-core,temporal_scenario_id,temporal,custom,0,1,1,temporal,,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
-core,project_portfolio_scenario_id,project_portfolios,simple,0,1,1,project/project_portfolios,,
-core,project_operational_chars_scenario_id,project_operational_chars,simple,0,1,1,project/project_operational_chars,,
-core,load_scenario_id,system_load,simple,0,1,1,system_load/system_load,,
-core,load_zone_scenario_id,geography_load_zones,simple,0,1,1,system_load/load_zones,,
-core,project_load_zone_scenario_id,project_load_zones,simple,0,1,1,project/project_load_zones,,
-data_dependent,project_specified_capacity_scenario_id,project_specified_capacity,simple,0,0,1,project/project_specified_capacity,,
-data_dependent,project_specified_fixed_cost_scenario_id,project_specified_fixed_cost,simple,0,0,1,project/project_specified_fixed_cost,,
-data_dependent,project_new_cost_scenario_id,project_new_cost,simple,0,0,1,project/project_new_cost,,
-data_dependent,project_new_potential_scenario_id,project_new_potential,simple,0,0,1,project/project_new_potential,,
-data_dependent,project_new_binary_build_size_scenario_id,project_new_binary_build_size,simple,0,0,1,project/project_new_binary_build_size,,
-data_dependent,project_capacity_group_requirement_scenario_id,project_capacity_group_requirements,simple,0,0,1,project/project_capacity_groups/requirements,,
-data_dependent,project_capacity_group_scenario_id,project_capacity_groups,simple,0,0,1,project/project_capacity_groups/projects,,
-data_dependent,heat_rate_curves_scenario_id,project_heat_rate_curves,simple,1,0,1,project/project_heat_rate_curves,,Selected in inputs_project_operational_chars table
-data_dependent,variable_om_curves_scenario_id,project_variable_om_curves,simple,1,0,1,project/project_variable_om_curves,,Selected in inputs_project_operational_chars table
-data_dependent,startup_chars_scenario_id,project_startup_chars,simple,1,0,1,project/project_startup_chars,,Selected in inputs_project_operational_chars table
-data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,simple,1,0,1,project/project_hydro_operational_chars,,Selected in inputs_project_operational_chars table
-data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,simple,1,0,1,project/project_variable_generator_profiles,,Selected in inputs_project_operational_chars table
-data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,simple,0,0,0,,,not implemented yet in csvs import; selected via inputs_project_new_costs table
-data_dependent,project_availability_scenario_id,project_availability,simple,0,0,1,project/project_availability/project_availability_types,,
-data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,simple,1,0,1,project/project_availability/project_availability_endogenous,,Selected in inputs_project_availability_types table
-data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,simple,1,0,1,project/project_availability/project_availability_exogenous,,Selected in inputs_project_availability_types table
-fuels,fuel_scenario_id,project_fuels,simple,0,0,1,fuels/project_fuels,,
-fuels,fuel_price_scenario_id,project_fuel_prices,simple,0,0,1,fuels/project_fuel_prices,,
-transmission,transmission_portfolio_scenario_id,transmission_portfolios,simple,0,0,1,transmission/transmission_portfolios,,
-transmission,transmission_load_zone_scenario_id,transmission_load_zones,simple,0,0,1,transmission/transmission_load_zones,,
-transmission,transmission_specified_capacity_scenario_id,transmission_specified_capacity,simple,0,0,1,transmission/transmission_specified_capacity,,
-transmission,transmission_operational_chars_scenario_id,transmission_operational_chars,simple,0,0,1,transmission/transmission_operational_chars,,
-transmission,transmission_new_cost_scenario_id,transmission_new_cost,simple,0,0,1,transmission/transmission_new_cost,,
-transmission_hurdle_rates,transmission_hurdle_rate_scenario_id,transmission_hurdle_rates,simple,0,0,1,transmission/transmission_hurdle_rates,,
-simultaneous_flow_limits,transmission_simultaneous_flow_limit_scenario_id,transmission_simultaneous_flow_limits,simple,0,0,1,transmission/simultaneous_flow_limits/limits,,
-simultaneous_flow_limits,transmission_simultaneous_flow_limit_line_group_scenario_id,transmission_simultaneous_flow_limit_line_groups,simple,0,0,1,transmission/simultaneous_flow_limits/line_groups,,
-lf_reserves_up,lf_reserves_up_ba_scenario_id,geography_lf_reserves_up_bas,simple,0,0,1,reserves/lf_reserves_up/geography_lf_reserves_up_bas,,
-lf_reserves_up,project_lf_reserves_up_ba_scenario_id,project_lf_reserves_up_bas,simple,0,0,1,reserves/lf_reserves_up/project_lf_reserves_up_bas,,
-lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up,dir_main,0,0,1,reserves/lf_reserves_up/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up_percent,dir_aux,0,0,1,reserves/lf_reserves_up/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up_percent_lz_map,dir_aux,0,0,1,reserves/lf_reserves_up/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-lf_reserves_down,lf_reserves_down_ba_scenario_id,geography_lf_reserves_down_bas,simple,0,0,1,reserves/lf_reserves_down/geography_lf_reserves_down_bas,,
-lf_reserves_down,project_lf_reserves_down_ba_scenario_id,project_lf_reserves_down_bas,simple,0,0,1,reserves/lf_reserves_down/project_lf_reserves_down_bas,,
-lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down,dir_main,0,0,1,reserves/lf_reserves_down/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down_percent,dir_aux,0,0,1,reserves/lf_reserves_down/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down_percent_lz_map,dir_aux,0,0,1,reserves/lf_reserves_down/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-regulation_up,regulation_up_ba_scenario_id,geography_regulation_up_bas,simple,0,0,1,reserves/regulation_up/geography_regulation_up_bas,,
-regulation_up,project_regulation_up_ba_scenario_id,project_regulation_up_bas,simple,0,0,1,reserves/regulation_up/project_regulation_up_bas,,
-regulation_up,regulation_up_scenario_id,system_regulation_up,dir_main,0,0,1,reserves/regulation_up/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-regulation_up,regulation_up_scenario_id,system_regulation_up_percent,dir_aux,0,0,1,reserves/regulation_up/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-regulation_up,regulation_up_scenario_id,system_regulation_up_percent_lz_map,dir_aux,0,0,1,reserves/regulation_up/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-regulation_down,regulation_down_ba_scenario_id,geography_regulation_down_bas,simple,0,0,1,reserves/regulation_down/geography_regulation_down_bas,,
-regulation_down,project_regulation_down_ba_scenario_id,project_regulation_down_bas,simple,0,0,1,reserves/regulation_down/project_regulation_down_bas,,
-regulation_down,regulation_down_scenario_id,system_regulation_down,dir_main,0,0,1,reserves/regulation_down/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-regulation_down,regulation_down_scenario_id,system_regulation_down_percent,dir_aux,0,0,1,reserves/regulation_down/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-regulation_down,regulation_down_scenario_id,system_regulation_down_percent_lz_map,dir_aux,0,0,1,reserves/regulation_down/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-frequency_response,frequency_response_ba_scenario_id,geography_frequency_response_bas,simple,0,0,1,reserves/frequency_response/geography_frequency_response_bas,,
-frequency_response,project_frequency_response_ba_scenario_id,project_frequency_response_bas,simple,0,0,1,reserves/frequency_response/project_frequency_response_bas,,
-frequency_response,frequency_response_scenario_id,system_frequency_response,dir_main,0,0,1,reserves/frequency_response/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-frequency_response,frequency_response_scenario_id,system_frequency_response_percent,dir_aux,0,0,1,reserves/frequency_response/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-frequency_response,frequency_response_scenario_id,system_frequency_response_percent_lz_map,dir_aux,0,0,1,reserves/frequency_response/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-spinning_reserves,spinning_reserves_ba_scenario_id,geography_spinning_reserves_bas,simple,0,0,1,reserves/spinning_reserves/geography_spinning_reserves_bas,,
-spinning_reserves,project_spinning_reserves_ba_scenario_id,project_spinning_reserves_bas,simple,0,0,1,reserves/spinning_reserves/project_spinning_reserves_bas,,
-spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves,dir_main,0,0,1,reserves/spinning_reserves/req,timepoint.csv,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
-spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves_percent,dir_aux,0,0,1,reserves/spinning_reserves/req,percentage.csv,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
-spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves_percent_lz_map,dir_aux,0,0,1,reserves/spinning_reserves/req,percentage_load_zone_map.csv,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
-rps,rps_zone_scenario_id,geography_rps_zones,simple,0,0,1,policy/rps/geography_rps_zones,,
-rps,project_rps_zone_scenario_id,project_rps_zones,simple,0,0,1,policy/rps/project_rps_zones,,
-rps,rps_target_scenario_id,system_rps_targets,dir_main,0,0,1,policy/rps/system_rps_targets,targets.csv,
-rps,rps_target_scenario_id,system_rps_target_load_zone_map,dir_aux,0,0,1,policy/rps/system_rps_targets,load_zone_mapping.csv,
-carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,simple,0,0,1,policy/carbon_cap/geography_carbon_cap_zones,,
-carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,simple,0,0,1,policy/carbon_cap/project_carbon_cap_zones,,
-carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,simple,0,0,1,policy/carbon_cap/system_carbon_cap_targets,,
-track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,simple,0,0,1,policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones,,
-prm,prm_zone_scenario_id,geography_prm_zones,simple,0,0,1,reliability/prm/geography_prm_zones,,
-prm,project_prm_zone_scenario_id,project_prm_zones,simple,0,0,1,reliability/prm/project_prm_zones,,
-prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,0,0,1,reliability/prm/project_elcc_chars,,
-prm,prm_energy_only_scenario_id,project_prm_energy_only,simple,0,0,1,reliability/prm/project_prm_energy_only,,
-prm,prm_requirement_scenario_id,system_prm_requirement,simple,0,0,1,reliability/prm/system_prm_requirement,,
-elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,dir_main,0,0,1,reliability/prm/elcc_surface,zone_intercepts.csv,Tables include inputs_system_prm_zone_elcc_surface and inputs_project_elcc_surface
-elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface_prm_load,dir_aux,0,0,1,reliability/prm/elcc_surface,zone_peak_and_annual_load.csv,
-elcc_surface,elcc_surface_scenario_id,project_elcc_surface,dir_aux,0,0,1,reliability/prm/elcc_surface,project_coefficients.csv,
-elcc_surface,elcc_surface_scenario_id,project_elcc_surface_cap_factors,dir_aux,0,0,1,reliability/prm/elcc_surface,project_cap_factors.csv,
-local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,simple,0,0,1,reliability/local_capacity/geography_local_capacity_zones,,
-local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,simple,0,0,1,reliability/local_capacity/project_local_capacity_zones,,
-local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,simple,0,0,1,reliability/local_capacity/project_local_capacity_chars,,
-local_capacity,local_capacity_requirement_scenario_id,system_local_capacity_requirement,simple,0,0,1,reliability/local_capacity/system_local_capacity_requirement,,
-tuning,tuning_scenario_id,tuning,custom,0,0,0,tuning,,
+feature,subscenario,table,subscenario_type,custom_method,project_input,required,include,path,filename,cols_to_exclude_str,notes
+core,scenarios,scenarios,custom,,0,1,1,scenarios,,,
+core,solver_options_id,solver,custom,,0,1,1,solver,,,requires both solver options and description csvs
+core,temporal_scenario_id,temporal,dir_main,,0,1,1,temporal,structure.csv,horizon,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
+core,temporal_scenario_id,temporal_periods,dir_aux,,0,1,1,temporal,period_params.csv,,
+core,temporal_scenario_id,temporal_horizons,dir_aux,,0,1,1,temporal,horizon_params.csv,,
+core,temporal_scenario_id,temporal_horizon_timepoints_start_end,dir_aux,temporal,0,1,1,temporal,horizon_timepoints.csv,,
+core,project_portfolio_scenario_id,project_portfolios,simple,,0,1,1,project/project_portfolios,,,
+core,project_operational_chars_scenario_id,project_operational_chars,simple,,0,1,1,project/project_operational_chars,,,
+core,load_scenario_id,system_load,simple,,0,1,1,system_load/system_load,,,
+core,load_zone_scenario_id,geography_load_zones,simple,,0,1,1,system_load/load_zones,,,
+core,project_load_zone_scenario_id,project_load_zones,simple,,0,1,1,project/project_load_zones,,,
+data_dependent,project_specified_capacity_scenario_id,project_specified_capacity,simple,,0,0,1,project/project_specified_capacity,,,
+data_dependent,project_specified_fixed_cost_scenario_id,project_specified_fixed_cost,simple,,0,0,1,project/project_specified_fixed_cost,,,
+data_dependent,project_new_cost_scenario_id,project_new_cost,simple,,0,0,1,project/project_new_cost,,,
+data_dependent,project_new_potential_scenario_id,project_new_potential,simple,,0,0,1,project/project_new_potential,,,
+data_dependent,project_new_binary_build_size_scenario_id,project_new_binary_build_size,simple,,0,0,1,project/project_new_binary_build_size,,,
+data_dependent,project_capacity_group_requirement_scenario_id,project_capacity_group_requirements,simple,,0,0,1,project/project_capacity_groups/requirements,,,
+data_dependent,project_capacity_group_scenario_id,project_capacity_groups,simple,,0,0,1,project/project_capacity_groups/projects,,,
+data_dependent,heat_rate_curves_scenario_id,project_heat_rate_curves,simple,,1,0,1,project/project_heat_rate_curves,,,Selected in inputs_project_operational_chars table
+data_dependent,variable_om_curves_scenario_id,project_variable_om_curves,simple,,1,0,1,project/project_variable_om_curves,,,Selected in inputs_project_operational_chars table
+data_dependent,startup_chars_scenario_id,project_startup_chars,simple,,1,0,1,project/project_startup_chars,,,Selected in inputs_project_operational_chars table
+data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,simple,,1,0,1,project/project_hydro_operational_chars,,,Selected in inputs_project_operational_chars table
+data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,simple,,1,0,1,project/project_variable_generator_profiles,,,Selected in inputs_project_operational_chars table
+data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,simple,,0,0,0,,,,not implemented yet in csvs import; selected via inputs_project_new_costs table
+data_dependent,project_availability_scenario_id,project_availability,simple,,0,0,1,project/project_availability/project_availability_types,,,
+data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,simple,,1,0,1,project/project_availability/project_availability_endogenous,,,Selected in inputs_project_availability_types table
+data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,simple,,1,0,1,project/project_availability/project_availability_exogenous,,,Selected in inputs_project_availability_types table
+fuels,fuel_scenario_id,project_fuels,simple,,0,0,1,fuels/project_fuels,,,
+fuels,fuel_price_scenario_id,project_fuel_prices,simple,,0,0,1,fuels/project_fuel_prices,,,
+transmission,transmission_portfolio_scenario_id,transmission_portfolios,simple,,0,0,1,transmission/transmission_portfolios,,,
+transmission,transmission_load_zone_scenario_id,transmission_load_zones,simple,,0,0,1,transmission/transmission_load_zones,,,
+transmission,transmission_specified_capacity_scenario_id,transmission_specified_capacity,simple,,0,0,1,transmission/transmission_specified_capacity,,,
+transmission,transmission_operational_chars_scenario_id,transmission_operational_chars,simple,,0,0,1,transmission/transmission_operational_chars,,,
+transmission,transmission_new_cost_scenario_id,transmission_new_cost,simple,,0,0,1,transmission/transmission_new_cost,,,
+transmission_hurdle_rates,transmission_hurdle_rate_scenario_id,transmission_hurdle_rates,simple,,0,0,1,transmission/transmission_hurdle_rates,,,
+simultaneous_flow_limits,transmission_simultaneous_flow_limit_scenario_id,transmission_simultaneous_flow_limits,simple,,0,0,1,transmission/simultaneous_flow_limits/limits,,,
+simultaneous_flow_limits,transmission_simultaneous_flow_limit_line_group_scenario_id,transmission_simultaneous_flow_limit_line_groups,simple,,0,0,1,transmission/simultaneous_flow_limits/line_groups,,,
+lf_reserves_up,lf_reserves_up_ba_scenario_id,geography_lf_reserves_up_bas,simple,,0,0,1,reserves/lf_reserves_up/geography_lf_reserves_up_bas,,,
+lf_reserves_up,project_lf_reserves_up_ba_scenario_id,project_lf_reserves_up_bas,simple,,0,0,1,reserves/lf_reserves_up/project_lf_reserves_up_bas,,,
+lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up,dir_main,,0,0,1,reserves/lf_reserves_up/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up_percent,dir_aux,,0,0,1,reserves/lf_reserves_up/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+lf_reserves_up,lf_reserves_up_scenario_id,system_lf_reserves_up_percent_lz_map,dir_aux,,0,0,1,reserves/lf_reserves_up/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+lf_reserves_down,lf_reserves_down_ba_scenario_id,geography_lf_reserves_down_bas,simple,,0,0,1,reserves/lf_reserves_down/geography_lf_reserves_down_bas,,,
+lf_reserves_down,project_lf_reserves_down_ba_scenario_id,project_lf_reserves_down_bas,simple,,0,0,1,reserves/lf_reserves_down/project_lf_reserves_down_bas,,,
+lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down,dir_main,,0,0,1,reserves/lf_reserves_down/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down_percent,dir_aux,,0,0,1,reserves/lf_reserves_down/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+lf_reserves_down,lf_reserves_down_scenario_id,system_lf_reserves_down_percent_lz_map,dir_aux,,0,0,1,reserves/lf_reserves_down/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+regulation_up,regulation_up_ba_scenario_id,geography_regulation_up_bas,simple,,0,0,1,reserves/regulation_up/geography_regulation_up_bas,,,
+regulation_up,project_regulation_up_ba_scenario_id,project_regulation_up_bas,simple,,0,0,1,reserves/regulation_up/project_regulation_up_bas,,,
+regulation_up,regulation_up_scenario_id,system_regulation_up,dir_main,,0,0,1,reserves/regulation_up/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+regulation_up,regulation_up_scenario_id,system_regulation_up_percent,dir_aux,,0,0,1,reserves/regulation_up/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+regulation_up,regulation_up_scenario_id,system_regulation_up_percent_lz_map,dir_aux,,0,0,1,reserves/regulation_up/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+regulation_down,regulation_down_ba_scenario_id,geography_regulation_down_bas,simple,,0,0,1,reserves/regulation_down/geography_regulation_down_bas,,,
+regulation_down,project_regulation_down_ba_scenario_id,project_regulation_down_bas,simple,,0,0,1,reserves/regulation_down/project_regulation_down_bas,,,
+regulation_down,regulation_down_scenario_id,system_regulation_down,dir_main,,0,0,1,reserves/regulation_down/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+regulation_down,regulation_down_scenario_id,system_regulation_down_percent,dir_aux,,0,0,1,reserves/regulation_down/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+regulation_down,regulation_down_scenario_id,system_regulation_down_percent_lz_map,dir_aux,,0,0,1,reserves/regulation_down/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+frequency_response,frequency_response_ba_scenario_id,geography_frequency_response_bas,simple,,0,0,1,reserves/frequency_response/geography_frequency_response_bas,,,
+frequency_response,project_frequency_response_ba_scenario_id,project_frequency_response_bas,simple,,0,0,1,reserves/frequency_response/project_frequency_response_bas,,,
+frequency_response,frequency_response_scenario_id,system_frequency_response,dir_main,,0,0,1,reserves/frequency_response/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+frequency_response,frequency_response_scenario_id,system_frequency_response_percent,dir_aux,,0,0,1,reserves/frequency_response/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+frequency_response,frequency_response_scenario_id,system_frequency_response_percent_lz_map,dir_aux,,0,0,1,reserves/frequency_response/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+spinning_reserves,spinning_reserves_ba_scenario_id,geography_spinning_reserves_bas,simple,,0,0,1,reserves/spinning_reserves/geography_spinning_reserves_bas,,,
+spinning_reserves,project_spinning_reserves_ba_scenario_id,project_spinning_reserves_bas,simple,,0,0,1,reserves/spinning_reserves/project_spinning_reserves_bas,,,
+spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves,dir_main,,0,0,1,reserves/spinning_reserves/req,timepoint.csv,,Contains timepoint-level reserve requirement specifications for each BA that has them. Can be blank (header only).
+spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves_percent,dir_aux,,0,0,1,reserves/spinning_reserves/req,percentage.csv,,Contains the percent of load requirement specification for each BA that has it. Can be blank (header only).
+spinning_reserves,spinning_reserves_scenario_id,system_spinning_reserves_percent_lz_map,dir_aux,,0,0,1,reserves/spinning_reserves/req,percentage_load_zone_map.csv,,Contains the BA-to-load_zones mapping for the percentage requirement. Can be blank (header only).
+rps,rps_zone_scenario_id,geography_rps_zones,simple,,0,0,1,policy/rps/geography_rps_zones,,,
+rps,project_rps_zone_scenario_id,project_rps_zones,simple,,0,0,1,policy/rps/project_rps_zones,,,
+rps,rps_target_scenario_id,system_rps_targets,dir_main,,0,0,1,policy/rps/system_rps_targets,targets.csv,,
+rps,rps_target_scenario_id,system_rps_target_load_zone_map,dir_aux,,0,0,1,policy/rps/system_rps_targets,load_zone_mapping.csv,,
+carbon_cap,carbon_cap_zone_scenario_id,geography_carbon_cap_zones,simple,,0,0,1,policy/carbon_cap/geography_carbon_cap_zones,,,
+carbon_cap,project_carbon_cap_zone_scenario_id,project_carbon_cap_zones,simple,,0,0,1,policy/carbon_cap/project_carbon_cap_zones,,,
+carbon_cap,carbon_cap_target_scenario_id,system_carbon_cap_targets,simple,,0,0,1,policy/carbon_cap/system_carbon_cap_targets,,,
+track_carbon_imports,transmission_carbon_cap_zone_scenario_id,transmission_carbon_cap_zones,simple,,0,0,1,policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones,,,
+prm,prm_zone_scenario_id,geography_prm_zones,simple,,0,0,1,reliability/prm/geography_prm_zones,,,
+prm,project_prm_zone_scenario_id,project_prm_zones,simple,,0,0,1,reliability/prm/project_prm_zones,,,
+prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,,0,0,1,reliability/prm/project_elcc_chars,,,
+prm,prm_energy_only_scenario_id,project_prm_energy_only,simple,,0,0,1,reliability/prm/project_prm_energy_only,,,
+prm,prm_requirement_scenario_id,system_prm_requirement,simple,,0,0,1,reliability/prm/system_prm_requirement,,,
+elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,dir_main,,0,0,1,reliability/prm/elcc_surface,zone_intercepts.csv,,Tables include inputs_system_prm_zone_elcc_surface and inputs_project_elcc_surface
+elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface_prm_load,dir_aux,,0,0,1,reliability/prm/elcc_surface,zone_peak_and_annual_load.csv,,
+elcc_surface,elcc_surface_scenario_id,project_elcc_surface,dir_aux,,0,0,1,reliability/prm/elcc_surface,project_coefficients.csv,,
+elcc_surface,elcc_surface_scenario_id,project_elcc_surface_cap_factors,dir_aux,,0,0,1,reliability/prm/elcc_surface,project_cap_factors.csv,,
+local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,simple,,0,0,1,reliability/local_capacity/geography_local_capacity_zones,,,
+local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zones,simple,,0,0,1,reliability/local_capacity/project_local_capacity_zones,,,
+local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,simple,,0,0,1,reliability/local_capacity/project_local_capacity_chars,,,
+local_capacity,local_capacity_requirement_scenario_id,system_local_capacity_requirement,simple,,0,0,1,reliability/local_capacity/system_local_capacity_requirement,,,
+tuning,tuning_scenario_id,tuning,custom,,0,0,0,tuning,,,

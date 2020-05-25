@@ -132,7 +132,7 @@ Temporal Inputs
 +-------------------------------+----------------------------------------------+
 |:code:`subscenario_` table     |:code:`subscenarios_temporal_timepoints`      |
 +-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |- :code:`inputs_temporal_timepoints`          |
+|:code:`input_` tables          |- :code:`inputs_temporal`                     |
 |                               |- :code:`inputs_temporal_horizons`            |
 |                               |- :code:`inputs_temporal_horizon_timepoints`  |
 |                               |- :code:`inputs_temporal_periods`             |
@@ -184,7 +184,7 @@ descriptions of the temporal scenarios to be available to the user. This
 table must be populated before data for the respective
 :code:`temporal_scenario_id` can be imported into the input tables.
 
-The :code:`inputs_temporal_timepoints`: for a given temporal scenario, the
+The :code:`inputs_temporal`: for a given temporal scenario, the
 timepoints along with their horizon and period as well as the “resolution”
 of each timepoint (is it an hour, a 4-hour chunk, 15-minute chunk, etc.)
 
@@ -209,7 +209,7 @@ used as the previous timepoint for the first timepoint of the horizon and
 'linear' if we ignore the previous timepoint for the first timepoint of the
 horizon).
 
-The :code:`inputs_temporal_timepoints` table contains information about the
+The :code:`inputs_temporal` table contains information about the
 timepoints within each :code:`temporal_scenario_id`, :code:`subproblem_id`, and
 :code:`stage_id`, including the period of the timepoint, its 'resolution' (the
 number of hours in the timepoint), its weight (the number of timepoints not

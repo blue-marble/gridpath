@@ -722,7 +722,7 @@ class SubProblems(object):
         """
 
         # TODO: make sure there is data integrity between subproblems_stages
-        #   and inputs_temporal_horizons and inputs_temporal_timepoints
+        #   and inputs_temporal_horizons and inputs_temporal
         subproblems = cursor.execute(
             """SELECT subproblem_id
                FROM inputs_temporal_subproblems

@@ -15,7 +15,7 @@ features,prm,1,PRM (Planning Reserve Margin),feature_prm,,of_prm,
 features,elcc_surface,1,PRM: ELCC Surface,feature_elcc_surface,,of_elcc_surface,
 features,local_capacity,1,Local Capacity Requirement,feature_local_capacity,,of_local_capacity,
 features,tuning,1,Tuning,feature_tuning,,of_tuning,
-temporal,temporal,1,Temporal Span and Resolution,temporal,subscenarios_temporal,temporal_scenario_id,inputs_temporal_timepoints
+temporal,temporal,1,Temporal Span and Resolution,temporal,subscenarios_temporal,temporal_scenario_id,inputs_temporal
 load_zones,load_zones,1,Load Zones,geography_load_zones,subscenarios_geography_load_zones,load_zone_scenario_id,inputs_geography_load_zones
 load_zones,project_load_zones,1,Load Zones: Projects,project_load_zones,subscenarios_project_load_zones,project_load_zone_scenario_id,inputs_project_load_zones
 load_zones,transmission_load_zones,1,Load Zones: Transmission,transmission_load_zones,subscenarios_transmission_load_zones,transmission_load_zone_scenario_id,inputs_transmission_load_zones

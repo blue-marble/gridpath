@@ -908,7 +908,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         ) as agg_curtailment_tbl
         JOIN (
             SELECT subproblem_id, stage_id, timepoint, month, hour_of_day
-            FROM inputs_temporal_timepoints
+            FROM inputs_temporal
             WHERE temporal_scenario_id = (
                 SELECT temporal_scenario_id 
                 FROM scenarios
