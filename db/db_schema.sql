@@ -2321,7 +2321,7 @@ FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
-    REFERENCES options_solver_descriptions (solver_options_id)
+    REFERENCES subscenarios_options_solver (solver_options_id)
 );
 
 --------------------------
@@ -3161,22 +3161,22 @@ PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 --- OPTIONS ---
 ---------------
 
-DROP TABLE IF EXISTS options_solver_descriptions;
-CREATE TABLE options_solver_descriptions (
+DROP TABLE IF EXISTS subscenarios_options_solver;
+CREATE TABLE subscenarios_options_solver (
     solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(32),
     description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS options_solver_values;
-CREATE TABLE options_solver_values (
+DROP TABLE IF EXISTS inputs_options_solver;
+CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
     solver VARCHAR(32),
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
     PRIMARY KEY (solver_options_id, solver, solver_option_name),
     FOREIGN KEY (solver_options_id)
-        REFERENCES options_solver_descriptions (solver_options_id)
+        REFERENCES subscenarios_options_solver (solver_options_id)
 );
 
 -- Views
@@ -3284,7 +3284,7 @@ subscenarios_system_prm_zone_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
-options_solver_descriptions.name as solver
+subscenarios_options_solver.name as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3393,7 +3393,7 @@ LEFT JOIN subscenarios_system_prm_zone_elcc_surface
 LEFT JOIN subscenarios_system_local_capacity_requirement
     USING (local_capacity_requirement_scenario_id)
 LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
-LEFT JOIN options_solver_descriptions USING (solver_options_id)
+LEFT JOIN subscenarios_options_solver USING (solver_options_id)
 ;
 
 
