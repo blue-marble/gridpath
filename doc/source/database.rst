@@ -132,7 +132,7 @@ Temporal Inputs
 +-------------------------------+----------------------------------------------+
 |:code:`subscenario_` table     |:code:`subscenarios_temporal_timepoints`      |
 +-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |- :code:`inputs_temporal`          |
+|:code:`input_` tables          |- :code:`inputs_temporal`                     |
 |                               |- :code:`inputs_temporal_horizons`            |
 |                               |- :code:`inputs_temporal_horizon_timepoints`  |
 |                               |- :code:`inputs_temporal_periods`             |
