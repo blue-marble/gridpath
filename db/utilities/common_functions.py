@@ -143,7 +143,7 @@ def get_subscenario_data(csv_file, cols_to_exclude_str, **kwargs):
     csv_columns = df.columns.tolist()
 
     # Exclude some columns if directed to do so
-    if cols_to_exclude_str == "":
+    if cols_to_exclude_str == "nan":
         pass
     else:
         cols_to_exclude = [
@@ -255,6 +255,7 @@ def get_subscenario_data_and_insert_into_db(
     :param csv_file: string
     :param use_project_method: boolean
     :param skip_subscenario_info: boolean
+    :param custom_method: string
 
     Read the data for a subscenario, convert it to tuples, and insert into the
     database.
@@ -282,12 +283,11 @@ def get_subscenario_data_and_insert_into_db(
         skip_subscenario_info=skip_subscenario_info
     )
 
-    # TODO: how to know we're done importing the basics for a subscenario
-    #  and finalize it
-    if custom_method == "":
+    # If a custom method is requsted, run it here to finalize the subscenario
+    if custom_method != "nan":
         getattr(custom, custom_method)(
             conn=conn,
-            temporal_scenario_id=subscenario_tuples[0][0]
+            subscenario_id=subscenario_tuples[0][0]
         )
 
 

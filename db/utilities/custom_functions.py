@@ -56,7 +56,7 @@ def temporal(conn, subscenario_id):
     for (sid, stage, bt, hr) in sid_stg_bt_hr:
         tmp_start, tmp_end = c.execute(
             """SELECT tmp_start, tmp_end
-            FROM inputs_temporal_horizons
+            FROM inputs_temporal_horizon_timepoints_start_end
             WHERE temporal_scenario_id = ?
             AND subproblem_id = ?
             AND balancing_type_horizon = ?

@@ -1,3 +1,3 @@
-subproblem_id,balancing_type_horizon,horizon,boundary,tmp_start,tmp_end
-1,day,202001,circular,20200101,20200102
-1,day,203001,circular,20300101,20300102
+subproblem_id,balancing_type_horizon,horizon,boundary
+1,day,202001,circular
+1,day,203001,circular

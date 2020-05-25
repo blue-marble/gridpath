@@ -280,9 +280,6 @@ FOREIGN KEY (month) REFERENCES mod_months (month)
 -- subproblem can be a week and have days as horizons and another one
 -- can be a week and have the week as horizon), but will have to be same for
 -- each stage of a subproblem
--- TODO: do they?
--- TODO: we should add stage to this table, as the values of tmp_start and
---  tmp_end can vary by stage; or should it be a separate auxiliary table
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
@@ -290,8 +287,6 @@ subproblem_id INTEGER,
 balancing_type_horizon VARCHAR(32),
 horizon VARCHAR(32),
 boundary VARCHAR(16),
-tmp_start INTEGER, -- auxiliary for populating temporal_horizon_timepoints
-tmp_end INTEGER, -- auxiliary for populating temporal_horizon_timepoints
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
              balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
@@ -305,6 +300,32 @@ inputs_temporal_subproblems (temporal_scenario_id, subproblem_id)
 );
 
 
+-- This table is auxiliary for 1) readability and 2) populating the
+-- inputs_temporal_horizon_timepoints table if we're using the CSV-to-DB
+-- functionality
+DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
+CREATE TABLE inputs_temporal_horizon_timepoints_start_end (
+temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(32),
+horizon VARCHAR(32),
+tmp_start INTEGER,
+tmp_end INTEGER,
+PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
+             balancing_type_horizon, horizon),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure the start and end timepoints exist in the main timepoints table
+FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_start)
+    REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id, stage_id,
+                                timepoint),
+FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_end)
+    REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id, stage_id,
+                                timepoint)
+);
+
+-- This table is what GridPath uses to get inputs
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints;
 CREATE TABLE inputs_temporal_horizon_timepoints (
 temporal_scenario_id INTEGER,
@@ -320,7 +341,7 @@ FOREIGN KEY (temporal_scenario_id)
 -- Make sure these are the same timepoints as in the main timepoints table
 FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint)
     REFERENCES inputs_temporal (temporal_scenario_id,
-                                           subproblem_id, stage_id, timepoint),
+                                subproblem_id, stage_id, timepoint),
 -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
              horizon)

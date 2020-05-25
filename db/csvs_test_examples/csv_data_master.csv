@@ -3,7 +3,8 @@ core,scenarios,scenarios,custom,,0,1,1,scenarios,,,
 core,solver_options_id,solver,custom,,0,1,1,solver,,,requires both solver options and description csvs
 core,temporal_scenario_id,temporal,dir_main,,0,1,1,temporal,structure.csv,horizon,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,temporal_scenario_id,temporal_periods,dir_aux,,0,1,1,temporal,period_params.csv,,
-core,temporal_scenario_id,temporal_horizons,dir_aux,temporal,0,1,1,temporal,horizon_params.csv,,
+core,temporal_scenario_id,temporal_horizons,dir_aux,,0,1,1,temporal,horizon_params.csv,,
+core,temporal_scenario_id,temporal_horizon_timepoints_start_end,dir_aux,temporal,0,1,1,temporal,horizon_timepoints.csv,,
 core,project_portfolio_scenario_id,project_portfolios,simple,,0,1,1,project/project_portfolios,,,
 core,project_operational_chars_scenario_id,project_operational_chars,simple,,0,1,1,project/project_operational_chars,,,
 core,load_scenario_id,system_load,simple,,0,1,1,system_load/system_load,,,
