@@ -13,33 +13,6 @@ from db.common_functions import spin_on_database_lock
 import db.utilities.custom_functions as custom
 
 
-# This will be deleted once we've dealt with scenarios and solver options
-def get_inputs_dir(csvs_main_dir, csv_data_master, subscenario):
-    """
-    :param csvs_main_dir:
-    :param csv_data_master:
-    :param subscenario:
-    :return:
-
-    Get the inputs directory listed in the CSV master file for a particular
-    subscenario (for now, "table").
-    """
-    if csv_data_master.loc[
-        csv_data_master["subscenario"] == subscenario, 'include'
-    ].iloc[0] == 1:
-        inputs_dir = os.path.join(
-            csvs_main_dir,
-            csv_data_master.loc[
-                csv_data_master["subscenario"] == subscenario,
-                "path"
-            ].iloc[0]
-        )
-    else:
-        inputs_dir = None
-
-    return inputs_dir
-
-
 # ### Functions for converting CSVs to lists of tuples for DB insertion ### #
 
 def get_subscenario_info(
