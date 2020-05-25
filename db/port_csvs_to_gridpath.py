@@ -177,7 +177,6 @@ def load_csv_data(conn, csv_path, quiet):
             'optional_feature_or_subscenarios'
         )[sc].to_dict()
         scenario_info["scenario_name"] = sc
-        print(scenario_info)
 
         scenario.create_scenario(
             io=conn, c=c, column_values_dict=scenario_info
