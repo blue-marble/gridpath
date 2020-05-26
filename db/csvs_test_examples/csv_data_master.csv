@@ -1,6 +1,6 @@
 feature,subscenario,table,subscenario_type,custom_method,project_input,required,include,path,filename,cols_to_exclude_str,notes
 core,scenarios,scenarios,custom,,0,1,1,scenarios,,,
-core,solver_options_id,solver,custom,,0,1,1,solver,,,requires both solver options and description csvs
+core,solver_options_id,options_solver,simple,,0,1,1,solver,,,
 core,temporal_scenario_id,temporal,dir_main,,0,1,1,temporal,structure.csv,horizon,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,temporal_scenario_id,temporal_periods,dir_aux,,0,1,1,temporal,period_params.csv,,
 core,temporal_scenario_id,temporal_horizons,dir_aux,,0,1,1,temporal,horizon_params.csv,,

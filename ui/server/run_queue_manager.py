@@ -53,7 +53,7 @@ def manage_queue(db_path):
                     # # Get the requested solver
                     solver = c.execute("""
                         SELECT name
-                        FROM options_solver_descriptions
+                        FROM subscenarios_options_solver
                         WHERE solver_options_id = (
                             SELECT solver_options_id
                             FROM scenarios

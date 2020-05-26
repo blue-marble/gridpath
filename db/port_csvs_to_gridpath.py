@@ -41,7 +41,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util
-from db.utilities import scenario, solver_options
+from db.utilities import scenario
 
 # Reserves list
 
@@ -187,29 +187,6 @@ def load_csv_data(conn, csv_path, quiet):
         scenario.load_scenarios_from_csv(conn, c, opchar_data_input)
     else:
         print("ERROR: scenarios table is required")
-
-
-    #### LOAD SOLVER OPTIONS ####
-    solver_dir = db_util.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="solver_options_id"
-    )
-    if solver_dir is not None:
-        for f in os.listdir(solver_dir):
-            if f.endswith(".csv") and 'template' not in f and 'options' in f:
-                if not quiet:
-                    print(f)
-                csv_solver_options = pd.read_csv(os.path.join(solver_dir, f))
-            if f.endswith(".csv") and 'template' not in f \
-                    and 'descriptions' in f:
-                if not quiet:
-                    print(f)
-                csv_solver_descriptions = \
-                    pd.read_csv(os.path.join(solver_dir, f))
-
-        solver_options.load_solver_options(
-            conn, c, csv_solver_options, csv_solver_descriptions
-        )
 
 
 def main(args=None):

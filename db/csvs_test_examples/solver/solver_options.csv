@@ -1,2 +1,0 @@
-solver_options_id,solver,solver_option_name,solver_option_value
-1,cplex,lpmethod,4
