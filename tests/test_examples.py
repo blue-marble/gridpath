@@ -17,7 +17,10 @@ from db.common_functions import connect_to_database
 #  db folder and changing directions all the time is not ideal.
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
-DB_PATH = os.path.join("..", "db", "test_examples.db")
+DB_NAME = "test_examples"
+DB_LOCATION = os.path.join("..", "db")
+DB_PATH = os.path.join(DB_LOCATION, "{}.db".format(DB_NAME))
+CSV_PATH = "../db/csvs_test_examples"
 
 
 class TestExamples(unittest.TestCase):
@@ -109,26 +112,22 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        test_db_path = os.path.join(os.getcwd(),
-                                    "..", "db", "test_examples.db")
+        if os.path.exists(DB_PATH):
+            os.remove(DB_PATH)
 
-        if os.path.exists(test_db_path):
-            os.remove(test_db_path)
-
-        create_database.main(["--db_location", "../db",
-                              "--db_name", "test_examples"])
+        create_database.main(["--db_location", DB_LOCATION,
+                              "--db_name", DB_NAME])
 
         try:
-            port_csvs_to_gridpath.main(["--db_location", "../db/",
-                                        "--db_name", "test_examples",
-                                        "--csv_location",
-                                        "../db/csvs_test_examples",
+            port_csvs_to_gridpath.main(["--db_location", DB_LOCATION,
+                                        "--db_name", DB_NAME,
+                                        "--csv_location", CSV_PATH,
                                         "--quiet"])
         except Exception as e:
             print("Error encountered during population of testing database "
-                  "test_examples.db. Deleting database ...")
+                  "{}.db. Deleting database ...".format(DB_NAME))
             logging.exception(e)
-            os.remove(test_db_path)
+            os.remove(DB_PATH)
 
         # TODO: create in memory instead and pass around connection?
 
@@ -785,7 +784,7 @@ class TestExamples(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.remove("../db/test_examples.db")
+        os.remove(DB_PATH)
 
 
 if __name__ == "__main__":
