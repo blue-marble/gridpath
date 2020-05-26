@@ -114,9 +114,6 @@ def load_csv_data(conn, csv_path, quiet):
     in the database.
 
     """
-
-    c = conn.cursor()
-
     #### MASTER CSV DATA ####
     # If include flag is 1, then read the feature, subscenario_id, and
     # path into a dictionary and call the specific function for the feature
@@ -168,26 +165,22 @@ def load_csv_data(conn, csv_path, quiet):
             pass
 
     #### LOAD SCENARIOS DATA ####
-    scenarios_dir = db_util.get_inputs_dir(
-        csvs_main_dir=csv_path, csv_data_master=csv_data_master,
-        subscenario="scenarios"
+    # A scenarios.csv file is expected in the csv_path directory
+    # TODO: maybe allow this to be skipped
+    scenarios_df = pd.read_csv(
+        os.path.join(csv_path, "scenarios.csv")
     )
-    if scenarios_dir is not None:
-        f_number = 0
-        for f in os.listdir(scenarios_dir):
-            if f.endswith(".csv") and 'template' not in f and 'scenario' in f \
-                    and 'ignore' not in f:
-                if not quiet:
-                    print(f)
-                f_number = f_number + 1
-                opchar_data_input = pd.read_csv(os.path.join(scenarios_dir, f))
-                if f_number > 1:
-                    print('Error: More than one scenario csv input files')
 
-        scenario.load_scenarios_from_csv(conn, c, opchar_data_input)
-    else:
-        print("ERROR: scenarios table is required")
+    c = conn.cursor()
+    for sc in scenarios_df.columns.to_list()[1:]:
+        scenario_info = scenarios_df.set_index(
+            'optional_feature_or_subscenarios'
+        )[sc].to_dict()
+        scenario_info["scenario_name"] = sc
 
+        scenario.create_scenario(
+            io=conn, c=c, column_values_dict=scenario_info
+        )
 
 def main(args=None):
     """
