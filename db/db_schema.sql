@@ -3457,7 +3457,7 @@ CREATE VIEW periods_horizons AS
 SELECT DISTINCT
 temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon,
 period, horizon
-FROM inputs_temporal_timepoints
+FROM inputs_temporal
 INNER JOIN
 inputs_temporal_horizon_timepoints
 USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
@@ -3494,7 +3494,7 @@ subproblem_id, stage_id, project, timepoint
 FROM project_portfolio_opchars
 -- Add all the timepoints
 CROSS JOIN
-inputs_temporal_timepoints
+inputs_temporal
 -- Only select timepoints from the actual operational periods
 INNER JOIN
 project_operational_periods
