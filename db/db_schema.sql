@@ -3397,6 +3397,15 @@ LEFT JOIN subscenarios_options_solver USING (solver_options_id)
 ;
 
 
+DROP VIEW IF EXISTS project_portfolio_opchars;
+CREATE VIEW project_portfolio_opchars AS
+SELECT * FROM inputs_project_portfolios
+INNER JOIN
+inputs_project_operational_chars
+USING (project)
+;
+
+
 DROP VIEW IF EXISTS project_new_possible_periods;
 CREATE VIEW project_new_possible_periods as
 -- recursive CTE, see
@@ -3423,12 +3432,14 @@ CREATE VIEW project_operational_periods AS
 SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id,
 temporal_scenario_id, project, period
 FROM
+    -- Use left join + union + left join because no outer join in sqlite
     (SELECT project_specified_capacity_scenario_id,
     project_new_cost_scenario_id, project, period
     FROM inputs_project_specified_capacity
     LEFT JOIN project_new_possible_periods USING(project, period)
     UNION ALL
-    SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id, project, period
+    SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
     FROM project_new_possible_periods
     LEFT JOIN inputs_project_specified_capacity USING(project, period)
     where project_specified_capacity_scenario_id IS NULL
@@ -3440,34 +3451,25 @@ INNER JOIN
 USING (period)
 ;
 
--- TODO: this isn't necessary if the periods column in the
--- inputs_temporal_horizons table is properly filled out (currently it's not)
+
 DROP VIEW IF EXISTS periods_horizons;
 CREATE VIEW periods_horizons AS
 SELECT DISTINCT
-temporal_scenario_id, subproblem_id, balancing_type_horizon, period, horizon
+temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon,
+period, horizon
 FROM inputs_temporal_timepoints
 INNER JOIN
 inputs_temporal_horizon_timepoints
-USING (temporal_scenario_id, subproblem_id, timepoint)
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
 ;
 
 
-DROP VIEW IF EXISTS project_portfolio_opchars;
-CREATE VIEW project_portfolio_opchars AS
-SELECT * FROM inputs_project_portfolios
-INNER JOIN
-inputs_project_operational_chars
-USING (project)
-;
-
-
-DROP VIEW IF EXISTS project_periods_horizons;
-CREATE VIEW project_periods_horizons AS
+DROP VIEW IF EXISTS project_operational_horizons;
+CREATE VIEW project_operational_horizons AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
 project_specified_capacity_scenario_id, project_new_cost_scenario_id,
 temporal_scenario_id, operational_type, hydro_operational_chars_scenario_id,
-subproblem_id, project, period, horizon
+subproblem_id, stage_id, project, horizon
 -- Get all projects in the portfolio (with their opchars)
 FROM project_portfolio_opchars
 -- Add all the periods horizons for the matching balancing type
@@ -3475,13 +3477,29 @@ LEFT OUTER JOIN
 periods_horizons
 ON (project_portfolio_opchars.balancing_type_project
 = periods_horizons.balancing_type_horizon)
--- Only select the actual operational periods
+-- Only select horizons from the actual operational periods
 INNER JOIN
 project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
 
+DROP VIEW IF EXISTS project_operational_timepoints;
+CREATE VIEW project_operational_timepoints AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, variable_generator_profile_scenario_id,
+subproblem_id, stage_id, project, timepoint
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal_timepoints
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
+;
 
 
 -------------------------------------------------------------------------------

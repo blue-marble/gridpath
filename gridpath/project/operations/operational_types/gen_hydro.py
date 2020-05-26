@@ -941,8 +941,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     validate_opchars(subscenarios, subproblem, stage, conn, "gen_hydro")
 
-    hydro_chars = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    # hydro_chars = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
 
-    print(hydro_chars.fetchall())
     # do stuff here to validate inputs
