@@ -152,8 +152,6 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
-# TODO: further generalize this by joining on opchars so "col" can also be
-#  any column in opchars, e.g. so we can select fuel projects for instance?
 def get_projects(conn, subscenarios, col, col_value):
     """
     Get projects for which the column value of "col" is equal to "col_value".
@@ -168,12 +166,13 @@ def get_projects(conn, subscenarios, col, col_value):
     c = conn.cursor()
     projects = c.execute(
         """SELECT project
-        FROM inputs_project_portfolios
+        FROM project_portfolio_opchars
         WHERE project_portfolio_scenario_id = {}
+        AND project_operational_chars_scenario_id = {}
         AND {} = '{}';""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            col,
-            col_value
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            col, col_value
         )
     )
     projects = [p[0] for p in projects]  # convert to list
