@@ -707,9 +707,6 @@ def get_hydro_inputs_from_database(
 
     c = conn.cursor()
 
-    # TODO: still need to add subproblem to the period horizon view and
-    # should slice out the correct subproblem here!
-
     # NOTE: There can be cases where a resource is both in specified capacity
     # table and in new build table, but depending on capacity type you'd only
     # use one of them, so filtering with OR is not 100% correct.
@@ -728,6 +725,7 @@ def get_hydro_inputs_from_database(
         AND temporal_scenario_id = {}
         AND (project_specified_capacity_scenario_id = {}
              OR project_new_cost_scenario_id = {})
+        AND subproblem_id = {}
         ) as projects_periods_horizon_tbl
     -- Now that we have the relevant projects and horizons, get the 
     -- respective hydro opchars (and no others) from 
@@ -742,7 +740,8 @@ def get_hydro_inputs_from_database(
         op_type,
         subscenarios.TEMPORAL_SCENARIO_ID,
         subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.PROJECT_NEW_COST_SCENARIO_ID
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+        subproblem
     )
 
     hydro_chars = c.execute(sql)
