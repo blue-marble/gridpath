@@ -39,11 +39,8 @@ from argparse import ArgumentParser
 
 # Data-import modules
 from db.common_functions import connect_to_database
-from db.create_database import get_database_file_path
 import db.utilities.common_functions as db_util
 from db.utilities import scenario
-
-# Reserves list
 
 
 def parse_arguments(args):
@@ -57,54 +54,23 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    # Adding defaults here even though the connect_to_database function has its own defaults
-    # because parser passes a text string of None and not a python None
     parser.add_argument("--db_name", default="io",
                         help="Name of the database without the db extension.")
     parser.add_argument("--db_location", default=".",
-                        help="Path to the database (relative to "
-                             "port_csvs_to_db.py).")
-    parser.add_argument("--csv_location", default="csvs",
-                        help="Path to the csvs folder including folder name (relative to "
-                             "port_csvs_to_db.py).")
+                        help="Path to the database (relative to this "
+                             "script). You can also skip the --db_name "
+                             "argument and specify the full path to the "
+                             "database file (including the filename and "
+                             "extension) here.")
+    parser.add_argument("--csv_location", default="./csvs",
+                        help="Path to the csvs folder including folder name "
+                             "(relative to this script).")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
-    #TODO: Using this argument for using the get_database_file_path function in create_database
-    # but not sure if we need it.
-    parser.add_argument("--in_memory", default=False, action="store_true",
-                        help="Create in-memory database. The db_name and "
-                             "db_location argument will be inactive.")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
-
-
-def get_csv_folder_path(parsed_arguments, relative_path=".."):
-    """
-    :param parsed_arguments: the parsed script arguments
-    :return: the path to the csv folder
-
-    Get the csv folder path from the script arguments.
-    If no csv folder is specified, assume that the folder is
-    called 'csvs' and it is located under the 'db' folder.
-    """
-
-    csv_path = str(parsed_arguments.csv_location)
-
-    if csv_path is None:
-        csv_path = os.path.join(os.path.dirname(__file__),
-                                relative_path, "db", "csvs")
-
-    if not os.path.isdir(csv_path):
-        raise OSError(
-            "The csv folder {} was not found. Did you mean to "
-            "specify a different csv folder?".format(
-                os.path.abspath(csv_path)
-            )
-        )
-
-    return csv_path
 
 
 def load_csv_data(conn, csv_path, quiet):
@@ -182,17 +148,38 @@ def load_csv_data(conn, csv_path, quiet):
             io=conn, c=c, column_values_dict=scenario_info
         )
 
+
 def main(args=None):
     """
     The 'main' method parses the database name along with path as
     script arguments and loads the data in the database.
     """
+    # Parse the arguments
     if args is None:
         args = sys.argv[1:]
     parsed_args = parse_arguments(args=args)
 
-    db_path = get_database_file_path(parsed_arguments=parsed_args)
-    csv_path = get_csv_folder_path(parsed_arguments=parsed_args)
+    # Get the database path
+    db_path = os.path.join(
+        str(parsed_args.db_location), str(parsed_args.db_name)+".db"
+    )
+    if not os.path.isfile(db_path):
+        raise OSError(
+            "The database file {} was not found. Did you mean to "
+            "specify a different database?".format(
+                os.path.abspath(db_path)
+            )
+        )
+
+    # Get the CSV directory
+    csv_path = parsed_args.csv_location
+    if not os.path.isdir(csv_path):
+        raise OSError(
+            "The csv folder {} was not found. Did you mean to "
+            "specify a different csv folder?".format(
+                os.path.abspath(csv_path)
+            )
+        )
 
     # Register numpy types with sqlite, so that they are properly inserted
     # from pandas dataframes

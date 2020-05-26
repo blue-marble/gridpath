@@ -1,0 +1,9 @@
+project,frequency_response_ba,contribute_to_partial
+Coal_z1,BA_frequency_response_1,1
+Gas_CCGT_z1,BA_frequency_response_1,1
+Gas_CT_z1,BA_frequency_response_1,1
+Hydro_z1,BA_frequency_response_1,1
+Gas_CCGT_new_z1,BA_frequency_response_1,1
+Gas_CCGT_z2,BA_frequency_response_1,1
+Battery_z2,BA_frequency_response_1,1
+Gas_CT_new_z2,BA_frequency_response_1,1
