@@ -182,7 +182,6 @@ def load_csv_data(conn, csv_path, quiet):
             io=conn, c=c, column_values_dict=scenario_info
         )
 
-
 def main(args=None):
     """
     The 'main' method parses the database name along with path as
