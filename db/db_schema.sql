@@ -3415,7 +3415,6 @@ WITH main_data (project, project_new_cost_scenario_id, period, highrange)
     WHERE  period < highrange - 1)
 SELECT distinct project_new_cost_scenario_id, project, period
 FROM main_data
-ORDER BY project_new_cost_scenario_id, project, period
 ;
 
 
@@ -3439,8 +3438,6 @@ INNER JOIN
     FROM inputs_temporal_periods
     ) as relevant_periods_tbl
 USING (period)
-ORDER BY project_specified_capacity_scenario_id,
-project_new_cost_scenario_id, temporal_scenario_id, project, period
 ;
 
 -- TODO: this isn't necessary if the periods column in the
@@ -3453,7 +3450,6 @@ FROM inputs_temporal_timepoints
 INNER JOIN
 inputs_temporal_horizon_timepoints
 USING (temporal_scenario_id, timepoint)
-ORDER BY temporal_scenario_id, balancing_type_horizon, period, horizon
 ;
 
 
@@ -3469,14 +3465,20 @@ USING (project)
 DROP VIEW IF EXISTS project_periods_horizons;
 CREATE VIEW project_periods_horizons AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
-temporal_scenario_id, project, period, horizon
-FROM inputs_project_portfolios
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, hydro_operational_chars_scenario_id,
+project, period, horizon
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the periods horizons for the matching balancing type
 LEFT OUTER JOIN
 periods_horizons
-ON (project_periods_horizons.balancing_type_project
+ON (project_portfolio_opchars.balancing_type_project
 = periods_horizons.balancing_type_horizon)
-ORDER BY project_portfolio_scenario_id, project_operational_chars_scenario_id,
-temporal_scenario_id, project, period, horizon
+-- Only select the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
 ;
 
 
