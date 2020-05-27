@@ -3397,22 +3397,30 @@ LEFT JOIN subscenarios_options_solver USING (solver_options_id)
 ;
 
 
+-- This view combines the project portfolios and operational characteristics
+-- table since we often need both, e.g. get the projects in the active
+-- portfolio of operational type X.
+-- TODO: refactor existing queries that could also use this view
 DROP VIEW IF EXISTS project_portfolio_opchars;
 CREATE VIEW project_portfolio_opchars AS
 SELECT * FROM inputs_project_portfolios
-INNER JOIN
+LEFT OUTER JOIN
 inputs_project_operational_chars
 USING (project)
 ;
 
 
-DROP VIEW IF EXISTS project_new_possible_periods;
-CREATE VIEW project_new_possible_periods AS
--- recursive CTE, see
+-- This view shows the possible operational periods for new projects, based on
+-- the available vintages and their lifetime. E.g. a project available in
+-- vintage 2020 with a lifetime of 30 years will have the 2020 through 2049
+-- as possible operational periods.
+-- We use recursive CTE to calculate this, see e.g.
 -- https://stackoverflow.com/questions/45104717/sql-to-generate-a-number
 -- between-range-specified-by-columns
 -- Note: the renaming of the columns ("AS period" is not strictly necessary
 -- since the UNION ALL statement doesn't read the column names
+DROP VIEW IF EXISTS project_new_operational_periods;
+CREATE VIEW project_new_operational_periods AS
 WITH main_data (project, project_new_cost_scenario_id, period, highrange)
     AS (
     SELECT project, project_new_cost_scenario_id, vintage AS period,
@@ -3428,6 +3436,9 @@ FROM main_data
 ;
 
 
+-- This view shows the possible operational periods for new and specified
+-- projects, based on the available vintage and lifetime and/or the specified
+-- capacity periods, as well as the actual modeled periods.
 DROP VIEW IF EXISTS project_operational_periods;
 CREATE VIEW project_operational_periods AS
 SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id,
@@ -3437,11 +3448,11 @@ FROM
     (SELECT project_specified_capacity_scenario_id,
     project_new_cost_scenario_id, project, period
     FROM inputs_project_specified_capacity
-    LEFT JOIN project_new_possible_periods USING(project, period)
+    LEFT JOIN project_new_operational_periods USING(project, period)
     UNION ALL
     SELECT project_specified_capacity_scenario_id,
     project_new_cost_scenario_id, project, period
-    FROM project_new_possible_periods
+    FROM project_new_operational_periods
     LEFT JOIN inputs_project_specified_capacity USING(project, period)
     where project_specified_capacity_scenario_id IS NULL
     ) AS all_operational_project_periods
@@ -3453,6 +3464,9 @@ USING (period)
 ;
 
 
+-- This view shows the periods and the respective horizons within each period
+-- for each balancing_type, based on the timepoint-to-horizon mapping and the
+-- timepoint-to-period mapping.
 DROP VIEW IF EXISTS periods_horizons;
 CREATE VIEW periods_horizons AS
 SELECT DISTINCT
@@ -3465,6 +3479,13 @@ USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
 ;
 
 
+-- This view shows the possible operational horizons for each project based
+-- based on its operational periods (see project_operational_periods), its
+-- balancing type, and the periods-horizons mapping for that balancing type
+-- (see periods_horizons). It also includes the operational type and the
+-- hydro_operational_chars_scenario_id, since these are useful to slice out
+-- operational types of interest (namely hydro) and join the hydro inputs,
+-- which are indexed by project-horizon.
 DROP VIEW IF EXISTS project_operational_horizons;
 CREATE VIEW project_operational_horizons AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
@@ -3484,7 +3505,13 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
-
+-- This view shows the possible operational timepoints for each project based
+-- based on its operational periods (see project_operational_periods), and
+-- the timepoints in the temporal subscenario (see inputs_temporal). It also
+-- includes the operational type and the
+-- variable_generator_profile_scenario_id, since these are useful to slice out
+-- operational types of interest (namely variale generators) and join the
+-- variable generator inputs which are indexed by project-timepoint.
 DROP VIEW IF EXISTS project_operational_timepoints;
 CREATE VIEW project_operational_timepoints AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
