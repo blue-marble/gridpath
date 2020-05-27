@@ -3407,21 +3407,22 @@ USING (project)
 
 
 DROP VIEW IF EXISTS project_new_possible_periods;
-CREATE VIEW project_new_possible_periods as
+CREATE VIEW project_new_possible_periods AS
 -- recursive CTE, see
 -- https://stackoverflow.com/questions/45104717/sql-to-generate-a-number
 -- between-range-specified-by-columns
+-- Note: the renaming of the columns ("AS period" is not strictly necessary
+-- since the UNION ALL statement doesn't read the column names
 WITH main_data (project, project_new_cost_scenario_id, period, highrange)
-    AS (SELECT project, project_new_cost_scenario_id,
-           vintage peirod,
-           (vintage + lifetime_yrs) as highrange
-    FROM   inputs_project_new_cost
+    AS (
+    SELECT project, project_new_cost_scenario_id, vintage AS period,
+    vintage + lifetime_yrs AS highrange
+    FROM inputs_project_new_cost
     UNION ALL
-    SELECT project, project_new_cost_scenario_id,
-           period + 1 period,
-           highrange
-    FROM   main_data
-    WHERE  period < highrange - 1)
+    SELECT project, project_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
 SELECT distinct project_new_cost_scenario_id, project, period
 FROM main_data
 ;
