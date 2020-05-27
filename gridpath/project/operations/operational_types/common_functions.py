@@ -549,79 +549,48 @@ def get_var_profile_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
-    variable_profiles = c.execute("""
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+
+    sql = """
         SELECT project, timepoint, cap_factor
-        FROM (
-        -- Select only projects from the relevant portfolio
-        SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        ) as portfolio_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'op_type' as 
-        -- their operational_type
-        INNER JOIN
-        (SELECT project, variable_generator_profile_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}'
-        ) AS op_char
-        USING (project)
-        -- Cross join to the timepoints in the relevant 
-        -- temporal_scenario_id, subproblem_id, and stage_id
-        -- Get the period since we'll need that to get only the operational 
-        -- timepoints for a project via an INNER JOIN below
-        CROSS JOIN
-        (SELECT stage_id, timepoint, period
-        FROM inputs_temporal
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}
-        ) as tmps_tbl
+        -- Select only projects, periods, horizons from the relevant portfolio, 
+        -- relevant opchar scenario id, operational type, 
+        -- and temporal scenario id
+        FROM 
+            (SELECT project, stage_id, timepoint, 
+            variable_generator_profile_scenario_id
+            FROM project_operational_timepoints
+            WHERE project_portfolio_scenario_id = {}
+            AND project_operational_chars_scenario_id = {}
+            AND operational_type = '{}'
+            AND temporal_scenario_id = {}
+            AND (project_specified_capacity_scenario_id = {}
+                 OR project_new_cost_scenario_id = {})
+            AND subproblem_id = {}
+            AND stage_id = {}
+            ) as projects_periods_timepoints_tbl
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap_factor (and no others) from 
-        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
-        LEFT OUTER JOIN
-        inputs_project_variable_generator_profiles
+        -- respective cap factors (and no others) from 
+        -- inputs_project_variable_generator_profiles
+        INNER JOIN
+            inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, 
         stage_id, timepoint)
-        -- We also only want timepoints in periods when the project actually 
-        -- exists, so we figure out the operational periods for each of the  
-        -- projects below and INNER JOIN to that
-        INNER JOIN
-            (SELECT project, period
-            FROM (
-                -- Get the operational periods for each 'existing' and 
-                -- 'new' project
-                SELECT project, period
-                FROM inputs_project_specified_capacity
-                WHERE project_specified_capacity_scenario_id = {}
-                UNION
-                SELECT project, vintage AS period
-                FROM inputs_project_new_cost
-                WHERE project_new_cost_scenario_id = {}
-                ) as all_operational_project_periods
-            -- Only use the periods in temporal_scenario_id via an INNER JOIN
-            INNER JOIN (
-                SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {}
-                ) as relevant_periods_tbl
-            USING (period)
-            ) as relevant_op_periods_tbl
-        USING (project, period);
+        ;
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            op_type,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
-        )
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        op_type,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+        subproblem,
+        stage
     )
+
+    variable_profiles = c.execute(sql)
 
     return variable_profiles
 
@@ -700,76 +669,47 @@ def get_hydro_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
-    # TODO: should we ensure that the project balancing type and the horizon
-    #  length type match (e.g. by joining on them being equal here)
-    hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_fraction, min_power_fraction,
-        max_power_fraction
-        FROM (
-            -- Select only projects from the relevant portfolio
-            SELECT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
-        ) as portfolio_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'op_type' as 
-        -- their operational_type
-        INNER JOIN
-            (SELECT project, hydro_operational_chars_scenario_id
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {}
-            AND operational_type = '{}') AS op_char
-        USING (project)
-        -- Cross join to the horizons in the relevant 
-        -- temporal_scenario_id, and subproblem_id
-        CROSS JOIN
-            (SELECT horizon
-            FROM inputs_temporal_horizons
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {})
-        -- Now that we have the relevant projects and horizons, get the 
-        -- respective hydro opchars (and no others) from 
-        -- inputs_project_hydro_operational_chars through a LEFT OUTER JOIN
-        LEFT OUTER JOIN
-            inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, horizon)
-        -- We also only want horizons in periods when the project actually 
-        -- exists, so we figure out the operational periods for each of the  
-        -- projects below and INNER JOIN to that
-        INNER JOIN
-            -- Get the operational periods for each 'existing' and 
-            -- 'new' project
-            (SELECT project, period
-            FROM (
-                SELECT project, period
-                FROM inputs_project_specified_capacity
-                WHERE project_specified_capacity_scenario_id = {}
-                UNION
-                SELECT project, vintage AS period
-                FROM inputs_project_new_cost                
-                WHERE project_new_cost_scenario_id = {}
-            ) as all_operational_project_periods
-            -- Only use the periods in temporal_scenario_id via an INNER JOIN
-            INNER JOIN
-                (SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {}
-                ) as relevant_periods_tbl
-            USING (period)
-            ) as relevant_op_periods_tbl
-        using (project, period);
-        """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            op_type,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
 
-        )
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+
+    sql = """
+    SELECT project, horizon, average_power_fraction, min_power_fraction,
+    max_power_fraction
+    -- Select only projects, horizons from the relevant portfolio, 
+    -- relevant opchar scenario id, operational type, and temporal scenario id
+    FROM 
+        (SELECT project, horizon, hydro_operational_chars_scenario_id
+        FROM project_operational_horizons
+        WHERE project_portfolio_scenario_id = {}
+        AND project_operational_chars_scenario_id = {}
+        AND operational_type = '{}'
+        AND temporal_scenario_id = {}
+        AND (project_specified_capacity_scenario_id = {}
+             OR project_new_cost_scenario_id = {})
+        AND subproblem_id = {}
+        AND stage_id = {}
+        ) as projects_periods_horizon_tbl
+    -- Now that we have the relevant projects and horizons, get the 
+    -- respective hydro opchars (and no others) from 
+    -- inputs_project_hydro_operational_chars
+    INNER JOIN
+        inputs_project_hydro_operational_chars
+    USING (hydro_operational_chars_scenario_id, project, horizon)
+    ;
+    """.format(
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        op_type,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+        subproblem,
+        stage
     )
+
+    hydro_chars = c.execute(sql)
 
     return hydro_chars
 
