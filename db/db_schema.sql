@@ -3397,6 +3397,139 @@ LEFT JOIN subscenarios_options_solver USING (solver_options_id)
 ;
 
 
+-- This view combines the project portfolios and operational characteristics
+-- table since we often need both, e.g. get the projects in the active
+-- portfolio of operational type X.
+-- TODO: refactor existing queries that could also use this view
+DROP VIEW IF EXISTS project_portfolio_opchars;
+CREATE VIEW project_portfolio_opchars AS
+SELECT * FROM inputs_project_portfolios
+LEFT OUTER JOIN
+inputs_project_operational_chars
+USING (project)
+;
+
+
+-- This view shows the possible operational periods for new projects, based on
+-- the available vintages and their lifetime. E.g. a project available in
+-- vintage 2020 with a lifetime of 30 years will have the 2020 through 2049
+-- as possible operational periods.
+-- We use recursive CTE to calculate this, see e.g.
+-- https://stackoverflow.com/questions/45104717/sql-to-generate-a-number
+-- between-range-specified-by-columns
+-- Note: the renaming of the columns ("AS period" is not strictly necessary
+-- since the UNION ALL statement doesn't read the column names
+DROP VIEW IF EXISTS project_new_operational_periods;
+CREATE VIEW project_new_operational_periods AS
+WITH main_data (project, project_new_cost_scenario_id, period, highrange)
+    AS (
+    SELECT project, project_new_cost_scenario_id, vintage AS period,
+    vintage + lifetime_yrs AS highrange
+    FROM inputs_project_new_cost
+    UNION ALL
+    SELECT project, project_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
+SELECT distinct project_new_cost_scenario_id, project, period
+FROM main_data
+;
+
+
+-- This view shows the possible operational periods for new and specified
+-- projects, based on the available vintage and lifetime and/or the specified
+-- capacity periods, as well as the actual modeled periods.
+DROP VIEW IF EXISTS project_operational_periods;
+CREATE VIEW project_operational_periods AS
+SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, project, period
+FROM
+    -- Use left join + union + left join because no outer join in sqlite
+    (SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
+    FROM inputs_project_specified_capacity
+    LEFT JOIN project_new_operational_periods USING(project, period)
+    UNION ALL
+    SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
+    FROM project_new_operational_periods
+    LEFT JOIN inputs_project_specified_capacity USING(project, period)
+    where project_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_project_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+;
+
+
+-- This view shows the periods and the respective horizons within each period
+-- for each balancing_type, based on the timepoint-to-horizon mapping and the
+-- timepoint-to-period mapping.
+DROP VIEW IF EXISTS periods_horizons;
+CREATE VIEW periods_horizons AS
+SELECT DISTINCT
+temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon,
+period, horizon
+FROM inputs_temporal
+INNER JOIN
+inputs_temporal_horizon_timepoints
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+;
+
+
+-- This view shows the possible operational horizons for each project based
+-- based on its operational periods (see project_operational_periods), its
+-- balancing type, and the periods-horizons mapping for that balancing type
+-- (see periods_horizons). It also includes the operational type and the
+-- hydro_operational_chars_scenario_id, since these are useful to slice out
+-- operational types of interest (namely hydro) and join the hydro inputs,
+-- which are indexed by project-horizon.
+DROP VIEW IF EXISTS project_operational_horizons;
+CREATE VIEW project_operational_horizons AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, hydro_operational_chars_scenario_id,
+subproblem_id, stage_id, project, horizon
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the periods horizons for the matching balancing type
+LEFT OUTER JOIN
+periods_horizons
+ON (project_portfolio_opchars.balancing_type_project
+= periods_horizons.balancing_type_horizon)
+-- Only select horizons from the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
+;
+
+-- This view shows the possible operational timepoints for each project based
+-- based on its operational periods (see project_operational_periods), and
+-- the timepoints in the temporal subscenario (see inputs_temporal). It also
+-- includes the operational type and the
+-- variable_generator_profile_scenario_id, since these are useful to slice out
+-- operational types of interest (namely variale generators) and join the
+-- variable generator inputs which are indexed by project-timepoint.
+DROP VIEW IF EXISTS project_operational_timepoints;
+CREATE VIEW project_operational_timepoints AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, variable_generator_profile_scenario_id,
+subproblem_id, stage_id, project, timepoint
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
+;
+
+
 -------------------------------------------------------------------------------
 ------------------------------ User Interface ---------------------------------
 -------------------------------------------------------------------------------
