@@ -88,13 +88,12 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
 
         FROM
 
-        (SELECT scenario_id, period, sum(annualized_capacity_cost) 
-        AS capacity_cost
-        FROM  results_project_costs_capacity
+        (SELECT scenario_id, period, capacity_cost
+        FROM capacity_costs_by_period_stage_loadzone
         WHERE scenario_id = ?
         AND stage_id = ?
         AND load_zone = ?
-        GROUP BY scenario_id, period) AS cap_costs
+        ) AS cap_costs
 
         LEFT JOIN
 

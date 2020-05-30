@@ -73,6 +73,12 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     # --> isn't that easy to do w foreign key?
 
 
+# TODO: check that subproblems don't stradle periods
+# TODO: check that sum of across subproblems sums up to hours in full
+#   period (within a certain rounding tolerance)
+# TODO: check that hours in period subproblem are the same for each
+#  stage
+
 def validate_subscenario_ids(subscenarios, optional_features, conn):
     """
     Check whether subscenarios_ids are consistent with:

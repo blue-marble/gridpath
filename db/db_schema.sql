@@ -222,6 +222,7 @@ temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
+hours_in_full_period FLOAT,
 PRIMARY KEY (temporal_scenario_id, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
@@ -2720,6 +2721,8 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+hours_in_full_period FLOAT,
+hours_in_subproblem_period FLOAT,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
@@ -3529,6 +3532,17 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+-- Aggregate capacity costs across projects and subproblems
+-- Take into account subproblem duration when aggregating across subproblems
+-- (e.g. if we are modeling daily subproblems when doing production simulation,
+--  the fixed O&M costs for each day is 1/365 of the annualized cost)
+DROP VIEW IF EXISTS capacity_costs_by_period_stage_loadzone;
+CREATE VIEW capacity_costs_by_period_stage_loadzone AS
+SELECT scenario_id, period, stage_id, load_zone, sum(annualized_capacity_cost *
+hours_in_subproblem_period / hours_in_full_period) AS capacity_cost
+FROM results_project_costs_capacity
+GROUP BY scenario_id, period, stage_id, load_zone
+;
 
 -------------------------------------------------------------------------------
 ------------------------------ User Interface ---------------------------------

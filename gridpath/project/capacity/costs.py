@@ -76,18 +76,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+
+    # TODO: need to add a period_weight here that is smaller than one if
+    #  the active subproblem-stage only represents a fraction of the period
+    # or simply add #hours represented
+
+
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "costs_capacity_all_projects.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "technology", "load_zone",
+            ["project", "period", "hours_in_full_period",
+             "hours_in_subproblem_period", "technology", "load_zone",
              "annualized_capacity_cost"]
         )
         for (prj, p) in m.PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
                 p,
+                m.hours_in_full_period[p],
+                m.hours_in_subproblem_period[p],
                 m.technology[prj],
                 m.load_zone[prj],
                 value(m.Capacity_Cost_in_Period[prj, p])
@@ -128,20 +137,24 @@ def import_results_into_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            annualized_capacity_cost = row[4]
+            hours_in_full_period = row[2]
+            hours_in_subproblem_period = row[3]
+            technology = row[4]
+            load_zone = row[5]
+            annualized_capacity_cost = row[6]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
+                 hours_in_full_period, hours_in_subproblem_period,
                  technology, load_zone, annualized_capacity_cost)
             )
 
     insert_temp_sql = """
         INSERT INTO temp_results_project_costs_capacity{}
         (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, annualized_capacity_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        annualized_capacity_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -149,10 +162,12 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_project_costs_capacity
         (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, annualized_capacity_cost)
+        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        annualized_capacity_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, annualized_capacity_cost
+        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        annualized_capacity_cost
         FROM temp_results_project_costs_capacity{}
         ORDER BY scenario_id, project, period, subproblem_id, 
         stage_id;""".format(scenario_id)
