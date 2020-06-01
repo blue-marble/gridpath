@@ -209,9 +209,10 @@ FROM  results_project_costs_capacity
 GROUP BY scenario_id, period) AS cap_costs
 JOIN
 (SELECT scenario_id, period,
-sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) AS fuel_cost
-sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS variable_om_cost
-sum(startup_cost * timepoint_weight) AS startup_cost
+sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) AS fuel_cost,
+sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS
+variable_om_cost,
+sum(startup_cost * timepoint_weight) AS startup_cost,
 sum(shutdown_cost * timepoint_weight) AS shutdown_cost
 FROM results_project_costs_operations
 GROUP BY scenario_id, period) AS operational_costs
@@ -228,9 +229,9 @@ USING (scenario_id)
 
 -- Carbon emissions by carbon_cap_zone and period -- in-zone, imported, and
 -- total + duals
-select scenario_id, scenario_name, carbon_cap_zone, period, carbon_cap_mmt,
-in_zone_project_emissions_mmt, import_emissions_mmt, total_emissions_mmt,
-carbon_cap_marginal_cost_per_mmt
+select scenario_id, scenario_name, carbon_cap_zone, period, carbon_cap,
+in_zone_project_emissions, import_emissions, total_emissions,
+carbon_cap_marginal_cost_per_emission
 from results_system_carbon_emissions
 join scenarios
 using (scenario_id)
