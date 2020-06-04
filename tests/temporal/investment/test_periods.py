@@ -86,7 +86,8 @@ class TestPeriods(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
-                usecols=['timepoint', 'period']
+                usecols=["timepoint", "period", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "spinup_or_lookahead"]
             )
 
         # PERIODS set
@@ -95,6 +96,7 @@ class TestPeriods(unittest.TestCase):
         self.assertListEqual(expected_periods, actual_periods,
                              msg="PERIODS set data does not load correctly."
                              )
+        # TODO: set index and convert to dict once
         # Param: discount_factor
         expected_discount_factor_param = \
             periods_df.set_index('period').to_dict()['discount_factor']
@@ -115,6 +117,19 @@ class TestPeriods(unittest.TestCase):
         self.assertDictEqual(expected_num_years_param,
                              actual_num_years_param,
                              msg="Data for param 'number_years_represented' "
+                                 "param not loaded correctly"
+                             )
+
+        # Param: hours_in_full_period
+        expected_hours_in_full_period = \
+            periods_df.set_index('period').to_dict()[
+                'hours_in_full_period'
+            ]
+        actual_hours_in_full_period = \
+            {p: instance.hours_in_full_period[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_hours_in_full_period,
+                             actual_hours_in_full_period,
+                             msg="Data for param 'hours_in_full_period' "
                                  "param not loaded correctly"
                              )
 
@@ -167,6 +182,21 @@ class TestPeriods(unittest.TestCase):
         actual_prev_periods = {p: instance.prev_period[p] for p in
                                instance.NOT_FIRST_PRDS}
         self.assertDictEqual(expected_prev_periods, actual_prev_periods)
+
+        # Param: hours_in_subproblem_period
+        timepoints_df["tot_hours"] = timepoints_df[
+            "number_of_hours_in_timepoint"] * timepoints_df["timepoint_weight"]
+        subdf = timepoints_df[timepoints_df["spinup_or_lookahead"] == "."]
+        expected_hours_in_subproblem_period = subdf.groupby(["period"])[
+            "tot_hours"].sum().to_dict()
+
+        actual_hours_in_subproblem_period = \
+            {p: instance.hours_in_subproblem_period[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_hours_in_subproblem_period,
+                             actual_hours_in_subproblem_period,
+                             msg="Data for param 'hours_in_subproblem_period' "
+                                 "param not loaded correctly"
+                             )
 
 
 if __name__ == "__main__":
