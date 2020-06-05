@@ -11,13 +11,15 @@ of the input data and scenario setup.
 from __future__ import print_function
 
 from builtins import str
+import pandas as pd
 import sqlite3
 import sys
 from argparse import ArgumentParser
 
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from gridpath.auxiliary.validations import write_validation_to_database
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_hours_in_periods
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
@@ -66,18 +68,53 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
             #    ... (see Evernote validation list)
             #    create separate function for each validation that you call here
 
-    # check that SU and SD * timepoint duration is larger than Pmin
-    # this requires multiple tables so cross validation?
-
-    # check that specified load zones are actual load zones that are available
-    # --> isn't that easy to do w foreign key?
+    # Validation across subproblems and stages:
+    validate_hours_in_subproblem_period(subscenarios, conn)
 
 
-# TODO: check that subproblems don't stradle periods
-# TODO: check that sum of across subproblems sums up to hours in full
-#   period (within a certain rounding tolerance)
-# TODO: check that hours in period subproblem are the same for each
-#  stage
+def validate_hours_in_subproblem_period(subscenarios, conn):
+    """
+
+    :param subscenarios:
+    :param conn:
+    :return:
+    """
+
+    sql = """
+        SELECT stage_id, period, n_hours, hours_in_full_period
+        FROM
+            (SELECT temporal_scenario_id, stage_id, period,
+            sum(number_of_hours_in_timepoint * timepoint_weight) as n_hours
+            FROM inputs_temporal
+            WHERE spinup_or_lookahead IS NULL
+            AND temporal_scenario_id = {}
+            GROUP BY temporal_scenario_id, stage_id, period
+            ) AS tmp_table
+    
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, period, hours_in_full_period
+        FROM inputs_temporal_periods) AS period_tbl
+    
+        USING (temporal_scenario_id, period)
+    
+    """.format(subscenarios.TEMPORAL_SCENARIO_ID)
+
+    df = pd.read_sql(sql, con=conn)
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="inputs_temporal",
+        severity="Mid",
+        errors=validate_hours_in_periods(df)
+    )
+
+    # TODO: check that subproblems don't straddle periods
+
 
 def validate_subscenario_ids(subscenarios, optional_features, conn):
     """
