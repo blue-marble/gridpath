@@ -6,18 +6,18 @@
                               New Capacity (MW)
 load_zone technology vintage                   
 Zone1     Gas        2020                 20.00
-                     2030                 10.00
+                     2030                 27.67
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                       8.00           9.55
-                 Gas                       61.00          72.79
-                 Nuclear                   12.00          14.32
-                 Wind                       2.80           3.34
-          2030   Coal                       3.00           3.33
-                 Gas                       72.20          80.22
-                 Nuclear                   12.00          13.33
-                 Wind                       2.80           3.11
+Zone1     2020   Coal                  35,040.00           9.55
+                 Gas                  267,180.00          72.79
+                 Nuclear               52,560.00          14.32
+                 Wind                  12,264.00           3.34
+          2030   Coal                       0.00           0.00
+                 Gas                  329,376.00          83.56
+                 Nuclear               52,560.00          13.33
+                 Wind                  12,264.00           3.11
