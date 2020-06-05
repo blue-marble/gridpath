@@ -65,7 +65,7 @@ class TestTimepoints(unittest.TestCase):
                 sep="\t",
                 usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
-                         "month"]
+                         "month", "spinup_or_lookahead"]
             )
 
         m, data = \
@@ -82,6 +82,7 @@ class TestTimepoints(unittest.TestCase):
                              msg="TIMEPOINTS set data does not load correctly."
                              )
 
+        # TODO: set index and convert to dict once
         expected_num_hrs_param = \
             timepoints_df.set_index("timepoint").to_dict()[
                 "number_of_hours_in_timepoint"
@@ -107,6 +108,20 @@ class TestTimepoints(unittest.TestCase):
                              msg="Data for param timepoint_weight not loaded "
                                  "correctly")
 
+        # Params: previous_stage_timepoint_map
+        expected_previous_stage_timepoint_map = {20200101: 20200101}
+        actual_previous_stage_timepoint_map =  \
+            {20200101: instance.prev_stage_tmp_map[20200101]}
+        # Note: params won't be defined when the value is "." unless there is
+        # a default value. We can therefore only test the first timepoint since
+        # all other timepoints have "." as input in the test data. We added the
+        # defined value for the first timepoint solely for testing purposes.
+
+        self.assertDictEqual(expected_previous_stage_timepoint_map,
+                             actual_previous_stage_timepoint_map,
+                             msg="Data for param previous_stage_timepoint_map not loaded "
+                                 "correctly")
+
         # Set: MONTHS
         self.assertListEqual([m for m in instance.MONTHS],
                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
@@ -128,8 +143,15 @@ class TestTimepoints(unittest.TestCase):
         # Params: furthest_linked_tmp
         # TODO: not sure how to check that this param has not been initialized
 
-        # TODO: we're missing a test for the loading of the
-        #  previous_stage_timepoint_map param
+        # Params: spinup_or_lookahead
+        expected_spinup_or_lookahead = {tmp: False for tmp in instance.TMPS}
+        actual_spinup_or_lookahead = {tmp: instance.spinup_or_lookahead[tmp]
+                                      for tmp in instance.TMPS}
+        self.assertDictEqual(
+            expected_spinup_or_lookahead,
+            actual_spinup_or_lookahead,
+            msg="Data for param spinup_or_lookahead not loaded correctly"
+        )
 
     def test_linked_tmps(self):
         """

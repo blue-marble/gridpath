@@ -222,6 +222,7 @@ temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
+hours_in_full_period FLOAT,
 PRIMARY KEY (temporal_scenario_id, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
@@ -2720,11 +2721,13 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+hours_in_full_period FLOAT,
+hours_in_subproblem_period FLOAT,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
-annualized_capacity_cost FLOAT,
+capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -2853,9 +2856,11 @@ tx_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+hours_in_full_period FLOAT,
+hours_in_subproblem_period FLOAT,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
-annualized_capacity_cost FLOAT,
+capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 

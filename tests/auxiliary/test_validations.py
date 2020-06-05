@@ -692,6 +692,41 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_hours_in_periods(self):
+        """
+        :return:
+        """
+
+        cols = ["stage_id", "period", "n_hours", "hours_in_full_period"]
+
+        test_cases = {
+            # Make sure a case with only basic inputs doesn't throw errors
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[[1, 2020, 8760, 8760],
+                          [1, 2030, 8760, 8760]]),
+                "result": []
+                },
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[[1, 2020, 8780, 8760],
+                      [1, 2030, 8760, 8760]]),
+                "result": [
+                    "Total number of hours in timepoints of period(s) '2020' - "
+                    "stage(s) '1', adjusted for timepoint weight and duration and "
+                    "excluding spinup and lookahead timepoints, does not match "
+                    "hours_in_full_period."
+                    ]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_hours_in_periods(
+                df=test_cases[test_case]["df"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
 
 if __name__ == "__main__":
     unittest.main()
