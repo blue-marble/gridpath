@@ -16,7 +16,8 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_signs, validate_columns
+    validate_dtypes, get_expected_dtypes, validate_signs, validate_columns, \
+    validate_missing_inputs
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -437,4 +438,51 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         severity="High",
         errors=validate_columns(df, "operational_type", valids=valid_op_types)
     )
+
+    # Check that all portfolio projects are present in the availability inputs
+    msg = "All projects in the portfolio should have an availability type " \
+          "specified in the inputs_project_availability table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability",
+        severity="High",
+        errors=validate_missing_inputs(df, "availability_type", msg=msg)
+    )
+
+    # Check that all portfolio projects are present in the opchar inputs
+    msg = "All projects in the portfolio should have an operational type " \
+          "and balancing type specified in the " \
+          "inputs_project_operational_chars table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=validate_missing_inputs(df,
+                                       ["operational_type",
+                                        "balancing_type_project"],
+                                       msg=msg)
+    )
+
+    # Check that all portfolio projects are present in the load zone inputs
+    msg = "All projects in the portfolio should have a load zone " \
+          "specified in the inputs_project_load_zones table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_load_zones",
+        severity="High",
+        errors=validate_missing_inputs(df, "load_zone", msg=msg)
+    )
+
 

@@ -727,6 +727,50 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_missing_inputs(self):
+        """
+        :return:
+        """
+
+        cols = ["project", "capacity_type", "operational_type"]
+
+        test_cases = {
+            # Make sure a case with only basic inputs doesn't throw errors
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", "cap1", "op1"],
+                          ["gas_ct2", "cap2", "op1"]]),
+                "result_cap_col": [],
+                "result_both_cols": []
+                },
+            # Make sure missing inputs are detected
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", "cap1", "op1"],
+                      ["gas_ct2", None, None]]),
+                "result_cap_col": ["Missing capacity_type inputs for project(s): gas_ct2. "],
+                "result_both_cols": ["Missing capacity_type inputs for project(s): gas_ct2. ",
+                                     "Missing operational_type inputs for project(s): gas_ct2. "]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            # single column
+            expected_list = test_cases[test_case]["result_cap_col"]
+            actual_list = module_to_test.validate_missing_inputs(
+                df=test_cases[test_case]["df"],
+                col="capacity_type"
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+            # multiple columns
+            expected_list = test_cases[test_case]["result_both_cols"]
+            actual_list = module_to_test.validate_missing_inputs(
+                df=test_cases[test_case]["df"],
+                col=["capacity_type", "operational_type"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
 
 if __name__ == "__main__":
     unittest.main()
