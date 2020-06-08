@@ -411,6 +411,32 @@ def validate_idxs(actual_idxs, req_idxs=[], invalid_idxs=[],
     return results
 
 
+def validate_missing_inputs(df, col, idx_col="project", msg=""):
+    """
+    Check whether there aren't any NULL inputs in the specified column.
+    :param df:
+    :param col: str or list of str
+    :param idx_col: str
+    :param msg: str
+    :return:
+    """
+
+    results = []
+
+    cols = [col] if isinstance(col, str) else col
+    for c in cols:
+        invalids = df[c].isnull()
+        if invalids.any():
+            bad_idxs = df[idx_col][invalids].astype(str)
+            print_bad_idxs = ", ".join(bad_idxs)
+            results.append(
+                "Missing {} inputs for {}(s): {}. {}"
+                .format(c, idx_col, print_bad_idxs, msg)
+            )
+
+    return results
+
+
 def validate_single_input(df, idx_col="project", msg=""):
     """
     Check whether there is only 1 input per index.
