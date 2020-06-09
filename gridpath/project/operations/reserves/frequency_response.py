@@ -16,6 +16,8 @@ from pyomo.environ import Set, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_idxs
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_get_inputs_from_database
@@ -266,10 +268,43 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    project_bas, _ = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
 
-    # do stuff here to validate inputs
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=project_bas.fetchall(),
+        columns=[s[0] for s in project_bas.description]
+    )
+    bas_w_project = df["frequency_response_ba"].unique()
+
+    # Get the required reserve bas
+    # TODO: make this into a function similar to get_projects()?
+    #  could eventually centralize all these db query functions in one place
+    c = conn.cursor()
+    bas = c.execute(
+        """SELECT frequency_response_ba FROM inputs_geography_frequency_response_bas
+        WHERE frequency_response_ba_scenario_id = {}
+        """.format(subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID)
+    )
+    bas = [b[0] for b in bas]  # convert to list
+
+    # Check that each reserve BA has at least one project assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_frequency_response_bas",
+        severity="High",
+        errors=validate_idxs(actual_idxs=bas_w_project,
+                             req_idxs=bas,
+                             idx_label="frequency_response_ba",
+                             msg="Each reserve BA needs at least 1 "
+                                 "project assigned to it.")
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
