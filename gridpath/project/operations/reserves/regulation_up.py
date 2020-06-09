@@ -14,7 +14,8 @@ import os.path
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database, generic_get_inputs_from_database
+    generic_import_results_into_database, generic_get_inputs_from_database, \
+    generic_validate_project_bas
 
 # Reserve-module variables
 MODULE_NAME = "regulation_up"
@@ -184,10 +185,16 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
+    generic_validate_project_bas(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="regulation_up",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_REGULATION_UP_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.REGULATION_UP_BA_SCENARIO_ID
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

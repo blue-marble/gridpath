@@ -11,10 +11,13 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_idxs
 
 
 def add_model_components(m, d):
@@ -440,9 +443,41 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    project_zones = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
 
-    # do stuff here to validate inputs
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=project_zones.fetchall(),
+        columns=[s[0] for s in project_zones.description]
+    )
+    zones_w_project = df["carbon_cap_zone"].unique()
+
+    # Get the required carbon cap zones
+    # TODO: make this into a function similar to get_projects()?
+    #  could eventually centralize all these db query functions in one place
+    c = conn.cursor()
+    zones = c.execute(
+        """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
+        WHERE carbon_cap_zone_scenario_id = {}
+        """.format(subscenarios.CARBON_CAP_ZONE_SCENARIO_ID)
+    )
+    zones = [z[0] for z in zones]  # convert to list
+
+    # Check that each carbon cap zone has at least one project assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_carbon_cap_zones",
+        severity="High",
+        errors=validate_idxs(actual_idxs=zones_w_project,
+                             req_idxs=zones,
+                             idx_label="carbon_cap_zone",
+                             msg="Each carbon cap zone needs at least 1 "
+                                 "project assigned to it.")
+    )
 
     # TODO: need validation that projects with carbon cap zones also have fuels
