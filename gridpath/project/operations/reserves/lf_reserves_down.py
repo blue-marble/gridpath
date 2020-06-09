@@ -10,15 +10,12 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-import pandas as pd
 
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_idxs
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database, generic_get_inputs_from_database
-
+    generic_import_results_into_database, generic_get_inputs_from_database, \
+    generic_validate_project_bas
 
 # Reserve-module variables
 MODULE_NAME = "lf_reserves_down"
@@ -183,42 +180,15 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    project_bas, _ = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
-    )
-
-    # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=project_bas.fetchall(),
-        columns=[s[0] for s in project_bas.description]
-    )
-    bas_w_project = df["lf_reserves_down_ba"].unique()
-
-    # Get the required reserve bas
-    # TODO: make this into a function similar to get_projects()?
-    #  could eventually centralize all these db query functions in one place
-    c = conn.cursor()
-    bas = c.execute(
-        """SELECT lf_reserves_down_ba FROM inputs_geography_lf_reserves_down_bas
-        WHERE lf_reserves_down_ba_scenario_id = {}
-        """.format(subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID)
-    )
-    bas = [b[0] for b in bas]  # convert to list
-
-    # Check that each reserve BA has at least one project assigned to it
-    write_validation_to_database(
+    generic_validate_project_bas(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_lf_reserves_down_bas",
-        severity="High",
-        errors=validate_idxs(actual_idxs=bas_w_project,
-                             req_idxs=bas,
-                             idx_label="lf_reserves_down_ba",
-                             msg="Each reserve BA needs at least 1 "
-                                 "project assigned to it.")
+        reserve_type="lf_reserves_down",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID
     )
 
 
