@@ -14,7 +14,8 @@ from pyomo.environ import Set, Param
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_columns, validate_signs
+    get_expected_dtypes, validate_dtypes, \
+    validate_columns, validate_signs, validate_missing_inputs
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -183,7 +184,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
         USING (transmission_line)
         
-        INNER JOIN
+        LEFT OUTER JOIN
             (SELECT transmission_line, operational_type, 
             tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
@@ -260,6 +261,43 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in transmission_lines.description]
     )
 
+    # Check data types:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_transmission_portfolios",
+               "inputs_transmission_load_zones",
+               "inputs_transmission_operational_chars"]
+    )
+
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmisison_portfolios, "
+                 "inputs_transmission_load_zones, "
+                 "inputs_transmission_operational_chars",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns if
+                       expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+    )
+
     # Ensure we're not combining incompatible capacity and operational types
     cols = ["capacity_type", "operational_type"]
     invalid_combos = c.execute(
@@ -288,4 +326,38 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         db_table="inputs_transmission_operational_chars",
         severity="High",
         errors=validate_signs(df, ["reactance_ohms"], "positive")
+    )
+
+    # Check that all portfolio tx lines are present in the opchar inputs
+    msg = "All tx lines in the portfolio should have an operational type " \
+          "specified in the inputs_transmission_operational_chars table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_missing_inputs(df,
+                                       ["operational_type"],
+                                       idx_col="transmission_line",
+                                       msg=msg)
+    )
+
+    # Check that all portfolio tx lines are present in the load zone inputs
+    msg = "All tx lines in the portfolio should have a load zone from/to " \
+          "specified in the inputs_transmission_load_zones table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_load_zones",
+        severity="High",
+        errors=validate_missing_inputs(df,
+                                       ["load_zone_from", "load_zone_to"],
+                                       idx_col="transmission_line",
+                                       msg=msg)
     )

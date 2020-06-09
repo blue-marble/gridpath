@@ -94,7 +94,7 @@ def get_required_tx_opchar_modules(scenario_id, c):
             FROM 
             (SELECT transmission_line FROM inputs_transmission_portfolios
             WHERE transmission_portfolio_scenario_id = {}) AS prj_tbl
-            LEFT OUTER JOIN 
+            INNER JOIN 
             (SELECT transmission_line, operational_type
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {}) 
