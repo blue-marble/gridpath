@@ -33,7 +33,7 @@ from gridpath.project.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     update_dispatch_results_table, load_var_profile_inputs, \
     get_var_profile_inputs_from_database, write_tab_file_model_inputs, \
-    validate_opchars
+    validate_opchars, validate_var_profiles
 
 
 def add_module_specific_components(m, d):
@@ -651,8 +651,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     validate_opchars(subscenarios, subproblem, stage, conn, "gen_var")
 
-
-    # variable_profiles = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
-
-    # do stuff here to validate inputs
+    # Validate var profiles input table
+    validate_var_profiles(subscenarios, subproblem, stage, conn, "gen_var")

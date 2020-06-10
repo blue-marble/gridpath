@@ -574,7 +574,7 @@ def get_var_profile_inputs_from_database(
         -- Now that we have the relevant projects and timepoints, get the 
         -- respective cap factors (and no others) from 
         -- inputs_project_variable_generator_profiles
-        INNER JOIN
+        LEFT OUTER JOIN
             inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, 
         stage_id, timepoint)
@@ -593,6 +593,36 @@ def get_var_profile_inputs_from_database(
     variable_profiles = c.execute(sql)
 
     return variable_profiles
+
+
+def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
+    var_profiles = get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+    )
+
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=var_profiles.fetchall(),
+        columns=[s[0] for s in var_profiles.description]
+    )
+
+    errors = validate_missing_inputs(
+        df=df,
+        col="cap_factor",
+        idx_col=["project", "timepoint"],
+        msg=""
+    )
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_generator_profiles",
+        severity="High",
+        errors=errors
+    )
 
 
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
