@@ -740,6 +740,7 @@ class TestValidations(unittest.TestCase):
                     columns=cols,
                     data=[["gas_ct", "cap1", "op1"],
                           ["gas_ct2", "cap2", "op1"]]),
+                "idx_col": "project",
                 "result_cap_col": [],
                 "result_both_cols": []
                 },
@@ -748,10 +749,20 @@ class TestValidations(unittest.TestCase):
                 columns=cols,
                 data=[["gas_ct", "cap1", "op1"],
                       ["gas_ct2", None, None]]),
-                "result_cap_col": ["Missing capacity_type inputs for project(s): gas_ct2. "],
-                "result_both_cols": ["Missing capacity_type inputs for project(s): gas_ct2. ",
-                                     "Missing operational_type inputs for project(s): gas_ct2. "]
-                }
+                "idx_col": "project",
+                "result_cap_col": ["Missing capacity_type inputs for project(s): ['gas_ct2']. "],
+                "result_both_cols": ["Missing capacity_type inputs for project(s): ['gas_ct2']. ",
+                                     "Missing operational_type inputs for project(s): ['gas_ct2']. "]
+                },
+            # Make sure idx_col with list of cols works
+            3: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", "cap1", "op1"],
+                      ["gas_ct2", "cap1", None]]),
+                "idx_col": ["project", "capacity_type"],
+                "result_cap_col": [],
+                "result_both_cols": ["Missing operational_type inputs for ['project', 'capacity_type'](s): [['gas_ct2' 'cap1']]. "]
+            }
         }
 
         for test_case in test_cases.keys():
@@ -759,6 +770,7 @@ class TestValidations(unittest.TestCase):
             expected_list = test_cases[test_case]["result_cap_col"]
             actual_list = module_to_test.validate_missing_inputs(
                 df=test_cases[test_case]["df"],
+                idx_col=test_cases[test_case]["idx_col"],
                 col="capacity_type"
             )
             self.assertListEqual(expected_list, actual_list)
@@ -767,6 +779,7 @@ class TestValidations(unittest.TestCase):
             expected_list = test_cases[test_case]["result_both_cols"]
             actual_list = module_to_test.validate_missing_inputs(
                 df=test_cases[test_case]["df"],
+                idx_col=test_cases[test_case]["idx_col"],
                 col=["capacity_type", "operational_type"]
             )
             self.assertListEqual(expected_list, actual_list)

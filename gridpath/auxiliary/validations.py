@@ -416,7 +416,7 @@ def validate_missing_inputs(df, col, idx_col="project", msg=""):
     Check whether there aren't any NULL inputs in the specified column.
     :param df:
     :param col: str or list of str
-    :param idx_col: str
+    :param idx_col: str or list of str
     :param msg: str
     :return:
     """
@@ -427,11 +427,10 @@ def validate_missing_inputs(df, col, idx_col="project", msg=""):
     for c in cols:
         invalids = df[c].isnull()
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].astype(str)
-            print_bad_idxs = ", ".join(bad_idxs)
+            bad_idxs = df[idx_col][invalids].values
             results.append(
                 "Missing {} inputs for {}(s): {}. {}"
-                .format(c, idx_col, print_bad_idxs, msg)
+                .format(c, idx_col, bad_idxs, msg)
             )
 
     return results
