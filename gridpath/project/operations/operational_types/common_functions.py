@@ -11,7 +11,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_req_cols
+    validate_req_cols, validate_missing_inputs
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -694,7 +694,7 @@ def get_hydro_inputs_from_database(
     -- Now that we have the relevant projects and horizons, get the 
     -- respective hydro opchars (and no others) from 
     -- inputs_project_hydro_operational_chars
-    INNER JOIN
+    LEFT OUTER JOIN
         inputs_project_hydro_operational_chars
     USING (hydro_operational_chars_scenario_id, project, horizon)
     ;
@@ -712,6 +712,37 @@ def get_hydro_inputs_from_database(
     hydro_chars = c.execute(sql)
 
     return hydro_chars
+
+
+def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
+    hydro_chars = get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+    )
+
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=hydro_chars.fetchall(),
+        columns=[s[0] for s in hydro_chars.description]
+    )
+
+    errors = validate_missing_inputs(
+        df=df,
+        col=["average_power_fraction", "min_power_fraction",
+             "max_power_fraction"],
+        idx_col=["project", "horizon"],
+        msg=""
+    )
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="High",
+        errors=errors
+    )
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,

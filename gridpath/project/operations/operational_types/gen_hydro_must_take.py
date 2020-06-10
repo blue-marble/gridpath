@@ -25,7 +25,7 @@ from gridpath.project.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, load_hydro_opchars, \
     get_hydro_inputs_from_database, write_tab_file_model_inputs, \
-    check_for_tmps_to_link, validate_opchars
+    check_for_tmps_to_link, validate_opchars, validate_hydro_opchars
 
 
 def add_module_specific_components(m, d):
@@ -789,7 +789,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     validate_opchars(subscenarios, subproblem, stage, conn,
                      "gen_hydro_must_take")
 
-    # hydro_chars = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
+    # Validate hydro opchars input table
+    validate_hydro_opchars(subscenarios, subproblem, stage, conn,
+                           "gen_hydro_must_take")
