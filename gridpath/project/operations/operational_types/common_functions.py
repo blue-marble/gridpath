@@ -596,6 +596,15 @@ def get_var_profile_inputs_from_database(
 
 
 def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
     var_profiles = get_var_profile_inputs_from_database(
         subscenarios, subproblem, stage, conn, op_type
     )
@@ -623,6 +632,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
         severity="High",
         errors=errors
     )
+    # TODO: validate percentfraction for cap factor?
 
 
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
@@ -745,6 +755,15 @@ def get_hydro_inputs_from_database(
 
 
 def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
     hydro_chars = get_hydro_inputs_from_database(
         subscenarios, subproblem, stage, conn, op_type
     )
@@ -773,6 +792,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
         severity="High",
         errors=errors
     )
+    # TODO: validate percentfraction for hydro opchars?
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,
