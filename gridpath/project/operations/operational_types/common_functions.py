@@ -11,7 +11,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_req_cols, validate_missing_inputs
+    validate_req_cols, validate_missing_inputs, validate_signs
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -615,13 +615,9 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
         columns=[s[0] for s in var_profiles.description]
     )
 
-    errors = validate_missing_inputs(
-        df=df,
-        col="cap_factor",
-        idx_col=["project", "timepoint"],
-        msg=""
-    )
+    value_cols = ["cap_factor"]
 
+    # Check for missing inputs
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -630,9 +626,20 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_variable_generator_profiles",
         severity="High",
-        errors=errors
+        errors=validate_missing_inputs(df, value_cols, ["project", "timepoint"])
     )
-    # TODO: validate percentfraction for cap factor?
+
+    # Check for sign (should be percent fraction)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_generator_profiles",
+        severity="Mid",
+        errors=validate_signs(df, ["cap_factor"], "pctfraction")
+    )
 
 
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
@@ -773,15 +780,10 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
         data=hydro_chars.fetchall(),
         columns=[s[0] for s in hydro_chars.description]
     )
+    value_cols = ["average_power_fraction", "min_power_fraction",
+                  "max_power_fraction"]
 
-    errors = validate_missing_inputs(
-        df=df,
-        col=["average_power_fraction", "min_power_fraction",
-             "max_power_fraction"],
-        idx_col=["project", "horizon"],
-        msg=""
-    )
-
+    # Check for missing inputs
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -790,9 +792,22 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_hydro_operational_chars",
         severity="High",
-        errors=errors
+        errors=validate_missing_inputs(df, value_cols, ["project", "horizon"])
     )
-    # TODO: validate percentfraction for hydro opchars?
+
+    # Check for sign (should be percent fraction)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="Mid",
+        errors=validate_signs(df, value_cols, "pctfraction")
+    )
+
+    # TODO: check min<=avg<=max
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,
