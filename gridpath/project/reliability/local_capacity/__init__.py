@@ -8,9 +8,9 @@ Local capacity projects and the zone they contribute to
 from builtins import next
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
@@ -120,10 +120,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=project_zones.fetchall(),
-        columns=[s[0] for s in project_zones.description]
-    )
+    df = cursor_to_df(project_zones)
     zones_w_project = df["local_capacity_zone"].unique()
 
     # Get the required local capacity zones zones

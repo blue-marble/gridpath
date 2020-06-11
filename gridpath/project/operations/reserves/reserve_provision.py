@@ -17,7 +17,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, setup_results_import
+    find_list_item_position, setup_results_import, cursor_to_df
 from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params
@@ -473,10 +473,7 @@ def generic_validate_project_bas(
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=project_bas.fetchall(),
-        columns=[s[0] for s in project_bas.description]
-    )
+    df = cursor_to_df(project_bas)
     bas_w_project = df["{}_ba".format(reserve_type)].unique()
 
     # Get the required reserve bas

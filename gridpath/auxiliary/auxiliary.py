@@ -10,6 +10,7 @@ from __future__ import print_function
 from builtins import str
 from importlib import import_module
 import os.path
+import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 
@@ -222,6 +223,19 @@ def is_number(s):
         return True
     except ValueError:
         return False
+
+
+def cursor_to_df(cursor):
+    """
+    Convert the cursor object with query results into a pandas DataFrame.
+    :param cursor: cursor object with query result
+    :return:
+    """
+    df = pd.DataFrame(
+        data=cursor.fetchall(),
+        columns=[s[0] for s in cursor.description]
+    )
+    return df
 
 
 # TODO: handle non-existing scenarios/scenario_ids

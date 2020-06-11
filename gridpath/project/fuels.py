@@ -9,9 +9,9 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes
-from gridpath.auxiliary.validations import validate_columns, validate_idxs
+    validate_dtypes, get_expected_dtypes, validate_columns, validate_idxs
 
 
 def add_model_components(m, d):
@@ -204,18 +204,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert input data into pandas DataFrame
-    fuels_df = pd.DataFrame(
-        data=fuels.fetchall(),
-        columns=[s[0] for s in fuels.description]
-    )
-    fuel_prices_df = pd.DataFrame(
-        data=fuel_prices.fetchall(),
-        columns=[s[0] for s in fuel_prices.description]
-    )
-    prj_df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
+    fuels_df = cursor_to_df(fuels)
+    fuel_prices_df = cursor_to_df(fuel_prices)
+    prj_df = cursor_to_df(projects)
 
     # Get relevant lists
     fuels = fuels_df["fuel"].to_list()

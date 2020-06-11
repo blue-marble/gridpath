@@ -38,11 +38,10 @@ from __future__ import division
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Binary, PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_startup_shutdown_rate_inputs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -2561,10 +2560,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     # Convert input data to DataFrame
-    su_df = pd.DataFrame(
-        data=startup_chars.fetchall(),
-        columns=[s[0] for s in startup_chars.description]
-    )
+    su_df = cursor_to_df(startup_chars)
 
     # Get the number of hours in the timepoint (take min if it varies)
     c = conn.cursor()

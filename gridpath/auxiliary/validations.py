@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import cursor_to_df
 
 
 def _get_idx_col(df):
@@ -94,10 +95,7 @@ def get_expected_dtypes(conn, tables):
     for table in tables:
         # Get the expected datatypes from the table info (pragma)
         table_info = conn.execute("""PRAGMA table_info({})""".format(table))
-        df = pd.DataFrame(
-            data=table_info.fetchall(),
-            columns=[s[0] for s in table_info.description]
-        )
+        df = cursor_to_df(table_info)
 
         df["type_category"] = df["type"].map(get_type_category)
         dtypes_dict = dict(zip(df.name, df.type_category))

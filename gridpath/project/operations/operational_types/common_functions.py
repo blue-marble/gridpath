@@ -10,6 +10,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_req_cols, validate_missing_inputs, validate_signs
 
@@ -610,10 +611,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=var_profiles.fetchall(),
-        columns=[s[0] for s in var_profiles.description]
-    )
+    df = cursor_to_df(var_profiles)
 
     value_cols = ["cap_factor"]
 
@@ -776,10 +774,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=hydro_chars.fetchall(),
-        columns=[s[0] for s in hydro_chars.description]
-    )
+    df = cursor_to_df(hydro_chars)
     value_cols = ["average_power_fraction", "min_power_fraction",
                   "max_power_fraction"]
 
@@ -961,8 +956,6 @@ def get_optype_inputs_from_db(subscenarios, conn, op_type):
     :return:
     """
 
-    c = conn.cursor()
-
     # TODO: consolidate this with what happens in projects.init so we only
     #  hard-code the list of project opchars once.
     #  Also remove min/max duration since not really an opchar?
@@ -983,27 +976,22 @@ def get_optype_inputs_from_db(subscenarios, conn, op_type):
         "aux_consumption_frac_capacity", "aux_consumption_frac_power"
     ]
 
-    projects = c.execute(
-        """SELECT {}
+    sql = """SELECT {}
         FROM inputs_project_portfolios
         INNER JOIN
         inputs_project_operational_chars
         USING (project)
         WHERE project_portfolio_scenario_id = {}
         AND project_operational_chars_scenario_id = {}
-        AND operational_type = '{}';""".format(
+        AND operational_type = '{}';
+        """.format(
             ",".join(cols),
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             op_type
         )
-    )
 
-    # Convert input data to DataFrame
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
+    df = pd.read_sql(sql, conn)
 
     return df
 

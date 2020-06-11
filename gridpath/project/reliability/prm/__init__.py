@@ -10,9 +10,9 @@ from builtins import str
 from builtins import range
 import csv
 import os.path
-import pandas as pd
-from pyomo.environ import Param, Set, Var, NonNegativeReals, Constraint
+from pyomo.environ import Param, Set
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
@@ -132,10 +132,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=project_zones.fetchall(),
-        columns=[s[0] for s in project_zones.description]
-    )
+    df = cursor_to_df(project_zones)
     zones_w_project = df["prm_zone"].unique()
 
     # Get the required PRM zones
@@ -164,6 +161,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                              msg="Each PRM zone needs at least 1 project "
                                  "assigned to it.")
     )
+
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
     """
