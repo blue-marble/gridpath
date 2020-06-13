@@ -20,7 +20,7 @@ from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_var_profile_inputs, get_var_profile_inputs_from_database, \
-    write_tab_file_model_inputs, validate_opchars
+    write_tab_file_model_inputs, validate_opchars, validate_var_profiles
 
 
 def add_module_specific_components(m, d):
@@ -369,12 +369,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                  "gen_var_must_take")
 
-    # Other module specific validations
+    # Validate var profiles input table
+    validate_var_profiles(subscenarios, subproblem, stage, conn,
+                          "gen_var_must_take")
 
-    # TODO: validate timepoints: make sure timepoints specified are consistent
-    #   with the temporal timepoints (more is okay, less is not)
-    # variable_profiles = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    # Other module specific validations
 
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_var_must_take can't

@@ -17,7 +17,8 @@ import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_signs
+    get_expected_dtypes, validate_dtypes, validate_signs, \
+    validate_missing_inputs
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -180,7 +181,7 @@ def get_inputs_from_database(
         -- Now that we have the relevant projects and timepoints, get the 
         -- respective availability_derate (and no others) from 
         -- inputs_project_availability_exogenous
-        INNER JOIN
+        left outer JOIN
             inputs_project_availability_exogenous
         USING (exogenous_availability_scenario_id, project, stage_id, 
         timepoint)
@@ -227,6 +228,7 @@ def write_module_specific_model_inputs(
             writer.writerow(["project", "timepoint", "availability_derate"])
 
             for row in availabilities:
+                row = ["." if i is None else i for i in row]
                 writer.writerow(row)
 
 
@@ -249,6 +251,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         data=availabilities.fetchall(),
         columns=[s[0] for s in availabilities.description]
     )
+    idx_cols = ["project", "timepoint"]
+    value_cols = ["availability_derate"]
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
@@ -266,6 +270,23 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
+    # Check for missing inputs
+    msg = "If not specified, availability is assumed to be 100%. If you " \
+          "don't want to specify any availability derates, simply leave the " \
+          "exogenous_availability_scenario_id empty and this message will " \
+          "disappear."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_exogenous",
+        severity="Low",
+        errors=validate_missing_inputs(df, value_cols, idx_cols, msg)
+    )
+
+    # Check for correct sign
     if "availability" not in error_columns:
         write_validation_to_database(
             conn=conn,
@@ -275,6 +296,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_project_availability_exogenous",
             severity="High",
-            errors=validate_signs(df, ["availability_derate"], "pctfraction")
+            errors=validate_signs(df, value_cols, "pctfraction")
         )
-
