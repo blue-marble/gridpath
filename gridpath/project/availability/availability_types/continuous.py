@@ -457,7 +457,7 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage,
+        scenario_directory, subproblem, stage, "inputs",
         "project_availability_endogenous.tab"
     )
 
