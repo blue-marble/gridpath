@@ -18,11 +18,10 @@ startup and shutdown costs.
 
 import csv
 import os
-import pandas as pd
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals, Param, \
     PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_single_input
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -646,10 +645,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert inputs to dataframe
-    hr_df = pd.DataFrame(
-        data=heat_rates.fetchall(),
-        columns=[s[0] for s in heat_rates.description]
-    )
+    hr_df = cursor_to_df(heat_rates)
 
     # Check that there is only one load point (constant heat rate)
     write_validation_to_database(

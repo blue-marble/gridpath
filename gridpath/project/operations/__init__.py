@@ -16,6 +16,7 @@ import pandas as pd
 import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_signs, \
     validate_idxs, validate_piecewise_curves
@@ -626,18 +627,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
-    prj_df = pd.DataFrame(
-        data=proj_opchar.fetchall(),
-        columns=[s[0] for s in proj_opchar.description]
-    )
-    hr_df = pd.DataFrame(
-        data=heat_rates.fetchall(),
-        columns=[s[0] for s in heat_rates.description]
-    )
-    vom_df = pd.DataFrame(
-        data=variable_om.fetchall(),
-        columns=[s[0] for s in variable_om.description]
-    )
+    prj_df = cursor_to_df(proj_opchar)
+    hr_df = cursor_to_df(heat_rates)
+    vom_df = cursor_to_df(variable_om)
 
     # Check data types operational chars:
     expected_dtypes = get_expected_dtypes(

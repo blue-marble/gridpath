@@ -12,6 +12,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Any
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
@@ -344,10 +345,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
+    df = cursor_to_df(projects)
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(

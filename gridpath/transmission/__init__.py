@@ -13,6 +13,7 @@ from pyomo.environ import Set, Param
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, \
     validate_columns, validate_signs, validate_missing_inputs
@@ -256,10 +257,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=transmission_lines.fetchall(),
-        columns=[s[0] for s in transmission_lines.description]
-    )
+    df = cursor_to_df(transmission_lines)
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(

@@ -13,9 +13,9 @@ optimization.
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, validate_signs, \
     validate_missing_inputs
@@ -247,10 +247,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn
     )
 
-    df = pd.DataFrame(
-        data=availabilities.fetchall(),
-        columns=[s[0] for s in availabilities.description]
-    )
+    df = cursor_to_df(availabilities)
     idx_cols = ["project", "timepoint"]
     value_cols = ["availability_derate"]
 

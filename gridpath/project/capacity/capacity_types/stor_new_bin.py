@@ -25,6 +25,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, \
     Constraint, value, Binary
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -652,15 +653,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                             "stor_new_bin")
 
     # Convert input data into pandas DataFrame
-    cost_df = pd.DataFrame(
-        data=new_stor_costs.fetchall(),
-        columns=[s[0] for s in new_stor_costs.description]
-    )
-
-    bld_size_df = pd.DataFrame(
-        data=new_stor_build_size.fetchall(),
-        columns=[s[0] for s in new_stor_build_size.description]
-    )
+    cost_df = cursor_to_df(new_stor_costs)
+    bld_size_df = cursor_to_df(new_stor_build_size)
 
     # get the project lists
     bld_size_projects = bld_size_df["project"]
