@@ -657,6 +657,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     bld_size_df = cursor_to_df(new_stor_build_size)
 
     # get the project lists
+    cost_projects = cost_df["project"].unique()
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -666,7 +667,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                 "inputs_project_new_binary_build_size"]
     )
 
-    # Check dtypes
+    # Check dtypes - cost_df
     dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
@@ -679,7 +680,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         errors=dtype_errors
     )
 
-    # Check valid numeric columns are non-negative
+    # Check valid numeric columns are non-negative - cost_df
     numeric_columns = [c for c in cost_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
@@ -692,6 +693,50 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         db_table="inputs_project_new_cost",
         severity="High",
         errors=validate_signs(cost_df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Check dtypes - bld_size_df
+    dtype_errors, error_columns = validate_dtypes(bld_size_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative - bld_size_df
+    numeric_columns = [c for c in bld_size_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=validate_signs(bld_size_df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Check that all binary new build projects are available in >=1 vintage
+    msg = "Expected cost data for at least one vintage."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_idxs(actual_idxs=cost_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
     )
 
     # Check that all binary new build projects have build size specified
