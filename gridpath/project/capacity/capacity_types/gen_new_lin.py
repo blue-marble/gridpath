@@ -424,6 +424,7 @@ def load_module_specific_data(
     :return:
     """
 
+    # TODO: actually do the todo below (similar to gen_spec)
     # TODO: throw an error when a generator of the 'gen_new_lin' capacity
     #   type is not found in new_build_option_vintage_costs.tab
     data_portal.load(filename=
