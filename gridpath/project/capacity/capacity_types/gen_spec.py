@@ -185,6 +185,10 @@ def load_module_specific_data(
             else:
                 pass
 
+        gen_w_params = [gp[0] for gp in generator_period_list]
+        if set(gen_w_params) != set(generators_list):
+            raise ValueError("Missing capacity/fixed cost inputs for gen_spec")
+
         return generator_period_list, \
             gen_spec_capacity_mw_dict, \
             gen_spec_fixed_cost_per_mw_yr_dict
