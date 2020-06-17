@@ -424,6 +424,12 @@ def load_module_specific_data(
     :return:
     """
 
+    # TODO: would have to rewrite this simple data_portal.load statement
+    #  into more complex manual loading to filter out "." values
+    #  Would also have to check consistency with the min/max inputs to avoid
+    #  avoid having GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT be larger than
+    #  GEN_NEW_LIN_VNTS (e.g. when project has an input for min/max but
+    #  not for cost).
     # TODO: throw an error when a generator of the 'gen_new_lin' capacity
     #   type is not found in new_build_option_vintage_costs.tab
     data_portal.load(filename=
@@ -626,7 +632,7 @@ def get_module_specific_inputs_from_database(
         (SELECT period AS vintage
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_vintages
-        INNER JOIN
+        LEFT OUTER JOIN
         (SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost

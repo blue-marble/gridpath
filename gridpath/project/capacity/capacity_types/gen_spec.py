@@ -176,7 +176,7 @@ def load_module_specific_data(
                        df["period"],
                        df["specified_capacity_mw"],
                        df["fixed_cost_per_mw_yr"]):
-            if row[0] in generators_list:
+            if row[0] in generators_list and row[2] != "." and row[3] != ".":
                 generator_period_list.append((row[0], row[1]))
                 gen_spec_capacity_mw_dict[(row[0], row[1])] = \
                     float(row[2])
@@ -184,6 +184,11 @@ def load_module_specific_data(
                     float(row[3])
             else:
                 pass
+
+        gen_w_params = [gp[0] for gp in generator_period_list]
+        if set(generators_list) != set(gen_w_params):
+            raise ValueError("Missing specified capacity/fixed cost inputs "
+                             "for some projects in the portfolio.")
 
         return generator_period_list, \
             gen_spec_capacity_mw_dict, \
@@ -222,7 +227,7 @@ def get_module_specific_inputs_from_database(
         (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
-        INNER JOIN
+        LEFT OUTER JOIN
         (SELECT project, period, specified_capacity_mw
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
@@ -272,7 +277,8 @@ def write_module_specific_model_inputs(
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
             for row in ep_capacities:
-                writer.writerow(row)
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
     # If specified_generation_period_params.tab file does not exist,
     # write header first, then add input data
     else:
@@ -290,7 +296,8 @@ def write_module_specific_model_inputs(
 
             # Write input data
             for row in ep_capacities:
-                writer.writerow(row)
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
 
 # Validation
