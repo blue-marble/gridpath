@@ -28,9 +28,12 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
     Constraint, value
 
-from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_signs, get_expected_dtypes, get_projects, validate_dtypes, \
+    validate_idxs, validate_row_monotonicity, validate_column_monotonicity
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -715,10 +718,101 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    # new_gen_costs = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
-    # validate inputs
-    # check that annualize real cost is positive
-    # check that maximum new build doesn't decrease
-    # ...
+    new_gen_costs = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_lin")
+
+    # Convert input data into pandas DataFrame
+    cost_df = cursor_to_df(new_gen_costs)
+    df_cols = cost_df.columns
+
+    # get the project lists
+    cost_projects = cost_df["project"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_project_new_cost", "inputs_project_new_potential"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in cost_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_signs(cost_df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Check that all binary new build projects are available in >=1 vintage
+    msg = "Expected cost data for at least one vintage."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="Mid",
+        errors=validate_idxs(actual_idxs=cost_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )
+
+    cols = ["min_cumulative_new_build_mw",
+            "max_cumulative_new_build_mw"]
+    # Check that maximum new build doesn't decrease
+    if cols[1] in df_cols:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_new_potential",
+            severity="Mid",
+            errors=validate_row_monotonicity(
+                df=cost_df,
+                col=cols[1],
+                rank_col="vintage"
+            )
+        )
+
+    # check that min build <= max build
+    if set(cols).issubset(set(df_cols)):
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_new_potential",
+            severity="High",
+            errors=validate_column_monotonicity(
+                df=cost_df,
+                cols=cols,
+                idx_col=["project", "vintage"]
+            )
+        )

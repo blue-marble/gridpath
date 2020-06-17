@@ -24,7 +24,7 @@ rps_zone_scenario_id,NULL
 carbon_cap_zone_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
-project_portfolio_scenario_id,11
+project_portfolio_scenario_id,12
 project_load_zone_scenario_id,1
 project_lf_reserves_up_ba_scenario_id,1
 project_lf_reserves_down_ba_scenario_id,1
@@ -42,7 +42,7 @@ project_operational_chars_scenario_id,1
 project_availability_scenario_id,1
 fuel_scenario_id,1
 fuel_price_scenario_id,1
-project_new_cost_scenario_id,2
+project_new_cost_scenario_id,1
 project_new_potential_scenario_id,NULL
 prm_energy_only_scenario_id,NULL
 transmission_portfolio_scenario_id,1

@@ -784,6 +784,134 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_validate_row_monotonicity(self):
+        """
+        :return:
+        """
+
+        cols = ["project", "period", "max_mw", "max_mwh"]
+        test_cases = {
+            # Make sure a case with only basic inputs doesn't throw errors
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 2020, 10, 20],
+                          ["gas_ct", 2030, 10, 20],
+                          ["coal", 2030, 20, 20]]),
+                "col": ["max_mw"],
+                "result": []
+                },
+            # Make sure a case with only basic inputs doesn't throw errors
+            # - checking multiple columns
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 20],
+                      ["gas_ct", 2030, 10, 20],
+                      ["coal", 2030, 20, 20]]),
+                "col": ["max_mw", "max_mwh"],
+                "result": []
+                },
+            # Decreasing values are flagged
+            3: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 20],
+                      ["gas_ct", 2030, 5, 20],
+                      ["coal", 2030, 20, 20]]),
+                "col": ["max_mw"],
+                "result": ["project(s) 'gas_ct': max_mw should monotonically "
+                           "increase with period. "]
+                },
+            # Decreasing values are flagged - multiple columns
+            4: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 20],
+                      ["gas_ct", 2030, 5, 15],
+                      ["coal", 2030, 20, 20]]),
+                "col": ["max_mw", "max_mwh"],
+                "result": ["project(s) 'gas_ct': max_mw should monotonically "
+                           "increase with period. ",
+                           "project(s) 'gas_ct': max_mwh should monotonically "
+                           "increase with period. "]
+                },
+            # None values are ignored
+            5: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 20],
+                      ["gas_ct", 2030, 5, None],
+                      ["coal", 2030, 20, 20]]),
+                "col": ["max_mw", "max_mwh"],
+                "result": ["project(s) 'gas_ct': max_mw should monotonically "
+                           "increase with period. "]
+                }
+        }
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_row_monotonicity(
+                df=test_cases[test_case]["df"],
+                col=test_cases[test_case]["col"],
+                rank_col="period"
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_validate_column_monotonicity(self):
+        """
+        :return:
+        """
+
+        cols = ["project", "period", "min_mw", "avg_mw", "max_mw"]
+        test_cases = {
+            # Make sure a case with only basic inputs doesn't throw errors
+            1: {"df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", 2020, 10, 15, 20],
+                          ["gas_ct", 2030, 10, 15, 20],
+                          ["coal", 2030, 20, 20, 20]]),
+                "cols": ["min_mw", "avg_mw", "max_mw"],
+                "idx_col": "project",
+                "result": []
+                },
+            # Make sure erroneous inputs are properly caught
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 15, 20],
+                      ["gas_ct", 2030, 21, 15, 20],
+                      ["coal", 2030, 20, 20, 20]]),
+                "cols": ["min_mw", "avg_mw", "max_mw"],
+                "idx_col": "project",
+                "result": ["project(s) ['gas_ct']: Values cannot decrease "
+                           "between ['min_mw', 'avg_mw', 'max_mw']. "]
+                },
+            # None values are ignored
+            3: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 15, 20],
+                      ["gas_ct", 2030, None, 15, 20],
+                      ["coal", 2030, 20, 20, 20]]),
+                "cols": ["min_mw", "max_mw"],
+                "idx_col": "project",
+                "result": []
+                },
+            # idx_col can be list of strings
+            4: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 10, 15, 20],
+                      ["gas_ct", 2030, 21, 15, 20],
+                      ["coal", 2030, 20, 20, 20]]),
+                "cols": ["min_mw", "avg_mw", "max_mw"],
+                "idx_col": ["project", "period"],
+                "result": ["['project', 'period'](s) [['gas_ct' 2030]]: "
+                           "Values cannot decrease between "
+                           "['min_mw', 'avg_mw', 'max_mw']. "]
+                }
+        }
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = module_to_test.validate_column_monotonicity(
+                df=test_cases[test_case]["df"],
+                cols=test_cases[test_case]["cols"],
+                idx_col=test_cases[test_case]["idx_col"],
+            )
+            self.assertListEqual(expected_list, actual_list)
+
 
 if __name__ == "__main__":
     unittest.main()
