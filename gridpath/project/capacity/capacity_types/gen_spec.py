@@ -226,12 +226,12 @@ def get_module_specific_inputs_from_database(
         (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
-        LEFT OUTER JOIN
+        INNER JOIN
         (SELECT project, period, specified_capacity_mw
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
-        LEFT OUTER JOIN
+        INNER JOIN
         (SELECT project, period, 
         annual_fixed_cost_per_mw_year
         FROM inputs_project_specified_fixed_cost
@@ -355,37 +355,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         errors=validate_signs(df, valid_numeric_columns, "nonnegative")
     )
 
-    value_cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
-    tables = ["inputs_project_specified_capacity",
-              "inputs_project_specified_fixed_cost"]
-    idx_cols = ["project", "period"]
-    for col, table in zip(value_cols, tables):
-        write_validation_to_database(
-            conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
-            subproblem_id=subproblem,
-            stage_id=stage,
-            gridpath_module=__name__,
-            db_table=table,
-            severity="High",
-            errors=validate_missing_inputs(df, col, idx_cols)
-        )
-
-    # TODO: could also leave inner join and instead check projects similar
-    #  to how it's done in gen_new_lin. However, you would still need to
-    #  flag missing fixed costs separately because they do use outer join
     # Check that project capacity is specified in at least 1 period
-    # msg = "Expected specified capacity for at least one period."
-    # write_validation_to_database(
-    #     conn=conn,
-    #     scenario_id=subscenarios.SCENARIO_ID,
-    #     subproblem_id=subproblem,
-    #     stage_id=stage,
-    #     gridpath_module=__name__,
-    #     db_table="inputs_project_specified_capacity",
-    #     severity="Mid",
-    #     errors=validate_idxs(actual_idxs=spec_projects,
-    #                          req_idxs=projects,
-    #                          idx_label="project",
-    #                          msg=msg)
-    # )
+    msg = "Expected specified capacity & fixed costs for at least one period."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, inputs_project_specified_fixed_cost",
+        severity="Mid",
+        errors=validate_idxs(actual_idxs=spec_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )
