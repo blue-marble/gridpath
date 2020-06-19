@@ -372,7 +372,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
                  "inputs_project_specified_fixed_cost",
-        severity="Mid",
+        severity="High",
         errors=validate_idxs(actual_idxs=spec_projects,
                              req_idxs=projects,
                              idx_label="project",
