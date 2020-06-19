@@ -362,6 +362,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         errors=validate_signs(df, valid_numeric_columns, "nonnegative")
     )
 
+    # TODO: this checks for missing row entries but not for missing values
+    #  in one or more columns
     # Ensure project capacity & fixed cost is specified in at least 1 period
     msg = "Expected specified capacity & fixed costs for at least one period."
     write_validation_to_database(
