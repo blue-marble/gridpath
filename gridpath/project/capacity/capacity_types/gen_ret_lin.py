@@ -209,8 +209,6 @@ def gen_ret_lin_capacity_rule(mod, g, p):
 # Constraint Formulation Rules
 ###############################################################################
 
-# TODO: we need to check that the user hasn't specified increasing
-#  capacity to begin with
 def retire_forever_rule(mod, g, p):
     """
     **Constraint Name**: GenRetLin_Retire_Forever_Constraint
