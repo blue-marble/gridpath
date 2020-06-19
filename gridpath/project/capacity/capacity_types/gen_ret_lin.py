@@ -607,7 +607,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                              idx_label="project",
                              msg=msg)
     )
-    
+
     # Check project capacity is not increasing
     msg = "gen_ret_lin projects are not expected to have increasing " \
           "specified capacity. Any increases will force retirements. "
@@ -618,7 +618,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity",
-        severity="Mid",
+        severity="High",
         errors=validate_row_monotonicity(
             df=df,
             col="specified_capacity_mw",
