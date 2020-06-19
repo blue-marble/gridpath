@@ -462,7 +462,8 @@ def validate_single_input(df, idx_col="project", msg=""):
     return results
 
 
-def validate_row_monotonicity(df, col, rank_col, idx_col="project", msg=""):
+def validate_row_monotonicity(df, col, rank_col, idx_col="project",
+                              increasing=True, msg=""):
     """
     Check whether row values for column(s) 'col' are monotonically increasing
     for each index in 'idx_col', when sorted by idx_col and rank_col.
@@ -474,6 +475,8 @@ def validate_row_monotonicity(df, col, rank_col, idx_col="project", msg=""):
     :param rank_col: str, column to sort along before checking monotonicity
     :param idx_col: str, default 'project', index column; will check
     monotonicity for each idx in the index
+    :param increasing: boolean, default False, whether to check for monotonic
+    increase or decrease
     :param msg: str, default '', optional clarifying error message.
     :return:
     """
@@ -483,13 +486,18 @@ def validate_row_monotonicity(df, col, rank_col, idx_col="project", msg=""):
     for c in cols:
         df2 = df.dropna(subset=[c])
         group = df2.sort_values([idx_col, rank_col]).groupby(idx_col)[c]
-        invalids = ~group.apply(lambda x: x.is_monotonic)
+        if increasing:
+            invalids = ~group.apply(lambda x: x.is_monotonic)
+            direction = "increase"
+        else:
+            invalids = ~group.apply(lambda x: x.is_monotonic_decreasing)
+            direction = "decrease"
         if invalids.any():
             bad_idxs = invalids.index[invalids]
             print_bad_idxs = ", ".join(bad_idxs)
             results.append(
-                "{}(s) '{}': {} should monotonically increase with {}. {}"
-                .format(idx_col, print_bad_idxs, c, rank_col, msg)
+                "{}(s) '{}': {} should monotonically {} with {}. {}"
+                .format(idx_col, print_bad_idxs, c, direction, rank_col, msg)
             )
 
     return results
