@@ -27,7 +27,7 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_signs, \
-    validate_idxs, validate_missing_inputs
+    validate_idxs
 
 
 def add_module_specific_components(m, d):
@@ -189,6 +189,12 @@ def load_module_specific_data(
             else:
                 pass
 
+        gen_w_params = [gp[0] for gp in generator_period_list]
+        diff = list(set(generators_list) - set(gen_w_params))
+        if diff:
+            raise ValueError("Missing capacity/fixed cost inputs for the "
+                             "following gen_spec projects: {}".format(diff))
+
         return generator_period_list, \
             gen_spec_capacity_mw_dict, \
             gen_spec_fixed_cost_per_mw_yr_dict
@@ -317,7 +323,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(gen_spec_params)
-    df_cols = df.columns
     spec_projects = df["project"].unique()
 
     # Get expected dtypes
@@ -335,7 +340,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
         severity="High",
         errors=dtype_errors
     )
@@ -350,12 +356,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
         severity="High",
         errors=validate_signs(df, valid_numeric_columns, "nonnegative")
     )
 
-    # Check that project capacity is specified in at least 1 period
+    # Ensure project capacity & fixed cost is specified in at least 1 period
     msg = "Expected specified capacity & fixed costs for at least one period."
     write_validation_to_database(
         conn=conn,
@@ -363,7 +370,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_specified_capacity, inputs_project_specified_fixed_cost",
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
         severity="Mid",
         errors=validate_idxs(actual_idxs=spec_projects,
                              req_idxs=projects,
