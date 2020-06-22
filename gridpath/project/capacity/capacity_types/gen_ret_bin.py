@@ -18,8 +18,12 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
     Binary, value
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
+    write_validation_to_database, validate_dtypes, validate_signs, \
+    validate_idxs
 from gridpath.project.capacity.capacity_types.common_methods import \
     update_capacity_results_table
 
@@ -166,8 +170,6 @@ def add_module_specific_components(m, d):
 # Constraint Formulation Rules
 ###############################################################################
 
-# TODO: we need to check that the user hasn't specified increasing
-#  capacity to begin with
 def retire_forever_rule(mod, g, p):
     """
     **Constraint Name**: GenRetBin_Retire_Forever_Constraint
@@ -275,6 +277,12 @@ def load_module_specific_data(
             else:
                 pass
 
+        gen_w_params = [gp[0] for gp in generator_period_list]
+        diff = list(set(generators_list) - set(gen_w_params))
+        if diff:
+            raise ValueError("Missing capacity/fixed cost inputs for the "
+                             "following gen_ret_bin projects: {}".format(diff))
+
         return generator_period_list, \
             gen_ret_bin_capacity_mw_dict, \
             gen_ret_bin_fixed_cost_per_mw_yr_dict
@@ -380,8 +388,7 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    # Select generators of 'gen_ret_bin' capacity
-    # type only
+    # Select generators of 'gen_ret_bin' capacity type only
     ep_capacities = c.execute(
         """SELECT project, period, specified_capacity_mw,
         annual_fixed_cost_per_mw_year
@@ -395,15 +402,14 @@ def get_module_specific_inputs_from_database(
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
-        LEFT OUTER JOIN
+        INNER JOIN
         (SELECT project, period, 
         annual_fixed_cost_per_mw_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 
-        'gen_ret_bin';""".format(
+        AND capacity_type = 'gen_ret_bin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
@@ -414,7 +420,6 @@ def get_module_specific_inputs_from_database(
     return ep_capacities
 
 
-# TODO: untested
 def write_module_specific_model_inputs(
         scenario_directory, subscenarios, subproblem, stage, conn
 ):
@@ -464,7 +469,6 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
 
-# TODO: untested functionality
 def import_module_specific_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
@@ -502,7 +506,66 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # ep_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+
+    gen_ret_bin_params = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_ret_bin")
+
+    # Convert input data into pandas DataFrame and extract data
+    df = cursor_to_df(gen_ret_bin_params)
+    spec_projects = df["project"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_project_specified_capacity",
+                "inputs_project_specified_fixed_cost"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Ensure project capacity & fixed cost is specified in at least 1 period
+    msg = "Expected specified capacity & fixed costs for at least one period."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=validate_idxs(actual_idxs=spec_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )

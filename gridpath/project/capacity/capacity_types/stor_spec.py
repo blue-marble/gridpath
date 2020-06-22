@@ -22,9 +22,13 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, NonNegativeReals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
+    write_validation_to_database, validate_dtypes, validate_signs, \
+    validate_idxs
 
 
 def add_module_specific_components(m, d):
@@ -214,7 +218,7 @@ def get_module_specific_inputs_from_database(
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
-        LEFT OUTER JOIN
+        INNER JOIN
         (SELECT project, period,
         annual_fixed_cost_per_mw_year,
         annual_fixed_cost_per_mwh_year
@@ -280,12 +284,66 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # stor_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
-    # do validation
-    # make sure existing capacity is a postive number
-    # make sure annual fixed costs are positive
+    stor_spec_params = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
 
+    projects = get_projects(conn, subscenarios, "capacity_type", "stor_spec")
+
+    # Convert input data into pandas DataFrame and extract data
+    df = cursor_to_df(stor_spec_params)
+    spec_projects = df["project"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_project_specified_capacity",
+                "inputs_project_specified_fixed_cost"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Ensure project capacity & fixed cost is specified in at least 1 period
+    msg = "Expected specified capacity & fixed costs for at least one period."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=validate_idxs(actual_idxs=spec_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )

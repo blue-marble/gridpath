@@ -798,6 +798,7 @@ class TestValidations(unittest.TestCase):
                           ["gas_ct", 2030, 10, 20],
                           ["coal", 2030, 20, 20]]),
                 "col": ["max_mw"],
+                "increasing": True,
                 "result": []
                 },
             # Make sure a case with only basic inputs doesn't throw errors
@@ -808,6 +809,7 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct", 2030, 10, 20],
                       ["coal", 2030, 20, 20]]),
                 "col": ["max_mw", "max_mwh"],
+                "increasing": True,
                 "result": []
                 },
             # Decreasing values are flagged
@@ -817,6 +819,7 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct", 2030, 5, 20],
                       ["coal", 2030, 20, 20]]),
                 "col": ["max_mw"],
+                "increasing": True,
                 "result": ["project(s) 'gas_ct': max_mw should monotonically "
                            "increase with period. "]
                 },
@@ -827,6 +830,7 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct", 2030, 5, 15],
                       ["coal", 2030, 20, 20]]),
                 "col": ["max_mw", "max_mwh"],
+                "increasing": True,
                 "result": ["project(s) 'gas_ct': max_mw should monotonically "
                            "increase with period. ",
                            "project(s) 'gas_ct': max_mwh should monotonically "
@@ -839,8 +843,20 @@ class TestValidations(unittest.TestCase):
                       ["gas_ct", 2030, 5, None],
                       ["coal", 2030, 20, 20]]),
                 "col": ["max_mw", "max_mwh"],
+                "increasing": True,
                 "result": ["project(s) 'gas_ct': max_mw should monotonically "
                            "increase with period. "]
+                },
+            # Increasing values are flagged w increasing=False
+            6: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", 2020, 5, 20],
+                      ["gas_ct", 2030, 10, 20],
+                      ["coal", 2030, 20, 20]]),
+                "col": ["max_mw"],
+                "increasing": False,
+                "result": ["project(s) 'gas_ct': max_mw should monotonically "
+                           "decrease with period. "]
                 }
         }
         for test_case in test_cases.keys():
@@ -848,7 +864,8 @@ class TestValidations(unittest.TestCase):
             actual_list = module_to_test.validate_row_monotonicity(
                 df=test_cases[test_case]["df"],
                 col=test_cases[test_case]["col"],
-                rank_col="period"
+                rank_col="period",
+                increasing=test_cases[test_case]["increasing"]
             )
             self.assertListEqual(expected_list, actual_list)
 
