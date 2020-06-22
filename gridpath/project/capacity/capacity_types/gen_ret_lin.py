@@ -30,7 +30,7 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_signs, \
-    validate_idxs, validate_row_monotonicity
+    validate_idxs, validate_row_monotonicity, validate_missing_inputs
 
 from gridpath.project.capacity.capacity_types.common_methods import \
     update_capacity_results_table
@@ -604,6 +604,20 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                              req_idxs=projects,
                              idx_label="project",
                              msg=msg)
+    )
+
+    # Check for missing values (vs. missing row entries above)
+    cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_specified_capacity, "
+                 "inputs_project_specified_fixed_cost",
+        severity="High",
+        errors=validate_missing_inputs(df, cols)
     )
 
     # Check project capacity is not increasing
