@@ -359,8 +359,7 @@ def load_module_specific_data(
                      df["minimum_duration_hours"]):
             if r[1] == "dr_new":
                 projects.append(r[0])
-                max_fraction[r[0]] \
-                    = float(r[2])
+                max_fraction[r[0]] = float(r[2])
             else:
                 pass
 
@@ -372,8 +371,8 @@ def load_module_specific_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory, subproblem, stage, "inputs",
-            "new_shiftable_load_supply_curve.tab")
-        ,
+            "new_shiftable_load_supply_curve.tab"
+        ),
         index=m.DR_NEW_PTS,
         select=("project", "point", "slope", "intercept"),
         param=(m.dr_new_supply_curve_slope,
@@ -503,10 +502,11 @@ def get_module_specific_inputs_from_database(
         WHERE project_new_potential_scenario_id = {}) as potential
         USING (project, period) 
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_shiftable_load_supply_curve';""".format(
+        AND capacity_type = '{}';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "dr_new"
         )
     )
 
@@ -518,10 +518,11 @@ def get_module_specific_inputs_from_database(
         USING (project)
         WHERE project_portfolio_scenario_id = {}
         AND project_new_cost_scenario_id = {}
-        AND capacity_type = 'new_shiftable_load_supply_curve'
+        AND capacity_type = '{}'
         GROUP BY project;""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            "dr_new"
         )
     )
 
@@ -693,6 +694,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+
     # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
     #     get_module_specific_inputs_from_database(
     #         subscenarios, subproblem, stage, conn)
