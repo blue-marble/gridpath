@@ -12,7 +12,8 @@ from gridpath.project.common_functions import \
     check_boundary_type
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_req_cols, validate_missing_inputs, validate_signs
+    validate_req_cols, validate_missing_inputs, validate_signs, \
+    validate_column_monotonicity
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -775,7 +776,8 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(hydro_chars)
-    value_cols = ["average_power_fraction", "min_power_fraction",
+    value_cols = ["min_power_fraction",
+                  "average_power_fraction",
                   "max_power_fraction"]
 
     # Check for missing inputs
@@ -802,7 +804,21 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
         errors=validate_signs(df, value_cols, "pctfraction")
     )
 
-    # TODO: check min<=avg<=max
+    # Check min <= avg <= sign
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="Mid",
+        errors=validate_column_monotonicity(
+            df=df,
+            cols=value_cols,
+            idx_col=["project", "horizon"]
+        )
+    )
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,
