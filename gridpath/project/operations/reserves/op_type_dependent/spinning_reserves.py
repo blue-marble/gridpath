@@ -75,7 +75,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         stage=stage,
         ramp_rate_limit_column_name
         =RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
-        reserve_provisigon_ramp_rate_limit_param
+        reserve_provision_ramp_rate_limit_param
         =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME
     )
 

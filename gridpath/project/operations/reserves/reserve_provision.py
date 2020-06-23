@@ -414,8 +414,6 @@ def generic_get_inputs_from_database(
     )
 
     # Get headroom/footroom derate
-    # TODO: add validation to catch projects that have a derate but don't
-    #  have a reserve BA specified
     c2 = conn.cursor()
     project_derates = c2.execute("""
         SELECT project, {}_derate
@@ -462,7 +460,7 @@ def generic_validate_project_bas(
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
 
-    project_bas, _ = generic_get_inputs_from_database(
+    project_bas, prj_derates = generic_get_inputs_from_database(
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -474,7 +472,10 @@ def generic_validate_project_bas(
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_bas)
+    df_derate = cursor_to_df(prj_derates).dropna()
     bas_w_project = df["{}_ba".format(reserve_type)].unique()
+    projects_w_ba = df["project"].unique()
+    projects_w_derate = df_derate["project"].unique()
 
     # Get the required reserve bas
     c = conn.cursor()
@@ -504,6 +505,22 @@ def generic_validate_project_bas(
                              idx_label="{}_ba".format(reserve_type),
                              msg="Each reserve BA needs at least 1 "
                                  "project assigned to it.")
+    )
+
+    # Check that all projects w derates have a BA specified
+    msg = "Project has a reserve derate specified but no relevant BA."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="Low",
+        errors=validate_idxs(actual_idxs=projects_w_ba,
+                             req_idxs=projects_w_derate,
+                             idx_label="project",
+                             msg=msg)
     )
 
 
