@@ -30,10 +30,12 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, value, \
     Reals, Expression, Constraint
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_missing_inputs, validate_idxs, get_projects
 
 
 def add_module_specific_components(m, d):
@@ -695,8 +697,41 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
-    #     get_module_specific_inputs_from_database(
-    #         subscenarios, subproblem, stage, conn)
+    min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
+        get_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, conn)
+    projects = get_projects(conn, subscenarios, "capacity_type", "dr_new")
 
-    # validate inputs
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(min_max_builds)
+    df_sc = cursor_to_df(supply_curve)
+
+    dr_projects = df_sc["project"].unique()
+
+    # Check for missing project potential inputs
+    cols = ["min_cumulative_new_build_mwh", "max_cumulative_new_build_mwh"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_potential",
+        severity="High",
+        errors=validate_missing_inputs(df, cols)
+    )
+
+    # Check for missing supply curve inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_shiftable_load_supply_curve",
+        severity="High",
+        errors=validate_idxs(actual_idxs=dr_projects,
+                             req_idxs=projects,
+                             idx_label="project")
+    )
+
