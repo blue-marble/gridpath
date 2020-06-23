@@ -14,7 +14,9 @@ import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_signs, validate_missing_inputs
 
 
 def add_model_components(m, d):
@@ -109,7 +111,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
-    project_zones = c.execute(
+    project_fractions = c.execute(
         """SELECT project, elcc_simple_fraction
         FROM 
         (SELECT project
@@ -125,7 +127,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return project_zones
+    return project_fractions
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -138,10 +140,35 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    project_fractions = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
 
-    # do stuff here to validate inputs
+    df = cursor_to_df(project_fractions)
+
+    # Make sure fraction is specified
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_signs(df, ["elcc_simple_fraction"], "pctfraction")
+    )
+
+    # Make sure fraction is specified
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_missing_inputs(df, "elcc_simple_fraction")
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
@@ -155,13 +182,13 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :param conn: database connection
     :return:
     """
-    project_zones = get_inputs_from_database(
+    project_fractions = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_frac_dict = dict()
-    for (prj, zone) in project_zones:
-        prj_frac_dict[str(prj)] = "." if zone is None else str(zone)
+    for (prj, fraction) in project_fractions:
+        prj_frac_dict[str(prj)] = "." if fraction is None else str(fraction)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
               ) as projects_file_in:

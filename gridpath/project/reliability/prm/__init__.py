@@ -14,7 +14,7 @@ from pyomo.environ import Param, Set
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_idxs
+    validate_idxs, validate_missing_inputs
 
 
 def add_model_components(m, d):
@@ -89,7 +89,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {}
         ) as prj_tbl
-        LEFT OUTER JOIN
+            LEFT OUTER JOIN
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
         WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
@@ -160,6 +160,18 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                              idx_label="prm_zone",
                              msg="Each PRM zone needs at least 1 project "
                                  "assigned to it.")
+    )
+
+    # Make sure PRM type is specified
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_missing_inputs(df, "prm_type")
     )
 
 
