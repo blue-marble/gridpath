@@ -17,6 +17,10 @@ import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Binary, value, \
     NonNegativeReals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_missing_inputs, \
+    validate_column_monotonicity
 from gridpath.project.availability.availability_types.common_functions import \
     insert_availability_results
 from gridpath.project.operations.operational_types.common_functions import \
@@ -505,4 +509,67 @@ def import_module_specific_results_into_database(
     )
 
 
-# TODO: add validation
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :return:
+    """
+
+    params = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+
+    df = cursor_to_df(params)
+
+    # Check data types availability
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_availability",
+               "inputs_project_availability_endogenous"])
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check for missing inputs
+    msg = ""
+    value_cols = ["unavailable_hours_per_period",
+                  "unavailable_hours_per_event_min",
+                  "available_hours_between_events_min"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="Low",
+        errors=validate_missing_inputs(df, value_cols, "project", msg)
+    )
+
+    cols = ["unavailable_hours_per_event_min",
+            "unavailable_hours_per_period"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="High",
+        errors=validate_column_monotonicity(
+            df=df,
+            cols=cols,
+            idx_col=["project"]
+        )
+    )
