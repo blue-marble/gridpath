@@ -15,7 +15,7 @@ from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, \
+    get_expected_dtypes, get_load_zones, validate_dtypes, \
     validate_columns, validate_signs, validate_missing_inputs
 
 
@@ -359,3 +359,17 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                                        idx_col="transmission_line",
                                        msg=msg)
     )
+
+    # Check that all tx load zones are part of the active load zones
+    load_zones = get_load_zones(conn, subscenarios)
+    for col in ["load_zone_from", "load_zone_to"]:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_transmission_load_zones",
+            severity="High",
+            errors=validate_columns(df, col, valids=load_zones)
+        )
