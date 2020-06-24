@@ -365,6 +365,8 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     if subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID is None:
+        # TODO: can this if block be removed? (validation assumes this function
+        #  returns cursor object, not empty lists)
         group_threshold_costs = []
         project_deliverability_groups = []
     else:
