@@ -177,6 +177,54 @@ def get_projects(conn, subscenarios, col, col_value):
     return projects
 
 
+def get_tx_lines(conn, subscenarios, col, col_value):
+    """
+    Get tx_lines for which the column value of "col" is equal to "col_value".
+    E.g. "get the tx_lines of operational type tx_dcopf".
+    :param conn: database connection
+    :param subscenarios: Subscenarios class objects
+    :param col: str
+    :param col_value: str
+    :return: List of tx_lines that meet the criteria
+    """
+
+    c = conn.cursor()
+    tx_lines = c.execute(
+        """SELECT transmission_line
+        FROM inputs_transmission_portfolios
+        LEFT OUTER JOIN
+        inputs_transmission_operational_chars
+        USING (transmission_line)
+        WHERE transmission_portfolio_scenario_id = {}
+        AND transmission_operational_chars_scenario_id = {}
+        AND {} = '{}';""".format(
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
+            col, col_value
+        )
+    )
+    tx_lines = [tx[0] for tx in tx_lines]  # convert to list
+    return tx_lines
+
+
+def get_load_zones(conn, subscenarios):
+    """
+    Get the load zones
+    :param conn: database connection
+    :param subscenarios: Subscenarios class object
+    :return:
+    """
+    c = conn.cursor()
+    load_zones = c.execute(
+        """SELECT load_zone 
+        FROM inputs_geography_load_zones
+        WHERE load_zone_scenario_id = {};    
+        """.format(subscenarios.LOAD_ZONE_SCENARIO_ID)
+    )
+    load_zones = [lz[0] for lz in load_zones]  # convert to list
+    return load_zones
+
+
 def validate_dtypes(df, expected_dtypes):
     """
     Checks whether the inputs for a DataFrame are in the expected datatype.
