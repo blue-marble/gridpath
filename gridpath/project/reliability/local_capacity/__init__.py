@@ -71,7 +71,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     c = conn.cursor()
@@ -79,22 +79,20 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         """SELECT project, local_capacity_zone
         FROM
         -- Get projects from portfolio only
-        (SELECT project
+            (SELECT project
             FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
-        ) as prj_tbl
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
         LEFT OUTER JOIN
-        (SELECT project, local_capacity_zone
-        FROM inputs_project_local_capacity_zones
-        WHERE project_local_capacity_zone_scenario_id = {}) as lc_zone_tbl
+            (SELECT project, local_capacity_zone
+            FROM inputs_project_local_capacity_zones
+            WHERE project_local_capacity_zone_scenario_id = {}) as lc_zone_tbl
         USING (project)
         -- Filter out projects whose LC zone is not one included in our 
-        -- local_capacity_zone_sceenario_id
+        -- local_capacity_zone_scenario_id
         WHERE local_capacity_zone in (
-                SELECT local_capacity_zone
-                    FROM inputs_geography_local_capacity_zones
-                    WHERE local_capacity_zone_scenario_id = {}
-        );
+            SELECT local_capacity_zone
+            FROM inputs_geography_local_capacity_zones
+            WHERE local_capacity_zone_scenario_id = {});
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID,
@@ -149,6 +147,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                              msg="Each local capacity zone needs at least 1 project "
                                  "assigned to it.")
     )
+
+    # TODO: Currently mismatched zones are filtered out in SQL query so
+    #  checking for mismatching zones doesn't really make sense?
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
