@@ -19,6 +19,11 @@ import csv
 import os.path
 from pyomo.environ import Set, Param, Reals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import get_tx_lines, get_expected_dtypes, \
+    write_validation_to_database, validate_dtypes, \
+    validate_idxs, validate_missing_inputs, validate_column_monotonicity
+
 
 # TODO: add fixed O&M costs similar to gen_spec
 def add_module_specific_components(m, d):
@@ -200,8 +205,76 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # tx_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
+    tx_capacities = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    tx_lines = get_tx_lines(conn, subscenarios, "capacity_type", "tx_spec")
+
+    # Convert input data into pandas DataFrame and extract data
+    df = cursor_to_df(tx_capacities)
+    spec_tx_lines = df["transmission_line"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_transmission_specified_capacity"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_specified_capacity",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Ensure tx_line capacity is specified in at least 1 period
+    msg = "Expected specified capacity for at least one period."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_specified_capacity",
+        severity="High",
+        errors=validate_idxs(actual_idxs=spec_tx_lines,
+                             req_idxs=tx_lines,
+                             idx_label="transmission_line",
+                             msg=msg)
+    )
+
+    # Check for missing values (vs. missing row entries above)
+    cols = ["min_mw", "max_mw"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_specified_capacity",
+        severity="High",
+        errors=validate_missing_inputs(df, cols)
+    )
+
+    # check that min <= max
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_potential",
+        severity="High",
+        errors=validate_column_monotonicity(
+            df=df,
+            cols=cols,
+            idx_col=["project", "period"]
+        )
+    )
