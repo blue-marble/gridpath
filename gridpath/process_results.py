@@ -21,25 +21,23 @@ from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import SubScenarios
+from gridpath.auxiliary.scenario_chars import Scenario
 
 
-def process_results(
-        loaded_modules, db, cursor, subscenarios, quiet
-):
+def process_results(loaded_modules, scenario, quiet):
     """
     
     :param loaded_modules: 
-    :param db: 
-    :param cursor: 
-    :param subscenarios:
+    :param scenario:
     :param quiet:
     :return: 
     """
+    conn = scenario.conn
+    c = conn.cursor()
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(
-                db, cursor, subscenarios, quiet)
+                conn, c, scenario, quiet)
         else:
             pass
 
@@ -77,14 +75,15 @@ def main(args=None):
     scenario_location = parsed_arguments.scenario_location
 
     conn = connect_to_database(db_path=db_path)
-    c = conn.cursor()
 
     if not parsed_arguments.quiet:
         print("Processing results... (connected to database {})".format(db_path))
 
     scenario_id, scenario_name = get_scenario_id_and_name(
-        scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
-        c=c, script="process_results"
+        scenario_id_arg=scenario_id_arg,
+        scenario_name_arg=scenario_name_arg,
+        c=conn.cursor(),
+        script="process_results"
     )
 
     # Determine scenario directory
@@ -94,15 +93,16 @@ def main(args=None):
     )
 
     # Go through modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = determine_modules(scenario_directory)
     loaded_modules = load_modules(modules_to_use)
 
     # Subscenarios
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    scenario = Scenario(conn, scenario_id)
 
     process_results(
-        loaded_modules=loaded_modules, db=conn, cursor=c,
-        subscenarios=subscenarios, quiet=parsed_arguments.quiet
+        loaded_modules=loaded_modules,
+        scenario=scenario,
+        quiet=parsed_arguments.quiet
     )
 
     # Close the database connection

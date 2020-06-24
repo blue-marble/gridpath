@@ -24,31 +24,25 @@ from gridpath.common_functions import determine_scenario_directory, \
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import SubProblems
+from gridpath.auxiliary.scenario_chars import Scenario
 
 
 def import_results_into_database(
-        loaded_modules, scenario_id, subproblems, cursor, db,
-        scenario_directory, quiet
+    loaded_modules, scenario, scenario_directory, quiet
 ):
     """
 
     :param loaded_modules:
-    :param scenario_id:
-    :param subproblems:
-    :param cursor:
-    :param db:
+    :param scenario:
     :param scenario_directory:
     :param quiet: boolean
     :return:
     """
 
-    subproblems_list = subproblems.SUBPROBLEMS
-    for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+    for subproblem, stages in scenario.SUBPROBLEM_STAGE_DICT.items():
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
-            if len(subproblems_list) > 1 and len(stages) > 1:
+            if len(scenario.SUBPROBLEMS) > 1 and len(stages) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  str(stage),
@@ -56,7 +50,7 @@ def import_results_into_database(
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(scenario.SUBPROBLEMS) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  "results")
@@ -77,11 +71,11 @@ def import_results_into_database(
                 os.makedirs(results_directory)
 
             # Import results_scenario data
-            c = db.cursor()
+            conn = scenario.conn
+            c = conn.cursor()
             with open(os.path.join(results_directory, "solver_status.txt"),
                       "r") as f:
                 solver_status = f.read()
-
 
             solver_status_sql = """
                 INSERT INTO results_scenario
@@ -90,9 +84,9 @@ def import_results_into_database(
                 VALUES (?, ?, ?, ?)
             ;"""
             solver_status_data = \
-                (scenario_id, subproblem, stage, solver_status)
+                (scenario.scenario_id, subproblem, stage, solver_status)
             spin_on_database_lock(
-                conn=db, cursor=c, sql=solver_status_sql,
+                conn=conn, cursor=c, sql=solver_status_sql,
                 data=solver_status_data, many=False
             )
 
@@ -126,11 +120,11 @@ def import_results_into_database(
                 for m in loaded_modules:
                     if hasattr(m, "import_results_into_database"):
                         m.import_results_into_database(
-                            scenario_id=scenario_id,
+                            scenario_id=scenario.scenario_id,
                             subproblem=subproblem,
                             stage=stage,
-                            c=cursor,
-                            db=db,
+                            c=c,
+                            db=conn,
                             results_directory=results_directory,
                             quiet=quiet
                         )
@@ -187,7 +181,7 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
         c=c, script="import_scenario_results")
 
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+    scenario = Scenario(conn, scenario_id)
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(
@@ -217,10 +211,7 @@ def main(args=None):
     # Import appropriate results into database
     import_results_into_database(
         loaded_modules=loaded_modules,
-        scenario_id=scenario_id,
-        subproblems=subproblems,
-        cursor=c,
-        db=conn,
+        scenario=scenario,
         scenario_directory=scenario_directory,
         quiet=quiet
     )
