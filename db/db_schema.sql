@@ -1596,7 +1596,7 @@ description VARCHAR(128)
 DROP TABLE IF EXISTS inputs_transmission_hurdle_rates;
 CREATE TABLE inputs_transmission_hurdle_rates (
 transmission_hurdle_rate_scenario_id INTEGER,
-transmission_line INTEGER,
+transmission_line VARCHAR(64),
 period INTEGER,
 hurdle_rate_positive_direction_per_mwh FLOAT,
 hurdle_rate_negative_direction_per_mwh FLOAT,

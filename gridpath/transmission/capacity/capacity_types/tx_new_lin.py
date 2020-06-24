@@ -24,7 +24,10 @@ import os.path
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, get_tx_lines, validate_dtypes, validate_signs, \
+    validate_idxs
 
 
 # TODO: can we have different capacities depending on the direction
@@ -81,7 +84,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | transmission line-vintage combination, based on the                     |
-    | :code:`gen_new_lin_lifetime_yrs`. For instance, transmission capacity   |
+    | :code:`tx_new_lin_lifetime_yrs`. For instance, transmission capacity    |
     | of the 2020 vintage with lifetime of 30 years will be assumed           |
     | operational starting Jan 1, 2020 and through Dec 31, 2049, but will     |
     | *not* be operational in 2050.                                           |
@@ -482,7 +485,66 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # tx_cost = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+
+    tx_cost = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    tx_lines = get_tx_lines(conn, subscenarios, "capacity_type", "tx_new_lin")
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(tx_cost)
+
+    # get the tx lines lists
+    tx_lines_w_cost = df["transmission_line"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_transmission_new_cost"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_new_cost",
+        severity="High",
+        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+    )
+
+    # Check that all binary new build tx lines are available in >=1 vintage
+    msg = "Expected cost data for at least one vintage."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_new_cost",
+        severity="Mid",
+        errors=validate_idxs(actual_idxs=tx_lines_w_cost,
+                             req_idxs=tx_lines,
+                             idx_label="transmission_line",
+                             msg=msg)
+    )
+
