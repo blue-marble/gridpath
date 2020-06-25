@@ -13,7 +13,7 @@ import os.path
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_signs
+    validate_values
 from gridpath.project.operations.reserves.op_type_dependent.\
     reserve_limits_by_op_type import \
     generic_add_model_components, generic_load_model_data
@@ -127,7 +127,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="Mid",
-        errors=validate_signs(df, ["regulation_down_ramp_rate"], "pctfraction")
+        errors=validate_values(df, ["regulation_down_ramp_rate"], min=0, max=1)
     )
 
 

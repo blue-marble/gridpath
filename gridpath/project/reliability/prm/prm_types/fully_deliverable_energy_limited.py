@@ -16,7 +16,7 @@ from pyomo.environ import Param, Var, Set, Constraint, PositiveReals, \
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_signs, validate_missing_inputs
+    validate_values, validate_missing_inputs
 
 
 def add_module_specific_components(m, d):
@@ -180,7 +180,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_elcc_chars",
         severity="High",
-        errors=validate_signs(df, cols, "positive")
+        errors=validate_values(df, cols, min=0, strict_min=True)
     )
 
     # Make sure param is specified

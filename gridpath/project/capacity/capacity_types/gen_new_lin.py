@@ -32,7 +32,7 @@ from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_signs, get_expected_dtypes, get_projects, validate_dtypes, \
+    validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_column_monotonicity
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
@@ -762,7 +762,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=validate_signs(cost_df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(cost_df, valid_numeric_columns, min=0)
     )
 
     # Check that all binary new build projects are available in >=1 vintage

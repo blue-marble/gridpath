@@ -271,52 +271,38 @@ def validate_dtypes(df, expected_dtypes):
     return result, columns
 
 
-def validate_signs(df, columns, sign):
+def validate_values(df, columns, min=0, max=np.inf,
+                    strict_min=False, strict_max=False):
     """
-    Checks whether the selected columns of a DataFrame have the correct sign,
-    e.g. whether all entries are positive numbers.
-    Helper function for input validation.
-    :param df: DataFrame for which to check signs. Must have a 'project'
+    Checks whether the selected columns of a DataFrame have values within the
+    expected range. Helper function for input validation.
+    :param df: DataFrame for which to check values. Must have a 'project'
         or 'transmission_line' column, and 'columns' param must be a subset
         of the columns in df
-    :param columns: list with columns that are expected to be non-negative
-    :param sign: str, specifies the expected sign for the columns. Option are
-        'positive', 'nonnegative', 'negative', 'nonpositive', 'pctfraction',
-        'pctfraction_nonzero'.
+    :param columns: list of columns to check values for
+    :param min: float, minimum value
+    :param max: float, maximum value
+    :param strict_min: Boolean, whether the min is a strict inequality or not
+    :param strict_max: Boolean, whether the max is a strict inequality or not
     :return: List of error messages for each column with invalid inputs.
-        Error message specifies the column and the expected sign.
+        Error message specifies the column and the expected value range.
     """
-    assert sign in ["positive", "nonnegative", "negative", "nonpositive",
-                    "pctfraction", "pctfraction_nonzero"]
 
     idx_col = _get_idx_col(df)
     result = []
-    for column in columns:
-        if sign == "positive":
-            invalids = (df[column] <= 0)
-            expected = "> 0"
-        elif sign == "nonnegative":
-            invalids = (df[column] < 0)
-            expected = ">= 0"
-        elif sign == "negative":
-            invalids = (df[column] >= 0)
-            expected = "< 0"
-        elif sign == "nonpositive":
-            invalids = (df[column] > 0)
-            expected = "<= 0"
-        elif sign == "pctfraction":
-            invalids = (df[column] < 0) | (df[column] > 1)
-            expected = "within [0, 1]"
-        elif sign == "pctfraction_nonzero":
-            invalids = (df[column] <= 0) | (df[column] > 1)
-            expected = "within (0, 1]"
-
+    for col in columns:
+        min_invalids = (df[col] <= min) if strict_min else (df[col] < min)
+        max_invalids = (df[col] >= max) if strict_max else (df[col] > max)
+        invalids = min_invalids | max_invalids
         if invalids.any():
             bad_idxs = df[idx_col][invalids].values
             print_bad_idxs = ", ".join(bad_idxs)
+            exp_min = "{} <".format(min) if strict_min else "{} <=".format(min)
+            exp_max = "< {}".format(max) if strict_max else "<= {}".format(max)
+
             result.append(
-                "{}(s) '{}': Expected '{}' {}"
-                .format(idx_col, print_bad_idxs, column, expected)
+                "{}(s) '{}': Expected {} '{}' {}"
+                .format(idx_col, print_bad_idxs, exp_min, col, exp_max)
             )
 
     return result

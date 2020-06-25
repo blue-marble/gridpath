@@ -12,7 +12,7 @@ from gridpath.project.common_functions import \
     check_boundary_type
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_req_cols, validate_missing_inputs, validate_signs, \
+    validate_req_cols, validate_missing_inputs, validate_values, \
     validate_column_monotonicity
 
 
@@ -637,7 +637,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_variable_generator_profiles",
         severity="Mid",
-        errors=validate_signs(df, ["cap_factor"], "pctfraction")
+        errors=validate_values(df, ["cap_factor"], min=0, max=1)
     )
 
 
@@ -801,7 +801,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
         gridpath_module=__name__,
         db_table="inputs_project_hydro_operational_chars",
         severity="Mid",
-        errors=validate_signs(df, value_cols, "pctfraction")
+        errors=validate_values(df, value_cols, min=0, max=1)
     )
 
     # Check min <= avg <= sign

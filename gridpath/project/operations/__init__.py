@@ -18,7 +18,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_signs, \
+    validate_dtypes, get_expected_dtypes, validate_values, \
     validate_idxs, validate_piecewise_curves
 from gridpath.project.common_functions import append_to_input_file
 
@@ -660,7 +660,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_signs(prj_df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(prj_df, valid_numeric_columns, min=0)
     )
 
     # Check min_stable_level_fraction within (0, 1]
@@ -673,8 +673,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_project_operational_chars",
             severity="Mid",
-            errors=validate_signs(prj_df, ["min_stable_level_fraction"],
-                                  "pctfraction_nonzero")
+            errors=validate_values(prj_df, ["min_stable_level_fraction"],
+                                   min=0, max=1, strict_min=True)
         )
 
     # Check data types heat_rates and variable_om:
@@ -719,7 +719,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="High",
-        errors=validate_signs(hr_df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(hr_df, valid_numeric_columns, min=0)
     )
 
     # Check valid numeric columns in variable OM are non-negative
@@ -734,7 +734,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_variable_om_curves",
         severity="High",
-        errors=validate_signs(vom_df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(vom_df, valid_numeric_columns, min=0)
     )
 
     # Check for consistency between fuel and heat rate curve inputs:
