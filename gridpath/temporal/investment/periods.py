@@ -28,6 +28,10 @@ import os.path
 
 from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_values, validate_columns
+
 def add_model_components(m, d):
     """
     The following Pyomo model components are defined in this module:
@@ -296,10 +300,62 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # periods = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+
+    # TODO: check that hours in full period is within x and y
+    #  ("within" check or "validate" check in param definition returns obscure
+    #  error message that isn't helpful).
+
+    periods = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    df = cursor_to_df(periods)
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_temporal_periods"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="Mid",
+        errors=validate_values(df, valid_numeric_columns, min=0)
+    )
+
+    # Check values of hours_in_full_period
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="Mid",
+        errors=validate_columns(df, valid_numeric_columns, min=0)
+    )
 
     # TODO: check that hours in full period is within x and y
     # ("within" check or "validate" check in param definition returns obscure
