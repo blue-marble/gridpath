@@ -18,9 +18,12 @@ def _get_idx_col(df):
         return "project"
     elif "transmission_line" in df.columns:
         return "transmission_line"
+    elif "period" in df.columns:
+        return "period"
     else:
         raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
+            "df should contain 'project', 'transmission_line', "
+            "or 'period' column"
         )
 
 
@@ -295,7 +298,7 @@ def validate_values(df, columns, min=0, max=np.inf,
         max_invalids = (df[col] >= max) if strict_max else (df[col] > max)
         invalids = min_invalids | max_invalids
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
+            bad_idxs = df[idx_col][invalids].astype(str).values
             print_bad_idxs = ", ".join(bad_idxs)
             exp_min = "{} <".format(min) if strict_min else "{} <=".format(min)
             exp_max = "< {}".format(max) if strict_max else "<= {}".format(max)
@@ -336,7 +339,7 @@ def validate_req_cols(df, columns, required, category):
             invalids = pd.notna(df[column])
             error_str = "should not have inputs for"
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
+            bad_idxs = df[idx_col][invalids].astype(str).values
             print_bad_idxs = ", ".join(bad_idxs)
             result.append(
                 "{}(s) '{}'; {} {} '{}'"
@@ -391,7 +394,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
     mask = valids_mask | invalids_mask
 
     if mask.any():
-        bad_idxs = df[idx_col][mask].values
+        bad_idxs = df[idx_col][mask].astype(str).values
         print_bad_idxs = ", ".join(bad_idxs)
         print_valid = " Valid options are {}.".format(valids) if valids else ""
         print_invalid = " Invalid options are {}.".format(invalids) if invalids else ""
