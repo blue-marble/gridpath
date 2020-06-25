@@ -17,7 +17,7 @@ from pyomo.environ import Param, Set, PercentFraction
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_signs, \
+    get_expected_dtypes, validate_dtypes, validate_values, \
     validate_missing_inputs
 from gridpath.project.common_functions import determine_project_subset
 
@@ -293,5 +293,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_project_availability_exogenous",
             severity="High",
-            errors=validate_signs(df, value_cols, "pctfraction")
+            errors=validate_values(df, value_cols, min=0, max=1)
         )

@@ -16,7 +16,7 @@ from pyomo.environ import Param, PercentFraction, Expression, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_signs, validate_missing_inputs
+    validate_values, validate_missing_inputs
 
 
 def add_model_components(m, d):
@@ -155,7 +155,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_elcc_chars",
         severity="High",
-        errors=validate_signs(df, ["elcc_simple_fraction"], "pctfraction")
+        errors=validate_values(df, ["elcc_simple_fraction"], min=0, max=1)
     )
 
     # Make sure fraction is specified

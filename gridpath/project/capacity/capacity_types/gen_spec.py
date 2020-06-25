@@ -26,7 +26,7 @@ from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
-    write_validation_to_database, validate_dtypes, validate_signs, \
+    write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
 
 
@@ -359,7 +359,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         db_table="inputs_project_specified_capacity, "
                  "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(df, valid_numeric_columns, min=0)
     )
 
     # Ensure project capacity & fixed cost is specified in at least 1 period

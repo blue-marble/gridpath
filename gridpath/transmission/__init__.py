@@ -16,7 +16,7 @@ from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, get_load_zones, validate_dtypes, \
-    validate_columns, validate_signs, validate_missing_inputs
+    validate_columns, validate_values, validate_missing_inputs
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -293,7 +293,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(df, valid_numeric_columns, min=0)
     )
 
     # Ensure we're not combining incompatible capacity and operational types
@@ -323,7 +323,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_signs(df, ["reactance_ohms"], "positive")
+        errors=validate_values(df, ["reactance_ohms"], min=0, strict_min=True)
     )
 
     # Check that all portfolio tx lines are present in the opchar inputs

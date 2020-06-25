@@ -26,7 +26,7 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, get_tx_lines, validate_dtypes, validate_signs, \
+    get_expected_dtypes, get_tx_lines, validate_dtypes, validate_values, \
     validate_idxs
 
 
@@ -529,7 +529,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_new_cost",
         severity="High",
-        errors=validate_signs(df, valid_numeric_columns, "nonnegative")
+        errors=validate_values(df, valid_numeric_columns, min=0)
     )
 
     # Check that all binary new build tx lines are available in >=1 vintage
