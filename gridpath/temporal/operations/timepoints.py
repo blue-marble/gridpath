@@ -318,5 +318,5 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
     # validate timepoint inputs
 
-    # TODO: what checks do we need on the sum of all timepoint weights (x
-    #  number of hours in timepoint?)
+    # TODO: could gather the timepoints from the previous stage (if any) and
+    #  check that the previous stage timepoint map inputs are valid
