@@ -354,11 +354,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_periods",
         severity="Mid",
-        errors=validate_columns(df, valid_numeric_columns, min=0)
+        errors=validate_columns(
+            df=df,
+            columns="hours_in_full_period",
+            valids=[8760, 8766, 8784]
+        )
     )
 
-    # TODO: check that hours in full period is within x and y
-    # ("within" check or "validate" check in param definition returns obscure
-    # error message that isn't helpful).
 
 
