@@ -560,6 +560,33 @@ def validate_column_monotonicity(df, cols, idx_col="project", msg=""):
     return results
 
 
+def validate_cols_equal(df, col1, col2, idx_col, decimals=3, msg=""):
+    """
+    For each period and stage, check that number of hours across all
+    subproblems equals to the expected hours in that period.
+
+    :param df: Must contain columns col1 and col2,
+    :param col1: str
+    :param col2: str
+    "param idx_col: str or list of str
+    :param decimals: int, default 3, number of decimals to check
+    :param msg: str, default '', optional clarifying error message.
+    :return:
+    """
+
+    results = []
+    df = df.round({col1: decimals, col2: decimals})
+    invalids = (df[col1] != df[col2])
+    if invalids.any():
+        bad_idxs = df[idx_col][invalids].values
+        results.append(
+            "{}(s) {}: values in column {} and {} should be equal. {}"
+            .format(idx_col, bad_idxs, col1, col2, msg)
+        )
+
+    return results
+
+
 def validate_piecewise_curves(df, x_col, slope_col, y_name):
     """
     Check that the specified piecewise linear curve inputs are valid:
@@ -826,36 +853,6 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     #  cold start? (right now it always enforces a down time match and does
     #  not accept no inputs for down time cutoff, even though a simple case
     #  for a fast-start unit might not need this input).
-
-    return results
-
-
-def validate_hours_in_periods(df):
-    """
-    For each period and stage, check that number of hours across all
-    subproblems equals to the expected hours in that period.
-
-    :param df: Must contain columns "n_hours", "hours_in_full_period",
-    "period", "stage_id"
-    :return:
-    """
-
-    results = []
-    df = df.round({'n_hours': 3, 'hours_in_full_period': 3})
-
-    invalids = (df["n_hours"] != df["hours_in_full_period"])
-    if invalids.any():
-        bad_periods = df["period"][invalids].astype(str)
-        print_bad_periods = ", ".join(bad_periods)
-        bad_stages = df["stage_id"][invalids].astype(str)
-        print_bad_stages = ", ".join(bad_stages)
-        results.append(
-            "Total number of hours in timepoints of period(s) '{}' - "
-            "stage(s) '{}', adjusted for timepoint weight and duration and "
-            "excluding spinup and lookahead timepoints, does not match "
-            "hours_in_full_period."
-            .format(print_bad_periods, print_bad_stages)
-        )
 
     return results
 

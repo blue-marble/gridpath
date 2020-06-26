@@ -655,12 +655,15 @@ class TestValidations(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_validate_hours_in_periods(self):
+    def test_validate_cols_equal(self):
         """
         :return:
         """
 
         cols = ["stage_id", "period", "n_hours", "hours_in_full_period"]
+        col1 = "n_hours"
+        col2 = "hours_in_full_period"
+        idx_col = ["stage_id", "period"]
 
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
@@ -670,23 +673,26 @@ class TestValidations(unittest.TestCase):
                           [1, 2030, 8760, 8760]]),
                 "result": []
                 },
+            # Make sure invalids are properly captured. Note that .values
+            # somehow adds whitespace in front of the number
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[[1, 2020, 8780, 8760],
+                data=[[1, 2020, 8761, 8760],
                       [1, 2030, 8760, 8760]]),
                 "result": [
-                    "Total number of hours in timepoints of period(s) '2020' - "
-                    "stage(s) '1', adjusted for timepoint weight and duration and "
-                    "excluding spinup and lookahead timepoints, does not match "
-                    "hours_in_full_period."
+                    "['stage_id', 'period'](s) [[   1 2020]]: values in "
+                    "column n_hours and hours_in_full_period should be equal. "
                     ]
                 }
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = module_to_test.validate_hours_in_periods(
-                df=test_cases[test_case]["df"]
+            actual_list = module_to_test.validate_cols_equal(
+                df=test_cases[test_case]["df"],
+                col1=col1,
+                col2=col2,
+                idx_col=idx_col
             )
             self.assertListEqual(expected_list, actual_list)
 

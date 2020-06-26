@@ -19,7 +19,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_hours_in_periods
+    validate_cols_equal
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
@@ -102,6 +102,9 @@ def validate_hours_in_subproblem_period(subscenarios, conn):
 
     df = pd.read_sql(sql, con=conn)
 
+    msg = """Total number of hours in timepoints adjusted for timepoint weight
+          and duration and excluding spinup and lookahead timepoints should 
+          match hours_in_full_period."""
     write_validation_to_database(
         conn=conn,
         scenario_id=subscenarios.SCENARIO_ID,
@@ -110,7 +113,13 @@ def validate_hours_in_subproblem_period(subscenarios, conn):
         gridpath_module="N/A",
         db_table="inputs_temporal",
         severity="Mid",
-        errors=validate_hours_in_periods(df)
+        errors=validate_cols_equal(
+            df=df,
+            col1="n_hours",
+            col2="hours_in_full_period",
+            idx_col=["stage_id", "period"],
+            msg=msg
+        )
     )
 
     # TODO: check that subproblems don't straddle periods
