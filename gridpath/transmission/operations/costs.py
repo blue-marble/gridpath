@@ -435,7 +435,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_hurdle_rates",
         severity="High",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns,
+                               "transmission_line", min=0)
     )
 
     # Check that all binary new build tx lines are available in >=1 vintage

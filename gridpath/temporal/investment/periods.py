@@ -342,7 +342,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_periods",
         severity="Mid",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns, "period", min=0)
     )
 
     # Check values of hours_in_full_period
