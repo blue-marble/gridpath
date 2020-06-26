@@ -479,14 +479,14 @@ def validate_single_input(df, idx_col="project", msg=""):
     rate inputs DataFrame.
 
     :param df: DataFrame to check. Must have column idx_col.
-    :param idx_col: str, the index column, defaults to "project".
+    :param idx_col: str or list of str, the index column, defaults to "project"
     :param msg: str, optional error message clarification.
     :return: List of error messages for each index with invalid inputs.
     """
 
     results = []
 
-    n_inputs = df.groupby([idx_col]).size()
+    n_inputs = df.groupby(idx_col).size()
     invalids = (n_inputs > 1)
     if invalids.any():
         bad_idxs = invalids.index[invalids]
