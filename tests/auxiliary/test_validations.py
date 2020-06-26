@@ -173,6 +173,7 @@ class TestValidations(unittest.TestCase):
                 "average_heat_rate_mmbtu_per_mwh"]
         cols_to_check = ["load_point_fraction",
                          "average_heat_rate_mmbtu_per_mwh"]
+        idx_col = "project"
         test_cases = {
             # Make sure correct inputs aren't flagged
             1: {"df": pd.DataFrame(
@@ -233,7 +234,8 @@ class TestValidations(unittest.TestCase):
             expected_list = test_cases[test_case]["result"]
             actual_list = module_to_test.validate_values(
                 df=test_cases[test_case]["df"],
-                columns=cols_to_check,
+                col=cols_to_check,
+                idx_col=idx_col,
                 min=test_cases[test_case]["min"],
                 max=test_cases[test_case]["max"],
                 strict_min=test_cases[test_case]["strict_min"],

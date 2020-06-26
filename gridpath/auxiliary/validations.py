@@ -18,9 +18,12 @@ def _get_idx_col(df):
         return "project"
     elif "transmission_line" in df.columns:
         return "transmission_line"
+    elif "period" in df.columns:
+        return "period"
     else:
         raise IOError(
-            "df should contain 'project' or 'transmission_line' column"
+            "df should contain 'project', 'transmission_line', "
+            "or 'period' column"
         )
 
 
@@ -271,7 +274,7 @@ def validate_dtypes(df, expected_dtypes):
     return result, columns
 
 
-def validate_values(df, columns, min=0, max=np.inf,
+def validate_values(df, col, idx_col="project", min=0, max=np.inf,
                     strict_min=False, strict_max=False):
     """
     Checks whether the selected columns of a DataFrame have values within the
@@ -279,7 +282,8 @@ def validate_values(df, columns, min=0, max=np.inf,
     :param df: DataFrame for which to check values. Must have a 'project'
         or 'transmission_line' column, and 'columns' param must be a subset
         of the columns in df
-    :param columns: list of columns to check values for
+    :param col: str or list of str, list of columns to check values for
+    :param idx_col: str or list of str, index column
     :param min: float, minimum value
     :param max: float, maximum value
     :param strict_min: Boolean, whether the min is a strict inequality or not
@@ -288,21 +292,21 @@ def validate_values(df, columns, min=0, max=np.inf,
         Error message specifies the column and the expected value range.
     """
 
-    idx_col = _get_idx_col(df)
     result = []
-    for col in columns:
-        min_invalids = (df[col] <= min) if strict_min else (df[col] < min)
-        max_invalids = (df[col] >= max) if strict_max else (df[col] > max)
+    cols = [col] if isinstance(col, str) else col
+    for c in cols:
+        min_invalids = (df[c] <= min) if strict_min else (df[c] < min)
+        max_invalids = (df[c] >= max) if strict_max else (df[c] > max)
         invalids = min_invalids | max_invalids
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
+            bad_idxs = df[idx_col][invalids].astype(str).values
             print_bad_idxs = ", ".join(bad_idxs)
             exp_min = "{} <".format(min) if strict_min else "{} <=".format(min)
             exp_max = "< {}".format(max) if strict_max else "<= {}".format(max)
 
             result.append(
                 "{}(s) '{}': Expected {} '{}' {}"
-                .format(idx_col, print_bad_idxs, exp_min, col, exp_max)
+                .format(idx_col, print_bad_idxs, exp_min, c, exp_max)
             )
 
     return result
@@ -336,7 +340,7 @@ def validate_req_cols(df, columns, required, category):
             invalids = pd.notna(df[column])
             error_str = "should not have inputs for"
         if invalids.any():
-            bad_idxs = df[idx_col][invalids].values
+            bad_idxs = df[idx_col][invalids].astype(str).values
             print_bad_idxs = ", ".join(bad_idxs)
             result.append(
                 "{}(s) '{}'; {} {} '{}'"
@@ -391,7 +395,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
     mask = valids_mask | invalids_mask
 
     if mask.any():
-        bad_idxs = df[idx_col][mask].values
+        bad_idxs = df[idx_col][mask].astype(str).values
         print_bad_idxs = ", ".join(bad_idxs)
         print_valid = " Valid options are {}.".format(valids) if valids else ""
         print_invalid = " Invalid options are {}.".format(invalids) if invalids else ""
@@ -476,14 +480,14 @@ def validate_single_input(df, idx_col="project", msg=""):
     rate inputs DataFrame.
 
     :param df: DataFrame to check. Must have column idx_col.
-    :param idx_col: str, the index column, defaults to "project".
+    :param idx_col: str or list of str, the index column, defaults to "project"
     :param msg: str, optional error message clarification.
     :return: List of error messages for each index with invalid inputs.
     """
 
     results = []
 
-    n_inputs = df.groupby([idx_col]).size()
+    n_inputs = df.groupby(idx_col).size()
     invalids = (n_inputs > 1)
     if invalids.any():
         bad_idxs = invalids.index[invalids]
