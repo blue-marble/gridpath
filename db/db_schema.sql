@@ -846,8 +846,6 @@ spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
-FOREIGN KEY (last_commitment_stage) REFERENCES
-inputs_temporal_subproblems_stages (stage_id),
 -- Ensure operational characteristics for variable, hydro and heat rates exist
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
