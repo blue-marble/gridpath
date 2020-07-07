@@ -161,6 +161,8 @@ def csv_to_subscenario_for_insertion(
         dir_subsc, inputs_dir, csv_file, project_flag
     )
 
+    # Get the data from the CSV if a CSV file name is passed (if not,
+    # we're expecting the object to not be a string and to be 'nan')
     if not isinstance(csv_file, str) and math.isnan(csv_file):
         csv_headers = None
         data_tuples = None
@@ -229,10 +231,12 @@ def get_subscenario_data_and_insert_into_db(
     :param quiet: boolean
     :param subscenario: string
     :param table: string
+    :param dir_subsc: boolean
     :param inputs_dir: string
     :param csv_file: string
     :param use_project_method: boolean
     :param skip_subscenario_info: boolean
+    :param skip_subscenario_data: boolean
     :param cols_to_exclude_str: boolean
     :param custom_method: string
 
@@ -309,7 +313,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             use_project_method=use_project_method,
-            skip_subscenario_info=True,
+            skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method
