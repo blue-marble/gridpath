@@ -98,6 +98,8 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
         many=False
     )
 
+    conn.close()
+
 
 def record_end_time(db_path, scenario, process_id, end_time):
     """
@@ -125,9 +127,17 @@ def record_end_time(db_path, scenario, process_id, end_time):
         many=False
     )
 
+    conn.close()
+
 
 def check_if_in_queue(db_path, scenario):
-    # Check if we're running from the queue
+    """
+    :param db_path:
+    :param scenario:
+    :return:
+
+    Check if we're running from the queue
+    """
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
@@ -139,11 +149,20 @@ def check_if_in_queue(db_path, scenario):
         """.format(scenario)
     ).fetchone()[0]
 
+    conn.close()
+
     return queue_order_id
 
 
 def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
-    # If running from the queue, remove from the queue
+    """
+    :param db_path:
+    :param scenario:
+    :param queue_order_id:
+    :return:
+
+    If running from the queue, remove from the queue
+    """
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -161,6 +180,7 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
     else:
         pass
 
+    conn.close()
 
 
 # TODO: add more run status types?
