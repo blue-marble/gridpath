@@ -302,7 +302,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             inputs_dir=inputs_dir,
             csv_file=csv_file,
             use_project_method=use_project_method,
-            skip_subscenario_info=True,
+            skip_subscenario_info=False,
             cols_to_exclude_str=cols_to_exclude_str,
             custom_method=custom_method
         )
