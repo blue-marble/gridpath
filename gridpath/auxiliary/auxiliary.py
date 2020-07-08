@@ -252,40 +252,60 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     :param script: 
     :return: (scenario_id, scenario_name)
     """
+
     if scenario_id_arg is None and scenario_name_arg is None:
         raise TypeError(
             """ERROR: Either scenario_id or scenario_name must be specified. 
             Run 'python """ + script + """'.py --help' for help."""
         )
+
     elif scenario_id_arg is not None and scenario_name_arg is None:
-        scenario_id = scenario_id_arg
-        scenario_name = c.execute(
-            """SELECT scenario_name
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-    elif scenario_id_arg is None and scenario_name_arg is not None:
-        scenario_name = scenario_name_arg
-        scenario_id = c.execute(
-            """SELECT scenario_id
-               FROM scenarios
-               WHERE scenario_name = '{}';""".format(scenario_name)
-        ).fetchone()[0]
-    else:
-        # If both scenario_id and scenario_name
-        scenario_name_db = c.execute(
+        result = c.execute(
             """SELECT scenario_name
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id_arg)
-        ).fetchone()[0]
-        if scenario_name_db == scenario_name_arg:
-            scenario_id = scenario_id_arg
-            scenario_name = scenario_name_arg
+        ).fetchone()
+        if result is None:
+            raise ValueError(
+                """ERROR: No matching scenario found for scenario_id '{}'"""
+                .format(scenario_id_arg)
+            )
         else:
-            raise ValueError("ERROR: scenario_id and scenario_name don't "
-                             "match in database.")
+            return scenario_id_arg, result[0]
 
-    return scenario_id, scenario_name
+    elif scenario_id_arg is None and scenario_name_arg is not None:
+        result = c.execute(
+            """SELECT scenario_id
+               FROM scenarios
+               WHERE scenario_name = '{}';""".format(scenario_name_arg)
+        ).fetchone()
+        if result is None:
+            raise ValueError(
+                """ERROR: No matching scenario found for scenario_name '{}'"""
+                .format(scenario_name_arg)
+            )
+        else:
+            return result[0], scenario_name_arg
+
+    else:
+        # If both scenario_id and scenario_name are specified
+        result = c.execute(
+            """SELECT scenario_name
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id_arg)
+        ).fetchone()
+        if result is None:
+            raise ValueError(
+                """ERROR: No matching scenario found for scenario_id '{}'"""
+                .format(scenario_id_arg)
+            )
+        elif result[0] != scenario_name_arg:
+            raise ValueError(
+                """ERROR: scenario_id and scenario_name don't match in 
+                database."""
+            )
+        else:
+            return scenario_id_arg, scenario_name_arg
 
 
 def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
