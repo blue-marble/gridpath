@@ -18,8 +18,7 @@ from db.common_functions import connect_to_database
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
 DB_NAME = "test_examples"
-DB_LOCATION = os.path.join("..", "db")
-DB_PATH = os.path.join(DB_LOCATION, "{}.db".format(DB_NAME))
+DB_PATH = os.path.join("..", "db", "{}.db".format(DB_NAME))
 CSV_PATH = "../db/csvs_test_examples"
 
 
@@ -115,12 +114,10 @@ class TestExamples(unittest.TestCase):
         if os.path.exists(DB_PATH):
             os.remove(DB_PATH)
 
-        create_database.main(["--db_location", DB_LOCATION,
-                              "--db_name", DB_NAME])
+        create_database.main(["--database", DB_PATH])
 
         try:
-            port_csvs_to_gridpath.main(["--db_location", DB_LOCATION,
-                                        "--db_name", DB_NAME,
+            port_csvs_to_gridpath.main(["--database", DB_PATH,
                                         "--csv_location", CSV_PATH,
                                         "--quiet"])
         except Exception as e:

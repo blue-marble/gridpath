@@ -24,9 +24,9 @@ particular scenario by providing the subscenario_id. Each scenario has a
 separate column. The user-defined name of the scenario should be entered as
 the name of the scenario column.
 
-The input params for this script include database name (db_name_, database
-path (db_location), and csvs folder path (csv_location. The defaults are the
-"io.db" database and "csvs" folder located under the "db" folder.
+The input params for this script include database file path (database),
+and csvs folder path (csv_location). The defaults are the
+"../db/io.db" database and "csvs" folder located under the "db" folder.
 
 """
 
@@ -54,17 +54,12 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--db_name", default="io",
-                        help="Name of the database without the db extension.")
-    parser.add_argument("--db_location", default=".",
-                        help="Path to the database (relative to this "
-                             "script). You can also skip the --db_name "
-                             "argument and specify the full path to the "
-                             "database file (including the filename and "
-                             "extension) here.")
-    parser.add_argument("--csv_location", default="./csvs",
+    parser.add_argument("--database", default="../db/io.db",
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../db/io.db ")
+    parser.add_argument("--csv_location", default="../db/csvs",
                         help="Path to the csvs folder including folder name "
-                             "(relative to this script).")
+                             "relative to the current working directory.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
 
@@ -168,9 +163,7 @@ def main(args=None):
     parsed_args = parse_arguments(args=args)
 
     # Get the database path
-    db_path = os.path.join(
-        str(parsed_args.db_location), str(parsed_args.db_name)+".db"
-    )
+    db_path = parsed_args.database
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "

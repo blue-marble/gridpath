@@ -77,8 +77,8 @@ def get_parent_parser():
 
     parser = ArgumentParser(add_help=False)
     parser.add_argument("--database",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../db/io.db")
     parser.add_argument("--plot_write_directory", default="../scenarios",
                         help="The path to the base directory in which to save "
                              "the plot html file. Note: the file will be saved "

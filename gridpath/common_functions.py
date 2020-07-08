@@ -103,8 +103,8 @@ def get_db_parser():
 
     parser = ArgumentParser(add_help=False)
     parser.add_argument("--database", default="../db/io.db",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../db/io.db ")
     parser.add_argument("--scenario_id", type=int,
                         help="The scenario_id from the database. Not needed "
                              "if scenario is specified.")
