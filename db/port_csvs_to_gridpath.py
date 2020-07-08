@@ -110,12 +110,19 @@ def load_csv_data(conn, csv_path, quiet):
                     cols_to_exclude_str=cols_to_exclude_str,
                     custom_method=custom_method
                 )
-            elif row["subscenario_type"] in ["dir_main", "dir_aux"]:
+            elif row["subscenario_type"] in [
+                "dir_subsc_only", "dir_main", "dir_aux"
+            ]:
                 filename = row["filename"]
-                if row["subscenario_type"] == "dir_main":
+                if row["subscenario_type"] == "dir_subsc_only":
                     skip_subscenario_info = False
-                else:
+                    skip_subscenario_data = True
+                elif row["subscenario_type"] == "dir_aux":
                     skip_subscenario_info = True
+                    skip_subscenario_data = False
+                else:
+                    skip_subscenario_info = False
+                    skip_subscenario_data = False
                 db_util.read_all_dir_subscenarios_from_dir_and_insert_into_db(
                     conn=conn,
                     quiet=quiet,
@@ -124,6 +131,7 @@ def load_csv_data(conn, csv_path, quiet):
                     table=table,
                     filename=filename,
                     skip_subscenario_info=skip_subscenario_info,
+                    skip_subscenario_data=skip_subscenario_data,
                     cols_to_exclude_str=cols_to_exclude_str,
                     custom_method=custom_method
                 )
