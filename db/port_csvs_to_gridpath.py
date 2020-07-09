@@ -3,14 +3,10 @@
 
 """
 The *port_csvs_to_gridpath.py* script ports the input data provided through
-csvs to the sql database, which is created using the create_database.py
-script. The csv_data_master.csv has the list of all the subscenarios in the
-gridpath database. The 'required' column in this csv indicates whether the
-subscenario is required [1] or optional [0]. The 'include' column indicates
-whether the user would like to include this subscenario and import the csv data
-into this subscenario [1] or omit the subscenario [0]. The paths to the csv data
-subfolders that house the csv scenario data for each subscenario are also proided
-in this master csv.
+CSVS to the SQLite database, which is created using the create_database.py
+script. The csv_data_master.csv has the list of all the subscenarios and
+associated tables in the GridPath database. CSV data is imported if a path is
+specified for each table.
 
 The script will look for CSV files in each subscenario's subfolder. It is
 expecting that the CSV filenames will conform to a certain structure
@@ -68,7 +64,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def load_csv_data(conn, csv_path, quiet):
+def load_all_from_master_csv(conn, csv_path, quiet):
     """
     The 'main' method parses the database name along with path as
     script arguments, reads the data from csvs, and loads the data
@@ -76,18 +72,14 @@ def load_csv_data(conn, csv_path, quiet):
 
     """
     #### MASTER CSV DATA ####
-    # If include flag is 1, then read the feature, subscenario_id, and
-    # path into a dictionary and call the specific function for the feature
     csv_data_master = pd.read_csv(
         os.path.join(csv_path, 'csv_data_master.csv')
     )
 
     #### LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS ####
-    csv_subscenarios_simple = csv_data_master.loc[
-        csv_data_master["subscenario_type"] != "custom"
-    ]
-    for index, row in csv_subscenarios_simple.iterrows():
-        if row["include"] == 1:
+    for index, row in csv_data_master.iterrows():
+        # Load data if a directory is specified for this table
+        if isinstance(row["path"], str):
             subscenario = row["subscenario"]
             table = row["table"]
             inputs_dir = os.path.join(csv_path, row["path"])
@@ -192,7 +184,9 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
 
     # Load data
-    load_csv_data(conn=conn, csv_path=csv_path, quiet=parsed_args.quiet)
+    load_all_from_master_csv(
+        conn=conn, csv_path=csv_path, quiet=parsed_args.quiet
+    )
 
     # Close connection
     conn.close()
