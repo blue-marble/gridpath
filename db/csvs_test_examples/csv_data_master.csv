@@ -6,7 +6,6 @@ core,temporal_scenario_id,temporal_horizons,dir_aux,,0,temporal,horizon_params.c
 core,temporal_scenario_id,temporal,dir_main,,0,temporal,structure.csv,horizon,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,temporal_scenario_id,temporal_horizon_timepoints_start_end,dir_aux,temporal,0,temporal,horizon_timepoints.csv,,
 core,project_portfolio_scenario_id,project_portfolios,simple,,0,project/project_portfolios,,,
-core,project_operational_chars_scenario_id,project_operational_chars,simple,,0,project/project_operational_chars,,,
 core,load_scenario_id,system_load,simple,,0,system_load/system_load,,,
 core,load_zone_scenario_id,geography_load_zones,simple,,0,system_load/load_zones,,,
 core,project_load_zone_scenario_id,project_load_zones,simple,,0,project/project_load_zones,,,
@@ -22,6 +21,7 @@ data_dependent,variable_om_curves_scenario_id,project_variable_om_curves,simple,
 data_dependent,startup_chars_scenario_id,project_startup_chars,simple,,1,project/project_startup_chars,,,Selected in inputs_project_operational_chars table
 data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,simple,,1,project/project_hydro_operational_chars,,,Selected in inputs_project_operational_chars table
 data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,simple,,1,project/project_variable_generator_profiles,,,Selected in inputs_project_operational_chars table
+core,project_operational_chars_scenario_id,project_operational_chars,simple,,0,project/project_operational_chars,,,
 data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,simple,,0,,,,not implemented yet in csvs import; selected via inputs_project_new_costs table
 data_dependent,project_availability_scenario_id,project_availability,simple,,0,project/project_availability/project_availability_types,,,
 data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,simple,,1,project/project_availability/project_availability_endogenous,,,Selected in inputs_project_availability_types table
