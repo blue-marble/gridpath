@@ -248,6 +248,7 @@ def main(args=None):
         c=conn.cursor(),
         script="run_end_to_end"
     )
+    conn.close()
 
     if not parsed_args.quiet:
         print("Running scenario {} end to end".format(scenario))
