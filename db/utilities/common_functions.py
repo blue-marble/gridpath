@@ -566,3 +566,120 @@ def generic_insert_subscenario_data(
                           data=inputs_data)
 
     c.close()
+
+
+def load_all_subscenario_ids_from_dir_to_subscenario_table(
+    conn, subscenario, table, subscenario_type, project_flag,
+    cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
+):
+    """
+
+    :param conn:
+    :param subscenario:
+    :param table:
+    :param subscenario_type:
+    :param project_flag:
+    :param cols_to_exclude_str:
+    :param custom_method:
+    :param inputs_dir:
+    :param filename:
+    :param quiet:
+    :return:
+    """
+    if subscenario_type == "simple":
+        read_all_csv_subscenarios_from_dir_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            inputs_dir=inputs_dir,
+            use_project_method=project_flag,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
+        )
+    elif subscenario_type in [
+        "dir_subsc_only", "dir_main", "dir_aux"
+    ]:
+        if subscenario_type == "dir_subsc_only":
+            skip_subscenario_info = False
+            skip_subscenario_data = True
+        elif subscenario_type == "dir_aux":
+            skip_subscenario_info = True
+            skip_subscenario_data = False
+        else:
+            skip_subscenario_info = False
+            skip_subscenario_data = False
+        read_all_dir_subscenarios_from_dir_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            inputs_dir=inputs_dir,
+            subscenario=subscenario,
+            table=table,
+            filename=filename,
+            skip_subscenario_info=skip_subscenario_info,
+            skip_subscenario_data=skip_subscenario_data,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
+        )
+    else:
+        pass
+
+
+def load_single_subscenario_id_from_dir_to_subscenario_table(
+    conn, subscenario, table, subscenario_type, project_flag,
+    cols_to_exclude_str, custom_method, inputs_dir, filename, quiet,
+    subscenario_id_to_load
+):
+
+    if subscenario_type == "simple":
+        csv_file = [
+            f for f in os.listdir(inputs_dir)
+            if f.startswith(str(subscenario_id_to_load)) and f.endswith(".csv")
+        ]
+        get_subscenario_data_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            dir_subsc=False,
+            inputs_dir=inputs_dir,
+            csv_file=csv_file,
+            use_project_method=project_flag,
+            skip_subscenario_info=False,
+            skip_subscenario_data=False,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
+        )
+
+    elif subscenario_type in [
+        "dir_subsc_only", "dir_main", "dir_aux"
+    ]:
+        subscenario_directory = [
+            d for d in sorted(next(os.walk(inputs_dir))[1])
+            if d.startswith(str(subscenario_id_to_load))
+        ]
+        if subscenario_type == "dir_subsc_only":
+            skip_subscenario_info = False
+            skip_subscenario_data = True
+        elif subscenario_type == "dir_aux":
+            skip_subscenario_info = True
+            skip_subscenario_data = False
+        else:
+            skip_subscenario_info = False
+            skip_subscenario_data = False
+        get_subscenario_data_and_insert_into_db(
+            conn=conn,
+            quiet=quiet,
+            subscenario=subscenario,
+            table=table,
+            dir_subsc=True,
+            inputs_dir=subscenario_directory,
+            csv_file=filename,
+            use_project_method=False,
+            skip_subscenario_info=skip_subscenario_info,
+            skip_subscenario_data=skip_subscenario_data,
+            cols_to_exclude_str=cols_to_exclude_str,
+            custom_method=custom_method
+        )
+    else:
+        pass
