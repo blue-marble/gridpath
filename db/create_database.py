@@ -440,6 +440,8 @@ def main(args=None):
     conn = sqlite3.connect(database=db_path)
     # Allow concurrent reading and writing
     conn.execute("PRAGMA journal_mode=WAL")
+    # Enforce foreign keys (default = not enforced)
+    conn.execute("PRAGMA foreign_keys=ON;")
     # Create schema
     create_database_schema(conn=conn, parsed_arguments=parsed_args)
     # Load data

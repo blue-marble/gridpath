@@ -261,10 +261,6 @@ timestamp DATETIME,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
--- Make sure subproblem/stage exist in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id) REFERENCES
-inputs_temporal_subproblems_stages (temporal_scenario_id, subproblem_id,
-stage_id),
 -- Make sure period exists in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, period)
     REFERENCES inputs_temporal_periods (temporal_scenario_id, period),
@@ -294,10 +290,7 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure boundary type is correct
 FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
-(horizon_boundary_type),
--- Make sure subproblem_id exists in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
-inputs_temporal_subproblems (temporal_scenario_id, subproblem_id)
+(horizon_boundary_type)
 );
 
 
