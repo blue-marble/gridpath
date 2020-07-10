@@ -289,7 +289,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     :param inputs_dir: string
     :param use_project_method: boolean
     :param cols_to_exclude_str: string
-    :param custom_method: boolean
+    :param custom_method: string
 
     Read data from all subscenario CSVs in a directory and insert them into
     the database.
@@ -573,18 +573,20 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
     cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
 ):
     """
-
-    :param conn:
-    :param subscenario:
-    :param table:
-    :param subscenario_type:
-    :param project_flag:
+    :param conn: the database connection
+    :param subscenario: str; the subscenario (e.g. 'temporal_scenario_id')
+    :param table: str; the subscenario table name
+    :param subscenario_type: str; determines which CSV-to-DB functions to use
+    :param project_flag: boolean
     :param cols_to_exclude_str:
-    :param custom_method:
-    :param inputs_dir:
-    :param filename:
-    :param quiet:
+    :param custom_method: str
+    :param inputs_dir: str
+    :param filename: str
+    :param quiet: boolean
     :return:
+
+    Load all data for a subscenario (i.e. all subscenario IDs) from a
+    directory.
     """
     if subscenario_type == "simple":
         read_all_csv_subscenarios_from_dir_and_insert_into_db(
@@ -600,15 +602,10 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
     elif subscenario_type in [
         "dir_subsc_only", "dir_main", "dir_aux"
     ]:
-        if subscenario_type == "dir_subsc_only":
-            skip_subscenario_info = False
-            skip_subscenario_data = True
-        elif subscenario_type == "dir_aux":
-            skip_subscenario_info = True
-            skip_subscenario_data = False
-        else:
-            skip_subscenario_info = False
-            skip_subscenario_data = False
+        skip_subscenario_info, skip_subscenario_data = \
+            determine_whether_to_skip_subscenario_info_and_or_data(
+                subscenario_type=subscenario_type
+            )
         read_all_dir_subscenarios_from_dir_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -630,7 +627,22 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     cols_to_exclude_str, custom_method, inputs_dir, filename, quiet,
     subscenario_id_to_load
 ):
+    """
+    :param conn: the database connection
+    :param subscenario: str; the subscenario (e.g. 'temporal_scenario_id')
+    :param table: str; the subscenario table name
+    :param subscenario_type: str; determines which CSV-to-DB functions to use
+    :param project_flag: boolean
+    :param cols_to_exclude_str:
+    :param custom_method: str
+    :param inputs_dir: str
+    :param filename: str
+    :param quiet: boolean
+    :param subscenario_id_to_load: integer; the subscenario ID to load
+    :return:
 
+    Load data for a particular subscenario ID from a directory.
+    """
     if subscenario_type == "simple":
         csv_files = [
             f for f in os.listdir(inputs_dir)
@@ -671,15 +683,10 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             raise ValueError("Only one CSV file must have ID ".format(
                 subscenario_id_to_load))
 
-        if subscenario_type == "dir_subsc_only":
-            skip_subscenario_info = False
-            skip_subscenario_data = True
-        elif subscenario_type == "dir_aux":
-            skip_subscenario_info = True
-            skip_subscenario_data = False
-        else:
-            skip_subscenario_info = False
-            skip_subscenario_data = False
+        skip_subscenario_info, skip_subscenario_data = \
+            determine_whether_to_skip_subscenario_info_and_or_data(
+                subscenario_type=subscenario_type
+            )
 
         get_subscenario_data_and_insert_into_db(
             conn=conn,
@@ -697,3 +704,21 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
         )
     else:
         pass
+
+
+def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):
+    """
+    :param subscenario_type:
+    :return:
+    """
+    if subscenario_type == "dir_subsc_only":
+        skip_subscenario_info = False
+        skip_subscenario_data = True
+    elif subscenario_type == "dir_aux":
+        skip_subscenario_info = True
+        skip_subscenario_data = False
+    else:
+        skip_subscenario_info = False
+        skip_subscenario_data = False
+
+    return skip_subscenario_info, skip_subscenario_data

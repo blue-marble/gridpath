@@ -52,10 +52,10 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--database", default="../db/test_examples.db",
+    parser.add_argument("--database", default="../db/io.db",
                         help="The database file path relative to the current "
                              "working directory. Defaults to ../db/io.db ")
-    parser.add_argument("--csv_location", default="../db/csvs_test_examples",
+    parser.add_argument("--csv_location", default="../db/csvs",
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
     parser.add_argument("--subscenario",
@@ -82,23 +82,22 @@ def parse_arguments(args):
 
 def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
     """
-    The 'main' method parses the database name along with path as
-    script arguments, reads the data from csvs, and loads the data
-    in the database.
+    :param conn: the database connection
+    :param csv_path: str, the directory where the CSV files are located
+    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param quiet: boolean for whether to print output
+    :return:
 
+    Read and load all data specified in the CSV master file.
     """
-    #### LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS ####
+    # LOAD ALL SUBSCENARIOS WITH NON-CUSTOM INPUTS #
     for index, row in csv_data_master.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str):
             subscenario = row["subscenario"]
-            table = row["table"]
-            inputs_dir = os.path.join(csv_path, row["path"])
-            project_flag = True if int(row["project_input"]) else False
-            cols_to_exclude_str = str(row["cols_to_exclude_str"])
-            custom_method = str(row["custom_method"])
-            subscenario_type = row["subscenario_type"]
-            filename = row["filename"]
+            table, inputs_dir, project_flag, cols_to_exclude_str, \
+                custom_method, subscenario_type, filename = \
+                parse_row(row=row, csv_path=csv_path)
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn, subscenario, table, subscenario_type, project_flag,
                 cols_to_exclude_str, custom_method, inputs_dir, filename,
@@ -107,7 +106,7 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
         else:
             pass
 
-    #### LOAD SCENARIOS DATA ####
+    # LOAD SCENARIOS DATA #
     # A scenarios.csv file is expected in the csv_path directory
     # TODO: maybe allow this to be skipped
     scenarios_df = pd.read_csv(
@@ -127,46 +126,67 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
 
 
 def load_all_subscenario_ids_from_directory(
-        conn, csv_path, csv_data_master, subscenario, quiet
+    conn, csv_path, csv_data_master, subscenario, quiet
 ):
+    """
+    :param conn: the database connection
+    :param csv_path: str, the directory where the CSV files are located
+    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param subscenario: str; the subscenario for which to load data (e.g.
+        temporal_scenario_id or project_portfolio_scenario_id)
+    :param quiet: boolean for whether to print output
+    :return:
+
+    Read and load all data for a particular subscenario (e.g. for the
+    subscenario temporal_scenario_id).
+    """
     for index, row in csv_data_master.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
-            table = row["table"]
-            inputs_dir = os.path.join(csv_path, row["path"])
-            project_flag = True if int(row["project_input"]) else False
-            cols_to_exclude_str = str(row["cols_to_exclude_str"])
-            custom_method = str(row["custom_method"])
-            subscenario_type = row["subscenario_type"]
-            filename = row["filename"]
+            table, inputs_dir, project_flag, cols_to_exclude_str, \
+                custom_method, subscenario_type, filename = \
+                parse_row(row=row, csv_path=csv_path)
             load_all_subscenario_ids_from_dir_to_subscenario_table(
-                conn, subscenario, table, subscenario_type, project_flag,
-                cols_to_exclude_str, custom_method, inputs_dir, filename,
-                quiet
+                conn=conn, subscenario=subscenario, table=table,
+                subscenario_type=subscenario_type, project_flag=project_flag,
+                cols_to_exclude_str=cols_to_exclude_str,
+                custom_method=custom_method, inputs_dir=inputs_dir,
+                filename=filename, quiet=quiet
             )
         else:
             pass
 
 
 def load_single_subscenario_id_from_directory(
-        conn, csv_path, csv_data_master, subscenario,
-        subscenario_id_to_load, quiet
+    conn, csv_path, csv_data_master, subscenario, subscenario_id_to_load, quiet
 ):
+    """
+    :param conn: the database connection
+    :param csv_path: str, the directory where the CSV files are located
+    :param csv_data_master: Pandas dataframe of the CSV master file
+    :param subscenario: str; the subscenario for which to load data (e.g.
+        temporal_scenario_id or project_portfolio_scenario_id)
+    :param subscenario_id_to_load: int; the subscenario ID for which to load
+        data
+    :param quiet: boolean for whether to print output
+    :return:
+
+    Read and load all data for a particular subscenario ID (e.g. for
+    temporal_scenario_id=5).
+    """
     for index, row in csv_data_master.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
-            table = row["table"]
-            inputs_dir = os.path.join(csv_path, row["path"])
-            project_flag = True if int(row["project_input"]) else False
-            cols_to_exclude_str = str(row["cols_to_exclude_str"])
-            custom_method = str(row["custom_method"])
-            subscenario_type = row["subscenario_type"]
-            filename = row["filename"]
+            table, inputs_dir, project_flag, cols_to_exclude_str, \
+                custom_method, subscenario_type, filename = \
+                parse_row(row=row, csv_path=csv_path)
             load_single_subscenario_id_from_dir_to_subscenario_table(
-                conn, subscenario, table, subscenario_type, project_flag,
-                cols_to_exclude_str, custom_method, inputs_dir, filename,
-                quiet,
-                subscenario_id_to_load
+                conn=conn, subscenario=subscenario, table=table,
+                subscenario_type=subscenario_type, project_flag=project_flag,
+                cols_to_exclude_str=cols_to_exclude_str,
+                custom_method=custom_method, inputs_dir=inputs_dir,
+                filename=filename, quiet=quiet,
+                subscenario_id_to_load=subscenario_id_to_load
             )
         else:
             pass
@@ -238,6 +258,26 @@ def main(args=None):
 
     # Close connection
     conn.close()
+
+
+def parse_row(row, csv_path):
+    """
+    :param row:
+    :param csv_path:
+    :return:
+
+    Parse a row of the CSV master file.
+    """
+    table = row["table"]
+    inputs_dir = os.path.join(csv_path, row["path"])
+    project_flag = True if int(row["project_input"]) else False
+    cols_to_exclude_str = str(row["cols_to_exclude_str"])
+    custom_method = str(row["custom_method"])
+    subscenario_type = row["subscenario_type"]
+    filename = row["filename"]
+
+    return table, inputs_dir, project_flag, cols_to_exclude_str, \
+        custom_method, subscenario_type, filename
 
 
 if __name__ == "__main__":
