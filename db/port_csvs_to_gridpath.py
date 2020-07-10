@@ -58,6 +58,20 @@ def parse_arguments(args):
     parser.add_argument("--csv_location", default="../db/csvs_test_examples",
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
+    parser.add_argument("--subscenario",
+                        default='temporal_scenario_id',
+                        help="The subscenario to load. The script will look "
+                             "for the directory where data for the "
+                             "subscenario are located based on the "
+                             "csv_master file and will load all subscenario "
+                             "IDs located there.")
+    parser.add_argument("--subscenario_id", default=5,
+                        help="The subscenario ID to load. The "
+                             "'--subscenario' argument must also be "
+                             "specified. The script will look for the "
+                             "directory where data for the subscenario are "
+                             "located based on the csv_master file and will "
+                             "load this scenario ID.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
 
@@ -203,18 +217,24 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
 
     # Load all data in directory
-    load_all_from_master_csv(
-        conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
-        quiet=parsed_args.quiet
-    )
-
-    # Load all IDs for a subscenario-table
-    load_all_subscenario_ids_from_directory(
-        conn, csv_path, csv_data_master, parsed_args.subscenario,
-        parsed_args.quiet
-    )
-
-    # Load single subscenario ID
+    if parsed_args.subscenario is None and parsed_args.subscenario_id is None:
+        load_all_from_master_csv(
+            conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
+            quiet=parsed_args.quiet
+        )
+    elif parsed_args.subscenario is not None and parsed_args.subscenario_id \
+            is None:
+        # Load all IDs for a subscenario-table
+        load_all_subscenario_ids_from_directory(
+            conn, csv_path, csv_data_master, parsed_args.subscenario,
+            parsed_args.quiet
+        )
+    else:
+        # Load single subscenario ID
+        load_single_subscenario_id_from_directory(
+            conn, csv_path, csv_data_master, parsed_args.subscenario,
+            parsed_args.subscenario_id, parsed_args.quiet
+        )
 
     # Close connection
     conn.close()

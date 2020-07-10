@@ -632,10 +632,17 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
 ):
 
     if subscenario_type == "simple":
-        csv_file = [
+        csv_files = [
             f for f in os.listdir(inputs_dir)
-            if f.startswith(str(subscenario_id_to_load)) and f.endswith(".csv")
+            if f.startswith(str(subscenario_id_to_load)) and f.endswith(
+                ".csv")
         ]
+        if len(csv_files) == 1:
+            csv_file = csv_files[0]
+        else:
+            raise ValueError("Only one CSV file must have ID ".format(
+                subscenario_id_to_load))
+
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -654,10 +661,16 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     elif subscenario_type in [
         "dir_subsc_only", "dir_main", "dir_aux"
     ]:
-        subscenario_directory = [
+        subscenario_directories = [
             d for d in sorted(next(os.walk(inputs_dir))[1])
             if d.startswith(str(subscenario_id_to_load))
         ]
+        if len(subscenario_directories) == 1:
+            subscenario_directory = subscenario_directories[0]
+        else:
+            raise ValueError("Only one CSV file must have ID ".format(
+                subscenario_id_to_load))
+
         if subscenario_type == "dir_subsc_only":
             skip_subscenario_info = False
             skip_subscenario_data = True
@@ -667,13 +680,14 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
         else:
             skip_subscenario_info = False
             skip_subscenario_data = False
+
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
             subscenario=subscenario,
             table=table,
             dir_subsc=True,
-            inputs_dir=subscenario_directory,
+            inputs_dir=os.path.join(inputs_dir, subscenario_directory),
             csv_file=filename,
             use_project_method=False,
             skip_subscenario_info=skip_subscenario_info,
