@@ -133,7 +133,7 @@ def add_module_specific_components(m, d):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_startup_plus_ramp_up_rate`                      |
+    | | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`                |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -182,7 +182,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_startup_cost_per_mw`                            |
+    | | :code:`gen_commit_lin_startup_cost_by_st_per_mw`                      |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
@@ -275,14 +275,14 @@ def add_module_specific_components(m, d):
     | The project's downward ramp rate in MW in the linked timepoints         |
     | (depends on timepoint duration.)                                        |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_linked_provide_power_startup_mw`                |
+    | | :code:`gen_commit_lin_linked_provide_power_startup_by_st_mw`          |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES`          |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's startup power provision by startup type for each linked   |
     | timepoint.                                                              |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp`            |
+    | | :code:`gen_commit_lin_linked_startup_ramp_rate_by_st_mw_per_tmp`      |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES`          |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -357,7 +357,7 @@ def add_module_specific_components(m, d):
     | Power provision above the minimum stable level in MW from this project  |
     | in each timepoint in which the project is committed.                    |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Provide_Power_Startup_MW`                         |
+    | | :code:`GenCommitLin_Provide_Power_Startup_By_ST_MW`                   |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
@@ -432,13 +432,14 @@ def add_module_specific_components(m, d):
     | , the availability and capacity in the timepoint, and the timepoint's   |
     | duration.                                                               |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp`                     |
+    | | :code:`GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp`               |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | The project's upward ramp-able capacity (in MW) during startup in each  |
     | operational timepoint. Depends on the                                   |
-    | :code:`gen_commit_lin_startup_plus_ramp_up_rate`, the availability and  |
-    | capacity in the timepoint, and the timepoint's duration.                |
+    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st                   |
+    | availability and capacity in the timepoint, and the timepoint's         |
+    | duration.                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp`                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
@@ -554,24 +555,24 @@ def add_module_specific_components(m, d):
     | Limits startup power to zero when the project is committed and to the   |
     | minimum stable level when it is not committed.                          |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Ramp_During_Startup_Constraint`                   |
+    | | :code:`GenCommitLin_Ramp_During_Startup_By_ST_Constraint`             |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Limits the allowed project upward startup power ramp based on the       |
-    | :code:`gen_commit_lin_startup_plus_ramp_up_rate`.                       |
+    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`.                 |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Increasing_Startup_Power_Constraint`              |
+    | | :code:`GenCommitLin_Increasing_Startup_Power_By_ST_Constraint`        |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Requires that the startup power always increases, except for the        |
     | startup timepoint (when :code:`GenCommitLin_Startup` is one).           |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Power_During_Startup_Constraint`                  |
+    | | :code:`GenCommitLin_Power_During_Startup_By_ST_Constraint`            |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Limits the difference between the power provision in the startup        |
     | timepoint and the startup power in the previous timepoint based on the  |
-    | :code:`gen_commit_lin_startup_plus_ramp_up_rate`.                       |
+    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`.                 |
     +-------------------------------------------------------------------------+
     | Shutdown Power                                                          |
     +-------------------------------------------------------------------------+
@@ -703,7 +704,7 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_LIN,
         within=PercentFraction, default=1
     )
-    m.gen_commit_lin_startup_plus_ramp_up_rate = Param(
+    m.gen_commit_lin_startup_plus_ramp_up_rate_by_st = Param(
         m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
         within=PercentFraction, default=1
     )
@@ -733,7 +734,7 @@ def add_module_specific_components(m, d):
         default=0
     )
 
-    m.gen_commit_lin_startup_cost_per_mw = Param(
+    m.gen_commit_lin_startup_cost_by_st_per_mw = Param(
         m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
         within=NonNegativeReals,
         default=0
@@ -797,12 +798,12 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.gen_commit_lin_linked_provide_power_startup_mw = Param(
+    m.gen_commit_lin_linked_provide_power_startup_by_st_mw = Param(
         m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES,
         within=NonNegativeReals
     )
 
-    m.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp = Param(
+    m.gen_commit_lin_linked_startup_ramp_rate_by_st_mw_per_tmp = Param(
         m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES,
         within=NonNegativeReals
     )
@@ -850,7 +851,7 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.GenCommitLin_Provide_Power_Startup_MW = Var(
+    m.GenCommitLin_Provide_Power_Startup_By_ST_MW = Var(
         m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES,
         within=NonNegativeReals
     )
@@ -898,9 +899,9 @@ def add_module_specific_components(m, d):
         rule=ramp_down_rate_rule
     )
 
-    m.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp = Expression(
+    m.GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp = Expression(
         m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES,
-        rule=startup_ramp_rate_rule
+        rule=startup_ramp_rate_by_st_rule
     )
 
     m.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp = Expression(
@@ -997,19 +998,19 @@ def add_module_specific_components(m, d):
         rule=max_startup_power_constraint_rule
     )
 
-    m.GenCommitLin_Ramp_During_Startup_Constraint = Constraint(
+    m.GenCommitLin_Ramp_During_Startup_By_ST_Constraint = Constraint(
         m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES,
-        rule=ramp_during_startup_constraint_rule
+        rule=ramp_during_startup_by_st_constraint_rule
     )
 
-    m.GenCommitLin_Increasing_Startup_Power_Constraint = Constraint(
+    m.GenCommitLin_Increasing_Startup_Power_By_ST_Constraint = Constraint(
         m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES,
-        rule=increasing_startup_power_constraint_rule
+        rule=increasing_startup_power_by_st_constraint_rule
     )
 
-    m.GenCommitLin_Power_During_Startup_Constraint = Constraint(
+    m.GenCommitLin_Power_During_Startup_By_ST_Constraint = Constraint(
         m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES,
-        rule=power_during_startup_constraint_rule
+        rule=power_during_startup_by_st_constraint_rule
     )
 
     # Shutdown Power
@@ -1089,7 +1090,7 @@ def provide_power_rule(mod, g, tmp):
     return mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp] \
         + mod.GenCommitLin_Pmin_MW[g, tmp] \
         * mod.GenCommitLin_Commit[g, tmp] \
-        + sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
+        + sum(mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
               for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]) \
         + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
 
@@ -1155,14 +1156,14 @@ def ramp_down_rate_rule(mod, g, tmp):
         * 60  # convert min to hours
 
 
-def startup_ramp_rate_rule(mod, g, tmp, s):
+def startup_ramp_rate_by_st_rule(mod, g, tmp, s):
     """
-    **Expression Name**: GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp
+    **Expression Name**: GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp
     **Defined Over**: GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * min(mod.gen_commit_lin_startup_plus_ramp_up_rate[g, s]
+        * min(mod.gen_commit_lin_startup_plus_ramp_up_rate_by_st[g, s]
               * mod.hrs_in_tmp[tmp]
               * 60, 1)
 
@@ -1264,7 +1265,7 @@ def synced_constraint_rule(mod, g, tmp):
         startup_shutdown_fraction = 0
     else:
         startup_shutdown_fraction = (
-            sum(mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
+            sum(mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
                 for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
             + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
         ) / mod.GenCommitLin_Pmin_MW[g, tmp]
@@ -1691,7 +1692,7 @@ def max_startup_power_constraint_rule(mod, g, tmp):
 
     # TODO: make this expression since used in many places?
     total_startup_power = sum(
-        mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s]
+        mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
         for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]
     )
 
@@ -1700,9 +1701,9 @@ def max_startup_power_constraint_rule(mod, g, tmp):
         * mod.GenCommitLin_Pmin_MW[g, tmp]
 
 
-def ramp_during_startup_constraint_rule(mod, g, tmp, s):
+def ramp_during_startup_by_st_constraint_rule(mod, g, tmp, s):
     """
-    **Constraint Name**: GenCommitLin_Ramp_During_Startup_Constraint
+    **Constraint Name**: GenCommitLin_Ramp_During_Startup_By_ST_Constraint
     **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES
 
     The difference between startup power of consecutive timepoints has to
@@ -1725,37 +1726,38 @@ def ramp_during_startup_constraint_rule(mod, g, tmp, s):
             boundary_type="linked"
         ):
             prev_tmp_provide_power_startup = \
-                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+                mod.gen_commit_lin_linked_provide_power_startup_by_st_mw[g, 0, s]
             prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp[g, 0, s]
+                mod.gen_commit_lin_linked_startup_ramp_rate_by_st_mw_per_tmp[g, 0, s]
         else:
             prev_tmp_provide_power_startup = \
-                mod.GenCommitLin_Provide_Power_Startup_MW[
+                mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
                 ]
             prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                mod.GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
                 ]
 
         return \
-            mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] \
+            mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s] \
             - prev_tmp_provide_power_startup \
             <= prev_tmp_startup_ramp_rate_mw_per_tmp
 
 
-def increasing_startup_power_constraint_rule(mod, g, tmp, s):
+def increasing_startup_power_by_st_constraint_rule(mod, g, tmp, s):
     """
-    **Constraint Name**: GenCommitLin_Increasing_Startup_Power_Constraint
+    **Constraint Name**: GenCommitLin_Increasing_Startup_Power_By_ST_Constraint
     **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES
 
-    GenCommitLin_Provide_Power_Startup_MW[t] can only be less than
-    GenCommitLin_Provide_Power_Startup_MW[t-1] in the starting timepoint (when
-    it is is back at 0). In other words, GenCommitLin_Provide_Power_Startup_MW
-    can only decrease in the starting timepoint; in all other timepoints it
-    should increase or stay constant. This prevents situations in which the
-    model can abuse this by providing starting power in some timepoints and
-    then reducing power back to 0 without ever committing the unit.
+    GenCommitLin_Provide_Power_Startup_By_ST_MW[t] can only be less than
+    GenCommitLin_Provide_Power_Startup_By_ST_MW[t-1] in the starting timepoint
+    (when it is is back at 0). In other words,
+    GenCommitLin_Provide_Power_Startup_By_ST_MW can only decrease in the
+    starting timepoint; in all other timepoints it should increase or stay
+    constant. This prevents situations in which the model can abuse this by
+    providing starting power in some timepoints and then reducing power back
+    to 0 without ever committing the unit.
     """
     if check_if_boundary_type_and_first_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
@@ -1768,23 +1770,23 @@ def increasing_startup_power_constraint_rule(mod, g, tmp, s):
             boundary_type="linked"
         ):
             prev_tmp_provide_power_startup = \
-                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+                mod.gen_commit_lin_linked_provide_power_startup_by_st_mw[g, 0, s]
         else:
             prev_tmp_provide_power_startup = \
-                mod.GenCommitLin_Provide_Power_Startup_MW[
+                mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
                 ]
 
         return \
-            mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] \
+            mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s] \
             - prev_tmp_provide_power_startup \
             >= - mod.GenCommitLin_Startup_Type[g, tmp, s] \
             * mod.GenCommitLin_Pmin_MW[g, tmp]
 
 
-def power_during_startup_constraint_rule(mod, g, tmp, s):
+def power_during_startup_by_st_constraint_rule(mod, g, tmp, s):
     """
-    **Constraint Name**: GenCommitLin_Power_During_Startup_Constraint
+    **Constraint Name**: GenCommitLin_Power_During_Startup_By_ST_Constraint
     **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES
 
     Power provision in the start timepoint (i.e. the timepoint when the unit
@@ -1820,16 +1822,16 @@ def power_during_startup_constraint_rule(mod, g, tmp, s):
             boundary_type="linked"
         ):
             prev_tmp_provide_power_startup = \
-                mod.gen_commit_lin_linked_provide_power_startup_mw[g, 0, s]
+                mod.gen_commit_lin_linked_provide_power_startup_by_st_mw[g, 0, s]
             prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp[g, 0, s]
+                mod.gen_commit_lin_linked_startup_ramp_rate_by_st_mw_per_tmp[g, 0, s]
         else:
             prev_tmp_provide_power_startup = \
-                mod.GenCommitLin_Provide_Power_Startup_MW[
+                mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
                 ]
             prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                mod.GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
                 ]
 
@@ -2140,7 +2142,7 @@ def startup_cost_rule(mod, g, tmp):
     all startup types since only one startup type is active at the same time.
     """
     return sum(
-        mod.gen_commit_lin_startup_cost_per_mw[g, s]
+        mod.gen_commit_lin_startup_cost_by_st_per_mw[g, s]
         * mod.GenCommitLin_Startup_Type[g, tmp, s]
         for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]
     ) * mod.GenCommitLin_Pmax_MW[g, tmp]
@@ -2264,8 +2266,8 @@ def load_module_specific_data(mod, data_portal,
         data_portal.load(
             filename=linked_startup_inputs_filename,
             param=(
-                mod.gen_commit_lin_linked_provide_power_startup_mw,
-                mod.gen_commit_lin_linked_startup_ramp_rate_mw_per_tmp
+                mod.gen_commit_lin_linked_provide_power_startup_by_st_mw,
+                mod.gen_commit_lin_linked_startup_ramp_rate_by_st_mw_per_tmp
             )
         )
     else:
@@ -2437,12 +2439,12 @@ def export_linked_subproblem_inputs(
                                 tmp_linked_tmp_dict[tmp],
                                 s,
                                 value(
-                                    mod.GenCommitLin_Provide_Power_Startup_MW[
+                                    mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[
                                         p, tmp, s]
                                 ),
                                 value(
                                     mod.
-                                    GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
+                                    GenCommitLin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
                                         p, tmp, s]
                                 )
                             ])

@@ -834,11 +834,6 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     :return:
     """
 
-    # TODO: change the name of the startup_cost_per_mw,
-    #  gen_commit_bin_startup_plus_ramp_up_rate, and
-    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
-    #  like that, and re-add these same params for a simple treatment to
-    #  gen_commit_bin and gen_commit_lin
     # Startup characteristics
     df = pd.read_csv(
         os.path.join(scenario_directory, str(subproblem), str(stage),
@@ -883,9 +878,9 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
             {None: startup_ramp_projects_types}
         data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
             down_time_cutoff_hours_dict
-        data_portal.data()["{}_startup_plus_ramp_up_rate".format(op_type)] = \
-            startup_plus_ramp_up_rate_dict
-        data_portal.data()["{}_startup_cost_per_mw".format(op_type)] = \
+        data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(
+            op_type)] = startup_plus_ramp_up_rate_dict
+        data_portal.data()["{}_startup_cost_by_st_per_mw".format(op_type)] = \
             startup_cost_dict
 
 
