@@ -409,6 +409,12 @@ def add_module_specific_components(m, d):
     | Depends on the project's availability and capacity in the timepoint,    |
     | and the minimum stable level.                                           |
     +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Provide_Power_Startup_MW`                         |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Power provision during startup in each timepoint in which the project   |
+    | is starting up (zero if project is committed or not starting up).       |
+    +-------------------------------------------------------------------------+
     | | :code:`GenCommitLin_Provide_Power_MW`                                 |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
@@ -884,6 +890,11 @@ def add_module_specific_components(m, d):
         rule=pmin_rule
     )
 
+    m.GenCommitLin_Provide_Power_Startup_MW = Expression(
+        m.GEN_COMMIT_LIN_OPR_TMPS,
+        rule=provide_power_startup_rule
+    )
+
     m.GenCommitLin_Provide_Power_MW = Expression(
         m.GEN_COMMIT_LIN_OPR_TMPS,
         rule=provide_power_rule
@@ -1082,6 +1093,15 @@ def pmin_rule(mod, g, tmp):
         * mod.gen_commit_lin_min_stable_level_fraction[g]
 
 
+def provide_power_startup_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenCommitLin_Provide_Power_Startup_MW
+    **Defined Over**: GEN_COMMIT_LIN_OPR_TMPS
+    """
+    return sum(mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
+               for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
+
+
 def provide_power_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitLin_Provide_Power_MW
@@ -1090,8 +1110,7 @@ def provide_power_rule(mod, g, tmp):
     return mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp] \
         + mod.GenCommitLin_Pmin_MW[g, tmp] \
         * mod.GenCommitLin_Commit[g, tmp] \
-        + sum(mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
-              for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]) \
+        + mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp] \
         + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
 
 
@@ -1185,9 +1204,8 @@ def active_startup_rule(mod, g, tmp):
     **Expression Name**: GenCommitLin_Active_Startup_Type
     **Defined Over**: GEN_COMMIT_LIN_OPR_TMPS
     """
-    return (sum(mod.GenCommitLin_Startup_Type[g, tmp, s] * s
-                for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
-            if g in mod.GEN_COMMIT_LIN_STR_RMP_PRJS else 0)
+    return sum(mod.GenCommitLin_Startup_Type[g, tmp, s] * s
+               for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -1265,8 +1283,7 @@ def synced_constraint_rule(mod, g, tmp):
         startup_shutdown_fraction = 0
     else:
         startup_shutdown_fraction = (
-            sum(mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
-                for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g])
+            mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp]
             + mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp]
         ) / mod.GenCommitLin_Pmin_MW[g, tmp]
 
@@ -1690,13 +1707,7 @@ def max_startup_power_constraint_rule(mod, g, tmp):
     equal to the minimum stable level when not committed.
     """
 
-    # TODO: make this expression since used in many places?
-    total_startup_power = sum(
-        mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
-        for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]
-    )
-
-    return total_startup_power \
+    return mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp] \
         <= (1 - mod.GenCommitLin_Commit[g, tmp]) \
         * mod.GenCommitLin_Pmin_MW[g, tmp]
 
