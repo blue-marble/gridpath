@@ -59,13 +59,13 @@ def parse_arguments(args):
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
     parser.add_argument("--subscenario",
-                        default='temporal_scenario_id',
+                        default=None,
                         help="The subscenario to load. The script will look "
                              "for the directory where data for the "
                              "subscenario are located based on the "
                              "csv_master file and will load all subscenario "
                              "IDs located there.")
-    parser.add_argument("--subscenario_id", default=5,
+    parser.add_argument("--subscenario_id", default=None,
                         help="The subscenario ID to load. The "
                              "'--subscenario' argument must also be "
                              "specified. The script will look for the "
