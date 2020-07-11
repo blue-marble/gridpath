@@ -2226,11 +2226,16 @@ def load_module_specific_data(mod, data_portal,
     )
 
     # Load data from startup_chars.tab
-    load_startup_chars(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_lin", projects=projects
+    startup_chars_filepath = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs",
+        "startup_chars.tab"
     )
+    if os.path.exists(startup_chars_filepath):
+        load_startup_chars(
+            data_portal=data_portal,
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, op_type="gen_commit_lin", projects=projects
+        )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
@@ -2511,11 +2516,16 @@ def write_module_specific_model_inputs(
 
     data = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
-    fname = "startup_chars.tab"
+    df = cursor_to_df(data)
 
-    write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, fname, data, replace_nulls=True
-    )
+    if not df.empty:
+        df = df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "startup_chars.tab")
+        if not os.path.isfile(fpath):
+            df.to_csv(fpath, index=False, sep="\t")
+        else:
+            df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
 
 
 # Validation
