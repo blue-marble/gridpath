@@ -49,7 +49,7 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-   | | :code:`GEN_SIMPLE_LINKED_TMPS`                                         |
+    | | :code:`GEN_SIMPLE_LINKED_TMPS`                                        |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their linked timepoints.                           |
@@ -60,6 +60,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_simple_variable_om_cost_per_mwh`                           |
+    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_simple_ramp_up_when_on_rate`                               |
     | | *Defined over*: :code:`GEN_SIMPLE`                                    |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -168,6 +176,11 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.gen_simple_variable_om_cost_per_mwh = Param(
+        m.GEN_SIMPLE, within=NonNegativeReals,
+        default=0
+    )
 
     m.gen_simple_ramp_up_when_on_rate = Param(
         m.GEN_SIMPLE, within=PercentFraction,
@@ -475,7 +488,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenSimple_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_simple_variable_om_cost_per_mwh[g]
 
 
 def startup_fuel_burn_rule(mod, g, tmp):

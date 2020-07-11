@@ -113,6 +113,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_commit_cap_variable_om_cost_per_mwh`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_startup_plus_ramp_up_rate`                      |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -488,6 +496,12 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.gen_commit_cap_variable_om_cost_per_mwh = Param(
+        m.GEN_COMMIT_CAP, within=NonNegativeReals,
+        default=0
+    )
+
     m.gen_commit_cap_startup_plus_ramp_up_rate = Param(
         m.GEN_COMMIT_CAP,
         within=PercentFraction,
@@ -766,8 +780,8 @@ def add_module_specific_components(m, d):
 ###############################################################################
 def auxiliary_consumption_rule(mod, g, tmp):
     """
-    **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Expression Name**: GenCommitCap_Auxiliary_Consumption_MW
+    **Defined Over**: GEN_COMMIT_CAP_OPR_TMPS
     """
     return mod.Commit_Capacity_MW[g, tmp] \
         * mod.gen_commit_cap_aux_consumption_frac_capacity[g] \
@@ -1447,7 +1461,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
-       levels: :code:`variable_om_cost_per_mwh`.
+       levels: :code:`gen_commit_cap_variable_om_cost_per_mwh`.
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
@@ -1459,7 +1473,7 @@ def variable_om_cost_rule(mod, g, tmp):
     commitment decisions can have the second component.
     """
     return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g] \
+        * mod.gen_commit_cap_variable_om_cost_per_mwh[g] \
         + mod.GenCommitCap_Variable_OM_Cost_By_LL[g, tmp]
 
 

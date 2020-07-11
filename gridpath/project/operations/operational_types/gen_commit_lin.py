@@ -117,6 +117,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_commit_lin_variable_om_cost_per_mwh`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_ramp_up_when_on_rate`                           |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -701,6 +709,11 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.gen_commit_lin_variable_om_cost_per_mwh = Param(
+        m.GEN_COMMIT_LIN, within=NonNegativeReals,
+        default=0
+    )
 
     m.gen_commit_lin_ramp_up_when_on_rate = Param(
         m.GEN_COMMIT_LIN,
@@ -2129,7 +2142,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
-       levels: :code:`variable_om_cost_per_mwh`.
+       levels: :code:`gen_commit_lin_variable_om_cost_per_mwh`.
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
@@ -2141,7 +2154,7 @@ def variable_om_cost_rule(mod, g, tmp):
     commitment decisions can have the second component.
     """
     return mod.GenCommitLin_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g] \
+        * mod.gen_commit_lin_variable_om_cost_per_mwh[g] \
         + mod.GenCommitLin_Variable_OM_Cost_By_LL[g, tmp]
 
 

@@ -173,8 +173,6 @@ def add_model_components(m, d):
     # Input Params
     ###########################################################################
 
-    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
-
     m.fuel = Param(
         m.FUEL_PRJS,
         within=m.FUELS
@@ -224,18 +222,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         sep="\t"
     )
     periods = set(periods["period"])
-
-    # variable_om_cost_per_mwh (all projects have it, so it's defined here)
-    var_cost_df = read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "variable_om_cost_per_mwh"]
-    )
-    var_cost_dict = dict(
-        zip(var_cost_df["project"], var_cost_df["variable_om_cost_per_mwh"])
-    )
-    data_portal.data()["variable_om_cost_per_mwh"] = var_cost_dict
 
     # Heat Rate Curves
     if "fuel" in headers:

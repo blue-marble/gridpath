@@ -19,7 +19,7 @@ Costs for this operational type include fuel costs and variable O&M costs.
 """
 
 import warnings
-from pyomo.environ import Constraint, Set
+from pyomo.environ import Constraint, Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -28,7 +28,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    validate_opchars
+    validate_opchars, load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -46,6 +46,20 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_must_run_variable_om_cost_per_mwh`                         |
+    | | *Defined over*: :code:`GEN_MUST_RUN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
     +-------------------------------------------------------------------------+
 
     |
@@ -80,6 +94,14 @@ def add_module_specific_components(m, d):
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_MUST_RUN)
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_must_run_variable_om_cost_per_mwh = Param(
+        m.GEN_MUST_RUN, within=NonNegativeReals,
+        default=0
     )
 
     # Constraints
@@ -211,7 +233,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_must_run_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -239,6 +261,28 @@ def power_delta_rule(mod, g, tmp):
     """
     """
     return 0
+
+
+# Input-Output
+###############################################################################
+
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
+    """
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+
+    # Load data from projects.tab and get the list of projects of this type
+    projects = load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_must_run"
+    )
 
 
 # Validation

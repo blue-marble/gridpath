@@ -196,6 +196,15 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate)
 
+        # Params: gen_commit_bin_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Disp_Binary_Commit": 0}
+        actual_var_om_cost = {
+            prj: instance.gen_commit_bin_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_commit_bin_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Binary_Commit": 0.3}
         actual_ramp_down_when_on_rate = {

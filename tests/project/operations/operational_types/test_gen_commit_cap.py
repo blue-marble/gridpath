@@ -171,6 +171,25 @@ class TestGenCommitCap(unittest.TestCase):
                              actual_shutdown_plus_ramp_down_rate
                              )
 
+        # Params: gen_commit_cap_variable_om_cost_per_mwh
+        expected_var_om_cost = {
+            "Gas_CCGT": 2,
+            "Coal": 1,
+            "Gas_CT": 2,
+            "Gas_CCGT_New": 2,
+            "Gas_CCGT_New_Binary": 2,
+            "Gas_CT_New": 2,
+            "Gas_CCGT_z2": 2,
+            "Coal_z2": 1,
+            "Gas_CT_z2": 2
+        }
+        actual_var_om_cost = {
+            prj: instance.gen_commit_cap_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_COMMIT_CAP
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_commit_cap_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,

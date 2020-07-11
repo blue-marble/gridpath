@@ -355,7 +355,6 @@ def get_optype_param_requirements(op_type):
     #  will be read in for each op-type module whereas now they are read in
     #  in project.init so it would happen twice.
     del other_columns_dict["fuel"]
-    del other_columns_dict["variable_om_cost_per_mwh"]
 
     return required_columns_dict, optional_columns_dict, other_columns_dict
 

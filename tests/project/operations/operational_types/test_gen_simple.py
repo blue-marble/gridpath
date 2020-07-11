@@ -109,6 +109,15 @@ class TestGenSimple(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
+        # Params: gen_simple_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Disp_No_Commit": 0}
+        actual_var_om_cost = {
+            prj: instance.gen_simple_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_SIMPLE
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_simple_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Disp_No_Commit": 1  # default value

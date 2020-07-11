@@ -204,6 +204,17 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate)
 
+        # Params: gen_commit_lin_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Disp_Cont_Commit": 0,
+                                "Clunky_Old_Gen": 1,
+                                "Clunky_Old_Gen2": 1}
+        actual_var_om_cost = {
+            prj: instance.gen_commit_lin_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_commit_lin_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Cont_Commit": 0.3,
                                          "Clunky_Old_Gen": 1,

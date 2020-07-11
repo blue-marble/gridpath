@@ -129,13 +129,21 @@ class TestGenAlwaysOn(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
+        # Params: gen_always_on_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Nuclear_Flexible": 1}
+        actual_var_om_cost = {
+            prj: instance.gen_always_on_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_ALWAYS_ON
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_always_on_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.gen_always_on_ramp_up_when_on_rate[
-                prj]
+            prj: instance.gen_always_on_ramp_up_when_on_rate[prj]
             for prj in instance.GEN_ALWAYS_ON
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
