@@ -228,37 +228,6 @@ class TestOperationsInit(unittest.TestCase):
             actual_fuel_project_segments_operational_timepoints
         )
 
-        # Set: VOM_PRJS_PRDS_SGMS
-        expected_vom_project_period_segments = sorted([
-            ("Disp_Binary_Commit", 2020, 0),
-            ("Disp_Binary_Commit", 2030, 0),
-            ("Disp_Cont_Commit", 2020, 0),
-            ("Disp_Cont_Commit", 2030, 0),
-        ])
-        actual_vom_project_period_segments = sorted([
-            (prj, p, s) for (prj, p, s) in instance.VOM_PRJS_PRDS_SGMS
-            ])
-        self.assertListEqual(expected_vom_project_period_segments,
-                             actual_vom_project_period_segments)
-
-        # Set: VOM_PRJS_OPR_TMPS_SGMS
-        expected_prj_opr_tmps = sorted(
-            get_project_operational_timepoints(["Disp_Binary_Commit",
-                                                "Disp_Cont_Commit"])
-        )
-        expected_vom_project_segments_operational_timepoints = sorted([
-            (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
-        ])
-        actual_vom_project_segments_operational_timepoints = sorted([
-            (prj, tmp, s) for (prj, tmp, s) in
-            instance.VOM_PRJS_OPR_TMPS_SGMS
-        ])
-
-        self.assertListEqual(
-            expected_vom_project_segments_operational_timepoints,
-            actual_vom_project_segments_operational_timepoints
-        )
-
         # Param: fuel_burn_slope_mmbtu_per_mwh
         expected_fuel_burn_slope = OrderedDict(sorted({
             ("Nuclear", 2020, 0): 1666.67,
@@ -352,40 +321,6 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictAlmostEqual(expected_fuel_burn_intercept,
                                    actual_fuel_burn_intercept,
-                                   places=5)
-
-        # Param: vom_slope_cost_per_mwh
-        expected_vom_slope = OrderedDict(sorted({
-            ("Disp_Binary_Commit", 2020, 0): 1,
-            ("Disp_Binary_Commit", 2030, 0): 1,
-            ("Disp_Cont_Commit", 2020, 0): 1,
-            ("Disp_Cont_Commit", 2030, 0): 1,
-        }.items()))
-        actual_vom_slope = OrderedDict(sorted(
-            {(prj, p, s): instance.vom_slope_cost_per_mwh[(prj, p, s)]
-             for (prj, p, s) in instance.VOM_PRJS_PRDS_SGMS}.items()
-            )
-        )
-
-        self.assertDictAlmostEqual(expected_vom_slope,
-                                   actual_vom_slope,
-                                   places=5)
-
-        # Param: vom_intercept_cost_per_mw_hour
-        expected_vom_intercept = OrderedDict(sorted({
-            ("Disp_Binary_Commit", 2020, 0): 0.5,
-            ("Disp_Binary_Commit", 2030, 0): 0.5,
-            ("Disp_Cont_Commit", 2020, 0): 0,
-            ("Disp_Cont_Commit", 2030, 0): 0,
-        }.items()))
-        actual_vom_intercept = OrderedDict(sorted(
-            {(prj, p, s): instance.vom_intercept_cost_per_mw_hr[(prj, p, s)]
-             for (prj, p, s) in instance.VOM_PRJS_PRDS_SGMS}.items()
-            )
-        )
-
-        self.assertDictAlmostEqual(expected_vom_intercept,
-                                   actual_vom_intercept,
                                    places=5)
 
     def test_get_slopes_intercept_by_project_period_segment(self):

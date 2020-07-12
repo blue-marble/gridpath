@@ -49,6 +49,22 @@ class TestGenCommitCap(unittest.TestCase):
 
     """
 
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -110,6 +126,33 @@ class TestGenCommitCap(unittest.TestCase):
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
+
+        # Set: GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        expected_vom_project_period_segments = sorted([
+        ])
+        actual_vom_project_period_segments = sorted([
+            (prj, p, s)
+            for (prj, p, s) in instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_vom_project_period_segments,
+                             actual_vom_project_period_segments)
+
+        # Set: GEN_COMMIT_CAP_VOM_PRJS_OPR_TMPS_SGMS
+        expected_prj_opr_tmps = sorted(
+            get_project_operational_timepoints([])
+        )
+        expected_vom_project_segments_operational_timepoints = sorted([
+            (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
+        ])
+        actual_vom_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.GEN_COMMIT_CAP_VOM_PRJS_OPR_TMPS_SGMS
+        ])
+
+        self.assertListEqual(
+            expected_vom_project_segments_operational_timepoints,
+            actual_vom_project_segments_operational_timepoints
+        )
 
         # Param: gen_commit_cap_unit_size_mw
         expected_unit_size = {
@@ -189,6 +232,27 @@ class TestGenCommitCap(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
+        # Param: gen_commit_cap_vom_slope_cost_per_mwh
+        expected_vom_slope = {}
+        actual_vom_slope = {
+            (prj, p, s):
+                instance.gen_commit_cap_vom_slope_cost_per_mwh[(prj, p, s)]
+             for (prj, p, s) in instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        }
+
+        self.assertDictAlmostEqual(expected_vom_slope,
+                                   actual_vom_slope,
+                                   places=5)
+
+        # Param: gen_commit_cap_vom_intercept_cost_per_mw_hour
+        expected_vom_intercept = {}
+        actual_vom_intercept = {
+            (prj, p, s):
+                instance.gen_commit_cap_vom_intercept_cost_per_mw_hr[(prj,p, s)]
+             for (prj, p, s) in
+             instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        }
 
         # Param: gen_commit_cap_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {

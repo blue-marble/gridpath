@@ -22,7 +22,7 @@ from __future__ import division
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    PercentFraction, Expression, value
+    PercentFraction, Reals, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -31,9 +31,10 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, load_startup_chars, \
+    load_optype_module_specific_data, load_vom_curves, load_startup_chars, \
+    get_vom_curves_inputs_from_database, \
     get_startup_chars_inputs_from_database, write_tab_file_model_inputs, \
-    check_for_tmps_to_link, validate_opchars
+    check_for_tmps_to_link, validate_opchars, validate_vom_curves
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_last_timepoint, \
     check_boundary_type
@@ -75,6 +76,12 @@ def add_module_specific_components(m, d):
     | operational type, their operational timepoints, and their fuel          |
     | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS`                             |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the periods in which the project could be        |
+    | operational.                                                            |
+    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_VOM_PRJS_OPR_TMPS_SGMS`                         |
     |                                                                         |
     | Three-dimensional set describing projects, their variable O&M cost      |
@@ -87,8 +94,7 @@ def add_module_specific_components(m, d):
     | operational type, their operational timepoints, and their startup       |
     | types (if the project is in :code:`GEN_COMMIT_LIN_STR_RMP_PRJS`).       |
     +-------------------------------------------------------------------------+
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_LIN_STR_TYPES_BY_PRJ  `                             |
+    | | :code:`GEN_COMMIT_LIN_STR_TYPES_BY_PRJ`                               |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     |                                                                         |
     | Indexed set that describes the startup types for each project of the    |
@@ -124,6 +130,27 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The variable operations and maintenance (O&M) cost for each project in  |
     | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_Lin_vom_slope_cost_per_mwh`                         |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS`             |
+    | | *Within*: :code:`PositiveReals`                                       |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear variable O&M     |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MWh of electricity       |
+    | generation.                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_Lin_vom_intercept_cost_per_mw_hr`                   |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS`             |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear variable O&M |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MW of operational        |
+    | capacity per hour (multiply by operational capacity and timepoint       |
+    | duration to get actual cost).                                           |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_ramp_up_when_on_rate`                           |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
@@ -658,13 +685,17 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_COMMIT_LIN)
     )
 
+    m.GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS = Set(
+        dimen=3,
+        ordered=True
+    )
+
     m.GEN_COMMIT_LIN_VOM_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        within=m.VOM_PRJS_OPR_TMPS_SGMS,
         rule=lambda mod:
-        set((g, tmp, s) for (g, tmp, s)
-            in mod.VOM_PRJS_OPR_TMPS_SGMS
-            if g in mod.GEN_COMMIT_LIN)
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
     )
 
     m.GEN_COMMIT_LIN_STR_RMP_PRJS = Set(
@@ -712,6 +743,18 @@ def add_module_specific_components(m, d):
 
     m.gen_commit_lin_variable_om_cost_per_mwh = Param(
         m.GEN_COMMIT_LIN, within=NonNegativeReals,
+        default=0
+    )
+
+    m.gen_commit_lin_vom_slope_cost_per_mwh = Param(
+        m.GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS,
+        within=NonNegativeReals,
+        default=0
+    )
+
+    m.gen_commit_lin_vom_intercept_cost_per_mw_hr = Param(
+        m.GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS,
+        within=Reals,
         default=0
     )
 
@@ -2064,9 +2107,10 @@ def variable_om_cost_constraint_rule(mod, g, tmp, s):
     """
     return mod.GenCommitLin_Variable_OM_Cost_By_LL[g, tmp] \
         >= \
-        mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
+        mod.gen_commit_lin_vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
         * mod.GenCommitLin_Provide_Power_MW[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
+        + mod.gen_commit_lin_vom_intercept_cost_per_mw_hr[g, mod.period[tmp],
+                                                        s] \
         * mod.GenCommitLin_Pmax_MW[g, tmp] \
         * mod.GenCommitLin_Synced[g, tmp]
 
@@ -2260,6 +2304,13 @@ def load_module_specific_data(mod, data_portal,
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, op_type="gen_commit_lin", projects=projects
         )
+
+    # Load data from variable_om_curves.tab
+    load_vom_curves(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_lin", projects=projects
+    )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
@@ -2519,9 +2570,14 @@ def get_module_specific_inputs_from_database(
     :return: cursor object with query results
     """
 
-    return get_startup_chars_inputs_from_database(
+    startup_chars = get_startup_chars_inputs_from_database(
         subscenarios, subproblem, stage, conn, "gen_commit_lin"
     )
+    vom_curves = get_vom_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_commit_lin"
+    )
+
+    return startup_chars, vom_curves
 
 
 def write_module_specific_model_inputs(
@@ -2538,10 +2594,10 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    data = get_module_specific_inputs_from_database(
+    startup_chars, vom_curves = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
-    df = cursor_to_df(data)
 
+    df = cursor_to_df(startup_chars)
     if not df.empty:
         df = df.fillna(".")
         fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
@@ -2551,6 +2607,10 @@ def write_module_specific_model_inputs(
         else:
             df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
 
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, "variable_om_curves.tab",
+        vom_curves, replace_nulls=True
+    )
 
 # Validation
 ###############################################################################
@@ -2570,11 +2630,16 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                 "gen_commit_lin")
 
+    # Validate VOM curves
+    validate_vom_curves(subscenarios, subproblem, stage, conn,
+                        "gen_commit_lin")
+
     # Other module specific validations
 
     # Get startup chars and project inputs
-    startup_chars = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    startup_chars = get_startup_chars_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_commit_lin"
+    )
 
     # Convert input data to DataFrame
     su_df = cursor_to_df(startup_chars)

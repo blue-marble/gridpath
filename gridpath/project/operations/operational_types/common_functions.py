@@ -13,7 +13,10 @@ from gridpath.project.common_functions import \
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_req_cols, validate_missing_inputs, validate_values, \
-    validate_column_monotonicity
+    validate_column_monotonicity, get_expected_dtypes, validate_dtypes, \
+    validate_piecewise_curves
+from gridpath.project.operations import \
+    get_slopes_intercept_by_project_period_segment
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -820,6 +823,89 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     )
 
 
+def load_vom_curves(data_portal, scenario_directory, subproblem,
+                    stage, op_type, projects):
+    """
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param projects:`
+    :return:
+    """
+
+    # Get modelled periods
+    # TODO: could we simply use m.PRJ_OPR_PRDS?
+    periods = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "periods.tab"),
+        sep="\t"
+    )
+    periods = set(periods["period"])
+
+    # Variable O&M curves
+    vom_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "variable_om_curves.tab"),
+        sep="\t"
+    )
+
+    vom_projects = set(projects) & set(vom_df["project"].unique())
+    slope_dict, intercept_dict = \
+        get_slopes_intercept_by_project_period_segment(
+            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods)
+    vom_project_segments = list(slope_dict.keys())
+
+    data_portal.data()["{}_VOM_PRJS_PRDS_SGMS".format(op_type.upper())] = \
+        {None: vom_project_segments}
+    data_portal.data()["{}_vom_slope_cost_per_mwh".format(op_type)] = \
+        slope_dict
+    data_portal.data()["{}_vom_intercept_cost_per_mw_hr".format(op_type)] = \
+        intercept_dict
+
+
+def get_vom_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return: cursor object with query results
+    """
+
+    c = conn.cursor()
+    vom_curves = c.execute(
+        """
+        SELECT project, period,  
+        load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        -- select only variable OM curves inputs with matching projects
+        INNER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        AND variable_om_curves_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   op_type,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return vom_curves
+
+
 def load_startup_chars(data_portal, scenario_directory, subproblem,
                        stage, op_type, projects):
     """
@@ -829,7 +915,7 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     :param subproblem:
     :param stage:
     :param op_type:
-    :param projects:`
+    :param projects:
     :return:
     """
 
@@ -1058,3 +1144,70 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
 
     # Return the opchar df (sometimes used for further validations)
     return df
+
+
+def validate_vom_curves(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # Get the project input data
+    vom_curves = get_vom_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+    vom_df = cursor_to_df(vom_curves)
+
+    # Check data types
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_variable_om_curves"]
+    )
+
+    dtype_errors, error_columns = validate_dtypes(vom_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns in variable OM are non-negative
+    numeric_columns = [c for c in vom_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_values(vom_df, valid_numeric_columns, min=0)
+    )
+
+    # Check that specified vom curves inputs are valid:
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_piecewise_curves(df=vom_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_variable_om_cost_per_mwh",
+                                         y_name="variable O&M cost")
+    )
+
+    # TODO: Check that specified vom scenarios actually have inputs in the vom
+    #  table --> would need to get list of projects w vom curve scenario
