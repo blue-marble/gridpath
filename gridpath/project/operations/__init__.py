@@ -61,13 +61,6 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | Input Params                                                            |
     +=========================================================================+
-    | | :code:`variable_om_cost_per_mwh`                                      |
-    | | *Defined over*: :code:`PROJECTS`                                      |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`fuel`                                                          |
     | | *Defined over*: :code:`FUEL_PRJS`                                     |
     | | *Within*: :code:`FUELS`                                               |
