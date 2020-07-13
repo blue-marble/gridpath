@@ -175,14 +175,17 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
-        # Param: gen_commit_bin_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {("Disp_Binary_Commit", 1.0): 0.6}
-        actual_startup_plus_ramp_up_rate = {
-            (prj, s): instance.gen_commit_bin_startup_plus_ramp_up_rate[prj, s]
+        # Param: gen_commit_bin_startup_plus_ramp_up_rate_by_st
+        expected_startup_plus_ramp_up_rate_by_st = {
+            ("Disp_Binary_Commit", 1.0): 0.6
+        }
+        actual_startup_plus_ramp_up_rate_by_st = {
+            (prj, s): instance.gen_commit_bin_startup_plus_ramp_up_rate_by_st[
+                prj, s]
             for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
         }
-        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
-                             actual_startup_plus_ramp_up_rate)
+        self.assertDictEqual(expected_startup_plus_ramp_up_rate_by_st,
+                             actual_startup_plus_ramp_up_rate_by_st)
 
         # Param: gen_commit_bin_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Binary_Commit": 0.6}
@@ -230,15 +233,15 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
 
-        # Param: gen_commit_bin_startup_cost_per_mw
-        expected_startup_costs = {
+        # Param: gen_commit_bin_startup_cost_by_st_per_mw
+        expected_startup_costs_by_st = {
             ("Disp_Binary_Commit", 1.0): 1}
-        actual_startup_costs = {
-            (prj, s): instance.gen_commit_bin_startup_cost_per_mw[prj, s]
+        actual_startup_costs_by_st = {
+            (prj, s): instance.gen_commit_bin_startup_cost_by_st_per_mw[prj, s]
             for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
         }
-        self.assertDictEqual(expected_startup_costs,
-                             actual_startup_costs)
+        self.assertDictEqual(expected_startup_costs_by_st,
+                             actual_startup_costs_by_st)
 
         # Param: gen_commit_bin_shutdown_cost_per_mw
         expected_shutdown_costs = {
