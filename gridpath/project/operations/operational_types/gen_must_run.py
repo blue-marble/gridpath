@@ -19,7 +19,8 @@ Costs for this operational type include fuel costs and variable O&M costs.
 """
 
 import warnings
-from pyomo.environ import Constraint, Set, Param, NonNegativeReals
+from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
+    PositiveReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -28,7 +29,9 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    validate_opchars, load_optype_module_specific_data
+    load_optype_module_specific_data, \
+    load_heat_rate_curves, get_heat_rate_curves_inputs_from_database, \
+    write_tab_file_model_inputs, validate_opchars, validate_heat_rate_curves
 
 
 def add_module_specific_components(m, d):
@@ -47,8 +50,39 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_MUST_RUN_FUEL_PRJS`                                        |
+    | | *Within*: :code:`GEN_MUST_RUN`                                        |
+    |                                                                         |
+    | The list of projects of the code:`gen_must_run` operational type that   |
+    | consume fuel.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS`                              |
+    |                                                                         |
+    | Three-dimensional set describing fuel projects and their heat rate      |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | heat rate is constant, the heat rate can be defined by multiple         |
+    | piecewise linear segments.                                              |
+    +-------------------------------------------------------------------------+
 
     |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_must_run_fuel`                                             |
+    | | *Defined over*: :code:`GEN_MUST_RUN_FUEL_PRJS`                        |
+    | | *Within*: :code:`FUELS`                                               |
+    |                                                                         |
+    | This param describes each fuel project's fuel.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_must_run_fuel_burn_slope_mmbtu_per_mwh`                    |
+    | | *Defined over*: :code:`GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS`              |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear fuel burn for    |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -94,6 +128,27 @@ def add_module_specific_components(m, d):
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_MUST_RUN)
+    )
+    
+    m.GEN_MUST_RUN_FUEL_PRJS = Set(
+        within=m.GEN_MUST_RUN
+    )
+
+    m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS = Set(
+        dimen=3
+    )
+
+    # Required Params
+    ###########################################################################
+
+    m.gen_must_run_fuel = Param(
+        m.GEN_MUST_RUN_FUEL_PRJS,
+        within=m.FUELS
+    )
+
+    m.gen_must_run_fuel_burn_slope_mmbtu_per_mwh = Param(
+        m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS,
+        within=PositiveReals
     )
 
     # Optional Params
@@ -221,11 +276,31 @@ def fuel_burn_rule(mod, g, tmp):
     should not have been given a fuel or labeled carbonaceous in the first
     place.
     """
-    if g in mod.FUEL_PRJS:
-        return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
+    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
+        return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
+            tmp], 0] \
             * mod.Power_Provision_MW[g, tmp]
     else:
         return 0
+
+
+def fuel_price_rule(mod, g, tmp):
+    """
+    """
+    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
+        return mod.fuel_price_per_mmbtu[
+            mod.gen_must_run_fuel[g], mod.period[tmp], mod.month[tmp]]
+    else:
+        return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
+        return mod.gen_must_run_fuel[g]
+    else:
+        return None
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -284,6 +359,56 @@ def load_module_specific_data(mod, data_portal,
         stage=stage, op_type="gen_must_run"
     )
 
+    # Load data from heat_rate_curves.tab
+    load_heat_rate_curves(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_must_run", projects=projects
+    )
+
+
+# Database
+###############################################################################
+
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return: cursor object with query results
+    """
+
+    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_must_run"
+    )
+
+    return heat_rate_curves
+
+
+def write_module_specific_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    startup_chars.tab files.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    heat_rate_curves = get_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, conn)
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, "heat_rate_curves.tab",
+        heat_rate_curves, replace_nulls=True
+    )
+
 
 # Validation
 ###############################################################################
@@ -301,6 +426,10 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                  "gen_must_run")
+
+    # Validate heat rate curves
+    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
+                              "gen_must_run")
 
     # Other module specific validations
 

@@ -393,16 +393,23 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
-    Variable generators should not have fuel use.
+    Variable generator projects should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! gen_var projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+
+    return 0
+
+
+def fuel_price_rule(mod, g, tmp):
+    """
+    """
+
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return ""
 
 
 def variable_om_cost_rule(mod, g, tmp):

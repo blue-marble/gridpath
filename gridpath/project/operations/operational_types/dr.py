@@ -248,15 +248,21 @@ def power_provision_rule(mod, p, tmp):
 
 def fuel_burn_rule(mod, p, tmp, error_message):
     """
+    DR projects should not have fuel use.
     """
-    if p in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! Shiftable load projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(p) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_price_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return ""
 
 
 def variable_om_cost_rule(mod, g, tmp):

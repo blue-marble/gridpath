@@ -22,7 +22,7 @@ from __future__ import division
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    PercentFraction, Reals, Expression, value
+    PercentFraction, Reals, PositiveReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -31,10 +31,13 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, load_vom_curves, load_startup_chars, \
+    load_optype_module_specific_data, load_heat_rate_curves, \
+    load_vom_curves, load_startup_chars, \
+    get_heat_rate_curves_inputs_from_database, \
     get_vom_curves_inputs_from_database, \
     get_startup_chars_inputs_from_database, write_tab_file_model_inputs, \
-    check_for_tmps_to_link, validate_opchars, validate_vom_curves
+    check_for_tmps_to_link, validate_opchars, \
+    validate_heat_rate_curves, validate_vom_curves
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_last_timepoint, \
     check_boundary_type
@@ -70,9 +73,28 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_commit_lin`       |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG`                              |
+    | | :code:`GEN_COMMIT_LIN_FUEL_PRJS`                                      |
+    | | *Within*: :code:`GEN_COMMIT_LIN`                                      |
     |                                                                         |
-    | Three-dimensional set with generators of the :code:`gen_commit_lin`     |
+    | The list of projects of the code:`gen_commit_lin` operational type that |
+    | consume fuel.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS`                            |
+    |                                                                         |
+    | Three-dimensional set describing fuel projects and their heat rate      |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | heat rate is constant, the heat rate can be defined by multiple         |
+    | piecewise linear segments.                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS`                             |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_commit_lin`       |
+    | operational type who also consume fuel, and their operational           |
+    | timepoints.                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS_SGMS`                        |
+    |                                                                         |
+    | Three-dimensional set with generators of the :code:`gen_commit_Lin`     |
     | operational type, their operational timepoints, and their fuel          |
     | segments (if the project is in :code:`FUEL_PRJS`).                      |
     +-------------------------------------------------------------------------+
@@ -116,6 +138,30 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`PercentFraction`                                     |
     |                                                                         |
     | The minimum stable level of this project as a fraction of its capacity. |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_fuel`                                           |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_FUEL_PRJS`                      |
+    | | *Within*: :code:`FUELS`                                               |
+    |                                                                         |
+    | This param describes each fuel project's fuel.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_fuel_burn_slope_mmbtu_per_mwh`                  |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS`            |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear fuel burn for    |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_fuel_burn_intercept_mmbtu_per_mw_hr`            |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS`            |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear fuel burn    |
+    | for each project's heat rate segment in each operational period. The    |
+    | units are MMBtu of fuel burn per MW of operational capacity per hour    |
+    | (multiply by operational capacity and timepoint duration to get fuel    |
+    | burn in MMBtu).                                                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -645,7 +691,7 @@ def add_module_specific_components(m, d):
     | Fuel Burn                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitLin_Fuel_Burn_Constraint`                             |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG`              |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS_SGMS`        |
     |                                                                         |
     | Determines fuel burn from the project in each timepoint based on its    |
     | heat rate curve.                                                        |
@@ -676,13 +722,28 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_COMMIT_LIN)
     )
 
-    m.GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG = Set(
-        dimen=3,
-        within=m.FUEL_PRJ_SGMS_OPR_TMPS,
+    m.GEN_COMMIT_LIN_FUEL_PRJS = Set(
+        within=m.GEN_COMMIT_LIN
+    )
+
+    m.GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS = Set(
+        dimen=3
+    )
+
+    m.GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS = Set(
+        dimen=2,
         rule=lambda mod:
-        set((g, tmp, s) for (g, tmp, s)
-            in mod.FUEL_PRJ_SGMS_OPR_TMPS
-            if g in mod.GEN_COMMIT_LIN)
+        set((g, tmp) for (g, tmp) in mod.GEN_COMMIT_LIN_OPR_TMPS
+            if g in mod.GEN_COMMIT_LIN_FUEL_PRJS)
+    )
+
+    m.GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_OPR_TMPS
+            for _g, p, s in mod.GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS
+            if g in mod.GEN_COMMIT_LIN_FUEL_PRJS
+            and g == _g and mod.period[tmp] == p)
     )
 
     m.GEN_COMMIT_LIN_VOM_PRJS_PRDS_SGMS = Set(
@@ -736,6 +797,21 @@ def add_module_specific_components(m, d):
     m.gen_commit_lin_min_stable_level_fraction = Param(
         m.GEN_COMMIT_LIN,
         within=PercentFraction
+    )
+
+    m.gen_commit_lin_fuel = Param(
+        m.GEN_COMMIT_LIN_FUEL_PRJS,
+        within=m.FUELS
+    )
+
+    m.gen_commit_lin_fuel_burn_slope_mmbtu_per_mwh = Param(
+        m.GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS,
+        within=PositiveReals
+    )
+
+    m.gen_commit_lin_fuel_burn_intercept_mmbtu_per_mw_hr = Param(
+        m.GEN_COMMIT_LIN_FUEL_PRJS_PRDS_SGMS,
+        within=Reals
     )
 
     # Optional Params
@@ -924,7 +1000,7 @@ def add_module_specific_components(m, d):
     )
 
     m.GenCommitLin_Fuel_Burn_MMBTU = Var(
-        m.GEN_COMMIT_LIN_OPR_TMPS,
+        m.GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS,
         within=NonNegativeReals
     )
 
@@ -1103,7 +1179,7 @@ def add_module_specific_components(m, d):
 
     # Fuel Burn
     m.GenCommitLin_Fuel_Burn_Constraint = Constraint(
-        m.GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG,
+        m.GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS_SGMS,
         rule=fuel_burn_constraint_rule
     )
 
@@ -2069,7 +2145,7 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
 def fuel_burn_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitLin_Fuel_Burn_Constraint
-    **Enforced Over**: GEN_COMMIT_LIN_OPR_TMPS_FUEL_SEG
+    **Enforced Over**: GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS_SGMS
 
     Fuel burn is set by piecewise linear representation of input/output
     curve.
@@ -2083,9 +2159,11 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
     return \
         mod.GenCommitLin_Fuel_Burn_MMBTU[g, tmp] \
         >= \
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
+        mod.gen_commit_lin_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 
+                                                        s] \
         * mod.GenCommitLin_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
+        + mod.gen_commit_lin_fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[
+            tmp], s] \
         * mod.GenCommitLin_Pmax_MW[g, tmp] \
         * mod.GenCommitLin_Synced[g, tmp]
 
@@ -2176,10 +2254,29 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp):
     """
     """
-    if g in mod.FUEL_PRJS:
+    if g in mod.GEN_COMMIT_LIN_FUEL_PRJS:
         return mod.GenCommitLin_Fuel_Burn_MMBTU[g, tmp]
     else:
         return 0
+
+
+def fuel_price_rule(mod, g, tmp):
+    """
+    """
+    if g in mod.GEN_COMMIT_LIN_FUEL_PRJS:
+        return mod.fuel_price_per_mmbtu[
+            mod.gen_commit_lin_fuel[g], mod.period[tmp], mod.month[tmp]]
+    else:
+        return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    if g in mod.GEN_COMMIT_LIN_FUEL_PRJS:
+        return mod.gen_commit_lin_fuel[g]
+    else:
+        return None
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -2304,6 +2401,13 @@ def load_module_specific_data(mod, data_portal,
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, op_type="gen_commit_lin", projects=projects
         )
+
+    # Load data from heat_rate_curves.tab
+    load_heat_rate_curves(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_commit_lin", projects=projects
+    )
 
     # Load data from variable_om_curves.tab
     load_vom_curves(
@@ -2573,11 +2677,14 @@ def get_module_specific_inputs_from_database(
     startup_chars = get_startup_chars_inputs_from_database(
         subscenarios, subproblem, stage, conn, "gen_commit_lin"
     )
+    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_commit_lin"
+    )
     vom_curves = get_vom_curves_inputs_from_database(
         subscenarios, subproblem, stage, conn, "gen_commit_lin"
     )
 
-    return startup_chars, vom_curves
+    return startup_chars, heat_rate_curves, vom_curves
 
 
 def write_module_specific_model_inputs(
@@ -2594,7 +2701,8 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    startup_chars, vom_curves = get_module_specific_inputs_from_database(
+    startup_chars, heat_rate_curves, vom_curves = \
+        get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     df = cursor_to_df(startup_chars)
@@ -2606,6 +2714,11 @@ def write_module_specific_model_inputs(
             df.to_csv(fpath, index=False, sep="\t")
         else:
             df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
+
+    write_tab_file_model_inputs(
+        scenario_directory, subproblem, stage, "heat_rate_curves.tab",
+        heat_rate_curves, replace_nulls=True
+    )
 
     write_tab_file_model_inputs(
         scenario_directory, subproblem, stage, "variable_om_curves.tab",
@@ -2629,6 +2742,10 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                 "gen_commit_lin")
+
+    # Validate heat rate curves
+    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
+                              "gen_commit_lin")
 
     # Validate VOM curves
     validate_vom_curves(subscenarios, subproblem, stage, conn,
