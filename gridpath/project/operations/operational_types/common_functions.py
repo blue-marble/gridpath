@@ -879,7 +879,7 @@ def load_heat_rate_curves(data_portal, scenario_directory, subproblem,
         fuel_project_segments = list(slope_dict.keys())
 
         data_portal.data()["{}_FUEL_PRJS".format(op_type.upper())] = \
-            {None: projects}
+            {None: fuel_projects}
         data_portal.data()["{}_FUEL_PRJS_PRDS_SGMS".format(op_type.upper())] \
             = {None: fuel_project_segments}
         data_portal.data()["{}_fuel".format(op_type)] = fuels_dict
