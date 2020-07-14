@@ -246,7 +246,7 @@ def power_provision_rule(mod, p, tmp):
     return mod.DR_Shift_Down_MW[p, tmp] - mod.DR_Shift_Up_MW[p, tmp]
 
 
-def fuel_burn_rule(mod, p, tmp, error_message):
+def fuel_burn_rule(mod, p, tmp):
     """
     DR projects should not have fuel use.
     """
