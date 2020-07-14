@@ -1709,7 +1709,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     load_heat_rate_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_lin", projects=projects
+        stage=stage, op_type="gen_commit_cap", projects=projects
     )
 
     # Load data from variable_om_curves.tab
