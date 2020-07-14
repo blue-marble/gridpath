@@ -867,9 +867,8 @@ def load_heat_rate_curves(data_portal, scenario_directory, subproblem,
             sep="\t",
             usecols=["project", "fuel"]
         )
-        pr_df = pr_df[pr_df["fuel"] != "."]
-        fuel_projects = set(projects) & set(pr_df["project"])
-
+        pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
+        fuel_projects = pr_df["project"].unique()
         fuels_dict = dict(zip(projects, pr_df["fuel"]))
 
         slope_dict, intercept_dict = \

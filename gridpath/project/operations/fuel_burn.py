@@ -75,7 +75,6 @@ def add_model_components(m, d):
     m.fuel = Param(
         m.PROJECTS,
         initialize=fuel_rule,
-        within=m.FUELS
     )
 
     # Expressions
