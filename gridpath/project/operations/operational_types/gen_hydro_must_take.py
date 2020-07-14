@@ -580,7 +580,7 @@ def fuel_burn_rule(mod, g, tmp):
 def fuel_cost_rule(mod, g, tmp):
     """
     """
-    return 0
+    return None
 
 
 def fuel_rule(mod, g):
