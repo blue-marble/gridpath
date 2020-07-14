@@ -607,7 +607,7 @@ def fuel_burn_rule(mod, g, tmp):
     return 0
 
 
-def fuel_price_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     """
     return 0

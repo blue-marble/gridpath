@@ -33,24 +33,15 @@ def add_model_components(m, d):
     | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
     |                                                                         |
     | This expression defines the variable cost of a project in all of its    |
-    | operational timepoints, and is simply equal to the project's power      |
-    | output times its variable cost.                                         |
-    +-------------------------------------------------------------------------+
-    | | :code:`Fuel_Price`                                                    |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
-    |                                                                         |
-    | This expression defines the fuel price for a project in all of its      |
-    | operational timepoints.                                                 |
+    | operational timepoints. We obtain the expression by calling the         |
+    | *variable_om_cost_rule* method of a project's *operational_type* module.|
     +-------------------------------------------------------------------------+
     | | :code:`Fuel_Cost`                                                     |
     | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
     |                                                                         |
     | This expression defines the fuel cost of a project in all of its        |
-    | operational timepoints, and is simply equal to the project's fuel burn  |
-    | in that timepoint times the fuel price (fuel price is currently defined |
-    | by period and month). The fuel burn expression is formulated in the     |
-    | gridpath.project.operations.fuel_burn module by calling the *fuel_burn* |
-    | method of a project's *operational_type* module.                        |
+    | operational timepoints. We obtain the expression by calling the         |
+    | *fuel_cost_rule* method of a project's *operational_type* module.       |
     +-------------------------------------------------------------------------+
     | | :code:`Startup_Cost`                                                  |
     | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
@@ -79,32 +70,6 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def fuel_price_rule(mod, g, tmp):
-        """
-        Fuel price for each project based on operational type
-        (and whether a project burns fuel)
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_price_rule(mod, g, tmp)
-
-    m.Fuel_Price = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=fuel_price_rule
-    )
-
-    def fuel_cost_rule(mod, g, tmp):
-        """
-        **Expression Name**: Fuel_Cost
-        **Defined Over**: PRJ_OPR_TMPS
-        """
-        return mod.Total_Fuel_Burn_MMBtu[g, tmp] * mod.Fuel_Price[g, tmp]
-
-    m.Fuel_Cost = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=fuel_cost_rule
-    )
-
     def variable_om_cost_rule(mod, g, tmp):
         """
         """
@@ -115,6 +80,20 @@ def add_model_components(m, d):
     m.Variable_OM_Cost = Expression(
         m.PRJ_OPR_TMPS,
         rule=variable_om_cost_rule
+    )
+
+    def fuel_cost_rule(mod, g, tmp):
+        """
+        **Expression Name**: Fuel_Cost
+        **Defined Over**: PRJ_OPR_TMPS
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            fuel_cost_rule(mod, g, tmp)
+
+    m.Fuel_Cost = Expression(
+        m.PRJ_OPR_TMPS,
+        rule=fuel_cost_rule
     )
 
     def startup_cost_rule(mod, g, tmp):

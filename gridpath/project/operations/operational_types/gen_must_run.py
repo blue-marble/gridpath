@@ -284,12 +284,14 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
-def fuel_price_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     """
     if g in mod.GEN_MUST_RUN_FUEL_PRJS:
-        return mod.fuel_price_per_mmbtu[
-            mod.gen_must_run_fuel[g], mod.period[tmp], mod.month[tmp]]
+        return fuel_burn_rule(mod, g, tmp) \
+            * mod.fuel_price_per_mmbtu[mod.gen_must_run_fuel[g],
+                                       mod.period[tmp],
+                                       mod.month[tmp]]
     else:
         return 0
 

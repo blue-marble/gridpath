@@ -508,8 +508,6 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-# TODO: add data check that there is indeed only 1 segment for must-run
-#   generators (and therefore there is no intercept)
 def fuel_burn_rule(mod, g, tmp):
     """
     Fuel burn is the product of the fuel burn slope and the power output. For
@@ -525,12 +523,14 @@ def fuel_burn_rule(mod, g, tmp):
         return 0
 
 
-def fuel_price_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     """
     if g in mod.GEN_SIMPLE_FUEL_PRJS:
-        return mod.fuel_price_per_mmbtu[
-            mod.gen_simple_fuel[g], mod.period[tmp], mod.month[tmp]]
+        return fuel_burn_rule(mod, g, tmp) \
+            * mod.fuel_price_per_mmbtu[mod.gen_simple_fuel[g],
+                                       mod.period[tmp],
+                                       mod.month[tmp]]
     else:
         return 0
 
