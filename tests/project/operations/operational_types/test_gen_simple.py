@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -46,6 +47,23 @@ class TestGenSimple(unittest.TestCase):
     """
 
     """
+
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
+
 
     def test_add_model_components(self):
         """
@@ -143,6 +161,61 @@ class TestGenSimple(unittest.TestCase):
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate
                              )
+
+        # Set: GEN_SIMPLE_FUEL_PRJS
+        expected_fuel_projects = sorted([
+            "Disp_No_Commit",
+        ])
+        actual_fuel_projects = sorted([
+            prj for prj in instance.GEN_SIMPLE_FUEL_PRJS
+            ])
+        self.assertListEqual(expected_fuel_projects,
+                             actual_fuel_projects)
+
+        # Param: fuel
+        expected_fuel = OrderedDict(sorted({
+            "Disp_No_Commit": "Gas",
+                                           }.items()
+                                           )
+                                    )
+        actual_fuel = OrderedDict(sorted(
+            {prj: instance.gen_simple_fuel[prj] for prj in
+             instance.GEN_SIMPLE_FUEL_PRJS}.items()
+        )
+        )
+        self.assertDictEqual(expected_fuel, actual_fuel)
+
+        # Set: GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
+
+        expected_fuel_project_period_segments = sorted([
+            ("Disp_No_Commit", 2020, 0),
+            ("Disp_No_Commit", 2030, 0),
+        ])
+        actual_fuel_project_period_segments = sorted([
+            (prj, p, s) for (prj, p, s) in
+            instance.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_fuel_project_period_segments,
+                             actual_fuel_project_period_segments)
+
+        # Param: gen_simple_fuel_burn_slope_mmbtu_per_mwh
+        expected_fuel_burn_slope = OrderedDict(sorted({
+            ("Disp_No_Commit", 2020, 0): 8,
+            ("Disp_No_Commit", 2030, 0): 8,
+        }.items()))
+        actual_fuel_burn_slope = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_simple_fuel_burn_slope_mmbtu_per_mwh[(prj,
+                                                                        p, s)]
+             for (prj, p, s) in
+             instance.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_slope,
+                                   actual_fuel_burn_slope,
+                                   places=5)
+
 
 
 if __name__ == "__main__":
