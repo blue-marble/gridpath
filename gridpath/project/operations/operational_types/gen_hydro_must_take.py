@@ -89,6 +89,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_hydro_must_take_variable_om_cost_per_mwh`                  |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_ramp_up_when_on_rate`                      |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -225,6 +233,11 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.gen_hydro_must_take_variable_om_cost_per_mwh = Param(
+        m.GEN_HYDRO_MUST_TAKE, within=NonNegativeReals,
+        default=0
+    )
 
     m.gen_hydro_must_take_ramp_up_when_on_rate = Param(
         m.GEN_HYDRO_MUST_TAKE,
@@ -559,22 +572,28 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
+    Hydro projects should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! gen_hydro_must_take projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
 
 
 def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_hydro_must_take_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):

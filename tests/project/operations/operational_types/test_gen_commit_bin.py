@@ -7,6 +7,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -47,6 +48,22 @@ class TestGenCommitBin(unittest.TestCase):
     """
 
     """
+
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
 
     def test_add_model_components(self):
         """
@@ -105,6 +122,35 @@ class TestGenCommitBin(unittest.TestCase):
             ])
         self.assertListEqual(expected_gen_commit_bin_str_rmp_prjs,
                              actual_gen_commit_bin_str_rmp_prjs)
+
+        # Set: GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS
+        expected_vom_project_period_segments = sorted([
+            ("Disp_Binary_Commit", 2020, 0),
+            ("Disp_Binary_Commit", 2030, 0),
+        ])
+        actual_vom_project_period_segments = sorted([
+            (prj, p, s)
+            for (prj, p, s) in instance.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_vom_project_period_segments,
+                             actual_vom_project_period_segments)
+
+        # Set: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
+        expected_prj_opr_tmps = sorted(
+            get_project_operational_timepoints(["Disp_Binary_Commit"])
+        )
+        expected_vom_project_segments_operational_timepoints = sorted([
+            (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
+        ])
+        actual_vom_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
+        ])
+
+        self.assertListEqual(
+            expected_vom_project_segments_operational_timepoints,
+            actual_vom_project_segments_operational_timepoints
+        )
 
         # Set: GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
         expected_gen_commit_bin_str_rmp_prjs_types = sorted([
@@ -196,6 +242,50 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate)
 
+        # Params: gen_commit_bin_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Disp_Binary_Commit": 0}
+        actual_var_om_cost = {
+            prj: instance.gen_commit_bin_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
+        # Param: gen_commit_bin_vom_slope_cost_per_mwh
+        expected_vom_slope = OrderedDict(sorted({
+            ("Disp_Binary_Commit", 2020, 0): 1,
+            ("Disp_Binary_Commit", 2030, 0): 1,
+        }.items()))
+        actual_vom_slope = OrderedDict(sorted(
+            {(prj, p, s): instance.gen_commit_bin_vom_slope_cost_per_mwh[(
+                prj, p, s)]
+             for (prj, p, s) in
+             instance.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_vom_slope,
+                                   actual_vom_slope,
+                                   places=5)
+
+        # Param: gen_commit_bin_vom_intercept_cost_per_mw_hour
+        expected_vom_intercept = OrderedDict(sorted({
+            ("Disp_Binary_Commit", 2020, 0): 0.5,
+            ("Disp_Binary_Commit", 2030, 0): 0.5,
+        }.items()))
+        actual_vom_intercept = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_commit_bin_vom_intercept_cost_per_mw_hr[(prj,
+                                                                       p, s)]
+             for (prj, p, s) in
+             instance.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_vom_intercept,
+                                   actual_vom_intercept,
+                                   places=5)
+
         # Param: gen_commit_bin_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Binary_Commit": 0.3}
         actual_ramp_down_when_on_rate = {
@@ -271,6 +361,114 @@ class TestGenCommitBin(unittest.TestCase):
         }
         self.assertDictEqual(expected_down_time_cutoff_hours,
                              actual_down_time_cutoff_hours)
+
+        # Set: GEN_COMMIT_BIN_FUEL_PRJS
+        expected_fuel_projects = sorted([
+            "Disp_Binary_Commit"
+        ])
+        actual_fuel_projects = sorted([
+            prj for prj in instance.GEN_COMMIT_BIN_FUEL_PRJS
+            ])
+        self.assertListEqual(expected_fuel_projects,
+                             actual_fuel_projects)
+
+        # Param: fuel
+        expected_fuel = OrderedDict(sorted({
+            "Disp_Binary_Commit": "Gas"
+                                           }.items()
+                                           )
+                                    )
+        actual_fuel = OrderedDict(sorted(
+            {prj: instance.gen_commit_bin_fuel[prj] for prj in
+             instance.GEN_COMMIT_BIN_FUEL_PRJS}.items()
+        )
+        )
+        self.assertDictEqual(expected_fuel, actual_fuel)
+
+        # Set: GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS
+        expected_tmps_by_fuel_project = sorted(
+            get_project_operational_timepoints(expected_fuel_projects)
+        )
+        actual_tmps_by_fuel_project = sorted([
+            (prj, tmp) for (prj, tmp) in
+            instance.GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS
+                                                 ])
+        self.assertListEqual(expected_tmps_by_fuel_project,
+                             actual_tmps_by_fuel_project)
+
+        # Set: GEN_COMMIT_BIN_FUEL_PRJS_PRDS_SGMS
+
+        expected_fuel_project_period_segments = sorted([
+            ("Disp_Binary_Commit", 2020, 0),
+            ("Disp_Binary_Commit", 2030, 0)
+        ])
+        actual_fuel_project_period_segments = sorted([
+            (prj, p, s) for (prj, p, s) in
+            instance.GEN_COMMIT_BIN_FUEL_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_fuel_project_period_segments,
+                             actual_fuel_project_period_segments)
+
+        # Set: GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS_SGMS
+        timepoints_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
+            sep="\t",
+            usecols=['timepoint', 'period']
+        )
+
+        expected_period_param = \
+            timepoints_df.set_index('timepoint').to_dict()['period']
+
+        expected_fuel_project_segments_operational_timepoints = sorted([
+            (g, tmp, s) for (g, tmp) in expected_tmps_by_fuel_project
+            for _g, p, s in expected_fuel_project_period_segments
+            if g in expected_fuel_projects and g == _g
+            and expected_period_param[tmp] == p
+        ])
+        actual_fuel_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS_SGMS
+        ])
+
+        self.assertListEqual(
+            expected_fuel_project_segments_operational_timepoints,
+            actual_fuel_project_segments_operational_timepoints
+        )
+
+        # Param: gen_commit_bin_fuel_burn_slope_mmbtu_per_mwh
+        expected_fuel_burn_slope = OrderedDict(sorted({
+            ("Disp_Binary_Commit", 2020, 0): 8,
+            ("Disp_Binary_Commit", 2030, 0): 8,
+        }.items()))
+        actual_fuel_burn_slope = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_commit_bin_fuel_burn_slope_mmbtu_per_mwh[(prj,
+                                                                        p, s)]
+             for (prj, p, s) in 
+             instance.GEN_COMMIT_BIN_FUEL_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_slope,
+                                   actual_fuel_burn_slope,
+                                   places=5)
+
+        # Param: gen_commit_bin_fuel_burn_intercept_mmbtu_per_mw_hour
+        expected_fuel_burn_intercept = OrderedDict(sorted({
+            ("Disp_Binary_Commit", 2020, 0): 80.13333,
+            ("Disp_Binary_Commit", 2030, 0): 80.13333,
+        }.items()))
+        actual_fuel_burn_intercept = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_commit_bin_fuel_burn_intercept_mmbtu_per_mw_hr[
+                (prj, p, s)]
+             for (prj, p, s) in instance.GEN_COMMIT_BIN_FUEL_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_intercept,
+                                   actual_fuel_burn_intercept,
+                                   places=5)
 
 
 if __name__ == "__main__":

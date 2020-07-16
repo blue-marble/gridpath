@@ -81,6 +81,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`stor_variable_om_cost_per_mwh`                                 |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_rps`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -233,6 +241,11 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.stor_variable_om_cost_per_mwh = Param(
+        m.STOR, within=NonNegativeReals,
+        default=0
+    )
 
     m.stor_losses_factor_in_rps = Param(default=1)
 
@@ -589,15 +602,21 @@ def rec_provision_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
+    Storage projects should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! Storage projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -605,7 +624,7 @@ def variable_om_cost_rule(mod, g, tmp):
     Variable O&M costs are applied only to the storage discharge, i.e. when the
     project is providing power to the system.
     """
-    return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+    return mod.Stor_Discharge_MW[g, tmp] * mod.stor_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):

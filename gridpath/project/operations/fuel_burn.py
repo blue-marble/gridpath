@@ -13,7 +13,7 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Expression, value, Var, NonNegativeReals, Constraint
+from pyomo.environ import Expression, value, Param
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -30,7 +30,7 @@ def add_model_components(m, d):
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Operations_Fuel_Burn_MMBtu`                                    |
-    | | *Within*: :code:`FUEL_PRJ_OPR_TMPS`                                   |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
     |                                                                         |
     | This expression describes each project's operational fuel consumption   |
     | (in MMBtu) in all operational timepoints. We obtain it by calling the   |
@@ -47,7 +47,7 @@ def add_model_components(m, d):
     | burn (for others it will always return zero).                           |
     +-------------------------------------------------------------------------+
     | | :code:`Total_Fuel_Burn_MMBtu`                                         |
-    | | *Within*: :code:`FUEL_PRJ_OPR_TMPS`                                   |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
     |                                                                         |
     | Total fuel burn is the sum of operational fuel burn for power           |
     | production and startup fuel burn.                                       |
@@ -60,6 +60,21 @@ def add_model_components(m, d):
 
     imported_operational_modules = load_operational_type_modules(
         getattr(d, required_operational_modules)
+    )
+
+    # Derived Params
+    ###########################################################################
+
+    def fuel_rule(mod, g):
+        """
+        Fuel for each project (None if no fuel)
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].fuel_rule(mod, g)
+
+    m.fuel = Param(
+        m.PROJECTS,
+        initialize=fuel_rule,
     )
 
     # Expressions
@@ -75,7 +90,7 @@ def add_model_components(m, d):
             fuel_burn_rule(mod, g, tmp)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
+        m.PRJ_OPR_TMPS,
         rule=fuel_burn_rule
     )
 
@@ -95,7 +110,7 @@ def add_model_components(m, d):
     )
 
     m.Total_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
+        m.PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
 
@@ -106,7 +121,7 @@ def add_model_components(m, d):
 def total_fuel_burn_rule(mod, g, tmp):
     """
     *Expression Name*: :code:`Total_Fuel_Burn_MMBtu`
-    *Defined Over*: :code:`FUEL_PRJ_OPR_TMPS`
+    *Defined Over*: :code:`PRJ_OPR_TMPS`
 
     Total fuel burn is the sum of operational fuel burn (power production)
     and startup fuel burn.
@@ -140,7 +155,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
-        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
+        for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

@@ -33,7 +33,7 @@ from gridpath.project.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     update_dispatch_results_table, load_var_profile_inputs, \
     get_var_profile_inputs_from_database, write_tab_file_model_inputs, \
-    validate_opchars, validate_var_profiles
+    validate_opchars, validate_var_profiles, load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -64,6 +64,20 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
     | of its available capacity (i.e. the capacity factor).                   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_variable_om_cost_per_mwh`                              |
+    | | *Defined over*: :code:`GEN_VAR`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
     +-------------------------------------------------------------------------+
 
     |
@@ -149,6 +163,14 @@ def add_module_specific_components(m, d):
     m.gen_var_cap_factor = Param(
         m.GEN_VAR_OPR_TMPS,
         within=NonNegativeReals
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_var_variable_om_cost_per_mwh = Param(
+        m.GEN_VAR, within=NonNegativeReals,
+        default=0
     )
 
     # Variables
@@ -371,23 +393,30 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
-    Variable generators should not have fuel use.
+    Variable generator projects should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! gen_var projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
 
 
 def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenVar_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_var_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -460,6 +489,13 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
+
+    # Load data from projects.tab and get the list of projects of this type
+    projects = load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_var"
+    )
 
     load_var_profile_inputs(
         data_portal, scenario_directory, subproblem, stage, "gen_var"
