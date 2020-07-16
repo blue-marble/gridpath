@@ -24,7 +24,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project", "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations",
     "project.operations.operational_types",
-    "project.operations.power", "project.operations.fuel_burn", "project.operations.carbon_emissions"]
+    "project.operations.power", "project.operations.fuel_burn",
+    "project.operations.carbon_cap", "project.operations.carbon_emissions"]
 NAME_OF_MODULE_BEING_TESTED = \
     "system.policy.carbon_cap.aggregate_project_carbon_emissions"
 IMPORTED_PREREQ_MODULES = list()

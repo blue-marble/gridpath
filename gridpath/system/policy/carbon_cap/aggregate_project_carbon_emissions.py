@@ -29,30 +29,29 @@ def add_model_components(m, d):
     """
     def total_carbon_emissions_rule(mod, z, p):
         """
-        Calculate total emissions from all carbonaceous generators in carbon
+        Calculate total emissions from all carbonaceous projects in carbon
         cap zone
         :param mod:
         :param z:
         :param p:
         :return:
         """
-        return sum(mod.Carbon_Emissions_Tons[g, tmp]
+        return sum(mod.Project_Carbon_Emissions[g, tmp]
                    * mod.hrs_in_tmp[tmp]
                    * mod.tmp_weight[tmp]
-                   for (g, tmp) in
-                   mod.CRBN_PRJ_OPR_TMPS
+                   for (g, tmp) in mod.CRBN_PRJ_OPR_TMPS
                    if g in mod.CRBN_PRJS_BY_CARBON_CAP_ZONE[z]
                    and tmp in mod.TMPS_IN_PRD[p]
                    )
 
-    m.Total_Carbon_Emissions_Tons = Expression(
+    m.Total_Carbon_Cap_Project_Emissions = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=total_carbon_emissions_rule
     )
 
     # Add to emission imports to carbon balance
     getattr(d, carbon_cap_balance_emission_components).append(
-        "Total_Carbon_Emissions_Tons"
+        "Total_Carbon_Cap_Project_Emissions"
     )
 
 
@@ -81,7 +80,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.carbon_cap_target[z, p]),
-                value(m.Total_Carbon_Emissions_Tons[z, p])
+                value(m.Total_Carbon_Cap_Project_Emissions[z, p])
             ])
 
 

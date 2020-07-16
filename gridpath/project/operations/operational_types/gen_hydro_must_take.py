@@ -589,6 +589,12 @@ def fuel_rule(mod, g):
     return None
 
 
+def carbon_emissions_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
 def variable_om_cost_rule(mod, g, tmp):
     """
     """

@@ -2281,6 +2281,14 @@ def fuel_rule(mod, g):
         return None
 
 
+def carbon_emissions_rule(mod, g, tmp):
+    if g in mod.GEN_COMMIT_LIN_FUEL_PRJS:
+        return mod.GenCommitLin_Fuel_Burn_MMBTU[g, tmp] \
+            * mod.co2_intensity_tons_per_mmbtu[mod.gen_commit_lin_fuel[g]]
+    else:
+        return 0
+
+
 def variable_om_cost_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
