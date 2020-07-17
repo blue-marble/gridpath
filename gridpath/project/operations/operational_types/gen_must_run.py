@@ -18,6 +18,7 @@ Costs for this operational type include fuel costs and variable O&M costs.
 
 """
 
+import os
 import warnings
 from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
     PositiveReals
@@ -31,7 +32,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, \
     load_heat_rate_curves, get_heat_rate_curves_inputs_from_database, \
-    write_tab_file_model_inputs, validate_opchars, validate_heat_rate_curves
+    validate_opchars, validate_heat_rate_curves
 
 
 def add_module_specific_components(m, d):
@@ -361,7 +362,7 @@ def load_module_specific_data(mod, data_portal,
         stage=stage, op_type="gen_must_run"
     )
 
-    # Load data from heat_rate_curves.tab
+    # Load data from heat_rate_curves.tab (if it exists)
     load_heat_rate_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
@@ -406,10 +407,15 @@ def write_module_specific_model_inputs(
     heat_rate_curves = get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, "heat_rate_curves.tab",
-        heat_rate_curves, replace_nulls=True
-    )
+    hr_df = cursor_to_df(heat_rate_curves)
+    if not hr_df.empty:
+        hr_df = hr_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "heat_rate_curves.tab")
+        if not os.path.isfile(fpath):
+            hr_df.to_csv(fpath, index=False, sep="\t")
+        else:
+            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
 
 
 # Validation

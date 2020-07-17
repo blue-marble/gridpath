@@ -854,7 +854,7 @@ def load_heat_rate_curves(data_portal, scenario_directory, subproblem,
 
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         periods_df = pd.read_csv(periods_file, sep="\t")
-        pr_df = pd.read_csv(projects_file, sep="\t", secols=["project", "fuel"])
+        pr_df = pd.read_csv(projects_file, sep="\t", usecols=["project", "fuel"])
         pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
 
         periods = set(periods_df["period"])
