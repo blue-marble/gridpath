@@ -124,7 +124,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(results_file)
         writer.writerow(["zone", "period", "timepoint",
                          "discount_factor", "number_years_represented",
-                         "timepoint_weight", "number_of_hours_in_timepiont",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "load_mw", "overgeneration_mw", "unserved_energy_mw"]
                         )
         for z in getattr(m, "LOAD_ZONES"):
