@@ -834,40 +834,30 @@ def load_heat_rate_curves(data_portal, scenario_directory, subproblem,
     :return:
     """
 
+    hr_curves_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "heat_rate_curves.tab"
+    )
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "periods.tab"
+    )
+    projects_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "projects.tab"
+    )
+
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "inputs", "projects.tab")
-              ) as prj_file:
-        reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
-        headers = next(reader)
+    headers = pd.read_csv(projects_file, nrows=0, sep="\t").columns
+    if os.path.exists(hr_curves_file) and "fuel" in headers:
 
-    # Get modelled periods
-    # TODO: could we simply use m.PRJ_OPR_PRDS?
-    periods = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "periods.tab"),
-        sep="\t"
-    )
-    periods = set(periods["period"])
-
-    # Heat Rate Curves
-    if "fuel" in headers:
-        # TODO: read_csv seems to fail silently if file not found; check and
-        #  implement validation
-        hr_df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage),
-                         "inputs", "heat_rate_curves.tab"),
-            sep="\t"
-        )
-
-        pr_df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage),
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "fuel"]
-        )
+        hr_df = pd.read_csv(hr_curves_file, sep="\t")
+        periods_df = pd.read_csv(periods_file, sep="\t")
+        pr_df = pd.read_csv(projects_file, sep="\t", usecols=["project", "fuel"])
         pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
+
+        periods = set(periods_df["period"])
         fuel_projects = pr_df["project"].unique()
         fuels_dict = dict(zip(projects, pr_df["fuel"]))
 
@@ -942,34 +932,35 @@ def load_vom_curves(data_portal, scenario_directory, subproblem,
     :return:
     """
 
-    # Get modelled periods
-    # TODO: could we simply use m.PRJ_OPR_PRDS?
-    periods = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "periods.tab"),
-        sep="\t"
+    vom_curves_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "variable_om_curves.tab"
     )
-    periods = set(periods["period"])
-
-    # Variable O&M curves
-    vom_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "variable_om_curves.tab"),
-        sep="\t"
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "periods.tab"
     )
 
-    vom_projects = set(projects) & set(vom_df["project"].unique())
-    slope_dict, intercept_dict = \
-        get_slopes_intercept_by_project_period_segment(
-            vom_df, "average_variable_om_cost_per_mwh", vom_projects, periods)
-    vom_project_segments = list(slope_dict.keys())
+    if os.path.exists(vom_curves_file):
+        periods = pd.read_csv(periods_file, sep="\t")
+        vom_df = pd.read_csv(vom_curves_file, sep="\t")
 
-    data_portal.data()["{}_VOM_PRJS_PRDS_SGMS".format(op_type.upper())] = \
-        {None: vom_project_segments}
-    data_portal.data()["{}_vom_slope_cost_per_mwh".format(op_type)] = \
-        slope_dict
-    data_portal.data()["{}_vom_intercept_cost_per_mw_hr".format(op_type)] = \
-        intercept_dict
+        periods = set(periods["period"])
+        vom_projects = set(projects) & set(vom_df["project"].unique())
+
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                vom_df, "average_variable_om_cost_per_mwh",
+                vom_projects, periods
+            )
+        vom_project_segments = list(slope_dict.keys())
+
+        data_portal.data()["{}_VOM_PRJS_PRDS_SGMS".format(op_type.upper())] = \
+            {None: vom_project_segments}
+        data_portal.data()["{}_vom_slope_cost_per_mwh".format(op_type)] = \
+            slope_dict
+        data_portal.data()["{}_vom_intercept_cost_per_mw_hr".format(op_type)] = \
+            intercept_dict
 
 
 def get_vom_curves_inputs_from_database(
@@ -1025,54 +1016,56 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     :return:
     """
 
-    # Startup characteristics
-    df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "startup_chars.tab"),
-        sep="\t"
+    startup_chars_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "startup_chars.tab"
     )
 
-    # Note: the rank function requires at least one numeric input in the
-    # down_time_cutoff_hours column (can't be all NULL/None).
-    if len(df) > 0:
-        df["startup_type_id"] = df.groupby("project")[
-            "down_time_cutoff_hours"].rank()
+    if os.path.exists(startup_chars_file):
+        df = pd.read_csv(startup_chars_file, sep="\t")
 
-    startup_ramp_projects = set()
-    startup_ramp_projects_types = list()
-    down_time_cutoff_hours_dict = dict()
-    startup_plus_ramp_up_rate_dict = dict()
-    startup_cost_dict = dict()
+        # Note: the rank function requires at least one numeric input in the
+        # down_time_cutoff_hours column (can't be all NULL/None).
+        if len(df) > 0:
+            df["startup_type_id"] = df.groupby("project")[
+                "down_time_cutoff_hours"].rank()
 
-    for i, row in df.iterrows():
-        project = row["project"]
-        startup_type_id = row["startup_type_id"]
-        down_time_cutoff_hours = row["down_time_cutoff_hours"]
-        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
-        startup_cost = row["startup_cost_per_mw"]
+        startup_ramp_projects = set()
+        startup_ramp_projects_types = list()
+        down_time_cutoff_hours_dict = dict()
+        startup_plus_ramp_up_rate_dict = dict()
+        startup_cost_dict = dict()
 
-        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
-                and project in projects:
-            startup_ramp_projects.add(project)
-            startup_ramp_projects_types.append((project, startup_type_id))
-            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
-                float(down_time_cutoff_hours)
-            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
-                float(startup_plus_ramp_up_rate)
-            startup_cost_dict[(project, startup_type_id)] = \
-                float(startup_cost)
+        for i, row in df.iterrows():
+            project = row["project"]
+            startup_type_id = row["startup_type_id"]
+            down_time_cutoff_hours = row["down_time_cutoff_hours"]
+            startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+            startup_cost = row["startup_cost_per_mw"]
 
-    if startup_ramp_projects:
-        data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
-            {None: startup_ramp_projects}
-        data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
-            {None: startup_ramp_projects_types}
-        data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
-            down_time_cutoff_hours_dict
-        data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(
-            op_type)] = startup_plus_ramp_up_rate_dict
-        data_portal.data()["{}_startup_cost_by_st_per_mw".format(op_type)] = \
-            startup_cost_dict
+            if down_time_cutoff_hours != "." \
+                    and startup_plus_ramp_up_rate != "." \
+                    and project in projects:
+                startup_ramp_projects.add(project)
+                startup_ramp_projects_types.append((project, startup_type_id))
+                down_time_cutoff_hours_dict[(project, startup_type_id)] = \
+                    float(down_time_cutoff_hours)
+                startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
+                    float(startup_plus_ramp_up_rate)
+                startup_cost_dict[(project, startup_type_id)] = \
+                    float(startup_cost)
+
+        if startup_ramp_projects:
+            data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
+                {None: startup_ramp_projects}
+            data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
+                {None: startup_ramp_projects_types}
+            data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
+                down_time_cutoff_hours_dict
+            data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(
+                op_type)] = startup_plus_ramp_up_rate_dict
+            data_portal.data()["{}_startup_cost_by_st_per_mw".format(op_type)] = \
+                startup_cost_dict
 
 
 def get_startup_chars_inputs_from_database(

@@ -37,7 +37,7 @@ from gridpath.project.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, load_heat_rate_curves, load_vom_curves, \
     get_heat_rate_curves_inputs_from_database, \
-    get_vom_curves_inputs_from_database, write_tab_file_model_inputs, \
+    get_vom_curves_inputs_from_database, \
     check_for_tmps_to_link, validate_opchars, validate_heat_rate_curves, \
     validate_vom_curves
 
@@ -874,14 +874,14 @@ def load_module_specific_data(mod, data_portal,
         stage=stage, op_type="gen_always_on"
     )
 
-    # Load data from heat_rate_curves.tab
+    # Load data from heat_rate_curves.tab (if it exists)
     load_heat_rate_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_always_on", projects=projects
     )
 
-    # Load data from variable_om_curves.tab
+    # Load data from variable_om_curves.tab (if it exists)
     load_vom_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
@@ -1002,15 +1002,25 @@ def write_module_specific_model_inputs(
     heat_rate_curves, vom_curves = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, "heat_rate_curves.tab",
-        heat_rate_curves, replace_nulls=True
-    )
+    hr_df = cursor_to_df(heat_rate_curves)
+    if not hr_df.empty:
+        hr_df = hr_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "heat_rate_curves.tab")
+        if not os.path.isfile(fpath):
+            hr_df.to_csv(fpath, index=False, sep="\t")
+        else:
+            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
 
-    write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, "variable_om_curves.tab",
-        vom_curves, replace_nulls=True
-    )
+    vom_df = cursor_to_df(vom_curves)
+    if not vom_df.empty:
+        vom_df = vom_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "variable_om_curves.tab")
+        if not os.path.isfile(fpath):
+            vom_df.to_csv(fpath, index=False, sep="\t")
+        else:
+            vom_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
 
 
 # Validation
