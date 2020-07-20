@@ -305,6 +305,16 @@ def fuel_rule(mod, g):
         return None
 
 
+def carbon_emissions_rule(mod, g, tmp):
+    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
+        return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[
+                   g, mod.period[tmp], 0] \
+            * mod.Power_Provision_MW[g, tmp] \
+            * mod.co2_intensity_tons_per_mmbtu[mod.gen_must_run_fuel[g]]
+    else:
+        return 0
+
+
 def variable_om_cost_rule(mod, g, tmp):
     """
     """
