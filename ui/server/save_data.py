@@ -59,7 +59,8 @@ def save_table_data_to_csv(db_path, download_path, scenario_id,
 
 def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
                           load_zone, carbon_cap_zone, rps_zone,
-                          period, horizon, subproblem, stage, project):
+                          period, start_timepoint, end_timepoint, subproblem,
+                          stage, project):
     """
     :param db_path: string, the path to the database
     :param download_path: string, the CSV file path
@@ -69,7 +70,8 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
     :param carbon_cap_zone: string, carbon cap zone parameter for the plot
     :param rps_zone: string, RPS zone parameter for the plot
     :param period: integer, period parameter for the plot
-    :param horizon: integer, horizon parameter for the plot
+    :param start_timepoint: integer, start timepoint parameter for the plot
+    :param end_timepoint: integer, end timepoint parameter for the plot
     :param subproblem: integer, subproblem parameter for the plot
     :param stage: integer, stage parameter for the plot
     :param project: string, project parameter for the plot
@@ -101,7 +103,8 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
                 carbon_cap_zone=carbon_cap_zone,
                 rps_zone=rps_zone,
                 period=period,
-                horizon=horizon,
+                starting_tmp=start_timepoint,
+                ending_tmp=end_timepoint,
                 subproblem=subproblem,
                 stage=stage,
                 project=project,

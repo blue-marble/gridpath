@@ -33,7 +33,8 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     rpsZone: string,
     carbonCapZone: string,
     period: number,
-    horizon: number,
+    startTimepoint: number,
+    endTimepoint: number,
     subproblem: number,
     stage: number,
     project: string,
@@ -101,7 +102,8 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsPlot(
         this.baseScenarioID, this.formValues.plotType, this.formValues.loadZone,
           this.formValues.rpsZone, this.formValues.carbonCapZone, this.formValues.period,
-          this.formValues.horizon, this.formValues.subproblem, this.formValues.stage,
+          this.formValues.startTimepoint, this.formValues.endTimepoint,
+          this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
         this.basePlotHTMLTarget = resultsPlot.plotJSON.target_id;
@@ -115,7 +117,8 @@ export class ScenarioComparisonResultsComponent implements OnInit {
       this.scenarioResultsService.getResultsPlot(
         scenarioIDTOCompare, this.formValues.plotType, this.formValues.loadZone,
           this.formValues.rpsZone, this.formValues.carbonCapZone, this.formValues.period,
-          this.formValues.horizon, this.formValues.subproblem, this.formValues.stage,
+          this.formValues.startTimepoint, this.formValues.endTimepoint,
+          this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
         this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);

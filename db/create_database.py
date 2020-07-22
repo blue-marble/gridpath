@@ -379,9 +379,10 @@ def load_ui_scenario_results_plot_metadata(conn):
         INSERT INTO ui_scenario_results_plot_metadata
         (results_plot, include, caption, load_zone_form_control,
         rps_zone_form_control, carbon_cap_zone_form_control,
-        period_form_control, horizon_form_control, 
+        period_form_control, 
+        start_timepoint_form_control, end_timepoint_form_control,
         stage_form_control, project_form_control, commit_project_form_control)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
     load_aux_data(conn=conn,
                   filename="ui_scenario_results_plot_metadata.csv",
