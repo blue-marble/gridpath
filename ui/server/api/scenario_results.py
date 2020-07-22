@@ -72,6 +72,7 @@ class ScenarioResultsOptions(Resource):
         options_api["startTimepointOptions"] = ['Select Starting Timepoint']\
                                                 + timepoint_options
         # TODO: keep track of start timepoint since end has to be >= start
+        #  timepoint options also depend on stage
         options_api["endTimepointOptions"] = ['Select Ending Timepoint'] \
                                                 + timepoint_options
 
