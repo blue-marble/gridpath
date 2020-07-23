@@ -327,6 +327,7 @@ def socket_save_plot_data(client_message):
       carbon_cap_zone=client_message["carbonCapZone"],
       rps_zone=client_message["rpsZone"],
       period=client_message["period"],
+      horizon=client_message["horizon"],
       start_timepoint=client_message["startTimepoint"],
       end_timepoint=client_message["endTimepoint"],
       subproblem=client_message["subproblem"],

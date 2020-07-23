@@ -158,6 +158,7 @@ export class ScenarioResultsComponent implements OnInit {
             rpsZone: plot.rpsZone,
             carbonCapZone: plot.carbonCapZone,
             period: plot.period,
+            horizon: plot.horizon,
             startTimepoint: plot.startTimepoint,
             endTimepoint: plot.endTimepoint,
             subproblem: plot.subproblem,
@@ -189,10 +190,11 @@ export class ScenarioResultsComponent implements OnInit {
     if (buttonName === 'showPlot') {
       this.scenarioResultsService.getResultsPlot(
         this.scenarioID, formValues.plotType, formValues.loadZone,
-          formValues.rpsZone, formValues.carbonCapZone, formValues.period,
+          formValues.rpsZone, formValues.carbonCapZone,
+          formValues.period, formValues.horizon,
           formValues.startTimepoint, formValues.endTimepoint,
-          formValues.subproblem, formValues.stage, formValues.project,
-          formValues.commitProject, formValues.yMax
+          formValues.subproblem, formValues.stage,
+          formValues.project, formValues.commitProject, formValues.yMax
       ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
@@ -217,9 +219,11 @@ export class ScenarioResultsComponent implements OnInit {
 
     const formValues = getFormGroupValues(formGroup);
     this.scenarioResultsService.getResultsPlot(
-      scenarioID, formValues.plotType, formValues.loadZone, formValues.rpsZone,
-      formValues.carbonCapZone, formValues.period, formValues.startTimepoint,
-      formValues.endTimepoint, formValues.subproblem, formValues.stage,
+      scenarioID, formValues.plotType, formValues.loadZone,
+      formValues.rpsZone, formValues.carbonCapZone,
+      formValues.period, formValues.horizon,
+      formValues.startTimepoint, formValues.endTimepoint,
+      formValues.subproblem, formValues.stage,
       formValues.project, formValues.commitProject, formValues.yMax
     ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot.plotJSON;
@@ -240,6 +244,7 @@ export class ScenarioResultsComponent implements OnInit {
               carbonCapZone: formValues.carbonCapZone,
               rpsZone: formValues.rpsZone,
               period: formValues.period,
+              horizon: formValues.horizon,
               startTimepoint: formValues.startTimepoint,
               endTimepoint: formValues.endTimepoint,
               subproblem: formValues.subproblem,
@@ -275,6 +280,7 @@ export function getFormGroupValues(formGroup) {
     const carbonCapZone = formGroup.value.carbonCapZone;
     const rpsZone = formGroup.value.rpsZone;
     const period = formGroup.value.period;
+    const horizon = formGroup.value.horizon;
     const startTimepoint = formGroup.value.startTimepoint;
     const endTimepoint = formGroup.value.endTimepoint;
     // Set subproblem to 'default' if it is null or 'Select Subproblem' (either
@@ -294,7 +300,7 @@ export function getFormGroupValues(formGroup) {
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
-    return {plotType, loadZone, carbonCapZone, rpsZone, period,
-    startTimepoint, endTimepoint, subproblem, stage, project,
-    commitProject, yMax};
+    return {plotType, loadZone, carbonCapZone, rpsZone, period, horizon,
+    startTimepoint, endTimepoint,
+    subproblem, stage, project, commitProject, yMax};
 }

@@ -129,6 +129,13 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
+                <select class="custom-select" formControlName="horizon"
+                        *ngIf="formGroup.value['horizon'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.horizonOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
                 <select class="custom-select" formControlName="startTimepoint"
                         *ngIf="formGroup.value['startTimepoint']!=='default'">
                   <ng-container
