@@ -34,13 +34,15 @@ export class ScenarioResultsService {
     carbonCapZone: string,
     period: number,
     horizon: number,
+    startTimepoint: number,
+    endTimepoint: number,
     subproblem: number,
     stage: number,
     project: string,
     commitProject: string,
     yMax: number
   ): Observable<ScenarioResultsPlot> {
-    return this.http.get<ScenarioResultsPlot>(`${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${rpsZone}/${carbonCapZone}/${period}/${horizon}/${subproblem}/${stage}/${project}/${commitProject}/${yMax}`
+    return this.http.get<ScenarioResultsPlot>(`${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${rpsZone}/${carbonCapZone}/${period}/${horizon}/${startTimepoint}/${endTimepoint}/${subproblem}/${stage}/${project}/${commitProject}/${yMax}`
     );
   }
 
