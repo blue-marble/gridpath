@@ -430,7 +430,9 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
         inactive_exports = (df[line_cols[1]] == 0).all()
     inactive_storage = (df[line_cols[2]] == 0).all()
 
-    if not inactive_exports:
+    if inactive_exports:
+        line_cols = [line_cols[0], line_cols[2]]
+    else:
         # Add export line to plot
         label = "Load + Exports"
         exports_renderer = plot.line(
