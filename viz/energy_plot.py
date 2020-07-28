@@ -67,8 +67,8 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     # Spinup/lookahead timepoints are ignored by adding the resp. column tag
     # through inner joins and adding a conditional to ignore those timepoints
     sql = """SELECT period, technology, 
-        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)/1000000
-        as energy_twh
+        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)
+        as energy_mwh
         FROM results_project_dispatch_by_technology
         
         -- add temporal scenario id so we can join timepoints table
@@ -143,10 +143,10 @@ def main(args=None):
     plot = create_stacked_bar_plot(
         df=df,
         title=plot_title,
-        y_axis_column="energy_twh",
+        y_axis_column="energy_mwh",
         x_axis_column="period",
         group_column="technology",
-        column_mapper={"energy_twh": "Energy ({})".format(energy_unit),
+        column_mapper={"energy_mwh": "Energy ({})".format(energy_unit),
                        "period": "Period",
                        "technology": "Technology"},
         group_colors=tech_colors,
