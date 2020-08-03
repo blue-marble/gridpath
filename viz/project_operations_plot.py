@@ -127,7 +127,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         SUM(number_of_hours_in_timepoint) 
         OVER (PARTITION BY period ORDER BY timepoint) AS hour_on_period,
         committed_mw, power_mw, 
-        (min_stable_level * committed_mw) AS min_stable_level_mw,
+        (min_stable_level_fraction * committed_mw) AS min_stable_level_mw,
         spin_mw, reg_up_mw, reg_down_mw, lf_up_mw, lf_down_mw, frq_resp_mw
         FROM
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint, 
@@ -186,7 +186,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         
         LEFT JOIN
         
-        (SELECT scenario_id, project, min_stable_level
+        (SELECT scenario_id, project, min_stable_level_fraction
         FROM inputs_project_operational_chars
         JOIN scenarios
         USING (project_operational_chars_scenario_id)

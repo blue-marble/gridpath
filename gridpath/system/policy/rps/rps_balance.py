@@ -82,7 +82,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 p,
                 m.discount_factor[p],
                 m.number_years_represented[p],
-                float(m.rps_target_mwh[z, p]),
+                value(m.RPS_Target[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]) +
