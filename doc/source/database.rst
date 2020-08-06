@@ -788,13 +788,13 @@ Capacity
 Relevant tables:
 
 +--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_specified_capacity_scenario_id`  |
+|:code:`scenarios` table column  |:code:`transmission_specified_capacity_scenario_id` |
 +--------------------------------+----------------------------------------------------+
 |:code:`scenarios` table feature |:code:`of_transmission`                             |
 +--------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_specified_capacity` |
+|:code:`subscenario_` table      |:code:`subscenarios_transmission_specified_capacity`|
 +--------------------------------+----------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_specified_capacity`       |
+|:code:`input_` tables           |:code:`inputs_transmission_specified_capacity`      |
 +--------------------------------+----------------------------------------------------+
 
 

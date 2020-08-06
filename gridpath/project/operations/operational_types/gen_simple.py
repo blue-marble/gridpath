@@ -57,7 +57,7 @@ def add_module_specific_components(m, d):
     | The list of projects of the code:`gen_simple` operational type that     |
     | consume fuel.                                                           |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                                 |
+    | | :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                                |
     |                                                                         |
     | Three-dimensional set describing fuel projects and their heat rate      |
     | curve segment IDs for each operational period. Unless the project's     |
@@ -82,7 +82,7 @@ def add_module_specific_components(m, d):
     | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
     | | :code:`gen_simple_fuel_burn_slope_mmbtu_per_mwh`                      |
-    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                 |
+    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
