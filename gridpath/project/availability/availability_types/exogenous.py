@@ -13,10 +13,12 @@ optimization.
 
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
-from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_values, \
+    validate_missing_inputs
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -146,15 +148,22 @@ def get_inputs_from_database(
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
 
-    c = conn.cursor()
-    availabilities = c.execute("""
+    sql = """
         SELECT project, timepoint, availability_derate
-        FROM (
-        -- Select only projects from the relevant portfolio
-        SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        ) as portfolio_tbl
+        -- Select only projects, periods, timepoints from the relevant 
+        -- portfolio, relevant opchar scenario id, operational type, 
+        -- and temporal scenario id
+        FROM 
+            (SELECT project, stage_id, timepoint
+            FROM project_operational_timepoints
+            WHERE project_portfolio_scenario_id = {}
+            AND project_operational_chars_scenario_id = {}
+            AND temporal_scenario_id = {}
+            AND (project_specified_capacity_scenario_id = {}
+                 OR project_new_cost_scenario_id = {})
+            AND subproblem_id = {}
+            AND stage_id = {}
+            ) as projects_periods_timepoints_tbl
         -- Of the projects in the portfolio, select only those that are in 
         -- this project_availability_scenario_id and have 'exogenous' as 
         -- their availability type and a non-null 
@@ -163,67 +172,34 @@ def get_inputs_from_database(
         -- inputs_project_availability_exogenous table
         INNER JOIN (
             SELECT project, exogenous_availability_scenario_id
-            FROM inputs_project_availability_types
+            FROM inputs_project_availability
             WHERE project_availability_scenario_id = {}
-            AND availability_type = 'exogenous'
+            AND availability_type = '{}'
             AND exogenous_availability_scenario_id IS NOT NULL
             ) AS avail_char
-         USING (project)
-         -- Cross join to the timepoints in the relevant 
-         -- temporal_scenario_id, subproblem_id, and stage_id
-         -- Get the period since we'll need that to get only the operational 
-         -- timepoints for a project via an INNER JOIN below
-         CROSS JOIN (
-            SELECT stage_id, timepoint, period
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}
-            AND stage_id = {}
-            ) as tmps_tbl
+        USING (project)
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective availability_derate from the 
-        -- inputs_project_availability_exogenous (and no others) through a 
-        -- LEFT OUTER JOIN
-        LEFT OUTER JOIN
-        inputs_project_availability_exogenous
+        -- respective availability_derate (and no others) from 
+        -- inputs_project_availability_exogenous
+        left outer JOIN
+            inputs_project_availability_exogenous
         USING (exogenous_availability_scenario_id, project, stage_id, 
         timepoint)
-        -- We also only want timepoints in periods when the project actually 
-        -- exists, so we figure out the operational periods for each of the  
-        -- projects below and INNER JOIN to that
-        INNER JOIN
-            (SELECT project, period
-            FROM (
-                -- Get the operational periods for each 'specified' and 
-                -- 'new' project
-                SELECT project, period
-                FROM inputs_project_specified_capacity
-                WHERE project_specified_capacity_scenario_id = {}
-                UNION
-                SELECT project, period
-                FROM inputs_project_new_cost
-                WHERE project_new_cost_scenario_id = {}
-                ) as all_operational_project_periods
-            -- Only use the periods in temporal_scenario_id via an INNER JOIN
-            INNER JOIN (
-                SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {}
-                ) as relevant_periods_tbl
-            USING (period)
-            ) as relevant_op_periods_tbl
-        USING (project, period);
-        """.format(
+        ;
+    """.format(
         subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
+        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         subscenarios.TEMPORAL_SCENARIO_ID,
-        subproblem,
-        stage,
         subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
         subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-        subscenarios.TEMPORAL_SCENARIO_ID
-        )
+        subproblem,
+        stage,
+        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
+        "exogenous",
     )
+
+    c = conn.cursor()
+    availabilities = c.execute(sql)
 
     return availabilities
 
@@ -252,6 +228,7 @@ def write_module_specific_model_inputs(
             writer.writerow(["project", "timepoint", "availability_derate"])
 
             for row in availabilities:
+                row = ["." if i is None else i for i in row]
                 writer.writerow(row)
 
 
@@ -270,62 +247,51 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn
     )
 
-    av_df = pd.DataFrame(
-        data=availabilities.fetchall(),
-        columns=[s[0] for s in availabilities.description]
-    )
+    df = cursor_to_df(availabilities)
+    idx_cols = ["project", "timepoint"]
+    value_cols = ["availability_derate"]
 
-    validation_results = []
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_availability_types",
+        conn, ["inputs_project_availability",
                "inputs_project_availability_exogenous"])
-    dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_AVAILABILITY",
-             "inputs_project_availability_exogenous",
-             "Invalid data type",
-             error
-             )
-        )
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_exogenous",
+        severity="High",
+        errors=dtype_errors
+    )
 
+    # Check for missing inputs
+    msg = "If not specified, availability is assumed to be 100%. If you " \
+          "don't want to specify any availability derates, simply leave the " \
+          "exogenous_availability_scenario_id empty and this message will " \
+          "disappear."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_exogenous",
+        severity="Low",
+        errors=validate_missing_inputs(df, value_cols, idx_cols, msg)
+    )
+
+    # Check for correct sign
     if "availability" not in error_columns:
-        validation_errors = validate_availability(av_df)
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_AVAILABILITY",
-                 "inputs_project_availability_exogenous",
-                 "Invalid availability (exogenous)",
-                 error
-                 )
-            )
-
-
-def validate_availability(av_df):
-    """
-    Check 0 <= availability <= 1
-    :param av_df:
-    :return:
-    """
-    results = []
-
-    invalids = ((av_df["availability_derate"] < 0) |
-                (av_df["availability_derate"] > 1))
-    if invalids.any():
-        bad_projects = av_df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 <= avl_exog_derate <= 1"
-            .format(print_bad_projects)
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_availability_exogenous",
+            severity="High",
+            errors=validate_values(df, value_cols, min=0, max=1)
         )
-
-    return results

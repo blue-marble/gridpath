@@ -18,7 +18,10 @@ from pyomo.environ import Param, Var, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_values, \
+    validate_missing_inputs
 
 
 def add_model_components(m, d):
@@ -246,16 +249,23 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         """SELECT transmission_line, period, 
         hurdle_rate_positive_direction_per_mwh,
         hurdle_rate_negative_direction_per_mwh
-        FROM inputs_transmission_hurdle_rates
-        INNER JOIN
-        (SELECT period
-         FROM inputs_temporal_periods
-         WHERE temporal_scenario_id = {}) as relevant_periods
-         USING (period)
-         WHERE transmission_hurdle_rate_scenario_id = {};
+        FROM inputs_transmission_portfolios
+        CROSS JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {}) AS relevant_periods 
+        LEFT OUTER JOIN
+            (SELECT transmission_line, period, 
+            hurdle_rate_positive_direction_per_mwh,
+            hurdle_rate_negative_direction_per_mwh
+            FROM inputs_transmission_hurdle_rates
+            WHERE transmission_hurdle_rate_scenario_id = {}) AS relevant_hrs
+        USING (transmission_line, period)
+        WHERE transmission_portfolio_scenario_id = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
+            subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
         )
     )
 
@@ -291,7 +301,8 @@ def write_model_inputs(
         )
 
         for row in hurdle_rates:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def import_results_into_database(
@@ -386,7 +397,66 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # hurdle_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+
+    hurdle_rates = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    df = cursor_to_df(hurdle_rates)
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_transmission_hurdle_rates"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_hurdle_rates",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_hurdle_rates",
+        severity="High",
+        errors=validate_values(df, valid_numeric_columns,
+                               "transmission_line", min=0)
+    )
+
+    # Check that all binary new build tx lines are available in >=1 vintage
+    msg = "Expected hurdle rates specified for each modeling period when " \
+          "transmission hurdle rates feature is on."
+    cols = ["hurdle_rate_positive_direction_per_mwh",
+            "hurdle_rate_negative_direction_per_mwh"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_hurdle_rates",
+        severity="Low",
+        errors=validate_missing_inputs(
+            df=df,
+            col=cols,
+            idx_col=["transmission_line", "period"],
+            msg=msg
+        )
+    )
+

@@ -160,6 +160,15 @@ class TestGenHydroMustTake(unittest.TestCase):
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
+        # Params: gen_hydro_must_take_variable_om_cost_per_mwh
+        expected_var_om_cost = {"Hydro_NonCurtailable": 0}
+        actual_var_om_cost = {
+            prj: instance.gen_hydro_must_take_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_HYDRO_MUST_TAKE
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
         # Param: gen_hydro_must_take_ramp_up_when_on_rate
         expected_ramp_up = OrderedDict(
             sorted({"Hydro_NonCurtailable": 0.5}.items())

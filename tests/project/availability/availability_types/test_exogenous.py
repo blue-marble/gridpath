@@ -143,54 +143,6 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         self.assertDictEqual(expected_availability_derate,
                              actual_availability_derate)
 
-    def test_availability_validations(self):
-        av_df_columns = ["project", "horizon", "availability_derate"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative availabilities are flagged
-            2: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Availabilities > 1 are flagged
-            3: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= avl_exog_derate <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = MODULE_BEING_TESTED.validate_availability(
-                av_df=test_cases[test_case]["av_df"],
-            )
-            self.assertListEqual(expected_list, actual_list)
-
 
 if __name__ == "__main__":
     unittest.main()

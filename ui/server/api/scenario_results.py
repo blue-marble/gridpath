@@ -65,13 +65,27 @@ class ScenarioResultsOptions(Resource):
         # TODO: are these unique or do we need to separate by period; in fact,
         #  is separating by period a better user experience regardless
         horizon_options = [h[0] for h in c.execute(
-            """SELECT horizon FROM inputs_temporal_horizons
+          """SELECT horizon FROM inputs_temporal_horizons
+          WHERE temporal_scenario_id = (
+          SELECT temporal_scenario_id
+          FROM scenarios
+          WHERE scenario_id = {});""".format(scenario_id)
+        ).fetchall()]
+        options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
+
+        timepoint_options = [t[0] for t in c.execute(
+            """SELECT timepoint FROM inputs_temporal
             WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
-        options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
+        options_api["startTimepointOptions"] = ['Select Starting Timepoint']\
+                                                + timepoint_options
+        # TODO: keep track of start timepoint since end has to be >= start
+        #  timepoint options also depend on stage
+        options_api["endTimepointOptions"] = ['Select Ending Timepoint'] \
+                                                + timepoint_options
 
         subproblem_options = [h[0] for h in c.execute(
             """SELECT DISTINCT subproblem_id
@@ -139,7 +153,8 @@ class ScenarioResultsPlot(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self, plot, scenario_id, load_zone, rps_zone, carbon_cap_zone,
-            period, horizon, subproblem, stage, project, commit_project, ymax):
+            period, horizon, start_timepoint, end_timepoint, subproblem, stage,
+            project, commit_project, ymax):
         """
 
         :return:
@@ -185,6 +200,18 @@ class ScenarioResultsPlot(Resource):
         else:
             filter_arguments.append("--horizon")
             filter_arguments.append(horizon)
+
+        if start_timepoint == 'default':
+            pass
+        else:
+            filter_arguments.append("--starting_tmp")
+            filter_arguments.append(start_timepoint)
+
+        if end_timepoint == 'default':
+            pass
+        else:
+            filter_arguments.append("--ending_tmp")
+            filter_arguments.append(end_timepoint)
 
         if subproblem == 'default':
             pass
@@ -241,8 +268,10 @@ class ScenarioResultsIncludedPlots(Resource):
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control,
           rps_zone_form_control, carbon_cap_zone_form_control,
-          period_form_control, horizon_form_control, subproblem_form_control,
-          stage_form_control, project_form_control, commit_project_form_control
+          period_form_control, horizon_form_control,
+          start_timepoint_form_control, end_timepoint_form_control,
+          subproblem_form_control, stage_form_control,
+          project_form_control, commit_project_form_control
           FROM ui_scenario_results_plot_metadata
           WHERE include = 1;"""
         ).fetchall()
@@ -253,6 +282,7 @@ class ScenarioResultsIncludedPlots(Resource):
             (results_plot, caption, load_zone_form_control,
                 rps_zone_form_control, carbon_cap_zone_form_control,
                 period_form_control, horizon_form_control,
+                start_timepoint_form_control, end_timepoint_form_control,
                 subproblem_form_control, stage_form_control,
                 project_form_control, commit_project_form_control) \
                 = plot
@@ -265,6 +295,10 @@ class ScenarioResultsIncludedPlots(Resource):
                 else "default",
                 "period": [] if period_form_control else "default",
                 "horizon": [] if horizon_form_control else "default",
+                "startTimepoint": [] if start_timepoint_form_control
+                else "default",
+                "endTimepoint": [] if end_timepoint_form_control
+                else "default",
                 "subproblem": [] if subproblem_form_control else "default",
                 "stage": [] if stage_form_control else "default",
                 "project": [] if project_form_control else "default",

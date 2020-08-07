@@ -11,7 +11,12 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Param, Var, Set, Constraint, NonNegativeReals
+from pyomo.environ import Param, Var, Set, Constraint, PositiveReals, \
+    NonNegativeReals
+
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_values, validate_missing_inputs
 
 
 def add_module_specific_components(m, d):
@@ -44,7 +49,7 @@ def add_module_specific_components(m, d):
     
     m.min_duration_for_full_capacity_credit = Param(
         m.FDDL_PRM_PROJECTS,
-        within=NonNegativeReals
+        within=PositiveReals
     ) 
     
     m.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW = Var(
@@ -158,10 +163,37 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # project_zone_dur =get_module_specific_inputs_from_database(
-    #    subscenarios, subproblem, stage, conn
+
+    project_zone_dur = get_module_specific_inputs_from_database(
+       subscenarios, subproblem, stage, conn
+    )
+
+    df = cursor_to_df(project_zone_dur)
+    cols = ["min_duration_for_full_capacity_credit_hours"]
+
+    # Make sure param sign is as expected
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_values(df, cols, min=0, strict_min=True)
+    )
+
+    # Make sure param is specified
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_missing_inputs(df, cols)
+    )
 
 
 def write_module_specific_model_inputs(

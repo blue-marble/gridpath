@@ -3,6 +3,7 @@
 
 import csv
 import os.path
+import numpy as np
 import pandas as pd
 import warnings
 
@@ -10,6 +11,11 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, get_column_row_value, \
     check_boundary_type
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_req_cols, validate_missing_inputs, validate_values, \
+    validate_column_monotonicity, get_expected_dtypes, validate_dtypes, \
+    validate_piecewise_curves
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -314,32 +320,45 @@ def get_param_dict(df, column_name, cast_as_type):
 def get_optype_param_requirements(op_type):
     """
     :param op_type: string
-    :return: two dictionaries of the required and optional projects.tab
-        columns for the operational type with their types as values
+    :return: three dictionaries of the required, optional, and other
+        projects.tab columns for the operational type with their types as
+        values.
 
-    Read in the required and optional columns for an operational type. Make
-    a dictionary for each with the types for each as values. We need the
-    types to cast when loading into Pyomo.
+    Read in the required, optional, and other columns for an operational
+    type. Make a dictionary for each with the types for each as values. We
+    need the types to cast when loading into Pyomo. "other" columns are columns
+    that are nor required nor optional and for which we don't expect any
+    inputs for for that operational type.
     """
 
     df = pd.read_csv(
         os.path.join(os.path.dirname(__file__),
                      "opchar_param_requirements.csv"),
-        sep=","
+        sep=",",
+        dtype=str
     )
     # df.set_index('ID').T.to_dict('list')
-    required_columns = \
-        df.loc[df[op_type] == "required"][["char", "type"]]
+    required_columns = df.loc[df[op_type] == "required"][["char", "type"]]
     required_columns_dict = dict(
         zip(required_columns["char"], required_columns["type"])
     )
-    optional_columns = \
-        df.loc[df[op_type] == "optional"][["char", "type"]]
+    optional_columns = df.loc[df[op_type] == "optional"][["char", "type"]]
     optional_columns_dict = dict(
         zip(optional_columns["char"], optional_columns["type"])
     )
+    other_columns = df.loc[~df[op_type].isin(["optional", "required"])][[
+        "char", "type"]]
+    other_columns_dict = dict(
+        zip(other_columns["char"], other_columns["type"])
+    )
 
-    return required_columns_dict, optional_columns_dict
+    # TODO: find more elegant solution than having to remove this here
+    #  could add the "optional" flag to all op-types but then these params
+    #  will be read in for each op-type module whereas now they are read in
+    #  in project.init so it would happen twice.
+    del other_columns_dict["fuel"]
+
+    return required_columns_dict, optional_columns_dict, other_columns_dict
 
 
 def get_types_dict():
@@ -369,7 +388,7 @@ def load_optype_module_specific_data(
     types_dict = get_types_dict()
 
     # Get the required and optional columns with their types
-    required_columns_types, optional_columns_types = \
+    required_columns_types, optional_columns_types, _ = \
         get_optype_param_requirements(op_type=op_type)
 
     # Load in the inputs dataframe for the op type module
@@ -533,81 +552,94 @@ def get_var_profile_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
-    variable_profiles = c.execute("""
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+
+    sql = """
         SELECT project, timepoint, cap_factor
-        FROM (
-        -- Select only projects from the relevant portfolio
-        SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        ) as portfolio_tbl
-        -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'op_type' as 
-        -- their operational_type
-        INNER JOIN
-        (SELECT project, variable_generator_profile_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}'
-        ) AS op_char
-        USING (project)
-        -- Cross join to the timepoints in the relevant 
-        -- temporal_scenario_id, subproblem_id, and stage_id
-        -- Get the period since we'll need that to get only the operational 
-        -- timepoints for a project via an INNER JOIN below
-        CROSS JOIN
-        (SELECT stage_id, timepoint, period
-        FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}
-        ) as tmps_tbl
+        -- Select only projects, periods, horizons from the relevant portfolio, 
+        -- relevant opchar scenario id, operational type, 
+        -- and temporal scenario id
+        FROM 
+            (SELECT project, stage_id, timepoint, 
+            variable_generator_profile_scenario_id
+            FROM project_operational_timepoints
+            WHERE project_portfolio_scenario_id = {}
+            AND project_operational_chars_scenario_id = {}
+            AND operational_type = '{}'
+            AND temporal_scenario_id = {}
+            AND (project_specified_capacity_scenario_id = {}
+                 OR project_new_cost_scenario_id = {})
+            AND subproblem_id = {}
+            AND stage_id = {}
+            ) as projects_periods_timepoints_tbl
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap_factor (and no others) from 
-        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
+        -- respective cap factors (and no others) from 
+        -- inputs_project_variable_generator_profiles
         LEFT OUTER JOIN
-        inputs_project_variable_generator_profiles
+            inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, 
         stage_id, timepoint)
-        -- We also only want timepoints in periods when the project actually 
-        -- exists, so we figure out the operational periods for each of the  
-        -- projects below and INNER JOIN to that
-        INNER JOIN
-            (SELECT project, period
-            FROM (
-                -- Get the operational periods for each 'existing' and 
-                -- 'new' project
-                SELECT project, period
-                FROM inputs_project_specified_capacity
-                WHERE project_specified_capacity_scenario_id = {}
-                UNION
-                SELECT project, period
-                FROM inputs_project_new_cost
-                WHERE project_new_cost_scenario_id = {}
-                ) as all_operational_project_periods
-            -- Only use the periods in temporal_scenario_id via an INNER JOIN
-            INNER JOIN (
-                SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {}
-                ) as relevant_periods_tbl
-            USING (period)
-            ) as relevant_op_periods_tbl
-        USING (project, period);
+        ;
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            op_type,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
-        )
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        op_type,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+        subproblem,
+        stage
     )
 
+    variable_profiles = c.execute(sql)
+
     return variable_profiles
+
+
+def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+    var_profiles = get_var_profile_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+    )
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(var_profiles)
+
+    value_cols = ["cap_factor"]
+
+    # Check for missing inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_generator_profiles",
+        severity="High",
+        errors=validate_missing_inputs(df, value_cols, ["project", "timepoint"])
+    )
+
+    # Check for sign (should be percent fraction)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_generator_profiles",
+        severity="Mid",
+        errors=validate_values(df, ["cap_factor"], min=0, max=1)
+    )
 
 
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
@@ -684,66 +716,211 @@ def get_hydro_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     c = conn.cursor()
-    # TODO: should we ensure that the project balancing type and the horizon
-    #  length type match (e.g. by joining on them being equal here)
-    hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_fraction, min_power_fraction,
-        max_power_fraction
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, hydro_operational_chars_scenario_id
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = '{}') AS op_char
-        USING (project)
-        CROSS JOIN
-        (SELECT horizon
-        FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {})
-        LEFT OUTER JOIN
-        inputs_project_hydro_operational_chars
-        USING (hydro_operational_chars_scenario_id, project, horizon)
-        INNER JOIN
-        (SELECT project, period
-        FROM
-        (SELECT project, period
-        FROM inputs_project_specified_capacity
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_specified_capacity_scenario_id = {}) as existing
-        UNION
-        SELECT project, period
-        FROM inputs_project_new_cost
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_new_cost_scenario_id = {})
-        USING (project, period)
+
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+
+    sql = """
+    SELECT project, horizon, average_power_fraction, min_power_fraction,
+    max_power_fraction
+    -- Select only projects, horizons from the relevant portfolio, 
+    -- relevant opchar scenario id, operational type, and temporal scenario id
+    FROM 
+        (SELECT project, horizon, hydro_operational_chars_scenario_id
+        FROM project_operational_horizons
         WHERE project_portfolio_scenario_id = {}
-        """.format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            op_type,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+        AND project_operational_chars_scenario_id = {}
+        AND operational_type = '{}'
+        AND temporal_scenario_id = {}
+        AND (project_specified_capacity_scenario_id = {}
+             OR project_new_cost_scenario_id = {})
+        AND subproblem_id = {}
+        AND stage_id = {}
+        ) as projects_periods_horizon_tbl
+    -- Now that we have the relevant projects and horizons, get the 
+    -- respective hydro opchars (and no others) from 
+    -- inputs_project_hydro_operational_chars
+    LEFT OUTER JOIN
+        inputs_project_hydro_operational_chars
+    USING (hydro_operational_chars_scenario_id, project, horizon)
+    ;
+    """.format(
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        op_type,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+        subproblem,
+        stage
     )
+
+    hydro_chars = c.execute(sql)
 
     return hydro_chars
 
 
-def load_startup_chars(data_portal, scenario_directory, subproblem,
-                       stage, op_type, projects):
+def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+    hydro_chars = get_hydro_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type
+    )
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(hydro_chars)
+    value_cols = ["min_power_fraction",
+                  "average_power_fraction",
+                  "max_power_fraction"]
+
+    # Check for missing inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="High",
+        errors=validate_missing_inputs(df, value_cols, ["project", "horizon"])
+    )
+
+    # Check for sign (should be percent fraction)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="Mid",
+        errors=validate_values(df, value_cols, min=0, max=1)
+    )
+
+    # Check min <= avg <= sign
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_hydro_operational_chars",
+        severity="Mid",
+        errors=validate_column_monotonicity(
+            df=df,
+            cols=value_cols,
+            idx_col=["project", "horizon"]
+        )
+    )
+
+
+def load_heat_rate_curves(data_portal, scenario_directory, subproblem,
+                          stage, op_type, projects):
+    """
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :return:
+    """
+
+    hr_curves_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "heat_rate_curves.tab"
+    )
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "periods.tab"
+    )
+    projects_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "projects.tab"
+    )
+
+    # Get column names as a few columns will be optional;
+    # won't load data if fuel column does not exist
+    headers = pd.read_csv(projects_file, nrows=0, sep="\t").columns
+    if os.path.exists(hr_curves_file) and "fuel" in headers:
+
+        hr_df = pd.read_csv(hr_curves_file, sep="\t")
+        periods_df = pd.read_csv(periods_file, sep="\t")
+        pr_df = pd.read_csv(projects_file, sep="\t", usecols=["project", "fuel"])
+        pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
+
+        periods = set(periods_df["period"])
+        fuel_projects = pr_df["project"].unique()
+        fuels_dict = dict(zip(projects, pr_df["fuel"]))
+
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                hr_df, "average_heat_rate_mmbtu_per_mwh",
+                fuel_projects, periods)
+
+        fuel_project_segments = list(slope_dict.keys())
+
+        data_portal.data()["{}_FUEL_PRJS".format(op_type.upper())] = \
+            {None: fuel_projects}
+        data_portal.data()["{}_FUEL_PRJS_PRDS_SGMS".format(op_type.upper())] \
+            = {None: fuel_project_segments}
+        data_portal.data()["{}_fuel".format(op_type)] = fuels_dict
+        data_portal.data()["{}_fuel_burn_slope_mmbtu_per_mwh".format(
+            op_type)] = slope_dict
+        data_portal.data()["{}_fuel_burn_intercept_mmbtu_per_mw_hr".format(
+            op_type)] = intercept_dict
+
+
+def get_heat_rate_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return: cursor object with query results
+    """
+
+    # Get heat rate curves;
+    c = conn.cursor()
+    heat_rates = c.execute(
+        """
+        SELECT project, period,
+        load_point_fraction, average_heat_rate_mmbtu_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, heat_rate_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_heat_rate_curves
+        USING(project, heat_rate_curves_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {}
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   op_type,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return heat_rates
+
+
+def load_vom_curves(data_portal, scenario_directory, subproblem,
+                    stage, op_type, projects):
     """
 
     :param data_portal:
@@ -755,59 +932,140 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     :return:
     """
 
-    # TODO: change the name of the startup_cost_per_mw,
-    #  gen_commit_bin_startup_plus_ramp_up_rate, and
-    #  gen_commit_bin_down_time_cutoff_hours to include "by_ll" or something
-    #  like that, and re-add these same params for a simple treatment to
-    #  gen_commit_bin and gen_commit_lin
-    # Startup characteristics
-    df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "startup_chars.tab"),
-        sep="\t"
+    vom_curves_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "variable_om_curves.tab"
+    )
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "periods.tab"
     )
 
-    # Note: the rank function requires at least one numeric input in the
-    # down_time_cutoff_hours column (can't be all NULL/None).
-    if len(df) > 0:
-        df["startup_type_id"] = df.groupby("project")[
-            "down_time_cutoff_hours"].rank()
+    if os.path.exists(vom_curves_file):
+        periods = pd.read_csv(periods_file, sep="\t")
+        vom_df = pd.read_csv(vom_curves_file, sep="\t")
 
-    startup_ramp_projects = set()
-    startup_ramp_projects_types = list()
-    down_time_cutoff_hours_dict = dict()
-    startup_plus_ramp_up_rate_dict = dict()
-    startup_cost_dict = dict()
+        periods = set(periods["period"])
+        vom_projects = set(projects) & set(vom_df["project"].unique())
 
-    for i, row in df.iterrows():
-        project = row["project"]
-        startup_type_id = row["startup_type_id"]
-        down_time_cutoff_hours = row["down_time_cutoff_hours"]
-        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
-        startup_cost = row["startup_cost_per_mw"]
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                vom_df, "average_variable_om_cost_per_mwh",
+                vom_projects, periods
+            )
+        vom_project_segments = list(slope_dict.keys())
 
-        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
-                and project in projects:
-            startup_ramp_projects.add(project)
-            startup_ramp_projects_types.append((project, startup_type_id))
-            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
-                float(down_time_cutoff_hours)
-            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
-                float(startup_plus_ramp_up_rate)
-            startup_cost_dict[(project, startup_type_id)] = \
-                float(startup_cost)
+        data_portal.data()["{}_VOM_PRJS_PRDS_SGMS".format(op_type.upper())] = \
+            {None: vom_project_segments}
+        data_portal.data()["{}_vom_slope_cost_per_mwh".format(op_type)] = \
+            slope_dict
+        data_portal.data()["{}_vom_intercept_cost_per_mw_hr".format(op_type)] = \
+            intercept_dict
 
-    if startup_ramp_projects:
-        data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
-            {None: startup_ramp_projects}
-        data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
-            {None: startup_ramp_projects_types}
-        data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
-            down_time_cutoff_hours_dict
-        data_portal.data()["{}_startup_plus_ramp_up_rate".format(op_type)] = \
-            startup_plus_ramp_up_rate_dict
-        data_portal.data()["{}_startup_cost_per_mw".format(op_type)] = \
-            startup_cost_dict
+
+def get_vom_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :param op_type:
+    :return: cursor object with query results
+    """
+
+    c = conn.cursor()
+    vom_curves = c.execute(
+        """
+        SELECT project, period,  
+        load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        -- select only variable OM curves inputs with matching projects
+        INNER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        AND variable_om_curves_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   op_type,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return vom_curves
+
+
+def load_startup_chars(data_portal, scenario_directory, subproblem,
+                       stage, op_type, projects):
+    """
+
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param op_type:
+    :param projects:
+    :return:
+    """
+
+    startup_chars_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "startup_chars.tab"
+    )
+
+    if os.path.exists(startup_chars_file):
+        df = pd.read_csv(startup_chars_file, sep="\t")
+
+        # Note: the rank function requires at least one numeric input in the
+        # down_time_cutoff_hours column (can't be all NULL/None).
+        if len(df) > 0:
+            df["startup_type_id"] = df.groupby("project")[
+                "down_time_cutoff_hours"].rank()
+
+        startup_ramp_projects = set()
+        startup_ramp_projects_types = list()
+        down_time_cutoff_hours_dict = dict()
+        startup_plus_ramp_up_rate_dict = dict()
+        startup_cost_dict = dict()
+
+        for i, row in df.iterrows():
+            project = row["project"]
+            startup_type_id = row["startup_type_id"]
+            down_time_cutoff_hours = row["down_time_cutoff_hours"]
+            startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+            startup_cost = row["startup_cost_per_mw"]
+
+            if down_time_cutoff_hours != "." \
+                    and startup_plus_ramp_up_rate != "." \
+                    and project in projects:
+                startup_ramp_projects.add(project)
+                startup_ramp_projects_types.append((project, startup_type_id))
+                down_time_cutoff_hours_dict[(project, startup_type_id)] = \
+                    float(down_time_cutoff_hours)
+                startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
+                    float(startup_plus_ramp_up_rate)
+                startup_cost_dict[(project, startup_type_id)] = \
+                    float(startup_cost)
+
+        if startup_ramp_projects:
+            data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
+                {None: startup_ramp_projects}
+            data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
+                {None: startup_ramp_projects_types}
+            data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
+                down_time_cutoff_hours_dict
+            data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(
+                op_type)] = startup_plus_ramp_up_rate_dict
+            data_portal.data()["{}_startup_cost_by_st_per_mw".format(op_type)] = \
+                startup_cost_dict
 
 
 def get_startup_chars_inputs_from_database(
@@ -882,3 +1140,423 @@ def check_for_tmps_to_link(
         return tmps_to_link, tmp_linked_tmp_dict
     except FileNotFoundError:
         return [], {}
+
+
+def get_optype_inputs_from_db(subscenarios, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # TODO: consolidate this with what happens in projects.init so we only
+    #  hard-code the list of project opchars once.
+    #  Also remove min/max duration since not really an opchar?
+    cols = [
+        "project",
+        "fuel",
+        "variable_om_cost_per_mwh",
+        "operational_type",
+        "min_stable_level_fraction",
+        "unit_size_mw",
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate", "shutdown_plus_ramp_down_rate",
+        "ramp_up_when_on_rate", "ramp_down_when_on_rate",
+        "min_up_time_hours, min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours", "maximum_duration_hours",
+        "aux_consumption_frac_capacity", "aux_consumption_frac_power"
+    ]
+
+    sql = """SELECT {}
+        FROM inputs_project_portfolios
+        INNER JOIN
+        inputs_project_operational_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_operational_chars_scenario_id = {}
+        AND operational_type = '{}';
+        """.format(
+            ",".join(cols),
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            op_type
+        )
+
+    df = pd.read_sql(sql, conn)
+
+    return df
+
+
+def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # TODO: deal with fuel and variable O&M column, which are nor optional nor
+    #  required for any?
+
+    # Get the opchar inputs for this operational type
+    df = get_optype_inputs_from_db(subscenarios, conn, op_type)
+
+    # Get the required, optional, and other columns with their types
+    required_columns_types, optional_columns_types, other_columns_types = \
+        get_optype_param_requirements(op_type=op_type)
+    req_cols = required_columns_types.keys()
+    na_cols = other_columns_types.keys()
+
+    # Check that required inputs are present
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="High",
+        errors=validate_req_cols(df, req_cols, True, op_type)
+    )
+
+    # Check that other (not required or optional) inputs are not present
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="Low",
+        errors=validate_req_cols(df, na_cols, False, op_type)
+    )
+
+    # TODO: do data-type and numeric non-negativity checking here rather than
+    #  in project.init?
+
+    # Return the opchar df (sometimes used for further validations)
+    return df
+
+
+def validate_heat_rate_curves(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # Get the project input data
+    heat_rates = get_heat_rate_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+
+    # Convert input data into DataFrame
+    hr_df = cursor_to_df(heat_rates)
+
+    # Check data types heat_rates:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_heat_rate_curves"]
+    )
+    dtype_errors, error_columns = validate_dtypes(hr_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns in heat rates are non-negative
+    numeric_columns = [c for c in hr_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=validate_values(hr_df, valid_numeric_columns, min=0)
+    )
+
+    # TODO: make this work w new structure
+    # Check for consistency between fuel and heat rate curve inputs:
+    # Projects with fuel should have a heat rate scenario specified with
+    # associated inputs in the hr curves table, and vice versa for projects
+    # with no fuel.
+    # fuel_mask = pd.notna(prj_df["fuel"])
+    # prjs_w_fuel = prj_df["project"][fuel_mask]
+    # prjs_wo_fuel = prj_df["project"][~fuel_mask]
+    # prjs_w_hr = hr_df["project"].unique()  # prjs w hr inputs and matching hr id
+    # write_validation_to_database(
+    #     conn=conn,
+    #     scenario_id=subscenarios.SCENARIO_ID,
+    #     subproblem_id=subproblem,
+    #     stage_id=stage,
+    #     gridpath_module=__name__,
+    #     db_table="inputs_project_operational_chars, inputs_project_heat_rate_curves",
+    #     severity="High",
+    #     errors=validate_idxs(actual_idxs=prjs_w_hr,
+    #                          req_idxs=prjs_w_fuel,
+    #                          invalid_idxs=prjs_wo_fuel,
+    #                          msg="Projects with(out) fuel should (not) have "
+    #                              "heat rate scenario specified, and should "
+    #                              "(not) have inputs for that project-scenario "
+    #                              "in the heat rate curves inputs table.")
+    # )
+
+    # Check that specified heat rate curves inputs are valid:
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=validate_piecewise_curves(df=hr_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_heat_rate_mmbtu_per_mwh",
+                                         y_name="fuel burn")
+    )
+
+    # TODO: check that if there is a "0" for the period for a given
+    #  project there are zeroes everywhere for that project.
+
+
+def validate_vom_curves(subscenarios, subproblem, stage, conn, op_type):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param op_type:
+    :return:
+    """
+
+    # Get the project input data
+    vom_curves = get_vom_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, op_type)
+    vom_df = cursor_to_df(vom_curves)
+
+    # Check data types
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_variable_om_curves"]
+    )
+
+    dtype_errors, error_columns = validate_dtypes(vom_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns in variable OM are non-negative
+    numeric_columns = [c for c in vom_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_values(vom_df, valid_numeric_columns, min=0)
+    )
+
+    # Check that specified vom curves inputs are valid:
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_piecewise_curves(df=vom_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_variable_om_cost_per_mwh",
+                                         y_name="variable O&M cost")
+    )
+
+    # TODO: Check that specified vom scenarios actually have inputs in the vom
+    #  table --> would need to get list of projects w vom curve scenario
+
+
+def get_slopes_intercept_by_project_period_segment(
+        df, input_col, projects, periods):
+    """
+    Given a DataFrame with the average heat rates or variable O&M curves by
+    load point fraction for each project in each period, calculate the slope
+    and intercept for the fuel burn or variable O&M cost curves for the
+    segments defined by the load points (for each project and period). If the
+    period in the DataFrame is zero, set the same slope and intercept for each
+    of the modeling periods.
+    fractions.
+
+    :param df: DataFrame with columns [project, period, load_point_fraction,
+        input_col]
+    :param input_col: string with the name of the column in the DataFrame that
+        has the average heat rate or variable O&M rate.
+    :param projects: list of all the projects to be included
+    :param periods: set of all the modeling periods to  be included
+    :return: (slope_dict, intercept_dict), with slope_dict and
+        intercept_dict a dictionary of the fuel burn / variable O&M cost slope
+        and intercept by (project, period, segment).
+
+    """
+
+    slope_dict = {}
+    intercept_dict = {}
+
+    for project in projects:
+        df_slice = df[df["project"] == project]
+        slice_periods = set(df_slice["period"])
+
+        if slice_periods == set([0]):
+            p_iterable = [0]
+        elif periods.issubset(slice_periods):
+            p_iterable = periods
+        else:
+            raise ValueError(
+                """{} for project '{}' isn't specified for all 
+                modelled periods. Set period to 0 if inputs are the 
+                same for each period or make sure all modelled periods 
+                are included.""".format(input_col, project)
+            )
+
+        for period in p_iterable:
+            df_slice_p = df_slice[df_slice["period"] == period]
+            df_slice_p = df_slice_p.sort_values(by=["load_point_fraction"])
+            load_points = df_slice_p["load_point_fraction"].values
+            averages = df_slice_p[input_col].values
+
+            slopes, intercepts = calculate_slope_intercept(
+                project, load_points, averages
+            )
+            sgms = range(len(slopes))
+
+            # If period is 0, create same inputs for all periods
+            if period == 0:
+                slope_dict.update(
+                    {(project, p, sgms[i]): slope
+                     for i, slope in enumerate(slopes)
+                     for p in periods}
+                )
+                intercept_dict.update(
+                    {(project, p, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)
+                     for p in periods}
+                )
+            # If not, create inputs for just this period
+            else:
+                slope_dict.update(
+                    {(project, period, sgms[i]): slope
+                     for i, slope in enumerate(slopes)}
+                )
+                intercept_dict.update(
+                    {(project, period, sgms[i]): intercept
+                     for i, intercept in enumerate(intercepts)}
+                )
+
+    return slope_dict, intercept_dict
+
+
+def calculate_slope_intercept(project, load_points, heat_rates):
+    """
+    Calculates slope and intercept for a set of load points and corresponding
+    average heat rates or variable O&M rates.
+    Note that the intercept will be normalized to the
+    operational capacity (Pmax) and the timepoint duration.
+    :param project: the project name (for error messages)
+    :param load_points: NumPy array with the loading points in fraction of Pmax
+    :param heat_rates: NumPy array with the corresponding *average* heat rates
+    in MMBtu per MWh or variable O&M in cost/MWh
+    :return: slopes, intercepts: tuple with the array of slopes and intercepts
+    for each segment. If more than one loading point, the array will have
+    one less element than the amount of load points.
+
+    """
+
+    n_points = len(load_points)
+
+    # Data checks
+    assert len(load_points) == len(heat_rates)
+    if np.any(load_points <= 0) or np.any(heat_rates <= 0):
+        raise ValueError(
+            """
+            Load points and average heat rates should be positive
+            numbers. Check heat rate curve inputs for project '{}'.
+            """.format(project)
+        )
+    if n_points == 0:
+        raise ValueError(
+            """
+            Model requires at least one load point and one average
+            heat rate input for each fuel project. It seems like
+            there are no heat rate inputs for project '{}'.
+            """.format(project)
+        )
+
+    # if just one point, assume constant heat rate (no intercept)
+    if n_points == 1:
+        slopes = np.array([heat_rates[0]])
+        intercepts = np.array([0])
+    else:
+        fuel_burn = load_points * heat_rates
+        incr_loads = np.diff(load_points)
+        incr_fuel_burn = np.diff(fuel_burn)
+        slopes = incr_fuel_burn / incr_loads
+        intercepts = fuel_burn[:-1] - slopes * load_points[:-1]
+
+        # Data Checks
+        if np.any(incr_loads <= 0):
+            raise ValueError(
+                """
+                Load points in curve should be strictly
+                increasing. Check curve inputs for project '{}'.
+                """.format(project)
+            )
+        if np.any(incr_fuel_burn <= 0):
+            raise ValueError(
+                """
+                Total fuel burn or variable O&M cost should be strictly 
+                increasing between load points. Check heat rate curve inputs
+                for project '{}'.
+                """.format(project)
+            )
+        if np.any(np.diff(slopes) <= 0):
+            raise ValueError(
+                """
+                The fuel burn or variable O&M cost as a function of power 
+                output should be a convex function, i.e. the incremental 
+                heat rate or variable O&M rate should
+                be positive and strictly increasing. Check curve inputs for 
+                project '{}'.
+                """.format(project)
+            )
+
+    return slopes, intercepts

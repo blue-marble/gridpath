@@ -76,9 +76,23 @@
                   </ng-container>
                 </select>
                 <select class="custom-select" formControlName="horizon"
-                        *ngIf="formGroup.value['horizon']!=='default'">
+                        *ngIf="formGroup.value['horizon'] !== 'default'">
                   <ng-container
                     *ngFor="let opt of formOptions.horizonOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="startTimepoint"
+                        *ngIf="formGroup.value['startTimepoint']!=='default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.startTimepointOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="endTimepoint"
+                        *ngIf="formGroup.value['endTimepoint']!=='default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.endTimepointOptions">
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>

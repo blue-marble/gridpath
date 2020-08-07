@@ -14,8 +14,8 @@ import os.path
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
-    generic_import_results_into_database, generic_get_inputs_from_database
-
+    generic_import_results_into_database, generic_get_inputs_from_database, \
+    generic_validate_project_bas
 
 # Reserve-module variables
 MODULE_NAME = "spinning_reserves"
@@ -180,10 +180,16 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
+    generic_validate_project_bas(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="spinning_reserves",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
@@ -264,7 +270,7 @@ def import_results_into_database(
     :return: 
     """
     if not quiet:
-        print("project lf reserves up provision")
+        print("project spinning reserves provision")
 
     generic_import_results_into_database(
         scenario_id=scenario_id,

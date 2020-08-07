@@ -30,10 +30,12 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, value, \
     Reals, Expression, Constraint
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_missing_inputs, validate_idxs, get_projects
 
 
 def add_module_specific_components(m, d):
@@ -321,6 +323,13 @@ def capacity_cost_rule(mod, g, p):
     return mod.DRNew_Cost[g, p]
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    """
+    return mod.DRNew_Power_Capacity_MW[g, p]
+
+
 # Input-Output
 ###############################################################################
 
@@ -352,8 +361,7 @@ def load_module_specific_data(
                      df["minimum_duration_hours"]):
             if r[1] == "dr_new":
                 projects.append(r[0])
-                max_fraction[r[0]] \
-                    = float(r[2])
+                max_fraction[r[0]] = float(r[2])
             else:
                 pass
 
@@ -365,8 +373,8 @@ def load_module_specific_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory, subproblem, stage, "inputs",
-            "new_shiftable_load_supply_curve.tab")
-        ,
+            "new_shiftable_load_supply_curve.tab"
+        ),
         index=m.DR_NEW_PTS,
         select=("project", "point", "slope", "intercept"),
         param=(m.dr_new_supply_curve_slope,
@@ -482,7 +490,7 @@ def get_module_specific_inputs_from_database(
     c1 = conn.cursor()
     min_max_builds = c1.execute(
         """SELECT project, period, 
-        minimum_cumulative_new_build_mwh, maximum_cumulative_new_build_mwh
+        min_cumulative_new_build_mwh, max_cumulative_new_build_mwh
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
@@ -490,16 +498,17 @@ def get_module_specific_inputs_from_database(
         WHERE temporal_scenario_id = {}) as relevant_periods
         LEFT OUTER JOIN
         (SELECT project, period,
-        minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
-        maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh
+        min_cumulative_new_build_mw, min_cumulative_new_build_mwh,
+        max_cumulative_new_build_mw, max_cumulative_new_build_mwh
         FROM inputs_project_new_potential
         WHERE project_new_potential_scenario_id = {}) as potential
         USING (project, period) 
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_shiftable_load_supply_curve';""".format(
+        AND capacity_type = '{}';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "dr_new"
         )
     )
 
@@ -511,10 +520,11 @@ def get_module_specific_inputs_from_database(
         USING (project)
         WHERE project_portfolio_scenario_id = {}
         AND project_new_cost_scenario_id = {}
-        AND capacity_type = 'new_shiftable_load_supply_curve'
+        AND capacity_type = '{}'
         GROUP BY project;""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_COST_SCENARIO_ID
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            "dr_new"
         )
     )
 
@@ -686,8 +696,42 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
-    #     get_module_specific_inputs_from_database(
-    #         subscenarios, subproblem, stage, conn)
 
-    # validate inputs
+    min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
+        get_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, conn)
+    projects = get_projects(conn, subscenarios, "capacity_type", "dr_new")
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(min_max_builds)
+    df_sc = cursor_to_df(supply_curve)
+
+    dr_projects = df_sc["project"].unique()
+
+    # Check for missing project potential inputs
+    cols = ["min_cumulative_new_build_mwh", "max_cumulative_new_build_mwh"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_potential",
+        severity="High",
+        errors=validate_missing_inputs(df, cols)
+    )
+
+    # Check for missing supply curve inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_shiftable_load_supply_curve",
+        severity="High",
+        errors=validate_idxs(actual_idxs=dr_projects,
+                             req_idxs=projects,
+                             idx_label="project")
+    )
+

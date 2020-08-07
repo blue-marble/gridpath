@@ -3,29 +3,29 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                             New Capacity (MW)
-load_zone technology period                   
-Zone1     Gas        2020                 1.33
-          Wind       2020                33.71
-                     2030                25.62
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Gas        2020                  7.33
+          Wind       2020                 37.24
+                     2030                 18.09
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                       4.00           5.00
-                 Gas                       14.61          18.26
-                 Nuclear                   12.00          15.00
-                 Storage                   -0.61          -0.76
-                 Wind                      50.00          62.50
-          2030   Coal                       4.00           5.00
-                 Gas                       14.00          17.50
-                 Nuclear                   12.00          15.00
-                 Wind                      50.00          62.50
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                   61,320.00          17.50
+                 Nuclear               52,560.00          15.00
+                 Storage               -4,123.80          -1.18
+                 Wind                 240,643.80          68.68
+          2030   Coal                       0.00           0.00
+                 Gas                   87,600.00          25.00
+                 Nuclear               52,560.00          15.00
+                 Wind                 210,240.00          60.00
 
 ### RPS RESULTS ###
-                 rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed           dual  rps_marginal_cost_per_mwh
-rps_zone period                                                                                                                                 
-RPSZone1 2020             50.00                     50.00                      0.00               0.00  -7,138,721.50                -713,872.15
-         2030             50.00                     50.00                     35.87              41.77 -19,995,563.00              -1,999,556.30
+                 rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed  dual  rps_marginal_cost_per_mwh
+rps_zone period                                                                                                                        
+RPSZone1 2020             50.00                240,643.80                      0.00               0.00  0.00                       0.00
+         2030             50.00                210,240.00                141,328.00              40.20  0.00                       0.00

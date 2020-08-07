@@ -132,7 +132,7 @@ Temporal Inputs
 +-------------------------------+----------------------------------------------+
 |:code:`subscenario_` table     |:code:`subscenarios_temporal_timepoints`      |
 +-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |- :code:`inputs_temporal_timepoints`          |
+|:code:`input_` tables          |- :code:`inputs_temporal`                     |
 |                               |- :code:`inputs_temporal_horizons`            |
 |                               |- :code:`inputs_temporal_horizon_timepoints`  |
 |                               |- :code:`inputs_temporal_periods`             |
@@ -184,7 +184,7 @@ descriptions of the temporal scenarios to be available to the user. This
 table must be populated before data for the respective
 :code:`temporal_scenario_id` can be imported into the input tables.
 
-The :code:`inputs_temporal_timepoints`: for a given temporal scenario, the
+The :code:`inputs_temporal`: for a given temporal scenario, the
 timepoints along with their horizon and period as well as the “resolution”
 of each timepoint (is it an hour, a 4-hour chunk, 15-minute chunk, etc.)
 
@@ -209,7 +209,7 @@ used as the previous timepoint for the first timepoint of the horizon and
 'linear' if we ignore the previous timepoint for the first timepoint of the
 horizon).
 
-The :code:`inputs_temporal_timepoints` table contains information about the
+The :code:`inputs_temporal` table contains information about the
 timepoints within each :code:`temporal_scenario_id`, :code:`subproblem_id`, and
 :code:`stage_id`, including the period of the timepoint, its 'resolution' (the
 number of hours in the timepoint), its weight (the number of timepoints not
@@ -535,7 +535,7 @@ Project Availability
 +--------------------------------+----------------------------------------------+
 |:code:`subscenario_` table      |:code:`subscenarios_project_availability`     |
 +--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_availability_types`     |
+|:code:`input_` tables           |:code:`inputs_project_availability`           |
 +--------------------------------+----------------------------------------------+
 
 All projects in a GridPath scenario must be a assigned an *availability
@@ -544,14 +544,14 @@ timepoint in which the capacity exists. All implemented availability types are
 listed in the :code:`mod_availability_types` table.
 
 Each project's availability type are given in the
-:code:`inputs_project_availability_types`. The availability types currently
+:code:`inputs_project_availability`. The availability types currently
 implemented include :code:`exogenous` (availability is determined outside of
 a GridPath model via the data fed into it) and two endogenous types:
 :code:`binary` and :code:`continuous` that require certain inputs that
 determine how availability is constrained in the GridPath model. See the
 :ref:`project-availability-type-section-ref` section for more info. In
 addition to the project availability types, the
-:code:`inputs_project_availability_types` table contains the information for
+:code:`inputs_project_availability` table contains the information for
 how to find any additional data needed to determine project availability with
 the :code:`exogenous_availability_scenario_id` and
 :code:`endogenous_availability_scenario` columns for the endogenous and
@@ -788,13 +788,13 @@ Capacity
 Relevant tables:
 
 +--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_specified_capacity_scenario_id`  |
+|:code:`scenarios` table column  |:code:`transmission_specified_capacity_scenario_id` |
 +--------------------------------+----------------------------------------------------+
 |:code:`scenarios` table feature |:code:`of_transmission`                             |
 +--------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_specified_capacity` |
+|:code:`subscenario_` table      |:code:`subscenarios_transmission_specified_capacity`|
 +--------------------------------+----------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_specified_capacity`       |
+|:code:`input_` tables           |:code:`inputs_transmission_specified_capacity`      |
 +--------------------------------+----------------------------------------------------+
 
 

@@ -417,6 +417,22 @@ class SubScenarios(object):
         self.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID = \
             "NULL" if p_nbbsize_sid is None else p_nbbsize_sid
 
+        p_capgrp_sid = cursor.execute(
+            """SELECT project_capacity_group_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.PROJECT_CAPACITY_GROUP_SCENARIO_ID = \
+            "NULL" if p_capgrp_sid is None else p_capgrp_sid
+
+        p_capgrp_req_sid = cursor.execute(
+            """SELECT project_capacity_group_requirement_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.PROJECT_CAPACITY_GROUP_REQUIREMENT_SCENARIO_ID = \
+            "NULL" if p_capgrp_req_sid is None else p_capgrp_req_sid
+
         prm_en_only_sid = cursor.execute(
             """SELECT prm_energy_only_scenario_id
                FROM scenarios
@@ -706,7 +722,7 @@ class SubProblems(object):
         """
 
         # TODO: make sure there is data integrity between subproblems_stages
-        #   and inputs_temporal_horizons and inputs_temporal_timepoints
+        #   and inputs_temporal_horizons and inputs_temporal
         subproblems = cursor.execute(
             """SELECT subproblem_id
                FROM inputs_temporal_subproblems
@@ -752,14 +768,14 @@ class SolverOptions(object):
         else:
             distinct_solvers = cursor.execute(
                 """SELECT DISTINCT solver 
-                FROM options_solver_values 
+                FROM inputs_options_solver 
                 WHERE solver_options_id = {}""".format(self.SOLVER_OPTIONS_ID)
             ).fetchall()
             if len(distinct_solvers) > 1:
                 raise ValueError("""
                 ERROR: Solver options include more than one solver! Only a 
                 single solver must be specified for solver_options_id in the 
-                options_solver_values table. See solver_options_id {}. 
+                inputs_options_solver table. See solver_options_id {}. 
                 """.format(self.SOLVER_OPTIONS_ID))
             else:
                 self.SOLVER = distinct_solvers[0][0]
@@ -770,7 +786,7 @@ class SolverOptions(object):
                 row[0]: row[1]
                 for row in cursor.execute("""
                     SELECT solver_option_name, solver_option_value
-                    FROM options_solver_values
+                    FROM inputs_options_solver
                     WHERE solver_options_id = {};
                     """.format(self.SOLVER_OPTIONS_ID)
                 ).fetchall() if row[0] is not None and row[0] is not ""

@@ -2,16 +2,19 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make results dispatch plot for a specified zone/stage/horizon
+Make results dispatch plot for a specified zone/stage/set of timepoints
 """
 
-# TODO: adjust x-axis for timepoint duration? (assumes 1h now)
+# TODO: adjust x-axis for timepoint duration? (assumes 1h now) - could
+#  use timestamp from inputs_temporal instead and create x-axis automatically
+#  using built-in datestime libraries?
 # TODO: create a database table with technologies and colors for each tech
 #   note: currently technology more narrowly defined than tech color (latter
 #   includes curtailment etc.)
 # TODO: okay to default stage to 1 for cases with only one stage? Need to
 #   make sure this is aligned with SQL tables (default value for column)
 #   and data validation
+
 
 from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
@@ -38,8 +41,12 @@ def create_parser():
                                            "no --scenario_id is specified.")
     parser.add_argument("--load_zone", required=True, type=str,
                         help="The name of the load zone. Required.")
-    parser.add_argument("--horizon", required=True, type=int,
-                        help="The horizon ID. Required.")
+    parser.add_argument("--starting_tmp", default=None, type=int,
+                        help="The starting timepoint. Defaults to None ("
+                             "first timepoint)")
+    parser.add_argument("--ending_tmp", default=None, type=int,
+                        help="The ending timepoint. Defaults to None ("
+                             "last timepoint)")
     parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
@@ -57,14 +64,51 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
+def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None,
+                   stage_id=1):
     """
-    Get results for power by technology and create dictionary
+    Note: assumes timepoints are ordered!
+    :param conn:
+    :param scenario_id:
+    :param starting_tmp:
+    :param ending_tmp:
+    :param stage_id:
+    :return:
+    """
+
+    if starting_tmp is None:
+        start_query = ""
+    else:
+        start_query = "AND timepoint >= {}".format(starting_tmp)
+
+    if ending_tmp is None:
+        end_query = ""
+    else:
+        end_query = "AND timepoint <= {}".format(ending_tmp)
+
+    query = """SELECT timepoint
+        FROM inputs_temporal
+        INNER JOIN
+        (SELECT temporal_scenario_id FROM scenarios WHERE scenario_id = {})
+        USING (temporal_scenario_id)
+        WHERE stage_id = {}
+        {}
+        {}
+        ;""".format(scenario_id, stage_id, start_query, end_query)
+
+    tmps = [i[0] for i in conn.execute(query).fetchall()]
+
+    return tmps
+
+
+def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
+    """
+    Get results for power by technology for a given load_zone and set of
+    points.
     :param conn:
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param timepoints
     :return:
     """
 
@@ -73,19 +117,10 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {}
         AND load_zone = '{}'
-        AND timepoint IN (
-        SELECT DISTINCT timepoint
-        FROM results_project_dispatch
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND horizon = {}
-        AND stage_id = {})
-        AND stage_id = {};""".format(
-            scenario_id, load_zone, scenario_id, load_zone, horizon, stage,
-        stage
-        )
+        AND timepoint IN ({})
+        ;""".format(scenario_id, load_zone, ",".join(["?"] * len(timepoints)))
 
-    df = pd.read_sql(query, conn)
+    df = pd.read_sql(query, conn, params=timepoints)
     if not df.empty:
         df = df.pivot(index="timepoint", columns="technology")["power_mw"]
 
@@ -93,95 +128,69 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
 
 
 def get_variable_curtailment_results(
-        c, scenario_id, load_zone, horizon, stage):
+        c, scenario_id, load_zone, timepoints):
     """
-    Get variable generator curtailment by load_zone, horizon, and stage
+    Get variable generator curtailment for a given load_zone and set of
+    timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param timepoints:
     :return:
     """
     query = """SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_variable
             WHERE scenario_id = {}
             AND load_zone = '{}'
-            AND timepoint IN (
-            SELECT DISTINCT timepoint
-            FROM results_project_dispatch
-            WHERE scenario_id = {}
-            AND load_zone = '{}'
-            AND horizon = {}
-            AND stage_id = {})
-            AND stage_id = {};""".format(
-                scenario_id, load_zone, scenario_id, load_zone, horizon,
-                stage, stage
+            AND timepoint IN ({})
+            ;""".format(
+                scenario_id, load_zone, ",".join(["?"] * len(timepoints))
             )
 
-    curtailment = [i[0] for i in c.execute(query).fetchall()]
+    curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
     return curtailment
 
 
-def get_hydro_curtailment_results(c, scenario_id, load_zone, horizon, stage):
+def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
     """
-    Get conventional hydro curtailment by load_zone, horizon, and stage
-    :param c:
+    Get conventional hydro curtailment for a given load_zone and set of
+    timepoints.
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param timepoints:
     :return:
     """
     query = """SELECT scheduled_curtailment_mw
             FROM results_project_curtailment_hydro
             WHERE scenario_id = {}
             AND load_zone = '{}'
-            AND timepoint IN (
-            SELECT DISTINCT timepoint
-            FROM results_project_dispatch
-            WHERE scenario_id = {}
-            AND load_zone = '{}'
-            AND horizon = {}
-            AND stage_id = {})
-            AND stage_id = {};""".format(
-                scenario_id, load_zone, scenario_id, load_zone, horizon,
-                stage, stage
+            AND timepoint IN ({});""".format(
+                scenario_id, load_zone, ",".join(["?"] * len(timepoints))
             )
 
-    curtailment = [i[0] for i in c.execute(query).fetchall()]
+    curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
     return curtailment
 
 
-def get_imports_exports_results(c, scenario_id, load_zone, horizon, stage):
+def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
     """
-    Get imports/exports results for the load zone, horizon, and stage
+    Get imports/exports results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param timepoints:
     :return:
     """
-    net_imports = c.execute(
-        """SELECT net_imports_mw
+    query = """SELECT net_imports_mw
         FROM results_transmission_imports_exports
         WHERE scenario_id = {}
         AND load_zone = '{}'
-        AND timepoint IN (
-        SELECT DISTINCT timepoint
-        FROM results_project_dispatch
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND horizon = {}
-        AND stage_id = {})
-        AND stage_id = {};""".format(
-            scenario_id, load_zone, scenario_id, load_zone, horizon,
-            stage, stage
-        )
-    ).fetchall()
+        AND timepoint IN ({})
+        ;""".format(scenario_id, load_zone, ",".join(["?"] * len(timepoints)))
+
+    net_imports = c.execute(query, timepoints).fetchall()
 
     imports = [i[0] if i[0] > 0 else 0 for i in net_imports]
     exports = [-e[0] if e[0] < 0 else 0 for e in net_imports]
@@ -189,34 +198,25 @@ def get_imports_exports_results(c, scenario_id, load_zone, horizon, stage):
     return imports, exports
 
 
-def get_load(c, scenario_id, load_zone, horizon, stage):
+def get_load(c, scenario_id, load_zone, timepoints):
     """
 
     :param c:
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param timepoints
     :return:
     """
 
-    load_balance = c.execute(
-        """SELECT load_mw, unserved_energy_mw
+    query = """SELECT load_mw, unserved_energy_mw
         FROM results_system_load_balance
         WHERE scenario_id = {}
         AND load_zone = '{}'
-        AND timepoint IN (
-        SELECT DISTINCT timepoint
-        FROM results_project_dispatch
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND horizon = {}
-        AND stage_id = {})
-        AND stage_id = {};""".format(
-            scenario_id, load_zone, scenario_id, load_zone, horizon,
-            stage, stage
+        AND timepoint IN ({});""".format(
+            scenario_id, load_zone, ",".join(["?"] * len(timepoints))
         )
-    ).fetchall()
+
+    load_balance = c.execute(query, timepoints).fetchall()
 
     load = [i[0] for i in load_balance]
     unserved_energy = [i[1] for i in load_balance]
@@ -224,10 +224,11 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     return load, unserved_energy
 
 
-def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
+def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
+                      stage, **kwargs):
     """
     Get the dispatch data by timepoint and technology for a given
-    scenario/load_zone/horizon/stage.
+    scenario/load_zone/set of timepoints/stage.
 
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
@@ -235,12 +236,16 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
     :param conn:
     :param scenario_id:
     :param load_zone:
-    :param horizon:
-    :param stage:
+    :param starting_tmp:
+    :param ending_tmp:
     :return:
     """
 
     c = conn.cursor()
+
+    # Get the relevant timepoints
+    timepoints = get_timepoints(conn, scenario_id, starting_tmp, ending_tmp,
+                                stage)
 
     # Get dispatch by technology
     # TODO: Let tech order depend on specified order in database table.
@@ -249,8 +254,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         conn=conn,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
+        timepoints=timepoints
     )
 
     # Add x axis
@@ -270,8 +274,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
+        timepoints=timepoints
     )
     if curtailment_variable:
         df["Curtailment_Variable"] = curtailment_variable
@@ -281,8 +284,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
+        timepoints=timepoints
     )
     if curtailment_hydro:
         df["Curtailment_Hydro"] = curtailment_hydro
@@ -292,8 +294,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
+        timepoints=timepoints
     )
     if imports:
         df["Imports"] = imports
@@ -305,8 +306,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
+        timepoints=timepoints
     )
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
@@ -389,7 +389,6 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
         else:
             colors.append(unspecified_tech_colors[tech])
 
-    # TODO: include horizon in title? (would need to add function arg)
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
@@ -431,7 +430,9 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
         inactive_exports = (df[line_cols[1]] == 0).all()
     inactive_storage = (df[line_cols[2]] == 0).all()
 
-    if not inactive_exports:
+    if inactive_exports:
+        line_cols = [line_cols[0], line_cols[2]]
+    else:
         # Add export line to plot
         label = "Load + Exports"
         exports_renderer = plot.line(
@@ -527,18 +528,21 @@ def main(args=None):
     tech_plotting_order = get_tech_plotting_order(c)
     power_unit = get_unit(c, "power")
 
-    plot_title = "{}Dispatch Plot - {} - Stage {} - Horizon {}".format(
+    plot_title = "{}Dispatch Plot - {} - Stage {} - Timepoints {}-{}".format(
         "{} - ".format(scenario)
         if parsed_args.scenario_name_in_title else "",
-        parsed_args.load_zone, parsed_args.stage, parsed_args.horizon)
-    plot_name = "dispatchPlot-{}-{}".format(
-        parsed_args.load_zone, parsed_args.horizon)
+        parsed_args.load_zone, parsed_args.stage, parsed_args.starting_tmp,
+        parsed_args.ending_tmp)
+    plot_name = "dispatchPlot-{}-{}-{}-{}".format(
+        parsed_args.load_zone, parsed_args.stage, parsed_args.starting_tmp,
+        parsed_args.ending_tmp)
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
-        horizon=parsed_args.horizon,
+        starting_tmp=parsed_args.starting_tmp,
+        ending_tmp=parsed_args.ending_tmp,
         stage=parsed_args.stage
     )
 

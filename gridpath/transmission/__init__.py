@@ -13,7 +13,10 @@ from pyomo.environ import Set, Param
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
-from gridpath.auxiliary.auxiliary import write_validation_to_database
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, get_load_zones, validate_dtypes, \
+    validate_columns, validate_values, validate_missing_inputs
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -182,7 +185,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
         USING (transmission_line)
         
-        INNER JOIN
+        LEFT OUTER JOIN
             (SELECT transmission_line, operational_type, 
             tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
@@ -247,7 +250,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     c = conn.cursor()
-    validation_results = []
 
     # Get the transmission inputs
     transmission_lines = get_inputs_from_database(
@@ -255,89 +257,119 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert input data into pandas DataFrame
-    df = pd.DataFrame(
-        data=transmission_lines.fetchall(),
-        columns=[s[0] for s in transmission_lines.description]
+    df = cursor_to_df(transmission_lines)
+
+    # Check data types:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_transmission_portfolios",
+               "inputs_transmission_load_zones",
+               "inputs_transmission_operational_chars"]
+    )
+
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmisison_portfolios, "
+                 "inputs_transmission_load_zones, "
+                 "inputs_transmission_operational_chars",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns if
+                       expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_values(df, valid_numeric_columns, min=0)
     )
 
     # Ensure we're not combining incompatible capacity and operational types
+    cols = ["capacity_type", "operational_type"]
     invalid_combos = c.execute(
-        """SELECT capacity_type, operational_type 
-        FROM mod_tx_capacity_and_tx_operational_type_invalid_combos"""
+        """
+        SELECT {} FROM mod_tx_capacity_and_tx_operational_type_invalid_combos
+        """.format(",".join(cols))
     ).fetchall()
-    validation_errors = validate_op_cap_combos(df, invalid_combos)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "TRANSMISSION_OPERATIONAL_CHARS, TRANSMISSION_PORTFOLIOS",
-             "inputs_transmission_operational_chars, inputs_tranmission_portfolios",
-             "High",
-             "Invalid combination of capacity type and operational type",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
+        severity="High",
+        errors=validate_columns(df, cols, invalids=invalid_combos)
+    )
 
     # Check reactance > 0
-    validation_errors = validate_reactance(df)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "TRANSMISSION_OPERATIONAL_CHARS",
-             "inputs_transmission_operational_chars",
-             "High",
-             "Invalid reactance inputs",
-             error
-             )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_values(df, ["reactance_ohms"], min=0, strict_min=True)
+    )
+
+    # Check that all portfolio tx lines are present in the opchar inputs
+    msg = "All tx lines in the portfolio should have an operational type " \
+          "specified in the inputs_transmission_operational_chars table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_operational_chars",
+        severity="High",
+        errors=validate_missing_inputs(df,
+                                       ["operational_type"],
+                                       idx_col="transmission_line",
+                                       msg=msg)
+    )
+
+    # Check that all portfolio tx lines are present in the load zone inputs
+    msg = "All tx lines in the portfolio should have a load zone from/to " \
+          "specified in the inputs_transmission_load_zones table."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_transmission_load_zones",
+        severity="High",
+        errors=validate_missing_inputs(df,
+                                       ["load_zone_from", "load_zone_to"],
+                                       idx_col="transmission_line",
+                                       msg=msg)
+    )
+
+    # Check that all tx load zones are part of the active load zones
+    load_zones = get_load_zones(conn, subscenarios)
+    for col in ["load_zone_from", "load_zone_to"]:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_transmission_load_zones",
+            severity="High",
+            errors=validate_columns(df, col, valids=load_zones)
         )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
-
-
-def validate_op_cap_combos(df, invalid_combos):
-    """
-    Check that there's no mixing of incompatible capacity and operational types
-    :param df:
-    :param invalid_combos:
-    :return:
-    """
-    results = []
-    for combo in invalid_combos:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_lines = df['transmission_line'][bad_combos].values
-            print_bad_lines = ", ".join(bad_lines)
-            results.append(
-                "Line(s) '{}': '{}' and '{}'"
-                .format(print_bad_lines, combo[0], combo[1])
-            )
-
-    return results
-
-
-def validate_reactance(df):
-    """
-    Check reactance > 1 for tx_dcopf lines
-    :param df:
-    :return:
-    """
-    results = []
-
-    # df = df[df["operational_type"] == "tx_dcopf"]
-    invalids = (df["reactance_ohms"] <= 0)
-    if invalids.any():
-        bad_lines = df["transmission_line"][invalids].values
-        print_bad_lines = ", ".join(bad_lines)
-        results.append(
-            "Line(s) '{}': expected reactance_ohms > 0"
-            .format(print_bad_lines)
-        )
-
-    return results

@@ -70,6 +70,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     #   start with empty capacity table
     # TODO: what hurdle rates should we include? load_zone_to, load_zone_from
     #   or both?
+    # TODO: add new transmisison costs?
 
     # Note: fuel cost and variable O&M cost are actually cost *rates* in $/hr
     #  and should be multiplied by the timepoint duration to get the actual
@@ -87,9 +88,8 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         hurdle_cost/1000000 as Hurdle_Rates
 
         FROM
-
-        (SELECT scenario_id, period, sum(annualized_capacity_cost) 
-        AS capacity_cost
+        
+        (SELECT scenario_id, period, sum(capacity_cost) AS capacity_cost
         FROM  results_project_costs_capacity
         WHERE scenario_id = ?
         AND stage_id = ?
@@ -118,7 +118,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         
         (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
         spinup_or_lookahead
-        FROM inputs_temporal_timepoints)
+        FROM inputs_temporal)
         USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
         
         WHERE scenario_id = ?
@@ -148,7 +148,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         
         (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
         spinup_or_lookahead
-        FROM inputs_temporal_timepoints)
+        FROM inputs_temporal)
         USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
         
         WHERE scenario_id = ?

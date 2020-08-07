@@ -6,7 +6,6 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
-import pandas as pd
 import sys
 import unittest
 
@@ -181,54 +180,6 @@ class TestGenNewBin(unittest.TestCase):
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
                              actual_gen_vintage_op_in_period)
-
-    def test_input_validations(self):
-        cost_df_columns = ["project", "period", "lifetime_yrs",
-                           "annualized_real_cost_per_mw_yr"]
-        bld_size_df_columns = ["project", "gen_new_bin_build_size_mw"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"cost_df": pd.DataFrame(
-                    columns=cost_df_columns,
-                    data=[["gas_ct", 2018, 20, 100],
-                          ["gas_ct", 2022, 20, 120]]),
-                "bld_size_df": pd.DataFrame(
-                    columns=bld_size_df_columns,
-                    data=[["gas_ct", 1000]]),
-                "prj_periods": [("gas_ct", 2018), ("gas_ct", 2022)],
-                "project_error": [],
-                "cost_error": []
-                },
-            # Make sure missing bld size or cost is detected
-            2: {"cost_df": pd.DataFrame(
-                    columns=cost_df_columns,
-                    data=[["gas_ct", 2018, 20, 100]]),
-                "bld_size_df": pd.DataFrame(
-                    columns=bld_size_df_columns,
-                    data=[]),
-                "prj_periods": [("gas_ct", 2018), ("gas_ct", 2022)],
-                "project_error": ["Missing build size inputs for project 'gas_ct'"],
-                "cost_error": ["Missing cost inputs for project 'gas_ct', period '2022'"]
-                }
-        }
-
-        for test_case in test_cases.keys():
-            projects = [p[0] for p in test_cases[test_case]["prj_periods"]]
-            bld_size_projects = test_cases[test_case]["bld_size_df"]["project"]
-
-            expected_list = test_cases[test_case]["project_error"]
-            actual_list = MODULE_BEING_TESTED.validate_projects(
-                list1=projects,
-                list2=bld_size_projects
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["cost_error"]
-            actual_list = MODULE_BEING_TESTED.validate_costs(
-                cost_df=test_cases[test_case]["cost_df"],
-                prj_periods=test_cases[test_case]["prj_periods"]
-            )
-            self.assertListEqual(expected_list, actual_list)
 
 
 if __name__ == "__main__":

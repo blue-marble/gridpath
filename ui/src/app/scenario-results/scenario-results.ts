@@ -18,6 +18,8 @@ export class ResultsOptions {
   carbonCapZoneOptions: [];
   periodOptions: [];
   horizonOptions: [];
+  startTimepointOptions: [];
+  endTimepointOptions: [];
   subproblemOptions: [];
   stageOptions: [];
   projectOptions: [];
@@ -32,6 +34,8 @@ export class IncludedPlotFormBuilderAPI {
   'rpsZone': [] | string;
   'period': [] | string;
   'horizon': [] | string;
+  'startTimepoint': [] | string;
+  'endTimepoint': [] | string;
   'subproblem': [] | string;
   'stage': [] | string;
   'project': [] | string;

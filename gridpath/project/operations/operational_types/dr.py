@@ -13,11 +13,13 @@ Efficiency losses are not currently implemented.
 
 """
 
-from pyomo.environ import Var, Set, Constraint, NonNegativeReals
+from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
+from gridpath.project.operations.operational_types.common_functions import \
+    validate_opchars, load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -43,6 +45,19 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
 
     |
+
+    +-------------------------------------------------------------------------+
+    | Input Params                                                            |
+    +=========================================================================+
+    | | :code:`dr_variable_om_cost_per_mwh`                                   |
+    | | *Defined over*: :code:`DR`                                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
+
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -110,6 +125,15 @@ def add_module_specific_components(m, d):
         set((g, mod.horizon[tmp, mod.balancing_type_project[g]])
             for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.DR)
+    )
+
+    # Params
+    ###########################################################################
+
+    m.dr_variable_om_cost_per_mwh = Param(
+        m.DR,
+        within=NonNegativeReals,
+        default=0
     )
 
     # Variables
@@ -222,17 +246,29 @@ def power_provision_rule(mod, p, tmp):
     return mod.DR_Shift_Down_MW[p, tmp] - mod.DR_Shift_Up_MW[p, tmp]
 
 
-def fuel_burn_rule(mod, p, tmp, error_message):
+def fuel_burn_rule(mod, p, tmp):
+    """
+    DR projects should not have fuel use.
+    """
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
     """
     """
-    if p in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! Shiftable load projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(p) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
+
+
+def carbon_emissions_rule(mod, g, tmp):
+    """
+    """
+    return 0
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -240,7 +276,7 @@ def variable_om_cost_rule(mod, g, tmp):
     Variable O&M costs are applied only to the down-shift, i.e. when the
     project is "providing power" to the system.
     """
-    return mod.DR_Shift_Down_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
+    return mod.DR_Shift_Down_MW[g, tmp] * mod.dr_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -293,3 +329,42 @@ def power_delta_rule(mod, p, tmp):
                 - mod.DR_Shift_Down_MW[
                  p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
              ])
+
+
+# Input-Output
+###############################################################################
+
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
+    """
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+
+    # Load data from projects.tab and get the list of projects of this type
+    projects = load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="dr"
+    )
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "dr")

@@ -10,6 +10,10 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_idxs
+
 
 def add_model_components(m, d):
     """
@@ -67,7 +71,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     c = conn.cursor()
@@ -75,22 +79,20 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         """SELECT project, local_capacity_zone
         FROM
         -- Get projects from portfolio only
-        (SELECT project
+            (SELECT project
             FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
-        ) as prj_tbl
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
         LEFT OUTER JOIN
-        (SELECT project, local_capacity_zone
-        FROM inputs_project_local_capacity_zones
-        WHERE project_local_capacity_zone_scenario_id = {}) as lc_zone_tbl
+            (SELECT project, local_capacity_zone
+            FROM inputs_project_local_capacity_zones
+            WHERE project_local_capacity_zone_scenario_id = {}) as lc_zone_tbl
         USING (project)
         -- Filter out projects whose LC zone is not one included in our 
-        -- local_capacity_zone_sceenario_id
+        -- local_capacity_zone_scenario_id
         WHERE local_capacity_zone in (
-                SELECT local_capacity_zone
-                    FROM inputs_geography_local_capacity_zones
-                    WHERE local_capacity_zone_scenario_id = {}
-        );
+            SELECT local_capacity_zone
+            FROM inputs_geography_local_capacity_zones
+            WHERE local_capacity_zone_scenario_id = {});
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID,
@@ -111,10 +113,43 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    project_zones = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
 
-    # do stuff here to validate inputs
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(project_zones)
+    zones_w_project = df["local_capacity_zone"].unique()
+
+    # Get the required local capacity zones zones
+    # TODO: make this into a function similar to get_projects()?
+    #  could eventually centralize all these db query functions in one place
+    c = conn.cursor()
+    zones = c.execute(
+        """SELECT local_capacity_zone FROM inputs_geography_local_capacity_zones
+        WHERE local_capacity_zone_scenario_id = {}
+        """.format(subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID)
+    )
+    zones = [z[0] for z in zones]  # convert to list
+
+    # Check that each local capacity zone has at least one project assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_local_capacity_zones",
+        severity="High",
+        errors=validate_idxs(actual_idxs=zones_w_project,
+                             req_idxs=zones,
+                             idx_label="local_capacity_zone",
+                             msg="Each local capacity zone needs at least 1 project "
+                                 "assigned to it.")
+    )
+
+    # TODO: Currently mismatched zones are filtered out in SQL query so
+    #  checking for mismatching zones doesn't really make sense?
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

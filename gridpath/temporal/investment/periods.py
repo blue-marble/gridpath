@@ -5,24 +5,32 @@
 Each *timepoint* in a GridPath model also belongs to a *period* (e.g. a year),
 which describes when decisions to build or retire infrastructure are made. A
 *period* must be specified in both capacity-expansion and production-cost
-model. In a production-cost simulation context, we can use the period to
+models. In a production-cost simulation context, we can use the period to
 exogenously change the amount of available capacity, but the *period*
 temporal unit is mostly used in the capacity-expansion approach, as it
 defines when capacity decisions are made and new infrastructure becomes
 available (or is retired). That information in turn feeds into the horizon-
 and timepoint-level operational constraints, i.e. once a generator is build,
 the optimization is allowed to operate it in subsequent periods (usually for
-the duration of the generators's lifetime). The *period* duration is
-flexible: e.g. capacity decisions can be made every month, every year, every
-10 years, etc. A discount factor can also be applied to weight costs
-differently depending on when they are incurred.
+the duration of the generators's lifetime).
+The *period* duration is assumed to be 1 year (which can be broken up into
+multiple subproblems in production-cost mode). However, a period can
+represent multiple years, e.g. when modeling investment decisions in 5-year
+increments. A discount factor can also be applied to weight costs
+differently depending on when (in which period) they are incurred.
+In the future, we might support investment periods that are shorter than 1
+year, e.g. monthly investment decisions.
+
 """
 
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
+from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_values, validate_columns
 
 def add_model_components(m, d):
     """
@@ -32,7 +40,7 @@ def add_model_components(m, d):
     | Sets                                                                    |
     +=========================================================================+
     | | :code:`PERIODS`                                                       |
-    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    | | *Within*: :code:`PositiveIntegers`                                    |
     |                                                                         |
     | The list of all periods being modeled. Periods must be non-negative     |
     | integers and the set is ordered.                                        |
@@ -76,6 +84,13 @@ def add_model_components(m, d):
     | represent. Investment cost inputs in GridPath are annualized, so they   |
     | are multiplied by this parameter in the objective function.             |
     +-------------------------------------------------------------------------+
+    | | :code:`hours_in_full_period`                                          |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`[8760, 8766, 8784]`                                  |
+    |                                                                         |
+    | The number of hours in a period. This should be 1 year                  |
+    | (8760-8784 hours) even if the period represents more than 1 year!       |
+    +-------------------------------------------------------------------------+
     | | :code:`period`                                                        |
     | | *Defined over*: :code:`TMPS`                                          |
     | | *Within*: :code:`PERIODS`                                             |
@@ -100,6 +115,22 @@ def add_model_components(m, d):
     | Determines the previous period for each period other than the first     |
     | period, which doesn't have a previous period.                           |
     +-------------------------------------------------------------------------+
+    | | :code:`hours_in_subproblem_period`                                    |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The number of hours in each period for the current subproblem, taking   |
+    | into account the timepoints in each period-subproblem, the number of    |
+    | hours in each timepoint, and their associated timepoint weights, and    |
+    | ignoring any spinup or lookahead timepoints.                            |
+    | In capacity expansion mode with one subproblem, this should simply be   |
+    | equal to :code:`hours_in_full_period`. In production simulation mode    |
+    | with multiple subproblems within 1 period, this number is compared to   |
+    | :code: hours_in_full_period` and used to adjust the reported            |
+    | "per-period" costs. For instance, when running daily subproblems the    |
+    | fixed cost in each day should be only 1/365 of the annualized fixed     |
+    | cost.                                                                   |
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -107,7 +138,7 @@ def add_model_components(m, d):
     ###########################################################################
 
     m.PERIODS = Set(
-        within=NonNegativeIntegers,
+        within=PositiveIntegers,
         ordered=True
     )
 
@@ -122,6 +153,11 @@ def add_model_components(m, d):
     m.number_years_represented = Param(
         m.PERIODS,
         within=NonNegativeReals
+    )
+
+    m.hours_in_full_period = Param(
+        m.PERIODS,
+        within=[8760, 8766, 8784]
     )
 
     # TODO: think numbers_years_represent through and figure out appropriate
@@ -162,6 +198,15 @@ def add_model_components(m, d):
         list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
     )
 
+    m.hours_in_subproblem_period = Param(
+        m.PERIODS,
+        within=NonNegativeReals,
+        initialize=lambda mod, p:
+        sum(mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+            for tmp in mod.TMPS_IN_PRD[p]
+            if not mod.spinup_or_lookahead[tmp])
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -172,9 +217,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "periods.tab"),
-        select=("period", "discount_factor", "number_years_represented"),
+        select=("period", "discount_factor", "number_years_represented",
+                "hours_in_full_period"),
         index=m.PERIODS,
-        param=(m.discount_factor, m.number_years_represented)
+        param=(m.discount_factor, m.number_years_represented,
+               m.hours_in_full_period)
     )
 
     data_portal.load(
@@ -201,7 +248,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     periods = c.execute(
-        """SELECT period, discount_factor, number_years_represented
+        """SELECT period, discount_factor, number_years_represented, 
+           hours_in_full_period
            FROM inputs_temporal_periods
            WHERE temporal_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID
@@ -233,7 +281,8 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
         # Write header
         writer.writerow(
-            ["period", "discount_factor", "number_years_represented"])
+            ["period", "discount_factor", "number_years_represented",
+             "hours_in_full_period"])
 
         for row in periods:
             writer.writerow(row)
@@ -251,8 +300,66 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # periods = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+
+    # TODO: check that hours in full period is within x and y
+    #  ("within" check or "validate" check in param definition returns obscure
+    #  error message that isn't helpful).
+
+    periods = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    df = cursor_to_df(periods)
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_temporal_periods"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="Mid",
+        errors=validate_values(df, valid_numeric_columns, "period", min=0)
+    )
+
+    # Check values of hours_in_full_period
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_periods",
+        severity="Mid",
+        errors=validate_columns(
+            df=df,
+            columns="hours_in_full_period",
+            valids=[8760, 8766, 8784]
+        )
+    )
+
+
 

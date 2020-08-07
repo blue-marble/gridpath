@@ -29,7 +29,7 @@ import os.path
 import pandas as pd
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
-    PositiveIntegers, NonPositiveIntegers
+    PositiveIntegers, NonPositiveIntegers, Any
 
 
 def add_model_components(m, d):
@@ -97,6 +97,16 @@ def add_model_components(m, d):
     | The month that each timepoint belongs to. This is used to determine     |
     | fuel costs during that timepoint, among others.                         |
     +-------------------------------------------------------------------------+
+    | | :code:`spinup_or_lookahead`                                           |
+    | | *Defined over*: :code:`TMPS`                                          |
+    | | *Within*: :code:`Any`                                                 |
+    |                                                                         |
+    | Designates whether the timepoint is a part of a spinup or lookahead     |
+    | window. If it is a spinup or lookahead timepoint the costs incurred     |
+    | during these timepoints will be ignored when reporting the final costs. |
+    | Note that this is only used for reporting purposes; all timepoints      |
+    | (spinup/lookahead or not) are considered in the objective function.     |
+    +-------------------------------------------------------------------------+
 
     .. TODO:: varying timepoint durations haven't been extensiveliy tested
 
@@ -145,6 +155,12 @@ def add_model_components(m, d):
         within=m.MONTHS
     )
 
+    m.spinup_or_lookahead = Param(
+        m.TMPS,
+        within=Any,
+        default=False
+    )
+
     # Optional Params
     ###########################################################################
 
@@ -179,12 +195,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.tmp_weight,
                m.hrs_in_tmp,
                m.prev_stage_tmp_map,
-               m.month),
+               m.month,
+               m.spinup_or_lookahead),
         select=("timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
-                "month")
+                "month",
+                "spinup_or_lookahead")
     )
 
     # Load in any timepoints to link to the next subproblem and linked
@@ -237,8 +255,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
-           FROM inputs_temporal_timepoints
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month,
+           spinup_or_lookahead
+           FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
            AND stage_id = {};""".format(
@@ -274,7 +293,8 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         # Write header
         writer.writerow(["timepoint", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map", "month"])
+                         "previous_stage_timepoint_map", "month",
+                         "spinup_or_lookahead"])
 
         # Write timepoints
         for row in timepoints:
@@ -298,5 +318,5 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #     subscenarios, subproblem, stage, conn)
     # validate timepoint inputs
 
-    # TODO: what checks do we need on the sum of all timepoint weights (x
-    #  number of hours in timepoint?)
+    # TODO: could gather the timepoints from the previous stage (if any) and
+    #  check that the previous stage timepoint map inputs are valid

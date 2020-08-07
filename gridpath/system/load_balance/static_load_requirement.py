@@ -72,7 +72,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM inputs_system_load
         INNER JOIN
         (SELECT timepoint
-        FROM inputs_temporal_timepoints
+        FROM inputs_temporal
         WHERE temporal_scenario_id = {}
         AND subproblem_id ={}
         AND stage_id = {}) as relevant_timepoints

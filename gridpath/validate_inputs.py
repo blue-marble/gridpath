@@ -11,13 +11,15 @@ of the input data and scenario setup.
 from __future__ import print_function
 
 from builtins import str
+import pandas as pd
 import sqlite3
 import sys
 from argparse import ArgumentParser
 
 from db.common_functions import connect_to_database, spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
-    write_validation_to_database
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_cols_equal
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
@@ -66,11 +68,61 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
             #    ... (see Evernote validation list)
             #    create separate function for each validation that you call here
 
-    # check that SU and SD * timepoint duration is larger than Pmin
-    # this requires multiple tables so cross validation?
+    # Validation across subproblems and stages:
+    validate_hours_in_subproblem_period(subscenarios, conn)
 
-    # check that specified load zones are actual load zones that are available
-    # --> isn't that easy to do w foreign key?
+
+def validate_hours_in_subproblem_period(subscenarios, conn):
+    """
+
+    :param subscenarios:
+    :param conn:
+    :return:
+    """
+
+    sql = """
+        SELECT stage_id, period, n_hours, hours_in_full_period
+        FROM
+            (SELECT temporal_scenario_id, stage_id, period,
+            sum(number_of_hours_in_timepoint * timepoint_weight) as n_hours
+            FROM inputs_temporal
+            WHERE spinup_or_lookahead IS NULL
+            AND temporal_scenario_id = {}
+            GROUP BY temporal_scenario_id, stage_id, period
+            ) AS tmp_table
+    
+        INNER JOIN
+        
+        (SELECT temporal_scenario_id, period, hours_in_full_period
+        FROM inputs_temporal_periods) AS period_tbl
+    
+        USING (temporal_scenario_id, period)
+    
+    """.format(subscenarios.TEMPORAL_SCENARIO_ID)
+
+    df = pd.read_sql(sql, con=conn)
+
+    msg = """Total number of hours in timepoints adjusted for timepoint weight
+          and duration and excluding spinup and lookahead timepoints should 
+          match hours_in_full_period."""
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="inputs_temporal",
+        severity="Mid",
+        errors=validate_cols_equal(
+            df=df,
+            col1="n_hours",
+            col2="hours_in_full_period",
+            idx_col=["stage_id", "period"],
+            msg=msg
+        )
+    )
+
+    # TODO: check that subproblems don't straddle periods
 
 
 def validate_subscenario_ids(subscenarios, optional_features, conn):
@@ -113,7 +165,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
     subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
     feature_list = optional_features.determine_feature_list()
 
-    validation_results = []
+    errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
         if feature not in ["core", "optional", "data_dependent"]:
             for sc_id in subscenario_ids:
@@ -121,42 +173,33 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                 # are not specified, raise a validation error
                 if feature in feature_list and \
                         getattr(subscenarios, sc_id) == "NULL":
-                    validation_results.append(
-                        (subscenarios.SCENARIO_ID,
-                         "N/A",
-                         "N/A",
-                         "N/A",
-                         sc_id,
-                         "scenarios",
-                         "High",
-                         "Missing subscenario ID",
-                         "Requested feature '{}' requires an input for '{}'"
-                         .format(feature, sc_id)
-                         )
+                    errors["High"].append(
+                        "Requested feature '{}' requires an input for '{}'"
+                        .format(feature, sc_id)
                     )
+
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
                 elif feature not in feature_list and \
                         getattr(subscenarios, sc_id) != "NULL":
-                    validation_results.append(
-                        (subscenarios.SCENARIO_ID,
-                         "N/A",
-                         "N/A",
-                         "N/A",
-                         sc_id,
-                         "scenarios",
-                         "Low",
-                         "Unnecessary subscenario ID",
-                         "Detected inputs for '{}' while related feature '{}' "
+                    errors["Low"].append(
+                        "Detected inputs for '{}' while related feature '{}' "
                          "is not requested".format(sc_id, feature)
-                         )
                     )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    for severity, error_list in errors.items():
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id="N/A",
+            stage_id="N/A",
+            gridpath_module="N/A",
+            db_table="scenarios",
+            severity=severity,
+            errors=error_list
+        )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(sum(errors.values(), []))
 
 
 def validate_required_subscenario_ids(subscenarios, conn):
@@ -169,29 +212,27 @@ def validate_required_subscenario_ids(subscenarios, conn):
 
     required_subscenario_ids = subscenarios.subscenario_ids_by_feature["core"]
 
-    validation_results = []
+    errors = []
     for sc_id in required_subscenario_ids:
         if getattr(subscenarios, sc_id) is None:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 "N/A",
-                 "N/A",
-                 "N/A",
-                 sc_id,
-                 "scenarios",
-                 "High",
-                 "Missing required subscenario ID",
-                 "'{}' is a required input in the 'scenarios' table".format(
-                     sc_id
-                 )
-                 )
+            errors.append(
+                "'{}' is a required input in the 'scenarios' table"
+                .format(sc_id)
             )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="scenarios",
+        severity="High",
+        errors=errors
+    )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(errors)
 
 
 def validate_data_dependent_subscenario_ids(subscenarios, conn):
@@ -238,29 +279,27 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
                            "Demand Response (DR)"))
 
     # Check whether required subscenario_ids are present
-    validation_results = []
+    errors = []
     for sc_id, build_type in sc_id_type:
         if getattr(subscenarios, sc_id) is None:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 "N/A",
-                 "N/A",
-                 "N/A",
-                 sc_id,
-                 "scenarios",
-                 "High",
-                 "Missing data dependent subscenario ID",
+            errors.append(
                  "'{}' is a required input in the 'scenarios' table if there "
-                 "are '{}' resources in the portfolio"
-                 .format(sc_id, build_type)
-                 )
+                 "are '{}' resources in the portfolio".format(sc_id, build_type)
             )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id="N/A",
+        stage_id="N/A",
+        gridpath_module="N/A",
+        db_table="scenarios",
+        severity="High",
+        errors=errors
+    )
 
     # Return True if all required subscenario_ids are valid (list is empty)
-    return not bool(validation_results)
+    return not bool(errors)
 
 
 def reset_input_validation(conn, scenario_id):

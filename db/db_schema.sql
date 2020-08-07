@@ -154,12 +154,22 @@ scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 gridpath_module VARCHAR(64),
-related_subscenario VARCHAR(64),
-related_database_table VARCHAR(64),
-issue_severity VARCHAR(32),
-issue_type VARCHAR(32),
-issue_description VARCHAR(64),
-timestamp TEXT,  -- ISO8601 String
+db_table VARCHAR(64),
+severity VARCHAR(32),
+description VARCHAR(64),
+time_stamp TEXT,  -- ISO8601 String
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
+);
+
+-- Scenario results: objective function, solver status
+DROP TABLE IF EXISTS results_scenario;
+CREATE TABLE results_scenario (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+objective_function_value FLOAT,
+solver_termination_condition VARCHAR(128),
+PRIMARY KEY (scenario_id, subproblem_id, stage_id),
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
@@ -212,6 +222,7 @@ temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
+hours_in_full_period FLOAT,
 PRIMARY KEY (temporal_scenario_id, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
@@ -232,8 +243,8 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 -- the previous timepoints for the first horizon of the next subproblem
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
-DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints (
+DROP TABLE IF EXISTS inputs_temporal;
+CREATE TABLE inputs_temporal (
 temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -250,10 +261,6 @@ timestamp DATETIME,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
--- Make sure subproblem/stage exist in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id) REFERENCES
-inputs_temporal_subproblems_stages (temporal_scenario_id, subproblem_id,
-stage_id),
 -- Make sure period exists in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, period)
     REFERENCES inputs_temporal_periods (temporal_scenario_id, period),
@@ -277,23 +284,42 @@ subproblem_id INTEGER,
 balancing_type_horizon VARCHAR(32),
 horizon VARCHAR(32),
 boundary VARCHAR(16),
-period INTEGER,  -- auxiliary, we use the timepoint period
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
              balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure boundary type is correct
 FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
-(horizon_boundary_type),
--- Make sure subproblem_id exists in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
-inputs_temporal_subproblems (temporal_scenario_id, subproblem_id),
--- Make sure period exists in this temporal_scenario_id
-FOREIGN KEY (temporal_scenario_id, period) REFERENCES
-inputs_temporal_periods (temporal_scenario_id, period)
+(horizon_boundary_type)
 );
 
 
+-- This table is auxiliary for 1) readability and 2) populating the
+-- inputs_temporal_horizon_timepoints table if we're using the CSV-to-DB
+-- functionality
+DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints_start_end;
+CREATE TABLE inputs_temporal_horizon_timepoints_start_end (
+temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(32),
+horizon VARCHAR(32),
+tmp_start INTEGER,
+tmp_end INTEGER,
+PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
+             balancing_type_horizon, horizon),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure the start and end timepoints exist in the main timepoints table
+FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_start)
+    REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id, stage_id,
+                                timepoint),
+FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, tmp_end)
+    REFERENCES inputs_temporal (temporal_scenario_id, subproblem_id, stage_id,
+                                timepoint)
+);
+
+-- This table is what GridPath uses to get inputs
 DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints;
 CREATE TABLE inputs_temporal_horizon_timepoints (
 temporal_scenario_id INTEGER,
@@ -308,8 +334,8 @@ FOREIGN KEY (temporal_scenario_id)
     REFERENCES subscenarios_temporal (temporal_scenario_id),
 -- Make sure these are the same timepoints as in the main timepoints table
 FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint)
-    REFERENCES inputs_temporal_timepoints (temporal_scenario_id,
-                                           subproblem_id, stage_id, timepoint),
+    REFERENCES inputs_temporal (temporal_scenario_id,
+                                subproblem_id, stage_id, timepoint),
 -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type_horizon,
              horizon)
@@ -553,12 +579,6 @@ subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
 -- -- PROJECT -- --
 -------------------
 
--- All projects: a list of all projects we may model
-DROP TABLE IF EXISTS inputs_project_all;
-CREATE TABLE inputs_project_all (
-project VARCHAR(64) PRIMARY KEY
-);
-
 -- -- Capacity -- --
 
 -- Project portfolios
@@ -644,13 +664,13 @@ DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
-period INTEGER,
+vintage INTEGER,
 lifetime_yrs INTEGER,
 annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
-PRIMARY KEY (project_new_cost_scenario_id, project, period),
+PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
 );
@@ -700,14 +720,61 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-minimum_cumulative_new_build_mw FLOAT,
-maximum_cumulative_new_build_mw FLOAT,
-minimum_cumulative_new_build_mwh FLOAT,
-maximum_cumulative_new_build_mwh FLOAT,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+min_cumulative_new_build_mwh FLOAT,
+max_cumulative_new_build_mwh FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
 );
+
+
+-- Group capacity requirements
+-- Requirements
+DROP TABLE IF EXISTS subscenarios_project_capacity_group_requirements;
+CREATE TABLE subscenarios_project_capacity_group_requirements (
+project_capacity_group_requirement_scenario_id INTEGER PRIMARY KEY
+    AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_capacity_group_requirements;
+CREATE TABLE inputs_project_capacity_group_requirements (
+project_capacity_group_requirement_scenario_id INTEGER,
+capacity_group VARCHAR(64),
+period INTEGER,
+capacity_group_new_capacity_min FLOAT,
+capacity_group_new_capacity_max FLOAT,
+capacity_group_total_capacity_min FLOAT,
+capacity_group_total_capacity_max FLOAT,
+PRIMARY KEY (project_capacity_group_requirement_scenario_id,
+            capacity_group, period),
+FOREIGN KEY (project_capacity_group_requirement_scenario_id) REFERENCES
+subscenarios_project_capacity_group_requirements
+    (project_capacity_group_requirement_scenario_id)
+);
+
+
+-- Group project mapping
+DROP TABLE IF EXISTS subscenarios_project_capacity_groups;
+CREATE TABLE subscenarios_project_capacity_groups (
+project_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_capacity_groups;
+CREATE TABLE inputs_project_capacity_groups (
+project_capacity_group_scenario_id INTEGER,
+capacity_group VARCHAR(64),
+project VARCHAR(64),
+PRIMARY KEY (project_capacity_group_scenario_id, capacity_group, project),
+FOREIGN KEY (project_capacity_group_scenario_id) REFERENCES
+subscenarios_project_capacity_groups (project_capacity_group_scenario_id)
+);
+
 
 -- -- Operations -- --
 
@@ -732,12 +799,12 @@ project VARCHAR(64),
 technology VARCHAR(32),
 operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
-variable_cost_per_mwh FLOAT,
+variable_om_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
 startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
-min_stable_level FLOAT,
+min_stable_level_fraction FLOAT,
 unit_size_mw FLOAT,
 startup_cost_per_mw FLOAT,
 shutdown_cost_per_mw FLOAT,
@@ -772,8 +839,6 @@ spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
-FOREIGN KEY (last_commitment_stage) REFERENCES
-inputs_temporal_subproblems_stages (stage_id),
 -- Ensure operational characteristics for variable, hydro and heat rates exist
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
@@ -930,8 +995,8 @@ description VARCHAR(128)
 -- Define availability type and IDs for type characteristics
 -- TODO: implement check that there are exogenous IDs only for exogenous
 --  types and endogenous IDs only for endogenous types
-DROP TABLE IF EXISTS inputs_project_availability_types;
-CREATE TABLE inputs_project_availability_types (
+DROP TABLE IF EXISTS inputs_project_availability;
+CREATE TABLE inputs_project_availability (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
 availability_type VARCHAR(32),
@@ -1206,6 +1271,7 @@ project VARCHAR(64),
 prm_type VARCHAR(32),
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
+cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
 deliverability_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
@@ -1216,14 +1282,14 @@ subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
 
 -- ELCC surface
 -- Depends on how PRM zones are defined
-DROP TABLE IF EXISTS subscenarios_system_elcc_surface;
-CREATE TABLE subscenarios_system_elcc_surface (
+DROP TABLE IF EXISTS subscenarios_system_prm_zone_elcc_surface;
+CREATE TABLE subscenarios_system_prm_zone_elcc_surface (
 elcc_surface_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
--- ELCC surface intercept by PRM zone
+-- ELCC surface intercept by PRM zone, period, and facet
 DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface;
 CREATE TABLE inputs_system_prm_zone_elcc_surface (
 elcc_surface_scenario_id INTEGER,
@@ -1233,9 +1299,23 @@ facet INTEGER,
 elcc_surface_intercept FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period, facet),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface (elcc_surface_scenario_id)
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
 );
 
+-- Peak and annual load for ELCC surface by PRM zone and period
+DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface_prm_load;
+CREATE TABLE inputs_system_prm_zone_elcc_surface_prm_load (
+elcc_surface_scenario_id INTEGER,
+prm_zone VARCHAR(32),
+period INTEGER,
+prm_peak_load_mw FLOAT,
+prm_annual_load_mwh FLOAT,
+PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period),
+FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
+);
+
+-- ELCC coefficients by project, period, and facet
 DROP TABLE IF EXISTS inputs_project_elcc_surface;
 CREATE TABLE inputs_project_elcc_surface (
 elcc_surface_scenario_id INTEGER,
@@ -1244,6 +1324,15 @@ period INTEGER,
 facet INTEGER,
 elcc_surface_coefficient FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, project, period, facet)
+);
+
+-- Project cap factors for the ELCC surface
+DROP TABLE IF EXISTS inputs_project_elcc_surface_cap_factors;
+CREATE TABLE inputs_project_elcc_surface_cap_factors (
+elcc_surface_scenario_id INTEGER,
+project VARCHAR(64),
+elcc_surface_cap_factor FLOAT,
+PRIMARY KEY (elcc_surface_scenario_id, project)
 );
 
 -- Energy-only parameters
@@ -1498,7 +1587,7 @@ description VARCHAR(128)
 DROP TABLE IF EXISTS inputs_transmission_hurdle_rates;
 CREATE TABLE inputs_transmission_hurdle_rates (
 transmission_hurdle_rate_scenario_id INTEGER,
-transmission_line INTEGER,
+transmission_line VARCHAR(64),
 period INTEGER,
 hurdle_rate_positive_direction_per_mwh FLOAT,
 hurdle_rate_negative_direction_per_mwh FLOAT,
@@ -1928,10 +2017,9 @@ prm_requirement_scenario_id INTEGER,
 prm_zone VARCHAR(32),
 period INTEGER,
 prm_requirement_mw FLOAT,
-prm_zone_scenario_id INTEGER,
-PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period),
-FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
-inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
+prm_peak_load_mw FLOAT,  -- for ELCC surface
+prm_annual_load_mwh FLOAT,  -- for ELCC surface
+PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period)
 );
 
 -- Local capacity requirements
@@ -1951,12 +2039,8 @@ local_capacity_requirement_scenario_id INTEGER,
 local_capacity_zone VARCHAR(32),
 period INTEGER,
 local_capacity_requirement_mw FLOAT,
-local_capacity_zone_scenario_id INTEGER,
 PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
-period),
-FOREIGN KEY (local_capacity_zone_scenario_id, local_capacity_zone) REFERENCES
-inputs_geography_local_capacity_zones (local_capacity_zone_scenario_id,
-local_capacity_zone)
+period)
 );
 
 -- Case tuning
@@ -2055,6 +2139,8 @@ fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
 project_new_binary_build_size_scenario_id INTEGER,
+project_capacity_group_requirement_scenario_id INTEGER,
+project_capacity_group_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_specified_capacity_scenario_id INTEGER,
@@ -2167,6 +2253,12 @@ FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
     subscenarios_project_new_binary_build_size
     (project_new_binary_build_size_scenario_id),
+FOREIGN KEY (project_capacity_group_scenario_id) REFERENCES
+    subscenarios_project_capacity_groups
+    (project_capacity_group_scenario_id),
+FOREIGN KEY (project_capacity_group_requirement_scenario_id) REFERENCES
+    subscenarios_project_capacity_group_requirements
+    (project_capacity_group_requirement_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
     subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
 FOREIGN KEY (transmission_load_zone_scenario_id)
@@ -2214,14 +2306,14 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface (elcc_surface_scenario_id),
+    subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
-    REFERENCES options_solver_descriptions (solver_options_id)
+    REFERENCES subscenarios_options_solver (solver_options_id)
 );
 
 --------------------------
@@ -2267,6 +2359,23 @@ retired_mw FLOAT,
 retired_binary INTEGER,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
+
+DROP TABLE IF EXISTS results_project_group_capacity;
+CREATE TABLE results_project_group_capacity (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+capacity_group VARCHAR(64),
+period INTEGER,
+group_new_capacity FLOAT,
+group_total_capacity FLOAT,
+capacity_group_new_capacity_min FLOAT,
+capacity_group_new_capacity_max FLOAT,
+capacity_group_total_capacity_min FLOAT,
+capacity_group_total_capacity_max FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, capacity_group, period)
+);
+
 
 DROP TABLE IF EXISTS results_project_availability_endogenous;
 CREATE TABLE results_project_availability_endogenous (
@@ -2603,11 +2712,13 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+hours_in_full_period FLOAT,
+hours_in_subproblem_period FLOAT,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
-annualized_capacity_cost FLOAT,
+capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -2736,9 +2847,11 @@ tx_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+hours_in_full_period FLOAT,
+hours_in_subproblem_period FLOAT,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
-annualized_capacity_cost FLOAT,
+capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
@@ -3044,22 +3157,22 @@ PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 --- OPTIONS ---
 ---------------
 
-DROP TABLE IF EXISTS options_solver_descriptions;
-CREATE TABLE options_solver_descriptions (
+DROP TABLE IF EXISTS subscenarios_options_solver;
+CREATE TABLE subscenarios_options_solver (
     solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(32),
     description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS options_solver_values;
-CREATE TABLE options_solver_values (
+DROP TABLE IF EXISTS inputs_options_solver;
+CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
     solver VARCHAR(32),
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
     PRIMARY KEY (solver_options_id, solver, solver_option_name),
     FOREIGN KEY (solver_options_id)
-        REFERENCES options_solver_descriptions (solver_options_id)
+        REFERENCES subscenarios_options_solver (solver_options_id)
 );
 
 -- Views
@@ -3163,11 +3276,11 @@ subscenarios_system_frequency_response.name AS frequency_response_profile,
 subscenarios_system_rps_targets.name AS rps_target,
 subscenarios_system_carbon_cap_targets.name AS carbon_cap,
 subscenarios_system_prm_requirement.name AS prm_requirement,
-subscenarios_system_elcc_surface.name AS elcc_surface,
+subscenarios_system_prm_zone_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
-options_solver_descriptions.name as solver
+subscenarios_options_solver.name as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3271,12 +3384,145 @@ LEFT JOIN subscenarios_system_carbon_cap_targets
     USING (carbon_cap_target_scenario_id)
 LEFT JOIN subscenarios_system_prm_requirement
     USING (prm_requirement_scenario_id)
-LEFT JOIN subscenarios_system_elcc_surface
+LEFT JOIN subscenarios_system_prm_zone_elcc_surface
     USING (elcc_surface_scenario_id)
 LEFT JOIN subscenarios_system_local_capacity_requirement
     USING (local_capacity_requirement_scenario_id)
 LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
-LEFT JOIN options_solver_descriptions USING (solver_options_id)
+LEFT JOIN subscenarios_options_solver USING (solver_options_id)
+;
+
+
+-- This view combines the project portfolios and operational characteristics
+-- table since we often need both, e.g. get the projects in the active
+-- portfolio of operational type X.
+-- TODO: refactor existing queries that could also use this view
+DROP VIEW IF EXISTS project_portfolio_opchars;
+CREATE VIEW project_portfolio_opchars AS
+SELECT * FROM inputs_project_portfolios
+LEFT OUTER JOIN
+inputs_project_operational_chars
+USING (project)
+;
+
+
+-- This view shows the possible operational periods for new projects, based on
+-- the available vintages and their lifetime. E.g. a project available in
+-- vintage 2020 with a lifetime of 30 years will have the 2020 through 2049
+-- as possible operational periods.
+-- We use recursive CTE to calculate this, see e.g.
+-- https://stackoverflow.com/questions/45104717/sql-to-generate-a-number
+-- between-range-specified-by-columns
+-- Note: the renaming of the columns ("AS period" is not strictly necessary
+-- since the UNION ALL statement doesn't read the column names
+DROP VIEW IF EXISTS project_new_operational_periods;
+CREATE VIEW project_new_operational_periods AS
+WITH main_data (project, project_new_cost_scenario_id, period, highrange)
+    AS (
+    SELECT project, project_new_cost_scenario_id, vintage AS period,
+    vintage + lifetime_yrs AS highrange
+    FROM inputs_project_new_cost
+    UNION ALL
+    SELECT project, project_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
+SELECT distinct project_new_cost_scenario_id, project, period
+FROM main_data
+;
+
+
+-- This view shows the possible operational periods for new and specified
+-- projects, based on the available vintage and lifetime and/or the specified
+-- capacity periods, as well as the actual modeled periods.
+DROP VIEW IF EXISTS project_operational_periods;
+CREATE VIEW project_operational_periods AS
+SELECT project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, project, period
+FROM
+    -- Use left join + union + left join because no outer join in sqlite
+    (SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
+    FROM inputs_project_specified_capacity
+    LEFT JOIN project_new_operational_periods USING(project, period)
+    UNION ALL
+    SELECT project_specified_capacity_scenario_id,
+    project_new_cost_scenario_id, project, period
+    FROM project_new_operational_periods
+    LEFT JOIN inputs_project_specified_capacity USING(project, period)
+    where project_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_project_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+;
+
+
+-- This view shows the periods and the respective horizons within each period
+-- for each balancing_type, based on the timepoint-to-horizon mapping and the
+-- timepoint-to-period mapping.
+DROP VIEW IF EXISTS periods_horizons;
+CREATE VIEW periods_horizons AS
+SELECT DISTINCT
+temporal_scenario_id, subproblem_id, stage_id, balancing_type_horizon,
+period, horizon
+FROM inputs_temporal
+INNER JOIN
+inputs_temporal_horizon_timepoints
+USING (temporal_scenario_id, subproblem_id, stage_id, timepoint)
+;
+
+
+-- This view shows the possible operational horizons for each project based
+-- based on its operational periods (see project_operational_periods), its
+-- balancing type, and the periods-horizons mapping for that balancing type
+-- (see periods_horizons). It also includes the operational type and the
+-- hydro_operational_chars_scenario_id, since these are useful to slice out
+-- operational types of interest (namely hydro) and join the hydro inputs,
+-- which are indexed by project-horizon.
+DROP VIEW IF EXISTS project_operational_horizons;
+CREATE VIEW project_operational_horizons AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, hydro_operational_chars_scenario_id,
+subproblem_id, stage_id, project, horizon
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the periods horizons for the matching balancing type
+LEFT OUTER JOIN
+periods_horizons
+ON (project_portfolio_opchars.balancing_type_project
+= periods_horizons.balancing_type_horizon)
+-- Only select horizons from the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
+;
+
+-- This view shows the possible operational timepoints for each project based
+-- based on its operational periods (see project_operational_periods), and
+-- the timepoints in the temporal subscenario (see inputs_temporal). It also
+-- includes the operational type and the
+-- variable_generator_profile_scenario_id, since these are useful to slice out
+-- operational types of interest (namely variale generators) and join the
+-- variable generator inputs which are indexed by project-timepoint.
+DROP VIEW IF EXISTS project_operational_timepoints;
+CREATE VIEW project_operational_timepoints AS
+SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
+project_specified_capacity_scenario_id, project_new_cost_scenario_id,
+temporal_scenario_id, operational_type, variable_generator_profile_scenario_id,
+subproblem_id, stage_id, project, timepoint
+-- Get all projects in the portfolio (with their opchars)
+FROM project_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+project_operational_periods
+USING (temporal_scenario_id, project, period)
 ;
 
 
@@ -3326,6 +3572,8 @@ rps_zone_form_control INTEGER,
 carbon_cap_zone_form_control INTEGER,
 period_form_control INTEGER,
 horizon_form_control INTEGER,
+start_timepoint_form_control INTEGER,
+end_timepoint_form_control INTEGER,
 subproblem_form_control INTEGER,
 stage_form_control INTEGER,
 project_form_control INTEGER,

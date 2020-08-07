@@ -11,6 +11,9 @@ from builtins import str
 import csv
 import os.path
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_values
 from gridpath.project.operations.reserves.op_type_dependent.\
     reserve_limits_by_op_type import \
     generic_add_model_components, generic_load_model_data
@@ -85,6 +88,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    # TODO: generalize this for all reserves and inner join to portfolio
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
@@ -110,10 +114,21 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # prj_ramp_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    prj_ramp_rates = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+    df = cursor_to_df(prj_ramp_rates)
 
-    # do stuff here to validate inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="Mid",
+        errors=validate_values(df, ["lf_reserves_down_ramp_rate"], min=0, max=1)
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

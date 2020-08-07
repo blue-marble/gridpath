@@ -9,408 +9,6 @@ import warnings
 from db.common_functions import spin_on_database_lock
 
 
-def create_scenario_all_args(
-        io, c,
-        scenario_name,
-        of_transmission,
-        of_transmission_hurdle_rates,
-        of_simultaneous_flow_limits,
-        of_lf_reserves_up,
-        of_lf_reserves_down,
-        of_regulation_up,
-        of_regulation_down,
-        of_frequency_response,
-        of_spinning_reserves,
-        of_rps,
-        of_carbon_cap,
-        of_track_carbon_imports,
-        of_prm,
-        of_local_capacity,
-        of_elcc_surface,
-        of_tuning,
-        temporal_scenario_id,
-        load_zone_scenario_id,
-        lf_reserves_up_ba_scenario_id,
-        lf_reserves_down_ba_scenario_id,
-        regulation_up_ba_scenario_id,
-        regulation_down_ba_scenario_id,
-        frequency_response_ba_scenario_id,
-        spinning_reserves_ba_scenario_id,
-        rps_zone_scenario_id,
-        carbon_cap_zone_scenario_id,
-        prm_zone_scenario_id,
-        local_capacity_zone_scenario_id,
-        project_portfolio_scenario_id,
-        project_operational_chars_scenario_id,
-        project_availability_scenario_id,
-        fuel_scenario_id,
-        project_load_zone_scenario_id,
-        project_lf_reserves_up_ba_scenario_id,
-        project_lf_reserves_down_ba_scenario_id,
-        project_regulation_up_ba_scenario_id,
-        project_regulation_down_ba_scenario_id,
-        project_frequency_response_ba_scenario_id,
-        project_spinning_reserves_ba_scenario_id,
-        project_rps_zone_scenario_id,
-        project_carbon_cap_zone_scenario_id,
-        project_prm_zone_scenario_id,
-        project_elcc_chars_scenario_id,
-        prm_energy_only_scenario_id,
-        project_local_capacity_zone_scenario_id,
-        project_local_capacity_chars_scenario_id,
-        project_specified_capacity_scenario_id,
-        project_specified_fixed_cost_scenario_id,
-        fuel_price_scenario_id,
-        project_new_cost_scenario_id,
-        project_new_potential_scenario_id,
-        project_new_binary_build_size_scenario_id,
-        transmission_portfolio_scenario_id,
-        transmission_load_zone_scenario_id,
-        transmission_specified_capacity_scenario_id,
-        transmission_new_cost_scenario_id,
-        transmission_operational_chars_scenario_id,
-        transmission_hurdle_rate_scenario_id,
-        transmission_carbon_cap_zone_scenario_id,
-        transmission_simultaneous_flow_limit_scenario_id,
-        transmission_simultaneous_flow_limit_line_group_scenario_id,
-        load_scenario_id,
-        lf_reserves_up_scenario_id,
-        lf_reserves_down_scenario_id,
-        regulation_up_scenario_id,
-        regulation_down_scenario_id,
-        frequency_response_scenario_id,
-        spinning_reserves_scenario_id,
-        rps_target_scenario_id,
-        carbon_cap_target_scenario_id,
-        prm_requirement_scenario_id,
-        local_capacity_requirement_scenario_id,
-        elcc_surface_scenario_id,
-        tuning_scenario_id,
-        solver_options_id
-):
-    """
-    Insert a scenario by explicitly specifying the value for each column (
-    the columns are arguments to this function). The scenario_id column is
-    auto increment, so is not inserted directly.
-    :param io:
-    :param c:
-    :param scenario_name:
-    :param of_transmission:
-    :param of_transmission_hurdle_rates:
-    :param of_simultaneous_flow_limits:
-    :param of_lf_reserves_up:
-    :param of_lf_reserves_down:
-    :param of_regulation_up:
-    :param of_regulation_down:
-    :param of_frequency_response:
-    :param of_spinning_reserves:
-    :param of_rps:
-    :param of_carbon_cap:
-    :param of_track_carbon_imports:
-    :param of_prm:
-    :param of_local_capacity:
-    :param of_elcc_surface:
-    :param of_tuning:
-    :param temporal_scenario_id:
-    :param load_zone_scenario_id:
-    :param lf_reserves_up_ba_scenario_id:
-    :param lf_reserves_down_ba_scenario_id:
-    :param regulation_up_ba_scenario_id:
-    :param regulation_down_ba_scenario_id:
-    :param frequency_response_ba_scenario_id:
-    :param spinning_reserves_ba_scenario_id:
-    :param rps_zone_scenario_id:
-    :param carbon_cap_zone_scenario_id:
-    :param prm_zone_scenario_id:
-    :param local_capacity_zone_scenario_id:
-    :param project_portfolio_scenario_id:
-    :param project_operational_chars_scenario_id:
-    :param project_availability_scenario_id:
-    :param fuel_scenario_id:
-    :param project_load_zone_scenario_id:
-    :param project_lf_reserves_up_ba_scenario_id:
-    :param project_lf_reserves_down_ba_scenario_id:
-    :param project_regulation_up_ba_scenario_id:
-    :param project_regulation_down_ba_scenario_id:
-    :param project_frequency_response_ba_scenario_id:
-    :param project_spinning_reserves_ba_scenario_id:
-    :param project_rps_zone_scenario_id:
-    :param project_carbon_cap_zone_scenario_id:
-    :param project_prm_zone_scenario_id:
-    :param project_elcc_chars_scenario_id:
-    :param prm_energy_only_scenario_id:
-    :param project_local_capacity_zone_scenario_id:
-    :param project_local_capacity_chars_scenario_id
-    :param project_specified_capacity_scenario_id:
-    :param project_specified_fixed_cost_scenario_id:
-    :param fuel_price_scenario_id:
-    :param project_new_cost_scenario_id:
-    :param project_new_potential_scenario_id:
-    :param project_new_binary_build_size_scenario_id:
-    :param transmission_portfolio_scenario_id:
-    :param transmission_load_zone_scenario_id:
-    :param transmission_specified_capacity_scenario_id:
-    :param transmission_new_cost_scenario_id:
-    :param transmission_operational_chars_scenario_id:
-    :param transmission_hurdle_rate_scenario_id:
-    :param transmission_carbon_cap_zone_scenario_id:
-    :param transmission_simultaneous_flow_limit_scenario_id:
-    :param transmission_simultaneous_flow_limit_line_group_scenario_id:
-    :param load_scenario_id:
-    :param lf_reserves_up_scenario_id:
-    :param lf_reserves_down_scenario_id:
-    :param regulation_up_scenario_id:
-    :param regulation_down_scenario_id:
-    :param frequency_response_scenario_id:
-    :param spinning_reserves_scenario_id:
-    :param rps_target_scenario_id:
-    :param carbon_cap_target_scenario_id:
-    :param prm_requirement_scenario_id:
-    :param elcc_surface_scenario_id:
-    :param local_capacity_requirement_scenario_id:
-    :param tuning_scenario_id:
-    :param solver_options_id:
-    :return:
-    """
-    sc_data = (
-        scenario_name,
-        of_transmission,
-        of_transmission_hurdle_rates,
-        of_simultaneous_flow_limits,
-        of_lf_reserves_up,
-        of_lf_reserves_down,
-        of_regulation_up,
-        of_regulation_down,
-        of_frequency_response,
-        of_spinning_reserves,
-        of_rps,
-        of_carbon_cap,
-        of_track_carbon_imports,
-        of_prm,
-        of_local_capacity,
-        of_elcc_surface,
-        of_tuning,
-        temporal_scenario_id,
-        load_zone_scenario_id,
-        lf_reserves_up_ba_scenario_id,
-        lf_reserves_down_ba_scenario_id,
-        regulation_up_ba_scenario_id,
-        regulation_down_ba_scenario_id,
-        frequency_response_ba_scenario_id,
-        spinning_reserves_ba_scenario_id,
-        rps_zone_scenario_id,
-        carbon_cap_zone_scenario_id,
-        prm_zone_scenario_id,
-        local_capacity_zone_scenario_id,
-        project_portfolio_scenario_id,
-        project_operational_chars_scenario_id,
-        project_availability_scenario_id,
-        fuel_scenario_id,
-        project_load_zone_scenario_id,
-        project_lf_reserves_up_ba_scenario_id,
-        project_lf_reserves_down_ba_scenario_id,
-        project_regulation_up_ba_scenario_id,
-        project_regulation_down_ba_scenario_id,
-        project_frequency_response_ba_scenario_id,
-        project_spinning_reserves_ba_scenario_id,
-        project_rps_zone_scenario_id,
-        project_carbon_cap_zone_scenario_id,
-        project_prm_zone_scenario_id,
-        project_elcc_chars_scenario_id,
-        prm_energy_only_scenario_id,
-        project_local_capacity_zone_scenario_id,
-        project_local_capacity_chars_scenario_id,
-        project_specified_capacity_scenario_id,
-        project_specified_fixed_cost_scenario_id,
-        fuel_price_scenario_id,
-        project_new_cost_scenario_id,
-        project_new_potential_scenario_id,
-        project_new_binary_build_size_scenario_id,
-        transmission_portfolio_scenario_id,
-        transmission_load_zone_scenario_id,
-        transmission_specified_capacity_scenario_id,
-        transmission_new_cost_scenario_id,
-        transmission_operational_chars_scenario_id,
-        transmission_hurdle_rate_scenario_id,
-        transmission_carbon_cap_zone_scenario_id,
-        transmission_simultaneous_flow_limit_scenario_id,
-        transmission_simultaneous_flow_limit_line_group_scenario_id,
-        load_scenario_id,
-        lf_reserves_up_scenario_id,
-        lf_reserves_down_scenario_id,
-        regulation_up_scenario_id,
-        regulation_down_scenario_id,
-        frequency_response_scenario_id,
-        spinning_reserves_scenario_id,
-        rps_target_scenario_id,
-        carbon_cap_target_scenario_id,
-        prm_requirement_scenario_id,
-        elcc_surface_scenario_id,
-        local_capacity_requirement_scenario_id,
-        tuning_scenario_id,
-        solver_options_id)
-    sc_sql = """
-        INSERT OR IGNORE INTO scenarios (
-        scenario_name,
-        of_transmission,
-        of_transmission_hurdle_rates,
-        of_simultaneous_flow_limits,
-        of_lf_reserves_up,
-        of_lf_reserves_down,
-        of_regulation_up,
-        of_regulation_down,
-        of_frequency_response,
-        of_spinning_reserves,
-        of_rps,
-        of_carbon_cap,
-        of_track_carbon_imports,
-        of_prm,
-        of_local_capacity,
-        of_elcc_surface,
-        of_tuning,
-        temporal_scenario_id,
-        load_zone_scenario_id,
-        lf_reserves_up_ba_scenario_id,
-        lf_reserves_down_ba_scenario_id,
-        regulation_up_ba_scenario_id,
-        regulation_down_ba_scenario_id,
-        frequency_response_ba_scenario_id,
-        spinning_reserves_ba_scenario_id,
-        rps_zone_scenario_id,
-        carbon_cap_zone_scenario_id,
-        prm_zone_scenario_id,
-        local_capacity_zone_scenario_id,
-        project_portfolio_scenario_id,
-        project_operational_chars_scenario_id,
-        project_availability_scenario_id,
-        fuel_scenario_id,
-        project_load_zone_scenario_id,
-        project_lf_reserves_up_ba_scenario_id,
-        project_lf_reserves_down_ba_scenario_id,
-        project_regulation_up_ba_scenario_id,
-        project_regulation_down_ba_scenario_id,
-        project_frequency_response_ba_scenario_id,
-        project_spinning_reserves_ba_scenario_id,
-        project_rps_zone_scenario_id,
-        project_carbon_cap_zone_scenario_id,
-        project_prm_zone_scenario_id,
-        project_elcc_chars_scenario_id,
-        prm_energy_only_scenario_id,
-        project_local_capacity_zone_scenario_id,
-        project_local_capacity_chars_scenario_id,
-        project_specified_capacity_scenario_id,
-        project_specified_fixed_cost_scenario_id,
-        fuel_price_scenario_id,
-        project_new_cost_scenario_id,
-        project_new_potential_scenario_id,
-        project_new_binary_build_size_scenario_id,
-        transmission_portfolio_scenario_id,
-        transmission_load_zone_scenario_id,
-        transmission_specified_capacity_scenario_id,
-        transmission_new_cost_scenario_id,
-        transmission_operational_chars_scenario_id,
-        transmission_hurdle_rate_scenario_id,
-        transmission_carbon_cap_zone_scenario_id,
-        transmission_simultaneous_flow_limit_scenario_id,
-        transmission_simultaneous_flow_limit_line_group_scenario_id,
-        load_scenario_id,
-        lf_reserves_up_scenario_id,
-        lf_reserves_down_scenario_id,
-        regulation_up_scenario_id,
-        regulation_down_scenario_id,
-        frequency_response_scenario_id,
-        spinning_reserves_scenario_id,
-        rps_target_scenario_id,
-        carbon_cap_target_scenario_id,
-        prm_requirement_scenario_id,
-        elcc_surface_scenario_id,
-        local_capacity_requirement_scenario_id,
-        tuning_scenario_id,
-        solver_options_id
-        ) VALUES (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-        );
-        """
-
-    spin_on_database_lock(conn=io, cursor=c, sql=sc_sql, data=sc_data,
-                          many=False)
-
-
 def create_scenario(io, c, column_values_dict):
     """
     Flexible way to insert a scenario that does not require specifying
@@ -529,7 +127,7 @@ def delete_scenario(conn, scenario_id):
     tables, and the scenarios table.
     """
     # Delete results and statuses
-    delete_scenario_results(conn=conn, scenario_id=scenario_id)
+    delete_scenario_results_and_status(conn=conn, scenario_id=scenario_id)
 
     # Delete from scenarios table
     c = conn.cursor()
@@ -539,7 +137,7 @@ def delete_scenario(conn, scenario_id):
                           many=False)
 
 
-def delete_scenario_results(conn, scenario_id):
+def delete_scenario_results_and_status(conn, scenario_id):
     """
     :param conn:
     :param scenario_id:
@@ -578,3 +176,30 @@ def delete_scenario_results(conn, scenario_id):
     """
     spin_on_database_lock(conn=conn, cursor=c, sql=status_sql,
                           data=(scenario_id,), many=False)
+
+
+def delete_scenario_results(conn, scenario_id):
+    """
+    :param conn:
+    :param scenario_id:
+    :return:
+
+    Delete scenario from all results tables.
+    """
+    c = conn.cursor()
+    all_tables = c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table';"
+    ).fetchall()
+
+    results_tables = [
+        tbl[0] for tbl in all_tables if tbl[0].startswith("results")
+    ]
+
+    # Delete from all results tables
+    for tbl in results_tables:
+        sql = """
+            DELETE FROM {} WHERE scenario_id = ?;
+            """.format(tbl)
+        spin_on_database_lock(conn=conn, cursor=c, sql=sql,
+                              data=(scenario_id,), many=False)
+

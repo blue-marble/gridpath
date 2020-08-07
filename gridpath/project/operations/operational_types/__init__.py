@@ -124,7 +124,7 @@ def get_required_opchar_modules(scenario_id, c):
             FROM 
             (SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            LEFT OUTER JOIN 
+            INNER JOIN 
             (SELECT project, operational_type
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {}) as op_type_tbl

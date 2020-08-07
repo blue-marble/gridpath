@@ -14,8 +14,10 @@ from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
     PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, setup_results_import
+    find_list_item_position, setup_results_import, cursor_to_df
 from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params
@@ -412,8 +414,6 @@ def generic_get_inputs_from_database(
     )
 
     # Get headroom/footroom derate
-    # TODO: add validation to catch projects that have a derate but don't
-    #  have a reserve BA specified
     c2 = conn.cursor()
     project_derates = c2.execute("""
         SELECT project, {}_derate
@@ -440,6 +440,88 @@ def generic_get_inputs_from_database(
 
     return project_bas, project_derates
 
+
+def generic_validate_project_bas(
+        subscenarios, subproblem, stage, conn,
+        reserve_type, project_ba_subscenario_id, ba_subscenario_id
+):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :param reserve_type:
+    :param project_ba_subscenario_id:
+    :param ba_subscenario_id:
+    :return:
+    """
+    # TODO: is this actually needed?
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    project_bas, prj_derates = generic_get_inputs_from_database(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type=reserve_type,
+        project_ba_subscenario_id=project_ba_subscenario_id,
+        ba_subscenario_id=ba_subscenario_id
+    )
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(project_bas)
+    df_derate = cursor_to_df(prj_derates).dropna()
+    bas_w_project = df["{}_ba".format(reserve_type)].unique()
+    projects_w_ba = df["project"].unique()
+    projects_w_derate = df_derate["project"].unique()
+
+    # Get the required reserve bas
+    c = conn.cursor()
+    bas = c.execute(
+        """SELECT {}_ba FROM inputs_geography_{}_bas
+        WHERE {}_ba_scenario_id = {}
+        """.format(
+            reserve_type,
+            reserve_type,
+            reserve_type,
+            subscenarios.REGULATION_UP_BA_SCENARIO_ID
+        )
+    )
+    bas = [b[0] for b in bas]  # convert to list
+
+    # Check that each reserve BA has at least one project assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_{}_bas".format(reserve_type),
+        severity="High",
+        errors=validate_idxs(actual_idxs=bas_w_project,
+                             req_idxs=bas,
+                             idx_label="{}_ba".format(reserve_type),
+                             msg="Each reserve BA needs at least 1 "
+                                 "project assigned to it.")
+    )
+
+    # Check that all projects w derates have a BA specified
+    msg = "Project has a reserve derate specified but no relevant BA."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars",
+        severity="Low",
+        errors=validate_idxs(actual_idxs=projects_w_ba,
+                             req_idxs=projects_w_derate,
+                             idx_label="project",
+                             msg=msg)
+    )
 
 
 def generic_import_results_into_database(

@@ -188,6 +188,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     scenario_id = subscenarios.SCENARIO_ID
     required_opchar_modules = get_required_availability_type_modules(
         scenario_id, c)
+
     imported_operational_modules = load_availability_type_modules(
         required_opchar_modules)
 
@@ -254,9 +255,9 @@ def get_required_availability_type_modules(scenario_id, c):
             FROM 
             (SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            LEFT OUTER JOIN 
+            INNER JOIN 
             (SELECT project, availability_type
-            FROM inputs_project_availability_types
+            FROM inputs_project_availability
             WHERE project_availability_scenario_id = {}) as av_type_tbl
             USING (project)""".format(
                 project_portfolio_scenario_id,

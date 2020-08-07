@@ -1,4 +1,4 @@
-frequency_response_ba,stage_id,timepoint,frequency_response_mw,100
+frequency_response_ba,stage_id,timepoint,frequency_response_mw,frequency_response_partial_mw
 BA_frequency_response_1,1,20200101,200,100
 BA_frequency_response_1,1,20200102,200,100
 BA_frequency_response_1,1,20200103,200,100

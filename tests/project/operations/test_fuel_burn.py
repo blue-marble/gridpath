@@ -7,6 +7,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -83,6 +84,31 @@ class TestFuelBurn(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
+        # param fuel
+
+        # Load test data
+        projects_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
+            sep="\t",
+            usecols=['project', 'fuel']
+        )
+
+        # Check derived param: fuel
+        # Note: projects with no fuel will have None as fuel but will be
+        #  written out as "."
+        projects_df = projects_df.where(projects_df != ".", None)
+        expected_fuel = OrderedDict(
+            sorted(
+                projects_df.set_index('project').to_dict()['fuel'].items()
+            )
+        )
+        actual_fuel = OrderedDict(
+            sorted(
+                {prj: instance.fuel[prj] for prj in instance.PROJECTS}.items()
+            )
+        )
+        self.assertDictEqual(expected_fuel, actual_fuel)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,11 @@ import os.path
 
 from pyomo.environ import Set, Param, PositiveIntegers
 
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_values, \
+    validate_single_input, validate_missing_inputs
+
 
 def add_model_components(m, d):
     """
@@ -380,7 +385,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     )
 
     c2 = conn.cursor()
-    timepoint_horizons = c2.execute(
+    horizon_timepoints = c2.execute(
         """SELECT horizon, balancing_type_horizon, timepoint
         FROM inputs_temporal_horizon_timepoints
         WHERE temporal_scenario_id = {}
@@ -393,7 +398,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return horizons, timepoint_horizons
+    return horizons, horizon_timepoints
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
@@ -408,7 +413,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    horizons, timepoint_horizons = get_inputs_from_database(
+    horizons, horizon_timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
@@ -423,15 +428,15 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
             hwriter.writerow(row)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizon_timepoints.tab"), "w",
-              newline="") as timepoint_horizons_tab_file:
-        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t",
+              newline="") as horizon_timepoints_tab_file:
+        htwriter = csv.writer(horizon_timepoints_tab_file, delimiter="\t",
                               lineterminator="\n")
 
         # Write header
-        thwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
+        htwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
 
-        for row in timepoint_horizons:
-            thwriter.writerow(row)
+        for row in horizon_timepoints:
+            htwriter.writerow(row)
 
 
 # Validation
@@ -446,8 +451,119 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # horizons = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
+    hrzs, hrz_tmps = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    c = conn.cursor()
+    periods_horizons = c.execute(
+        """
+        SELECT balancing_type_horizon, period, horizon
+        FROM periods_horizons
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        and stage_id = {}
+        """.format(subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage)
+    )
+
+    df_hrzs = cursor_to_df(hrzs)
+    df_hrz_tmps = cursor_to_df(hrz_tmps)
+    df_periods_hrzs = cursor_to_df(periods_horizons)
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_temporal_horizons",
+                "inputs_temporal_horizon_timepoints"]
+    )
+
+    # Check dtypes horizons
+    dtype_errors, error_columns = validate_dtypes(df_hrzs, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizons",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check dtypes horizon_timepoints
+    dtype_errors, error_columns = validate_dtypes(df_hrz_tmps, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizon_timepoints",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative - horizons
+    numeric_columns = [c for c in df_hrzs.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizons",
+        severity="Mid",
+        errors=validate_values(df_hrzs, valid_numeric_columns, "horizon", min=0)
+    )
+
+    # Check valid numeric columns are non-negative - horizon_timepoints
+    numeric_columns = [c for c in df_hrzs.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizon_timepoints",
+        severity="Mid",
+        errors=validate_values(df_hrz_tmps, valid_numeric_columns,
+                               ["horizon", "timepoint"], min=0)
+    )
+
+    # One horizon cannot straddle multiple periods
+    msg = "All timepoints within a horizon should belong to the same period."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizon_timepoints",
+        severity="High",
+        errors=validate_single_input(
+            df=df_periods_hrzs,
+            idx_col=["balancing_type_horizon", "horizon"],
+            msg=msg
+        )
+    )
+
+    # Make sure there are no missing horizon inputs
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_temporal_horizon_timepoints",
+        severity="High",
+        errors=validate_missing_inputs(
+            df=df_hrz_tmps,
+            col="horizon",
+            idx_col=["balancing_type_horizon", "timepoint"]
+        )
+    )

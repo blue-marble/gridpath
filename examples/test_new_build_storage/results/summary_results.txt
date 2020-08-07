@@ -3,10 +3,10 @@
 ### CAPACITY RESULTS ###
 
 --> New Storage Capacity <--
-                             New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
-load_zone technology period                                                                    
-Zone1     Storage    2020                               6.43                               9.64
-                     2030                               6.43                               9.64
+                              New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
+load_zone technology vintage                                                                    
+Zone1     Storage    2020                                6.43                               9.64
+                     2030                                6.43                               9.64
 
 ### OPERATIONAL RESULTS ###
 
@@ -14,12 +14,12 @@ Zone1     Storage    2020                               6.43                    
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
 Zone1     2020   Coal                       0.00           0.00
-                 Gas                       16.57          55.23
-                 Nuclear                   12.00          40.00
-                 Storage                   -1.37          -4.56
-                 Wind                       2.80           9.33
+                 Gas                   72,567.84          55.23
+                 Nuclear               52,560.00          40.00
+                 Storage               -5,991.84          -4.56
+                 Wind                  12,264.00           9.33
           2030   Coal                       0.00           0.00
-                 Gas                       16.57          55.23
-                 Nuclear                   12.00          40.00
-                 Storage                   -1.37          -4.56
-                 Wind                       2.80           9.33
+                 Gas                   72,567.84          55.23
+                 Nuclear               52,560.00          40.00
+                 Storage               -5,991.84          -4.56
+                 Wind                  12,264.00           9.33

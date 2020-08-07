@@ -17,22 +17,19 @@ Annual fixed O&M costs are also incurred by binary new-build generation.
 
 from __future__ import print_function
 
-from builtins import next
 from builtins import str
 import csv
-import numpy as np
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
     Constraint, value
 
-from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
-from gridpath.auxiliary.auxiliary import check_column_sign_positive, \
-    get_expected_dtypes, check_dtypes, write_validation_to_database, \
-    setup_results_import
-
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
+    validate_idxs
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -276,7 +273,7 @@ def only_build_once_rule(mod, g, p):
 def capacity_rule(mod, g, p):
     """
     The capacity of a new generator project in a given operational period
-    period is equal to the sum of all binary build decisions of vintages
+    is equal to the sum of all binary build decisions of vintages
     operational in that period multiplied with the build capacity size.
 
     Note: only one vintage can have a non-zero GenNewBin_Build variable in each
@@ -312,6 +309,15 @@ def capacity_cost_rule(mod, g, p):
         for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )
+
+
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    Returns 0 if we can't build capacity at this project in period p.
+    """
+    return mod.GenNewBin_Build[g, p] * mod.gen_new_bin_build_size_mw[g] \
+        if (g, p) in mod.GEN_NEW_BIN_VNTS else 0
 
 
 # Input-Output
@@ -364,7 +370,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
               "w", newline="") as f:
 
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "vintage", "technology", "load_zone",
                          "new_build_binary", "new_build_mw"])
         for (prj, v) in m.GEN_NEW_BIN_VNTS:
             writer.writerow([
@@ -396,7 +402,7 @@ def summarize_module_specific_results(
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
+        by=["load_zone", "technology", "vintage"],
         as_index=True
     ).sum()
 
@@ -441,21 +447,21 @@ def get_module_specific_inputs_from_database(
 
     c1 = conn.cursor()
     new_gen_costs = c1.execute(
-        """SELECT project, period, lifetime_yrs,
+        """SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
-        (SELECT period
+        (SELECT period AS vintage
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_vintages
         
         INNER JOIN
-        (SELECT project, period, lifetime_yrs,
+        (SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)
+        USING (project, vintage)
         
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'gen_new_bin';""".format(
@@ -572,43 +578,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    c = conn.cursor()
-    validation_results = []
-
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # Get the relevant projects and periods
-    prj_periods = c.execute(
-        """SELECT project, period
-        FROM inputs_project_portfolios
-
-        CROSS JOIN    
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'gen_new_bin';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
-    )
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_bin")
 
     # Convert input data into pandas DataFrame
-    cost_df = pd.DataFrame(
-        data=new_gen_costs.fetchall(),
-        columns=[s[0] for s in new_gen_costs.description]
-    )
-
-    bld_size_df = pd.DataFrame(
-        data=new_build_size.fetchall(),
-        columns=[s[0] for s in new_build_size.description]
-    )
+    cost_df = cursor_to_df(new_gen_costs)
+    bld_size_df = cursor_to_df(new_build_size)
 
     # get the project lists
-    projects = [p[0] for p in prj_periods]  # will have duplicates if >1 periods
+    cost_projects = cost_df["project"].unique()
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -618,111 +599,89 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                 "inputs_project_new_binary_build_size"]
     )
 
-    # Check dtypes
-    dtype_errors, error_columns = check_dtypes(cost_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Invalid data type",
-             error
-             )
-        )
+    # Check dtypes - cost_df
+    dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
 
-    # Check valid numeric columns are non-negative
+    # Check valid numeric columns are non-negative - cost_df
     numeric_columns = [c for c in cost_df.columns
                        if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-
-    sign_errors = check_column_sign_positive(
-        df=cost_df,
-        columns=valid_numeric_columns
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_values(cost_df, valid_numeric_columns, min=0)
     )
-    for error in sign_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Invalid numeric sign",
-             error)
-        )
+
+    # Check dtypes - bld_size_df
+    dtype_errors, error_columns = validate_dtypes(bld_size_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative - bld_size_df
+    numeric_columns = [c for c in bld_size_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=validate_values(bld_size_df, valid_numeric_columns, min=0)
+    )
+
+    # Check that all binary new build projects are available in >=1 vintage
+    msg = "Expected cost data for at least one vintage."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="Mid",
+        errors=validate_idxs(actual_idxs=cost_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )
 
     # Check that all binary new build projects have build size specified
-    validation_errors = validate_projects(projects, bld_size_projects)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID",
-             "inputs_project_new_binary_build_size",
-             "High",
-             "Missing Project",
-             error)
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_binary_build_size",
+        severity="High",
+        errors=validate_idxs(actual_idxs=bld_size_projects,
+                             req_idxs=projects,
+                             idx_label="project")
+    )
 
-    # Check that all binary new build projects have costs specified for each
-    # period
-    validation_errors = validate_costs(cost_df, prj_periods)
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_cost",
-             "High",
-             "Missing Costs",
-             error)
-        )
-
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
-
-
-def validate_projects(list1, list2):
-    """
-    Check for projects in list 1 that aren't in list 2
-
-    Note: Function will ignore duplicates in list
-    :param list1:
-    :param list2:
-    :return: list of error messages for each missing project
-    """
-    results = []
-    missing_projects = np.setdiff1d(list1, list2)
-    for prj in missing_projects:
-        results.append(
-            "Missing build size inputs for project '{}'".format(prj)
-        )
-
-    return results
-
-
-def validate_costs(cost_df, prj_periods):
-    """
-    Check that cost inputs exist for the relevant projects and periods
-    :param cost_df:
-    :param prj_periods: list with relevant projects and periods (tuple)
-    :return: list of error messages for each missing project, period combination
-    """
-    results = []
-    for prj, period in prj_periods:
-        if not ((cost_df.project == prj) & (cost_df.period == period)).any():
-            results.append(
-                "Missing cost inputs for project '{}', period '{}'"
-                .format(prj, str(period))
-            )
-
-    return results

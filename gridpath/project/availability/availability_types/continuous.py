@@ -14,8 +14,10 @@ import os.path
 from pyomo.environ import Param, Set, Var, Constraint, PercentFraction, \
     value, NonNegativeReals
 
-from gridpath.project.availability.availability_types.common_functions import \
-    insert_availability_results
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_expected_dtypes, validate_dtypes, validate_missing_inputs, \
+    validate_column_monotonicity
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
 from gridpath.project.common_functions import determine_project_subset, \
@@ -418,7 +420,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             ) as portfolio_tbl
             INNER JOIN (
                 SELECT project, endogenous_availability_scenario_id
-                FROM inputs_project_availability_types
+                FROM inputs_project_availability
                 WHERE project_availability_scenario_id = {}
                 AND availability_type = 'continuous'
                 AND endogenous_availability_scenario_id IS NOT NULL
@@ -457,7 +459,7 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage,
+        scenario_directory, subproblem, stage, "inputs",
         "project_availability_endogenous.tab"
     )
 
@@ -480,27 +482,67 @@ def write_module_specific_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
+# Validation
+###############################################################################
 
-    :param scenario_id:
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios:
     :param subproblem:
     :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
+    :param conn:
     :return:
     """
-    if not quiet:
-        print("project availability continuous")
 
-    insert_availability_results(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id,
-        results_file="project_availability_endogenous_continuous.csv"
+    params = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+
+    df = cursor_to_df(params)
+
+    # Check data types availability
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_availability",
+               "inputs_project_availability_endogenous"])
+    dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="High",
+        errors=dtype_errors
     )
 
-# TODO: add validation
+    # Check for missing inputs
+    msg = ""
+    value_cols = ["unavailable_hours_per_period",
+                  "unavailable_hours_per_event_min",
+                  "available_hours_between_events_min"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="Low",
+        errors=validate_missing_inputs(df, value_cols, "project", msg)
+    )
+
+    cols = ["unavailable_hours_per_event_min",
+            "unavailable_hours_per_period"]
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_availability_endogenous",
+        severity="High",
+        errors=validate_column_monotonicity(
+            df=df,
+            cols=cols,
+            idx_col=["project"]
+        )
+    )

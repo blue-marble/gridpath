@@ -394,7 +394,7 @@ def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
         SELECT subproblem_id as subproblem, stage_id as stage, timepoint, 
         subproblem_id + 1 as subproblem_to_link, 
         linked_timepoint, number_of_hours_in_timepoint
-        FROM inputs_temporal_timepoints
+        FROM inputs_temporal
         WHERE linked_timepoint IS NOT NULL
         AND temporal_scenario_id = ?;
         """

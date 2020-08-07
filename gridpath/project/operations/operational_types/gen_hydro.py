@@ -30,7 +30,8 @@ from gridpath.project.common_functions import \
 from gridpath.project.operations.operational_types.common_functions import \
     update_dispatch_results_table, load_optype_module_specific_data, \
     load_hydro_opchars, get_hydro_inputs_from_database, \
-    write_tab_file_model_inputs, check_for_tmps_to_link
+    write_tab_file_model_inputs, check_for_tmps_to_link, validate_opchars, \
+    validate_hydro_opchars
 
 
 def add_module_specific_components(m, d):
@@ -93,6 +94,14 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_hydro_variable_om_cost_per_mwh`                            |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_ramp_up_when_on_rate`                                |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -241,6 +250,11 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
+
+    m.gen_hydro_variable_om_cost_per_mwh = Param(
+        m.GEN_HYDRO, within=NonNegativeReals,
+        default=0
+    )
 
     m.gen_hydro_ramp_up_when_on_rate = Param(
         m.GEN_HYDRO,
@@ -602,22 +616,34 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
+    Hydro projects should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! gen_hydro projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
+
+
+def carbon_emissions_rule(mod, g, tmp):
+    """
+    """
+    return 0
 
 
 def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenHydro_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_hydro_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -908,7 +934,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         ) as agg_curtailment_tbl
         JOIN (
             SELECT subproblem_id, stage_id, timepoint, month, hour_of_day
-            FROM inputs_temporal_timepoints
+            FROM inputs_temporal
             WHERE temporal_scenario_id = (
                 SELECT temporal_scenario_id 
                 FROM scenarios
@@ -938,7 +964,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # hydro_chars = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "gen_hydro")
 
-    # do stuff here to validate inputs
+    # Validate hydro opchars input table
+    validate_hydro_opchars(subscenarios, subproblem, stage, conn,
+                           "gen_hydro")

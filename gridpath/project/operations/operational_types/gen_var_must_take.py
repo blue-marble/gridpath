@@ -8,21 +8,20 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-import csv
-import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, get_projects_by_reserve, \
-    check_projects_for_reserves
+from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    get_projects_by_reserve, validate_idxs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
     load_var_profile_inputs, get_var_profile_inputs_from_database, \
-    write_tab_file_model_inputs
+    write_tab_file_model_inputs, validate_opchars, validate_var_profiles, \
+    load_optype_module_specific_data
 
 
 def add_module_specific_components(m, d):
@@ -53,6 +52,20 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
     | of its available capacity (i.e. the capacity factor).                   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_must_take_variable_om_cost_per_mwh`                    |
+    | | *Defined over*: :code:`GEN_VAR_MUST_TAKE`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
     +-------------------------------------------------------------------------+
 
     |
@@ -97,6 +110,14 @@ def add_module_specific_components(m, d):
     m.gen_var_must_take_cap_factor = Param(
         m.GEN_VAR_MUST_TAKE_OPR_TMPS,
         within=NonNegativeReals
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_var_must_take_variable_om_cost_per_mwh = Param(
+        m.GEN_VAR_MUST_TAKE, within=NonNegativeReals,
+        default=0
     )
 
     # Constraints
@@ -219,14 +240,25 @@ def fuel_burn_rule(mod, g, tmp):
     """
     Variable generators should not have fuel use.
     """
-    if g in mod.FUEL_PRJS:
-        raise ValueError(
-            "ERROR! Variable projects should not use fuel." + "\n" +
-            "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value)."
-        )
-    else:
-        return 0
+    return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+    return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    return None
+
+
+def carbon_emissions_rule(mod, g, tmp):
+    """
+    """
+    return 0
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -235,7 +267,7 @@ def variable_om_cost_rule(mod, g, tmp):
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
         * mod.gen_var_must_take_cap_factor[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_var_must_take_variable_om_cost_per_mwh[g]
 
 
 def startup_cost_rule(mod, g, tmp):
@@ -308,6 +340,13 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
+    # Load data from projects.tab and get the list of projects of this type
+    projects = load_optype_module_specific_data(
+        mod=mod, data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_var_must_take"
+    )
+
     load_var_profile_inputs(
         data_portal, scenario_directory, subproblem, stage, "gen_var_must_take"
     )
@@ -367,58 +406,35 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
+    # Validate operational chars table inputs
+    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+                                 "gen_var_must_take")
 
-    # TODO: validate timepoints: make sure timepoints specified are consistent
-    #   with the temporal timepoints (more is okay, less is not)
-    # variable_profiles = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    # Validate var profiles input table
+    validate_var_profiles(subscenarios, subproblem, stage, conn,
+                          "gen_var_must_take")
 
-    # Get list of gen_var_must_take projects
-    c = conn.cursor()
-    var_projects = c.execute(
-        """SELECT project
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_var_must_take"
-        )
-    )
-    var_projects = [p[0] for p in var_projects.fetchall()]
+    # Other module specific validations
 
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_var_must_take can't
     # provide any reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
-    for reserve, projects in projects_by_reserve.items():
-        project_ba_id = "project_" + reserve + "_ba_scenario_id"
+    for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
-        validation_errors = check_projects_for_reserves(
-            projects_op_type=var_projects,
-            projects_w_ba=projects,
-            operational_type="gen_var_must_take",
-            reserve=reserve
+        reserve_errors = validate_idxs(
+            actual_idxs=opchar_df["project"],
+            invalid_idxs=projects_w_ba,
+            msg="gen_var_must_take cannot provide {}.".format(reserve)
         )
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 project_ba_id.upper(),
-                 table,
-                 "Mid",
-                 "Invalid {} BA inputs".format(reserve),
-                 error
-                 )
-            )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table=table,
+            severity="Mid",
+            errors=reserve_errors
+        )

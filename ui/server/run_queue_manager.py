@@ -51,16 +51,22 @@ def manage_queue(db_path):
                     """).fetchone()
 
                     # # Get the requested solver
-                    solver = c.execute("""
+                    solver_query = c.execute("""
                         SELECT name
-                        FROM options_solver_descriptions
+                        FROM subscenarios_options_solver
                         WHERE solver_options_id = (
                             SELECT solver_options_id
                             FROM scenarios
                             WHERE scenario_id = {}
                             );
                         """.format(next_scenario_to_run[0])
-                                       ).fetchone()[0]
+                                       ).fetchone()
+                    if solver_query is None:
+                        # TODO: we shoud specify the default solver as a
+                        #  global variable somewhere
+                        solver = 'cbc'
+                    else:
+                        solver = solver_query[0]
                     sio.emit(
                         "launch_scenario_process",
                         {"scenario": next_scenario_to_run[0], "solver": solver,
@@ -173,7 +179,7 @@ def parse_arguments(args):
     """
 
     parser = ArgumentParser(add_help=True)
-    parser.add_argument("--database", default="../db/io_irp.db",
+    parser.add_argument("--database", default="../db/io.db",
                         help="The database file path. Defaults to ../db/io.db "
                              "if not specified")
 

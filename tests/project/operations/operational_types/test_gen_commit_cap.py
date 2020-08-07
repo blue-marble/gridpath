@@ -7,6 +7,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -48,6 +49,22 @@ class TestGenCommitCap(unittest.TestCase):
     """
 
     """
+
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
 
     def test_add_model_components(self):
         """
@@ -111,6 +128,33 @@ class TestGenCommitCap(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
+        # Set: GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        expected_vom_project_period_segments = sorted([
+        ])
+        actual_vom_project_period_segments = sorted([
+            (prj, p, s)
+            for (prj, p, s) in instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_vom_project_period_segments,
+                             actual_vom_project_period_segments)
+
+        # Set: GEN_COMMIT_CAP_VOM_PRJS_OPR_TMPS_SGMS
+        expected_prj_opr_tmps = sorted(
+            get_project_operational_timepoints([])
+        )
+        expected_vom_project_segments_operational_timepoints = sorted([
+            (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
+        ])
+        actual_vom_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.GEN_COMMIT_CAP_VOM_PRJS_OPR_TMPS_SGMS
+        ])
+
+        self.assertListEqual(
+            expected_vom_project_segments_operational_timepoints,
+            actual_vom_project_segments_operational_timepoints
+        )
+
         # Param: gen_commit_cap_unit_size_mw
         expected_unit_size = {
             "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 6, "Gas_CCGT_New": 6,
@@ -170,6 +214,46 @@ class TestGenCommitCap(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate
                              )
+
+        # Params: gen_commit_cap_variable_om_cost_per_mwh
+        expected_var_om_cost = {
+            "Gas_CCGT": 2,
+            "Coal": 1,
+            "Gas_CT": 2,
+            "Gas_CCGT_New": 2,
+            "Gas_CCGT_New_Binary": 2,
+            "Gas_CT_New": 2,
+            "Gas_CCGT_z2": 2,
+            "Coal_z2": 1,
+            "Gas_CT_z2": 2
+        }
+        actual_var_om_cost = {
+            prj: instance.gen_commit_cap_variable_om_cost_per_mwh[prj]
+            for prj in instance.GEN_COMMIT_CAP
+        }
+
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
+        # Param: gen_commit_cap_vom_slope_cost_per_mwh
+        expected_vom_slope = {}
+        actual_vom_slope = {
+            (prj, p, s):
+                instance.gen_commit_cap_vom_slope_cost_per_mwh[(prj, p, s)]
+             for (prj, p, s) in instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        }
+
+        self.assertDictAlmostEqual(expected_vom_slope,
+                                   actual_vom_slope,
+                                   places=5)
+
+        # Param: gen_commit_cap_vom_intercept_cost_per_mw_hour
+        expected_vom_intercept = {}
+        actual_vom_intercept = {
+            (prj, p, s):
+                instance.gen_commit_cap_vom_intercept_cost_per_mw_hr[(prj,p, s)]
+             for (prj, p, s) in
+             instance.GEN_COMMIT_CAP_VOM_PRJS_PRDS_SGMS
+        }
 
         # Param: gen_commit_cap_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
@@ -294,6 +378,172 @@ class TestGenCommitCap(unittest.TestCase):
         }
         self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
                              actual_startup_fuel_mmbtu_per_mw)
+
+        # Set: GEN_COMMIT_CAP_FUEL_PRJS
+        expected_fuel_projects = sorted([
+            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
+            "Gas_CCGT_New_Binary", "Gas_CT_New", "Gas_CCGT_z2", "Coal_z2",
+            "Gas_CT_z2",
+        ])
+        actual_fuel_projects = sorted([
+            prj for prj in instance.GEN_COMMIT_CAP_FUEL_PRJS
+            ])
+        self.assertListEqual(expected_fuel_projects,
+                             actual_fuel_projects)
+
+        # Param: fuel
+        expected_fuel = OrderedDict(sorted({
+            "Gas_CCGT": "Gas",
+            "Coal": "Coal",
+            "Gas_CT": "Gas",
+            "Gas_CCGT_New": "Gas",
+            "Gas_CCGT_New_Binary": "Gas",
+            "Gas_CCGT_z2": "Gas",
+            "Coal_z2": "Coal",
+            "Gas_CT_z2": "Gas",
+            "Gas_CT_New": "Gas",
+                                           }.items()
+                                           )
+                                    )
+        actual_fuel = OrderedDict(sorted(
+            {prj: instance.gen_commit_cap_fuel[prj] for prj in
+             instance.GEN_COMMIT_CAP_FUEL_PRJS}.items()
+        )
+        )
+        self.assertDictEqual(expected_fuel, actual_fuel)
+
+        # Set: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS
+        expected_tmps_by_fuel_project = sorted(
+            get_project_operational_timepoints(expected_fuel_projects)
+        )
+        actual_tmps_by_fuel_project = sorted([
+            (prj, tmp) for (prj, tmp) in
+            instance.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS
+                                                 ])
+        self.assertListEqual(expected_tmps_by_fuel_project,
+                             actual_tmps_by_fuel_project)
+
+        # Set: GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS
+
+        expected_fuel_project_period_segments = sorted([
+            ("Gas_CCGT", 2020, 0),
+            ("Coal", 2020, 0),
+            ("Gas_CT", 2020, 0),
+            ("Gas_CCGT_New", 2020, 0),
+            ("Gas_CCGT_New_Binary", 2020, 0),
+            ("Gas_CCGT_z2", 2020, 0),
+            ("Coal_z2", 2020, 0),
+            ("Gas_CT_z2", 2020, 0),
+            ("Gas_CT_New", 2020, 0),
+            ("Gas_CCGT", 2030, 0),
+            ("Coal", 2030, 0),
+            ("Gas_CT", 2030, 0),
+            ("Gas_CCGT_New", 2030, 0),
+            ("Gas_CCGT_New_Binary", 2030, 0),
+            ("Gas_CCGT_z2", 2030, 0),
+            ("Coal_z2", 2030, 0),
+            ("Gas_CT_z2", 2030, 0),
+            ("Gas_CT_New", 2030, 0)
+        ])
+        actual_fuel_project_period_segments = sorted([
+            (prj, p, s) for (prj, p, s) in
+            instance.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS
+            ])
+        self.assertListEqual(expected_fuel_project_period_segments,
+                             actual_fuel_project_period_segments)
+
+        # Set: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS
+        timepoints_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
+            sep="\t",
+            usecols=['timepoint', 'period']
+        )
+
+        expected_period_param = \
+            timepoints_df.set_index('timepoint').to_dict()['period']
+
+        expected_fuel_project_segments_operational_timepoints = sorted([
+            (g, tmp, s) for (g, tmp) in expected_tmps_by_fuel_project
+            for _g, p, s in expected_fuel_project_period_segments
+            if g in expected_fuel_projects and g == _g
+            and expected_period_param[tmp] == p
+        ])
+        actual_fuel_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS
+        ])
+
+        self.assertListEqual(
+            expected_fuel_project_segments_operational_timepoints,
+            actual_fuel_project_segments_operational_timepoints
+        )
+
+        # Param: gen_commit_cap_fuel_burn_slope_mmbtu_per_mwh
+        expected_fuel_burn_slope = OrderedDict(sorted({
+            ("Gas_CCGT", 2020, 0): 6,
+            ("Coal", 2020, 0): 10,
+            ("Gas_CT", 2020, 0): 8,
+            ("Gas_CCGT_New", 2020, 0): 6,
+            ("Gas_CCGT_New_Binary", 2020, 0): 6,
+            ("Gas_CCGT_z2", 2020, 0): 6,
+            ("Coal_z2", 2020, 0): 10,
+            ("Gas_CT_z2", 2020, 0): 8,
+            ("Gas_CT_New", 2020, 0): 8,
+            ("Gas_CCGT", 2030, 0): 6,
+            ("Coal", 2030, 0): 10,
+            ("Gas_CT", 2030, 0): 8,
+            ("Gas_CCGT_New", 2030, 0): 6,
+            ("Gas_CCGT_New_Binary", 2030, 0): 6,
+            ("Gas_CCGT_z2", 2030, 0): 6,
+            ("Coal_z2", 2030, 0): 10,
+            ("Gas_CT_z2", 2030, 0): 8,
+            ("Gas_CT_New", 2030, 0): 8,
+        }.items()))
+        actual_fuel_burn_slope = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_commit_cap_fuel_burn_slope_mmbtu_per_mwh[(prj,
+                                                                        p, s)]
+             for (prj, p, s) in 
+             instance.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_slope,
+                                   actual_fuel_burn_slope,
+                                   places=5)
+
+        # Param: gen_commit_cap_fuel_burn_intercept_mmbtu_per_mw_hour
+        expected_fuel_burn_intercept = OrderedDict(sorted({
+            ("Gas_CCGT", 2020, 0): 250,
+            ("Coal", 2020, 0): 496,
+            ("Gas_CT", 2020, 0): 80.13333,
+            ("Gas_CCGT_New", 2020, 0): 250,
+            ("Gas_CCGT_New_Binary", 2020, 0): 250,
+            ("Gas_CCGT_z2", 2020, 0): 250,
+            ("Coal_z2", 2020, 0): 496,
+            ("Gas_CT_z2", 2020, 0): 80.13333,
+            ("Gas_CT_New", 2020, 0): 80.13333,
+            ("Gas_CCGT", 2030, 0): 250,
+            ("Coal", 2030, 0): 496,
+            ("Gas_CT", 2030, 0): 80.13333,
+            ("Gas_CCGT_New", 2030, 0): 250,
+            ("Gas_CCGT_New_Binary", 2030, 0): 250,
+            ("Gas_CCGT_z2", 2030, 0): 250,
+            ("Coal_z2", 2030, 0): 496,
+            ("Gas_CT_z2", 2030, 0): 80.13333,
+            ("Gas_CT_New", 2030, 0): 80.13333
+        }.items()))
+        actual_fuel_burn_intercept = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.gen_commit_cap_fuel_burn_intercept_mmbtu_per_mw_hr[
+                (prj, p, s)]
+             for (prj, p, s) in instance.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_intercept,
+                                   actual_fuel_burn_intercept,
+                                   places=5)
 
 
 if __name__ == "__main__":

@@ -58,6 +58,7 @@ def all_modules_list():
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
+        "project.capacity.capacity_groups",
         "project.capacity.costs",
         "project.availability.availability",
         "project.fuels",
@@ -82,6 +83,7 @@ def all_modules_list():
         "project.operations.tuning_costs",
         "project.operations.recs",
         "project.operations.carbon_emissions",
+        "project.operations.carbon_cap",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",
@@ -224,7 +226,7 @@ def optional_modules_list():
         "carbon_cap":
             ["geography.carbon_cap_zones",
              "system.policy.carbon_cap.carbon_cap",
-             "project.operations.carbon_emissions",
+             "project.operations.carbon_cap",
              "system.policy.carbon_cap.aggregate_project_carbon_emissions",
              "system.policy.carbon_cap.carbon_balance",
              "objective.system.policy.aggregate_carbon_cap_violation_penalties"

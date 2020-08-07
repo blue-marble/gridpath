@@ -10,7 +10,11 @@ from builtins import str
 from builtins import range
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, NonNegativeReals, Constraint
+from pyomo.environ import Param, Set
+
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_idxs, validate_missing_inputs
 
 
 def add_model_components(m, d):
@@ -85,7 +89,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = {}
         ) as prj_tbl
-        LEFT OUTER JOIN
+            LEFT OUTER JOIN
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
         WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
@@ -123,10 +127,52 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    project_zones = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
 
-    # do stuff here to validate inputs
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(project_zones)
+    zones_w_project = df["prm_zone"].unique()
+
+    # Get the required PRM zones
+    # TODO: make this into a function similar to get_projects()?
+    #  could eventually centralize all these db query functions in one place
+    c = conn.cursor()
+    zones = c.execute(
+        """SELECT prm_zone FROM inputs_geography_prm_zones
+        WHERE prm_zone_scenario_id = {}
+        """.format(subscenarios.PRM_ZONE_SCENARIO_ID)
+    )
+    zones = [z[0] for z in zones]  # convert to list
+
+    # Check that each PRM zone has at least one project assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_prm_zones",
+        severity="High",
+        errors=validate_idxs(actual_idxs=zones_w_project,
+                             req_idxs=zones,
+                             idx_label="prm_zone",
+                             msg="Each PRM zone needs at least 1 project "
+                                 "assigned to it.")
+    )
+
+    # Make sure PRM type is specified
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_elcc_chars",
+        severity="High",
+        errors=validate_missing_inputs(df, "prm_type")
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

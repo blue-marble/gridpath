@@ -28,9 +28,12 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
     Constraint, value
 
-from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
+    validate_idxs, validate_row_monotonicity, validate_column_monotonicity
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period, update_capacity_results_table
@@ -192,6 +195,8 @@ def add_module_specific_components(m, d):
         dimen=2, within=m.PROJECTS*m.PERIODS
     )
 
+    # TODO: rename vintage to period since the constraint is by
+    #  project-period, not project-vintage?
     m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(
         dimen=2, within=m.GEN_NEW_LIN_VNTS
     )
@@ -395,6 +400,14 @@ def capacity_cost_rule(mod, g, p):
                if gen == g)
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    """
+    return mod.GenNewLin_Build_MW[g, p] \
+        if (g, p) in mod.GEN_NEW_LIN_VNTS else 0
+
+
 # Input-Output
 ###############################################################################
 
@@ -512,7 +525,7 @@ def export_module_specific_results(
                            "capacity_gen_new_lin.csv"), "w", newline="") as f:
 
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "vintage", "technology", "load_zone",
                          "new_build_mw"])
         for (prj, p) in m.GEN_NEW_LIN_VNTS:
             writer.writerow([
@@ -542,11 +555,10 @@ def summarize_module_specific_results(
                      "results", "capacity_gen_new_lin.csv")
     )
 
-    capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", "vintage"],
+        as_index=True
+    ).sum()
 
     # Get all technologies with the new build capacity
     new_build_df = pd.DataFrame(
@@ -587,36 +599,39 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
 
+    # TODO: the fact that cumulative new build is specified by period whereas
+    #  the costs are by vintage can be confusing and could be a reason not to
+    #  combine both tables in one input table/file
     get_potentials = \
         (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
         else (
-            """, minimum_cumulative_new_build_mw, 
-            maximum_cumulative_new_build_mw """,
+            """, min_cumulative_new_build_mw, 
+            max_cumulative_new_build_mw """,
             """LEFT OUTER JOIN
-            (SELECT project, period, minimum_cumulative_new_build_mw,
-            maximum_cumulative_new_build_mw
+            (SELECT project, period AS vintage, 
+            min_cumulative_new_build_mw, max_cumulative_new_build_mw
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {}) as potential
-            USING (project, period) """.format(
+            USING (project, vintage) """.format(
                 subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID
             )
         )
 
     new_gen_costs = c.execute(
-        """SELECT project, period, lifetime_yrs,
+        """SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr"""
         + get_potentials[0] +
         """FROM inputs_project_portfolios
         CROSS JOIN
-        (SELECT period
+        (SELECT period AS vintage
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
-        (SELECT project, period, lifetime_yrs,
+        (SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)""".format(
+        USING (project, vintage)""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )
@@ -690,6 +705,7 @@ def import_module_specific_results_into_database(
         results_file="capacity_gen_new_lin.csv"
     )
 
+
 # Validation
 ###############################################################################
 
@@ -702,10 +718,101 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    # new_gen_costs = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
-    # validate inputs
-    # check that annualize real cost is positive
-    # check that maximum new build doesn't decrease
-    # ...
+    new_gen_costs = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_lin")
+
+    # Convert input data into pandas DataFrame
+    cost_df = cursor_to_df(new_gen_costs)
+    df_cols = cost_df.columns
+
+    # get the project lists
+    cost_projects = cost_df["project"].unique()
+
+    # Get expected dtypes
+    expected_dtypes = get_expected_dtypes(
+        conn=conn,
+        tables=["inputs_project_new_cost", "inputs_project_new_potential"]
+    )
+
+    # Check dtypes
+    dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns are non-negative
+    numeric_columns = [c for c in cost_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="High",
+        errors=validate_values(cost_df, valid_numeric_columns, min=0)
+    )
+
+    # Check that all binary new build projects are available in >=1 vintage
+    msg = "Expected cost data for at least one vintage."
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_new_cost",
+        severity="Mid",
+        errors=validate_idxs(actual_idxs=cost_projects,
+                             req_idxs=projects,
+                             idx_label="project",
+                             msg=msg)
+    )
+
+    cols = ["min_cumulative_new_build_mw",
+            "max_cumulative_new_build_mw"]
+    # Check that maximum new build doesn't decrease
+    if cols[1] in df_cols:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_new_potential",
+            severity="Mid",
+            errors=validate_row_monotonicity(
+                df=cost_df,
+                col=cols[1],
+                rank_col="vintage"
+            )
+        )
+
+    # check that min build <= max build
+    if set(cols).issubset(set(df_cols)):
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=subscenarios.SCENARIO_ID,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_new_potential",
+            severity="High",
+            errors=validate_column_monotonicity(
+                df=cost_df,
+                cols=cols,
+                idx_col=["project", "vintage"]
+            )
+        )

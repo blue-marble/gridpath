@@ -18,7 +18,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
-    generic_load_model_data, generic_get_inputs_from_database
+    generic_load_model_data, generic_get_inputs_from_database, \
+    generic_validate_project_bas
 
 # Reserve-module variables
 MODULE_NAME = "frequency_response"
@@ -266,10 +267,16 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
+    generic_validate_project_bas(
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
+        reserve_type="frequency_response",
+        project_ba_subscenario_id=
+        subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID
+    )
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):

@@ -18,20 +18,21 @@ startup and shutdown costs.
 
 import csv
 import os
-import pandas as pd
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals, Param, \
-    PercentFraction, Expression, value
+    PercentFraction, PositiveReals, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init,\
-    write_validation_to_database, check_req_prj_columns, \
-    check_constant_heat_rate
+from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
+from gridpath.auxiliary.validations import write_validation_to_database, \
+    validate_single_input
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_first_timepoint, \
     check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, check_for_tmps_to_link
+    load_optype_module_specific_data, load_heat_rate_curves, \
+    get_heat_rate_curves_inputs_from_database, \
+    check_for_tmps_to_link, validate_opchars, validate_heat_rate_curves
 
 
 def add_module_specific_components(m, d):
@@ -50,7 +51,20 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-   | | :code:`GEN_SIMPLE_LINKED_TMPS`                                         |
+    | | :code:`GEN_SIMPLE_FUEL_PRJS`                                          |
+    | | *Within*: :code:`GEN_SIMPLE`                                          |
+    |                                                                         |
+    | The list of projects of the code:`gen_simple` operational type that     |
+    | consume fuel.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                                |
+    |                                                                         |
+    | Three-dimensional set describing fuel projects and their heat rate      |
+    | curve segment IDs for each operational period. Unless the project's     |
+    | heat rate is constant, the heat rate can be defined by multiple         |
+    | piecewise linear segments.                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_SIMPLE_LINKED_TMPS`                                        |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their linked timepoints.                           |
@@ -59,8 +73,34 @@ def add_module_specific_components(m, d):
     |
 
     +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_simple_fuel`                                               |
+    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS`                          |
+    | | *Within*: :code:`FUELS`                                               |
+    |                                                                         |
+    | This param describes each fuel project's fuel.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_simple_fuel_burn_slope_mmbtu_per_mwh`                      |
+    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear fuel burn for    |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`gen_simple_variable_om_cost_per_mwh`                           |
+    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The variable operations and maintenance (O&M) cost for each project in  |
+    | $ per MWh.                                                              |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_simple_ramp_up_when_on_rate`                               |
     | | *Defined over*: :code:`GEN_SIMPLE`                                    |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -165,10 +205,36 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_SIMPLE)
     )
 
+    m.GEN_SIMPLE_FUEL_PRJS = Set(
+        within=m.GEN_SIMPLE
+    )
+
+    m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS = Set(
+        dimen=3
+    )
+
     m.GEN_SIMPLE_LINKED_TMPS = Set(dimen=2)
+
+    # Required Params
+    ###########################################################################
+
+    m.gen_simple_fuel = Param(
+        m.GEN_SIMPLE_FUEL_PRJS,
+        within=m.FUELS
+    )
+
+    m.gen_simple_fuel_burn_slope_mmbtu_per_mwh = Param(
+        m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS,
+        within=PositiveReals
+    )
 
     # Optional Params
     ###########################################################################
+
+    m.gen_simple_variable_om_cost_per_mwh = Param(
+        m.GEN_SIMPLE, within=NonNegativeReals,
+        default=0
+    )
 
     m.gen_simple_ramp_up_when_on_rate = Param(
         m.GEN_SIMPLE, within=PercentFraction,
@@ -442,8 +508,6 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-# TODO: add data check that there is indeed only 1 segment for must-run
-#   generators (and therefore there is no intercept)
 def fuel_burn_rule(mod, g, tmp):
     """
     Fuel burn is the product of the fuel burn slope and the power output. For
@@ -451,9 +515,41 @@ def fuel_burn_rule(mod, g, tmp):
     heat_rate_curves.tab, so the fuel burn slope is equal to the specified
     heat rate and the intercept is zero.
     """
-    if g in mod.FUEL_PRJS:
-        return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
+    if g in mod.GEN_SIMPLE_FUEL_PRJS:
+        return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
+            tmp], 0] \
             * mod.GenSimple_Provide_Power_MW[g, tmp]
+    else:
+        return 0
+
+
+def fuel_cost_rule(mod, g, tmp):
+    """
+    """
+    if g in mod.GEN_SIMPLE_FUEL_PRJS:
+        return fuel_burn_rule(mod, g, tmp) \
+            * mod.fuel_price_per_mmbtu[mod.gen_simple_fuel[g],
+                                       mod.period[tmp],
+                                       mod.month[tmp]]
+    else:
+        return 0
+
+
+def fuel_rule(mod, g):
+    """
+    """
+    if g in mod.GEN_SIMPLE_FUEL_PRJS:
+        return mod.gen_simple_fuel[g]
+    else:
+        return None
+
+
+def carbon_emissions_rule(mod, g, tmp):
+    if g in mod.GEN_SIMPLE_FUEL_PRJS:
+        return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[
+                   g, mod.period[tmp], 0] \
+            * mod.Power_Provision_MW[g, tmp] \
+            * mod.co2_intensity_tons_per_mmbtu[mod.gen_simple_fuel[g]]
     else:
         return 0
 
@@ -476,7 +572,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenSimple_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+        * mod.gen_simple_variable_om_cost_per_mwh[g]
 
 
 def startup_fuel_burn_rule(mod, g, tmp):
@@ -528,10 +624,18 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
-    load_optype_module_specific_data(
+    projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_simple"
+    )
+
+
+    # Load data from heat_rate_curves.tab (if it exists)
+    load_heat_rate_curves(
+        data_portal=data_portal,
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, op_type="gen_simple", projects=projects
     )
 
     # Linked timepoint params
@@ -591,7 +695,7 @@ def export_module_specific_results(
                  "linked_upward_reserves",
                  "linked_downward_reserves"]
             )
-            for (p, tmp) in sorted(mod.GEN_ALWAYS_ON_OPR_TMPS):
+            for (p, tmp) in sorted(mod.GEN_SIMPLE_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow([
                         p,
@@ -604,6 +708,55 @@ def export_module_specific_results(
                             0
                             )
                     ])
+
+
+# Database
+###############################################################################
+
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return: cursor object with query results
+    """
+
+    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
+        subscenarios, subproblem, stage, conn, "gen_simple"
+    )
+
+    return heat_rate_curves
+
+
+def write_module_specific_model_inputs(
+        scenario_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    heat_rate_curves.tab and variable_om_curves.tab files.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    heat_rate_curves = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    hr_df = cursor_to_df(heat_rate_curves)
+    if not hr_df.empty:
+        hr_df = hr_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "heat_rate_curves.tab")
+        if not os.path.isfile(fpath):
+            hr_df.to_csv(fpath, index=False, sep="\t")
+        else:
+            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
+
 
 # Validation
 ###############################################################################
@@ -618,48 +771,17 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    validation_results = []
+    # Validate operational chars table inputs
+    validate_opchars(subscenarios, subproblem, stage, conn, "gen_simple")
 
-    # Read in inputs to be validated
-    c1 = conn.cursor()
-    projects = c1.execute(
-        """SELECT project, operational_type,
-        fuel, min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_portfolios
-        INNER JOIN
-        (SELECT project, operational_type,
-        fuel, min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
-        shutdown_plus_ramp_down_rate,
-        ramp_up_when_on_rate,
-        ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
-        charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, maximum_duration_hours
-        FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}) as prj_chars
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND operational_type = '{}'""".format(
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "gen_simple"
-        )
-    )
+    # Validate heat rate curves
+    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
+                              "gen_simple")
 
-    c2 = conn.cursor()
-    heat_rates = c2.execute(
+    # Other module specific validations
+
+    c = conn.cursor()
+    heat_rates = c.execute(
         """
         SELECT project, load_point_fraction
         FROM inputs_project_portfolios
@@ -681,59 +803,19 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Convert inputs to dataframe
-    df = pd.DataFrame(
-        data=projects.fetchall(),
-        columns=[s[0] for s in projects.description]
-    )
-    hr_df = pd.DataFrame(
-        data=heat_rates.fetchall(),
-        columns=[s[0] for s in heat_rates.description]
-    )
-
-    # Check that there are no unexpected operational inputs
-    expected_na_columns = [
-        "min_stable_level",
-        "unit_size_mw",
-        "startup_cost_per_mw", "shutdown_cost_per_mw",
-        "startup_fuel_mmbtu_per_mw",
-        "startup_plus_ramp_up_rate",
-        "shutdown_plus_ramp_down_rate",
-        "min_up_time_hours", "min_down_time_hours",
-        "charging_efficiency", "discharging_efficiency",
-        "minimum_duration_hours", "maximum_duration_hours"
-    ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                              "gen_simple")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Low",
-             "Unexpected inputs",
-             error
-             )
-        )
+    hr_df = cursor_to_df(heat_rates)
 
     # Check that there is only one load point (constant heat rate)
-    validation_errors = check_constant_heat_rate(hr_df,
-                                                 "gen_simple")
-    for error in validation_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "Mid",
-             "Too many load points",
-             error
-             )
-        )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="Mid",
+        errors=validate_single_input(df=hr_df,
+                                     msg="gen_simple can only have one load "
+                                         "point (constant heat rate).")
+    )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)

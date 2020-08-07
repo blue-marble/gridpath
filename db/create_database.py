@@ -16,37 +16,6 @@ import sys
 from db.common_functions import spin_on_database_lock
 
 
-def database_file_exists(db_path):
-    """
-    :param db_path:
-    :return: boolean
-
-    Check if the database file exists.
-    """
-    if os.path.isfile(db_path):
-        return True
-    else:
-        return False
-
-
-def get_database_file_path(parsed_arguments):
-    """
-    :param parsed_arguments: the parsed script arguments
-    :return: the path to the database
-
-    Get the database file path from the script arguments.
-    """
-    if parsed_arguments.in_memory:
-        database = ":memory:"
-    else:
-        database = os.path.join(
-                str(parsed_arguments.db_location),
-                str(parsed_arguments.db_name)+".db"
-            )
-
-    return database
-
-
 def parse_arguments(arguments):
     """
 
@@ -55,18 +24,16 @@ def parse_arguments(arguments):
     parser = ArgumentParser(add_help=True)
 
     # Scenario name and location options
-    parser.add_argument("--db_name", default="io",
-                        help="Name of the database.")
-    parser.add_argument("--db_location", default=".",
-                        help="Path to the database (relative to "
-                             "create_database.py).")
+    parser.add_argument("--database", default="../db/io.db",
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../db/io.db ")
     parser.add_argument("--db_schema", default="db_schema.sql",
                         help="Name of the SQL file containing the database "
                              "schema. Assumed to be in same directory as"
                              "create_database.py")
     parser.add_argument("--in_memory", default=False, action="store_true",
-                        help="Create in-memory database. The db_name and "
-                             "db_location argument will be inactive.")
+                        help="Create in-memory database. The database "
+                             "argument will be inactive.")
     parser.add_argument("--omit_data", default=False, action="store_true",
                         help="Don't load the model defaults data from the "
                              "data directory.")
@@ -79,10 +46,10 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def create_database_schema(db, parsed_arguments):
+def create_database_schema(conn, parsed_arguments):
     """
 
-    :param db:
+    :param conn: database connection
     :param parsed_arguments:
     :return:
     """
@@ -91,197 +58,195 @@ def create_database_schema(db, parsed_arguments):
 
     with open(schema_path, "r") as db_schema_script:
         schema = db_schema_script.read()
-        db.executescript(schema)
+        conn.executescript(schema)
 
 
-def load_data(db, omit_data, custom_units):
+def load_data(conn, omit_data, custom_units):
     """
     Load GridPath structural data (e.g. defaults, allowed modules, validation
     data, UI component data, etc.)
-    :param db:
+    :param conn: database connection
     :param omit_data:
-    :param custom_units:
+    :param custom_units: Boolean, True if user-specified units
     :return:
     """
     if not omit_data:
-        c = db.cursor()
         # General Model Data
-        load_mod_months(db=db, c=c)
-        load_mod_capacity_types(db=db, c=c)
-        load_mod_availability_types(db=db, c=c)
-        load_mod_operational_types(db=db, c=c)
-        load_mod_reserve_types(db=db, c=c)
-        load_mod_tx_capacity_types(db=db, c=c)
-        load_mod_tx_operational_types(db=db, c=c)
-        load_mod_prm_types(db=db, c=c)
-        load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
-        load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db=db, c=c)
-        load_mod_horizon_boundary_types(db=db, c=c)
-        load_mod_run_status_types(db=db, c=c)
-        load_mod_validation_status_types(db=db, c=c)
-        load_mod_features(db=db, c=c)
-        load_mod_feature_subscenarios(db=db, c=c)
-        load_mod_units(db=db, c=c, custom_units=custom_units)
+        load_mod_months(conn=conn)
+        load_mod_capacity_types(conn=conn)
+        load_mod_availability_types(conn=conn)
+        load_mod_operational_types(conn=conn)
+        load_mod_reserve_types(conn=conn)
+        load_mod_tx_capacity_types(conn=conn)
+        load_mod_tx_operational_types(conn=conn)
+        load_mod_prm_types(conn=conn)
+        load_mod_capacity_and_operational_type_invalid_combos(conn=conn)
+        load_mod_tx_capacity_and_tx_operational_type_invalid_combos(conn=conn)
+        load_mod_horizon_boundary_types(conn=conn)
+        load_mod_run_status_types(conn=conn)
+        load_mod_validation_status_types(conn=conn)
+        load_mod_features(conn=conn)
+        load_mod_feature_subscenarios(conn=conn)
+        load_mod_units(conn=conn, custom_units=custom_units)
 
         # Data required for the UI
-        load_ui_scenario_detail_table_metadata(db=db, c=c)
-        ui_scenario_detail_table_row_metadata(db=db, c=c)
-        load_ui_scenario_results_table_metadata(db=db, c=c)
-        load_ui_scenario_results_plot_metadata(db=db, c=c)
+        load_ui_scenario_detail_table_metadata(conn=conn)
+        ui_scenario_detail_table_row_metadata(conn=conn)
+        load_ui_scenario_results_table_metadata(conn=conn)
+        load_ui_scenario_results_plot_metadata(conn=conn)
 
         # Data for plotting
-        load_viz_technologies(db=db, c=c)
+        load_viz_technologies(conn=conn)
 
     else:
         pass
 
 
-def load_mod_months(db, c):
+def load_mod_months(conn):
     sql = """
         INSERT INTO mod_months
         (month, description)
         VALUES (?, ?);"""    
-    load_aux_data(conn=db, cursor=c, filename="mod_months.csv", sql=sql)
+    load_aux_data(conn=conn, filename="mod_months.csv", sql=sql)
 
 
-def load_mod_capacity_types(db, c):
+def load_mod_capacity_types(conn):
     sql = """
         INSERT INTO mod_capacity_types
         (capacity_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_capacity_types.csv", 
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_capacity_types.csv", sql=sql)
 
 
-def load_mod_availability_types(db, c):
+def load_mod_availability_types(conn):
     sql = """
         INSERT INTO mod_availability_types
         (availability_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_availability_types.csv",
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_availability_types.csv", sql=sql)
 
 
-def load_mod_operational_types(db, c):
+def load_mod_operational_types(conn):
     sql = """
         INSERT INTO mod_operational_types
         (operational_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_operational_types.csv", 
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_operational_types.csv", sql=sql)
 
 
-def load_mod_reserve_types(db, c):
+def load_mod_reserve_types(conn):
     sql = """
         INSERT INTO mod_reserve_types
         (reserve_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_reserve_types.csv", sql=sql)
+    load_aux_data(conn=conn, filename="mod_reserve_types.csv", sql=sql)
 
 
-def load_mod_tx_capacity_types(db, c):
+def load_mod_tx_capacity_types(conn):
     sql = """
         INSERT INTO mod_tx_capacity_types
         (capacity_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_tx_capacity_types.csv",
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_tx_capacity_types.csv", sql=sql)
 
 
-def load_mod_tx_operational_types(db, c):
+def load_mod_tx_operational_types(conn):
     sql = """
         INSERT INTO mod_tx_operational_types
         (operational_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_tx_operational_types.csv",
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_tx_operational_types.csv", sql=sql)
 
 
-def load_mod_prm_types(db, c):
+def load_mod_prm_types(conn):
     sql = """
         INSERT INTO mod_prm_types
         (prm_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_prm_types.csv",
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_prm_types.csv", sql=sql)
 
 
-def load_mod_capacity_and_operational_type_invalid_combos(db, c):
+def load_mod_capacity_and_operational_type_invalid_combos(conn):
     sql = """
         INSERT INTO 
         mod_capacity_and_operational_type_invalid_combos
         (capacity_type, operational_type)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, 
+    load_aux_data(conn=conn,
                   filename=
                   "mod_capacity_and_operational_type_invalid_combos.csv", 
                   sql=sql)
 
 
-def load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db, c):
+def load_mod_tx_capacity_and_tx_operational_type_invalid_combos(conn):
     sql = """
         INSERT INTO 
         mod_tx_capacity_and_tx_operational_type_invalid_combos
         (capacity_type, operational_type)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c,
+    load_aux_data(conn=conn,
                   filename=
                   "mod_tx_capacity_and_tx_operational_type_invalid_combos.csv",
                   sql=sql)
 
 
-def load_mod_horizon_boundary_types(db, c):
+def load_mod_horizon_boundary_types(conn):
     sql = """
         INSERT INTO mod_horizon_boundary_types
         (horizon_boundary_type, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_horizon_boundary_types.csv",
+    load_aux_data(conn=conn, filename="mod_horizon_boundary_types.csv",
                   sql=sql)
 
 
-def load_mod_run_status_types(db, c):
+def load_mod_run_status_types(conn):
     sql = """
         INSERT INTO mod_run_status_types
         (run_status_id, run_status_name)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_run_status_types.csv", 
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_run_status_types.csv", sql=sql)
 
 
-def load_mod_validation_status_types(db, c):
+def load_mod_validation_status_types(conn):
     sql = """
         INSERT INTO mod_validation_status_types
         (validation_status_id, validation_status_name)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, 
-                  filename="mod_validation_status_types.csv", sql=sql)
+    load_aux_data(conn=conn, filename="mod_validation_status_types.csv",
+                  sql=sql)
 
 
-def load_mod_features(db, c):
+def load_mod_features(conn):
     sql = """
         INSERT INTO mod_features
         (feature, description)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_features.csv", sql=sql)
+    load_aux_data(conn=conn, filename="mod_features.csv", sql=sql)
 
 
-def load_mod_feature_subscenarios(db, c):
+def load_mod_feature_subscenarios(conn):
     sql = """
         INSERT INTO mod_feature_subscenarios
         (feature, subscenario_id)
         VALUES (?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_feature_subscenarios.csv", 
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_feature_subscenarios.csv", sql=sql)
 
 
-def load_mod_units(db, c, custom_units):
+def load_mod_units(conn, custom_units):
+    """
+    Load the units
+    :param conn:
+    :param custom_units: Boolean, True if user-specified units
+    :return:
+    """
+    c = conn.cursor()
+
     sql = """
         INSERT INTO mod_units
         (metric, type, numerator_core_units, denominator_core_units,
         unit, description)
         VALUES (?, ?, ?, ?, ?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="mod_units.csv",
-                  sql=sql)
+    load_aux_data(conn=conn, filename="mod_units.csv", sql=sql)
 
     if custom_units:
         # Retrieve settings from user
@@ -317,36 +282,36 @@ def load_mod_units(db, c, custom_units):
             sql = """UPDATE mod_units
                 SET unit = ?
                 WHERE metric = 'power'"""
-            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+            spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                                   data=(power,))
             # add energy units based on user's power units
             energy = power + "h"
             sql = """UPDATE mod_units
                 SET unit = ?
                 WHERE metric = 'energy'"""
-            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+            spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                                   data=(energy,))
         if fuel_energy != "default":
             sql = """UPDATE mod_units
                 SET unit = ?
                 WHERE metric = 'fuel_energy'"""
-            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+            spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                                   data=(fuel_energy,))
         if cost != "default":
             sql = """UPDATE mod_units
                 SET unit = ?
                 WHERE metric = 'cost'"""
-            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+            spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                                   data=(cost,))
         if carbon_emissions != "default":
             sql = """UPDATE mod_units
                 SET unit = ?
                 WHERE metric = 'carbon_emissions'"""
-            spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+            spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                                   data=(carbon_emissions,))
 
     # Derive secondary units
-    df = pd.read_sql(sql="SELECT * FROM mod_units", con=db,
+    df = pd.read_sql(sql="SELECT * FROM mod_units", con=conn,
                      index_col="metric")
     for sec_metric in df[df["type"] == "secondary"].index:
         numerator = df.loc[sec_metric, "numerator_core_units"]
@@ -370,20 +335,20 @@ def load_mod_units(db, c, custom_units):
         sql = """UPDATE mod_units
             SET unit = ?
             WHERE metric = ?"""
-        spin_on_database_lock(conn=db, cursor=c, sql=sql, many=False,
+        spin_on_database_lock(conn=conn, cursor=c, sql=sql, many=False,
                               data=(sec_unit, sec_metric))
 
 
-def load_ui_scenario_detail_table_metadata(db, c):
+def load_ui_scenario_detail_table_metadata(conn):
     sql = """
         INSERT INTO ui_scenario_detail_table_metadata
         (ui_table, include, ui_table_caption)
         VALUES (?, ?, ?);"""
-    load_aux_data(conn=db, cursor=c, 
-                  filename="ui_scenario_detail_table_metadata.csv", sql=sql)
+    load_aux_data(conn=conn, filename="ui_scenario_detail_table_metadata.csv",
+                  sql=sql)
 
 
-def ui_scenario_detail_table_row_metadata(db, c):
+def ui_scenario_detail_table_row_metadata(conn):
     sql = """
         INSERT INTO ui_scenario_detail_table_row_metadata
         (ui_table, ui_table_row, include, ui_row_caption,
@@ -393,55 +358,57 @@ def ui_scenario_detail_table_row_metadata(db, c):
         ui_row_db_input_table)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
         """
-    load_aux_data(conn=db, cursor=c,
+    load_aux_data(conn=conn,
                   filename="ui_scenario_detail_table_row_metadata.csv",
                   sql=sql)
 
 
-def load_ui_scenario_results_table_metadata(db, c):
+def load_ui_scenario_results_table_metadata(conn):
     sql = """
         INSERT INTO ui_scenario_results_table_metadata
         (results_table, include, caption)
         VALUES (?, ?, ?);
         """
-    load_aux_data(conn=db, cursor=c,
+    load_aux_data(conn=conn,
                   filename="ui_scenario_results_table_metadata.csv",
                   sql=sql)
 
 
-def load_ui_scenario_results_plot_metadata(db, c):
+def load_ui_scenario_results_plot_metadata(conn):
     sql = """
         INSERT INTO ui_scenario_results_plot_metadata
         (results_plot, include, caption, load_zone_form_control,
         rps_zone_form_control, carbon_cap_zone_form_control,
-        period_form_control, horizon_form_control, 
+        period_form_control, horizon_form_control,
+        start_timepoint_form_control, end_timepoint_form_control,
         stage_form_control, project_form_control, commit_project_form_control)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
-    load_aux_data(conn=db, cursor=c,
+    load_aux_data(conn=conn,
                   filename="ui_scenario_results_plot_metadata.csv",
                   sql=sql)
 
 
-def load_viz_technologies(db, c):
+def load_viz_technologies(conn):
     sql = """
         INSERT INTO viz_technologies
         (technology, color, plotting_order)
         VALUES (?, ?, ?);"""
-    load_aux_data(conn=db, cursor=c, filename="viz_technologies.csv",
+    load_aux_data(conn=conn,
+                  filename="viz_technologies.csv",
                   sql=sql)
 
 
-def load_aux_data(conn, cursor, filename, sql):
+def load_aux_data(conn, filename, sql):
     """
     :param conn: 
-    :param cursor: 
-    :param filename: 
+    :param filename:
     :param sql: 
-    
-    
+    :return:
+
     """
     data = []
+    cursor = conn.cursor()
 
     file_path = os.path.join(os.path.dirname(__file__), "data", filename)
     with open(file_path, "r") as f:
@@ -458,29 +425,34 @@ def main(args=None):
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    db_path = get_database_file_path(parsed_arguments=parsed_args)
-
-    if database_file_exists(db_path=db_path):
-        print(
-            "WARNING: The database file {} already exists. Please delete it "
-            "before re-creating the database.".format(os.path.abspath(db_path))
-        )
-        sys.exit()
+    if parsed_args.in_memory:
+        db_path = ":memory:"
     else:
-        # Connect to the database
-        db = sqlite3.connect(database=db_path)
-        # Allow concurrent reading and writing
-        db.execute("PRAGMA journal_mode=WAL")
-        # Create schema
-        create_database_schema(db=db, parsed_arguments=parsed_args)
-        # Load data
-        load_data(
-            db=db,
-            omit_data=parsed_args.omit_data,
-            custom_units=parsed_args.custom_units
-        )
-        # Close the database
-        db.close()
+        db_path = parsed_args.database
+        if os.path.isfile(db_path):
+            print(
+                """WARNING: The database file {} already exists. Please 
+                delete it before re-creating the database"""
+                .format(os.path.abspath(db_path))
+            )
+            sys.exit()
+
+    # Connect to the database
+    conn = sqlite3.connect(database=db_path)
+    # Allow concurrent reading and writing
+    conn.execute("PRAGMA journal_mode=WAL")
+    # Enforce foreign keys (default = not enforced)
+    conn.execute("PRAGMA foreign_keys=ON;")
+    # Create schema
+    create_database_schema(conn=conn, parsed_arguments=parsed_args)
+    # Load data
+    load_data(
+        conn=conn,
+        omit_data=parsed_args.omit_data,
+        custom_units=parsed_args.custom_units
+    )
+    # Close the database
+    conn.close()
 
 
 if __name__ == "__main__":
