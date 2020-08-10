@@ -132,18 +132,23 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source = reformat_stacked_plot_data(
         df=df,
-        title=plot_title,
-        y_axis_column="capacity_mw",
-        x_axis_column="period",
-        group_column="technology",
-        column_mapper={"capacity_mw": "Capacity ({})".format(power_unit),
-                       "period": "Period",
-                       "technology": "Technology"},
-        group_colors=tech_colors,
-        group_order=tech_plotting_order,
-        ylimit=parsed_args.ylimit
+        y_col="capacity_mw",
+        x_col="period",
+        category_col="technology"
+    )
+
+    plot = create_stacked_bar_plot(
+        source=source,
+        title=title,
+        x_col="period",
+        category_label="Technology",
+        category_colors=tech_colors,
+        category_order=tech_plotting_order,
+        ylimit=parsed_args.ylimit,
+        y_label="Capacity ({})".format(power_unit),
+        x_label="Period"
     )
 
     # Show plot in HTML browser file if requested

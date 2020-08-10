@@ -159,12 +159,57 @@ def get_unit(c, metric):
         return unit.fetchone()[0]
 
 
-def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
-                            group_column, column_mapper={}, group_colors={},
-                            group_order={}, ylimit=None):
+def reformat_stacked_plot_data(df, y_col, x_col, category_col,
+                               column_mapper={}):
+    """
+    TODO: REMOVE COLUMN MAPPER?
+    Rename columns, pivot, and convert to Bokeh ColumnDataSource
+    :param df: a data-base style DataFrame which should at least include the
+    columns 'y_col', 'x_col' and 'category_col'. The
+    'x_col' and 'category_col' should uniquely identify the value of
+    the 'y_col' (e.g. capacity should be uniquely defined by the
+    period and the technology).
+    :param y_col:
+    :param x_col:
+    :param category_col: str, name of column to pivot
+    :param column_mapper:
+    :return:
+    """
+    # Rename axis/category labels using mapper (if specified)
+    # for k, v in column_mapper.items():
+    #     y_col = y_col.replace(k, v)
+    #     x_col = x_col.replace(k, v)
+    #     category_col = category_col.replace(k, v)
+
+    # Pre-process DataFrame:
+    # 1. rename
+    # df.rename(columns=column_mapper, inplace=True)
+    # 2. Pivot such that values in category column become column headers
+    df = df.pivot(
+        index=x_col,
+        columns=category_col,
+        values=y_col
+    ).fillna(0)
+    # 3. Change type of index to str, required for categorical bar chart
+    df.index = df.index.map(str)
+
+    # df.rename(columns=column_mapper, index=column_mapper, inplace=True)
+
+    print(df)
+
+    # Set up data source
+    source = ColumnDataSource(data=df)
+
+    return source
+
+
+def create_stacked_bar_plot(source, title, x_col, y_label,
+                            category_label, category_colors={},
+                            category_order={}, ylimit=None,
+                            x_label=None):
     """
     Create a stacked bar chart based on a DataFrame and the desired x-axis,
-    y-axis, and group (category). Different groups/categories will be stacked.
+    y-axis, and category. Different categories will be stacked.
 
     Example:
         data = {'year': [2018, 2018], 'mw': [5, 8], 'tech': ['t1', 't2']}
@@ -172,83 +217,60 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
         create_stacked_bar_plot(
             df=df,
             title="example_plot",
-            y_axis_column="mw",
-            x_axis_column="year",
-            group_column="tech"
+            y_col="mw",
+            x_col="year",
+            category_label="tech"
         )
 
-    :param df: a data-base style DataFrame which should at least include the
-        columns 'y_axis_column', 'x_axis_column' and 'group_column'. The
-        'x_axis_column' and 'group_column' should uniquely identify the value of
-        the 'y_axis_column' (e.g. capacity should be uniquely defined by the
-        period and the technology).
+    :param source: Bokeh ColumnDataSource
     :param title: string, plot title
-    :param y_axis_column:
-    :param x_axis_column:
-    :param group_column:
-    :param column_mapper: optional dict that maps columns names to cleaner
-        labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
-    :param group_colors: optional dict that maps groups to colors. Groups
-        without a specified color will use a default palette
-    :param group_order: optional dict that maps groups to their plotting order
-        in the stacked bar chart (lower = bottom)
+    :param x_col: str
+    :param y_label: str
+    :param category_label: str, name of the
+    :param category_colors: optional dict that maps categories to colors. 
+        Categories without a specified color will use a default palette
+    :param category_order: optional dict that maps categories to their plotting 
+        order in the stacked bar chart (lower = bottom)
     :param ylimit: float/int, upper limit of y-axis; optional
+    :param x_label: str, optional
     :return:
     """
 
-    # Rename axis/group labels using mapper (if specified)
-    for k, v in column_mapper.items():
-        y_axis_column = y_axis_column.replace(k, v)
-        x_axis_column = x_axis_column.replace(k, v)
-        group_column = group_column.replace(k, v)
-
-    # Pre-process DataFrame:
-    # 1. rename
-    df.rename(columns=column_mapper, inplace=True)
-    # 2. Pivot such that values in group column become column headers
-    df = df.pivot(
-        index=x_axis_column,
-        columns=group_column,
-        values=y_axis_column
-    ).fillna(0)
-    # 3. Change type of index to str, required for categorical bar chart
-    df.index = df.index.map(str)
-
-    # Set up data source
-    source = ColumnDataSource(data=df)
-
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
-    for col in df.columns:
-        if col not in group_order:
-            group_order[col] = max(group_order.values(), default=0) + 1
-    stacked_cols = sorted(df.columns, key=lambda x: group_order[x])
+    # TODO: remove x col?
+    cols = source.data.keys()
+    for col in cols:
+        if col not in category_order:
+            category_order[col] = max(category_order.values(), default=0) + 1
+    stacked_cols = sorted(cols, key=lambda x: category_order[x])
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
-                           if c not in group_colors.keys()]
-    unspecified_group_colors = dict(zip(unspecified_columns,
-                                        cividis(len(unspecified_columns))))
+                           if c not in category_colors.keys()]
+    unspecified_category_colors = dict(zip(unspecified_columns,
+                                           cividis(len(unspecified_columns)))
+                                       )
     colors = []
     for column in stacked_cols:
-        if column in group_colors:
-            colors.append(group_colors[column])
+        if column in category_colors:
+            colors.append(category_colors[column])
         else:
-            colors.append(unspecified_group_colors[column])
+            colors.append(unspecified_category_colors[column])
 
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=df.index.values
+        x_range=source.data[x_col]
         # sizing_mode="scale_both"
     )
 
     # Add stacked area chart to plot
     area_renderers = plot.vbar_stack(
         stackers=stacked_cols,
-        x=x_axis_column,
+        x=x_col,
         source=source,
         color=colors,
         width=0.5,
@@ -256,32 +278,33 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
 
     # Add Legend
     legend_items = [(y, [area_renderers[i]]) for i, y in enumerate(stacked_cols)
-                    if df[y].mean() > 0]
+                    if source.data[y].mean() > 0]
     legend = Legend(items=legend_items)
     plot.add_layout(legend, 'right')
-    plot.legend.title = group_column
+    plot.legend.title = category_label
     plot.legend[0].items.reverse()  # Reverse legend to match stacked order
     plot.legend.click_policy = 'hide'  # Add interactivity to the legend
     show_hide_legend(plot=plot)  # Hide legend on double click
 
     # Format Axes (labels, number formatting, range, etc.)
-    plot.xaxis.axis_label = "{}".format(x_axis_column)
-    plot.yaxis.axis_label = "{}".format(y_axis_column)
+    x_label = x_col if x_label is None else x_label
+    plot.xaxis.axis_label = x_label
+    plot.yaxis.axis_label = y_label
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
-        group = r.name
-        if "$" in y_axis_column or "USD" in y_axis_column:
-            y_axis_formatter = "@%s{$0,0}" % group
+        category = r.name
+        if "$" in y_label or "USD" in y_label:
+            y_axis_formatter = "@%s{$0,0}" % category
         else:
-            y_axis_formatter = "@%s{0,0}" % group
+            y_axis_formatter = "@%s{0,0}" % category
         hover = HoverTool(
             tooltips=[
-                ("%s" % x_axis_column, "@{%s}" % x_axis_column),
-                ("%s" % group_column, group),
-                ("%s" % y_axis_column, y_axis_formatter)
+                ("%s" % x_label, "@{%s}" % x_col),
+                ("%s" % category_label, category),
+                ("%s" % y_label, y_axis_formatter)
             ],
             renderers=[r],
             toggleable=False)
