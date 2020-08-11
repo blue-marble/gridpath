@@ -15,10 +15,13 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import create_stacked_bar_plot, show_plot, \
+from viz.common_functions import reformat_stacked_plot_data, \
+    create_stacked_bar_plot, show_plot, \
     get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
 
 
+# TODO: update parser to allow for list of inputs (using nargs)
+#  see here: https://stackoverflow.com/questions/15753701/how-can-i-pass-a-list-as-a-command-line-argument-with-argparse
 def create_parser():
     """
 
@@ -50,36 +53,52 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, load_zone, subproblem, stage,
-                      **kwargs):
+def get_plotting_data(conn, subproblem, stage, scenario_id=None,
+                      load_zone=None, period=None, **kwargs):
     """
-    Get capacity results by period/technology for a given
-    scenario/oad_zone/subproblem/stage.
+    Get capacity results by scenario/period/technology. Users can
+    optionally provide a subset of scenarios/load_zones/periods.
+    Note: if load zone is not provided, will aggregate across load zones.
 
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
 
     :param conn:
-    :param scenario_id:
-    :param load_zone:
     :param subproblem:
     :param stage:
-    :return:
+    :param scenario_id: int or list of int, optional (default: return all
+        scenarios)
+    :param load_zone: str or list of str, optional (default: aggregate across
+        load_zones)
+    :param period: int or list of int, optional (default: return all periods)
+    :return: DataFrame with columns scenario_id, period, technology, capacity_mw
     """
 
-    # Total capacity by period and technology
-    sql = """SELECT period, technology, sum(capacity_mw) as capacity_mw
+    # TODO: add scenario name?
+    params = [subproblem, stage]
+    sql = """SELECT scenario_id, period, technology, 
+        sum(capacity_mw) AS capacity_mw
         FROM results_project_capacity
-        WHERE scenario_id = ?
-        AND load_zone = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        GROUP BY period, technology;"""
+        WHERE subproblem_id = ?
+        AND stage_id = ?"""
+    if period is not None:
+        period = period if isinstance(period, list) else [period]
+        sql += " AND period in ({})".format(",".join("?"*len(period)))
+        params += period
+    if scenario_id is not None:
+        scenario_id = scenario_id if isinstance(scenario_id, list) else [scenario_id]
+        sql += " AND scenario_id in ({})".format(",".join("?"*len(scenario_id)))
+        params += scenario_id
+    if load_zone is not None:
+        load_zone = load_zone if isinstance(load_zone, list) else [load_zone]
+        sql += " AND load_zone in ({})".format(",".join("?"*len(load_zone)))
+        params += load_zone
+    sql += " GROUP BY scenario_id, period, technology;"
 
     df = pd.read_sql(
         sql,
         con=conn,
-        params=(scenario_id, load_zone, subproblem, stage)
+        params=params
     )
 
     return df
@@ -109,6 +128,7 @@ def main(args=None):
     tech_plotting_order = get_tech_plotting_order(c)
     power_unit = get_unit(c, "power")
 
+    # Update title for different use cases (multi-period or multi-scenario)
     plot_title = \
         "{}Total Capacity by Period - {} - Subproblem {} - Stage {}".format(
             "{} - ".format(scenario)
@@ -124,6 +144,8 @@ def main(args=None):
             parsed_args.stage
         )
 
+    # TODO: do hard-code testing here where we set scenario_ids=[2,25]
+    #  or load_zone=['CAISO', 'LDWP']
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
@@ -132,23 +154,24 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    source = reformat_stacked_plot_data(
+    source, x_col = reformat_stacked_plot_data(
         df=df,
         y_col="capacity_mw",
         x_col="period",
         category_col="technology"
     )
 
+    # TODO: base x_col on x_col above (if list, x_col will be different in CDS!)
     plot = create_stacked_bar_plot(
         source=source,
-        title=title,
         x_col="period",
+        x_label="Period",
+        y_label="Capacity ({})".format(power_unit),
         category_label="Technology",
         category_colors=tech_colors,
         category_order=tech_plotting_order,
-        ylimit=parsed_args.ylimit,
-        y_label="Capacity ({})".format(power_unit),
-        x_label="Period"
+        title=plot_title,
+        ylimit=parsed_args.ylimit
     )
 
     # Show plot in HTML browser file if requested
