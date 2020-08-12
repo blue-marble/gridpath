@@ -161,6 +161,57 @@ def get_unit(c, metric):
         return unit.fetchone()[0]
 
 
+def get_capacity_data(conn, subproblem, stage, capacity_col,
+                      scenario_id=None, load_zone=None, period=None):
+    """
+    Get capacity results by scenario/period/technology. Users can
+    optionally provide a subset of scenarios/load_zones/periods.
+    Note: if load zone is not provided, will aggregate across load zones.
+
+    :param conn:
+    :param subproblem:
+    :param stage:
+    :param capacity_col: str, capacity column in results_project_capacity
+    :param scenario_id: int or list of int, optional (default: return all
+        scenarios)
+    :param load_zone: str or list of str, optional (default: aggregate across
+        load_zones)
+    :param period: int or list of int, optional (default: return all periods)
+    :return: DataFrame with columns scenario_id, period, technology, capacity_mw
+    """
+
+    params = [subproblem, stage]
+    sql = """SELECT scenario_name AS scenario, period, technology, 
+        sum({}) AS capacity_mw
+        FROM results_project_capacity
+        INNER JOIN 
+        (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
+        USING (scenario_id)
+        WHERE subproblem_id = ?
+        AND stage_id = ?""".format(capacity_col)
+    if period is not None:
+        period = period if isinstance(period, list) else [period]
+        sql += " AND period in ({})".format(",".join("?"*len(period)))
+        params += period
+    if scenario_id is not None:
+        scenario_id = scenario_id if isinstance(scenario_id, list) else [scenario_id]
+        sql += " AND scenario_id in ({})".format(",".join("?"*len(scenario_id)))
+        params += scenario_id
+    if load_zone is not None:
+        load_zone = load_zone if isinstance(load_zone, list) else [load_zone]
+        sql += " AND load_zone in ({})".format(",".join("?"*len(load_zone)))
+        params += load_zone
+    sql += " GROUP BY scenario, period, technology;"
+
+    df = pd.read_sql(
+        sql,
+        con=conn,
+        params=params
+    )
+
+    return df
+
+
 def order_cols_by_nunique(df, cols):
     """
     Reorder columns in cols according to number of unique values in the df.
