@@ -161,86 +161,90 @@ def get_unit(c, metric):
         return unit.fetchone()[0]
 
 
-def reformat_stacked_plot_data(df, y_col, x_col, category_col,
-                               column_mapper={}):
+def order_cols_by_nunique(df, cols):
     """
-    TODO: update docstrings
-    Rename columns, pivot, and convert to Bokeh ColumnDataSource
-    :param df: a data-base style DataFrame which should at least include the
-    columns 'y_col', 'x_col' and 'category_col'. The
-    'x_col' and 'category_col' should uniquely identify the value of
-    the 'y_col' (e.g. capacity should be uniquely defined by the
-    period and the technology).
+    Reorder columns in cols according to number of unique values in the df.
+    This can be used to have a cleaner grouped (multi-level) x-axis where
+    the level with the least unique values is at the bottom.
+    Note: alternatively you could remove cols that have only 1 unique value
+    :param df: pandas DataFrame
+    :param cols: list of columns to reorder
+    :return:
+    """
+    unique_count = df[cols].nunique().sort_values()
+    re_ordered_cols = list(unique_count.index.values)
+    return re_ordered_cols
+
+
+def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
+    """
+    Processes a SQL-style long dataframe into a Bokeh ColumnDataSource (CDS)
+    for stacked bar plotting:
+        - Reorder index columns (x_cols) according to unique entries
+        - Convert index column values to string
+        - Pivot category_col to wide format
+        - Rename columns and indices using an optional column_mapper
+        - Create the CDS from the dataframe
+    Returns the processed CDS as well as the reordered index column labels.
+
+    Note: x_col(s) and category_col should uniquely identify a dataframe row!
 
     Example:
-    data = {'year': [2018, 2018], 'mw': [5, 8], 'tech': ['t1', 't2']}
+    data = {'period': [2018, 2018],
+            'scenario' : ['scen1', 'scen2'],
+            'tech': ['t1', 't2'],
+            'mw': [5, 8],
+            }
     df = pd.DataFrame(data)
-    create_stacked_bar_plot(
+    source, reordered_cols = process_stacked_plot_data(
         df=df,
-        title="example_plot",
         y_col="mw",
-        x_col="year",
+        x_col=["scenario", "period"],
         category_label="tech"
     )
+    --> source = {'period_scenario': [('2018', 'scen1'), ('2018', 'scen2')],
+                  't1': [5],
+                  't2': [8]}
+    --> x_col_reordered = ["period", scenario"]
 
+    :param df: a database style long DataFrame which should include the columns
+    'y_col', 'x_col' (can be list of cols) and 'category_col'. The
+    'x_col' and 'category_col' should uniquely identify the value of the 'y_col'
+    the 'y_col' (e.g. capacity should be uniquely defined by the
+    period and the technology).
     :param y_col:
-    :param x_col:
+    :param x_col: str or list of str, the index column(s) to use
     :param category_col: str, name of column to pivot
     :param column_mapper:
     :return:
     """
 
-    # Change type of index to str, required for categorical bar chart
-    # df.index = df.index.map(str)
-    # x_col = ["period", "scenario_id"]
+    # Prepare x_col (index)
     x_col = x_col if isinstance(x_col, list) else [x_col]
-    for col in x_col:
-        df[col] = df[col].astype(str)
-
-    # TODO: figure out if we need to index by all entries in x_col
-    #  only do so if there are more than 1 unique
+    df[x_col] = df[x_col].astype(str)  # required for categorical bar chart
+    x_col_reordered = order_cols_by_nunique(df, x_col)  # cleaner grouped axis
 
     # Pivot such that values in category column become column headers
     # Note: df.pivot doesn't work with list of indexes in v1.0.5. Fixed in 1.1.0
     df = pd.pivot_table(
         data=df,
-        index=x_col,
+        index=x_col_reordered,  # can be multi-level index!
         columns=category_col,
         values=y_col
     ).fillna(0).sort_index()  # sorting for grouped x-axis format
-
-    # TODO: does this work for multi-index?
-    # TODO: need to make sure that if index is not x_col, we need to remove
-    #  the index from the CDS.
 
     # Rename columns (optional)
     df.rename(columns=column_mapper, index=column_mapper, inplace=True)
     # Set up Bokeh ColumnDataSource
     source = ColumnDataSource(data=df)
 
-    # TODO: remove
-    # df = pd.DataFrame(
-    #     columns=["period", "solar", "wind", "gas"],
-    #     data=[[("2020", "test_long_scenario_name"), 10, 5, 8],
-    #           [("2030", "test"), 10, 5, 8],
-    #           [("2040", "test"), 10, 5, 8],
-    #           [("2020", "test2a;dlkjadsf;kj"), 10, 5, 8],
-    #           [("2030", "test2eq;hda;hdd"), 10, 5, 8],
-    #           [("2040", "test2"), 10, 5, 8],
-    #           [("2020", "test3"), 10, 5, 8],
-    #           [("2030", "test3"), 10, 5, 8],
-    #           [("2040", "test3"), 10, 5, 8]
-    #           ]
-    # ).set_index(['period']).sort_index()  # sorting for grouped x-axis format
-    #
-    # source = ColumnDataSource(df)
-
-    return source, x_col
+    return source, x_col_reordered
 
 
 def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
                             category_label="Category", category_colors={},
-                            category_order={}, title=None, ylimit=None
+                            category_order={}, title=None, ylimit=None,
+                            sizing_mode="fixed"
                             ):
     """
     Create a stacked bar chart from a Bokeh ColumnDataSource (CDS). The CDS
@@ -252,8 +256,8 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
 
     :param source: Bokeh ColumnDataSource
     :param x_col: str
-    :param x_label: str, optional
-    :param y_label: str, optional
+    :param x_label: str, optional (defaults to x_col)
+    :param y_label: str, optional (defaults to no label)
     :param category_label: str, optional
     :param category_colors: dict, optional, maps categories to colors.
         Categories without a specified color will use a default palette
@@ -261,6 +265,7 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
         plotting order in the stacked bar chart (lower = bottom)
     :param title: string, optional, plot title
     :param ylimit: float/int, optional, upper limit of y-axis
+    :param sizing_mode: Bokeh layout/figure sizing mode, default 'fixed'
     :return:
     """
 
@@ -286,22 +291,30 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
         else:
             colors.append(unspecified_category_colors[column])
 
+    # Determine whether we are dealing with a grouped x_axis (tuple values)
+    grouped_x = False
     try:
-        # Use FactorRange for stacked, grouped bar chart if x_col is tuple
         if isinstance(source.data[x_col][0], tuple):
-            x_range = FactorRange(*source.data[x_col])
-        else:
-            x_range = source.data[x_col]
-    except IndexError as e:
-        x_range = []
+            grouped_x = True
+    except IndexError:
+        # If there is no data, there grouped_x_axis remains False
+        pass
+
+    # Find max label length in x axis labels
+    if grouped_x:
+        tuples = list(zip(*source.data[x_col]))  # convert to tuple of lists
+        max_length = len(max(tuples[-1], key=len))  # look at inner-most x-axis
+        # group
+    else:
+        max_length = len(max(list(source.data[x_col]), key=len))
 
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=x_range
-        # sizing_mode="scale_both"
+        x_range=FactorRange(*source.data[x_col]) if grouped_x else source.data[x_col],
+        sizing_mode=sizing_mode,
     )
 
     # Add stacked area chart to plot
@@ -310,8 +323,8 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
         x=x_col,
         source=source,
         color=colors,
-        width=0.5,
-        alpha=0.7  # transparancy
+        width=0.8,
+        alpha=0.7  # transparency
     )
 
     # Add Legend
@@ -327,7 +340,8 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
     # Format Axes (labels, number formatting, range, etc.)
     x_label = x_col if x_label is None else x_label
     plot.xaxis.axis_label = x_label
-    plot.xaxis.major_label_orientation = 1
+    if max_length > 10:  # Print innermost labels at angle if label is long
+        plot.xaxis.major_label_orientation = 1
     plot.xgrid.grid_line_color = None
     if y_label is not None:
         plot.yaxis.axis_label = y_label
