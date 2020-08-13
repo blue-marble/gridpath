@@ -274,16 +274,19 @@ def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
     x_col = x_col if isinstance(x_col, list) else [x_col]
     df[x_col] = df[x_col].astype(str)  # required for categorical bar chart
     x_col_reordered = order_cols_by_nunique(df, x_col)  # cleaner grouped axis
-
     # Pivot such that values in category column become column headers
-    # Note: df.pivot doesn't work with list of indexes in v1.0.5. Fixed in 1.1.0
+    # Note on df.pivot vs. pd.pivot_table:
+    #   df.pivot doesn't work with list of indexes in v1.0.5. Fixed in 1.1.0
+    #   pd.pivot_table doesn't work with non-numeric values so need .fillna(0)
+    #      to make sure None values are replaced with zero (e.g. hurdle rates)
+    #   pd.pivot_table doesn't work with empty table without aggfunc="first"
     df = pd.pivot_table(
-        data=df,
+        data=df.fillna(0),
         index=x_col_reordered,  # can be multi-level index!
         columns=category_col,
-        values=y_col
+        values=y_col,
+        aggfunc="first"  # take first value if there are duplicates
     ).fillna(0).sort_index()  # sorting for grouped x-axis format
-
     # Rename columns (optional)
     df.rename(columns=column_mapper, index=column_mapper, inplace=True)
     # Set up Bokeh ColumnDataSource
@@ -348,16 +351,15 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
         if isinstance(source.data[x_col][0], tuple):
             grouped_x = True
     except IndexError:
-        # If there is no data, there grouped_x_axis remains False
+        # If there is no data, grouped_x remains False
         pass
 
     # Find max label length in x axis labels
     if grouped_x:
         tuples = list(zip(*source.data[x_col]))  # convert to tuple of lists
-        max_length = len(max(tuples[-1], key=len))  # look at inner-most x-axis
-        # group
+        max_length = len(max(tuples[-1], key=len))  # look at inner-most level
     else:
-        max_length = len(max(list(source.data[x_col]), key=len))
+        max_length = len(max(list(source.data[x_col]), key=len, default=""))
 
     # Set up the figure
     plot = figure(
