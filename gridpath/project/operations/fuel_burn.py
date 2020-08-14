@@ -20,6 +20,7 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -65,12 +66,17 @@ def add_model_components(m, d):
     # Derived Params
     ###########################################################################
 
-    def fuel_rule(mod, g):
+    def fuel_rule(mod, prj):
         """
         Fuel for each project (None if no fuel)
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].fuel_rule(mod, g)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_rule"):
+            return imported_operational_modules[gen_op_type]\
+                .fuel_rule(mod, prj)
+        else:
+            return op_type.fuel_rule(mod, prj)
 
     m.fuel = Param(
         m.PROJECTS,
@@ -80,29 +86,37 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def fuel_burn_rule(mod, g, tmp):
+    def fuel_burn_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel)
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_burn_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_burn_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                fuel_burn_rule(mod, prj, tmp)
+        else:
+            return op_type.fuel_burn_rule(mod, prj, tmp)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
         m.PRJ_OPR_TMPS,
         rule=fuel_burn_rule
     )
 
-    def startup_fuel_burn_rule(mod, g, tmp):
+    def startup_fuel_burn_rule(mod, prj, tmp):
         """
         Startup fuel burn is defined for some operational types while
         they are zero for others. Get the appropriate expression for each
         generator based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            startup_fuel_burn_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_fuel_burn_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                startup_fuel_burn_rule(mod, prj, tmp)
+        else:
+            return op_type.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
         m.PRJ_OPR_TMPS,

@@ -391,59 +391,11 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
-def fuel_burn_rule(mod, g, tmp):
-    """
-    Variable generator projects should not have fuel use.
-    """
-
-    return 0
-
-
-def fuel_cost_rule(mod, g, tmp):
-    """
-    """
-
-    return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    return None
-
-
-def carbon_emissions_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     """
     return mod.GenVar_Provide_Power_MW[g, tmp] \
         * mod.gen_var_variable_om_cost_per_mwh[g]
-
-
-def startup_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
-
-
-def shutdown_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of shutting down.
-    """
-    return 0
-
-
-def startup_fuel_burn_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
 
 
 def power_delta_rule(mod, g, tmp):

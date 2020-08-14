@@ -20,6 +20,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
     setup_results_import
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -82,44 +83,56 @@ def add_model_components(m, d):
         rule=variable_om_cost_rule
     )
 
-    def fuel_cost_rule(mod, g, tmp):
+    def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
         **Defined Over**: PRJ_OPR_TMPS
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                fuel_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.fuel_cost_rule(mod, prj, tmp)
 
     m.Fuel_Cost = Expression(
         m.PRJ_OPR_TMPS,
         rule=fuel_cost_rule
     )
 
-    def startup_cost_rule(mod, g, tmp):
+    def startup_cost_rule(mod, prj, tmp):
         """
         Startup costs are defined for some operational types while they are
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            startup_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                startup_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.startup_cost_rule(mod, prj, tmp)
 
     m.Startup_Cost = Expression(
         m.PRJ_OPR_TMPS,
         rule=startup_cost_rule
     )
 
-    def shutdown_cost_rule(mod, g, tmp):
+    def shutdown_cost_rule(mod, prj, tmp):
         """
         Shutdown costs are defined for some operational types while they are
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            shutdown_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "shutdown_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                shutdown_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.shutdown_cost_rule(mod, prj, tmp)
 
     m.Shutdown_Cost = Expression(
         m.PRJ_OPR_TMPS,

@@ -18,6 +18,7 @@ from gridpath.auxiliary.auxiliary import setup_results_import, \
     load_operational_type_modules
 from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -48,16 +49,20 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def carbon_emissions_rule(mod, g, tmp):
+    def carbon_emissions_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel). Multiply by the timepoint duration
         and timepoint weight to get the total emissions amount.
         """
 
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            carbon_emissions_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "carbon_emissions_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                carbon_emissions_rule(mod, prj, tmp)
+        else:
+            return op_type.carbon_emissions_rule(mod, prj, tmp)
 
     m.Project_Carbon_Emissions = Expression(
         m.PRJ_OPR_TMPS,

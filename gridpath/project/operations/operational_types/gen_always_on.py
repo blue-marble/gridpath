@@ -805,27 +805,6 @@ def variable_om_cost_rule(mod, g, tmp):
         + mod.GenAlwaysOn_Variable_OM_Cost_By_LL[g, tmp]
 
 
-def startup_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
-
-
-def shutdown_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of shutting down.
-    """
-    return 0
-
-
-def startup_fuel_burn_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
-
-
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

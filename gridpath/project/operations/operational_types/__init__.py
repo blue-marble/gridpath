@@ -2,9 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Describe operational constraints on the generation infrastructure.
+Describe operational constraints on generation, storage, and DR projects.
 
-
+This module contains the defaults for the operational type module methods.
+If an operational type module method is not speified in an operational type
+module, these defaults are used.
 """
 
 import csv
@@ -328,5 +330,57 @@ def power_provision_rule(mod, prj, tmp):
     return 0
 
 
+def fuel_burn_rule(mod, prj, tmp):
+    """
+    If no fuel_burn_rule is specified in an operational type module, the
+    default fuel burn is 0.
+    """
+    return 0
 
 
+def fuel_cost_rule(mod, prj, tmp):
+    """
+    If no fuel_cost_rule is specified in an operational type module, the
+    default fuel cost is 0.
+    """
+    return 0
+
+
+def fuel_rule(mod, prj):
+    """
+    If no fuel_rule is specified in an operational type module, the
+    default fuel is None.
+    """
+    return None
+
+
+def carbon_emissions_rule(mod, prj, tmp):
+    """
+    If no carbon_emissions_rule is specified in an operational type module, the
+    default carbon emissions amount is 0.
+    """
+    return 0
+
+
+def startup_cost_rule(mod, g, tmp):
+    """
+    If no startup_cost_rule is specified in an operational type module, the
+    default startup fuel cost is 0.
+    """
+    return 0
+
+
+def shutdown_cost_rule(mod, g, tmp):
+    """
+    If no shutdown_cost_rule is specified in an operational type module, the
+    default shutdown fuel cost is 0.
+    """
+    return 0
+
+
+def startup_fuel_burn_rule(mod, g, tmp):
+    """
+    If no startup_fuel_burn_rule is specified in an operational type module, the
+    default startup fuel burn is 0.
+    """
+    return 0
