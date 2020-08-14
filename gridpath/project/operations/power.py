@@ -21,6 +21,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
     setup_results_import
 from gridpath.auxiliary.dynamic_components import required_operational_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -55,7 +56,7 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def power_provision_rule(mod, g, tmp):
+    def power_provision_rule(mod, prj, tmp):
         """
         **Expression Name**: Power_Provision_MW
         **Defined Over**: PRJ_OPR_TMPS
@@ -64,9 +65,13 @@ def add_model_components(m, d):
         the appropriate expression for each generator based on its operational
         type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            power_provision_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "power_provision_rule"):
+            return imported_operational_modules[gen_op_type].\
+                power_provision_rule(mod, prj, tmp)
+        else:
+            return op_type.power_provision_rule(mod, prj, tmp)
 
     m.Power_Provision_MW = Expression(
         m.PRJ_OPR_TMPS,

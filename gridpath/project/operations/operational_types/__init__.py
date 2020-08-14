@@ -3,6 +3,8 @@
 
 """
 Describe operational constraints on the generation infrastructure.
+
+
 """
 
 import csv
@@ -314,3 +316,17 @@ def process_results(db, c, subscenarios, quiet):
                     db, c, subscenarios, quiet)
         else:
             pass
+
+
+# ###  Operational Type Module Method Defaults ### #
+
+def power_provision_rule(mod, prj, tmp):
+    """
+    If no power_provision_rule is specified in an operational type module, the
+    default power provision is 0.
+    """
+    return 0
+
+
+
+
