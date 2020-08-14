@@ -2231,26 +2231,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.GenCommitLin_Commit[g, tmp]
 
 
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    No 'curtailment' -- simply dispatch down
-    """
-    return 0
-
-
-# TODO: ignoring subhourly behavior for dispatchable gens for now
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     """

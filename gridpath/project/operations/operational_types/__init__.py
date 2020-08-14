@@ -362,7 +362,7 @@ def carbon_emissions_rule(mod, prj, tmp):
     return 0
 
 
-def startup_cost_rule(mod, g, tmp):
+def startup_cost_rule(mod, prj, tmp):
     """
     If no startup_cost_rule is specified in an operational type module, the
     default startup fuel cost is 0.
@@ -370,7 +370,7 @@ def startup_cost_rule(mod, g, tmp):
     return 0
 
 
-def shutdown_cost_rule(mod, g, tmp):
+def shutdown_cost_rule(mod, prj, tmp):
     """
     If no shutdown_cost_rule is specified in an operational type module, the
     default shutdown fuel cost is 0.
@@ -378,9 +378,33 @@ def shutdown_cost_rule(mod, g, tmp):
     return 0
 
 
-def startup_fuel_burn_rule(mod, g, tmp):
+def startup_fuel_burn_rule(mod, prj, tmp):
     """
     If no startup_fuel_burn_rule is specified in an operational type module, the
     default startup fuel burn is 0.
+    """
+    return 0
+
+
+def scheduled_curtailment_rule(mod, prj, tmp):
+    """
+    If no scheduled_curtailment_rule is specified in an operational type
+    module, the default scheduled curtailment is 0.
+    """
+    return 0
+
+
+def subhourly_curtailment_rule(mod, prj, tmp):
+    """
+    If no subhourly_curtailment_rule is specified in an operational type
+    module, the default subhourly curtailment is 0.
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, prj, tmp):
+    """
+    If no subhourly_energy_delivered_rule is specified in an operational type
+    module, the default subhourly energy delivered is 0.
     """
     return 0

@@ -215,27 +215,6 @@ def rec_provision_rule(mod, g, tmp):
         * mod.gen_var_must_take_cap_factor[g, tmp]
 
 
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    No curtailment allowed for must-take variable generators.
-    """
-    return 0
-
-
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    Can't provide downward reserves, so no sub-hourly curtailment.
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    Can't provide upward reserves, so no sub-hourly energy delivered.
-    """
-    return 0
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     """

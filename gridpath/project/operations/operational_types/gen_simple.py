@@ -488,26 +488,6 @@ def rec_provision_rule(mod, g, tmp):
     return mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    No 'curtailment' -- simply dispatch down
-    """
-    return 0
-
-
-# TODO: ignoring subhourly behavior for dispatchable gens for now
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     Fuel burn is the product of the fuel burn slope and the power output. For

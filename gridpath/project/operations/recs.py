@@ -19,6 +19,7 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.dynamic_components import required_operational_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -143,44 +144,56 @@ def add_model_components(m, d):
         rule=scheduled_recs_rule
     )
 
-    def scheduled_curtailment_rule(mod, g, tmp):
+    def scheduled_curtailment_rule(mod, prj, tmp):
         """
         Keep track of curtailment to make it easier to calculate total
         curtailed RPS energy for example -- this is the scheduled
         curtailment component.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            scheduled_curtailment_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "scheduled_curtailment_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                scheduled_curtailment_rule(mod, prj, tmp)
+        else:
+            return op_type.scheduled_curtailment_rule(mod, prj, tmp)
 
     m.Scheduled_Curtailment_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,
         rule=scheduled_curtailment_rule
     )
 
-    def subhourly_recs_delivered_rule(mod, g, tmp):
+    def subhourly_recs_delivered_rule(mod, prj, tmp):
         """
         This how many RECs are scheduled to be delivered through sub-hourly
         dispatch (upward reserve dispatch).
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            subhourly_energy_delivered_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "subhourly_energy_delivered_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                subhourly_energy_delivered_rule(mod, prj, tmp)
+        else:
+            return op_type.subhourly_energy_delivered_rule(mod, prj, tmp)
 
     m.Subhourly_RPS_Energy_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,
         rule=subhourly_recs_delivered_rule
     )
 
-    def subhourly_curtailment_rule(mod, g, tmp):
+    def subhourly_curtailment_rule(mod, prj, tmp):
         """
         Keep track of curtailment to make it easier to calculate total
         curtailed RPS energy for example -- this is the subhourly
         curtailment component (downward reserve dispatch).
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            subhourly_curtailment_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "subhourly_curtailment_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                subhourly_curtailment_rule(mod, prj, tmp)
+        else:
+            return op_type.subhourly_curtailment_rule(mod, prj, tmp)
 
     m.Subhourly_Curtailment_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,

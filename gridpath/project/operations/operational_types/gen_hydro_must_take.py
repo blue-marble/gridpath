@@ -551,25 +551,6 @@ def rec_provision_rule(mod, g, tmp):
     return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
 
 
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-# TODO: ignoring subhourly behavior for hydro for now
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     """

@@ -248,27 +248,6 @@ def rec_provision_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    Can't dispatch down and curtailment not allowed
-    """
-    return 0
-
-
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    Can't provide reserves
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    Can't provide reserves
-    """
-    return 0
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     Output doesn't vary, so this is a constant.

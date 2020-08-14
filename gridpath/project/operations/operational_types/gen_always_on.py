@@ -726,27 +726,6 @@ def rec_provision_rule(mod, g, tmp):
     return mod.GenAlwaysOn_Provide_Power_MW[g, tmp]
 
 
-# TODO: ignore curtailment for now, but might need to revisit if for example
-#  RPS-eligible technologies are modeled as always-on (e.g. geothermal) --
-#  it may make more sense to model them as 'gen_var' with constant cap factor
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     """
