@@ -588,13 +588,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision from curtailable hydro if eligible.
-    """
-    return mod.GenHydro_Provide_Power_MW[g, tmp]
-
-
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     """

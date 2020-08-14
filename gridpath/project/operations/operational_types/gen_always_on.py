@@ -719,13 +719,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision for always-on generators, if eligible, is their power output.
-    """
-    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp]
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     """

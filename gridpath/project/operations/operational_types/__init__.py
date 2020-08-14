@@ -386,6 +386,14 @@ def startup_fuel_burn_rule(mod, prj, tmp):
     return 0
 
 
+def rec_provision_rule(mod, prj, tmp):
+    """
+    If no rec_provision_rule is specified in an operational type module,
+    the default REC provisions is the power provision.
+    """
+    return mod.Power_Provision_MW[prj, tmp]
+
+
 def scheduled_curtailment_rule(mod, prj, tmp):
     """
     If no scheduled_curtailment_rule is specified in an operational type

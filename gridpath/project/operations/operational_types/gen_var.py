@@ -356,15 +356,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision from variable generators is a variable lesser than or
-    equal to capacity times the capacity factor in each timepoint minus any
-    upward reserves/curtailment. See max_power_rule above.
-    """
-    return mod.GenVar_Provide_Power_MW[g, tmp]
-
-
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Variable generation can be dispatched down, i.e. scheduled below the

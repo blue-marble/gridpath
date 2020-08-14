@@ -544,13 +544,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision from must-take hydro if eligible.
-    """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     """

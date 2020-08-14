@@ -2206,14 +2206,6 @@ def power_provision_rule(mod, g, tmp):
         mod.GenCommitLin_Auxiliary_Consumption_MW[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision of dispatchable generators is an endogenous variable.
-    """
-    return mod.GenCommitLin_Provide_Power_MW[g, tmp] - \
-        mod.GenCommitLin_Auxiliary_Consumption_MW[g, tmp]
-
-
 def commitment_rule(mod, g, tmp):
     """
     Commitment decision in each timepoint

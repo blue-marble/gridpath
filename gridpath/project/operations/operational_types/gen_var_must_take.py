@@ -204,17 +204,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision from variable must-take generators is the same as power
-    provision: their capacity times the capacity factor in each timepoint.
-    """
-
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_var_must_take_cap_factor[g, tmp]
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     """

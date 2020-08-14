@@ -130,14 +130,18 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def scheduled_recs_rule(mod, g, tmp):
+    def scheduled_recs_rule(mod, prj, tmp):
         """
         This how many RECs are scheduled to be delivered at the timepoint
         (hourly) schedule.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            rec_provision_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "rec_provision_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                rec_provision_rule(mod, prj, tmp)
+        else:
+            return op_type.rec_provision_rule(mod, prj, tmp)
 
     m.Scheduled_RPS_Energy_MW = Expression(
         m.RPS_PRJ_OPR_TMPS, 

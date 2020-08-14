@@ -240,14 +240,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision for must-run generators, if eligible, is their capacity.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def fuel_burn_rule(mod, g, tmp):
     """
     Output doesn't vary, so this is a constant.
