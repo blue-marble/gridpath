@@ -487,12 +487,9 @@ def fuel_burn_rule(mod, g, tmp):
     heat_rate_curves.tab, so the fuel burn slope is equal to the specified
     heat rate and the intercept is zero.
     """
-    if g in mod.GEN_SIMPLE_FUEL_PRJS:
-        return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
-            tmp], 0] \
-            * mod.GenSimple_Provide_Power_MW[g, tmp]
-    else:
-        return 0
+    return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
+        tmp], 0] \
+        * mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -505,15 +502,6 @@ def fuel_cost_rule(mod, g, tmp):
                                        mod.month[tmp]]
     else:
         return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    if g in mod.GEN_SIMPLE_FUEL_PRJS:
-        return mod.gen_simple_fuel[g]
-    else:
-        return None
 
 
 def carbon_emissions_rule(mod, g, tmp):

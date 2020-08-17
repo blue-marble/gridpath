@@ -86,7 +86,6 @@ class TestFuelBurn(unittest.TestCase):
         instance = m.create_instance(data)
 
         # param fuel
-
         # Load test data
         projects_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
@@ -95,17 +94,15 @@ class TestFuelBurn(unittest.TestCase):
         )
 
         # Check derived param: fuel
-        # Note: projects with no fuel will have None as fuel but will be
-        #  written out as "."
-        projects_df = projects_df.where(projects_df != ".", None)
+        expected_fuel_df = projects_df[~projects_df['fuel'].isin(['.'])]
         expected_fuel = OrderedDict(
             sorted(
-                projects_df.set_index('project').to_dict()['fuel'].items()
+                expected_fuel_df.set_index('project').to_dict()['fuel'].items()
             )
         )
         actual_fuel = OrderedDict(
             sorted(
-                {prj: instance.fuel[prj] for prj in instance.PROJECTS}.items()
+                {prj: instance.fuel[prj] for prj in instance.FUEL_PRJS}.items()
             )
         )
         self.assertDictEqual(expected_fuel, actual_fuel)

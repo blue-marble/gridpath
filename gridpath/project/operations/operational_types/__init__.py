@@ -356,14 +356,6 @@ def fuel_cost_rule(mod, prj, tmp):
     return 0
 
 
-def fuel_rule(mod, prj):
-    """
-    If no fuel_rule is specified in an operational type module, the
-    default fuel is None.
-    """
-    return None
-
-
 def carbon_emissions_rule(mod, prj, tmp):
     """
     If no carbon_emissions_rule is specified in an operational type module, the

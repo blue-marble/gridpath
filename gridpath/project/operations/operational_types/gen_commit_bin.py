@@ -2244,10 +2244,7 @@ def online_capacity_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp):
     """
     """
-    if g in mod.GEN_COMMIT_BIN_FUEL_PRJS:
-        return mod.GenCommitBin_Fuel_Burn_MMBTU[g, tmp]
-    else:
-        return 0
+    return mod.GenCommitBin_Fuel_Burn_MMBTU[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -2260,15 +2257,6 @@ def fuel_cost_rule(mod, g, tmp):
                                        mod.month[tmp]]
     else:
         return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    if g in mod.GEN_COMMIT_BIN_FUEL_PRJS:
-        return mod.gen_commit_bin_fuel[g]
-    else:
-        return None
 
 
 def carbon_emissions_rule(mod, g, tmp):

@@ -13,7 +13,7 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Expression, value, Param
+from pyomo.environ import Set, Expression, value, Param, Any
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -66,21 +66,16 @@ def add_model_components(m, d):
     # Derived Params
     ###########################################################################
 
-    def fuel_rule(mod, prj):
-        """
-        Fuel for each project (None if no fuel)
-        """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "fuel_rule"):
-            return imported_operational_modules[gen_op_type]\
-                .fuel_rule(mod, prj)
-        else:
-            return op_type.fuel_rule(mod, prj)
+    m.FUEL_PRJS = Set(within=m.PROJECTS)
+
+    m.FUEL_PRJS_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.FUEL_PRJS]
+    )
 
     m.fuel = Param(
-        m.PROJECTS,
-        initialize=fuel_rule,
+        m.FUEL_PRJS, within=Any
     )
 
     # Expressions
@@ -100,7 +95,7 @@ def add_model_components(m, d):
             return op_type.fuel_burn_rule(mod, prj, tmp)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJS_OPR_TMPS,
         rule=fuel_burn_rule
     )
 
@@ -119,12 +114,12 @@ def add_model_components(m, d):
             return op_type.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJS_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
 
     m.Total_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJS_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
 
@@ -146,6 +141,29 @@ def total_fuel_burn_rule(mod, g, tmp):
 
 # Input-Output
 ###############################################################################
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+                              "inputs", "projects.tab"),
+        select=("project", "fuel"),
+        param=(m.fuel,)
+    )
+
+    data_portal.data()['FUEL_PRJS'] = {
+        None: list(data_portal.data()['fuel'].keys())
+    }
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -169,7 +187,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for (p, tmp) in m.FUEL_PRJS_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

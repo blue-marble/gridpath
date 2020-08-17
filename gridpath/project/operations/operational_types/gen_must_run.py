@@ -242,18 +242,10 @@ def online_capacity_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp):
     """
-    Output doesn't vary, so this is a constant.
-
-    Return 0 if must-run generator with no fuel (e.g. geothermal); these
-    should not have been given a fuel or labeled carbonaceous in the first
-    place.
     """
-    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
-        return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
-            tmp], 0] \
-            * mod.Power_Provision_MW[g, tmp]
-    else:
-        return 0
+    return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
+        tmp], 0] \
+        * mod.Power_Provision_MW[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -266,15 +258,6 @@ def fuel_cost_rule(mod, g, tmp):
                                        mod.month[tmp]]
     else:
         return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
-        return mod.gen_must_run_fuel[g]
-    else:
-        return None
 
 
 def carbon_emissions_rule(mod, g, tmp):
