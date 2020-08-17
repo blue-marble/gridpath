@@ -16,7 +16,8 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
+    process_stacked_plot_data
 
 
 def create_parser():
@@ -67,13 +68,14 @@ def get_plotting_data(conn, scenario_id, period, subproblem, stage, **kwargs):
     """
 
     # Total capacity by load_zone and technology
-    sql = """SELECT load_zone, technology, sum(capacity_mw) as capacity_mw
+    sql = """SELECT period, load_zone, technology, 
+        sum(capacity_mw) AS capacity_mw
         FROM results_project_capacity
         WHERE scenario_id = ?
         AND period = ?
         AND subproblem_id = ?
         AND stage_id = ?
-        GROUP BY load_zone, technology;"""
+        GROUP BY period, load_zone, technology;"""
 
     df = pd.read_sql(
         sql,
@@ -131,17 +133,25 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source, x_col_reordered = process_stacked_plot_data(
         df=df,
+        y_col="capacity_mw",
+        x_col=["load_zone"],
+        category_col="technology"
+    )
+
+    # Multi-level index in CDS will be joined into one column with "_" separator
+    x_col_cds = "_".join(x_col_reordered)
+    x_col_label = ", ".join([x.capitalize() for x in x_col_reordered])
+    plot = create_stacked_bar_plot(
+        source=source,
+        x_col=x_col_cds,
+        x_label=x_col_label,
+        y_label="New Capacity ({})".format(power_unit),
+        category_label="Technology",
+        category_colors=tech_colors,
+        category_order=tech_plotting_order,
         title=plot_title,
-        y_axis_column="capacity_mw",
-        x_axis_column="load_zone",
-        group_column="technology",
-        column_mapper={"capacity_mw": "New Capacity ({})".format(power_unit),
-                       "load_zone": "Load Zone",
-                       "technology": "Technology"},
-        group_colors=tech_colors,
-        group_order=tech_plotting_order,
         ylimit=parsed_args.ylimit
     )
 
