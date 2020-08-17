@@ -58,12 +58,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_always_on`        |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_ALWAYS_ON_FUEL_PRJS`                                       |
-    | | *Within*: :code:`GEN_ALWAYS_ON`                                       |
-    |                                                                         |
-    | The list of projects of the code:`gen_always_on` operational type that  |
-    | consume fuel.                                                           |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_ALWAYS_ON_FUEL_PRJS_PRDS_SGMS`                             |
     |                                                                         |
     | Three-dimensional set describing fuel projects and their heat rate      |
@@ -121,12 +115,6 @@ def add_module_specific_components(m, d):
     | This can also be interpreted as the minimum stable level of a unit      |
     | within this project (as the project itself can represent multiple       |
     | units with similar characteristics.                                     |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_always_on_fuel`                                            |
-    | | *Defined over*: :code:`GEN_ALWAYS_ON_FUEL_PRJS`                       |
-    | | *Within*: :code:`FUELS`                                               |
-    |                                                                         |
-    | This param describes each fuel project's fuel.                          |
     +-------------------------------------------------------------------------+
     | | :code:`gen_always_on_fuel_burn_slope_mmbtu_per_mwh`                   |
     | | *Defined over*: :code:`GEN_ALWAYS_ON_FUEL_PRJS_PRDS_SGMS`             |
@@ -318,10 +306,6 @@ def add_module_specific_components(m, d):
                 if g in mod.GEN_ALWAYS_ON)
     )
 
-    m.GEN_ALWAYS_ON_FUEL_PRJS = Set(
-        within=m.GEN_ALWAYS_ON
-    )
-
     m.GEN_ALWAYS_ON_FUEL_PRJS_PRDS_SGMS = Set(
         dimen=3
     )
@@ -330,7 +314,7 @@ def add_module_specific_components(m, d):
         dimen=2,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.GEN_ALWAYS_ON_OPR_TMPS
-            if g in mod.GEN_ALWAYS_ON_FUEL_PRJS)
+            if g in mod.FUEL_PRJS)
     )
 
     m.GEN_ALWAYS_ON_FUEL_PRJS_OPR_TMPS_SGMS = Set(
@@ -338,7 +322,7 @@ def add_module_specific_components(m, d):
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.GEN_ALWAYS_ON_OPR_TMPS
             for _g, p, s in mod.GEN_ALWAYS_ON_FUEL_PRJS_PRDS_SGMS
-            if g in mod.GEN_ALWAYS_ON_FUEL_PRJS 
+            if g in mod.FUEL_PRJS
             and g == _g and mod.period[tmp] == p)
     )
 
@@ -365,11 +349,6 @@ def add_module_specific_components(m, d):
 
     m.gen_always_on_min_stable_level_fraction = Param(
         m.GEN_ALWAYS_ON, within=PercentFraction
-    )
-
-    m.gen_always_on_fuel = Param(
-        m.GEN_ALWAYS_ON_FUEL_PRJS,
-        within=m.FUELS
     )
 
     m.gen_always_on_fuel_burn_slope_mmbtu_per_mwh = Param(

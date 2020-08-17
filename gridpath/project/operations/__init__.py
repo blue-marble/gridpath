@@ -8,11 +8,53 @@ and demand-side infrastructure 'projects' in the optimization problem.
 """
 
 import os.path
+from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_values
 from gridpath.project.common_functions import append_to_input_file
+
+
+def add_model_components(m, d):
+    """
+
+    :param m:
+    :param d:
+    :return:
+    """
+
+    m.FUEL_PRJS = Set(within=m.PROJECTS)
+
+    m.fuel = Param(
+        m.FUEL_PRJS, within=Any
+    )
+
+
+# Input-Output
+###############################################################################
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+                              "inputs", "projects.tab"),
+        select=("project", "fuel"),
+        param=(m.fuel,)
+    )
+
+    data_portal.data()['FUEL_PRJS'] = {
+        None: list(data_portal.data()['fuel'].keys())
+    }
 
 
 # Database

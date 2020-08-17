@@ -379,40 +379,12 @@ class TestGenCommitCap(unittest.TestCase):
         self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
                              actual_startup_fuel_mmbtu_per_mw)
 
-        # Set: GEN_COMMIT_CAP_FUEL_PRJS
+        # Set: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS
         expected_fuel_projects = sorted([
             "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
             "Gas_CCGT_New_Binary", "Gas_CT_New", "Gas_CCGT_z2", "Coal_z2",
             "Gas_CT_z2",
         ])
-        actual_fuel_projects = sorted([
-            prj for prj in instance.GEN_COMMIT_CAP_FUEL_PRJS
-            ])
-        self.assertListEqual(expected_fuel_projects,
-                             actual_fuel_projects)
-
-        # Param: fuel
-        expected_fuel = OrderedDict(sorted({
-            "Gas_CCGT": "Gas",
-            "Coal": "Coal",
-            "Gas_CT": "Gas",
-            "Gas_CCGT_New": "Gas",
-            "Gas_CCGT_New_Binary": "Gas",
-            "Gas_CCGT_z2": "Gas",
-            "Coal_z2": "Coal",
-            "Gas_CT_z2": "Gas",
-            "Gas_CT_New": "Gas",
-                                           }.items()
-                                           )
-                                    )
-        actual_fuel = OrderedDict(sorted(
-            {prj: instance.gen_commit_cap_fuel[prj] for prj in
-             instance.GEN_COMMIT_CAP_FUEL_PRJS}.items()
-        )
-        )
-        self.assertDictEqual(expected_fuel, actual_fuel)
-
-        # Set: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS
         expected_tmps_by_fuel_project = sorted(
             get_project_operational_timepoints(expected_fuel_projects)
         )

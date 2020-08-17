@@ -51,12 +51,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_MUST_RUN_FUEL_PRJS`                                        |
-    | | *Within*: :code:`GEN_MUST_RUN`                                        |
-    |                                                                         |
-    | The list of projects of the code:`gen_must_run` operational type that   |
-    | consume fuel.                                                           |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS`                              |
     |                                                                         |
     | Three-dimensional set describing fuel projects and their heat rate      |
@@ -130,10 +124,6 @@ def add_module_specific_components(m, d):
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_MUST_RUN)
     )
-    
-    m.GEN_MUST_RUN_FUEL_PRJS = Set(
-        within=m.GEN_MUST_RUN
-    )
 
     m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS = Set(
         dimen=3
@@ -141,11 +131,6 @@ def add_module_specific_components(m, d):
 
     # Required Params
     ###########################################################################
-
-    m.gen_must_run_fuel = Param(
-        m.GEN_MUST_RUN_FUEL_PRJS,
-        within=m.FUELS
-    )
 
     m.gen_must_run_fuel_burn_slope_mmbtu_per_mwh = Param(
         m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS,

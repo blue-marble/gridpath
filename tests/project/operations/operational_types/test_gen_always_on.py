@@ -229,30 +229,10 @@ class TestGenAlwaysOn(unittest.TestCase):
                              actual_ramp_down_when_on_rate
                              )
 
-        # Set: GEN_ALWAYS_ON_FUEL_PRJS
+        # Set: GEN_ALWAYS_ON_FUEL_PRJS_OPR_TMPS
         expected_fuel_projects = sorted([
             "Nuclear_Flexible"
         ])
-        actual_fuel_projects = sorted([
-            prj for prj in instance.GEN_ALWAYS_ON_FUEL_PRJS
-            ])
-        self.assertListEqual(expected_fuel_projects,
-                             actual_fuel_projects)
-
-        # Param: fuel
-        expected_fuel = OrderedDict(sorted({
-            "Nuclear_Flexible": "Uranium"
-                                           }.items()
-                                           )
-                                    )
-        actual_fuel = OrderedDict(sorted(
-            {prj: instance.gen_always_on_fuel[prj] for prj in
-             instance.GEN_ALWAYS_ON_FUEL_PRJS}.items()
-        )
-        )
-        self.assertDictEqual(expected_fuel, actual_fuel)
-
-        # Set: GEN_ALWAYS_ON_FUEL_PRJS_OPR_TMPS
         expected_tmps_by_fuel_project = sorted(
             get_project_operational_timepoints(expected_fuel_projects)
         )

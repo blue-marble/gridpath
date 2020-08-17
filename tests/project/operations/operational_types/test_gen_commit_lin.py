@@ -386,33 +386,10 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_down_time_cutoff_hours,
                              actual_down_time_cutoff_hours)
 
-        # Set: GEN_COMMIT_LIN_FUEL_PRJS
+        # Set: GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS
         expected_fuel_projects = sorted([
             "Disp_Cont_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
-        actual_fuel_projects = sorted([
-            prj for prj in instance.GEN_COMMIT_LIN_FUEL_PRJS
-            ])
-        self.assertListEqual(expected_fuel_projects,
-                             actual_fuel_projects)
-
-        # Param: fuel
-        expected_fuel = OrderedDict(sorted({
-            "Disp_Cont_Commit": "Gas",
-            "Clunky_Old_Gen": "Coal",
-            "Clunky_Old_Gen2": "Coal",
-
-                                           }.items()
-                                           )
-                                    )
-        actual_fuel = OrderedDict(sorted(
-            {prj: instance.gen_commit_lin_fuel[prj] for prj in
-             instance.GEN_COMMIT_LIN_FUEL_PRJS}.items()
-        )
-        )
-        self.assertDictEqual(expected_fuel, actual_fuel)
-
-        # Set: GEN_COMMIT_LIN_FUEL_PRJS_OPR_TMPS
         expected_tmps_by_fuel_project = sorted(
             get_project_operational_timepoints(expected_fuel_projects)
         )

@@ -51,12 +51,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_FUEL_PRJS`                                          |
-    | | *Within*: :code:`GEN_SIMPLE`                                          |
-    |                                                                         |
-    | The list of projects of the code:`gen_simple` operational type that     |
-    | consume fuel.                                                           |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                                |
     |                                                                         |
     | Three-dimensional set describing fuel projects and their heat rate      |
@@ -75,12 +69,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_simple_fuel`                                               |
-    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS`                          |
-    | | *Within*: :code:`FUELS`                                               |
-    |                                                                         |
-    | This param describes each fuel project's fuel.                          |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_simple_fuel_burn_slope_mmbtu_per_mwh`                      |
     | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                |
     | | *Within*: :code:`PositiveReals`                                       |
@@ -205,10 +193,6 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_SIMPLE)
     )
 
-    m.GEN_SIMPLE_FUEL_PRJS = Set(
-        within=m.GEN_SIMPLE
-    )
-
     m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS = Set(
         dimen=3
     )
@@ -217,11 +201,6 @@ def add_module_specific_components(m, d):
 
     # Required Params
     ###########################################################################
-
-    m.gen_simple_fuel = Param(
-        m.GEN_SIMPLE_FUEL_PRJS,
-        within=m.FUELS
-    )
 
     m.gen_simple_fuel_burn_slope_mmbtu_per_mwh = Param(
         m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS,

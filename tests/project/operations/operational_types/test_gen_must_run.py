@@ -134,31 +134,10 @@ class TestGenMustRun(unittest.TestCase):
 
         self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
 
-        # Set: GEN_MUST_RUN_FUEL_PRJS
+        # Set: GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS
         expected_fuel_projects = sorted([
             "Nuclear", "Nuclear_z2"
         ])
-        actual_fuel_projects = sorted([
-            prj for prj in instance.GEN_MUST_RUN_FUEL_PRJS
-            ])
-        self.assertListEqual(expected_fuel_projects,
-                             actual_fuel_projects)
-
-        # Param: fuel
-        expected_fuel = OrderedDict(sorted({
-            "Nuclear": "Uranium",
-            "Nuclear_z2": "Uranium"
-                                           }.items()
-                                           )
-                                    )
-        actual_fuel = OrderedDict(sorted(
-            {prj: instance.gen_must_run_fuel[prj] for prj in
-             instance.GEN_MUST_RUN_FUEL_PRJS}.items()
-        )
-        )
-        self.assertDictEqual(expected_fuel, actual_fuel)
-
-        # Set: GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS
 
         expected_fuel_project_period_segments = sorted([
             ("Nuclear", 2020, 0),

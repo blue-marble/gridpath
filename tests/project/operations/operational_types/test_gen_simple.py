@@ -162,30 +162,11 @@ class TestGenSimple(unittest.TestCase):
                              actual_ramp_down_when_on_rate
                              )
 
-        # Set: GEN_SIMPLE_FUEL_PRJS
+        # Set: GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
+
         expected_fuel_projects = sorted([
             "Disp_No_Commit",
         ])
-        actual_fuel_projects = sorted([
-            prj for prj in instance.GEN_SIMPLE_FUEL_PRJS
-            ])
-        self.assertListEqual(expected_fuel_projects,
-                             actual_fuel_projects)
-
-        # Param: fuel
-        expected_fuel = OrderedDict(sorted({
-            "Disp_No_Commit": "Gas",
-                                           }.items()
-                                           )
-                                    )
-        actual_fuel = OrderedDict(sorted(
-            {prj: instance.gen_simple_fuel[prj] for prj in
-             instance.GEN_SIMPLE_FUEL_PRJS}.items()
-        )
-        )
-        self.assertDictEqual(expected_fuel, actual_fuel)
-
-        # Set: GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
 
         expected_fuel_project_period_segments = sorted([
             ("Disp_No_Commit", 2020, 0),
