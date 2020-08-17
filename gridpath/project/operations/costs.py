@@ -108,21 +108,23 @@ def add_model_components(m, d):
         rule=variable_om_cost_rule
     )
 
+    # TODO: there was a bug before and this was not taking into account
+    #  startup fuel, so this may change objective functions, need to add into
+    #  PR description
     def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
-        **Defined Over**: PRJ_OPR_TMPS
+        **Defined Over**: FUEL_PRJS_OPR_TMPS
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "fuel_cost_rule"):
-            return imported_operational_modules[gen_op_type]. \
-                fuel_cost_rule(mod, prj, tmp)
-        else:
-            return op_type.fuel_cost_rule(mod, prj, tmp)
+        return mod.Total_Fuel_Burn_MMBtu[prj, tmp] * \
+            mod.fuel_price_per_mmbtu[
+                mod.fuel[prj],
+                mod.period[tmp],
+                mod.month[tmp]
+            ]
 
     m.Fuel_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_cost_rule
     )
 
@@ -206,7 +208,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results",
                            "costs_operations.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -224,8 +227,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.hrs_in_tmp[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Variable_OM_Cost[p, tmp]),
-                value(m.Fuel_Cost[p, tmp]),
+                value(m.Variable_OM_Cost[p, tmp]) if p in m.VAR_OM_COST_PRJS
+                else None,
+                value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
                 value(m.Startup_Cost[p, tmp]),
                 value(m.Shutdown_Cost[p, tmp])
             ])

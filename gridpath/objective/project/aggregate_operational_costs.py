@@ -48,7 +48,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.PRJ_OPR_TMPS)
+                   for (g, tmp) in mod.VAR_OM_COST_PRJ_OPR_TMPS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
     getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
@@ -65,7 +65,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.PRJ_OPR_TMPS)
+                   for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
     getattr(d, total_cost_components).append("Total_Fuel_Cost")

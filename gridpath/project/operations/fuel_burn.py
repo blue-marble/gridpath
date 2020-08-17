@@ -68,7 +68,7 @@ def add_model_components(m, d):
 
     m.FUEL_PRJS = Set(within=m.PROJECTS)
 
-    m.FUEL_PRJS_OPR_TMPS = Set(
+    m.FUEL_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.FUEL_PRJS]
@@ -95,7 +95,7 @@ def add_model_components(m, d):
             return op_type.fuel_burn_rule(mod, prj, tmp)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJS_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_burn_rule
     )
 
@@ -114,12 +114,12 @@ def add_model_components(m, d):
             return op_type.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJS_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
 
     m.Total_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJS_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
 
@@ -187,7 +187,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
-        for (p, tmp) in m.FUEL_PRJS_OPR_TMPS:
+        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

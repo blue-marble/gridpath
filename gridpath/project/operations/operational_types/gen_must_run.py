@@ -248,18 +248,6 @@ def fuel_burn_rule(mod, g, tmp):
         * mod.Power_Provision_MW[g, tmp]
 
 
-def fuel_cost_rule(mod, g, tmp):
-    """
-    """
-    if g in mod.GEN_MUST_RUN_FUEL_PRJS:
-        return fuel_burn_rule(mod, g, tmp) \
-            * mod.fuel_price_per_mmbtu[mod.gen_must_run_fuel[g],
-                                       mod.period[tmp],
-                                       mod.month[tmp]]
-    else:
-        return 0
-
-
 def carbon_emissions_rule(mod, g, tmp):
     if g in mod.GEN_MUST_RUN_FUEL_PRJS:
         return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[

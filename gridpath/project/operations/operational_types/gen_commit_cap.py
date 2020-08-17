@@ -1548,18 +1548,6 @@ def fuel_burn_rule(mod, g, tmp):
     return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp]
 
 
-def fuel_cost_rule(mod, g, tmp):
-    """
-    """
-    if g in mod.GEN_COMMIT_CAP_FUEL_PRJS:
-        return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp] \
-            * mod.fuel_price_per_mmbtu[mod.gen_commit_cap_fuel[g],
-                                       mod.period[tmp],
-                                       mod.month[tmp]]
-    else:
-        return 0
-
-
 def carbon_emissions_rule(mod, g, tmp):
     if g in mod.GEN_COMMIT_CAP_FUEL_PRJS:
         return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp] \

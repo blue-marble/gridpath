@@ -84,5 +84,6 @@ class TestOperationalCosts(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+
 if __name__ == "__main__":
     unittest.main()
