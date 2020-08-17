@@ -246,14 +246,6 @@ def power_provision_rule(mod, p, tmp):
     return mod.DR_Shift_Down_MW[p, tmp] - mod.DR_Shift_Up_MW[p, tmp]
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    Variable O&M costs are applied only to the down-shift, i.e. when the
-    project is "providing power" to the system.
-    """
-    return mod.DR_Shift_Down_MW[g, tmp] * mod.dr_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, p, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

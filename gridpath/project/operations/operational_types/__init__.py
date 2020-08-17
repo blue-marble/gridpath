@@ -36,8 +36,6 @@ def add_model_components(m, d):
             imp_op_m.add_module_specific_components(m, d)
 
 
-# TODO: we should check that all operational types specified by user are
-#  actually implemented
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -326,6 +324,18 @@ def power_provision_rule(mod, prj, tmp):
     """
     If no power_provision_rule is specified in an operational type module, the
     default power provision is 0.
+    """
+    return 0
+
+
+def variable_om_cost_rule(mod, prj, tmp):
+    """
+    """
+    return mod.Power_Provision_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
+
+
+def variable_om_cost_by_ll_rule(mod, prj, tmp):
+    """
     """
     return 0
 

@@ -287,14 +287,6 @@ def carbon_emissions_rule(mod, g, tmp):
         return 0
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_must_run_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     """

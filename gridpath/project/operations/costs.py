@@ -14,7 +14,7 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Var, Expression, Constraint, NonNegativeReals, value
+from pyomo.environ import Set, Param, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
@@ -71,15 +71,40 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def variable_om_cost_rule(mod, g, tmp):
+    m.VAR_OM_COST_PRJS = Set(within=m.PROJECTS)
+
+    m.variable_om_cost_per_mwh = Param(
+        m.VAR_OM_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.VAR_OM_COST_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.VAR_OM_COST_PRJS]
+    )
+
+    def variable_om_cost_rule(mod, prj, tmp):
         """
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            variable_om_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "variable_om_cost_rule"):
+            var_cost_generic = imported_operational_modules[gen_op_type]. \
+                variable_om_cost_rule(mod, prj, tmp)
+        else:
+            var_cost_generic = op_type.variable_om_cost_rule(mod, prj, tmp)
+
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "variable_om_cost_by_ll_rule"):
+            var_cost_by_ll = imported_operational_modules[gen_op_type]. \
+                variable_om_cost_by_ll_rule(mod, prj, tmp)
+        else:
+            var_cost_by_ll = op_type.variable_om_cost_by_ll_rule(mod, prj, tmp)
+
+        return var_cost_generic + var_cost_by_ll
 
     m.Variable_OM_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.VAR_OM_COST_PRJ_OPR_TMPS,
         rule=variable_om_cost_rule
     )
 
@@ -142,6 +167,29 @@ def add_model_components(m, d):
 
 # Input-Output
 ###############################################################################
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+                              "inputs", "projects.tab"),
+        select=("project", "variable_om_cost_per_mwh"),
+        param=(m.variable_om_cost_per_mwh,)
+    )
+
+    data_portal.data()['VAR_OM_COST_PRJS'] = {
+        None: list(data_portal.data()['variable_om_cost_per_mwh'].keys())
+    }
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """

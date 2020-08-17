@@ -757,7 +757,7 @@ def carbon_emissions_rule(mod, g, tmp):
         return 0
 
 
-def variable_om_cost_rule(mod, g, tmp):
+def variable_om_cost_by_ll_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
@@ -772,9 +772,7 @@ def variable_om_cost_rule(mod, g, tmp):
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
     """
-    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
-        * mod.gen_always_on_variable_om_cost_per_mwh[g] \
-        + mod.GenAlwaysOn_Variable_OM_Cost_By_LL[g, tmp]
+    return mod.GenAlwaysOn_Variable_OM_Cost_By_LL[g, tmp]
 
 
 def power_delta_rule(mod, g, tmp):

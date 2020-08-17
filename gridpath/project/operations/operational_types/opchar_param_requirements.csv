@@ -1,7 +1,8 @@
 ﻿char,type,dr,gen_always_on,gen_commit_bin,gen_commit_cap,gen_commit_lin,gen_hydro,gen_hydro_must_take,gen_must_run,gen_simple,gen_var,gen_var_must_take,stor
 fuel,str,,,,,,,,,,,,
-variable_om_cost_per_mwh,float,optional,optional,optional,optional,optional,optional,optional,optional,optional,optional,optional,optional
-min_stable_level_fraction,float,,required,required,required,required,,,,,,
+variable_om_cost_per_mwh,float,"optional
+",optional,optional,optional,optional,optional,optional,optional,optional,optional,optional,optional
+min_stable_level_fraction,float,,required,required,required,required,,,,,,,
 unit_size_mw,float,,required,,required,,,,,,,,
 startup_cost_per_mw,float,,,,optional,,,,,,,,
 shutdown_cost_per_mw,float,,,optional,optional,optional,,,,,,,

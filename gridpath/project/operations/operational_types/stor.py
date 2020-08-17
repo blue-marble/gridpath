@@ -585,7 +585,7 @@ def variable_om_cost_rule(mod, g, tmp):
     Variable O&M costs are applied only to the storage discharge, i.e. when the
     project is providing power to the system.
     """
-    return mod.Stor_Discharge_MW[g, tmp] * mod.stor_variable_om_cost_per_mwh[g]
+    return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
 def power_delta_rule(mod, g, tmp):

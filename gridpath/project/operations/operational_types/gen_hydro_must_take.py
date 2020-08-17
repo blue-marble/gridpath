@@ -544,13 +544,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
-        * mod.gen_hydro_must_take_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

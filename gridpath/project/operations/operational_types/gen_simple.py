@@ -526,13 +526,6 @@ def carbon_emissions_rule(mod, g, tmp):
         return 0
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.GenSimple_Provide_Power_MW[g, tmp] \
-        * mod.gen_simple_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

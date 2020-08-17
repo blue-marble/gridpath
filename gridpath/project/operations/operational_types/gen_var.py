@@ -382,13 +382,6 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.GenVar_Provide_Power_MW[g, tmp] \
-        * mod.gen_var_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     Curtailment is counted as part of the ramp here; excludes any ramping from

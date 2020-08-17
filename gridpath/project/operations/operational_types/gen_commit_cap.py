@@ -1594,10 +1594,33 @@ def variable_om_cost_rule(mod, g, tmp):
     Most users will only use the first component, which is specified in the
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
+
+    We need to explicitly have the op type method here because of auxiliary
+    consumption. The default method takes Power_Provision_MW multiplied by
+    the variable cost, and Power_Provision_MW is equal to Provide_Power_MW
+    minus the auxiliary consumption. The variable cost should be applied to
+    the gross power.
     """
     return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        * mod.gen_commit_cap_variable_om_cost_per_mwh[g] \
-        + mod.GenCommitCap_Variable_OM_Cost_By_LL[g, tmp]
+        * mod.variable_om_cost_per_mwh[g]
+
+
+def variable_om_cost_by_ll_rule(mod, g, tmp):
+    """
+    Variable O&M cost has two components which are additive:
+    1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
+       levels: :code:`gen_commit_cap_variable_om_cost_per_mwh`.
+    2. A variable variable O&M rate that changes with the loading level,
+       similar to the heat rates. The idea is to represent higher variable cost
+       rates at lower loading levels. This is captured in the
+       :code:`GenCommitCap_Variable_OM_Cost_By_LL` decision variable. If no
+       variable O&M curve inputs are provided, this component will be zero.
+
+    Most users will only use the first component, which is specified in the
+    operational characteristics table.  Only operational types with
+    commitment decisions can have the second component.
+    """
+    return mod.GenCommitCap_Variable_OM_Cost_By_LL[g, tmp]
 
 
 def startup_cost_rule(mod, g, tmp):

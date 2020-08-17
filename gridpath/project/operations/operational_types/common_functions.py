@@ -327,7 +327,7 @@ def get_optype_param_requirements(op_type):
     Read in the required, optional, and other columns for an operational
     type. Make a dictionary for each with the types for each as values. We
     need the types to cast when loading into Pyomo. "other" columns are columns
-    that are nor required nor optional and for which we don't expect any
+    that are neither required nor optional and for which we don't expect any
     inputs for for that operational type.
     """
 
@@ -384,7 +384,7 @@ def load_optype_module_specific_data(
     :param op_type:
     :return:
     """
-    # String to method dicionary for types
+    # String to method dictionary for types
     types_dict = get_types_dict()
 
     # Get the required and optional columns with their types
@@ -415,6 +415,8 @@ def load_optype_module_specific_data(
 
     # Load optional param data into the Pyomo DataPortal
     # Ignore if relevant columns are not found in the dataframe
+    # TODO: figure out how to flag what gets loaded at the module level vs
+    #  what we can load downstream
     for opt in optional_columns_types.keys():
         type_method = types_dict[optional_columns_types[opt]]
         try:

@@ -204,15 +204,6 @@ def online_capacity_rule(mod, g, tmp):
         * mod.Availability_Derate[g, tmp]
 
 
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_var_must_take_cap_factor[g, tmp] \
-        * mod.gen_var_must_take_variable_om_cost_per_mwh[g]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     Exogenously defined ramp for variable must-take generators.
