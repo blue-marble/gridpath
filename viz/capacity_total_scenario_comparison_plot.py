@@ -4,6 +4,7 @@
 """
 Create plot of total capacity by scenario and technology for a given
 period/zone/subproblem/stage.
+TODO: remove this and allow capacity_total to specify multiple scenarios?
 """
 
 from argparse import ArgumentParser
@@ -15,7 +16,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
+    process_stacked_plot_data, get_capacity_data
 
 
 def create_parser():
@@ -47,38 +49,17 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, period, load_zone, subproblem, stage, **kwargs):
+def get_plotting_data(conn, subproblem, stage, scenario_id=None,
+                      load_zone=None, period=None, **kwargs):
     """
-    Get total capacity results by scenario/technology for a given
-    period/load_zone/subproblem/stage.
+    See get_capacity_data()
 
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
-
-    :param conn:
-    :param period:
-    :param load_zone:
-    :param subproblem:
-    :param stage:
-    :return:
     """
 
-    # Total capacity by scenario and technology
-    sql = """SELECT scenario_id, technology, sum(capacity_mw) as capacity_mw
-        FROM results_project_capacity
-        WHERE period = ?
-        AND load_zone = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        GROUP BY scenario_id, technology;"""
-
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(period, load_zone, subproblem, stage)
-    )
-
-    return df
+    return get_capacity_data(conn, subproblem, stage, "capacity_mw",
+                             scenario_id, load_zone, period)
 
 
 def main(args=None):
@@ -118,17 +99,25 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source, x_col_reordered = process_stacked_plot_data(
         df=df,
+        y_col="capacity_mw",
+        x_col=["period", "scenario_id"],
+        category_col="technology"
+    )
+
+    # Multi-level index in CDS will be joined into one column with "_" separator
+    x_col_cds = "_".join(x_col_reordered)
+    x_col_label = ", ".join([x.capitalize() for x in x_col_reordered])
+    plot = create_stacked_bar_plot(
+        source=source,
+        x_col=x_col_cds,
+        x_label=x_col_label,
+        y_label="Total Capacity ({})".format(power_unit),
+        category_label="Technology",
+        category_colors=tech_colors,
+        category_order=tech_plotting_order,
         title=plot_title,
-        y_axis_column="capacity_mw",
-        x_axis_column="scenario_id",
-        group_column="technology",
-        column_mapper={"capacity_mw": "Total Capacity ({})".format(power_unit),
-                       "scenario_id": "Scenario",
-                       "technology": "Technology"},
-        group_colors=tech_colors,
-        group_order=tech_plotting_order,
         ylimit=parsed_args.ylimit
     )
 

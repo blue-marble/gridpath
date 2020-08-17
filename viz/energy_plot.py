@@ -15,7 +15,8 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
+    process_stacked_plot_data
 
 
 def create_parser():
@@ -140,17 +141,25 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source, x_col_reordered = process_stacked_plot_data(
         df=df,
+        y_col="energy_mwh",
+        x_col=["period"],
+        category_col="technology"
+    )
+
+    # Multi-level index in CDS will be joined into one column with "_" separator
+    x_col_cds = "_".join(x_col_reordered)
+    x_col_label = ", ".join([x.capitalize() for x in x_col_reordered])
+    plot = create_stacked_bar_plot(
+        source=source,
+        x_col=x_col_cds,
+        x_label=x_col_label,
+        y_label="Energy ({})".format(energy_unit),
+        category_label="Technology",
+        category_colors=tech_colors,
+        category_order=tech_plotting_order,
         title=plot_title,
-        y_axis_column="energy_mwh",
-        x_axis_column="period",
-        group_column="technology",
-        column_mapper={"energy_mwh": "Energy ({})".format(energy_unit),
-                       "period": "Period",
-                       "technology": "Technology"},
-        group_colors=tech_colors,
-        group_order=tech_plotting_order,
         ylimit=parsed_args.ylimit
     )
 

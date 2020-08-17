@@ -15,7 +15,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_unit
+    get_parent_parser, get_unit, process_stacked_plot_data
 
 
 def create_parser():
@@ -176,7 +176,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         value_vars=['Capacity', 'Fuel', 'Variable_OM',
                     'Startups', 'Shutdowns', 'Hurdle_Rates'],
         var_name='Cost Component',
-        value_name='Cost (MW)'
+        value_name='Cost'
     )
 
     return df
@@ -218,14 +218,23 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source, x_col_reordered = process_stacked_plot_data(
         df=df,
+        y_col="Cost",
+        x_col=["period"],
+        category_col="Cost Component"
+    )
+
+    # Multi-level index in CDS will be joined into one column with "_" separator
+    x_col_cds = "_".join(x_col_reordered)
+    x_col_label = ", ".join([x.capitalize() for x in x_col_reordered])
+    plot = create_stacked_bar_plot(
+        source=source,
+        x_col=x_col_cds,
+        x_label=x_col_label,
+        y_label="Cost ({})".format(cost_unit),
+        category_label="Cost Component",
         title=plot_title,
-        y_axis_column="Cost (MW)",
-        x_axis_column="period",
-        group_column="Cost Component",
-        column_mapper={"Cost (MW)": "Cost ({})".format(cost_unit),
-                       "period": "Period"},
         ylimit=parsed_args.ylimit
     )
 

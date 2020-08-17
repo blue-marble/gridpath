@@ -10,10 +10,12 @@ from argparse import ArgumentParser
 
 from bokeh import events
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import CustomJS, ColumnDataSource, Legend, \
+from bokeh.models import CustomJS, ColumnDataSource, Legend, FactorRange, \
     NumeralTickFormatter
 from bokeh.models.tools import HoverTool
 from bokeh.palettes import cividis
+import numpy as np
+import pandas as pd
 
 from gridpath.common_functions import create_directory_if_not_exists
 
@@ -159,130 +161,259 @@ def get_unit(c, metric):
         return unit.fetchone()[0]
 
 
-def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
-                            group_column, column_mapper={}, group_colors={},
-                            group_order={}, ylimit=None):
+def get_capacity_data(conn, subproblem, stage, capacity_col,
+                      scenario_id=None, load_zone=None, period=None):
     """
-    Create a stacked bar chart based on a DataFrame and the desired x-axis,
-    y-axis, and group (category). Different groups/categories will be stacked.
+    Get capacity results by scenario/period/technology. Users can
+    optionally provide a subset of scenarios/load_zones/periods.
+    Note: if load zone is not provided, will aggregate across load zones.
+
+    :param conn:
+    :param subproblem:
+    :param stage:
+    :param capacity_col: str, capacity column in results_project_capacity
+    :param scenario_id: int or list of int, optional (default: return all
+        scenarios)
+    :param load_zone: str or list of str, optional (default: aggregate across
+        load_zones)
+    :param period: int or list of int, optional (default: return all periods)
+    :return: DataFrame with columns scenario_id, period, technology, capacity_mw
+    """
+
+    params = [subproblem, stage]
+    sql = """SELECT scenario_name AS scenario, period, technology, 
+        sum({}) AS capacity_mw
+        FROM results_project_capacity
+        INNER JOIN 
+        (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
+        USING (scenario_id)
+        WHERE subproblem_id = ?
+        AND stage_id = ?""".format(capacity_col)
+    if period is not None:
+        period = period if isinstance(period, list) else [period]
+        sql += " AND period in ({})".format(",".join("?"*len(period)))
+        params += period
+    if scenario_id is not None:
+        scenario_id = scenario_id if isinstance(scenario_id, list) else [scenario_id]
+        sql += " AND scenario_id in ({})".format(",".join("?"*len(scenario_id)))
+        params += scenario_id
+    if load_zone is not None:
+        load_zone = load_zone if isinstance(load_zone, list) else [load_zone]
+        sql += " AND load_zone in ({})".format(",".join("?"*len(load_zone)))
+        params += load_zone
+    sql += " GROUP BY scenario, period, technology;"
+
+    df = pd.read_sql(
+        sql,
+        con=conn,
+        params=params
+    )
+
+    return df
+
+
+def order_cols_by_nunique(df, cols):
+    """
+    Reorder columns in cols according to number of unique values in the df.
+    This can be used to have a cleaner grouped (multi-level) x-axis where
+    the level with the least unique values is at the bottom.
+    Note: alternatively you could remove cols that have only 1 unique value
+    :param df: pandas DataFrame
+    :param cols: list of columns to reorder
+    :return:
+    """
+    unique_count = df[cols].nunique().sort_values()
+    re_ordered_cols = list(unique_count.index.values)
+    return re_ordered_cols
+
+
+def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
+    """
+    Processes a SQL-style long dataframe into a Bokeh ColumnDataSource (CDS)
+    for stacked bar plotting:
+        - Reorder index columns (x_cols) according to unique entries
+        - Convert index column values to string
+        - Pivot category_col to wide format
+        - Rename columns and indices using an optional column_mapper
+        - Create the CDS from the dataframe
+    Returns the processed CDS as well as the reordered index column labels.
+
+    Note: x_col(s) and category_col should uniquely identify a dataframe row!
 
     Example:
-        data = {'year': [2018, 2018], 'mw': [5, 8], 'tech': ['t1', 't2']}
-        df = pd.DataFrame(data)
-        create_stacked_bar_plot(
-            df=df,
-            title="example_plot",
-            y_axis_column="mw",
-            x_axis_column="year",
-            group_column="tech"
-        )
+    data = {'period': [2018, 2018],
+            'scenario' : ['scen1', 'scen2'],
+            'tech': ['t1', 't2'],
+            'mw': [5, 8],
+            }
+    df = pd.DataFrame(data)
+    source, reordered_cols = process_stacked_plot_data(
+        df=df,
+        y_col="mw",
+        x_col=["scenario", "period"],
+        category_label="tech"
+    )
+    --> source = {'period_scenario': [('2018', 'scen1'), ('2018', 'scen2')],
+                  't1': [5],
+                  't2': [8]}
+    --> x_col_reordered = ["period", scenario"]
 
-    :param df: a data-base style DataFrame which should at least include the
-        columns 'y_axis_column', 'x_axis_column' and 'group_column'. The
-        'x_axis_column' and 'group_column' should uniquely identify the value of
-        the 'y_axis_column' (e.g. capacity should be uniquely defined by the
-        period and the technology).
-    :param title: string, plot title
-    :param y_axis_column:
-    :param x_axis_column:
-    :param group_column:
-    :param column_mapper: optional dict that maps columns names to cleaner
-        labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
-    :param group_colors: optional dict that maps groups to colors. Groups
-        without a specified color will use a default palette
-    :param group_order: optional dict that maps groups to their plotting order
-        in the stacked bar chart (lower = bottom)
-    :param ylimit: float/int, upper limit of y-axis; optional
+    :param df: a database style long DataFrame which should include the columns
+    'y_col', 'x_col' (can be list of cols) and 'category_col'. The
+    'x_col' and 'category_col' should uniquely identify the value of the 'y_col'
+    the 'y_col' (e.g. capacity should be uniquely defined by the
+    period and the technology).
+    :param y_col:
+    :param x_col: str or list of str, the index column(s) to use
+    :param category_col: str, name of column to pivot
+    :param column_mapper:
     :return:
     """
 
-    # Rename axis/group labels using mapper (if specified)
-    for k, v in column_mapper.items():
-        y_axis_column = y_axis_column.replace(k, v)
-        x_axis_column = x_axis_column.replace(k, v)
-        group_column = group_column.replace(k, v)
-
-    # Pre-process DataFrame:
-    # 1. rename
-    df.rename(columns=column_mapper, inplace=True)
-    # 2. Pivot such that values in group column become column headers
-    df = df.pivot(
-        index=x_axis_column,
-        columns=group_column,
-        values=y_axis_column
-    ).fillna(0)
-    # 3. Change type of index to str, required for categorical bar chart
-    df.index = df.index.map(str)
-
-    # Set up data source
+    # Prepare x_col (index)
+    x_col = x_col if isinstance(x_col, list) else [x_col]
+    df[x_col] = df[x_col].astype(str)  # required for categorical bar chart
+    x_col_reordered = order_cols_by_nunique(df, x_col)  # cleaner grouped axis
+    # Pivot such that values in category column become column headers
+    # Note on df.pivot vs. pd.pivot_table:
+    #   df.pivot doesn't work with list of indexes in v1.0.5. Fixed in 1.1.0
+    #   pd.pivot_table doesn't work with non-numeric values so need .fillna(0)
+    #      to make sure None values are replaced with zero (e.g. hurdle rates)
+    #   pd.pivot_table doesn't work with empty table without aggfunc="first"
+    df = pd.pivot_table(
+        data=df.fillna(0),
+        index=x_col_reordered,  # can be multi-level index!
+        columns=category_col,
+        values=y_col,
+        aggfunc="first"  # take first value if there are duplicates
+    ).fillna(0).sort_index()  # sorting for grouped x-axis format
+    # Rename columns (optional)
+    df.rename(columns=column_mapper, index=column_mapper, inplace=True)
+    # Set up Bokeh ColumnDataSource
     source = ColumnDataSource(data=df)
+
+    return source, x_col_reordered
+
+
+def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
+                            category_label="Category", category_colors={},
+                            category_order={}, title=None, ylimit=None,
+                            sizing_mode="fixed"
+                            ):
+    """
+    Create a stacked bar chart from a Bokeh ColumnDataSource (CDS). The CDS
+    should have have a "x_col" column where each element is either a string
+    for a simple stacked bar charts or a tuple of strings for a grouped stacked
+    bar chart. Note that strings are required for the categorical axis.
+    All other columns are assumed to be categories that will be stacked in
+    the bar chart.
+
+    :param source: Bokeh ColumnDataSource
+    :param x_col: str
+    :param x_label: str, optional (defaults to x_col)
+    :param y_label: str, optional (defaults to no label)
+    :param category_label: str, optional
+    :param category_colors: dict, optional, maps categories to colors.
+        Categories without a specified color will use a default palette
+    :param category_order: dict, optional, maps categories to their
+        plotting order in the stacked bar chart (lower = bottom)
+    :param title: string, optional, plot title
+    :param ylimit: float/int, optional, upper limit of y-axis
+    :param sizing_mode: Bokeh layout/figure sizing mode, default 'fixed'
+    :return:
+    """
 
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
-    for col in df.columns:
-        if col not in group_order:
-            group_order[col] = max(group_order.values(), default=0) + 1
-    stacked_cols = sorted(df.columns, key=lambda x: group_order[x])
+    cols = list(source.data.keys())
+    cols.remove(x_col)
+    for col in cols:
+        if col not in category_order:
+            category_order[col] = max(category_order.values(), default=0) + 1
+    stacked_cols = sorted(cols, key=lambda x: category_order[x])
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
-                           if c not in group_colors.keys()]
-    unspecified_group_colors = dict(zip(unspecified_columns,
-                                        cividis(len(unspecified_columns))))
+                           if c not in category_colors.keys()]
+    unspecified_category_colors = dict(
+        zip(unspecified_columns, cividis(len(unspecified_columns)))
+    )
     colors = []
     for column in stacked_cols:
-        if column in group_colors:
-            colors.append(group_colors[column])
+        if column in category_colors:
+            colors.append(category_colors[column])
         else:
-            colors.append(unspecified_group_colors[column])
+            colors.append(unspecified_category_colors[column])
+
+    # Determine whether we are dealing with a grouped x_axis (tuple values)
+    grouped_x = False
+    try:
+        if isinstance(source.data[x_col][0], tuple):
+            grouped_x = True
+    except IndexError:
+        # If there is no data, grouped_x remains False
+        pass
+
+    # Find max label length in x axis labels
+    if grouped_x:
+        tuples = list(zip(*source.data[x_col]))  # convert to tuple of lists
+        max_length = len(max(tuples[-1], key=len))  # look at inner-most level
+    else:
+        max_length = len(max(list(source.data[x_col]), key=len, default=""))
 
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        x_range=df.index.values
-        # sizing_mode="scale_both"
+        x_range=FactorRange(*source.data[x_col]) if grouped_x else source.data[x_col],
+        sizing_mode=sizing_mode,
     )
 
     # Add stacked area chart to plot
     area_renderers = plot.vbar_stack(
         stackers=stacked_cols,
-        x=x_axis_column,
+        x=x_col,
         source=source,
         color=colors,
-        width=0.5,
+        width=0.8,
+        alpha=0.7  # transparency
     )
 
     # Add Legend
     legend_items = [(y, [area_renderers[i]]) for i, y in enumerate(stacked_cols)
-                    if df[y].mean() > 0]
+                    if np.mean(source.data[y]) > 0]
     legend = Legend(items=legend_items)
     plot.add_layout(legend, 'right')
-    plot.legend.title = group_column
+    plot.legend.title = category_label
     plot.legend[0].items.reverse()  # Reverse legend to match stacked order
     plot.legend.click_policy = 'hide'  # Add interactivity to the legend
     show_hide_legend(plot=plot)  # Hide legend on double click
 
     # Format Axes (labels, number formatting, range, etc.)
-    plot.xaxis.axis_label = "{}".format(x_axis_column)
-    plot.yaxis.axis_label = "{}".format(y_axis_column)
+    x_label = x_col if x_label is None else x_label
+    plot.xaxis.axis_label = x_label
+    if max_length > 10:  # Print innermost labels at angle if label is long
+        plot.xaxis.major_label_orientation = 1
+    plot.xgrid.grid_line_color = None
+    if y_label is not None:
+        plot.yaxis.axis_label = y_label
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
     plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
-        group = r.name
-        if "$" in y_axis_column or "USD" in y_axis_column:
-            y_axis_formatter = "@%s{$0,0}" % group
+        category = r.name
+        tooltips = [("%s" % x_label, "@{%s}" % x_col),
+                    ("%s" % category_label, category)]
+        if y_label is None:
+            pass
+        elif "$" in y_label or "USD" in y_label:
+            tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
         else:
-            y_axis_formatter = "@%s{0,0}" % group
+            tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
         hover = HoverTool(
-            tooltips=[
-                ("%s" % x_axis_column, "@{%s}" % x_axis_column),
-                ("%s" % group_column, group),
-                ("%s" % y_axis_column, y_axis_formatter)
-            ],
+            tooltips=tooltips,
             renderers=[r],
             toggleable=False)
         plot.add_tools(hover)
