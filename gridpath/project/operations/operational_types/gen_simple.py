@@ -492,16 +492,6 @@ def fuel_burn_rule(mod, g, tmp):
         * mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
-def carbon_emissions_rule(mod, g, tmp):
-    if g in mod.GEN_SIMPLE_FUEL_PRJS:
-        return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[
-                   g, mod.period[tmp], 0] \
-            * mod.Power_Provision_MW[g, tmp] \
-            * mod.co2_intensity_tons_per_mmbtu[mod.gen_simple_fuel[g]]
-    else:
-        return 0
-
-
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

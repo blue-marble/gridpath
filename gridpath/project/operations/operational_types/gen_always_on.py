@@ -725,14 +725,6 @@ def fuel_burn_rule(mod, g, tmp):
     return mod.GenAlwaysOn_Fuel_Burn_MMBTU[g, tmp]
 
 
-def carbon_emissions_rule(mod, g, tmp):
-    if g in mod.GEN_ALWAYS_ON_FUEL_PRJS:
-        return mod.GenAlwaysOn_Fuel_Burn_MMBTU[g, tmp] \
-            * mod.co2_intensity_tons_per_mmbtu[mod.gen_always_on_fuel[g]]
-    else:
-        return 0
-
-
 def variable_om_cost_by_ll_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
