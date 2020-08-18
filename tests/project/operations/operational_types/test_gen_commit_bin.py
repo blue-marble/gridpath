@@ -343,16 +343,6 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_costs,
                              actual_shutdown_costs)
 
-        # Param: gen_commit_bin_startup_fuel_mmbtu_per_mw
-        expected_startup_fuel_mmbtu_per_mw = {
-            "Disp_Binary_Commit": 10}
-        actual_startup_fuel_mmbtu_per_mw = {
-            prj: instance.gen_commit_bin_startup_fuel_mmbtu_per_mw[prj]
-            for prj in instance.GEN_COMMIT_BIN
-        }
-        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
-                             actual_startup_fuel_mmbtu_per_mw)
-
         # Param: gen_commit_bin_down_time_cutoff_hours
         expected_down_time_cutoff_hours = {("Disp_Binary_Commit", 1.0): 7}
         actual_down_time_cutoff_hours = {

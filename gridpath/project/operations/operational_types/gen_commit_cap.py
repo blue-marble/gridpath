@@ -242,14 +242,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's shutdown cost per MW of capacity that is shut down.       |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_startup_fuel_mmbtu_per_mw`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's startup fuel burn in MMBtu per MW of capacity that is     |
-    | started up.                                                             |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_aux_consumption_frac_capacity`                  |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -636,11 +628,6 @@ def add_module_specific_components(m, d):
         default=0
     )
     m.gen_commit_cap_shutdown_cost_per_mw = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals,
-        default=0
-    )
-    m.gen_commit_cap_startup_fuel_mmbtu_per_mw = Param(
         m.GEN_COMMIT_CAP,
         within=NonNegativeReals,
         default=0
@@ -1597,7 +1584,7 @@ def startup_fuel_burn_rule(mod, g, tmp):
     fuel parameter.
     """
     return mod.GenCommitCap_Startup_MW[g, tmp] \
-        * mod.gen_commit_cap_startup_fuel_mmbtu_per_mw[g]
+        * mod.startup_fuel_mmbtu_per_mw[g]
 
 
 def power_delta_rule(mod, g, tmp):

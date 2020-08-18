@@ -72,6 +72,11 @@ def add_model_components(m, d):
                           if p in mod.FUEL_PRJS]
     )
 
+    m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                          if p in mod.STARTUP_FUEL_PRJS]
+    )
 
     # Expressions
     ###########################################################################
@@ -109,7 +114,7 @@ def add_model_components(m, d):
             return op_type.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
+        m.STARTUP_FUEL_PRJ_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
 
@@ -131,7 +136,8 @@ def total_fuel_burn_rule(mod, g, tmp):
     and startup fuel burn.
     """
     return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
-        + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
+        + (mod.Startup_Fuel_Burn_MMBtu[g, tmp] if g in mod.STARTUP_FUEL_PRJS
+           else 0)
 
 
 # Input-Output
@@ -171,7 +177,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[p],
                 m.fuel[p],
                 value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
-                value(m.Startup_Fuel_Burn_MMBtu[p, tmp]),
+                value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
+                if p in m.STARTUP_FUEL_PRJS else None,
                 value(m.Total_Fuel_Burn_MMBtu[p, tmp])
             ])
 

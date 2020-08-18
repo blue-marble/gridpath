@@ -879,11 +879,6 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals,
         default=0
     )
-    m.gen_commit_bin_startup_fuel_mmbtu_per_mw = Param(
-        m.GEN_COMMIT_BIN,
-        within=NonNegativeReals,
-        default=0
-    )
 
     m.gen_commit_bin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
@@ -2302,7 +2297,7 @@ def startup_fuel_burn_rule(mod, g, tmp):
     """
     return mod.GenCommitBin_Startup[g, tmp] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.gen_commit_bin_startup_fuel_mmbtu_per_mw[g]
+        * mod.startup_fuel_mmbtu_per_mw[g]
 
 
 def power_delta_rule(mod, g, tmp):

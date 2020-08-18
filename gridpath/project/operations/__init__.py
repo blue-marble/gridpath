@@ -8,7 +8,7 @@ and demand-side infrastructure 'projects' in the optimization problem.
 """
 
 import os.path
-from pyomo.environ import Set, Param, Any
+from pyomo.environ import Set, Param, Any, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -26,8 +26,12 @@ def add_model_components(m, d):
 
     m.FUEL_PRJS = Set(within=m.PROJECTS)
 
-    m.fuel = Param(
-        m.FUEL_PRJS, within=Any
+    m.fuel = Param(m.FUEL_PRJS, within=Any)
+
+    m.STARTUP_FUEL_PRJS = Set(within=m.FUEL_PRJS)
+
+    m.startup_fuel_mmbtu_per_mw = Param(
+        m.STARTUP_FUEL_PRJS, within=NonNegativeReals
     )
 
 
@@ -48,12 +52,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "projects.tab"),
-        select=("project", "fuel"),
-        param=(m.fuel,)
+        select=("project", "fuel", "startup_fuel_mmbtu_per_mw"),
+        param=(m.fuel, m.startup_fuel_mmbtu_per_mw)
     )
 
     data_portal.data()['FUEL_PRJS'] = {
         None: list(data_portal.data()['fuel'].keys())
+    }
+
+    data_portal.data()['STARTUP_FUEL_PRJS'] = {
+        None: list(data_portal.data()['startup_fuel_mmbtu_per_mw'].keys())
     }
 
 

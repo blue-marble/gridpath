@@ -361,24 +361,6 @@ class TestGenCommitCap(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_costs,
                              actual_shutdown_costs)
 
-        # Param: gen_commit_cap_startup_fuel_mmbtu_per_mw
-        expected_startup_fuel_mmbtu_per_mw = {
-            "Gas_CCGT": 6,
-            "Coal": 6,
-            "Gas_CT": 0.5,
-            "Gas_CCGT_New": 6,
-            "Gas_CCGT_New_Binary": 6,
-            "Gas_CT_New": 0.5,
-            "Gas_CCGT_z2": 6,
-            "Coal_z2": 6,
-            "Gas_CT_z2": 0}
-        actual_startup_fuel_mmbtu_per_mw = {
-            prj: instance.gen_commit_cap_startup_fuel_mmbtu_per_mw[prj]
-            for prj in instance.GEN_COMMIT_CAP
-        }
-        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
-                             actual_startup_fuel_mmbtu_per_mw)
-
         # Set: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS
         expected_fuel_projects = sorted([
             "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
