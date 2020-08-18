@@ -83,7 +83,7 @@ def add_model_components(m, d):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.PRJ_OPR_TMPS)
+                   in mod.STARTUP_COST_PRJ_OPR_TMPS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
     getattr(d, total_cost_components).append("Total_Startup_Cost")
 
@@ -99,6 +99,6 @@ def add_model_components(m, d):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.PRJ_OPR_TMPS)
+                   in mod.SHUTDOWN_COST_PRJ_OPR_TMPS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
     getattr(d, total_cost_components).append("Total_Shutdown_Cost")

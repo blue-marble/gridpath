@@ -269,21 +269,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_startup_cost_by_st_per_mw`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's startup cost per MW of capacity that is started up for a  |
-    | for a given startup type.                                               |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_shutdown_cost_per_mw`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's shutdown cost per MW of capacity that is shut down.       |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_startup_fuel_mmbtu_per_mw`                      |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -866,17 +851,6 @@ def add_module_specific_components(m, d):
     m.gen_commit_bin_aux_consumption_frac_power = Param(
         m.GEN_COMMIT_BIN,
         within=PercentFraction,
-        default=0
-    )
-
-    m.gen_commit_bin_startup_cost_by_st_per_mw = Param(
-        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
-        within=NonNegativeReals,
-        default=0
-    )
-    m.gen_commit_bin_shutdown_cost_per_mw = Param(
-        m.GEN_COMMIT_BIN,
-        within=NonNegativeReals,
         default=0
     )
 
@@ -2258,7 +2232,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp):
     return mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp]
 
 
-def startup_cost_rule(mod, g, tmp):
+def startup_cost_by_st_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity
     (in MW) that is started up in that timepoint for a given startup type and
@@ -2266,7 +2240,7 @@ def startup_cost_rule(mod, g, tmp):
     all startup types since only one startup type is active at the same time.
     """
     return sum(
-        mod.gen_commit_bin_startup_cost_by_st_per_mw[g, s]
+        mod.startup_cost_by_st_per_mw[g, s]
         * mod.GenCommitBin_Startup_Type[g, tmp, s]
         for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
     ) * mod.GenCommitBin_Pmax_MW[g, tmp]
@@ -2280,7 +2254,7 @@ def shutdown_cost_rule(mod, g, tmp):
     """
     return mod.GenCommitBin_Shutdown[g, tmp] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.gen_commit_bin_shutdown_cost_per_mw[g]
+        * mod.shutdown_cost_per_mw[g]
 
 
 def fuel_burn_rule(mod, g, tmp):

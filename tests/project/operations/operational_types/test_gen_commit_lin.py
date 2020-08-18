@@ -337,32 +337,6 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
 
-        # Param: gen_commit_lin_startup_cost_by_st_per_mw
-        expected_startup_costs_by_st = {
-            ("Disp_Cont_Commit", 1.0): 1,
-            ("Clunky_Old_Gen", 1.0): 1,
-            ("Clunky_Old_Gen2", 1.0): 1
-        }
-        actual_startup_costs_by_st = {
-            (prj, s): instance.gen_commit_lin_startup_cost_by_st_per_mw[prj, s]
-            for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
-        }
-        self.assertDictEqual(expected_startup_costs_by_st,
-                             actual_startup_costs_by_st)
-
-        # Param: gen_commit_lin_shutdown_cost_per_mw
-        expected_shutdown_costs = {
-            "Disp_Cont_Commit": 1,
-            "Clunky_Old_Gen": 1,
-            "Clunky_Old_Gen2": 1
-        }
-        actual_shutdown_costs = {
-            prj: instance.gen_commit_lin_shutdown_cost_per_mw[prj]
-            for prj in instance.GEN_COMMIT_LIN
-        }
-        self.assertDictEqual(expected_shutdown_costs,
-                             actual_shutdown_costs)
-
         # Param: gen_commit_lin_down_time_cutoff_hours
         expected_down_time_cutoff_hours = {("Disp_Cont_Commit", 1.0): 7,
                                            ("Clunky_Old_Gen", 1.0): 0,

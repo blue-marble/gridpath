@@ -71,16 +71,22 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    m.VAR_OM_COST_PRJS = Set(within=m.PROJECTS)
-
-    m.variable_om_cost_per_mwh = Param(
-        m.VAR_OM_COST_PRJS, within=NonNegativeReals
-    )
-
     m.VAR_OM_COST_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.VAR_OM_COST_PRJS]
+    )
+
+    m.STARTUP_COST_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.STARTUP_COST_PRJS]
+    )
+
+    m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.SHUTDOWN_COST_PRJS]
     )
 
     def variable_om_cost_rule(mod, prj, tmp):
@@ -135,15 +141,26 @@ def add_model_components(m, d):
         based on its operational type.
         """
         gen_op_type = mod.operational_type[prj]
+
         if hasattr(imported_operational_modules[gen_op_type],
-                   "startup_cost_rule"):
-            return imported_operational_modules[gen_op_type]. \
-                startup_cost_rule(mod, prj, tmp)
+                   "startup_cost_simple_rule"):
+            startup_cost_simple = imported_operational_modules[gen_op_type]. \
+                startup_cost_simple_rule(mod, prj, tmp)
         else:
-            return op_type.startup_cost_rule(mod, prj, tmp)
+            startup_cost_simple = \
+                op_type.startup_cost_simple_rule(mod, prj, tmp)
+
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_cost_by_st_rule"):
+            startup_cost_by_st = imported_operational_modules[gen_op_type]. \
+                startup_cost_by_st_rule(mod, prj, tmp)
+        else:
+            startup_cost_by_st = op_type.startup_cost_by_st_rule(mod, prj, tmp)
+
+        return startup_cost_simple + startup_cost_by_st
 
     m.Startup_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.STARTUP_COST_PRJ_OPR_TMPS,
         rule=startup_cost_rule
     )
 
@@ -162,36 +179,13 @@ def add_model_components(m, d):
             return op_type.shutdown_cost_rule(mod, prj, tmp)
 
     m.Shutdown_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.SHUTDOWN_COST_PRJ_OPR_TMPS,
         rule=shutdown_cost_rule
     )
 
 
 # Input-Output
 ###############################################################################
-
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-    data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "projects.tab"),
-        select=("project", "variable_om_cost_per_mwh"),
-        param=(m.variable_om_cost_per_mwh,)
-    )
-
-    data_portal.data()['VAR_OM_COST_PRJS'] = {
-        None: list(data_portal.data()['variable_om_cost_per_mwh'].keys())
-    }
-
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -227,11 +221,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.hrs_in_tmp[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Variable_OM_Cost[p, tmp]) if p in m.VAR_OM_COST_PRJS
-                else None,
+                value(m.Variable_OM_Cost[p, tmp])
+                if p in m.VAR_OM_COST_PRJS else None,
                 value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
-                value(m.Startup_Cost[p, tmp]),
+                value(m.Startup_Cost[p, tmp])
+                if p in m.STARTUP_COST_PRJS else None,
                 value(m.Shutdown_Cost[p, tmp])
+                if p in m.SHUTDOWN_COST_PRJS else None
             ])
 
 

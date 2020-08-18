@@ -228,20 +228,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's minimum down time in hours.                               |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_startup_cost_per_mw`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's startup cost per MW of capacity that is started up.       |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_shutdown_cost_per_mw`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's shutdown cost per MW of capacity that is shut down.       |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_aux_consumption_frac_capacity`                  |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -621,16 +607,6 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_CAP,
         within=NonNegativeReals,
         default=1
-    )
-    m.gen_commit_cap_startup_cost_per_mw = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals,
-        default=0
-    )
-    m.gen_commit_cap_shutdown_cost_per_mw = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals,
-        default=0
     )
 
     m.gen_commit_cap_aux_consumption_frac_capacity = Param(
@@ -1557,14 +1533,14 @@ def variable_om_cost_by_ll_rule(mod, g, tmp):
     return mod.GenCommitCap_Variable_OM_Cost_By_LL[g, tmp]
 
 
-def startup_cost_rule(mod, g, tmp):
+def startup_cost_simple_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity
     (in MW) that is started up in that timepoint and the startup cost
     parameter.
     """
     return mod.GenCommitCap_Startup_MW[g, tmp] \
-        * mod.gen_commit_cap_startup_cost_per_mw[g]
+        * mod.startup_cost_per_mw[g]
 
 
 def shutdown_cost_rule(mod, g, tmp):
@@ -1574,7 +1550,7 @@ def shutdown_cost_rule(mod, g, tmp):
     cost parameter.
     """
     return mod.GenCommitCap_Shutdown_MW[g, tmp] \
-        * mod.gen_commit_cap_shutdown_cost_per_mw[g]
+        * mod.shutdown_cost_per_mw[g]
 
 
 def startup_fuel_burn_rule(mod, g, tmp):

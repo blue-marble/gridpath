@@ -1036,14 +1036,12 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
         startup_ramp_projects_types = list()
         down_time_cutoff_hours_dict = dict()
         startup_plus_ramp_up_rate_dict = dict()
-        startup_cost_dict = dict()
 
         for i, row in df.iterrows():
             project = row["project"]
             startup_type_id = row["startup_type_id"]
             down_time_cutoff_hours = row["down_time_cutoff_hours"]
             startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
-            startup_cost = row["startup_cost_per_mw"]
 
             if down_time_cutoff_hours != "." \
                     and startup_plus_ramp_up_rate != "." \
@@ -1054,8 +1052,6 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
                     float(down_time_cutoff_hours)
                 startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
                     float(startup_plus_ramp_up_rate)
-                startup_cost_dict[(project, startup_type_id)] = \
-                    float(startup_cost)
 
         if startup_ramp_projects:
             data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
@@ -1066,8 +1062,6 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
                 down_time_cutoff_hours_dict
             data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(
                 op_type)] = startup_plus_ramp_up_rate_dict
-            data_portal.data()["{}_startup_cost_by_st_per_mw".format(op_type)] = \
-                startup_cost_dict
 
 
 def get_startup_chars_inputs_from_database(

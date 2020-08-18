@@ -251,21 +251,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_startup_cost_by_st_per_mw`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES`             |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's startup cost per MW of capacity that is started up for a  |
-    | for a given startup type.                                               |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_lin_shutdown_cost_per_mw`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's shutdown cost per MW of capacity that is shut down.       |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_down_time_cutoff_hours`                         |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -843,16 +828,6 @@ def add_module_specific_components(m, d):
         default=0
     )
 
-    m.gen_commit_lin_startup_cost_by_st_per_mw = Param(
-        m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
-        within=NonNegativeReals,
-        default=0
-    )
-    m.gen_commit_lin_shutdown_cost_per_mw = Param(
-        m.GEN_COMMIT_LIN,
-        within=NonNegativeReals,
-        default=0
-    )
     m.gen_commit_lin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES,
         within=NonNegativeReals
@@ -2237,7 +2212,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp):
     return mod.GenCommitLin_Variable_OM_Cost_By_LL[g, tmp]
 
 
-def startup_cost_rule(mod, g, tmp):
+def startup_cost_by_st_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity
     (in MW) that is started up in that timepoint for a given startup type and
@@ -2245,7 +2220,7 @@ def startup_cost_rule(mod, g, tmp):
     all startup types since only one startup type is active at the same time.
     """
     return sum(
-        mod.gen_commit_lin_startup_cost_by_st_per_mw[g, s]
+        mod.startup_cost_by_st_per_mw[g, s]
         * mod.GenCommitLin_Startup_Type[g, tmp, s]
         for s in mod.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[g]
     ) * mod.GenCommitLin_Pmax_MW[g, tmp]
@@ -2259,7 +2234,7 @@ def shutdown_cost_rule(mod, g, tmp):
     """
     return mod.GenCommitLin_Shutdown[g, tmp] \
         * mod.GenCommitLin_Pmax_MW[g, tmp] \
-        * mod.gen_commit_lin_shutdown_cost_per_mw[g]
+        * mod.shutdown_cost_per_mw[g]
 
 
 def startup_fuel_burn_rule(mod, g, tmp):

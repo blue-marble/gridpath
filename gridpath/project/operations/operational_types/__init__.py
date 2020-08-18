@@ -348,7 +348,15 @@ def fuel_burn_rule(mod, prj, tmp):
     return 0
 
 
-def startup_cost_rule(mod, prj, tmp):
+def startup_cost_simple_rule(mod, prj, tmp):
+    """
+    If no startup_cost_simple_rule is specified in an operational type module,
+    the default startup cost is 0.
+    """
+    return 0
+
+
+def startup_cost_by_st_rule(mod, prj, tmp):
     """
     If no startup_cost_rule is specified in an operational type module, the
     default startup fuel cost is 0.
