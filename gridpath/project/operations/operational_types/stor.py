@@ -81,14 +81,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_variable_om_cost_per_mwh`                                 |
-    | | *Defined over*: :code:`STOR`                                          |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_rps`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -241,11 +233,6 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
-
-    m.stor_variable_om_cost_per_mwh = Param(
-        m.STOR, within=NonNegativeReals,
-        default=0
-    )
 
     m.stor_losses_factor_in_rps = Param(default=1)
 

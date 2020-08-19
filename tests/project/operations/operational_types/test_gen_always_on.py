@@ -124,33 +124,6 @@ class TestGenAlwaysOn(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Set: GEN_ALWAYS_ON_VOM_PRJS_PRDS_SGMS
-        expected_vom_project_period_segments = sorted([
-        ])
-        actual_vom_project_period_segments = sorted([
-            (prj, p, s)
-            for (prj, p, s) in instance.GEN_ALWAYS_ON_VOM_PRJS_PRDS_SGMS
-            ])
-        self.assertListEqual(expected_vom_project_period_segments,
-                             actual_vom_project_period_segments)
-
-        # Set: GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS
-        expected_prj_opr_tmps = sorted(
-            get_project_operational_timepoints([])
-        )
-        expected_vom_project_segments_operational_timepoints = sorted([
-            (g, tmp, 0) for (g, tmp) in expected_prj_opr_tmps
-        ])
-        actual_vom_project_segments_operational_timepoints = sorted([
-            (prj, tmp, s) for (prj, tmp, s) in
-            instance.GEN_ALWAYS_ON_VOM_PRJS_OPR_TMPS_SGMS
-        ])
-
-        self.assertListEqual(
-            expected_vom_project_segments_operational_timepoints,
-            actual_vom_project_segments_operational_timepoints
-        )
-
         # Param: gen_always_on_unit_size_mw
         expected_unit_size = {
             "Nuclear_Flexible": 584
@@ -173,36 +146,6 @@ class TestGenAlwaysOn(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction
                              )
-
-        # Params: gen_always_on_variable_om_cost_per_mwh
-        expected_var_om_cost = {"Nuclear_Flexible": 1}
-        actual_var_om_cost = {
-            prj: instance.gen_always_on_variable_om_cost_per_mwh[prj]
-            for prj in instance.GEN_ALWAYS_ON
-        }
-
-        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
-
-        # Param: gen_always_on_vom_slope_cost_per_mwh
-        expected_vom_slope = {}
-        actual_vom_slope = {
-            (prj, p, s):
-                instance.gen_always_on_vom_slope_cost_per_mwh[(prj, p, s)]
-             for (prj, p, s) in instance.GEN_ALWAYS_ON_VOM_PRJS_PRDS_SGMS
-        }
-
-        self.assertDictAlmostEqual(expected_vom_slope,
-                                   actual_vom_slope,
-                                   places=5)
-
-        # Param: gen_always_on_vom_intercept_cost_per_mw_hour
-        expected_vom_intercept = {}
-        actual_vom_intercept = {
-            (prj, p, s):
-                instance.gen_always_on_vom_intercept_cost_per_mw_hr[(prj,p, s)]
-             for (prj, p, s) in
-             instance.GEN_ALWAYS_ON_VOM_PRJS_PRDS_SGMS
-        }
 
         # Param: gen_always_on_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {

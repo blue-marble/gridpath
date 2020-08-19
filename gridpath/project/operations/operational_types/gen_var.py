@@ -69,20 +69,6 @@ def add_module_specific_components(m, d):
     |
 
     +-------------------------------------------------------------------------+
-    | Optional Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_var_variable_om_cost_per_mwh`                              |
-    | | *Defined over*: :code:`GEN_VAR`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`GenVar_Provide_Power_MW`                                       |
@@ -163,14 +149,6 @@ def add_module_specific_components(m, d):
     m.gen_var_cap_factor = Param(
         m.GEN_VAR_OPR_TMPS,
         within=NonNegativeReals
-    )
-
-    # Optional Params
-    ###########################################################################
-
-    m.gen_var_variable_om_cost_per_mwh = Param(
-        m.GEN_VAR, within=NonNegativeReals,
-        default=0
     )
 
     # Variables

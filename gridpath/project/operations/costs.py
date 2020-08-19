@@ -14,7 +14,8 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Set, Param, Expression, NonNegativeReals, value
+from pyomo.environ import Set, Var, Expression, Constraint, \
+    NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
@@ -71,10 +72,25 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    m.VAR_OM_COST_PRJ_OPR_TMPS = Set(
+    m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-                          if p in mod.VAR_OM_COST_PRJS]
+                          if p in mod.VAR_OM_COST_SIMPLE_PRJS]
+    )
+
+    m.VAR_OM_COST_BY_LL_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
+    )
+
+    m.VAR_OM_COST_BY_LL_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp)
+            for (g, tmp, s) in mod.VAR_OM_COST_BY_LL_PRJS_OPR_TMPS_SGMS)
     )
 
     m.STARTUP_COST_PRJ_OPR_TMPS = Set(
@@ -89,6 +105,43 @@ def add_model_components(m, d):
                           if p in mod.SHUTDOWN_COST_PRJS]
     )
 
+    m.Variable_OM_Cost_By_LL = Var(
+        m.VAR_OM_COST_BY_LL_PRJS_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    def variable_om_cost_by_ll_constraint_rule(mod, prj, tmp, s):
+        """
+        **Constraint Name**: GenCommitBin_Variable_OM_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
+
+        Variable O&M cost by loading level is set by piecewise linear
+        representation of the input/output curve (variable O&M cost vs. loading
+        level).
+
+        Note: we assume that when projects are derated for availability, the
+        input/output curve is derated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very costly operating points.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "variable_om_cost_by_ll_rule"):
+            var_cost_by_ll = imported_operational_modules[gen_op_type]. \
+                variable_om_cost_by_ll_rule(mod, prj, tmp, s)
+        else:
+            var_cost_by_ll = \
+                op_type.variable_om_cost_by_ll_rule(mod, prj, tmp, s)
+
+        return mod.Variable_OM_Cost_By_LL[prj, tmp] \
+            >= var_cost_by_ll
+
+    m.Variable_OM_by_LL_Constraint = Constraint(
+        m.VAR_OM_COST_BY_LL_PRJS_OPR_TMPS_SGMS,
+        rule=variable_om_cost_by_ll_constraint_rule
+    )
+
     def variable_om_cost_rule(mod, prj, tmp):
         """
         """
@@ -100,17 +153,12 @@ def add_model_components(m, d):
         else:
             var_cost_generic = op_type.variable_om_cost_rule(mod, prj, tmp)
 
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "variable_om_cost_by_ll_rule"):
-            var_cost_by_ll = imported_operational_modules[gen_op_type]. \
-                variable_om_cost_by_ll_rule(mod, prj, tmp)
-        else:
-            var_cost_by_ll = op_type.variable_om_cost_by_ll_rule(mod, prj, tmp)
-
-        return var_cost_generic + var_cost_by_ll
+        return var_cost_generic \
+            + (mod.Variable_OM_Cost_By_LL[prj, tmp]
+               if prj in mod.VAR_OM_COST_BY_LL_PRJS else 0)
 
     m.Variable_OM_Cost = Expression(
-        m.VAR_OM_COST_PRJ_OPR_TMPS,
+        m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS,
         rule=variable_om_cost_rule
     )
 
@@ -222,7 +270,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Variable_OM_Cost[p, tmp])
-                if p in m.VAR_OM_COST_PRJS else None,
+                if p in m.VAR_OM_COST_SIMPLE_PRJS else None,
                 value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
                 value(m.Startup_Cost[p, tmp])
                 if p in m.STARTUP_COST_PRJS else None,

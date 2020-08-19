@@ -116,12 +116,6 @@ def add_module_specific_components(m, d):
     | curve segment IDs, and the periods in which the project could be        |
     | operational.                                                            |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS`                         |
-    |                                                                         |
-    | Three-dimensional set describing projects, their variable O&M cost      |
-    | curve segment IDs, and the timepoints in which the project could be     |
-    | operational. The variable O&M cost constraint is applied over this set. |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`                             |
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
@@ -175,35 +169,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_commit_bin_variable_om_cost_per_mwh`                       |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_vom_slope_cost_per_mwh`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS`             |
-    | | *Within*: :code:`PositiveReals`                                       |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | This param describes the slope of the piecewise linear variable O&M     |
-    | cost for each project's variable O&M cost segment in each operational   |
-    | period. The units are cost of variable O&M per MWh of electricity       |
-    | generation.                                                             |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_vom_intercept_cost_per_mw_hr`                   |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS`             |
-    | | *Within*: :code:`Reals`                                               |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | This param describes the intercept of the piecewise linear variable O&M |
-    | cost for each project's variable O&M cost segment in each operational   |
-    | period. The units are cost of variable O&M per MW of operational        |
-    | capacity per hour (multiply by operational capacity and timepoint       |
-    | duration to get actual cost).                                           |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_ramp_up_when_on_rate`                           |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -450,18 +415,6 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Fuel burn in MMBTU by this project in each operational timepoint.       |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Variable_OM_Cost_By_LL`                           |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
-    |                                                                         |
-    | Variable O&M cost for this project in each operational timepoint. Note: |
-    | This is only the piecewise linear component of the variable O&M cost,   |
-    | determined by the variable O&M cost curve inputs. Most projects won't   |
-    | use this and instead simply have a :code:`variable_om_cost_per_mwh`     |
-    | rate specified that is constant for all loading points. Both components |
-    | are additive so users could use both if needed. See                     |
-    | :code:`variable_om_cost_rule` for more info.                            |
-    +-------------------------------------------------------------------------+
 
     |
 
@@ -687,14 +640,6 @@ def add_module_specific_components(m, d):
     | Determines fuel burn from the project in each timepoint based on its    |
     | heat rate curve.                                                        |
     +-------------------------------------------------------------------------+
-    | Variable O&M                                                            |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Variable_OM_Constraint`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS`         |
-    |                                                                         |
-    | Determines variable O&M cost from the project in each timepoint based   |
-    | on its variable O&M cost curve.                                         |
-    +-------------------------------------------------------------------------+
 
     """
 
@@ -731,19 +676,6 @@ def add_module_specific_components(m, d):
             for _g, p, s in mod.GEN_COMMIT_BIN_FUEL_PRJS_PRDS_SGMS
             if g in mod.FUEL_PRJS
             and g == _g and mod.period[tmp] == p)
-    )
-
-    m.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS = Set(
-        dimen=3,
-        ordered=True
-    )
-
-    m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS = Set(
-        dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, p, s in mod.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p)
     )
 
     m.GEN_COMMIT_BIN_STR_RMP_PRJS = Set(
@@ -798,23 +730,6 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
-
-    m.gen_commit_bin_variable_om_cost_per_mwh = Param(
-        m.GEN_COMMIT_BIN, within=NonNegativeReals,
-        default=0
-    )
-
-    m.gen_commit_bin_vom_slope_cost_per_mwh = Param(
-        m.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS,
-        within=NonNegativeReals,
-        default=0
-    )
-
-    m.gen_commit_bin_vom_intercept_cost_per_mw_hr = Param(
-        m.GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS,
-        within=Reals,
-        default=0
-    )
 
     m.gen_commit_bin_ramp_up_when_on_rate = Param(
         m.GEN_COMMIT_BIN,
@@ -967,11 +882,6 @@ def add_module_specific_components(m, d):
 
     m.GenCommitBin_Fuel_Burn_MMBTU = Var(
         m.GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.GenCommitBin_Variable_OM_Cost_By_LL = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals
     )
 
@@ -1147,12 +1057,6 @@ def add_module_specific_components(m, d):
     m.GenCommitBin_Fuel_Burn_Constraint = Constraint(
         m.GEN_COMMIT_BIN_FUEL_PRJS_OPR_TMPS_SGMS,
         rule=fuel_burn_constraint_rule
-    )
-
-    # Variable O&M
-    m.GenCommitBin_Variable_OM_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS,
-        rule=variable_om_cost_constraint_rule
     )
 
 
@@ -2134,31 +2038,6 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         * mod.GenCommitBin_Synced[g, tmp]
 
 
-def variable_om_cost_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: GenCommitBin_Variable_OM_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
-
-    Variable O&M cost by loading level is set by piecewise linear
-    representation of the input/output curve (variable O&M cost vs. loading
-    level).
-
-    Note: we assume that when projects are derated for availability, the
-    input/output curve is derated by the same amount. The implicit
-    assumption is that when a generator is de-rated, some of its units
-    are out rather than it being forced to run below minimum stable level
-    at very costly operating points.
-    """
-    return mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp] \
-        >= \
-        mod.gen_commit_bin_vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.gen_commit_bin_vom_intercept_cost_per_mw_hr[g, mod.period[tmp],
-                                                        s] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.GenCommitBin_Synced[g, tmp]
-
-
 # Operational Type Methods
 ###############################################################################
 
@@ -2193,7 +2072,7 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     Variable O&M cost has two components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
-       levels: :code:`gen_commit_bin_variable_om_cost_per_mwh`.
+       levels: :code:`variable_om_cost_per_mwh`.
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
@@ -2214,11 +2093,11 @@ def variable_om_cost_rule(mod, g, tmp):
         * mod.variable_om_cost_per_mwh[g]
 
 
-def variable_om_cost_by_ll_rule(mod, g, tmp):
+def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     """
     Variable O&M cost has two components which are additive:
     1. A fixed variable O&M rate (cost/MWh) that doesn't change with loading
-       levels: :code:`gen_commit_bin_variable_om_cost_per_mwh`.
+       levels: :code:`variable_om_cost_per_mwh`.
     2. A variable variable O&M rate that changes with the loading level,
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
@@ -2229,7 +2108,11 @@ def variable_om_cost_by_ll_rule(mod, g, tmp):
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
     """
-    return mod.GenCommitBin_Variable_OM_Cost_By_LL[g, tmp]
+    return mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
+        * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
+        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
+        * mod.GenCommitBin_Pmax_MW[g, tmp] \
+        * mod.GenCommitBin_Synced[g, tmp]
 
 
 def startup_cost_by_st_rule(mod, g, tmp):
@@ -2338,13 +2221,6 @@ def load_module_specific_data(mod, data_portal,
 
     # Load data from heat_rate_curves.tab (if it exists)
     load_heat_rate_curves(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin", projects=projects
-    )
-
-    # Load data from variable_om_curves.tab (if it exists)
-    load_vom_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_commit_bin", projects=projects

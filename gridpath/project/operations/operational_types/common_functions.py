@@ -1335,6 +1335,7 @@ def validate_heat_rate_curves(subscenarios, subproblem, stage, conn, op_type):
     #  project there are zeroes everywhere for that project.
 
 
+# TODO: consoildate these with operations init when fuels and HRs are moved
 def validate_vom_curves(subscenarios, subproblem, stage, conn, op_type):
     """
 

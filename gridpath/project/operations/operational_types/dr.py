@@ -127,15 +127,6 @@ def add_module_specific_components(m, d):
             if g in mod.DR)
     )
 
-    # Params
-    ###########################################################################
-
-    m.dr_variable_om_cost_per_mwh = Param(
-        m.DR,
-        within=NonNegativeReals,
-        default=0
-    )
-
     # Variables
     ###########################################################################
 

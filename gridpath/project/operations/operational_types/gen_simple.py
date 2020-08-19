@@ -81,14 +81,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_simple_variable_om_cost_per_mwh`                           |
-    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_simple_ramp_up_when_on_rate`                               |
     | | *Defined over*: :code:`GEN_SIMPLE`                                    |
     | | *Within*: :code:`PercentFraction`                                     |
@@ -209,11 +201,6 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
-
-    m.gen_simple_variable_om_cost_per_mwh = Param(
-        m.GEN_SIMPLE, within=NonNegativeReals,
-        default=0
-    )
 
     m.gen_simple_ramp_up_when_on_rate = Param(
         m.GEN_SIMPLE, within=PercentFraction,

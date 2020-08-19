@@ -124,16 +124,6 @@ class TestGenMustRun(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Params: gen_must_run_variable_om_cost_per_mwh
-        expected_var_om_cost = {"Nuclear": 1,
-                                "Nuclear_z2": 1}
-        actual_var_om_cost = {
-            prj: instance.gen_must_run_variable_om_cost_per_mwh[prj]
-            for prj in instance.GEN_MUST_RUN
-        }
-
-        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
-
         # Set: GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS
         expected_fuel_projects = sorted([
             "Nuclear", "Nuclear_z2"

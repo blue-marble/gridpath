@@ -334,7 +334,7 @@ def variable_om_cost_rule(mod, prj, tmp):
     return mod.Power_Provision_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
 
 
-def variable_om_cost_by_ll_rule(mod, prj, tmp):
+def variable_om_cost_by_ll_rule(mod, prj, tmp, s):
     """
     """
     return 0
