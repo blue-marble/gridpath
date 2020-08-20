@@ -71,25 +71,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_commit_cap`       |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS`                            |
-    |                                                                         |
-    | Three-dimensional set describing fuel projects and their heat rate      |
-    | curve segment IDs for each operational period. Unless the project's     |
-    | heat rate is constant, the heat rate can be defined by multiple         |
-    | piecewise linear segments.                                              |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS`                             |
-    |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_commit_cap`       |
-    | operational type who also consume fuel, and their operational           |
-    | timepoints.                                                             |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS`                        |
-    |                                                                         |
-    | Three-dimensional set with generators of the :code:`gen_commit_cap`     |
-    | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PRJS`).                      |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_CAP_LINKED_TMPS`                                    |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_commit_cap`       |
@@ -116,24 +97,6 @@ def add_module_specific_components(m, d):
     | This can also be interpreted as the minimum stable level of a unit      |
     | within this project (as the project itself can represent multiple       |
     | units with similar characteristics.                                     |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_fuel_burn_slope_mmbtu_per_mwh`                  |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS`            |
-    | | *Within*: :code:`PositiveReals`                                       |
-    |                                                                         |
-    | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment in each operational period. The units  |
-    | are MMBtu of fuel burn per MWh of electricity generation.               |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_fuel_burn_intercept_mmbtu_per_mw_hr`            |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS`            |
-    | | *Within*: :code:`Reals`                                               |
-    |                                                                         |
-    | This param describes the intercept of the piecewise linear fuel burn    |
-    | for each project's heat rate segment in each operational period. The    |
-    | units are MMBtu of fuel burn per MW of operational capacity per hour    |
-    | (multiply by operational capacity and timepoint duration to get fuel    |
-    | burn in MMBtu).                                                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -415,14 +378,6 @@ def add_module_specific_components(m, d):
     | Requires that when units within this project are stopped, they stay off |
     | for at least :code:`gen_commit_cap_min_down_time_hours`.                |
     +-------------------------------------------------------------------------+
-    | Fuel Burn                                                               |
-    +-------------------------------------------------------------------------+
-    | | :code:`Fuel_Burn_GenCommitCap_Constraint`                             |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS`        |
-    |                                                                         |
-    | Determines fuel burn from the project in each timepoint based on its    |
-    | heat rate curve.                                                        |
-    +-------------------------------------------------------------------------+
 
     """
 
@@ -441,26 +396,6 @@ def add_module_specific_components(m, d):
                              mod.GEN_COMMIT_CAP)
     )
 
-    m.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS = Set(
-        dimen=3
-    )
-
-    m.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS = Set(
-        dimen=2,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
-            if g in mod.FUEL_PRJS)
-    )
-
-    m.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS = Set(
-        dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
-            for _g, p, s in mod.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS
-            if g in mod.FUEL_PRJS
-            and g == _g and mod.period[tmp] == p)
-    )
-
     m.GEN_COMMIT_CAP_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
@@ -472,16 +407,6 @@ def add_module_specific_components(m, d):
     m.gen_commit_cap_min_stable_level_fraction = Param(
         m.GEN_COMMIT_CAP,
         within=PercentFraction
-    )
-
-    m.gen_commit_cap_fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS,
-        within=PositiveReals
-    )
-
-    m.gen_commit_cap_fuel_burn_intercept_mmbtu_per_mw_hr = Param(
-        m.GEN_COMMIT_CAP_FUEL_PRJS_PRDS_SGMS,
-        within=Reals
     )
 
     # Optional Params
@@ -571,10 +496,6 @@ def add_module_specific_components(m, d):
     )
     m.Commit_Capacity_MW = Var(
         m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
-    )
-    m.GenCommitCap_Fuel_Burn_MMBTU = Var(
-        m.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS,
         within=NonNegativeReals
     )
 
@@ -726,12 +647,6 @@ def add_module_specific_components(m, d):
     m.GenCommitCap_Min_Down_Time_Constraint = Constraint(
         m.GEN_COMMIT_CAP_OPR_TMPS,
         rule=min_down_time_constraint_rule
-    )
-
-    # Fuel burn
-    m.Fuel_Burn_GenCommitCap_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS,
-        rule=fuel_burn_constraint_rule
     )
 
 
@@ -1308,30 +1223,6 @@ def min_down_time_constraint_rule(mod, g, tmp):
             >= capacity_turned_off_min_down_time_or_less_hours_ago
 
 
-def fuel_burn_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: Fuel_Burn_GenCommitCap_Constraint
-    **Enforced Over**: GEN_COMMIT_CAP_FUEL_PRJS_OPR_TMPS_SGMS
-
-    Fuel burn is set by piecewise linear representation of input/output
-    curve.
-
-    Note: The availability de-rate is already accounted for in
-    Commit_Capacity_MW so we don't need to multiply the intercept
-    by the Availability_Derate like we do for gen_always_on generators.
-    """
-    return \
-        mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp] \
-        >= \
-        mod.gen_commit_cap_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp],
-                                                        s] \
-        * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.gen_commit_cap_fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[
-            tmp], s] \
-        * mod.Commit_Capacity_MW[g, tmp]
-
-
-
 # Operational Type Methods
 ###############################################################################
 def power_provision_rule(mod, g, tmp):
@@ -1359,10 +1250,14 @@ def online_capacity_rule(mod, g, tmp):
     return mod.Commit_Capacity_MW[g, tmp]
 
 
-def fuel_burn_rule(mod, g, tmp):
+def fuel_burn_by_ll_rule(mod, g, tmp, s):
     """
     """
-    return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp]
+    return \
+        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
+        * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
+        * mod.Commit_Capacity_MW[g, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -1407,8 +1302,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     """
     return mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
         * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp],
-                                                        s] \
+        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
         * mod.Commit_Capacity_MW[g, tmp]
 
 
