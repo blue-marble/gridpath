@@ -292,7 +292,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2periods_new_build")
-        self.run_and_check_objective("2periods_new_build", 10085845906.760294)
+        self.run_and_check_objective("2periods_new_build", 10085845900.191605)
 
     def test_example_2periods_new_build_2zones(self):
         """
@@ -380,7 +380,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps")
         self.run_and_check_objective("2periods_new_build_rps",
-                                     6852354316.820875)
+                                     6852354310.25219)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -394,7 +394,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_percent_target")
         self.run_and_check_objective("2periods_new_build_rps_percent_target",
-                                     6853489118.280875)
+                                     6853489111.712191)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -405,7 +405,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_cumulative_min_max")
         self.run_and_check_objective("2periods_new_build_cumulative_min_max",
-                                     27166044526946.766)
+                                     27166044526940.195)
 
     def test_example_single_stage_prod_cost(self):
         """
@@ -597,7 +597,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_ineligible_storage",
-            6807756608.056059
+            6807756610.25219
         )
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
@@ -610,7 +610,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_eligible_storage",
-            6807756608.056059
+            6807756610.25219
         )
 
     def test_example_test_new_solar(self):
@@ -678,7 +678,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_simple_prm")
         self.run_and_check_objective("2periods_new_build_simple_prm",
-                                     10153045906.760294)
+                                     10153045900.191605)
 
     def test_example_2periods_new_build_local_capacity(self):
         """
@@ -690,7 +690,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_local_capacity")
         self.run_and_check_objective("2periods_new_build_local_capacity",
-                                     10087189906.764233)
+                                     10087189902.382917)
 
     def test_example_test_tx_dcopf(self):
         """
@@ -777,7 +777,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_capgroups")
         self.run_and_check_objective("2periods_new_build_capgroups",
-                                     5266183794346.761)
+                                     5266183794340.191)
 
     @classmethod
     def tearDownClass(cls):

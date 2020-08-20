@@ -348,6 +348,12 @@ def fuel_burn_rule(mod, prj, tmp):
     return 0
 
 
+def fuel_burn_by_ll_rule(mod, prj, tmp, s):
+    """
+    """
+    return 0
+
+
 def startup_cost_simple_rule(mod, prj, tmp):
     """
     If no startup_cost_simple_rule is specified in an operational type module,

@@ -13,7 +13,8 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Set, Expression, value, Param, Any
+from pyomo.environ import Set, Var, Expression, Constraint, \
+    NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -72,10 +73,61 @@ def add_model_components(m, d):
                           if p in mod.FUEL_PRJS]
     )
 
+    m.FUEL_BY_LL_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.FUEL_BY_LL_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
+    )
+
+    m.FUEL_BY_LL_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp)
+            for (g, tmp, s) in mod.FUEL_BY_LL_PRJS_OPR_TMPS_SGMS)
+    )
+
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
                           if p in mod.STARTUP_FUEL_PRJS]
+    )
+
+    m.Fuel_Burn_by_LL = Var(
+        m.FUEL_BY_LL_PRJS_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    def fuel_burn_by_ll_constraint_rule(mod, prj, tmp, s):
+        """
+        **Constraint Name**: Fuel_Burn_Constraint
+        **Enforced Over**: FUEL_BY_LL_PRJS_OPR_TMPS_SGMS
+
+        Fuel burn is set by piecewise linear representation of input/output
+        curve.
+
+        Note: we assume that when projects are derated for availability, the
+        input/output curve is derated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very inefficient operating points.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_burn_by_ll_rule"):
+            fuel_burn_by_ll = imported_operational_modules[gen_op_type]. \
+                fuel_burn_by_ll_rule(mod, prj, tmp, s)
+        else:
+            fuel_burn_by_ll = \
+                op_type.fuel_burn_by_ll_rule(mod, prj, tmp, s)
+
+        return mod.Fuel_Burn_by_LL[prj, tmp] \
+            >= fuel_burn_by_ll
+
+    m.Fuel_Burn_by_LL_Constraint = Constraint(
+        m.FUEL_BY_LL_PRJS_OPR_TMPS_SGMS,
+        rule=fuel_burn_by_ll_constraint_rule
     )
 
     # Expressions
@@ -89,10 +141,14 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[prj]
         if hasattr(imported_operational_modules[gen_op_type],
                    "fuel_burn_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            fuel_burn_simple = imported_operational_modules[gen_op_type]. \
                 fuel_burn_rule(mod, prj, tmp)
         else:
-            return op_type.fuel_burn_rule(mod, prj, tmp)
+            fuel_burn_simple = op_type.fuel_burn_rule(mod, prj, tmp)
+
+        return fuel_burn_simple \
+            + (mod.Fuel_Burn_by_LL[prj, tmp] if prj in mod.FUEL_BY_LL_PRJS
+               else 0)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PRJ_OPR_TMPS,

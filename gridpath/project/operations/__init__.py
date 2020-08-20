@@ -10,7 +10,8 @@ and demand-side infrastructure 'projects' in the optimization problem.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals
+from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, \
+    PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -92,6 +93,25 @@ def add_model_components(m, d):
     m.FUEL_PRJS = Set(within=m.PROJECTS)
 
     m.fuel = Param(m.FUEL_PRJS, within=Any)
+    
+    m.FUEL_BY_LL_PRJS_PRDS_SGMS = Set(dimen=3)
+    
+    m.FUEL_BY_LL_PRJS = Set(
+        within=m.FUEL_PRJS,
+        initialize=lambda mod: set(
+            [prj for (prj, p, s) in mod.FUEL_BY_LL_PRJS_PRDS_SGMS]
+        )
+    )
+    
+    m.fuel_burn_slope_mmbtu_per_mwh = Param(
+        m.FUEL_BY_LL_PRJS_PRDS_SGMS,
+        within=PositiveReals
+    )
+
+    m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
+        m.FUEL_BY_LL_PRJS_PRDS_SGMS,
+        within=Reals
+    )
 
     # Fuel projects that incur fuel burn on startup
     m.STARTUP_FUEL_PRJS = Set(within=m.FUEL_PRJS)
@@ -206,6 +226,50 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["STARTUP_COST_BY_ST_PRJS_TYPES"] = \
             {None: startup_ramp_projects_types}
         data_portal.data()["startup_cost_by_st_per_mw"] = startup_cost_dict
+        
+    # HR curves
+    
+    hr_curves_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "heat_rate_curves.tab"
+    )
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "periods.tab"
+    )
+    projects_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage),
+        "inputs", "projects.tab"
+    )
+
+    # Get column names as a few columns will be optional;
+    # won't load data if fuel column does not exist
+    headers = pd.read_csv(projects_file, nrows=0, sep="\t").columns
+    if os.path.exists(hr_curves_file) and "fuel" in headers:
+
+        hr_df = pd.read_csv(hr_curves_file, sep="\t")
+        projects = set(hr_df["project"].unique())
+        
+        periods_df = pd.read_csv(periods_file, sep="\t")
+        pr_df = pd.read_csv(projects_file, sep="\t", usecols=["project", "fuel"])
+        pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
+
+        periods = set(periods_df["period"])
+        fuel_projects = pr_df["project"].unique()
+        fuels_dict = dict(zip(projects, pr_df["fuel"]))
+
+        slope_dict, intercept_dict = \
+            get_slopes_intercept_by_project_period_segment(
+                hr_df, "average_heat_rate_mmbtu_per_mwh",
+                fuel_projects, periods)
+
+        fuel_project_segments = list(slope_dict.keys())
+
+        data_portal.data()["FUEL_BY_LL_PRJS_PRDS_SGMS"] \
+            = {None: fuel_project_segments}
+        data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
+        data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
+            intercept_dict
 
 
 # Database
