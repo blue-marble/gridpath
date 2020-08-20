@@ -47,19 +47,6 @@ def add_module_specific_components(m, d):
     |
 
     +-------------------------------------------------------------------------+
-    | Input Params                                                            |
-    +=========================================================================+
-    | | :code:`dr_variable_om_cost_per_mwh`                                   |
-    | | *Defined over*: :code:`DR`                                            |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
-
-
-    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`DR_Shift_Up_MW`                                                |
@@ -266,28 +253,6 @@ def power_delta_rule(mod, p, tmp):
                 - mod.DR_Shift_Down_MW[
                  p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
              ])
-
-
-# Input-Output
-###############################################################################
-
-def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
-    """
-    :param mod:
-    :param data_portal:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-
-    # Load data from projects.tab and get the list of projects of this type
-    projects = load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="dr"
-    )
 
 
 # Validation
