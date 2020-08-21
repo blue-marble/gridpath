@@ -19,7 +19,7 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    validate_opchars, load_optype_module_specific_data
+    validate_opchars
 
 
 def add_module_specific_components(m, d):

@@ -40,17 +40,15 @@ from __future__ import print_function
 import csv
 import os.path
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    NonPositiveReals, PercentFraction, Reals, PositiveReals, value, Expression
+    NonPositiveReals, PercentFraction, Reals, value, Expression
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, load_heat_rate_curves, load_vom_curves, \
-    check_for_tmps_to_link, get_heat_rate_curves_inputs_from_database, \
-    get_vom_curves_inputs_from_database, \
-    validate_opchars, validate_heat_rate_curves, validate_vom_curves
+    load_optype_module_specific_data, check_for_tmps_to_link, \
+    validate_opchars
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
 
@@ -1533,65 +1531,6 @@ def import_module_specific_results_to_database(
     )
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn):
-    """
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return: cursor object with query results
-    """
-
-    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_cap"
-    )
-
-    vom_curves = get_vom_curves_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_cap"
-    )
-
-    return heat_rate_curves, vom_curves
-
-
-def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input files.
-    heat_rate_curves.tab and variable_om_curves.tab files.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    heat_rate_curves, vom_curves = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-
-    hr_df = cursor_to_df(heat_rate_curves)
-    if not hr_df.empty:
-        hr_df = hr_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "heat_rate_curves.tab")
-        if not os.path.isfile(fpath):
-            hr_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-    vom_df = cursor_to_df(vom_curves)
-    if not vom_df.empty:
-        vom_df = vom_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "variable_om_curves.tab")
-        if not os.path.isfile(fpath):
-            vom_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            vom_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-
 # Validation
 ###############################################################################
 
@@ -1607,11 +1546,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(subscenarios, subproblem, stage, conn, "gen_commit_cap")
-
-    # Validate heat rate curves
-    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
-                              "gen_commit_cap")
-
-    # Validate VOM curves
-    validate_vom_curves(subscenarios, subproblem, stage, conn,
-                        "gen_commit_cap")

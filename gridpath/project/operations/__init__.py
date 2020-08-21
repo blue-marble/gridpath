@@ -15,7 +15,8 @@ from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, \
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_values
+    validate_values, get_expected_dtypes, validate_dtypes, \
+    validate_piecewise_curves, validate_startup_shutdown_rate_inputs
 from gridpath.project.common_functions import append_to_input_file
 
 
@@ -319,7 +320,77 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return proj_opchar
+    c2 = conn.cursor()
+    heat_rates = c2.execute(
+        """
+        SELECT project, period,
+        load_point_fraction, average_heat_rate_mmbtu_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, heat_rate_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_heat_rate_curves
+        USING(project, heat_rate_curves_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {}
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    c3 = conn.cursor()
+    vom_curves = c3.execute(
+        """
+        SELECT project, period,  
+        load_point_fraction, average_variable_om_cost_per_mwh
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, variable_om_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        ) AS op_char
+        USING(project)
+        -- select only variable OM curves inputs with matching projects
+        INNER JOIN
+        inputs_project_variable_om_curves
+        USING(project, variable_om_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        AND variable_om_curves_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    c4 = conn.cursor()
+    startup_chars = c4.execute(
+        """
+        SELECT project, 
+        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, startup_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        ) AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_startup_chars
+        USING(project, startup_chars_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND startup_chars_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return proj_opchar, heat_rates, vom_curves, startup_chars
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
@@ -332,8 +403,8 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :param conn: database connection
     :return:
     """
-    proj_opchar = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    proj_opchar, heat_rate_curves, vom_curves, startup_chars = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
     # Update the projects.tab file
     new_columns = [
@@ -361,6 +432,33 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         new_column_names=new_columns
     )
 
+    # Write heat rates file
+    hr_df = cursor_to_df(heat_rate_curves)
+
+    if not hr_df.empty:
+        hr_df = hr_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "heat_rate_curves.tab")
+
+        hr_df.to_csv(fpath, index=False, sep="\t")
+
+
+    # Write VOM file
+    vom_df = cursor_to_df(vom_curves)
+    if not vom_df.empty:
+        vom_df = vom_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "variable_om_curves.tab")
+        vom_df.to_csv(fpath, index=False, sep="\t")
+
+    # Write startup chars file
+    su_df = cursor_to_df(startup_chars)
+    if not su_df.empty:
+        su_df = su_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
+                             "inputs", "startup_chars.tab")
+        su_df.to_csv(fpath, index=False, sep="\t")
+
 
 # Validation
 ###############################################################################
@@ -376,8 +474,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Get the project input data
-    proj_opchar = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+    proj_opchar, heat_rates, vom_curves, startup_chars = \
+        get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -427,6 +525,204 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             errors=validate_values(prj_df, ["min_stable_level_fraction"],
                                    min=0, max=1, strict_min=True)
         )
+
+    # Convert input data into DataFrame
+    hr_df = cursor_to_df(heat_rates)
+
+    # Check data types heat_rates:
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_heat_rate_curves"]
+    )
+    dtype_errors, error_columns = validate_dtypes(hr_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns in heat rates are non-negative
+    numeric_columns = [c for c in hr_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=validate_values(hr_df, valid_numeric_columns, min=0)
+    )
+
+    # TODO: make this work w new structure
+    # Check for consistency between fuel and heat rate curve inputs:
+    # Projects with fuel should have a heat rate scenario specified with
+    # associated inputs in the hr curves table, and vice versa for projects
+    # with no fuel.
+    # fuel_mask = pd.notna(prj_df["fuel"])
+    # prjs_w_fuel = prj_df["project"][fuel_mask]
+    # prjs_wo_fuel = prj_df["project"][~fuel_mask]
+    # prjs_w_hr = hr_df["project"].unique()  # prjs w hr inputs and matching hr id
+    # write_validation_to_database(
+    #     conn=conn,
+    #     scenario_id=subscenarios.SCENARIO_ID,
+    #     subproblem_id=subproblem,
+    #     stage_id=stage,
+    #     gridpath_module=__name__,
+    #     db_table="inputs_project_operational_chars, inputs_project_heat_rate_curves",
+    #     severity="High",
+    #     errors=validate_idxs(actual_idxs=prjs_w_hr,
+    #                          req_idxs=prjs_w_fuel,
+    #                          invalid_idxs=prjs_wo_fuel,
+    #                          msg="Projects with(out) fuel should (not) have "
+    #                              "heat rate scenario specified, and should "
+    #                              "(not) have inputs for that project-scenario "
+    #                              "in the heat rate curves inputs table.")
+    # )
+
+    # Check that specified heat rate curves inputs are valid:
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_heat_rate_curves",
+        severity="High",
+        errors=validate_piecewise_curves(df=hr_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_heat_rate_mmbtu_per_mwh",
+                                         y_name="fuel burn")
+    )
+
+    # Validate VOM curves
+    vom_df = cursor_to_df(vom_curves)
+
+    # Check data types
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_variable_om_curves"]
+    )
+
+    dtype_errors, error_columns = validate_dtypes(vom_df, expected_dtypes)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=dtype_errors
+    )
+
+    # Check valid numeric columns in variable OM are non-negative
+    numeric_columns = [c for c in vom_df.columns
+                       if expected_dtypes[c] == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_values(vom_df, valid_numeric_columns, min=0)
+    )
+
+    # Check that specified vom curves inputs are valid:
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_variable_om_curves",
+        severity="High",
+        errors=validate_piecewise_curves(df=vom_df,
+                                         x_col="load_point_fraction",
+                                         slope_col="average_variable_om_cost_per_mwh",
+                                         y_name="variable O&M cost")
+    )
+
+    # Validate startup chars
+    # Convert input data to DataFrame
+    su_df = cursor_to_df(startup_chars)
+
+    # Get the number of hours in the timepoint (take min if it varies)
+    c = conn.cursor()
+    tmp_durations = c.execute(
+        """SELECT number_of_hours_in_timepoint
+           FROM inputs_temporal
+           WHERE temporal_scenario_id = {}
+           AND subproblem_id = {}
+           AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    ).fetchall()
+    hrs_in_tmp = min(tmp_durations)
+
+    # Check startup shutdown rate inputs
+    # TODO: figure out why we need the df in the validation and refactor this
+    cols = [
+        "project",
+        "fuel",
+        "variable_om_cost_per_mwh",
+        "operational_type",
+        "min_stable_level_fraction",
+        "unit_size_mw",
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate", "shutdown_plus_ramp_down_rate",
+        "ramp_up_when_on_rate", "ramp_down_when_on_rate",
+        "min_up_time_hours, min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours", "maximum_duration_hours",
+        "aux_consumption_frac_capacity", "aux_consumption_frac_power"
+    ]
+
+    sql = """SELECT {}
+        FROM inputs_project_portfolios
+        INNER JOIN
+        inputs_project_operational_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_operational_chars_scenario_id = {};
+        """.format(
+            ",".join(cols),
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        )
+
+    opchar_df = pd.read_sql(sql, conn)
+
+    su_errors = validate_startup_shutdown_rate_inputs(
+        opchar_df, su_df, hrs_in_tmp
+    )
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=subscenarios.SCENARIO_ID,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_project_operational_chars, inputs_project_startup_chars",
+        severity="High",
+        errors=su_errors
+    )
+
+    # TODO: Check that specified vom scenarios actually have inputs in the vom
+    #  table --> would need to get list of projects w vom curve scenario
+
+    # TODO: check that if there is a "0" for the period for a given
+    #  project there are zeroes everywhere for that project.
 
 
 def get_slopes_intercept_by_project_period_segment(

@@ -30,9 +30,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, \
-    load_heat_rate_curves, get_heat_rate_curves_inputs_from_database, \
-    validate_opchars, validate_heat_rate_curves
+    load_optype_module_specific_data, validate_opchars
 
 
 def add_module_specific_components(m, d):
@@ -201,54 +199,6 @@ def load_module_specific_data(mod, data_portal,
     )
 
 
-# Database
-###############################################################################
-
-def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn):
-    """
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return: cursor object with query results
-    """
-
-    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_must_run"
-    )
-
-    return heat_rate_curves
-
-
-def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input
-    startup_chars.tab files.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    heat_rate_curves = get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
-
-    hr_df = cursor_to_df(heat_rate_curves)
-    if not hr_df.empty:
-        hr_df = hr_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "heat_rate_curves.tab")
-        if not os.path.isfile(fpath):
-            hr_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-
 # Validation
 ###############################################################################
 
@@ -265,10 +215,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                  "gen_must_run")
-
-    # Validate heat rate curves
-    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
-                              "gen_must_run")
 
     # Other module specific validations
 

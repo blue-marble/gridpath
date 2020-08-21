@@ -22,21 +22,15 @@ from __future__ import division
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    PercentFraction, Reals, PositiveReals, Expression, value
+    PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_startup_shutdown_rate_inputs
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
-    get_heat_rate_curves_inputs_from_database, \
-    get_vom_curves_inputs_from_database, \
-    get_startup_chars_inputs_from_database, \
-    check_for_tmps_to_link, validate_opchars, \
-    validate_heat_rate_curves, validate_vom_curves
+    check_for_tmps_to_link, validate_opchars
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_last_timepoint, \
     check_boundary_type
@@ -2329,78 +2323,6 @@ def import_module_specific_results_to_database(
     )
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn):
-    """
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return: cursor object with query results
-    """
-
-    startup_chars = get_startup_chars_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_lin"
-    )
-    heat_rate_curves = get_heat_rate_curves_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_lin"
-    )
-    vom_curves = get_vom_curves_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_lin"
-    )
-
-    return startup_chars, heat_rate_curves, vom_curves
-
-
-def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input
-    startup_chars.tab files.
-    :param scenario_directory: string, the scenario directory
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    startup_chars, heat_rate_curves, vom_curves = \
-        get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-
-    su_df = cursor_to_df(startup_chars)
-    if not su_df.empty:
-        su_df = su_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "startup_chars.tab")
-        if not os.path.isfile(fpath):
-            su_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            su_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-    hr_df = cursor_to_df(heat_rate_curves)
-    if not hr_df.empty:
-        hr_df = hr_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "heat_rate_curves.tab")
-        if not os.path.isfile(fpath):
-            hr_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            hr_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-    vom_df = cursor_to_df(vom_curves)
-    if not vom_df.empty:
-        vom_df = vom_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
-                             "inputs", "variable_om_curves.tab")
-        if not os.path.isfile(fpath):
-            vom_df.to_csv(fpath, index=False, sep="\t")
-        else:
-            vom_df.to_csv(fpath, index=False, sep="\t", mode="a", header=False)
-
-
 # Validation
 ###############################################################################
 
@@ -2418,52 +2340,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                 "gen_commit_lin")
-
-    # Validate heat rate curves
-    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
-                              "gen_commit_lin")
-
-    # Validate VOM curves
-    validate_vom_curves(subscenarios, subproblem, stage, conn,
-                        "gen_commit_lin")
-
-    # Other module specific validations
-
-    # Get startup chars and project inputs
-    startup_chars = get_startup_chars_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_commit_lin"
-    )
-
-    # Convert input data to DataFrame
-    su_df = cursor_to_df(startup_chars)
-
-    # Get the number of hours in the timepoint (take min if it varies)
-    c2 = conn.cursor()
-    tmp_durations = c2.execute(
-        """SELECT number_of_hours_in_timepoint
-           FROM inputs_temporal
-           WHERE temporal_scenario_id = {}
-           AND subproblem_id = {}
-           AND stage_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage
-        )
-    ).fetchall()
-    hrs_in_tmp = min(tmp_durations)
-
-    # Check startup shutdown rate inputs
-    su_errors = validate_startup_shutdown_rate_inputs(
-        opchar_df, su_df, hrs_in_tmp
-    )
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_operational_chars, inputs_project_startup_chars",
-        severity="High",
-        errors=su_errors
-    )
-
