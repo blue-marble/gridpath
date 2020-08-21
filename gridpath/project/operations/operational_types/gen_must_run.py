@@ -51,45 +51,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS`                              |
-    |                                                                         |
-    | Three-dimensional set describing fuel projects and their heat rate      |
-    | curve segment IDs for each operational period. Unless the project's     |
-    | heat rate is constant, the heat rate can be defined by multiple         |
-    | piecewise linear segments.                                              |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_must_run_fuel`                                             |
-    | | *Defined over*: :code:`GEN_MUST_RUN_FUEL_PRJS`                        |
-    | | *Within*: :code:`FUELS`                                               |
-    |                                                                         |
-    | This param describes each fuel project's fuel.                          |
-    +-------------------------------------------------------------------------+
-    | | :code:`gen_must_run_fuel_burn_slope_mmbtu_per_mwh`                    |
-    | | *Defined over*: :code:`GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS`              |
-    | | *Within*: :code:`PositiveReals`                                       |
-    |                                                                         |
-    | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment in each operational period. The units  |
-    | are MMBtu of fuel burn per MWh of electricity generation.               |
-    +-------------------------------------------------------------------------+
-
-    +-------------------------------------------------------------------------+
-    | Optional Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_must_run_variable_om_cost_per_mwh`                         |
-    | | *Defined over*: :code:`GEN_MUST_RUN`                                  |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
 
     |
 
@@ -123,26 +84,6 @@ def add_module_specific_components(m, d):
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_MUST_RUN)
-    )
-
-    m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS = Set(
-        dimen=3
-    )
-
-    # Required Params
-    ###########################################################################
-
-    m.gen_must_run_fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS,
-        within=PositiveReals
-    )
-
-    # Optional Params
-    ###########################################################################
-
-    m.gen_must_run_variable_om_cost_per_mwh = Param(
-        m.GEN_MUST_RUN, within=NonNegativeReals,
-        default=0
     )
 
     # Constraints
@@ -228,8 +169,7 @@ def online_capacity_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp):
     """
     """
-    return mod.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
-        tmp], 0] \
+    return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
         * mod.Power_Provision_MW[g, tmp]
 
 
@@ -258,13 +198,6 @@ def load_module_specific_data(mod, data_portal,
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_must_run"
-    )
-
-    # Load data from heat_rate_curves.tab (if it exists)
-    load_heat_rate_curves(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_must_run", projects=projects
     )
 
 

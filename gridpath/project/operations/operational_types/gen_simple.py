@@ -51,13 +51,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_simple`           |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                                |
-    |                                                                         |
-    | Three-dimensional set describing fuel projects and their heat rate      |
-    | curve segment IDs for each operational period. Unless the project's     |
-    | heat rate is constant, the heat rate can be defined by multiple         |
-    | piecewise linear segments.                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_SIMPLE_LINKED_TMPS`                                        |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_simple`           |
@@ -65,18 +58,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
 
     |
-
-    +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_simple_fuel_burn_slope_mmbtu_per_mwh`                      |
-    | | *Defined over*: :code:`GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS`                |
-    | | *Within*: :code:`PositiveReals`                                       |
-    |                                                                         |
-    | This param describes the slope of the piecewise linear fuel burn for    |
-    | each project's heat rate segment in each operational period. The units  |
-    | are MMBtu of fuel burn per MWh of electricity generation.               |
-    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -185,19 +166,7 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_SIMPLE)
     )
 
-    m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS = Set(
-        dimen=3
-    )
-
     m.GEN_SIMPLE_LINKED_TMPS = Set(dimen=2)
-
-    # Required Params
-    ###########################################################################
-
-    m.gen_simple_fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS,
-        within=PositiveReals
-    )
 
     # Optional Params
     ###########################################################################
@@ -453,8 +422,7 @@ def fuel_burn_rule(mod, g, tmp):
     heat_rate_curves.tab, so the fuel burn slope is equal to the specified
     heat rate and the intercept is zero.
     """
-    return mod.gen_simple_fuel_burn_slope_mmbtu_per_mwh[g, mod.period[
-        tmp], 0] \
+    return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
         * mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
@@ -504,14 +472,6 @@ def load_module_specific_data(mod, data_portal,
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_simple"
-    )
-
-
-    # Load data from heat_rate_curves.tab (if it exists)
-    load_heat_rate_curves(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_simple", projects=projects
     )
 
     # Linked timepoint params

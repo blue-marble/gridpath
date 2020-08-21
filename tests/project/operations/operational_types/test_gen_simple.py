@@ -153,42 +153,6 @@ class TestGenSimple(unittest.TestCase):
                              actual_ramp_down_when_on_rate
                              )
 
-        # Set: GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
-
-        expected_fuel_projects = sorted([
-            "Disp_No_Commit",
-        ])
-
-        expected_fuel_project_period_segments = sorted([
-            ("Disp_No_Commit", 2020, 0),
-            ("Disp_No_Commit", 2030, 0),
-        ])
-        actual_fuel_project_period_segments = sorted([
-            (prj, p, s) for (prj, p, s) in
-            instance.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS
-            ])
-        self.assertListEqual(expected_fuel_project_period_segments,
-                             actual_fuel_project_period_segments)
-
-        # Param: gen_simple_fuel_burn_slope_mmbtu_per_mwh
-        expected_fuel_burn_slope = OrderedDict(sorted({
-            ("Disp_No_Commit", 2020, 0): 8,
-            ("Disp_No_Commit", 2030, 0): 8,
-        }.items()))
-        actual_fuel_burn_slope = OrderedDict(sorted(
-            {(prj, p, s):
-                 instance.gen_simple_fuel_burn_slope_mmbtu_per_mwh[(prj,
-                                                                        p, s)]
-             for (prj, p, s) in
-             instance.GEN_SIMPLE_FUEL_PRJS_PRDS_SGMS}.items()
-            )
-        )
-
-        self.assertDictAlmostEqual(expected_fuel_burn_slope,
-                                   actual_fuel_burn_slope,
-                                   places=5)
-
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -542,13 +542,6 @@ def load_module_specific_data(mod, data_portal,
         stage=stage, op_type="gen_always_on"
     )
 
-    # Load data from heat_rate_curves.tab (if it exists)
-    load_heat_rate_curves(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_always_on", projects=projects
-    )
-
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",

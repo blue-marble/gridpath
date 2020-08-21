@@ -124,44 +124,6 @@ class TestGenMustRun(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Set: GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS
-        expected_fuel_projects = sorted([
-            "Nuclear", "Nuclear_z2"
-        ])
-
-        expected_fuel_project_period_segments = sorted([
-            ("Nuclear", 2020, 0),
-            ("Nuclear", 2030, 0),
-            ("Nuclear_z2", 2020, 0),
-            ("Nuclear_z2", 2030, 0)
-        ])
-        actual_fuel_project_period_segments = sorted([
-            (prj, p, s) for (prj, p, s) in
-            instance.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS
-            ])
-        self.assertListEqual(expected_fuel_project_period_segments,
-                             actual_fuel_project_period_segments)
-
-        # Param: gen_must_run_fuel_burn_slope_mmbtu_per_mwh
-        expected_fuel_burn_slope = OrderedDict(sorted({
-            ("Nuclear", 2020, 0): 1666.67,
-            ("Nuclear", 2030, 0): 1666.67,
-            ("Nuclear_z2", 2020, 0): 1666.67,
-            ("Nuclear_z2", 2030, 0): 1666.67,
-        }.items()))
-        actual_fuel_burn_slope = OrderedDict(sorted(
-            {(prj, p, s):
-                 instance.gen_must_run_fuel_burn_slope_mmbtu_per_mwh[(prj,
-                                                                        p, s)]
-             for (prj, p, s) in 
-             instance.GEN_MUST_RUN_FUEL_PRJS_PRDS_SGMS}.items()
-            )
-        )
-
-        self.assertDictAlmostEqual(expected_fuel_burn_slope,
-                                   actual_fuel_burn_slope,
-                                   places=5)
-
 
 if __name__ == "__main__":
     unittest.main()
