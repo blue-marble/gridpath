@@ -113,26 +113,26 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertListEqual(expected_gen_commit_lin_set,
                              actual_gen_commit_lin_set)
 
-        # Set: GEN_COMMIT_LIN_STR_RMP_PRJS
+        # Set: GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS
         expected_gen_commit_lin_str_rmp_prjs = sorted([
             "Disp_Cont_Commit",
             "Clunky_Old_Gen",
             "Clunky_Old_Gen2"
         ])
         actual_gen_commit_lin_str_rmp_prjs = sorted([
-            prj for prj in instance.GEN_COMMIT_LIN_STR_RMP_PRJS
+            prj for prj in instance.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS
             ])
         self.assertListEqual(expected_gen_commit_lin_str_rmp_prjs,
                              actual_gen_commit_lin_str_rmp_prjs)
 
-        # Set: GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
+        # Set: GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
         expected_gen_commit_lin_str_rmp_prjs_types = sorted([
             ("Disp_Cont_Commit", 1.0),
             ("Clunky_Old_Gen", 1.0),
             ("Clunky_Old_Gen2", 1.0)
         ])
         actual_gen_commit_lin_str_rmp_prjs_types = sorted([
-            (prj, s) for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
+            (prj, s) for prj, s in instance.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
             ])
         self.assertListEqual(expected_gen_commit_lin_str_rmp_prjs_types,
                              actual_gen_commit_lin_str_rmp_prjs_types)
@@ -154,7 +154,7 @@ class TestGenCommitLin(unittest.TestCase):
             sorted(
                 {prj: [type for type in
                        instance.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ[prj]]
-                 for prj in instance.GEN_COMMIT_LIN_STR_RMP_PRJS}.items()
+                 for prj in instance.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS}.items()
             )
         )
         self.assertDictEqual(expected_str_types_by_prj,
@@ -205,7 +205,7 @@ class TestGenCommitLin(unittest.TestCase):
         actual_startup_plus_ramp_up_rate_by_st = {
             (prj, s): instance.gen_commit_lin_startup_plus_ramp_up_rate_by_st[
                 prj, s]
-            for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
+            for prj, s in instance.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
         }
         self.assertDictEqual(expected_startup_plus_ramp_up_rate_by_st,
                              actual_startup_plus_ramp_up_rate_by_st)
@@ -272,7 +272,7 @@ class TestGenCommitLin(unittest.TestCase):
                                            ("Clunky_Old_Gen2", 1.0): 0}
         actual_down_time_cutoff_hours = {
             (prj, s): instance.gen_commit_lin_down_time_cutoff_hours[prj, s]
-            for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
+            for prj, s in instance.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
         }
         self.assertDictEqual(expected_down_time_cutoff_hours,
                              actual_down_time_cutoff_hours)

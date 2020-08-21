@@ -1054,10 +1054,6 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
                     float(startup_plus_ramp_up_rate)
 
         if startup_ramp_projects:
-            data_portal.data()["{}_STR_RMP_PRJS".format(op_type.upper())] = \
-                {None: startup_ramp_projects}
-            data_portal.data()["{}_STR_RMP_PRJS_TYPES".format(op_type.upper())] = \
-                {None: startup_ramp_projects_types}
             data_portal.data()["{}_down_time_cutoff_hours".format(op_type)] = \
                 down_time_cutoff_hours_dict
             data_portal.data()["{}_startup_plus_ramp_up_rate_by_st".format(

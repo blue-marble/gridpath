@@ -49,7 +49,6 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
     load_optype_module_specific_data, load_startup_chars, \
-    load_heat_rate_curves, load_vom_curves, \
     get_heat_rate_curves_inputs_from_database, \
     get_vom_curves_inputs_from_database, \
     get_startup_chars_inputs_from_database, \
@@ -72,17 +71,17 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The set of generators of the :code:`gen_commit_bin` operational type.   |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`                                   |
+    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`                                   |
     | | *within*: :code:`GEN_COMMIT_BIN`                                      |
     |                                                                         |
     | The set of generators of the :code:`gen_commit_bin` operational type    |
     | that also have startup ramp rates specified.                            |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`                             |
+    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`                             |
     |                                                                         |
     | Two-dimensional set of generators of the the :code:`gen_commit_bin`     |
     | and their startup types (if the project is in                           |
-    | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`). Startup types are ordered from    |
+    | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`). Startup types are ordered from    |
     | hottest to coldest, e.g. if there are 3 startup types the hottest start |
     | is indicated by 1, and the coldest start is indicated by 3.             |
     +-------------------------------------------------------------------------+
@@ -101,7 +100,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
     | operational type, their operational timepoints, and their startup       |
-    | types (if the project is in :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`).       |
+    | types (if the project is in :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`).       |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_STR_TYPES_BY_PRJ`                               |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
@@ -149,7 +148,7 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_startup_plus_ramp_up_rate_by_st`                |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`             |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -197,16 +196,8 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_bin_startup_fuel_mmbtu_per_mw`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The project's startup fuel burn in MMBtu per MW of capacity that is     |
-    | started up.                                                             |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_down_time_cutoff_hours`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's minimum down time cutoff to activate a given startup      |
@@ -607,20 +598,28 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_COMMIT_BIN)
     )
 
-    m.GEN_COMMIT_BIN_STR_RMP_PRJS = Set(
-        within=m.GEN_COMMIT_BIN
+    m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS = Set(
+        within=m.GEN_COMMIT_BIN,
+        initialize=lambda mod: list(
+            prj for prj in mod.STARTUP_BY_ST_PRJS
+            if mod.operational_type[prj] == "gen_commit_bin"
+        )
     )
 
-    m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES = Set(
+    m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES = Set(
         dimen=2,
-        ordered=True
+        ordered=True,
+        initialize=lambda mod: list(
+            (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
+            if mod.operational_type[prj] == "gen_commit_bin"
+        )
     )
 
     m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES = Set(
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+            for _g, s in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
             if g == _g)
     )
 
@@ -636,7 +635,7 @@ def add_module_specific_components(m, d):
         dimen=3,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_BIN_LINKED_TMPS
-            for _g, s in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+            for _g, s in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
             if g == _g)
     )
 
@@ -659,7 +658,7 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
     m.gen_commit_bin_startup_plus_ramp_up_rate_by_st = Param(
-        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
+        m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES,
         within=PercentFraction, default=1
     )
     m.gen_commit_bin_shutdown_plus_ramp_down_rate = Param(
@@ -689,7 +688,7 @@ def add_module_specific_components(m, d):
     )
 
     m.gen_commit_bin_down_time_cutoff_hours = Param(
-        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
+        m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES,
         within=NonNegativeReals
     )
 
@@ -976,7 +975,7 @@ def get_startup_types_by_project(mod, g):
     Get indexed set of startup types by project, ordered from hottest to
     coldest.
     """
-    types = [s for (_g, s) in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+    types = [s for (_g, s) in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
              if g == _g]
     return types
 
@@ -1531,7 +1530,7 @@ def unique_startup_type_constraint_rule(mod, g, tmp):
     Only one startup type can be active (>= 1) at the same time.
     """
 
-    if g not in mod.GEN_COMMIT_BIN_STR_RMP_PRJS:
+    if g not in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS:
         return Constraint.Skip
 
     sum_startup_types = sum(
@@ -2037,7 +2036,7 @@ def startup_fuel_burn_rule(mod, g, tmp):
     """
     Startup fuel burn is applied in each timepoint based on the amount of
     capacity (in MW) that is started up in that timepoint and the startup
-    fuel parameter.
+    fuel parameter. This does not vary by startup type.
     """
     return mod.GenCommitBin_Startup[g, tmp] \
         * mod.GenCommitBin_Pmax_MW[g, tmp] \
@@ -2101,13 +2100,6 @@ def load_module_specific_data(mod, data_portal,
 
     # Load data from startup_chars.tab (if it exists)
     load_startup_chars(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin", projects=projects
-    )
-
-    # Load data from heat_rate_curves.tab (if it exists)
-    load_heat_rate_curves(
         data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_commit_bin", projects=projects

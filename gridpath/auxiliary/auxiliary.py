@@ -164,6 +164,8 @@ def join_sets(mod, set_list):
     return joined_set
 
 
+# TODO: make this function even more generic, so that we can initialize a
+#  subset of any set, not just PROJECTS
 def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by subtype based on subtype flags.

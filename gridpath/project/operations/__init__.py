@@ -62,15 +62,15 @@ def add_model_components(m, d):
     )
 
     # Startup cost by startup type projects
-    m.STARTUP_COST_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
-    m.STARTUP_COST_BY_ST_PRJS = Set(
+    m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
+    m.STARTUP_BY_ST_PRJS = Set(
         initialize=lambda mod: set(
-            [p for (p, t) in mod.STARTUP_COST_BY_ST_PRJS_TYPES]
+            [p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]
         )
     )
 
     m.startup_cost_by_st_per_mw = Param(
-        m.STARTUP_COST_BY_ST_PRJS_TYPES, within=NonNegativeReals
+        m.STARTUP_BY_ST_PRJS_TYPES, within=NonNegativeReals
     )
 
     # All startup cost projects
@@ -78,7 +78,7 @@ def add_model_components(m, d):
         within=m.PROJECTS,
         initialize=lambda mod: set(
             [p for p in mod.STARTUP_COST_SIMPLE_PRJS ] +
-            [p for p in mod.STARTUP_COST_BY_ST_PRJS]
+            [p for p in mod.STARTUP_BY_ST_PRJS]
         )
     )
 
@@ -223,7 +223,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             startup_cost_dict[(project, startup_type_id)] = \
                 float(startup_cost)
 
-        data_portal.data()["STARTUP_COST_BY_ST_PRJS_TYPES"] = \
+        data_portal.data()["STARTUP_BY_ST_PRJS_TYPES"] = \
             {None: startup_ramp_projects_types}
         data_portal.data()["startup_cost_by_st_per_mw"] = startup_cost_dict
         
