@@ -84,12 +84,6 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with generators of the :code:`gen_commit_bin`       |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_VOM_PRJS_PRDS_SGMS`                             |
-    |                                                                         |
-    | Three-dimensional set describing projects, their variable O&M cost      |
-    | curve segment IDs, and the periods in which the project could be        |
-    | operational.                                                            |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`                             |
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |

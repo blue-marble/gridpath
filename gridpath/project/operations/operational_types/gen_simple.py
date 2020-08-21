@@ -19,7 +19,7 @@ startup and shutdown costs.
 import csv
 import os
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals, Param, \
-    PercentFraction, PositiveReals, Expression, value
+    PercentFraction, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \

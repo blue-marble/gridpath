@@ -5,6 +5,24 @@
 The **gridpath.project.operations** package contains modules to describe the
 operational capabilities, constraints, and costs of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.
+
+In this package, we also create the project fuel burn and cost components to
+be passed downstream for aggregation into the system-level constraints and
+the objective function.
+
+In the `__init__` module of the package, we specify fuel burn and cost
+parameters for each project. The project's operational type uses these
+parameters to determine the projects will incur fuel burn and cost in each
+operational timepoint. All parameters are optional, i.e. each type can be
+used without fuel or variable cost for example. Conversely, the user needs
+to ensure that the specified functionality makes sense for the project's
+operational type, e.g. even if startup costs are specified for a gen_var
+project, that operational type uses the default method for startup costs,
+which returns 0, as variable generators do not have the concept of startup
+(see the documentation in operational_types.__init__ for the defaults and in
+each individual operational type module). When incompatible parameters are
+specified for an operational type, GridPath will flag a validation error and
+throw a warning (but not an error) at runtime.
 """
 
 import numpy as np
@@ -22,45 +40,175 @@ from gridpath.project.common_functions import append_to_input_file
 
 def add_model_components(m, d):
     """
+     The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`VAR_OM_COST_SIMPLE_PRJS`                                       |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a simple variable O&M cost is specified.  |
+    +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`                              |
+    |                                                                         |
+    | Three-dimensional set describing projects, their variable O&M cost      |
+    | curve segment IDs, and the periods in which the project could be        |
+    | operational.                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_BY_LL_PRJS`                                        |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a variable O&M cost curve is specified.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_COST_SIMPLE_PRJS`                                      |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a simple startup cost is specified.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_BY_ST_PRJS_TYPES`                                      |
+    |                                                                         |
+    | Two-dimensional set describing projects and their startup types.        |
+    | Startup types are ordered from hottest to coldest, e.g. if there are 3  |
+    | startup types the hottest start is indicated by 1, and the coldest      |
+    | start is indicated by 3.                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_BY_ST_PRJS`                                            |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which startup types are specified.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_COST_PRJS`                                             |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | All projects for which startup costs are specified (this is the union   |
+    | STARTUP_COST_SIMPLE_PRJS and STARTUP_BY_ST_PRJS.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`SHUTDOWN_COST_PRJS`                                            |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a shutdown cost is specified.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`FUEL_PRJS`                                                     |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a fuel is specified.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                                     |
+    |                                                                         |
+    | Three-dimensional set describing projects, their heat rate curve        |
+    | segment IDs, and the periods in which the project could be operational. |
+    +-------------------------------------------------------------------------+
+    | | :code:`FUEL_BY_LL_PRJS`                                               |
+    | | *Within*: :code:`FUEL_PRJS`                                           |
+    |                                                                         |
+    | The set of projects for which a heat rate curve is specified.           |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_FUEL_PRJS`                                             |
+    | | *Within*: :code:`FUEL_PRJS`                                           |
+    |                                                                         |
+    | The set of projects for which startup fuel burn is specified.           |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`variable_om_cost_per_mwh`                                      |
+    | | *Defined over*: :code:`VAR_OM_COST_SIMPLE_PRJS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's variable operations and maintenance cost per MWh of       |
+    | power production.                                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_slope_cost_per_mwh`                                        |
+    | | *Defined over*: :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`              |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear variable O&M     |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MWh of electricity       |
+    | generation.                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`vom_intercept_cost_per_mw_hr`                                  |
+    | | *Defined over*: :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`              |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear variable O&M |
+    | cost for each project's variable O&M cost segment in each operational   |
+    | period. The units are cost of variable O&M per MW of operational        |
+    | capacity per hour (multiply by operational capacity and timepoint       |
+    | duration to get actual cost).                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`startup_cost_per_mw`                                           |
+    | | *Defined over*: :code:`STARTUP_COST_SIMPLE_PRJS`                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's startup cost per MW of capacity that is started up.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`startup_cost_by_st_per_mw`                                     |
+    | | *Defined over*: :code:`STARTUP_BY_ST_PRJS_TYPES`                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's startup cost per MW of capacity that is started up for a  |
+    | for a given startup type.                                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`shutdown_cost_per_mw`                                          |
+    | | *Defined over*: :code:`SHUTDOWN_COST_PRJS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's shutdown cost per MW of capacity that is shut down.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel`                                                          |
+    | | *Defined over*: :code:`FUEL_PRJS`                                     |
+    | | *Within*: :code:`Any`                                                 |
+    |                                                                         |
+    | The project's fuel. This will determine emissions (via the fuel's       |
+    | carbon intensity) and fuel cost (via the fuel's price).                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`shutdown_cost_per_mw`                                          |
+    | | *Defined over*: :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                     |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the slope of the piecewise linear fuel burn for    |
+    | each project's heat rate segment in each operational period. The units  |
+    | are MMBtu of fuel burn per MWh of electricity generation.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
+    | | *Defined over*: :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                     |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | This param describes the intercept of the piecewise linear fuel burn    |
+    | for each project's heat rate segment in each operational period. The    |
+    | units are MMBtu of fuel burn per MW of operational capacity per hour    |
+    | (multiply by operational capacity and timepoint duration to get fuel    |
+    | burn in MMBtu).                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`startup_fuel_mmbtu_per_mw`                                     |
+    | | *Defined over*: :code:`STARTUP_FUEL_PRJS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fuel expenditure per MW started up.                       |
+    +-------------------------------------------------------------------------+
     """
 
+    # Sets
+    ###########################################################################
     # Variable O&M cost projects (simple)
     m.VAR_OM_COST_SIMPLE_PRJS = Set(within=m.PROJECTS)
-
-    m.variable_om_cost_per_mwh = Param(
-        m.VAR_OM_COST_SIMPLE_PRJS, within=NonNegativeReals
-    )
 
     # Variable O&M cost projects (by loading level)
     m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS = Set(
         dimen=3, ordered=True
     )
     m.VAR_OM_COST_BY_LL_PRJS = Set(
+        within=m.PROJECTS,
         initialize=lambda mod: set(
             [prj for (prj, p, s) in mod.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS]
         )
     )
 
-    m.vom_slope_cost_per_mwh = Param(
-        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
-        within=NonNegativeReals
-    )
-
-    m.vom_intercept_cost_per_mw_hr = Param(
-        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
-        within=Reals
-    )
-
     # Startup cost projects (simple)
     m.STARTUP_COST_SIMPLE_PRJS = Set(within=m.PROJECTS)
-
-    m.startup_cost_per_mw = Param(
-        m.STARTUP_COST_SIMPLE_PRJS, within=NonNegativeReals
-    )
 
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
@@ -68,10 +216,6 @@ def add_model_components(m, d):
         initialize=lambda mod: set(
             [p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]
         )
-    )
-
-    m.startup_cost_by_st_per_mw = Param(
-        m.STARTUP_BY_ST_PRJS_TYPES, within=NonNegativeReals
     )
 
     # All startup cost projects
@@ -86,22 +230,56 @@ def add_model_components(m, d):
     # Shutdown cost projects
     m.SHUTDOWN_COST_PRJS = Set(within=m.PROJECTS)
 
-    m.shutdown_cost_per_mw = Param(
-        m.SHUTDOWN_COST_PRJS, within=NonNegativeReals
-    )
-
     # Projects that burn fuel
     m.FUEL_PRJS = Set(within=m.PROJECTS)
 
-    m.fuel = Param(m.FUEL_PRJS, within=Any)
-    
     m.FUEL_BY_LL_PRJS_PRDS_SGMS = Set(dimen=3)
-    
+
     m.FUEL_BY_LL_PRJS = Set(
         within=m.FUEL_PRJS,
         initialize=lambda mod: set(
             [prj for (prj, p, s) in mod.FUEL_BY_LL_PRJS_PRDS_SGMS]
         )
+    )
+
+    # Fuel projects that incur fuel burn on startup
+    m.STARTUP_FUEL_PRJS = Set(within=m.FUEL_PRJS)
+
+    # Optional Params
+    ###########################################################################
+    m.variable_om_cost_per_mwh = Param(
+        m.VAR_OM_COST_SIMPLE_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.vom_slope_cost_per_mwh = Param(
+        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
+        within=NonNegativeReals
+    )
+
+    m.vom_intercept_cost_per_mw_hr = Param(
+        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
+        within=Reals
+    )
+
+    m.startup_cost_per_mw = Param(
+        m.STARTUP_COST_SIMPLE_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.startup_cost_by_st_per_mw = Param(
+        m.STARTUP_BY_ST_PRJS_TYPES,
+        within=NonNegativeReals
+    )
+
+    m.shutdown_cost_per_mw = Param(
+        m.SHUTDOWN_COST_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.fuel = Param(
+        m.FUEL_PRJS,
+        within=Any
     )
     
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
@@ -114,11 +292,9 @@ def add_model_components(m, d):
         within=Reals
     )
 
-    # Fuel projects that incur fuel burn on startup
-    m.STARTUP_FUEL_PRJS = Set(within=m.FUEL_PRJS)
-
     m.startup_fuel_mmbtu_per_mw = Param(
-        m.STARTUP_FUEL_PRJS, within=NonNegativeReals
+        m.STARTUP_FUEL_PRJS,
+        within=NonNegativeReals
     )
 
 
@@ -723,6 +899,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # TODO: check that if there is a "0" for the period for a given
     #  project there are zeroes everywhere for that project.
+
+    # TODO: check that there is no overlap between simple and by-type
+    #  startup cost
 
 
 def get_slopes_intercept_by_project_period_segment(
