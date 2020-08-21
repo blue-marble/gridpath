@@ -352,12 +352,6 @@ def get_optype_param_requirements(op_type):
         zip(other_columns["char"], other_columns["type"])
     )
 
-    # TODO: find more elegant solution than having to remove this here
-    #  could add the "optional" flag to all op-types but then these params
-    #  will be read in for each op-type module whereas now they are read in
-    #  in project.init so it would happen twice.
-    del other_columns_dict["fuel"]
-
     return required_columns_dict, optional_columns_dict, other_columns_dict
 
 
