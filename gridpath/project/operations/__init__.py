@@ -50,13 +50,13 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which a simple variable O&M cost is specified.  |
     +-------------------------------------------------------------------------+
-    | | :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`                              |
+    | | :code:`VAR_OM_COST_CURVE_PRJS_PRDS_SGMS`                              |
     |                                                                         |
     | Three-dimensional set describing projects, their variable O&M cost      |
     | curve segment IDs, and the periods in which the project could be        |
     | operational.                                                            |
     +-------------------------------------------------------------------------+
-    | | :code:`VAR_OM_COST_BY_LL_PRJS`                                        |
+    | | :code:`VAR_OM_COST_CURVE_PRJS`                                        |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
     | The set of projects for which a variable O&M cost curve is specified.   |
@@ -94,12 +94,12 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which a fuel is specified.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                                     |
+    | | :code:`HR_CURVE_PRJS_PRDS_SGMS`                                     |
     |                                                                         |
     | Three-dimensional set describing projects, their heat rate curve        |
     | segment IDs, and the periods in which the project could be operational. |
     +-------------------------------------------------------------------------+
-    | | :code:`FUEL_BY_LL_PRJS`                                               |
+    | | :code:`HR_CURVE_PRJS`                                               |
     | | *Within*: :code:`FUEL_PRJS`                                           |
     |                                                                         |
     | The set of projects for which a heat rate curve is specified.           |
@@ -121,7 +121,7 @@ def add_model_components(m, d):
     | power production.                                                       |
     +-------------------------------------------------------------------------+
     | | :code:`vom_slope_cost_per_mwh`                                        |
-    | | *Defined over*: :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`              |
+    | | *Defined over*: :code:`VAR_OM_COST_CURVE_PRJS_PRDS_SGMS`              |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear variable O&M     |
@@ -130,7 +130,7 @@ def add_model_components(m, d):
     | generation.                                                             |
     +-------------------------------------------------------------------------+
     | | :code:`vom_intercept_cost_per_mw_hr`                                  |
-    | | *Defined over*: :code:`VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS`              |
+    | | *Defined over*: :code:`VAR_OM_COST_CURVE_PRJS_PRDS_SGMS`              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear variable O&M |
@@ -166,7 +166,7 @@ def add_model_components(m, d):
     | carbon intensity) and fuel cost (via the fuel's price).                 |
     +-------------------------------------------------------------------------+
     | | :code:`shutdown_cost_per_mw`                                          |
-    | | *Defined over*: :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                     |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                     |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
@@ -174,7 +174,7 @@ def add_model_components(m, d):
     | are MMBtu of fuel burn per MWh of electricity generation.               |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
-    | | *Defined over*: :code:`FUEL_BY_LL_PRJS_PRDS_SGMS`                     |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                     |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear fuel burn    |
@@ -197,13 +197,13 @@ def add_model_components(m, d):
     m.VAR_OM_COST_SIMPLE_PRJS = Set(within=m.PROJECTS)
 
     # Variable O&M cost projects (by loading level)
-    m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS = Set(
+    m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS = Set(
         dimen=3, ordered=True
     )
-    m.VAR_OM_COST_BY_LL_PRJS = Set(
+    m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS]
+            [prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
         )
     )
 
@@ -233,12 +233,13 @@ def add_model_components(m, d):
     # Projects that burn fuel
     m.FUEL_PRJS = Set(within=m.PROJECTS)
 
-    m.FUEL_BY_LL_PRJS_PRDS_SGMS = Set(dimen=3)
+    # Projects with heat rate curves (must be within FUEL_PRJS)
+    m.HR_CURVE_PRJS_PRDS_SGMS = Set(dimen=3)
 
-    m.FUEL_BY_LL_PRJS = Set(
+    m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
         initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.FUEL_BY_LL_PRJS_PRDS_SGMS]
+            [prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS]
         )
     )
 
@@ -253,12 +254,12 @@ def add_model_components(m, d):
     )
 
     m.vom_slope_cost_per_mwh = Param(
-        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
+        m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS,
         within=NonNegativeReals
     )
 
     m.vom_intercept_cost_per_mw_hr = Param(
-        m.VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS,
+        m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS,
         within=Reals
     )
 
@@ -283,12 +284,12 @@ def add_model_components(m, d):
     )
     
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
-        m.FUEL_BY_LL_PRJS_PRDS_SGMS,
+        m.HR_CURVE_PRJS_PRDS_SGMS,
         within=PositiveReals
     )
 
     m.fuel_burn_intercept_mmbtu_per_mw_hr = Param(
-        m.FUEL_BY_LL_PRJS_PRDS_SGMS,
+        m.HR_CURVE_PRJS_PRDS_SGMS,
         within=Reals
     )
 
@@ -367,7 +368,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             )
         vom_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["VAR_OM_COST_BY_LL_PRJS_PRDS_SGMS"] = \
+        data_portal.data()["VAR_OM_COST_CURVE_PRJS_PRDS_SGMS"] = \
             {None: vom_project_segments}
         data_portal.data()["vom_slope_cost_per_mwh"] = \
             slope_dict
@@ -442,7 +443,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
         fuel_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["FUEL_BY_LL_PRJS_PRDS_SGMS"] \
+        data_portal.data()["HR_CURVE_PRJS_PRDS_SGMS"] \
             = {None: fuel_project_segments}
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = \
