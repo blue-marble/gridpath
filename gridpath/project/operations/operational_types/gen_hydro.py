@@ -567,6 +567,15 @@ def power_provision_rule(mod, g, tmp):
     return mod.GenHydro_Provide_Power_MW[g, tmp]
 
 
+def variable_om_cost_rule(mod, prj, tmp):
+    """
+    Variable cost is incurred on all power produced (including what's
+    curtailed).
+    """
+    return mod.GenHydro_Provide_Power_MW[prj, tmp] + \
+        mod.GenHydro_Curtail_MW[prj, tmp]
+
+
 def online_capacity_rule(mod, g, tmp):
     """
     Since there is no commitment, all is capacity assumed to be online.

@@ -326,6 +326,16 @@ def power_provision_rule(mod, g, tmp):
     return mod.GenVar_Provide_Power_MW[g, tmp]
 
 
+def variable_om_cost_rule(mod, g, tmp):
+    """
+    Variable cost is incurred on all power produced (including what's
+    curtailed).
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.gen_var_cap_factor[g, tmp]
+
+
 def online_capacity_rule(mod, g, tmp):
     """
     Since no commitment, all capacity assumed online

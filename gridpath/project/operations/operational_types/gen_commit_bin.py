@@ -65,19 +65,19 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The set of generators of the :code:`gen_commit_bin` operational type.   |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`                                   |
+    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`                             |
     | | *within*: :code:`GEN_COMMIT_BIN`                                      |
     |                                                                         |
     | The set of generators of the :code:`gen_commit_bin` operational type    |
     | that also have startup ramp rates specified.                            |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`                             |
+    | | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`                       |
     |                                                                         |
     | Two-dimensional set of generators of the the :code:`gen_commit_bin`     |
     | and their startup types (if the project is in                           |
-    | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`). Startup types are ordered from    |
-    | hottest to coldest, e.g. if there are 3 startup types the hottest start |
-    | is indicated by 1, and the coldest start is indicated by 3.             |
+    | :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`). Startup types are ordered   |
+    | from hottest to coldest, e.g. if there are 3 startup types the hottest  |
+    | start is indicated by 1, and the coldest start is indicated by 3.       |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_OPR_TMPS`                                       |
     |                                                                         |
@@ -88,7 +88,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
     | operational type, their operational timepoints, and their startup       |
-    | types (if the project is in :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`).       |
+    | types (if the project is in :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS`). |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_STR_TYPES_BY_PRJ`                               |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
@@ -136,7 +136,7 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_startup_plus_ramp_up_rate_by_st`                |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`       |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -185,7 +185,7 @@ def add_module_specific_components(m, d):
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_down_time_cutoff_hours`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES`       |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's minimum down time cutoff to activate a given startup      |
