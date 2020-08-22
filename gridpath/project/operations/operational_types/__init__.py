@@ -5,7 +5,7 @@
 Describe operational constraints on generation, storage, and DR projects.
 
 This module contains the defaults for the operational type module methods.
-If an operational type module method is not speified in an operational type
+If an operational type module method is not specified in an operational type
 module, these defaults are used.
 """
 
@@ -318,7 +318,8 @@ def process_results(db, c, subscenarios, quiet):
             pass
 
 
-# ###  Operational Type Module Method Defaults ### #
+# Operational Type Module Method Defaults
+###############################################################################
 
 def power_provision_rule(mod, prj, tmp):
     """
@@ -330,12 +331,17 @@ def power_provision_rule(mod, prj, tmp):
 
 def variable_om_cost_rule(mod, prj, tmp):
     """
+    By default the variable cost is the power provision (for load balancing
+    purposes) times the variable cost. Projects of operational type that
+    produce power not used for load balancing (e.g. curtailed power or
+    auxiliary power) should not use this default rule.
     """
     return mod.Power_Provision_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
 
 
 def variable_om_cost_by_ll_rule(mod, prj, tmp, s):
     """
+    By default the VOM curve cost needs to be greater than or equal to 0.
     """
     return 0
 
@@ -350,6 +356,8 @@ def fuel_burn_rule(mod, prj, tmp):
 
 def fuel_burn_by_ll_rule(mod, prj, tmp, s):
     """
+    If no fuel_burn_by_ll_rule is specified in an operational type module, the
+    default fuel burn is 0.
     """
     return 0
 
@@ -389,7 +397,8 @@ def startup_fuel_burn_rule(mod, prj, tmp):
 def rec_provision_rule(mod, prj, tmp):
     """
     If no rec_provision_rule is specified in an operational type module,
-    the default REC provisions is the power provision.
+    the default REC provisions is the power provision for load-balancing
+    purposes.
     """
     return mod.Power_Provision_MW[prj, tmp]
 

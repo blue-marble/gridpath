@@ -61,6 +61,12 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which a variable O&M cost curve is specified.   |
     +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_ALL_PRJS`                                          |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which a simple variable O&M cost and/or a VOM   |
+    | curve is specified.                                                     |
+    +-------------------------------------------------------------------------+
     | | :code:`STARTUP_COST_SIMPLE_PRJS`                                      |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
@@ -204,6 +210,13 @@ def add_model_components(m, d):
         within=m.PROJECTS,
         initialize=lambda mod: set(
             [prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+        )
+    )
+
+    m.VAR_OM_COST_ALL_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: set(
+            mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS
         )
     )
 
@@ -406,7 +419,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["startup_cost_by_st_per_mw"] = startup_cost_dict
         
     # HR curves
-    
     hr_curves_file = os.path.join(
         scenario_directory, str(subproblem), str(stage),
         "inputs", "heat_rate_curves.tab"
@@ -434,7 +446,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
         periods = set(periods_df["period"])
         fuel_projects = pr_df["project"].unique()
-        fuels_dict = dict(zip(projects, pr_df["fuel"]))
 
         slope_dict, intercept_dict = \
             get_slopes_intercept_by_project_period_segment(
@@ -611,14 +622,12 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
     # Write heat rates file
     hr_df = cursor_to_df(heat_rate_curves)
-
     if not hr_df.empty:
         hr_df = hr_df.fillna(".")
         fpath = os.path.join(scenario_directory, str(subproblem), str(stage),
                              "inputs", "heat_rate_curves.tab")
 
         hr_df.to_csv(fpath, index=False, sep="\t")
-
 
     # Write VOM file
     vom_df = cursor_to_df(vom_curves)
