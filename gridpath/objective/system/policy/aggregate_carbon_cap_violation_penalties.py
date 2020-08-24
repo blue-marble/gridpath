@@ -11,6 +11,18 @@ from pyomo.environ import Param, Expression, NonNegativeReals
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    Add total carbon cap penalty costs to cost components
+    :param d:
+    :return:
+    """
+
+    getattr(d, total_cost_components).append(
+        "Total_Carbon_Cap_Balance_Penalty_Costs"
+    )
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding components to
@@ -28,6 +40,3 @@ def add_model_components(m, d):
                    for (z, p) in mod.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP)
     m.Total_Carbon_Cap_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
-    getattr(d, total_cost_components).append(
-        "Total_Carbon_Cap_Balance_Penalty_Costs"
-    )

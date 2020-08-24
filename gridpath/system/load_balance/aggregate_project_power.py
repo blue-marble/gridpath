@@ -13,6 +13,16 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds the power production to the dynamic components.
+    :param d:
+    :return:
+    """
+    getattr(d, load_balance_production_components).append(
+        "Power_Production_in_Zone_MW")
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
@@ -38,5 +48,3 @@ def add_model_components(m, d):
     m.Power_Production_in_Zone_MW = \
         Expression(m.LOAD_ZONES, m.TMPS,
                    rule=total_power_production_rule)
-    getattr(d, load_balance_production_components).append(
-        "Power_Production_in_Zone_MW")
