@@ -333,7 +333,8 @@ def variable_om_cost_rule(mod, g, tmp):
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * mod.gen_var_cap_factor[g, tmp]
+        * mod.gen_var_cap_factor[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
 
 
 def online_capacity_rule(mod, g, tmp):
