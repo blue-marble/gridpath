@@ -12,10 +12,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
-from tests.project.operations.common_functions import \
-    get_project_operational_timepoints
+from tests.common_functions import add_components_and_load_data
 
 from gridpath.project.operations import calculate_slope_intercept, \
     get_slopes_intercept_by_project_period_segment
@@ -48,10 +45,494 @@ except ImportError:
           " to test.")
 
 
+# TODO: not sure whether to suppress these
+#  annoying warnings
+#  https://stackoverflow.com/questions/40659212/futurewarning-elementwise-comparison-failed-returning-scalar-but-in-the-futur
+
 class TestOperationsInit(unittest.TestCase):
     """
 
     """
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places,
+                                       msg=msg)
+
+    def test_data_loaded_correctly(self):
+        """
+        Test that the data loaded are as expected
+        :return:
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        # Load test data as dataframes
+        projects_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab")
+            , sep="\t"
+        )
+
+        var_om_curve_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "variable_om_curves.tab")
+            , sep="\t"
+        )
+
+        startup_by_st_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "startup_chars.tab")
+            , sep="\t"
+        )
+
+        hr_curve_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "heat_rate_curves.tab")
+            , sep="\t"
+        )
+
+        # Set: VAR_OM_COST_SIMPLE_PRJS
+        expected_var_om_simple_projects = sorted(
+            projects_df[
+                projects_df["variable_om_cost_per_mwh"] != "."
+                ]["project"].tolist()
+        )
+
+        actual_var_om_simple_projects = \
+            sorted([p for p in instance.VAR_OM_COST_SIMPLE_PRJS])
+
+        self.assertListEqual(expected_var_om_simple_projects,
+                             actual_var_om_simple_projects)
+
+        # Set: VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+        expected_var_om_curve_projects_periods_sgms = sorted([
+            ("Disp_Binary_Commit", 2020, 0),
+            ("Disp_Binary_Commit", 2020, 1),
+            ("Disp_Binary_Commit", 2030, 0),
+            ("Disp_Cont_Commit", 2020, 0),
+            ("Disp_Cont_Commit", 2030, 0)
+        ])
+
+        actual_var_om_curve_projects_periods_sgms = sorted(
+            [(prj, prd, s)
+             for (prj, prd, s) in instance.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+        )
+
+        self.assertListEqual(expected_var_om_curve_projects_periods_sgms,
+                             actual_var_om_curve_projects_periods_sgms)
+
+        # Set: VAR_OM_COST_CURVE_PRJS
+        expected_var_om_curve_projects = sorted(
+            var_om_curve_df["project"].unique().tolist()
+        )
+
+        actual_var_om_curve_projects = \
+            sorted([p for p in instance.VAR_OM_COST_CURVE_PRJS])
+
+        self.assertListEqual(expected_var_om_curve_projects,
+                             actual_var_om_curve_projects)
+
+        # Set: VAR_OM_COST_ALL_PRJS
+        expected_var_om_all_projects = sorted(list(set(
+            expected_var_om_simple_projects + expected_var_om_curve_projects
+        )))
+
+        actual_var_om_all_projects = \
+            sorted([p for p in instance.VAR_OM_COST_ALL_PRJS])
+
+        self.assertListEqual(expected_var_om_all_projects,
+                             actual_var_om_all_projects)
+
+        # Set: STARTUP_COST_SIMPLE_PRJS
+        expected_startup_cost_simple_projects = sorted(
+            projects_df[
+                projects_df["startup_cost_per_mw"] != "."
+                ]["project"].tolist()
+        )
+
+        actual_startup_cost_simple_projects = \
+            sorted([p for p in instance.STARTUP_COST_SIMPLE_PRJS])
+
+        self.assertListEqual(expected_startup_cost_simple_projects,
+                             actual_startup_cost_simple_projects)
+
+        # Set: STARTUP_BY_ST_PRJS_TYPES
+        expected_startup_by_st_projects_types = sorted([
+            ("Disp_Binary_Commit", 1),
+            ("Disp_Cont_Commit", 1),
+            ("Disp_Cont_Commit", 2),
+            ("Clunky_Old_Gen", 1),
+            ("Clunky_Old_Gen2", 1)
+        ])
+
+        actual_startup_by_st_projects_types = sorted(
+            [(prj, s) for (prj, s) in instance.STARTUP_BY_ST_PRJS_TYPES]
+        )
+
+        self.assertListEqual(expected_startup_by_st_projects_types,
+                             actual_startup_by_st_projects_types)
+
+        # Set: STARTUP_BY_ST_PRJS
+        expected_startup_by_st_projects = sorted(
+            startup_by_st_df["project"].unique().tolist()
+        )
+
+        actual_startup_by_st_projects = \
+            sorted([p for p in instance.STARTUP_BY_ST_PRJS])
+
+        self.assertListEqual(expected_startup_by_st_projects,
+                             actual_startup_by_st_projects)
+
+        # Set: STARTUP_COST_PRJS
+        expected_startup_cost_all_projects = sorted(list(set(
+            expected_startup_cost_simple_projects +
+            expected_startup_by_st_projects
+        )))
+
+        actual_startup_cost_all_projects = \
+            sorted([p for p in instance.STARTUP_COST_PRJS])
+
+        self.assertListEqual(expected_startup_cost_all_projects,
+                             actual_startup_cost_all_projects)
+
+        # Set: SHUTDOWN_COST_PRJS
+        expected_shutdown_cost_projects = sorted(
+            projects_df[
+                projects_df["shutdown_cost_per_mw"] != "."
+                ]["project"].tolist()
+        )
+
+        actual_shutdown_cost_projects = \
+            sorted([p for p in instance.SHUTDOWN_COST_PRJS])
+
+        self.assertListEqual(expected_shutdown_cost_projects,
+                             actual_shutdown_cost_projects)
+
+        # Set: FUEL_PRJS
+        expected_fuel_projects = sorted(
+            projects_df[projects_df["fuel"] != "."]["project"].tolist()
+        )
+
+        actual_fuel_projects = sorted([p for p in instance.FUEL_PRJS])
+
+        self.assertListEqual(expected_fuel_projects,
+                             actual_fuel_projects)
+
+        # Set: HR_CURVE_PRJS_PRDS_SGMS
+        expected_hr_curve_projects_periods_sgms = sorted([
+            ("Coal", 2020, 0),
+            ("Coal", 2030, 0),
+            ("Gas_CCGT", 2020, 0),
+            ("Gas_CCGT", 2030, 0),
+            ("Gas_CT", 2020, 0),
+            ("Gas_CT", 2030, 0),
+            ("Nuclear", 2020, 0),
+            ("Nuclear", 2030, 0),
+            ("Gas_CCGT_New", 2020, 0),
+            ("Gas_CCGT_New", 2030, 0),
+            ("Gas_CCGT_New_Binary", 2020, 0),
+            ("Gas_CCGT_New_Binary", 2030, 0),
+            ("Gas_CT_New", 2020, 0),
+            ("Gas_CT_New", 2030, 0),
+            ("Coal_z2", 2020, 0),
+            ("Coal_z2", 2030, 0),
+            ("Gas_CCGT_z2", 2020, 0),
+            ("Gas_CCGT_z2", 2030, 0),
+            ("Gas_CT_z2", 2020, 0),
+            ("Gas_CT_z2", 2030, 0),
+            ("Nuclear_z2", 2020, 0),
+            ("Nuclear_z2", 2030, 0),
+            ("Disp_Binary_Commit", 2020, 0),
+            ("Disp_Binary_Commit", 2030, 0),
+            ("Disp_Cont_Commit", 2020, 0),
+            ("Disp_Cont_Commit", 2030, 0),
+            ("Disp_No_Commit", 2020, 0),
+            ("Disp_No_Commit", 2030, 0),
+            ("Clunky_Old_Gen", 2020, 0),
+            ("Clunky_Old_Gen", 2030, 0),
+            ("Clunky_Old_Gen2", 2020, 0),
+            ("Clunky_Old_Gen2", 2030, 0),
+            ("Nuclear_Flexible", 2020, 0),
+            ("Nuclear_Flexible", 2030, 0),
+        ])
+
+        actual_hr_curve_projects_periods_sgms = sorted(
+            [(prj, prd, s)
+             for (prj, prd, s) in instance.HR_CURVE_PRJS_PRDS_SGMS]
+        )
+
+        self.assertListEqual(expected_hr_curve_projects_periods_sgms,
+                             actual_hr_curve_projects_periods_sgms)
+
+        # Set: HR_CURVE_PRJS
+        expected_hr_curve_projects = sorted(
+            hr_curve_df["project"].unique().tolist()
+        )
+
+        actual_hr_curve_projects = \
+            sorted([p for p in instance.HR_CURVE_PRJS])
+
+        self.assertListEqual(expected_hr_curve_projects,
+                             actual_hr_curve_projects)
+
+        # Set: STARTUP_FUEL_PRJS
+        expected_startup_fuel_projects = sorted(
+            projects_df[projects_df["startup_fuel_mmbtu_per_mw"] != "."][
+                "project"].tolist()
+        )
+
+        actual_startup_fuel_projects = sorted(
+            [p for p in instance.STARTUP_FUEL_PRJS]
+        )
+
+        self.assertListEqual(expected_startup_fuel_projects,
+                             actual_startup_fuel_projects)
+
+        # Param: variable_om_cost_per_mwh
+        var_om_cost_df = \
+            projects_df[projects_df["variable_om_cost_per_mwh"] != "."]
+        expected_var_om_cost_by_prj = OrderedDict(sorted(
+            dict(zip(var_om_cost_df["project"],
+                     pd.to_numeric(var_om_cost_df["variable_om_cost_per_mwh"]))
+                 ).items())
+        )
+        actual_var_om_cost_by_prj = OrderedDict(sorted(
+            {p: instance.variable_om_cost_per_mwh[p]
+             for p in instance.VAR_OM_COST_SIMPLE_PRJS}.items()
+        ))
+        self.assertDictEqual(expected_var_om_cost_by_prj,
+                             actual_var_om_cost_by_prj)
+
+        # Param: vom_slope_cost_per_mwh
+        expected_vom_slope = OrderedDict(sorted(
+            {("Disp_Binary_Commit", 2020, 0): 2.25,
+             ("Disp_Binary_Commit", 2020, 1): 2.75,
+             ("Disp_Binary_Commit", 2030, 0): 1.0,
+             ("Disp_Cont_Commit", 2020, 0): 1.0,
+             ("Disp_Cont_Commit", 2030, 0): 1.0}.items()
+        ))
+        actual_vom_slope = OrderedDict(sorted(
+            {(prj, p, s): instance.vom_slope_cost_per_mwh[(prj, p, s)]
+             for (prj, p, s) in
+             instance.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS}.items()
+        ))
+
+        self.assertDictAlmostEqual(expected_vom_slope,
+                                   actual_vom_slope,
+                                   places=5)
+
+        # Param: vom_intercept_cost_per_mw_hr
+        expected_vom_intercept = OrderedDict(sorted(
+            {("Disp_Binary_Commit", 2020, 0): -0.375,
+             ("Disp_Binary_Commit", 2020, 1): -0.75,
+             ("Disp_Binary_Commit", 2030, 0): 0.5,
+             ("Disp_Cont_Commit", 2020, 0): 0,
+             ("Disp_Cont_Commit", 2030, 0): 0}.items()
+        ))
+        actual_vom_intercept = OrderedDict(sorted(
+            {(prj, p, s): instance.vom_intercept_cost_per_mw_hr[(prj, p, s)]
+             for (prj, p, s) in
+             instance.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS}.items()
+        ))
+
+        self.assertDictAlmostEqual(expected_vom_intercept,
+                                   actual_vom_intercept,
+                                   places=5)
+
+        # Param: startup_cost_per_mw
+        startup_cost_df = \
+            projects_df[projects_df["startup_cost_per_mw"] != "."]
+        expected_startup_cost_by_prj = OrderedDict(sorted(
+            dict(zip(startup_cost_df["project"],
+                     pd.to_numeric(startup_cost_df["startup_cost_per_mw"]))
+                 ).items())
+        )
+        actual_startup_cost_by_prj = OrderedDict(sorted(
+            {p: instance.startup_cost_per_mw[p]
+             for p in instance.STARTUP_COST_SIMPLE_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_startup_cost_by_prj,
+                             actual_startup_cost_by_prj)
+
+        # Param: startup_cost_by_st_per_mw
+        expected_startup_cost_by_st = OrderedDict(sorted(
+            {("Clunky_Old_Gen", 1): 1.0,
+             ("Clunky_Old_Gen2", 1): 1.0,
+             ("Disp_Binary_Commit", 1): 1.0,
+             ("Disp_Cont_Commit", 1): 1.0,
+             ("Disp_Cont_Commit", 2): 10.0}.items()
+        ))
+        actual_startup_cost_by_st = OrderedDict(sorted(
+            {(prj, st): instance.startup_cost_by_st_per_mw[(prj, st)]
+             for (prj, st) in
+             instance.STARTUP_BY_ST_PRJS_TYPES}.items()
+        ))
+
+        self.assertDictAlmostEqual(expected_startup_cost_by_st,
+                                   actual_startup_cost_by_st,
+                                   places=5)
+
+        # Param: shutdown_cost_per_mw
+        shutdown_cost_df = \
+            projects_df[projects_df["shutdown_cost_per_mw"] != "."]
+        expected_shutdown_cost_by_prj = OrderedDict(sorted(
+            dict(zip(shutdown_cost_df["project"],
+                     pd.to_numeric(shutdown_cost_df["shutdown_cost_per_mw"]))
+                 ).items())
+        )
+        actual_shutdown_cost_by_prj = OrderedDict(sorted(
+            {p: instance.shutdown_cost_per_mw[p]
+             for p in instance.SHUTDOWN_COST_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_shutdown_cost_by_prj,
+                             actual_shutdown_cost_by_prj)
+
+        # Param: fuel
+        fuel_df = \
+            projects_df[projects_df["fuel"] != "."]
+        expected_fuel_by_prj = OrderedDict(sorted(
+            dict(zip(fuel_df["project"], fuel_df["fuel"])).items())
+        )
+        actual_fuel_by_prj = OrderedDict(sorted(
+            {p: instance.fuel[p] for p in instance.FUEL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_fuel_by_prj,
+                             actual_fuel_by_prj)
+
+        # Param: fuel_burn_slope_mmbtu_per_mwh
+        expected_fuel_burn_slope = OrderedDict(sorted(
+            {("Clunky_Old_Gen", 2020, 0): 14.999996666666675,
+             ("Clunky_Old_Gen", 2030, 0): 14.999996666666675,
+             ("Clunky_Old_Gen2", 2020, 0): 14.999996666666675,
+             ("Clunky_Old_Gen2", 2030, 0): 14.999996666666675,
+             ("Coal", 2020, 0): 10.0,
+             ("Coal", 2030, 0): 10.0,
+             ("Coal_z2", 2020, 0): 10.0,
+             ("Coal_z2", 2030, 0): 10.0,
+             ("Disp_Binary_Commit", 2020, 0): 7.999996666666647,
+             ("Disp_Binary_Commit", 2030, 0): 7.999996666666647,
+             ("Disp_Cont_Commit", 2020, 0): 7.999996666666647,
+             ("Disp_Cont_Commit", 2030, 0): 7.999996666666647,
+             ("Disp_No_Commit", 2020, 0): 8.0,
+             ("Disp_No_Commit", 2030, 0): 8.0,
+             ("Gas_CCGT", 2020, 0): 6.0,
+             ("Gas_CCGT", 2030, 0): 6.0,
+             ("Gas_CCGT_New", 2020, 0): 6.0,
+             ("Gas_CCGT_New", 2030, 0): 6.0,
+             ("Gas_CCGT_New_Binary", 2020, 0): 6.0,
+             ("Gas_CCGT_New_Binary", 2030, 0): 6.0,
+             ("Gas_CCGT_z2", 2020, 0): 6.0,
+             ("Gas_CCGT_z2", 2030, 0): 6.0,
+             ("Gas_CT", 2020, 0): 7.999996666666647,
+             ("Gas_CT", 2030, 0): 7.999996666666647,
+             ("Gas_CT_New", 2020, 0): 7.999996666666647,
+             ("Gas_CT_New", 2030, 0): 7.999996666666647,
+             ("Gas_CT_z2", 2020, 0): 7.999996666666647,
+             ("Gas_CT_z2", 2030, 0): 7.999996666666647,
+             ("Nuclear", 2020, 0): 1666.67,
+             ("Nuclear", 2030, 0): 1666.67,
+             ("Nuclear_Flexible", 2020, 0): 10.0,
+             ("Nuclear_Flexible", 2030, 0): 9.0,
+             ("Nuclear_z2", 2020, 0): 1666.67,
+             ("Nuclear_z2", 2030, 0): 1666.67,
+             }.items()
+        ))
+        actual_fuel_burn_slope = OrderedDict(sorted(
+            {(prj, p, s): instance.fuel_burn_slope_mmbtu_per_mwh[(prj, p, s)]
+             for (prj, p, s) in
+             instance.HR_CURVE_PRJS_PRDS_SGMS}.items()
+        ))
+
+        self.assertDictAlmostEqual(expected_fuel_burn_slope,
+                                   actual_fuel_burn_slope,
+                                   places=5)
+
+        # Param: fuel_burn_intercept_mmbtu_per_mw_hr
+        expected_fuel_burn_intercept = OrderedDict(sorted(
+            {("Clunky_Old_Gen", 2020, 0): 827.3333333333334,
+             ("Clunky_Old_Gen", 2030, 0): 827.3333333333334,
+             ("Clunky_Old_Gen2", 2020, 0): 827.3333333333334,
+             ("Clunky_Old_Gen2", 2030, 0): 827.3333333333334,
+             ("Coal", 2020, 0): 496.0,
+             ("Coal", 2030, 0): 496.0,
+             ("Coal_z2", 2020, 0): 496.0,
+             ("Coal_z2", 2030, 0): 496.0,
+             ("Disp_Binary_Commit", 2020, 0): 80.13333333333335,
+             ("Disp_Binary_Commit", 2030, 0): 80.13333333333335,
+             ("Disp_Cont_Commit", 2020, 0): 80.13333333333335,
+             ("Disp_Cont_Commit", 2030, 0): 80.13333333333335,
+             ("Disp_No_Commit", 2020, 0): 0,
+             ("Disp_No_Commit", 2030, 0): 0,
+             ("Gas_CCGT", 2020, 0): 250.0,
+             ("Gas_CCGT", 2030, 0): 250.0,
+             ("Gas_CCGT_New", 2020, 0): 250.0,
+             ("Gas_CCGT_New", 2030, 0): 250.0,
+             ("Gas_CCGT_New_Binary", 2020, 0): 250.0,
+             ("Gas_CCGT_New_Binary", 2030, 0): 250.0,
+             ("Gas_CCGT_z2", 2020, 0): 250.0,
+             ("Gas_CCGT_z2", 2030, 0): 250.0,
+             ("Gas_CT", 2020, 0): 80.13333333333335,
+             ("Gas_CT", 2030, 0): 80.13333333333335,
+             ("Gas_CT_New", 2020, 0): 80.13333333333335,
+             ("Gas_CT_New", 2030, 0): 80.13333333333335,
+             ("Gas_CT_z2", 2020, 0): 80.13333333333335,
+             ("Gas_CT_z2", 2030, 0): 80.13333333333335,
+             ("Nuclear", 2020, 0): 0,
+             ("Nuclear", 2030, 0): 0,
+             ("Nuclear_Flexible", 2020, 0): 0,
+             ("Nuclear_Flexible", 2030, 0): 0,
+             ("Nuclear_z2", 2020, 0): 0,
+             ("Nuclear_z2", 2030, 0): 0,
+             }.items()
+        ))
+        actual_fuel_burn_intercept = OrderedDict(sorted(
+            {(prj, p, s):
+                 instance.fuel_burn_intercept_mmbtu_per_mw_hr[(prj, p, s)]
+             for (prj, p, s) in
+             instance.HR_CURVE_PRJS_PRDS_SGMS}.items()
+        ))
+
+        self.assertDictAlmostEqual(expected_fuel_burn_intercept,
+                                   actual_fuel_burn_intercept,
+                                   places=5)
+
+        # Param: startup_fuel_mmbtu_per_mw
+        startup_fuel_df = \
+            projects_df[projects_df["startup_fuel_mmbtu_per_mw"] != "."]
+        expected_startup_fuel_by_prj = OrderedDict(sorted(
+            dict(zip(startup_fuel_df["project"],
+                     pd.to_numeric(
+                         startup_fuel_df["startup_fuel_mmbtu_per_mw"])
+                     )
+                 ).items())
+        )
+        actual_startup_fuel_by_prj = OrderedDict(sorted(
+            {p: instance.startup_fuel_mmbtu_per_mw[p]
+             for p in instance.STARTUP_FUEL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_startup_fuel_by_prj,
+                             actual_startup_fuel_by_prj)
 
     def test_get_slopes_intercept_by_project_period_segment(self):
         """
