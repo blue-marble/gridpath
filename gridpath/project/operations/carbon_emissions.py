@@ -85,7 +85,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight",
                          "number_of_hours_in_timepoint", "load_zone",
-                         "carbon_emissions_tons"])
+                         "technology", "carbon_emissions_tons"])
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
                 p,
@@ -95,6 +95,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
                 m.load_zone[p],
+                m.technology[p],
                 value(m.Project_Carbon_Emissions[p, tmp])
             ])
 
@@ -141,13 +142,14 @@ def import_results_into_database(
             timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
-            carbon_emissions_tons = row[7]
+            technology = row[7]
+            carbon_emissions_tons = row[8]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight,
                  number_of_hours_in_timepoint,
-                 load_zone, carbon_emissions_tons)
+                 load_zone, technology, carbon_emissions_tons)
             )
 
     insert_temp_sql = """
@@ -156,8 +158,8 @@ def import_results_into_database(
          (scenario_id, project, period, subproblem_id, stage_id,
          horizon, timepoint, timepoint_weight,
          number_of_hours_in_timepoint,
-         load_zone, carbon_emission_tons)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         load_zone, technology, carbon_emission_tons)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -166,13 +168,53 @@ def import_results_into_database(
         INSERT INTO results_project_carbon_emissions
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, carbon_emission_tons)
+        load_zone, technology, carbon_emission_tons)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, carbon_emission_tons
+        load_zone, technology, carbon_emission_tons
         FROM temp_results_project_carbon_emissions{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
+
+
+def process_results(db, c, subscenarios, quiet):
+    """
+    Aggregate dispatch by technology
+    Aggregate dispatch by period
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate emissions by technology-period")
+
+    # Delete old dispatch by technology
+    del_sql = """
+        DELETE FROM results_project_carbon_emissions_by_technology_period 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Aggregate dispatch by technology
+    agg_sql = """
+        INSERT INTO results_project_carbon_emissions_by_technology_period
+        (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        carbon_emission_tons)
+        SELECT
+        scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        SUM(carbon_emission_tons * timepoint_weight
+        * number_of_hours_in_timepoint ) AS carbon_emission_tons 
+        FROM results_project_carbon_emissions
+        WHERE scenario_id = ?
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology;"""
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,),
                           many=False)

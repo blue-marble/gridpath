@@ -252,3 +252,47 @@ def import_results_into_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+def process_results(db, c, subscenarios, quiet):
+    """
+    Aggregate costs by zone and period
+    TODO: by technology too?
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate costs")
+
+    # Delete old results
+    del_sql = """
+        DELETE FROM results_project_costs_operations_agg
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Aggregate operational costs by period and load zone
+    agg_sql = """
+        INSERT INTO results_project_costs_operations_agg
+        (scenario_id, subproblem_id, stage_id, period, 
+        load_zone, variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
+        SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+        SUM(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
+        AS fuel_cost,
+        SUM(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
+        AS variable_om_cost,
+        SUM(startup_cost * timepoint_weight) AS startup_cost,
+        SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
+        FROM results_project_costs_operations
+        WHERE scenario_id = ?
+        GROUP BY subproblem_id, stage_id, period, load_zone
+        ORDER BY subproblem_id, stage_id, period, load_zone
+        ;"""
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
