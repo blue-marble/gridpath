@@ -385,6 +385,71 @@ def import_results_into_database(
                           many=False)
 
 
+def process_results(db, c, subscenarios, quiet):
+    """
+    Aggregate costs by zone and period. Costs are allocated to the destination
+    zone. I.e. positive direction hurdle costs are allocated to the to-zone
+    while negative direction hurdle costs are allocated to the from-zone.
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate hurdle costs")
+
+    # Delete old results
+    del_sql = """
+        DELETE FROM results_transmission_hurdle_costs_agg
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Aggregate hurdle costs by period and load zone
+    agg_sql = """
+        INSERT INTO results_transmission_hurdle_costs_agg
+        (scenario_id, subproblem_id, stage_id, period, load_zone, 
+        tx_hurdle_cost)
+        
+        SELECT scenario_id, subproblem_id, stage_id, period, load_zone, 
+        (pos_dir_hurdle_cost + neg_dir_hurdle_cost) AS tx_hurdle_cost
+        
+        FROM
+        
+        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        load_zone_to AS load_zone,
+        SUM(hurdle_cost_positive_direction * timepoint_weight * 
+        number_of_hours_in_timepoint) AS pos_dir_hurdle_cost
+        FROM results_transmission_hurdle_costs
+        WHERE scenario_id = ?
+        GROUP BY subproblem_id, stage_id, period, load_zone
+        ORDER BY subproblem_id, stage_id, period, load_zone
+        ) AS pos_dir_hurdle_costs
+        
+        INNER JOIN
+        
+        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        load_zone_from AS load_zone,
+        SUM(hurdle_cost_negative_direction * timepoint_weight * 
+        number_of_hours_in_timepoint) AS neg_dir_hurdle_cost
+        FROM results_transmission_hurdle_costs
+        WHERE scenario_id = ?
+        GROUP BY subproblem_id, stage_id, period, load_zone
+        ORDER BY subproblem_id, stage_id, period, load_zone
+        ) AS neg_dir_hurdle_costs
+        
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,
+                                subscenarios.SCENARIO_ID),
+                          many=False)
+
+
 # Validation
 ###############################################################################
 
