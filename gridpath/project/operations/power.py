@@ -228,6 +228,7 @@ def import_results_into_database(
 def process_results(db, c, subscenarios, quiet):
     """
     Aggregate dispatch by technology
+    Aggregate dispatch by technology and period
     :param db:
     :param c:
     :param subscenarios:
@@ -235,7 +236,7 @@ def process_results(db, c, subscenarios, quiet):
     :return:
     """
     if not quiet:
-        print("aggregate dispatch")
+        print("aggregate dispatch by technology")
 
     # Delete old dispatch by technology
     del_sql = """
@@ -266,3 +267,31 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
+    if not quiet:
+        print("aggregate dispatch by technology-period")
+
+    # Delete old dispatch by technology
+    del_sql = """
+        DELETE FROM results_project_dispatch_by_technology_period 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Aggregate dispatch by technology
+    agg_sql = """
+        INSERT INTO results_project_dispatch_by_technology_period
+        (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        energy_mwh)
+        SELECT
+        scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        SUM(power_mw * timepoint_weight * number_of_hours_in_timepoint ) AS 
+        energy_mwh 
+        FROM results_project_dispatch_by_technology
+        WHERE scenario_id = ?
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology;"""
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
