@@ -128,6 +128,7 @@ class TestGenCommitLin(unittest.TestCase):
         # Set: GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
         expected_gen_commit_lin_str_rmp_prjs_types = sorted([
             ("Disp_Cont_Commit", 1.0),
+            ('Disp_Cont_Commit', 2.0),
             ("Clunky_Old_Gen", 1.0),
             ("Clunky_Old_Gen2", 1.0)
         ])
@@ -173,15 +174,23 @@ class TestGenCommitLin(unittest.TestCase):
                              actual_operational_timepoints_by_project)
 
         # Set: GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES
-        expected_opr_tmps_str_types = sorted(
-            [(g, tmp, 1.0) for (g, tmp) in
-             expected_operational_timepoints_by_project
-             if g in expected_gen_commit_lin_str_rmp_prjs]
-        )
+        expected_str_by_prj = {
+            "Disp_Cont_Commit": [1.0, 2.0],
+            "Clunky_Old_Gen": [1.0],
+            "Clunky_Old_Gen2": [1.0]
+        }
+
+        expected_opr_tmps_str_types = list()
+        for (p, tmp) in expected_operational_timepoints_by_project:
+            st_types = expected_str_by_prj[p]
+            for st in st_types:
+                expected_opr_tmps_str_types.append((p, tmp, st))
+
         actual_opr_tmps_str_types = sorted(
             [(g, tmp, s) for (g, tmp, s) in
              instance.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES]
         )
+
         self.assertListEqual(expected_opr_tmps_str_types,
                              actual_opr_tmps_str_types)
 
@@ -199,6 +208,7 @@ class TestGenCommitLin(unittest.TestCase):
         # Param: gen_commit_lin_startup_plus_ramp_up_by_st_rate
         expected_startup_plus_ramp_up_rate_by_st = {
             ("Disp_Cont_Commit", 1.0): 0.6,
+            ("Disp_Cont_Commit", 2.0): 0.3,
             ("Clunky_Old_Gen", 1.0): 1,
             ("Clunky_Old_Gen2", 1.0): 1
         }
@@ -268,6 +278,7 @@ class TestGenCommitLin(unittest.TestCase):
 
         # Param: gen_commit_lin_down_time_cutoff_hours
         expected_down_time_cutoff_hours = {("Disp_Cont_Commit", 1.0): 7,
+                                           ("Disp_Cont_Commit", 2.0): 15,
                                            ("Clunky_Old_Gen", 1.0): 0,
                                            ("Clunky_Old_Gen2", 1.0): 0}
         actual_down_time_cutoff_hours = {
