@@ -224,7 +224,7 @@ def get_subscenario_description(input_dir, csv_filename):
 def get_subscenario_data_and_insert_into_db(
     conn, quiet, subscenario, table, dir_subsc, inputs_dir, csv_file,
     use_project_method, skip_subscenario_info, skip_subscenario_data,
-    cols_to_exclude_str, custom_method
+    cols_to_exclude_str, custom_method, delete_flag
 ):
     """
     :param conn: database connection object
@@ -244,7 +244,7 @@ def get_subscenario_data_and_insert_into_db(
     database.
     """
     if not quiet:
-        print(csv_file)
+        print("   ...importing data from {}".format(csv_file))
 
     subscenario_tuples, csv_headers, inputs_tuples = \
         csv_to_subscenario_for_insertion(
@@ -253,6 +253,13 @@ def get_subscenario_data_and_insert_into_db(
             csv_file=csv_file,
             project_flag=use_project_method,
             cols_to_exclude_str=cols_to_exclude_str
+        )
+
+    if delete_flag:
+        generic_delete_subscenario(
+            conn=conn, subscenario=subscenario, table=table,
+            subscenario_data=subscenario_tuples,
+            project_flag=use_project_method
         )
 
     generic_insert_subscenario(
@@ -264,7 +271,8 @@ def get_subscenario_data_and_insert_into_db(
         project_flag=use_project_method,
         csv_headers=csv_headers,
         skip_subscenario_info=skip_subscenario_info,
-        skip_subscenario_data=skip_subscenario_data
+        skip_subscenario_data=skip_subscenario_data,
+        delete_flag=delete_flag
     )
 
     # If a custom method is requsted, run it here to finalize the subscenario
@@ -279,7 +287,7 @@ def get_subscenario_data_and_insert_into_db(
 
 def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method,
-    cols_to_exclude_str, custom_method
+    cols_to_exclude_str, custom_method, delete_flag
 ):
     """
     :param conn: database connection object
@@ -304,6 +312,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     for csv_file in csv_files:
+        print("...importing CSV {}".format(csv_file))
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -316,7 +325,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
 
 
@@ -355,7 +365,7 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 def read_all_dir_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, inputs_dir, subscenario, table, filename,
     skip_subscenario_info, skip_subscenario_data, cols_to_exclude_str,
-    custom_method
+    custom_method, delete_flag
 ):
     """
     :param conn: database connection object
@@ -379,6 +389,8 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
         )
 
     for subscenario_directory in subscenario_directories:
+        print("...importing data from directory {}".format(
+            subscenario_directory))
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -391,7 +403,8 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
 
 
@@ -416,8 +429,6 @@ def get_directory_subscenarios(main_directory, quiet):
     # they conform to the requirements
     subscenario_dir_names = sorted(next(os.walk(main_directory))[1])
     for subscenario in subscenario_dir_names:
-        if not quiet:
-            print(subscenario)
         if not subscenario.split("_")[0].isdigit():
             warnings.warn(
                 "Subfolder `{}` does not start with an integer to "
@@ -439,7 +450,7 @@ def get_directory_subscenarios(main_directory, quiet):
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    skip_subscenario_info, skip_subscenario_data, csv_headers=None
+    skip_subscenario_info, skip_subscenario_data, delete_flag, csv_headers=None
 ):
     """
     :param conn: the database connection object
@@ -462,18 +473,58 @@ def generic_insert_subscenario(
     # Load in the subscenario name and description
     if not skip_subscenario_info:
         generic_insert_subscenario_info(
-            conn, subscenario, table, subscenario_data, project_flag
+            conn, subscenario, table, subscenario_data, project_flag,
+            delete_flag
         )
 
     # Insert the subscenario data
     if not skip_subscenario_data:
         generic_insert_subscenario_data(
-            conn, subscenario, table, inputs_data, project_flag, csv_headers
+            conn, subscenario, table, inputs_data, project_flag,
+            delete_flag, csv_headers
         )
 
 
-def generic_insert_subscenario_info(
+def generic_delete_subscenario(
     conn, subscenario, table, subscenario_data, project_flag
+):
+    c = conn.cursor()
+
+    print(subscenario_data)
+
+    if not project_flag:
+        del_sql = """
+            DELETE FROM inputs_{}
+            WHERE {} = ?;
+            """.format(table, subscenario)
+    else:
+        del_sql = """
+            DELETE FROM inputs_{}
+            WHERE project = ?
+            AND {} = ?;
+            """.format(table, subscenario)
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=del_sql,
+                          data=subscenario_data[0], many=False)
+
+    if not project_flag:
+        del_sql = """
+            DELETE FROM subscenarios_{}
+            WHERE {} = ?;
+            """.format(table, subscenario)
+    else:
+        del_sql = """
+            DELETE FROM subscenarios_{}
+            WHERE project = ?
+            AND {} = ?;
+            """.format(table, subscenario)
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=del_sql,
+                          data=[subscenario_data], many=False)
+
+
+def generic_insert_subscenario_info(
+    conn, subscenario, table, subscenario_data, project_flag, delete_flag
 ):
     """
     :param conn: the database connection object
@@ -491,13 +542,13 @@ def generic_insert_subscenario_info(
     # Load in the subscenario name and description
     if not project_flag:
         subs_sql = """
-            INSERT OR IGNORE INTO subscenarios_{}
+            INSERT INTO subscenarios_{}
             ({}, name, description)
             VALUES (?, ?, ?);
             """.format(table, subscenario)
     else:
         subs_sql = """
-            INSERT OR IGNORE INTO subscenarios_{}
+            INSERT INTO subscenarios_{}
             (project, {}, name, description)
             VALUES (?, ?, ?, ?);
             """.format(table, subscenario)
@@ -509,7 +560,8 @@ def generic_insert_subscenario_info(
 
 
 def generic_insert_subscenario_data(
-    conn, subscenario, table, inputs_data, project_flag, csv_headers=None
+    conn, subscenario, table, inputs_data, project_flag,
+    delete_flag, csv_headers=None,
 ):
     """
     :param conn: the database connection object
@@ -559,7 +611,7 @@ def generic_insert_subscenario_data(
     values_string = ", ".join(["?"] * len(column_names))
 
     inputs_sql = """
-        INSERT OR IGNORE INTO inputs_{} ({}) VALUES ({});
+        INSERT INTO inputs_{} ({}) VALUES ({});
         """.format(table, column_string, values_string)
 
     spin_on_database_lock(conn=conn, cursor=c, sql=inputs_sql,
@@ -570,7 +622,8 @@ def generic_insert_subscenario_data(
 
 def load_all_subscenario_ids_from_dir_to_subscenario_table(
     conn, subscenario, table, subscenario_type, project_flag,
-    cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
+    cols_to_exclude_str, custom_method, inputs_dir, filename, delete_flag,
+    quiet
 ):
     """
     :param conn: the database connection
@@ -597,7 +650,8 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             inputs_dir=inputs_dir,
             use_project_method=project_flag,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
     elif subscenario_type in [
         "dir_subsc_only", "dir_main", "dir_aux"
@@ -616,7 +670,8 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
     else:
         pass
@@ -625,7 +680,7 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
 def load_single_subscenario_id_from_dir_to_subscenario_table(
     conn, subscenario, table, subscenario_type, project_flag,
     cols_to_exclude_str, custom_method, inputs_dir, filename, quiet,
-    subscenario_id_to_load
+    subscenario_id_to_load, delete_flag
 ):
     """
     :param conn: the database connection
@@ -639,20 +694,25 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     :param filename: str
     :param quiet: boolean
     :param subscenario_id_to_load: integer; the subscenario ID to load
+    :param delete_flag: boolean; whether to delete prior data for the
+        subscenario ID
     :return:
 
     Load data for a particular subscenario ID from a directory.
     """
+    print("Here")
     if subscenario_type == "simple":
         csv_files = [
             f for f in os.listdir(inputs_dir)
-            if f.startswith(str(subscenario_id_to_load)) and f.endswith(
-                ".csv")
+            if f.startswith(str(subscenario_id_to_load))
+            and f[len(str(subscenario_id_to_load))] == "_"
+            and f.endswith(".csv")
         ]
+        print(csv_files)
         if len(csv_files) == 1:
             csv_file = csv_files[0]
         else:
-            raise ValueError("Only one CSV file must have ID ".format(
+            raise ValueError("Only one CSV file may have ID {}".format(
                 subscenario_id_to_load))
 
         get_subscenario_data_and_insert_into_db(
@@ -667,7 +727,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
 
     elif subscenario_type in [
@@ -700,7 +761,8 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method
+            custom_method=custom_method,
+            delete_flag=delete_flag
         )
     else:
         pass

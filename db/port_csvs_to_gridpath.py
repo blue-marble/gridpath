@@ -52,26 +52,28 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--database", default="../db/io.db",
+    parser.add_argument("--database", default="./io.db",
                         help="The database file path relative to the current "
                              "working directory. Defaults to ../db/io.db ")
-    parser.add_argument("--csv_location", default="../db/csvs",
+    parser.add_argument("--csv_location", default="./csvs_test_examples",
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
     parser.add_argument("--subscenario",
-                        default=None,
+                        default="project_portfolio_scenario_id",
                         help="The subscenario to load. The script will look "
                              "for the directory where data for the "
                              "subscenario are located based on the "
                              "csv_master file and will load all subscenario "
                              "IDs located there.")
-    parser.add_argument("--subscenario_id", default=None,
+    parser.add_argument("--subscenario_id", default=1,
                         help="The subscenario ID to load. The "
                              "'--subscenario' argument must also be "
                              "specified. The script will look for the "
                              "directory where data for the subscenario are "
                              "located based on the csv_master file and will "
                              "load this scenario ID.")
+    parser.add_argument("--delete", default=True,
+                        help="Delete prior data.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
 
@@ -80,7 +82,8 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
+def load_all_from_master_csv(conn, csv_path, csv_data_master,
+                             delete_flag, quiet):
     """
     :param conn: the database connection
     :param csv_path: str, the directory where the CSV files are located
@@ -98,10 +101,12 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
             table, inputs_dir, project_flag, cols_to_exclude_str, \
                 custom_method, subscenario_type, filename = \
                 parse_row(row=row, csv_path=csv_path)
+            print("Importing data for subscenario {}, table {} from {}"
+                  "...".format(subscenario, table, inputs_dir))
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn, subscenario, table, subscenario_type, project_flag,
                 cols_to_exclude_str, custom_method, inputs_dir, filename,
-                quiet
+                delete_flag, quiet
             )
         else:
             pass
@@ -126,7 +131,7 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
 
 
 def load_all_subscenario_ids_from_directory(
-    conn, csv_path, csv_data_master, subscenario, quiet
+    conn, csv_path, csv_data_master, subscenario, delete_flag, quiet
 ):
     """
     :param conn: the database connection
@@ -151,14 +156,15 @@ def load_all_subscenario_ids_from_directory(
                 subscenario_type=subscenario_type, project_flag=project_flag,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method, inputs_dir=inputs_dir,
-                filename=filename, quiet=quiet
+                filename=filename, delete_flag=delete_flag, quiet=quiet
             )
         else:
             pass
 
 
 def load_single_subscenario_id_from_directory(
-    conn, csv_path, csv_data_master, subscenario, subscenario_id_to_load, quiet
+    conn, csv_path, csv_data_master, subscenario, subscenario_id_to_load,
+    delete_flag, quiet
 ):
     """
     :param conn: the database connection
@@ -168,6 +174,7 @@ def load_single_subscenario_id_from_directory(
         temporal_scenario_id or project_portfolio_scenario_id)
     :param subscenario_id_to_load: int; the subscenario ID for which to load
         data
+    :param delete_flag: boolean for whether to delete prior data
     :param quiet: boolean for whether to print output
     :return:
 
@@ -186,7 +193,8 @@ def load_single_subscenario_id_from_directory(
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method, inputs_dir=inputs_dir,
                 filename=filename, quiet=quiet,
-                subscenario_id_to_load=subscenario_id_to_load
+                subscenario_id_to_load=subscenario_id_to_load,
+                delete_flag=delete_flag
             )
         else:
             pass
@@ -240,6 +248,7 @@ def main(args=None):
     if parsed_args.subscenario is None and parsed_args.subscenario_id is None:
         load_all_from_master_csv(
             conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
+            delete_flag=delete_flag,
             quiet=parsed_args.quiet
         )
     elif parsed_args.subscenario is not None and parsed_args.subscenario_id \
@@ -247,13 +256,17 @@ def main(args=None):
         # Load all IDs for a subscenario-table
         load_all_subscenario_ids_from_directory(
             conn, csv_path, csv_data_master, parsed_args.subscenario,
+            parsed_args.delete,
             parsed_args.quiet
         )
     else:
         # Load single subscenario ID
         load_single_subscenario_id_from_directory(
-            conn, csv_path, csv_data_master, parsed_args.subscenario,
-            parsed_args.subscenario_id, parsed_args.quiet
+            conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
+            subscenario=parsed_args.subscenario,
+            subscenario_id_to_load=parsed_args.subscenario_id,
+            delete_flag=parsed_args.delete,
+            quiet=parsed_args.quiet
         )
 
     # Close connection
