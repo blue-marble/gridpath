@@ -14,6 +14,16 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds the static load to the load balance dynamic components.
+    :param d:
+    :return:
+    """
+
+    getattr(d, load_balance_consumption_components).append("static_load_mw")
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
@@ -29,7 +39,6 @@ def add_model_components(m, d):
     # Static load
     m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS,
                              within=NonNegativeReals)
-    getattr(d, load_balance_consumption_components).append("static_load_mw")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

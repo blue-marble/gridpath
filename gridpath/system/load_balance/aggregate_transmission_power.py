@@ -21,6 +21,23 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds the transmission to/from to the load balance dynamic
+    components.
+    :param d:
+    :return:
+    """
+
+    getattr(d, load_balance_production_components).append(
+        "Transmission_to_Zone_MW"
+    )
+
+    getattr(d, load_balance_consumption_components).append(
+        "Transmission_from_Zone_MW"
+    )
+
+
 def add_model_components(m, d):
     """
     Add net transmitted power to load balance
@@ -45,9 +62,6 @@ def add_model_components(m, d):
         )
     m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TMPS,
                                            rule=total_transmission_to_rule)
-    getattr(d, load_balance_production_components).append(
-        "Transmission_to_Zone_MW"
-    )
 
     def total_transmission_from_rule(mod, z, tmp):
         """
@@ -65,9 +79,6 @@ def add_model_components(m, d):
         )
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TMPS,
                                              rule=total_transmission_from_rule)
-    getattr(d, load_balance_consumption_components).append(
-        "Transmission_from_Zone_MW"
-    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

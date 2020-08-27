@@ -11,6 +11,16 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    Add total capacity costs to cost components
+    :param d:
+    :return:
+    """
+
+    getattr(d, total_cost_components).append("Total_Capacity_Costs")
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
@@ -31,4 +41,3 @@ def add_model_components(m, d):
                    * mod.number_years_represented[p]
                    for (g, p) in mod.PRJ_OPR_PRDS)
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
-    getattr(d, total_cost_components).append("Total_Capacity_Costs")

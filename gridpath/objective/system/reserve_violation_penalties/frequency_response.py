@@ -7,7 +7,11 @@ from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 from .aggregate_reserve_violation_penalties import \
-    generic_add_model_components
+    generic_determine_dynamic_components, generic_add_model_components
+
+
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    generic_determine_dynamic_components(d, "Frequency_Response_Penalty_Costs")
 
 
 def add_model_components(m, d):

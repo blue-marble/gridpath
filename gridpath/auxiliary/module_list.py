@@ -129,6 +129,7 @@ def all_modules_list():
         "objective.project.aggregate_prm_group_costs",
         "objective.project.aggregate_operational_costs",
         "objective.project.aggregate_operational_tuning_costs",
+        "objective.transmission.aggregate_capacity_costs",
         "objective.transmission.aggregate_operational_costs",
         "objective.transmission.carbon_imports_tuning_costs",
         "objective.system.aggregate_load_balance_penalties",
@@ -165,7 +166,8 @@ def optional_modules_list():
              "transmission.capacity.capacity",
              "transmission.operations.operational_types",
              "transmission.operations.operations",
-             "system.load_balance.aggregate_transmission_power"],
+             "system.load_balance.aggregate_transmission_power",
+             "objective.transmission.aggregate_capacity_costs"],
         "lf_reserves_up":
             ["geography.load_following_up_balancing_areas",
              "system.reserves.requirement.lf_reserves_up",
