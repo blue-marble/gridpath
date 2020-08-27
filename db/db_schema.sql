@@ -3213,6 +3213,38 @@ local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 );
 
+
+-- Total Costs
+DROP TABLE IF EXISTS results_system_costs;
+CREATE TABLE  results_system_costs (
+scenario_id INTEGER,
+--period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+Total_Capacity_Costs Float,
+Total_Tx_Capacity_Costs Float,
+Total_PRM_Group_Costs Float,
+Total_Variable_OM_Cost Float,
+Total_Fuel_Cost Float,
+Total_Startup_Cost Float,
+Total_Shutdown_Cost Float,
+Total_Hurdle_Cost Float,
+Total_Load_Balance_Penalty_Costs Float,
+Frequency_Response_Penalty_Costs Float,
+LF_Reserves_Down_Penalty_Costs Float,
+LF_Reserves_Up_Penalty_Costs Float,
+Regulation_Down_Penalty_Costs Float,
+Regulation_Up_Penalty_Costs Float,
+Spinning_Reserves_Penalty_Costs Float,
+Total_PRM_Shortage_Penalty_Costs Float,
+Total_Local_Capacity_Shortage_Penalty_Costs Float,
+Total_Carbon_Cap_Balance_Penalty_Costs Float,
+Total_RPS_Balance_Penalty_Costs Float,
+Total_Dynamic_ELCC_Tuning_Cost Float,
+Total_Import_Carbon_Tuning_Cost Float,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id)
+);
+
 ---------------
 --- OPTIONS ---
 ---------------
