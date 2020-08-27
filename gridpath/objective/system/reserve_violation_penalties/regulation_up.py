@@ -5,7 +5,11 @@
 from __future__ import absolute_import
 
 from .aggregate_reserve_violation_penalties import \
-    generic_add_model_components
+    generic_determine_dynamic_components, generic_add_model_components
+
+
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    generic_determine_dynamic_components(d, "Regulation_Up_Penalty_Costs")
 
 
 def add_model_components(m, d):
