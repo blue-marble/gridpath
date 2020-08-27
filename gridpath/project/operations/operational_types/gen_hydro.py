@@ -764,7 +764,7 @@ def export_module_specific_results(mod, d,
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
+                         "number_of_hours_in_timepoint", "spinup_or_lookahead",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw"
                          ])
@@ -778,6 +778,7 @@ def export_module_specific_results(mod, d,
                 tmp,
                 mod.tmp_weight[tmp],
                 mod.hrs_in_tmp[tmp],
+                mod.spinup_or_lookahead[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenHydro_Provide_Power_MW[p, tmp]),
@@ -917,16 +918,18 @@ def process_module_specific_results(db, c, subscenarios, quiet):
     agg_sql = """
         INSERT INTO results_project_curtailment_hydro
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
+        month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
+        month, hour_of_day,
         load_zone, scheduled_curtailment_mw
         FROM (
             SELECT scenario_id, subproblem_id, stage_id, period, 
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-            load_zone, 
+            spinup_or_lookahead, load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
             FROM results_project_dispatch
             WHERE operational_type = 'gen_hydro'

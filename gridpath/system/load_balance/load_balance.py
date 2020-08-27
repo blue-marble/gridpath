@@ -132,6 +132,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["zone", "period", "timepoint",
                          "discount_factor", "number_years_represented",
                          "timepoint_weight", "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead",
                          "load_mw", "overgeneration_mw", "unserved_energy_mw"]
                         )
         for z in getattr(m, "LOAD_ZONES"):
@@ -144,6 +145,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.number_years_represented[m.period[tmp]],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
+                    m.spinup_or_lookahead[tmp],
                     m.static_load_mw[z, tmp],
                     value(m.Overgeneration_MW_Expression[z, tmp]),
                     value(m.Unserved_Energy_MW_Expression[z, tmp])
@@ -193,24 +195,25 @@ def import_results_into_database(
             number_years = row[4]
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
-            load = row[7]
-            overgen = row[8]
-            unserved_energy = row[9]
+            spinup_or_lookahead = row[7]
+            load = row[8]
+            overgen = row[9]
+            unserved_energy = row[10]
 
             results.append(
                 (scenario_id, ba, period, subproblem, stage,
                     timepoint, discount_factor, number_years,
                     timepoint_weight, number_of_hours_in_timepoint,
-                    load, overgen, unserved_energy)
+                    spinup_or_lookahead, load, overgen, unserved_energy)
             )
     insert_temp_sql = """
         INSERT INTO 
         temp_results_system_load_balance{}
         (scenario_id, load_zone, period, subproblem_id, stage_id,
         timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_mw, overgeneration_mw, unserved_energy_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -219,12 +222,12 @@ def import_results_into_database(
         INSERT INTO results_system_load_balance
         (scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_mw, overgeneration_mw, unserved_energy_mw)
         SELECT
         scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_mw, overgeneration_mw, unserved_energy_mw
         FROM temp_results_system_load_balance{}
         ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;

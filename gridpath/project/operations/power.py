@@ -98,6 +98,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "operational_type", "balancing_type",
                          "timepoint_weight", "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead",
                          "load_zone", "technology", "power_mw"])
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
@@ -109,6 +110,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.balancing_type_project[p],
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Power_Provision_MW[p, tmp])
@@ -251,11 +253,11 @@ def process_results(db, c, subscenarios, quiet):
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
         FROM results_project_dispatch
         WHERE scenario_id = ?
@@ -280,6 +282,7 @@ def process_results(db, c, subscenarios, quiet):
                           many=False)
 
     # Aggregate dispatch by technology
+    # TODO: filter out spinup/lookahead
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 

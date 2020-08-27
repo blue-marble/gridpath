@@ -373,6 +373,7 @@ def export_module_specific_results(
         writer.writerow(["project", "period", "subproblem_id", "stage_id",
                          "availability_type", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead",
                          "load_zone", "technology",
                          "unavailability_decision", "start_unavailability",
                          "stop_unavailability", "availability_derate"])
@@ -386,6 +387,7 @@ def export_module_specific_results(
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.AvlCont_Unavailable[p, tmp]),

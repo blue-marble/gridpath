@@ -270,7 +270,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(carbon_emission_imports__results_file)
         writer.writerow(["tx_line", "period", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
-                         "carbon_emission_imports_tons",
+                         "spinup_or_lookahead", "carbon_emission_imports_tons",
                          "carbon_emission_imports_tons_degen"])
         for (tx, tmp) in m.CRB_TX_OPR_TMPS:
             writer.writerow([
@@ -279,6 +279,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
                 calculate_carbon_emissions_imports(m, tx, tmp)
             ])
@@ -407,13 +408,14 @@ def import_results_into_database(
             timepoint = row[2]
             timepoint_weight = row[3]
             number_of_hours_in_timepoint = row[4]
-            carbon_emission_imports_tons = row[5]
-            carbon_emission_imports_tons_degen = row[6]
+            spinup_or_lookahead = row[5]
+            carbon_emission_imports_tons = row[6]
+            carbon_emission_imports_tons_degen = row[7]
 
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
                  carbon_emission_imports_tons,
                  carbon_emission_imports_tons_degen)
             )
@@ -423,10 +425,10 @@ def import_results_into_database(
         temp_results_transmission_carbon_emissions{}
          (scenario_id, tx_line, period, subproblem_id, stage_id, 
          timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
+         number_of_hours_in_timepoint, spinup_or_lookahead,
          carbon_emission_imports_tons, 
          carbon_emission_imports_tons_degen)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -435,10 +437,12 @@ def import_results_into_database(
         INSERT INTO results_transmission_carbon_emissions
         (scenario_id, tx_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        spinup_or_lookahead,
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
         SELECT
         scenario_id, tx_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        spinup_or_lookahead,
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen
         FROM temp_results_transmission_carbon_emissions{}
          ORDER BY scenario_id, tx_line, subproblem_id, stage_id, timepoint;

@@ -191,9 +191,10 @@ def update_dispatch_results_table(
             timepoint = row[4]
             timepoint_weight = row[5]
             n_hours_in_tmp = row[6]
-            technology = row[7]
-            load_zone = row[8]
-            power = row[9]
+            spinup_or_lookahead = row[7]
+            technology = row[8]
+            load_zone = row[9]
+            power = row[10]
             scheduled_curtailment_mw = get_column_row_value(
                 header, "scheduled_curtailment_mw", row)
             subhourly_curtailment_mw = get_column_row_value(

@@ -45,10 +45,10 @@ def insert_availability_results(
         INSERT INTO temp_results_project_availability_endogenous{}
         (scenario_id, project, period, subproblem_id, stage_id, 
         availability_type, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, unavailability_decision, start_unavailablity, 
         stop_unavailability, availability_derate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """.format(scenario_id)
 
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
@@ -58,12 +58,12 @@ def insert_availability_results(
         INSERT INTO results_project_availability_endogenous
         (scenario_id, project, period, subproblem_id, stage_id, 
         availability_type, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, unavailability_decision, start_unavailablity, 
         stop_unavailability, availability_derate)
         SELECT scenario_id, project, period, subproblem_id, stage_id, 
         availability_type, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, unavailability_decision, start_unavailablity, 
         stop_unavailability, availability_derate
         FROM temp_results_project_availability_endogenous{}

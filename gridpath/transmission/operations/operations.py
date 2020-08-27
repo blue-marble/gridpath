@@ -119,6 +119,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",
                          "timepoint_weight",
                          "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead",
                          "transmission_flow_mw",
                          "transmission_losses_lz_from",
                          "transmission_losses_lz_to"])
@@ -131,6 +132,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 value(m.Transmit_Power_MW[l, tmp]),
                 value(m.Tx_Losses_LZ_From_MW[l, tmp]),
                 value(m.Tx_Losses_LZ_To_MW[l, tmp])
@@ -194,14 +196,15 @@ def import_results_into_database(
             period = row[4]
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
-            tx_sent = row[7]
-            tx_losses_lz_from = row[8]
-            tx_losses_lz_to = row[9]
+            spinup_or_lookahead = row[7]
+            tx_sent = row[8]
+            tx_losses_lz_from = row[9]
+            tx_losses_lz_to = row[10]
 
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
                  lz_from, lz_to, tx_sent, tx_losses_lz_from, tx_losses_lz_to)
             )
 
@@ -209,10 +212,10 @@ def import_results_into_database(
         INSERT INTO temp_results_transmission_operations{}
         (scenario_id, transmission_line, period, subproblem_id, 
         stage_id, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone_from, load_zone_to, transmission_flow_mw,
         transmission_losses_lz_from, transmission_losses_lz_to)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -221,12 +224,12 @@ def import_results_into_database(
         INSERT INTO results_transmission_operations
         (scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, transmission_flow_mw,
+        spinup_or_lookahead, load_zone_from, load_zone_to, transmission_flow_mw,
         transmission_losses_lz_from, transmission_losses_lz_to)
         SELECT
         scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, transmission_flow_mw,
+        spinup_or_lookahead, load_zone_from, load_zone_to, transmission_flow_mw,
         transmission_losses_lz_from, transmission_losses_lz_to
         FROM temp_results_transmission_operations{}
          ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
@@ -241,6 +244,7 @@ def process_results(db, c, subscenarios, quiet):
     Aggregate imports/exports by zone and period (numbers are based on flows
     without accounting for losses!)
     TODO: add losses?
+    TODO: filter out spinup/lookahead?
     :param db:
     :param c:
     :param subscenarios:

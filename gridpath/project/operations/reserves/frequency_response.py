@@ -184,6 +184,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead",
                          "reserve_provision_mw", "partial"])
         for (p, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
             writer.writerow([
@@ -193,6 +194,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.frequency_response_ba[p],
                 m.technology[p],
@@ -382,27 +384,28 @@ def import_results_into_database(
             timepoint = row[3]
             timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
-            ba = row[6]
-            load_zone = row[7]
-            technology = row[8]
-            reserve_provision = row[9]
-            partial = row[10]
+            spinup_or_lookahead = row[6]
+            ba = row[7]
+            load_zone = row[8]
+            technology = row[9]
+            reserve_provision = row[10]
+            partial = row[11]
             
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
+                    number_of_hours_in_timepoint, spinup_or_lookahead,
                     ba, load_zone, technology, reserve_provision, partial)
             )
     insert_temp_sql = """
         INSERT INTO temp_results_project_frequency_response{}
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         frequency_response_ba, load_zone, technology,
         reserve_provision_mw, partial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?);""".format(scenario_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ;""".format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -410,12 +413,12 @@ def import_results_into_database(
         INSERT INTO results_project_frequency_response
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        frequency_response_ba, load_zone, technology,
+        spinup_or_lookahead, frequency_response_ba, load_zone, technology,
         reserve_provision_mw, partial)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        frequency_response_ba, load_zone, technology,
+        spinup_or_lookahead, frequency_response_ba, load_zone, technology,
         reserve_provision_mw, partial
         FROM temp_results_project_frequency_response{} 
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;

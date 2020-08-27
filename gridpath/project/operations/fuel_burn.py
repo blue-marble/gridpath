@@ -151,7 +151,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone", "technology", "fuel",
+             "number_of_hours_in_timepoint", "spinup_or_lookahead",
+             "load_zone", "technology", "fuel",
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
@@ -163,6 +164,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 m.fuel[p],
@@ -211,17 +213,18 @@ def import_results_into_database(
             timepoint = row[3]
             timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            fuel = row[8]
-            opr_fuel_burn_tons = row[9]
-            startup_fuel_burn_tons = row[10]
-            total_fuel_burn = row[11]
+            spinup_or_lookahead = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            fuel = row[9]
+            opr_fuel_burn_tons = row[10]
+            startup_fuel_burn_tons = row[11]
+            total_fuel_burn = row[12]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
+                    number_of_hours_in_timepoint, spinup_or_lookahead,
                     load_zone, technology, fuel, opr_fuel_burn_tons,
                     startup_fuel_burn_tons, total_fuel_burn)
             )
@@ -231,10 +234,10 @@ def import_results_into_database(
         temp_results_project_fuel_burn{}
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight,
-         number_of_hours_in_timepoint,
+         number_of_hours_in_timepoint, spinup_or_lookahead,
          load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
          startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -243,11 +246,13 @@ def import_results_into_database(
         INSERT INTO results_project_fuel_burn
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        spinup_or_lookahead,
         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
          startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        spinup_or_lookahead,
         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
          startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu
         FROM temp_results_project_fuel_burn{}

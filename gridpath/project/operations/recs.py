@@ -237,7 +237,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(rps_results_file)
         writer.writerow(["project", "load_zone", "rps_zone",
                          "timepoint", "period", "horizon", "timepoint_weight",
-                         "number_of_hours_in_timepoint", "technology",
+                         "number_of_hours_in_timepoint",
+                         "spinup_or_lookahead", "technology",
                          "scheduled_rps_energy_mw",
                          "scheduled_curtailment_mw",
                          "subhourly_rps_energy_delivered_mw",
@@ -252,6 +253,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.horizon[tmp, m.balancing_type_project[p]],
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.technology[p],
                 value(m.Scheduled_RPS_Energy_MW[p, tmp]),
                 value(m.Scheduled_Curtailment_MW[p, tmp]),
@@ -407,16 +409,17 @@ def import_results_into_database(
             horizon = row[5]
             timepoint_weight = row[6]
             hours_in_tmp = row[7]
-            technology = row[8]
-            scheduled_energy = row[9]
-            scheduled_curtailment = row[10]
-            subhourly_energy = row[11]
-            subhourly_curtailment = row[12]
+            spinup_or_lookahead = row[8]
+            technology = row[9]
+            scheduled_energy = row[10]
+            scheduled_curtailment = row[11]
+            subhourly_energy = row[12]
+            subhourly_curtailment = row[13]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight, hours_in_tmp,
-                 load_zone, rps_zone, technology,
+                 spinup_or_lookahead, load_zone, rps_zone, technology,
                  scheduled_energy, scheduled_curtailment,
                  subhourly_energy, subhourly_curtailment)
             )
@@ -426,11 +429,11 @@ def import_results_into_database(
         temp_results_project_rps{}
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight, 
-         number_of_hours_in_timepoint, 
+         number_of_hours_in_timepoint, spinup_or_lookahead,
          load_zone, rps_zone, technology, 
          scheduled_rps_energy_mw, scheduled_curtailment_mw, 
          subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -439,13 +442,13 @@ def import_results_into_database(
         INSERT INTO results_project_rps
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, rps_zone, technology, 
+        spinup_or_lookahead, load_zone, rps_zone, technology, 
         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, rps_zone, technology, 
+        spinup_or_lookahead, load_zone, rps_zone, technology, 
         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw
         FROM temp_results_project_rps{}

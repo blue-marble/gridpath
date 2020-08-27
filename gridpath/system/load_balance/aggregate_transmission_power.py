@@ -97,7 +97,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(imp_exp_file)
         writer.writerow(
             ["load_zone", "timepoint", "period", "timepoint_weight",
-             "number_of_hours_in_timepoint",
+             "number_of_hours_in_timepoint", "spinup_or_lookahead",
              "imports_mw", "exports_mw", "net_imports_mw"]
         )
         for z in m.LOAD_ZONES:
@@ -108,6 +108,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.period[tmp],
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
+                    m.spinup_or_lookahead[tmp],
                     value(m.Transmission_to_Zone_MW[z, tmp]),
                     value(m.Transmission_from_Zone_MW[z, tmp]),
                     (value(m.Transmission_to_Zone_MW[z, tmp]) -
@@ -151,14 +152,15 @@ def import_results_into_database(
             period = row[2]
             timepoint_weight = row[3]
             number_of_hours_in_timepoint = row[4]
-            imports_mw = row[5]
-            exports_mw = row[6]
-            net_imports_mw = row[7]
+            spinup_or_lookahead = row[5]
+            imports_mw = row[6]
+            exports_mw = row[7]
+            net_imports_mw = row[8]
             
             results.append(
                 (scenario_id, load_zone, period, subproblem, stage,
                  timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
                  imports_mw, exports_mw, net_imports_mw)
             )
             
@@ -166,9 +168,9 @@ def import_results_into_database(
         INSERT INTO temp_results_transmission_imports_exports{}
         (scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         imports_mw, exports_mw, net_imports_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -177,11 +179,11 @@ def import_results_into_database(
         INSERT INTO results_transmission_imports_exports
         (scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        imports_mw, exports_mw, net_imports_mw)
+        spinup_or_lookahead, imports_mw, exports_mw, net_imports_mw)
         SELECT
         scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        imports_mw, exports_mw, net_imports_mw
+        spinup_or_lookahead, imports_mw, exports_mw, net_imports_mw
         FROM temp_results_transmission_imports_exports{}
         ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)

@@ -150,7 +150,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone", "technology",
+             "number_of_hours_in_timepoint", "spinup_or_lookahead",
+             "load_zone", "technology",
              "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost"]
         )
         for (p, tmp) in m.PRJ_OPR_TMPS:
@@ -161,6 +162,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Variable_OM_Cost[p, tmp]),
@@ -209,17 +211,19 @@ def import_results_into_database(
             timepoint = row[3]
             timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            variable_om_cost = row[8]
-            fuel_cost = row[9]
-            startup_cost = row[10]
-            shutdown_cost = row[11]
+            spinup_or_lookahead = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            variable_om_cost = row[9]
+            fuel_cost = row[10]
+            startup_cost = row[11]
+            shutdown_cost = row[12]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint, load_zone, technology,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
+                 load_zone, technology,
                  variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
             )
 
@@ -227,10 +231,11 @@ def import_results_into_database(
         INSERT INTO
         temp_results_project_costs_operations{}
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint, load_zone, technology, 
+        horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
+        load_zone, technology, 
         variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
         scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -240,12 +245,14 @@ def import_results_into_database(
         results_project_costs_operations
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
+        load_zone, technology, 
         variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
+        number_of_hours_in_timepoint, spinup_or_lookahead,
+        load_zone, technology, 
         variable_om_cost, fuel_cost, startup_cost, shutdown_cost
         FROM temp_results_project_costs_operations{}
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;

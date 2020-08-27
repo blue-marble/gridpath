@@ -213,7 +213,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["tx_line", "period", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone_from", "load_zone_to",
+             "number_of_hours_in_timepoint", "spinup_or_lookahead",
+             "load_zone_from", "load_zone_to",
              "hurdle_cost_positive_direction",
              "hurdle_cost_negative_direction"]
         )
@@ -224,6 +225,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone_from[tx],
                 m.load_zone_to[tx],
                 value(m.Hurdle_Cost_Pos_Dir[tx, tmp]),
@@ -341,15 +343,16 @@ def import_results_into_database(
             timepoint = row[2]
             timepoint_weight = row[3]
             number_of_hours_in_timepoint = row[4]
-            lz_from = row[5]
-            lz_to = row[6]
-            hurdle_cost_positve_direction = row[7]
-            hurdle_cost_negative_direction = row[8]
+            spinup_or_lookahead = row[5]
+            lz_from = row[6]
+            lz_to = row[7]
+            hurdle_cost_positve_direction = row[8]
+            hurdle_cost_negative_direction = row[9]
 
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
                  lz_from, lz_to,
                  hurdle_cost_positve_direction,
                  hurdle_cost_negative_direction)
@@ -358,10 +361,10 @@ def import_results_into_database(
         INSERT INTO temp_results_transmission_hurdle_costs{}
         (scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone_from, load_zone_to, 
         hurdle_cost_positive_direction, hurdle_cost_negative_direction)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -370,11 +373,13 @@ def import_results_into_database(
         INSERT INTO results_transmission_hurdle_costs
         (scenario_id, transmission_line, period, subproblem_id, stage_id, 
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        spinup_or_lookahead,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction)
         SELECT
         scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        spinup_or_lookahead,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction
         FROM temp_results_transmission_hurdle_costs{}
@@ -409,6 +414,7 @@ def process_results(db, c, subscenarios, quiet):
                           many=False)
 
     # Aggregate hurdle costs by period and load zone
+    # TODO: filter out spinup_or_lookahead?
     agg_sql = """
         INSERT INTO results_transmission_hurdle_costs_agg
         (scenario_id, subproblem_id, stage_id, period, load_zone, 

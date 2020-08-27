@@ -93,7 +93,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
         writer.writerow(["ba", "period", "timepoint",
                          "discount_factor", "number_years_represented",
                          "timepoint_weight", "number_of_hours_in_timepoint",
-                         column_name]
+                         "spinup_or_lookahead", column_name]
                         )
         for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
             writer.writerow([
@@ -104,6 +104,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                 m.number_years_represented[m.period[tmp]],
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 value(getattr(m, reserve_violation_expression)[ba, tmp])
             ]
             )
@@ -157,13 +158,14 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
             number_years_represented = row[4]
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
-            violation = row[7]
+            spinup_or_lookahead = row[7]
+            violation = row[8]
 
             results.append(
                 (scenario_id, ba, period,
                  subproblem, stage, timepoint,
                  discount_factor, number_years_represented, timepoint_weight,
-                 number_of_hours_in_timepoint, violation)
+                 number_of_hours_in_timepoint, spinup_or_lookahead, violation)
             )
 
     insert_temp_sql = """
@@ -172,9 +174,9 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         (scenario_id, {}_ba, period,
         subproblem_id, stage_id, timepoint, 
         discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint,
+        number_of_hours_in_timepoint, spinup_or_lookahead,
         violation_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(reserve_type, scenario_id, reserve_type)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -184,17 +186,17 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         (scenario_id, {}_ba, period, 
         subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint, violation_mw)
+        spinup_or_lookahead, number_of_hours_in_timepoint, violation_mw)
         SELECT
         scenario_id, {}_ba, period, 
         subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
-        number_of_hours_in_timepoint, violation_mw
+        number_of_hours_in_timepoint, spinup_or_lookahead, violation_mw
         FROM temp_results_system_{}_balance{}
         ORDER BY scenario_id, {}_ba, 
         subproblem_id, stage_id, timepoint;
-        """.format( reserve_type, reserve_type, reserve_type, reserve_type,
-                    scenario_id, reserve_type)
+        """.format(reserve_type, reserve_type, reserve_type, reserve_type,
+                   scenario_id, reserve_type)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
 

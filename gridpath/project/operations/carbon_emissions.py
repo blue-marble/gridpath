@@ -84,8 +84,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(carbon_emissions_results_file)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight",
-                         "number_of_hours_in_timepoint", "load_zone",
-                         "technology", "carbon_emissions_tons"])
+                         "number_of_hours_in_timepoint", "spinup_or_lookahead",
+                         "load_zone", "technology", "carbon_emissions_tons"])
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
                 p,
@@ -94,6 +94,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
+                m.spinup_or_lookahead[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Project_Carbon_Emissions[p, tmp])
@@ -141,14 +142,15 @@ def import_results_into_database(
             timepoint = row[3]
             timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            carbon_emissions_tons = row[8]
+            spinup_or_lookahead = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            carbon_emissions_tons = row[9]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
+                 number_of_hours_in_timepoint, spinup_or_lookahead,
                  load_zone, technology, carbon_emissions_tons)
             )
 
@@ -157,9 +159,9 @@ def import_results_into_database(
         temp_results_project_carbon_emissions{}
          (scenario_id, project, period, subproblem_id, stage_id,
          horizon, timepoint, timepoint_weight,
-         number_of_hours_in_timepoint,
+         number_of_hours_in_timepoint, spinup_or_lookahead,
          load_zone, technology, carbon_emission_tons)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -168,11 +170,11 @@ def import_results_into_database(
         INSERT INTO results_project_carbon_emissions
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, carbon_emission_tons)
+        spinup_or_lookahead, load_zone, technology, carbon_emission_tons)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, carbon_emission_tons
+        spinup_or_lookahead, load_zone, technology, carbon_emission_tons
         FROM temp_results_project_carbon_emissions{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)
@@ -202,7 +204,8 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate dispatch by technology
+    # Aggregate carbon emissions by technology
+    # TODO: filter out spinup timepoints?
     agg_sql = """
         INSERT INTO results_project_carbon_emissions_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 

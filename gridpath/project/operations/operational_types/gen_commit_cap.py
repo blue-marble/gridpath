@@ -1766,16 +1766,14 @@ def export_module_specific_results(
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
+                         "number_of_hours_in_timepoint", "spinup_or_lookahead",
                          "technology", "load_zone",
                          "gross_power_mw",
                          "auxiliary_consumption_mw", "net_power_mw",
                          "committed_mw", "committed_units"
                          ])
 
-        for (p, tmp) \
-                in mod. \
-                GEN_COMMIT_CAP_OPR_TMPS:
+        for (p, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS:
             writer.writerow([
                 p,
                 mod.period[tmp],
@@ -1784,6 +1782,7 @@ def export_module_specific_results(
                 tmp,
                 mod.tmp_weight[tmp],
                 mod.hrs_in_tmp[tmp],
+                mod.spinup_or_lookahead[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
