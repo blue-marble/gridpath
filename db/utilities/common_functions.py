@@ -486,7 +486,6 @@ def determine_tables_to_delete_from(csv_data_master, subscenario):
     base_table = None
     base_subscenario = None
     for index, row in subscenario_df.iterrows():
-        print(row, row["subscenario_type"])
         if row["subscenario_type"] in ["simple", "dir_subsc_only",
                                        "dir_main"]:
             subscenario_table = "subscenarios_{}".format(row["table"])
@@ -568,9 +567,6 @@ def confirm_and_update_scenarios(
         """.format(base_subscenario, base_subscenario,
                    base_subscenario_ids_str)
 
-        print(scenarios_sql)
-
-        print(base_subscenario_ids_data)
         scenario_reupdate_tuples = c.execute(
             scenarios_sql, base_subscenario_ids_data
         ).fetchall()
@@ -615,7 +611,7 @@ def confirm_and_update_scenarios(
             UPDATE scenarios SET {} = NULL WHERE scenario_id = ?
         """.format(base_subscenario if project_flag else subscenario)
         spin_on_database_lock(conn=conn, cursor=c, sql=scenario_update_sql,
-                              data=scenarios_tuples, quiet=False)
+                              data=scenarios_tuples)
 
         # Update the base table if this is a project-level input
         if project_flag:
@@ -627,8 +623,7 @@ def confirm_and_update_scenarios(
             """.format(base_table, subscenario, base_subscenario)
             spin_on_database_lock(conn=conn, cursor=c,
                                   sql=base_table_update_sql,
-                                  data=base_subscenario_ids_project_tuples,
-                                  quiet=False)
+                                  data=base_subscenario_ids_project_tuples)
     else:
         sys.exit()
 
@@ -636,7 +631,8 @@ def confirm_and_update_scenarios(
         tuple(reversed(t)) for t in scenario_reupdate_tuples
     ]
 
-    return scenario_reupdate_tuples, base_subscenario_ids_str, base_subscenario_ids_data
+    return scenario_reupdate_tuples, base_subscenario_ids_str, \
+        base_subscenario_ids_data
 
 
 def generic_delete_subscenario(
@@ -645,12 +641,6 @@ def generic_delete_subscenario(
 ):
     c = conn.cursor()
 
-    print(subscenario_table)
-    print(input_tables)
-
-
-
-    # if not project_flag:
     delete_data = (subscenario_id,)
     # Create the SQL delete statement for each inputs table
 
@@ -891,7 +881,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
                 "{}-{}".format(project, str(subscenario_id_to_load))
             description_delimiter = "-"
 
-        print(os.listdir(inputs_dir))
         csv_files = [
             f for f in os.listdir(inputs_dir)
             if f.startswith(file_startswith)

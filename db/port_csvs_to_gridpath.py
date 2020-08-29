@@ -190,7 +190,8 @@ def load_single_subscenario_id_from_directory(
     :return:
 
     Read and load all data for a particular subscenario ID (e.g. for
-    temporal_scenario_id=5) or project-subscenario ID.
+    temporal_scenario_id=5) or project-subscenario ID (e.g. for project
+    'Solar' and variable_generator_scenario_id=1).
     """
 
     # Delete prior data if instructed to
@@ -278,19 +279,16 @@ def load_single_subscenario_id_from_directory(
                 ]
                 spin_on_database_lock(conn=conn, cursor=c,
                                       sql=base_subscenario_reupdate_sql,
-                                      data=base_subscenario_update_tuples,
-                                      quiet=False)
+                                      data=base_subscenario_update_tuples)
 
             # Update the scenarios table
-            print("here")
             scenario_reupdate_sql = """
                 UPDATE scenarios SET {} = ? WHERE scenario_id = ?
             """.format(base_subscenario if project_flag else subscenario)
 
             spin_on_database_lock(conn=conn, cursor=c,
                                   sql=scenario_reupdate_sql,
-                                  data=scenario_reupdate_tuples,
-                                  quiet=False)
+                                  data=scenario_reupdate_tuples)
 
             c.close()
 
