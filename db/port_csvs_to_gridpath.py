@@ -84,10 +84,10 @@ def parse_arguments(args):
                              "are located based on the csv_master file and "
                              "will load the data for this project and "
                              "subscenario ID.")
-    parser.add_argument("--delete", default=False,
-                        help="Delete prior data.")
+    parser.add_argument("--delete", default=False, action="store_true",
+                        help="Delete prior data. Defaults to False.")
     parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print output.")
+                        help="Don't print output. Defaults to False.")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -217,7 +217,7 @@ def load_single_subscenario_id_from_directory(
             )
 
         scenario_reupdate_tuples, base_subscenario_ids_str, \
-            base_subscenario_ids_tuples = confirm_and_update_scenarios(
+            base_subscenario_ids_data = confirm_and_update_scenarios(
                 conn=conn, project_flag=project_flag, subscenario=subscenario,
                 subscenario_id=subscenario_id_to_load, project=project,
                 base_table=base_table, base_subscenario=base_subscenario
@@ -272,12 +272,12 @@ def load_single_subscenario_id_from_directory(
             c = conn.cursor()
             if project_flag:
                 base_subscenario_reupdate_sql = """
-                    UPDATE {} SET {} = ? WHERE {} in {} AND project = ?
+                    UPDATE {} SET {} = ? WHERE {} in ({}) AND project = ?
                     """.format(base_table, subscenario, base_subscenario,
                                base_subscenario_ids_str)
                 base_subscenario_update_tuples = [
-                    (subscenario_id_to_load, ) + b_id + (project, )
-                    for b_id in base_subscenario_ids_tuples
+                    (int(subscenario_id_to_load),)
+                    + tuple(base_subscenario_ids_data) + (project, )
                 ]
                 spin_on_database_lock(conn=conn, cursor=c,
                                       sql=base_subscenario_reupdate_sql,
@@ -285,6 +285,7 @@ def load_single_subscenario_id_from_directory(
                                       quiet=False)
 
             # Update the scenarios table
+            print("here")
             scenario_reupdate_sql = """
                 UPDATE scenarios SET {} = ? WHERE scenario_id = ?
             """.format(base_subscenario if project_flag else subscenario)

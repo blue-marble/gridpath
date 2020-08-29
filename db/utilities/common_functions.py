@@ -555,8 +555,10 @@ def confirm_and_update_scenarios(
             base_subscenario_ids_sql, (project, subscenario_id)
         ).fetchall()
         base_subscenario_ids_str = str()
+        base_subscenario_ids_data = tuple()
         for s in base_subscenario_ids_tuples:
             base_subscenario_ids_str += "?,".format(s[0])
+            base_subscenario_ids_data += (s[0], )
         # Remove the final comma
         base_subscenario_ids_str = base_subscenario_ids_str[:-1]
 
@@ -565,13 +567,17 @@ def confirm_and_update_scenarios(
         # scenarios in order to avoid a FOREIGN KEY error when deleting the
         # subscenario_id
         scenarios_sql = """
-            SELECT scenario_id
+            SELECT scenario_id, {}
             FROM scenarios
             WHERE {} in ({})
-        """.format(base_subscenario, base_subscenario_ids_str)
+        """.format(base_subscenario, base_subscenario,
+                   base_subscenario_ids_str)
 
+        print(scenarios_sql)
+
+        print(base_subscenario_ids_data)
         scenario_reupdate_tuples = c.execute(
-            scenarios_sql, base_subscenario_ids_tuples
+            scenarios_sql, base_subscenario_ids_data
         ).fetchall()
     else:
         base_subscenario_ids_str, base_subscenario_ids_tuples = None, None
@@ -584,7 +590,7 @@ def confirm_and_update_scenarios(
             SELECT scenario_id, {}
             FROM scenarios
             WHERE {} = ?
-        """.format(base_subscenario, subscenario)
+        """.format(subscenario, subscenario)
 
         scenario_reupdate_tuples = c.execute(
             scenarios_sql, (subscenario_id,)
@@ -631,7 +637,11 @@ def confirm_and_update_scenarios(
     else:
         sys.exit()
 
-    return scenario_reupdate_tuples, base_subscenario_ids_str, base_subscenario_ids_tuples
+    scenario_reupdate_tuples = [
+        tuple(reversed(t)) for t in scenario_reupdate_tuples
+    ]
+
+    return scenario_reupdate_tuples, base_subscenario_ids_str, base_subscenario_ids_data
 
 
 def generic_delete_subscenario(
