@@ -95,5 +95,3 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
         else:
             # print("...done.")
             break
-
-    conn.commit()
