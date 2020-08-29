@@ -479,6 +479,106 @@ def generic_insert_subscenario(
         )
 
 
+def determine_tables_to_delete_from(csv_data_master, subscenario):
+    # Find out which tables go along with this subscenario
+    subscenario_df = csv_data_master.loc[
+        csv_data_master["subscenario"] == subscenario
+        ]
+    # Determine relevant tables
+    subscenario_table = None
+    input_tables = list()
+    project_flag = False
+    base_table = None
+    base_subscenario = None
+    for index, row in subscenario_df.iterrows():
+        print(row, row["subscenario_type"])
+        if row["subscenario_type"] in ["simple", "dir_subsc_only",
+                                       "dir_main"]:
+            subscenario_table = "subscenarios_{}".format(row["table"])
+        if row["subscenario_type"] != "dir_subsc_only":
+            input_tables.append("inputs_{}".format(row["table"]))
+        if row["subscenario_type"] == "simple" \
+                and int(row["project_input"]):
+            project_flag = True
+            base_table = row["base_table"]
+            base_subscenario = row["base_subscenario"]
+
+    print(subscenario_table)
+
+    # If we're loading a temporal_scenario_id, we'll hard code the
+    # tables instead, as the structure is quite different / we load with
+    # custom method
+    if subscenario == "temporal_scenario_id":
+        input_tables = [
+            "inputs_temporal_subproblems",
+            "inputs_temporal_subproblems_stages",
+            "inputs_temporal_periods",
+            "inputs_temporal",
+            "inputs_temporal_horizons",
+            "inputs_temporal_horizon_timepoints_start_end",
+            "inputs_temporal_horizon_timepoints"
+
+        ]
+
+    # We need to reverse the order in which inputs are deleted relative to
+    # how they are loaded to avoid foreign key errors
+    input_tables.reverse()
+
+    return subscenario_table, input_tables, project_flag
+
+
+def confirm_and_update_scenarios(conn, project_flag, subscenario,
+                                 subscenario_id_to_load):
+
+    c = conn.cursor()
+
+    if not project_flag:
+        # Figure out if there are scenarios using this subscenario_id,
+        # as if they are, we need to NULLify that subscenario for these
+        # scenarios in order to avoid a FOREIGN KEY error when deleting the
+        # subscenario_id
+        scenarios_sql = """
+            SELECT scenario_id
+            FROM scenarios
+            WHERE {} = ?
+        """.format(subscenario)
+
+        scenarios_tuples = c.execute(
+            scenarios_sql, (subscenario_id_to_load,)
+        ).fetchall()
+
+        scenarios_list = [s[0] for s in scenarios_tuples]
+
+        # Check with the user that they want to do this and confirm they
+        # aren't worried about data mismatch
+        if scenarios_list:
+            proceed = confirm(
+                prompt=
+                """The following scenarios use {} {}. Deleting prior inputs 
+                and reimporting may result in a mismatch between the inputs 
+                specified for these scenarios and their results. Are you 
+                sure you want to proceed?""".format(
+                    subscenario, subscenario_id_to_load)
+            )
+        else:
+            proceed = True
+
+        if proceed:
+            # To avoid foreign key errors, first NULL-ify this
+            # subscenario_id for all scenarios that use it
+            scenario_update_sql = """
+                UPDATE scenarios SET {} = NULL WHERE scenario_id = ?
+            """.format(subscenario)
+            spin_on_database_lock(conn=conn, cursor=c, sql=scenario_update_sql,
+                                  data=scenarios_tuples)
+
+            c.close()
+        else:
+            sys.exit()
+
+        return scenarios_list
+
+
 def generic_delete_subscenario(
     conn, subscenario, subscenario_id, subscenario_table, input_tables,
         project_flag
@@ -488,10 +588,7 @@ def generic_delete_subscenario(
     print(subscenario_table)
     print(input_tables)
 
-    # We need to reverse the order in which inputs are deleted relative to
-    # how they are loaded to avoid foreign key errors
-    # TODO: is this only needed for the temporal tables?
-    input_tables.reverse()
+
 
     # if not project_flag:
     delete_data = (subscenario_id,)
