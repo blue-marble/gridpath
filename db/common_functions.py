@@ -63,9 +63,7 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
         COMMIT;
     """
     if not quiet:
-        print("in spin")
         print(sql)
-        print(data)
 
     for i in range(0, max_attempts):
         if i == 0:

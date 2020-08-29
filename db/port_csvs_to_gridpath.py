@@ -94,8 +94,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def load_all_from_master_csv(conn, csv_path, csv_data_master,
-                             delete_flag, quiet):
+def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
     """
     :param conn: the database connection
     :param csv_path: str, the directory where the CSV files are located
@@ -117,8 +116,7 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master,
                   "...".format(subscenario, table, inputs_dir))
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn, subscenario, table, subscenario_type, project_flag,
-                cols_to_exclude_str, custom_method, inputs_dir, filename,
-                delete_flag, quiet
+                cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
             )
         else:
             pass
@@ -143,7 +141,7 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master,
 
 
 def load_all_subscenario_ids_from_directory(
-    conn, csv_path, csv_data_master, subscenario, delete_flag, quiet
+    conn, csv_path, csv_data_master, subscenario, quiet
 ):
     """
     :param conn: the database connection
@@ -168,7 +166,7 @@ def load_all_subscenario_ids_from_directory(
                 subscenario_type=subscenario_type, project_flag=project_flag,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method, inputs_dir=inputs_dir,
-                filename=filename, delete_flag=delete_flag, quiet=quiet
+                filename=filename, quiet=quiet
             )
         else:
             pass
@@ -260,8 +258,7 @@ def load_single_subscenario_id_from_directory(
                 custom_method=custom_method, inputs_dir=inputs_dir,
                 filename=filename, quiet=quiet,
                 subscenario_id_to_load=subscenario_id_to_load,
-                project=project,
-                delete_flag=delete_flag
+                project=project
             )
         else:
             pass
@@ -347,7 +344,6 @@ def main(args=None):
             None and parsed_args.project is None:
         load_all_from_master_csv(
             conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
-            delete_flag=parsed_args.delete,
             quiet=parsed_args.quiet
         )
     elif parsed_args.subscenario is not None and parsed_args.subscenario_id \

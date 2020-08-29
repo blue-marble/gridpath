@@ -225,7 +225,7 @@ def get_subscenario_description(input_dir, csv_filename):
 def get_subscenario_data_and_insert_into_db(
     conn, quiet, subscenario, table, dir_subsc, inputs_dir, csv_file,
     use_project_method, skip_subscenario_info, skip_subscenario_data,
-    cols_to_exclude_str, custom_method, delete_flag
+    cols_to_exclude_str, custom_method
 ):
     """
     :param conn: database connection object
@@ -265,8 +265,7 @@ def get_subscenario_data_and_insert_into_db(
         project_flag=use_project_method,
         csv_headers=csv_headers,
         skip_subscenario_info=skip_subscenario_info,
-        skip_subscenario_data=skip_subscenario_data,
-        delete_flag=delete_flag
+        skip_subscenario_data=skip_subscenario_data
     )
 
     # If a custom method is requsted, run it here to finalize the subscenario
@@ -281,7 +280,7 @@ def get_subscenario_data_and_insert_into_db(
 
 def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, subscenario, table, inputs_dir, use_project_method,
-    cols_to_exclude_str, custom_method, delete_flag
+    cols_to_exclude_str, custom_method
 ):
     """
     :param conn: database connection object
@@ -319,8 +318,7 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
 
 
@@ -359,7 +357,7 @@ def check_ids_are_unique(inputs_dir, csv_files, use_project_method):
 def read_all_dir_subscenarios_from_dir_and_insert_into_db(
     conn, quiet, inputs_dir, subscenario, table, filename,
     skip_subscenario_info, skip_subscenario_data, cols_to_exclude_str,
-    custom_method, delete_flag
+    custom_method
 ):
     """
     :param conn: database connection object
@@ -397,8 +395,7 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
 
 
@@ -444,7 +441,7 @@ def get_directory_subscenarios(main_directory, quiet):
 
 def generic_insert_subscenario(
     conn, subscenario, table, subscenario_data, inputs_data, project_flag,
-    skip_subscenario_info, skip_subscenario_data, delete_flag, csv_headers=None
+    skip_subscenario_info, skip_subscenario_data, csv_headers=None
 ):
     """
     :param conn: the database connection object
@@ -467,15 +464,13 @@ def generic_insert_subscenario(
     # Load in the subscenario name and description
     if not skip_subscenario_info:
         generic_insert_subscenario_info(
-            conn, subscenario, table, subscenario_data, project_flag,
-            delete_flag
+            conn, subscenario, table, subscenario_data, project_flag
         )
 
     # Insert the subscenario data
     if not skip_subscenario_data:
         generic_insert_subscenario_data(
-            conn, subscenario, table, inputs_data, project_flag,
-            delete_flag, csv_headers
+            conn, subscenario, table, inputs_data, project_flag, csv_headers
         )
 
 
@@ -701,7 +696,7 @@ def generic_delete_subscenario(
 
 
 def generic_insert_subscenario_info(
-    conn, subscenario, table, subscenario_data, project_flag, delete_flag
+    conn, subscenario, table, subscenario_data, project_flag
 ):
     """
     :param conn: the database connection object
@@ -737,8 +732,7 @@ def generic_insert_subscenario_info(
 
 
 def generic_insert_subscenario_data(
-    conn, subscenario, table, inputs_data, project_flag,
-    delete_flag, csv_headers=None,
+    conn, subscenario, table, inputs_data, project_flag, csv_headers=None,
 ):
     """
     :param conn: the database connection object
@@ -799,8 +793,7 @@ def generic_insert_subscenario_data(
 
 def load_all_subscenario_ids_from_dir_to_subscenario_table(
     conn, subscenario, table, subscenario_type, project_flag,
-    cols_to_exclude_str, custom_method, inputs_dir, filename, delete_flag,
-    quiet
+    cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
 ):
     """
     :param conn: the database connection
@@ -827,8 +820,7 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             inputs_dir=inputs_dir,
             use_project_method=project_flag,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
     elif subscenario_type in [
         "dir_subsc_only", "dir_main", "dir_aux"
@@ -847,8 +839,7 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
     else:
         pass
@@ -857,7 +848,7 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
 def load_single_subscenario_id_from_dir_to_subscenario_table(
     conn, subscenario, table, subscenario_type, project_flag,
     cols_to_exclude_str, custom_method, inputs_dir, filename, quiet,
-    subscenario_id_to_load, project, delete_flag
+    subscenario_id_to_load, project
 ):
     """
     :param conn: the database connection
@@ -872,8 +863,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     :param quiet: boolean
     :param subscenario_id_to_load: integer; the subscenario ID to load
     :param project: str; the project for which to load data
-    :param delete_flag: boolean; whether to delete prior data for the
-        subscenario ID
     :return:
 
     Load data for a particular (project-)subscenario ID from a directory.
@@ -933,8 +922,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             skip_subscenario_info=False,
             skip_subscenario_data=False,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
 
     elif subscenario_type in [
@@ -967,8 +955,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
             skip_subscenario_info=skip_subscenario_info,
             skip_subscenario_data=skip_subscenario_data,
             cols_to_exclude_str=cols_to_exclude_str,
-            custom_method=custom_method,
-            delete_flag=delete_flag
+            custom_method=custom_method
         )
     else:
         pass
