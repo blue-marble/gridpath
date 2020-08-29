@@ -61,7 +61,7 @@ def parse_arguments(args):
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
     parser.add_argument("--subscenario",
-                        default="project_portfolio_scenario_id",
+                        default="variable_generator_profile_scenario_id",
                         help="The subscenario to load. The script will look "
                              "for the directory where data for the "
                              "subscenario are located based on the "
@@ -73,8 +73,18 @@ def parse_arguments(args):
                              "specified. The script will look for the "
                              "directory where data for the subscenario are "
                              "located based on the csv_master file and will "
-                             "load this scenario ID.")
-    parser.add_argument("--delete", default=True,
+                             "load the data for this subscenario ID.")
+    parser.add_argument("--project", default="Solar_z2",
+                        help="The project for which to load data. The "
+                             "'--subscenario' argument must also be "
+                             "specified and it must be a project-level "
+                             "subscenario. The '--subscenario_id' must "
+                             "also be be specified. The script will look for "
+                             " the directory where data for the subscenario "
+                             "are located based on the csv_master file and "
+                             "will load the data for this project and "
+                             "subscenario ID.")
+    parser.add_argument("--delete", default=False,
                         help="Delete prior data.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
@@ -166,7 +176,7 @@ def load_all_subscenario_ids_from_directory(
 
 def load_single_subscenario_id_from_directory(
     conn, csv_path, csv_data_master, subscenario, subscenario_id_to_load,
-    delete_flag, quiet
+    project, delete_flag, quiet
 ):
     """
     :param conn: the database connection
@@ -176,6 +186,7 @@ def load_single_subscenario_id_from_directory(
         temporal_scenario_id or project_portfolio_scenario_id)
     :param subscenario_id_to_load: int; the subscenario ID for which to load
         data
+    :param project: str; the project for which to load data
     :param delete_flag: boolean for whether to delete prior data
     :param quiet: boolean for whether to print output
     :return:
@@ -189,6 +200,12 @@ def load_single_subscenario_id_from_directory(
         subscenario_table, input_tables, project_flag = \
             determine_tables_to_delete_from(
                 csv_data_master=csv_data_master, subscenario=subscenario
+            )
+
+        if project is not None and not project_flag:
+            raise ValueError(
+                "The {} is not a project-level input but you have specified "
+                "project {}.".format(subscenario, project)
             )
 
         scenarios_list = confirm_and_update_scenarios(
@@ -208,6 +225,22 @@ def load_single_subscenario_id_from_directory(
             table, inputs_dir, project_flag, cols_to_exclude_str, \
                 custom_method, subscenario_type, filename = \
                 parse_row(row=row, csv_path=csv_path)
+            # Raise error if a project is specified but this is not a
+            # project-level subscenario
+            if project is not None and not project_flag:
+                raise ValueError(
+                    "The {} not a project-level input but you have "
+                    "specified project {}.".format(subscenario, project)
+                )
+            # Raise error if a project is not specified but this is a
+            # project-level subscenario
+            if project is None and project_flag:
+                raise ValueError(
+                    "Please specify which project you'd like to "
+                    "import data for in addition to the {}.".format(
+                        subscenario)
+                )
+            # Load the data for this (project-)subscenario_id
             load_single_subscenario_id_from_dir_to_subscenario_table(
                 conn=conn, subscenario=subscenario, table=table,
                 subscenario_type=subscenario_type, project_flag=project_flag,
@@ -215,6 +248,7 @@ def load_single_subscenario_id_from_directory(
                 custom_method=custom_method, inputs_dir=inputs_dir,
                 filename=filename, quiet=quiet,
                 subscenario_id_to_load=subscenario_id_to_load,
+                project=project,
                 delete_flag=delete_flag
             )
         else:
@@ -283,7 +317,8 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
 
     # Load all data in directory
-    if parsed_args.subscenario is None and parsed_args.subscenario_id is None:
+    if parsed_args.subscenario is None and parsed_args.subscenario_id is \
+            None and parsed_args.project is None:
         load_all_from_master_csv(
             conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
             delete_flag=parsed_args.delete,
@@ -298,11 +333,12 @@ def main(args=None):
             parsed_args.quiet
         )
     else:
-        # Load single subscenario ID
+        # Load single subscenario ID (or project-subscenario ID)
         load_single_subscenario_id_from_directory(
             conn=conn, csv_path=csv_path, csv_data_master=csv_data_master,
             subscenario=parsed_args.subscenario,
             subscenario_id_to_load=parsed_args.subscenario_id,
+            project=parsed_args.project,
             delete_flag=parsed_args.delete,
             quiet=parsed_args.quiet
         )

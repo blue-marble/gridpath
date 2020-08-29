@@ -791,7 +791,7 @@ def load_all_subscenario_ids_from_dir_to_subscenario_table(
 def load_single_subscenario_id_from_dir_to_subscenario_table(
     conn, subscenario, table, subscenario_type, project_flag,
     cols_to_exclude_str, custom_method, inputs_dir, filename, quiet,
-    subscenario_id_to_load, delete_flag
+    subscenario_id_to_load, project, delete_flag
 ):
     """
     :param conn: the database connection
@@ -805,25 +805,55 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
     :param filename: str
     :param quiet: boolean
     :param subscenario_id_to_load: integer; the subscenario ID to load
+    :param project: str; the project for which to load data
     :param delete_flag: boolean; whether to delete prior data for the
         subscenario ID
     :return:
 
-    Load data for a particular subscenario ID from a directory.
+    Load data for a particular (project-)subscenario ID from a directory.
     """
     if subscenario_type == "simple":
+        # Simple subscenarios can be project-level, so change variables
+        # accordingly
+        if project is not None and not project_flag:
+            raise ValueError(
+                "The {} is not a project-level input but you have specified "
+                "project {}.".format(subscenario, project)
+            )
+        if not project_flag:
+            file_startswith = str(subscenario_id_to_load)
+            description_delimiter = "_"
+        else:
+            # Raise error if a project is not specified but this is a
+            # project-level subscenario
+            if project is None and project_flag:
+                raise ValueError(
+                    "Please specify which project you'd like to "
+                    "import data for in addition to the {}.".format(
+                        subscenario)
+                )
+            file_startswith = \
+                "{}-{}".format(project, str(subscenario_id_to_load))
+            description_delimiter = "-"
+
+        print(os.listdir(inputs_dir))
         csv_files = [
             f for f in os.listdir(inputs_dir)
-            if f.startswith(str(subscenario_id_to_load))
-            and f[len(str(subscenario_id_to_load))] == "_"
+            if f.startswith(file_startswith)
+            and f[len(file_startswith)] == description_delimiter
             and f.endswith(".csv")
         ]
-        print(csv_files)
+
+        if not csv_files:
+            raise ValueError("A CSV file for ID {} does not exist".format(
+                file_startswith
+            ))
         if len(csv_files) == 1:
             csv_file = csv_files[0]
         else:
-            raise ValueError("Only one CSV file may have ID {}".format(
-                subscenario_id_to_load))
+            print(csv_files)
+            raise ValueError("Only one CSV file may have ID ".format(
+                file_startswith))
 
         get_subscenario_data_and_insert_into_db(
             conn=conn,
