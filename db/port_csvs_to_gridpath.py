@@ -67,7 +67,7 @@ def parse_arguments(args):
                              "subscenario are located based on the "
                              "csv_master file and will load all subscenario "
                              "IDs located there.")
-    parser.add_argument("--subscenario_id", default=2,
+    parser.add_argument("--subscenario_id", default=1,
                         help="The subscenario ID to load. The "
                              "'--subscenario' argument must also be "
                              "specified. The script will look for the "
@@ -84,7 +84,7 @@ def parse_arguments(args):
                              "are located based on the csv_master file and "
                              "will load the data for this project and "
                              "subscenario ID.")
-    parser.add_argument("--delete", default=False,
+    parser.add_argument("--delete", default=True,
                         help="Delete prior data.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
@@ -192,31 +192,43 @@ def load_single_subscenario_id_from_directory(
     :return:
 
     Read and load all data for a particular subscenario ID (e.g. for
-    temporal_scenario_id=5).
+    temporal_scenario_id=5) or project-subscenario ID.
     """
-    c = conn.cursor()
 
+    # Delete prior data if instructed to
     if delete_flag:
-        subscenario_table, input_tables, project_flag = \
-            determine_tables_to_delete_from(
+        subscenario_table, input_tables, project_flag, base_table, \
+            base_subscenario = determine_tables_to_delete_from(
                 csv_data_master=csv_data_master, subscenario=subscenario
             )
 
+        # TODO: refactor this error checking as it's used a few different
+        #  places
         if project is not None and not project_flag:
             raise ValueError(
                 "The {} is not a project-level input but you have specified "
                 "project {}.".format(subscenario, project)
             )
 
-        scenarios_list = confirm_and_update_scenarios(
-            conn=conn, project_flag=project_flag, subscenario=subscenario,
-            subscenario_id_to_load=subscenario_id_to_load
-        )
+        if project is None and project_flag:
+            raise ValueError(
+                "Please specify which project you'd like to import data for "
+                "in addition to the {}.".format(subscenario)
+            )
+
+        scenario_reupdate_tuples, base_subscenario_ids_str, \
+            base_subscenario_ids_tuples = confirm_and_update_scenarios(
+                conn=conn, project_flag=project_flag, subscenario=subscenario,
+                subscenario_id=subscenario_id_to_load, project=project,
+                base_table=base_table, base_subscenario=base_subscenario
+            )
 
         # Delete prior data
         generic_delete_subscenario(
-            conn, subscenario, subscenario_id_to_load, subscenario_table,
-            input_tables, project_flag
+            conn=conn, subscenario=subscenario,
+            subscenario_id=subscenario_id_to_load, project=project,
+            subscenario_table=subscenario_table, input_tables=input_tables,
+            project_flag=project_flag
         )
 
     for index, row in csv_data_master.iterrows():
@@ -256,20 +268,33 @@ def load_single_subscenario_id_from_directory(
 
     # Repopulate the scenarios using this subscenario_id
     if delete_flag:
-        c = conn.cursor()
-        reupdate_tuples = [
-            (subscenario_id_to_load, scenario_id)
-            for scenario_id in scenarios_list
-        ]
-        print(reupdate_tuples)
-        scenario_reupdate_sql = """
-            UPDATE scenarios SET {} = ? WHERE scenario_id = ?
-        """.format(subscenario)
+        if scenario_reupdate_tuples:
+            c = conn.cursor()
+            if project_flag:
+                base_subscenario_reupdate_sql = """
+                    UPDATE {} SET {} = ? WHERE {} in {} AND project = ?
+                    """.format(base_table, subscenario, base_subscenario,
+                               base_subscenario_ids_str)
+                base_subscenario_update_tuples = [
+                    (subscenario_id_to_load, ) + b_id + (project, )
+                    for b_id in base_subscenario_ids_tuples
+                ]
+                spin_on_database_lock(conn=conn, cursor=c,
+                                      sql=base_subscenario_reupdate_sql,
+                                      data=base_subscenario_update_tuples,
+                                      quiet=False)
 
-        spin_on_database_lock(conn=conn, cursor=c,
-                              sql=scenario_reupdate_sql,
-                              data=reupdate_tuples, quiet=False)
-        c.close()
+            # Update the scenarios table
+            scenario_reupdate_sql = """
+                UPDATE scenarios SET {} = ? WHERE scenario_id = ?
+            """.format(base_subscenario if project_flag else subscenario)
+
+            spin_on_database_lock(conn=conn, cursor=c,
+                                  sql=scenario_reupdate_sql,
+                                  data=scenario_reupdate_tuples,
+                                  quiet=False)
+
+            c.close()
 
 
 def main(args=None):
