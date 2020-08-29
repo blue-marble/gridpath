@@ -37,7 +37,7 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
 
 
 def spin_on_database_lock(conn, cursor, sql, data, many=True,
-                          max_attempts=61, interval=10):
+                          max_attempts=61, interval=10, quiet=True):
     """
     :param conn: the connection object
     :param cursor: the cursor object
@@ -50,6 +50,7 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
     :param interval: how frequently to poll the database for whether
         the lock has been released; the default is 10 seconds, but that can
         be overridden
+    :param quiet: boolean; set to False to see the SQL query
 
     If the database is locked, wait for the lock to be released for a
     certain amount of time and occasionally retry to execute the SQL
@@ -61,6 +62,9 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
     The database will be locked until you run:
         COMMIT;
     """
+    if not quiet:
+        print(sql)
+
     for i in range(0, max_attempts):
         if i == 0:
             # print("initial attempt")
@@ -91,3 +95,5 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
         else:
             # print("...done.")
             break
+
+    conn.commit()

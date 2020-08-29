@@ -8,6 +8,7 @@ Common functions for data-loading utilities and port script.
 import math
 import os
 import pandas as pd
+import sys
 import warnings
 
 from db.common_functions import spin_on_database_lock
@@ -255,13 +256,6 @@ def get_subscenario_data_and_insert_into_db(
             cols_to_exclude_str=cols_to_exclude_str
         )
 
-    if delete_flag:
-        generic_delete_subscenario(
-            conn=conn, subscenario=subscenario, table=table,
-            subscenario_data=subscenario_tuples,
-            project_flag=use_project_method
-        )
-
     generic_insert_subscenario(
         conn=conn,
         subscenario=subscenario,
@@ -486,41 +480,61 @@ def generic_insert_subscenario(
 
 
 def generic_delete_subscenario(
-    conn, subscenario, table, subscenario_data, project_flag
+    conn, subscenario, subscenario_id, subscenario_table, input_tables,
+        project_flag
 ):
     c = conn.cursor()
 
-    print(subscenario_data)
+    print(subscenario_table)
+    print(input_tables)
 
-    if not project_flag:
-        del_sql = """
-            DELETE FROM inputs_{}
-            WHERE {} = ?;
-            """.format(table, subscenario)
-    else:
-        del_sql = """
-            DELETE FROM inputs_{}
-            WHERE project = ?
-            AND {} = ?;
-            """.format(table, subscenario)
+    # We need to reverse the order in which inputs are deleted relative to
+    # how they are loaded to avoid foreign key errors
+    # TODO: is this only needed for the temporal tables?
+    input_tables.reverse()
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=del_sql,
-                          data=subscenario_data[0], many=False)
+    # if not project_flag:
+    delete_data = (subscenario_id,)
+    # Create the SQL delete statement for each inputs table
 
-    if not project_flag:
-        del_sql = """
-            DELETE FROM subscenarios_{}
-            WHERE {} = ?;
-            """.format(table, subscenario)
-    else:
-        del_sql = """
-            DELETE FROM subscenarios_{}
-            WHERE project = ?
-            AND {} = ?;
-            """.format(table, subscenario)
+    del_inputs_sql_list = [
+        """
+        DELETE FROM {}
+        WHERE {} = ?;
+        """.format(table, subscenario)
+        for table in input_tables
+    ]
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=del_sql,
-                          data=[subscenario_data], many=False)
+    # Create the SQL delete statement for the subscenario info table
+    del_subscenario_sql = """
+        DELETE FROM {}
+        WHERE {} = ?;
+        """.format(subscenario_table, subscenario)
+    # else:
+    #     delete_data = (project, subscenario_id,)
+    #     # Create the SQL delete statement for each inputs table
+    #     del_inputs_sql = [
+    #         """
+    #         DELETE FROM {}
+    #         WHERE project = ?
+    #         AND {} = ?;
+    #         """.format(table, subscenario)
+    #         for table in input_tables
+    #     ]
+    #     del_subscenario_sql = """
+    #                 DELETE FROM {}
+    #                 WHERE project = ?
+    #                 AND {} = ?;
+    #                 """.format(subscenario_table, subscenario)
+
+    # Delete the subscenario inputs and info
+    for del_inputs_sql in del_inputs_sql_list:
+        spin_on_database_lock(conn=conn, cursor=c, sql=del_inputs_sql,
+                              data=delete_data, many=False)
+    spin_on_database_lock(conn=conn, cursor=c, sql=del_subscenario_sql,
+                          data=delete_data, many=False)
+
+    c.close()
 
 
 def generic_insert_subscenario_info(
@@ -700,7 +714,6 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
 
     Load data for a particular subscenario ID from a directory.
     """
-    print("Here")
     if subscenario_type == "simple":
         csv_files = [
             f for f in os.listdir(inputs_dir)
@@ -784,3 +797,43 @@ def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):
         skip_subscenario_data = False
 
     return skip_subscenario_info, skip_subscenario_data
+
+
+def confirm(prompt=None, resp=False):
+    """prompts for yes or no response from the user. Returns True for yes and
+    False for no.
+
+    'resp' should be set to the default value assumed by the caller when
+    user simply types ENTER.
+
+    >>> confirm(prompt='Create Directory?', resp=True)
+    Create Directory? [y]|n:
+    True
+    >>> confirm(prompt='Create Directory?', resp=False)
+    Create Directory? [n]|y:
+    False
+    >>> confirm(prompt='Create Directory?', resp=False)
+    Create Directory? [n]|y: y
+    True
+
+    """
+
+    if prompt is None:
+        prompt = 'Confirm'
+
+    if resp:
+        prompt = '%s [%s]|%s: ' % (prompt, 'y', 'n')
+    else:
+        prompt = '%s [%s]|%s: ' % (prompt, 'n', 'y')
+
+    while True:
+        ans = input(prompt)
+        if not ans:
+            return resp
+        if ans not in ['y', 'Y', 'n', 'N']:
+            print('please enter y or n.')
+            continue
+        if ans == 'y' or ans == 'Y':
+            return True
+        if ans == 'n' or ans == 'N':
+            return False
