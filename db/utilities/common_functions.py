@@ -616,8 +616,8 @@ def confirm_and_temp_update_affected_tables(
     # For non-project-level data, we only need to check if any scenarios
     # have this subscenario ID
     else:
-        # Project-level base table and subscenario set to None
-        base_subscenario_ids_str, base_subscenario_ids_tuples = None, None
+        # Project-level params to pass downstream set to None
+        base_subscenario_ids_str, base_subscenario_ids_data = None, None
 
         # Figure out if there are scenarios using this subscenario_id;
         # if there are, we need to NULLify that subscenario for these
@@ -639,7 +639,7 @@ def confirm_and_temp_update_affected_tables(
     if scenario_reupdate_tuples:
         proceed = confirm(
             prompt=
-            """The following scenarios use {} {}. Deleting prior inputs 
+            """You have scenarios that use {} {}. Deleting prior inputs 
             and reimporting may result in a mismatch between the inputs 
             specified for these scenarios and their results. Are you 
             sure you want to proceed?""".format(
@@ -649,9 +649,8 @@ def confirm_and_temp_update_affected_tables(
     else:
         proceed = True
 
-    # If the user decides to proceed, we'll make the necessary temporary
-    # updates to the affected tables before input deletion to avoid FOREIGN
-    # KEY errors
+    # If we decide to proceed, we'll make the necessary temporary updates to
+    # the affected tables before input deletion to avoid FOREIGN KEY errors
     if proceed:
         # To avoid foreign key errors, first NULL-ify the relevant subscenario
         # for all scenarios that use the input data we'll be deleting
@@ -696,7 +695,7 @@ def confirm_and_temp_update_affected_tables(
         base_subscenario_ids_data
 
 
-def repopulate_scenarios(
+def repopulate_tables(
     conn, project_flag, subscenario, subscenario_id, project,
     base_table, base_subscenario, scenario_reupdate_tuples,
     base_subscenario_ids_str, base_subscenario_ids_data
@@ -711,25 +710,31 @@ def repopulate_scenarios(
     :param base_subscenario: int
     :param scenario_reupdate_tuples: list of tuples
     :param base_subscenario_ids_str: str
-    :param base_subscenario_ids_data: list of tuples
-    :return:
-    """
-    if scenario_reupdate_tuples:
-        c = conn.cursor()
-        if project_flag:
-            base_subscenario_reupdate_sql = """
-                UPDATE {} SET {} = ? WHERE {} in ({}) AND project = ?
-                """.format(base_table, subscenario, base_subscenario,
-                           base_subscenario_ids_str)
-            base_subscenario_update_tuples = [
-                (int(subscenario_id),)
-                + tuple(base_subscenario_ids_data) + (project,)
-            ]
-            spin_on_database_lock(conn=conn, cursor=c,
-                                  sql=base_subscenario_reupdate_sql,
-                                  data=base_subscenario_update_tuples)
+    :param base_subscenario_ids_data: tuple
 
-        # Update the scenarios table
+    If project-level subscenario, update the base subscenario table with the
+    values passed.
+
+    Update the scenarios table with the values passed.
+    """
+    c = conn.cursor()
+
+    # Update the base table if project-level if there's any update data
+    if project_flag and base_subscenario_ids_data:
+        base_subscenario_reupdate_sql = """
+            UPDATE {} SET {} = ? WHERE {} in ({}) AND project = ?
+            """.format(base_table, subscenario, base_subscenario,
+                       base_subscenario_ids_str)
+        base_subscenario_update_tuple = \
+            (int(subscenario_id),) + tuple(base_subscenario_ids_data) \
+            + (project,)
+        spin_on_database_lock(conn=conn, cursor=c,
+                              sql=base_subscenario_reupdate_sql,
+                              data=base_subscenario_update_tuple,
+                              many=False)
+
+    # Update the scenarios table if there's any update data
+    if scenario_reupdate_tuples:
         scenario_reupdate_sql = """
             UPDATE scenarios SET {} = ? WHERE scenario_id = ?
         """.format(base_subscenario if project_flag else subscenario)
@@ -754,30 +759,30 @@ def generic_delete_subscenario(
     :param input_tables: list of strings
     :param project_flag: boolean
 
-    Delete prior data for a particular subscenario and subscenario ID.
+    Delete prior data for a particular subscenario and subscenario ID. Some
+    subscenarios have more than one input table associated with them,
+    so we iterate over those. Here, we assume the input tables are in the
+    correct order to avoid FOREIGN KEY errors.
     """
     c = conn.cursor()
 
-    delete_data = (subscenario_id,)
-    # Create the SQL delete statement for each inputs table
-
-    del_inputs_sql_list = [
-        """
-        DELETE FROM {}
-        WHERE {} = ?;
-        """.format(table, subscenario)
-        for table in input_tables
-    ]
-
-    # Create the SQL delete statement for the subscenario info table
+    # Create the SQL delete statements for the subscenario info and input
+    # tables
     if not project_flag:
+        delete_data = (subscenario_id,)
+        del_inputs_sql_list = [
+            """
+            DELETE FROM {}
+            WHERE {} = ?;
+            """.format(table, subscenario)
+            for table in input_tables
+        ]
         del_subscenario_sql = """
             DELETE FROM {}
             WHERE {} = ?;
             """.format(subscenario_table, subscenario)
     else:
         delete_data = (project, subscenario_id,)
-        # Create the SQL delete statement for each inputs table
         del_inputs_sql_list = [
             """
             DELETE FROM {}
@@ -792,7 +797,7 @@ def generic_delete_subscenario(
                     AND {} = ?;
                     """.format(subscenario_table, subscenario)
 
-    # Delete the subscenario inputs and info
+    # Delete the inputs and subscenario info
     for del_inputs_sql in del_inputs_sql_list:
         spin_on_database_lock(conn=conn, cursor=c, sql=del_inputs_sql,
                               data=delete_data, many=False)
@@ -1078,31 +1083,35 @@ def determine_whether_to_skip_subscenario_info_and_or_data(subscenario_type):
 
 
 def confirm(prompt=None, resp=False):
-    """prompts for yes or no response from the user. Returns True for yes and
-    False for no.
+    """
+    :param prompt: str
+    :param resp: boolean
+    :return: boolean
+
+    Prompts for 'yes' or 'no' response from the user. Returns True for 'yes'
+    and False for 'no'.
 
     'resp' should be set to the default value assumed by the caller when
     user simply types ENTER.
-
     """
     if prompt is None:
         prompt = 'Confirm'
 
     if resp:
-        prompt = '%s [%s]|%s: ' % (prompt, 'y', 'n')
+        prompt = "{} [{}]|{}: ".format(prompt, 'y', 'n')
     else:
-        prompt = '%s [%s]|%s: ' % (prompt, 'n', 'y')
+        prompt = "{} [{}]|{}: ".format(prompt, 'n', 'y')
 
     while True:
         ans = input(prompt)
         if not ans:
             return resp
-        if ans not in ['y', 'Y', 'n', 'N']:
-            print('please enter y or n.')
+        if ans not in ["y", "Y", "n", "N"]:
+            print("Please enter y or n.")
             continue
-        if ans == 'y' or ans == 'Y':
+        if ans == "y" or ans == "Y":
             return True
-        if ans == 'n' or ans == 'N':
+        if ans == "n" or ans == "N":
             return False
 
 

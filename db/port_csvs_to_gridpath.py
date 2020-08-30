@@ -40,7 +40,7 @@ from db.utilities.common_functions import \
     load_all_subscenario_ids_from_dir_to_subscenario_table, \
     load_single_subscenario_id_from_dir_to_subscenario_table, \
     generic_delete_subscenario, determine_tables_to_delete_from, \
-    confirm_and_temp_update_affected_tables, repopulate_scenarios, \
+    confirm_and_temp_update_affected_tables, repopulate_tables, \
     verify_project_flag_project_alignment
 
 
@@ -77,14 +77,13 @@ def parse_arguments(args):
                              "load the data for this subscenario ID.")
     parser.add_argument("--project", default=None,
                         help="The project for which to load data. The "
-                             "'--subscenario' argument must also be "
-                             "specified and it must be a project-level "
-                             "subscenario. The '--subscenario_id' must "
-                             "also be be specified. The script will look for "
-                             " the directory where data for the subscenario "
-                             "are located based on the csv_master file and "
-                             "will load the data for this project and "
-                             "subscenario ID.")
+                             "'--subscenario' and '--subscenario_id' "
+                             "arguments must also be specified, and this "
+                             "must be a project-level subscenario. The script "
+                             "will look for the directory where data for the "
+                             "subscenario are located based on the "
+                             "csv_master file and will load the data for "
+                             "this project and subscenario ID.")
     parser.add_argument("--delete", default=False, action="store_true",
                         help="Delete prior data. Defaults to False.")
     parser.add_argument("--quiet", default=False, action="store_true",
@@ -265,9 +264,10 @@ def load_single_subscenario_id_from_directory(
         else:
             pass
 
-    # If data were deleted, repopulate the affected scenarios
+    # If data were deleted, repopulate the affected scenarios with the data
+    # we NULLified above
     if delete_flag:
-        repopulate_scenarios(
+        repopulate_tables(
             conn=conn, project_flag=project_flag, subscenario=subscenario,
             subscenario_id=subscenario_id_to_load, project=project,
             base_table=base_table, base_subscenario=base_subscenario,
