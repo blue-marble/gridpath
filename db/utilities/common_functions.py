@@ -475,24 +475,42 @@ def generic_insert_subscenario(
 
 
 def determine_tables_to_delete_from(csv_data_master, subscenario):
-    # Find out which tables go along with this subscenario
+    """
+    :param csv_data_master: Pandas DataFrame
+    :param subscenario: str;
+    :return: subscenario_table, input_tables, project_flag, base_table, \
+        base_subscenario
+
+    Determine the relevant tables from which to delete prior data.
+    """
+    # Get the sub-dataframe for this subscenario from the master CSV
     subscenario_df = csv_data_master.loc[
         csv_data_master["subscenario"] == subscenario
         ]
-    # Determine relevant tables
+
+    # Determine the relevant tables for this subscenario
     subscenario_table = None
     input_tables = list()
     project_flag = False
     base_table = None
     base_subscenario = None
+
     for index, row in subscenario_df.iterrows():
-        if row["subscenario_type"] in ["simple", "dir_subsc_only",
-                                       "dir_main"]:
+        # The subscenario table name will be based on the
+        # "simple", "dir_subsc_only", or "dir_main" row
+        if row["subscenario_type"] in [
+            "simple", "dir_subsc_only", "dir_main"
+        ]:
             subscenario_table = "subscenarios_{}".format(row["table"])
-        if row["subscenario_type"] != "dir_subsc_only":
+        # Add to the list of input tables if this is not a "dir_subsc_only" row
+        # This shouldn't matter, as we deal with the temporal_scenario_id
+        # separately below, and currently that's the only subscenario that
+        # has the "dir_subsc_only" subscenario_type
+        if row["subscenario_type"] != "dir_subsc_only" \
+                and subscenario != "temporal_scenario_id":
             input_tables.append("inputs_{}".format(row["table"]))
-        if row["subscenario_type"] == "simple" \
-                and int(row["project_input"]):
+        # Add base table/subscenario for project-level inputs
+        if int(row["project_input"]):
             project_flag = True
             base_table = row["base_table"]
             base_subscenario = row["base_subscenario"]
@@ -520,26 +538,38 @@ def determine_tables_to_delete_from(csv_data_master, subscenario):
         base_subscenario
 
 
-def confirm_and_update_scenarios(
+def confirm_and_temp_update_affected_tables(
     conn, project_flag, subscenario, subscenario_id, project,
     base_table, base_subscenario
 ):
-    # TODO: refactor this error checking as it's used a few different
-    #  places
-    if project is not None and not project_flag:
-        raise ValueError(
-            "The {} is not a project-level input but you have specified "
-            "project {}.".format(subscenario, project)
-        )
+    """
+    :param conn:
+    :param project_flag: boolean
+    :param subscenario: str
+    :param subscenario_id: int
+    :param project: str
+    :param base_table: str
+    :param base_subscenario: str
+    :return: scenario_reupdate_tuples, base_subscenario_ids_str, \
+        base_subscenario_ids_data
 
-    if project is None and project_flag:
-        raise ValueError(
-            "Please specify which project you'd like to import data for "
-            "in addition to the {}.".format(subscenario)
-        )
+    If this subscenario ID or the base subscenario IDs using the
+    project-level subscenario_id are used in the scenarios table, confirm with
+    the user that they want to update the inputs. If so, NULLify this ID in
+    the scenarios table to avoid FOREIGN KEY errors when deleting the data.
+
+    For project-level data, also NULLify
+    """
+    # Verify project-project_flag alignmnet
+    verify_project_flag_project_alignment(
+        project=project, project_flag=project_flag,
+        subscenario=subscenario
+    )
 
     c = conn.cursor()
 
+    # For project-level data, we first check whether this
+    # project-subscenario_id is used in the base table
     if project_flag:
         # Check if this project-subscenario ID exists in the base table
         base_subscenario_ids_sql = """
@@ -548,33 +578,49 @@ def confirm_and_update_scenarios(
         base_subscenario_ids_tuples = c.execute(
             base_subscenario_ids_sql, (project, subscenario_id)
         ).fetchall()
-        base_subscenario_ids_str = str()
-        base_subscenario_ids_data = tuple()
-        for s in base_subscenario_ids_tuples:
-            base_subscenario_ids_str += "?,".format(s[0])
-            base_subscenario_ids_data += (s[0], )
-        # Remove the final comma
-        base_subscenario_ids_str = base_subscenario_ids_str[:-1]
 
-        # Figure out if there are scenarios using this subscenario_id,
-        # as if they are, we need to NULLify that subscenario for these
-        # scenarios in order to avoid a FOREIGN KEY error when deleting the
-        # subscenario_id
-        scenarios_sql = """
-            SELECT scenario_id, {}
-            FROM scenarios
-            WHERE {} in ({})
-        """.format(base_subscenario, base_subscenario,
-                   base_subscenario_ids_str)
+        # If the base table has base subscenario IDs that use this
+        # project-subscenario ID, check if the base subscenario is used in
+        # the scenarios table
+        if base_subscenario_ids_tuples:
+            # To create the query, we need to create the '?' str and a tuple
+            # with the base subscenario IDs
+            base_subscenario_ids_str = str()
+            base_subscenario_ids_data = tuple()
+            for s in base_subscenario_ids_tuples:
+                base_subscenario_ids_str += "?,".format(s[0])
+                base_subscenario_ids_data += (s[0], )
+            # Remove the final comma of the created string
+            base_subscenario_ids_str = base_subscenario_ids_str[:-1]
 
-        scenario_reupdate_tuples = c.execute(
-            scenarios_sql, base_subscenario_ids_data
-        ).fetchall()
+            # Determine if there are scenarios using any of the base
+            # subscenario IDs that use this project-subscenario ID;
+            # if there are, we need to NULLify that base subscenario for these
+            # scenarios in order to avoid a FOREIGN KEY error when deleting the
+            # base subscenario ID in the base subscenario table and the
+            # subscenario ID in the subscenario table
+            scenarios_sql = """
+                SELECT scenario_id, {}
+                FROM scenarios
+                WHERE {} in ({})
+            """.format(base_subscenario, base_subscenario,
+                       base_subscenario_ids_str)
+
+            scenario_reupdate_tuples = c.execute(
+                scenarios_sql, base_subscenario_ids_data
+            ).fetchall()
+        # If this project-subscenario ID does not exist in the base table,
+        # no scenarios are affected
+        else:
+            scenario_reupdate_tuples = []
+    # For non-project-level data, we only need to check if any scenarios
+    # have this subscenario ID
     else:
+        # Project-level base table and subscenario set to None
         base_subscenario_ids_str, base_subscenario_ids_tuples = None, None
 
-        # Figure out if there are scenarios using this subscenario_id,
-        # as if they are, we need to NULLify that subscenario for these
+        # Figure out if there are scenarios using this subscenario_id;
+        # if there are, we need to NULLify that subscenario for these
         # scenarios in order to avoid a FOREIGN KEY error when deleting the
         # subscenario_id
         scenarios_sql = """
@@ -587,11 +633,9 @@ def confirm_and_update_scenarios(
             scenarios_sql, (subscenario_id,)
         ).fetchall()
 
-    scenarios_tuples = [
-        (s[0],) for s in scenario_reupdate_tuples
-    ]
-    # Check with the user that they want to do this and confirm they
-    # aren't worried about data mismatch
+    # If we found affected scenarios, check with the user that they aren't
+    # worried about data mismatch and want to delete prior data
+    # We'll exit if they say 'no'
     if scenario_reupdate_tuples:
         proceed = confirm(
             prompt=
@@ -601,19 +645,29 @@ def confirm_and_update_scenarios(
             sure you want to proceed?""".format(
                 subscenario, subscenario_id)
         )
+    # If there aren't any affected scenarios, we'll just proceed
     else:
         proceed = True
 
+    # If the user decides to proceed, we'll make the necessary temporary
+    # updates to the affected tables before input deletion to avoid FOREIGN
+    # KEY errors
     if proceed:
-        # To avoid foreign key errors, first NULL-ify this
-        # subscenario_id for all scenarios that use it
+        # To avoid foreign key errors, first NULL-ify the relevant subscenario
+        # for all scenarios that use the input data we'll be deleting
+        # downstream
+        # Make a tuple for each affected scenario for use in the update queries
+        scenarios_tuples = [
+            (s[0],) for s in scenario_reupdate_tuples
+        ]
         scenario_update_sql = """
             UPDATE scenarios SET {} = NULL WHERE scenario_id = ?
         """.format(base_subscenario if project_flag else subscenario)
         spin_on_database_lock(conn=conn, cursor=c, sql=scenario_update_sql,
                               data=scenarios_tuples)
 
-        # Update the base table if this is a project-level input
+        # Next, update the base table with NULLs where this
+        # project-subscenario ID is used if this is a project-level input
         if project_flag:
             base_subscenario_ids_project_tuples = [
                 base + (project, ) for base in base_subscenario_ids_tuples
@@ -624,9 +678,16 @@ def confirm_and_update_scenarios(
             spin_on_database_lock(conn=conn, cursor=c,
                                   sql=base_table_update_sql,
                                   data=base_subscenario_ids_project_tuples)
+    # Otherwise, we'll exit
     else:
         sys.exit()
 
+    # We'll need to reverse the changes made above, so keep track of the
+    # affected scenarios and the respective subscenario values we NULLified
+    # and return for use downstream
+    # We'll also pass the needed info to reupdate the scenarios table as
+    # well as, for project-level data, the base table (these are None for
+    # non-project-level inputs)
     scenario_reupdate_tuples = [
         tuple(reversed(t)) for t in scenario_reupdate_tuples
     ]
@@ -635,10 +696,66 @@ def confirm_and_update_scenarios(
         base_subscenario_ids_data
 
 
+def repopulate_scenarios(
+    conn, project_flag, subscenario, subscenario_id, project,
+    base_table, base_subscenario, scenario_reupdate_tuples,
+    base_subscenario_ids_str, base_subscenario_ids_data
+):
+    """
+    :param conn:
+    :param project_flag: boolean
+    :param subscenario: str
+    :param subscenario_id: int
+    :param project: str
+    :param base_table: str
+    :param base_subscenario: int
+    :param scenario_reupdate_tuples: list of tuples
+    :param base_subscenario_ids_str: str
+    :param base_subscenario_ids_data: list of tuples
+    :return:
+    """
+    if scenario_reupdate_tuples:
+        c = conn.cursor()
+        if project_flag:
+            base_subscenario_reupdate_sql = """
+                UPDATE {} SET {} = ? WHERE {} in ({}) AND project = ?
+                """.format(base_table, subscenario, base_subscenario,
+                           base_subscenario_ids_str)
+            base_subscenario_update_tuples = [
+                (int(subscenario_id),)
+                + tuple(base_subscenario_ids_data) + (project,)
+            ]
+            spin_on_database_lock(conn=conn, cursor=c,
+                                  sql=base_subscenario_reupdate_sql,
+                                  data=base_subscenario_update_tuples)
+
+        # Update the scenarios table
+        scenario_reupdate_sql = """
+            UPDATE scenarios SET {} = ? WHERE scenario_id = ?
+        """.format(base_subscenario if project_flag else subscenario)
+
+        spin_on_database_lock(conn=conn, cursor=c,
+                              sql=scenario_reupdate_sql,
+                              data=scenario_reupdate_tuples)
+
+        c.close()
+
+
 def generic_delete_subscenario(
     conn, subscenario, subscenario_id, project, subscenario_table,
     input_tables, project_flag
 ):
+    """
+    :param conn:
+    :param subscenario: str
+    :param subscenario_id: int
+    :param project: str
+    :param subscenario_table: str
+    :param input_tables: list of strings
+    :param project_flag: boolean
+
+    Delete prior data for a particular subscenario and subscenario ID.
+    """
     c = conn.cursor()
 
     delete_data = (subscenario_id,)
@@ -857,26 +974,18 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
 
     Load data for a particular (project-)subscenario ID from a directory.
     """
+
+    # Verify project-project_flag alignment
+    verify_project_flag_project_alignment(
+        project=project, project_flag=project_flag,
+        subscenario=subscenario
+    )
+
     if subscenario_type == "simple":
-        # Simple subscenarios can be project-level, so change variables
-        # accordingly
-        if project is not None and not project_flag:
-            raise ValueError(
-                "The {} is not a project-level input but you have specified "
-                "project {}.".format(subscenario, project)
-            )
         if not project_flag:
             file_startswith = str(subscenario_id_to_load)
             description_delimiter = "_"
         else:
-            # Raise error if a project is not specified but this is a
-            # project-level subscenario
-            if project is None and project_flag:
-                raise ValueError(
-                    "Please specify which project you'd like to "
-                    "import data for in addition to the {}.".format(
-                        subscenario)
-                )
             file_startswith = \
                 "{}-{}".format(project, str(subscenario_id_to_load))
             description_delimiter = "-"
@@ -995,3 +1104,30 @@ def confirm(prompt=None, resp=False):
             return True
         if ans == 'n' or ans == 'N':
             return False
+
+
+def verify_project_flag_project_alignment(
+        project, project_flag, subscenario
+):
+    """
+    :param project: str
+    :param project_flag: boolean
+    :param subscenario: str
+
+    Check that the if a project is specified, this is a project-level
+    subscenario.
+
+    Check that if a project is not specified, this is not a project-level
+    subscenario.
+    """
+    if project is not None and not project_flag:
+        raise ValueError(
+            "The {} is not a project-level input but you have specified "
+            "project {}.".format(subscenario, project)
+        )
+
+    if project is None and project_flag:
+        raise ValueError(
+            "Please specify which project you'd like to import data for "
+            "in addition to the {}.".format(subscenario)
+        )
