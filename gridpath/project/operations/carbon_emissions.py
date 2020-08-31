@@ -41,9 +41,6 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    # TODO: there was a bug before and this was not taking into account
-    #  startup fuel, so this may change objective functions, need to add into
-    #  PR description
     def carbon_emissions_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type

@@ -4,7 +4,9 @@
 """
 Describe operational constraints on generation, storage, and DR projects.
 
-This module contains the defaults for the operational type module methods.
+This module contains the defaults for the operational type module methods (
+the standard methods used by the operational type modules to interact with
+the rest of the model).
 If an operational type module method is not specified in an operational type
 module, these defaults are used.
 """
@@ -357,7 +359,7 @@ def fuel_burn_rule(mod, prj, tmp):
 def fuel_burn_by_ll_rule(mod, prj, tmp, s):
     """
     If no fuel_burn_by_ll_rule is specified in an operational type module, the
-    default fuel burn is 0.
+    default fuel burn needs to be greater than or equal to 0.
     """
     return 0
 

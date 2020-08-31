@@ -100,12 +100,12 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which a fuel is specified.                      |
     +-------------------------------------------------------------------------+
-    | | :code:`HR_CURVE_PRJS_PRDS_SGMS`                                     |
+    | | :code:`HR_CURVE_PRJS_PRDS_SGMS`                                       |
     |                                                                         |
     | Three-dimensional set describing projects, their heat rate curve        |
     | segment IDs, and the periods in which the project could be operational. |
     +-------------------------------------------------------------------------+
-    | | :code:`HR_CURVE_PRJS`                                               |
+    | | :code:`HR_CURVE_PRJS`                                                 |
     | | *Within*: :code:`FUEL_PRJS`                                           |
     |                                                                         |
     | The set of projects for which a heat rate curve is specified.           |
@@ -172,7 +172,7 @@ def add_model_components(m, d):
     | carbon intensity) and fuel cost (via the fuel's price).                 |
     +-------------------------------------------------------------------------+
     | | :code:`shutdown_cost_per_mw`                                          |
-    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                     |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                       |
     | | *Within*: :code:`PositiveReals`                                       |
     |                                                                         |
     | This param describes the slope of the piecewise linear fuel burn for    |
@@ -180,7 +180,7 @@ def add_model_components(m, d):
     | are MMBtu of fuel burn per MWh of electricity generation.               |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_burn_intercept_mmbtu_per_mw_hr`                           |
-    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                     |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                       |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | This param describes the intercept of the piecewise linear fuel burn    |
