@@ -69,20 +69,6 @@ def add_module_specific_components(m, d):
     |
 
     +-------------------------------------------------------------------------+
-    | Optional Input Params                                                   |
-    +=========================================================================+
-    | | :code:`gen_var_variable_om_cost_per_mwh`                              |
-    | | *Defined over*: :code:`GEN_VAR`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
     | | :code:`GenVar_Provide_Power_MW`                                       |
@@ -163,14 +149,6 @@ def add_module_specific_components(m, d):
     m.gen_var_cap_factor = Param(
         m.GEN_VAR_OPR_TMPS,
         within=NonNegativeReals
-    )
-
-    # Optional Params
-    ###########################################################################
-
-    m.gen_var_variable_om_cost_per_mwh = Param(
-        m.GEN_VAR, within=NonNegativeReals,
-        default=0
     )
 
     # Variables
@@ -348,21 +326,15 @@ def power_provision_rule(mod, g, tmp):
     return mod.GenVar_Provide_Power_MW[g, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
+def variable_om_cost_rule(mod, g, tmp):
     """
-    Since no commitment, all capacity assumed online
+    Variable cost is incurred on all power produced (including what's
+    curtailed).
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
-def rec_provision_rule(mod, g, tmp):
-    """
-    REC provision from variable generators is a variable lesser than or
-    equal to capacity times the capacity factor in each timepoint minus any
-    upward reserves/curtailment. See max_power_rule above.
-    """
-    return mod.GenVar_Provide_Power_MW[g, tmp]
+        * mod.Availability_Derate[g, tmp] \
+        * mod.gen_var_cap_factor[g, tmp] \
+        * mod.variable_om_cost_per_mwh[g]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
@@ -389,61 +361,6 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     relative to their schedule (less curtailment)
     """
     return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
-
-
-def fuel_burn_rule(mod, g, tmp):
-    """
-    Variable generator projects should not have fuel use.
-    """
-
-    return 0
-
-
-def fuel_cost_rule(mod, g, tmp):
-    """
-    """
-
-    return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    return None
-
-
-def carbon_emissions_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def variable_om_cost_rule(mod, g, tmp):
-    """
-    """
-    return mod.GenVar_Provide_Power_MW[g, tmp] \
-        * mod.gen_var_variable_om_cost_per_mwh[g]
-
-
-def startup_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
-
-
-def shutdown_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of shutting down.
-    """
-    return 0
-
-
-def startup_fuel_burn_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
 
 
 def power_delta_rule(mod, g, tmp):

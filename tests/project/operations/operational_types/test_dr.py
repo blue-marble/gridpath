@@ -118,15 +118,6 @@ class TestDR(unittest.TestCase):
         self.assertListEqual(expected_operational_horizons_by_project,
                              actual_operational_horizons_by_project)
 
-        # Params: dr_variable_om_cost_per_mwh
-        expected_var_om_cost = {"Shift_DR": 0}
-        actual_var_om_cost = {
-            prj: instance.dr_variable_om_cost_per_mwh[prj]
-            for prj in instance.DR
-        }
-
-        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
-
 
 if __name__ == "__main__":
     unittest.main()

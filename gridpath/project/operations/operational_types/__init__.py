@@ -2,7 +2,13 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Describe operational constraints on the generation infrastructure.
+Describe operational constraints on generation, storage, and DR projects.
+
+This module contains the defaults for the operational type module methods (
+the standard methods used by the operational type modules to interact with
+the rest of the model).
+If an operational type module method is not specified in an operational type
+module, these defaults are used.
 """
 
 import csv
@@ -32,8 +38,6 @@ def add_model_components(m, d):
             imp_op_m.add_module_specific_components(m, d)
 
 
-# TODO: we should check that all operational types specified by user are
-#  actually implemented
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -314,3 +318,120 @@ def process_results(db, c, subscenarios, quiet):
                     db, c, subscenarios, quiet)
         else:
             pass
+
+
+# Operational Type Module Method Defaults
+###############################################################################
+
+def power_provision_rule(mod, prj, tmp):
+    """
+    If no power_provision_rule is specified in an operational type module, the
+    default power provision is 0.
+    """
+    return 0
+
+
+def online_capacity_rule(mod, g, tmp):
+    """
+    The default online capacity is the available capacity.
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp]
+
+
+def variable_om_cost_rule(mod, prj, tmp):
+    """
+    By default the variable cost is the power provision (for load balancing
+    purposes) times the variable cost. Projects of operational type that
+    produce power not used for load balancing (e.g. curtailed power or
+    auxiliary power) should not use this default rule.
+    """
+    return mod.Power_Provision_MW[prj, tmp] * mod.variable_om_cost_per_mwh[prj]
+
+
+def variable_om_cost_by_ll_rule(mod, prj, tmp, s):
+    """
+    By default the VOM curve cost needs to be greater than or equal to 0.
+    """
+    return 0
+
+
+def fuel_burn_rule(mod, prj, tmp):
+    """
+    If no fuel_burn_rule is specified in an operational type module, the
+    default fuel burn is 0.
+    """
+    return 0
+
+
+def fuel_burn_by_ll_rule(mod, prj, tmp, s):
+    """
+    If no fuel_burn_by_ll_rule is specified in an operational type module, the
+    default fuel burn needs to be greater than or equal to 0.
+    """
+    return 0
+
+
+def startup_cost_simple_rule(mod, prj, tmp):
+    """
+    If no startup_cost_simple_rule is specified in an operational type module,
+    the default startup cost is 0.
+    """
+    return 0
+
+
+def startup_cost_by_st_rule(mod, prj, tmp):
+    """
+    If no startup_cost_rule is specified in an operational type module, the
+    default startup fuel cost is 0.
+    """
+    return 0
+
+
+def shutdown_cost_rule(mod, prj, tmp):
+    """
+    If no shutdown_cost_rule is specified in an operational type module, the
+    default shutdown fuel cost is 0.
+    """
+    return 0
+
+
+def startup_fuel_burn_rule(mod, prj, tmp):
+    """
+    If no startup_fuel_burn_rule is specified in an operational type module, the
+    default startup fuel burn is 0.
+    """
+    return 0
+
+
+def rec_provision_rule(mod, prj, tmp):
+    """
+    If no rec_provision_rule is specified in an operational type module,
+    the default REC provisions is the power provision for load-balancing
+    purposes.
+    """
+    return mod.Power_Provision_MW[prj, tmp]
+
+
+def scheduled_curtailment_rule(mod, prj, tmp):
+    """
+    If no scheduled_curtailment_rule is specified in an operational type
+    module, the default scheduled curtailment is 0.
+    """
+    return 0
+
+
+def subhourly_curtailment_rule(mod, prj, tmp):
+    """
+    If no subhourly_curtailment_rule is specified in an operational type
+    module, the default subhourly curtailment is 0.
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, prj, tmp):
+    """
+    If no subhourly_energy_delivered_rule is specified in an operational type
+    module, the default subhourly energy delivered is 0.
+    """
+    return 0

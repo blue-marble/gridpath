@@ -93,9 +93,7 @@ def load_operational_type_modules(required_operational_modules):
     return load_subtype_modules(
         required_subtype_modules=required_operational_modules,
         package="gridpath.project.operations.operational_types",
-        required_attributes=["power_provision_rule", "variable_om_cost_rule",
-                             "startup_cost_rule",
-                             "shutdown_cost_rule", "startup_fuel_burn_rule"]
+        required_attributes=[]
     )
 
 
@@ -166,6 +164,8 @@ def join_sets(mod, set_list):
     return joined_set
 
 
+# TODO: make this function even more generic, so that we can initialize a
+#  subset of any set, not just PROJECTS
 def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by subtype based on subtype flags.
