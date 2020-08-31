@@ -448,14 +448,6 @@ def power_provision_rule(mod, g, tmp):
     return mod.GenAlwaysOn_Provide_Power_MW[g, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all capacity is assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def fuel_burn_by_ll_rule(mod, g, tmp, s):
     """
     """

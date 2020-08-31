@@ -541,14 +541,6 @@ def power_provision_rule(mod, s, tmp):
         - mod.Stor_Charge_MW[s, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all capacity is assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def rec_provision_rule(mod, g, tmp):
     """
     If modeled as eligible for RPS, losses incurred by storage (the sum

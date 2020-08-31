@@ -523,14 +523,6 @@ def power_provision_rule(mod, g, tmp):
     return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all is capacity assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

@@ -578,14 +578,6 @@ def variable_om_cost_rule(mod, g, tmp):
         * mod.variable_om_cost_per_mwh[g]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all is capacity assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     """

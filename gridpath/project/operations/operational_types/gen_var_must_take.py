@@ -174,14 +174,6 @@ def power_provision_rule(mod, g, tmp):
         * mod.gen_var_must_take_cap_factor[g, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all capacity is assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
 def power_delta_rule(mod, g, tmp):
     """
     Exogenously defined ramp for variable must-take generators.

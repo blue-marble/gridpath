@@ -331,6 +331,14 @@ def power_provision_rule(mod, prj, tmp):
     return 0
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    The default online capacity is the available capacity.
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp]
+
+
 def variable_om_cost_rule(mod, prj, tmp):
     """
     By default the variable cost is the power provision (for load balancing
