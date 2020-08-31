@@ -64,14 +64,11 @@ import pandas as pd
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, order_cols_by_nunique
 
 # TODO: base on actual data
 CAP_OPTIONS = ["new_build_capacity", "retired_capacity", "total_capacity",
                "cumulative_new_build_capacity", "cumulative_retired_capacity"]
-SCENARIO = "test"
-scenario_id = 42
 DB_PATH = "../db/test.db"  # TODO: link to UI or parsed arg?
 
 
@@ -128,22 +125,21 @@ def get_stage_options(conn, scenario_id):
     return stage_options
 
 
-def get_all_cost_data(conn, scenario_id):
-    # get data for all zones and periods
-
+def get_all_cost_data(conn, scenarios):
+    scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     # TODO: add tx deliverability costs, but those aren't by zone!
     #  might just keep zone NULL and make sure filter can deal with it
-    # TODO: filter for multiple scenarios
     # TODO: filter for subproblem/stage (?)
-    sql = """SELECT period, load_zone,
+    sql = """SELECT scenario_name AS scenario, period, load_zone,
         capacity_cost, variable_om_cost, fuel_cost, startup_cost, 
         shutdown_cost, tx_capacity_cost, tx_hurdle_cost
         FROM results_costs_by_period_load_zone
-        WHERE scenario_id = ?;
-        """
-
-    df = pd.read_sql(sql, conn, params=(scenario_id,)).fillna(0)
-
+        INNER JOIN 
+        (SELECT scenario_name, scenario_id FROM scenarios
+         WHERE scenario_name in ({}) ) as scen_table
+        USING (scenario_id);
+        """.format(",".join(["?"] * len(scenarios)))
+    df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
     return df
 
@@ -151,7 +147,7 @@ def get_all_cost_data(conn, scenario_id):
 def get_all_capacity_data(conn, scenarios):
     # TODO: filter for subproblem/stage (?)
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    sql = """SELECT scenario_name as scenario, period, load_zone, technology, 
+    sql = """SELECT scenario_name AS scenario, period, load_zone, technology, 
         SUM(new_build_mw) AS new_build_capacity, 
         SUM(retired_mw) AS retired_capacity, 
         SUM(capacity_mw) AS total_capacity
@@ -192,46 +188,30 @@ def get_all_capacity_data(conn, scenarios):
     return df
 
 
-def get_all_energy_data(conn, scenario_id):
+def get_all_energy_data(conn, scenarios):
     # TODO: filter/aggregate for subproblem/stage (?)
     # TODO: don't return value and idx cols (?)
-    sql = """SELECT period, load_zone, technology, 
+    scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
+    sql = """SELECT scenario_name AS scenario, period, load_zone, technology, 
         SUM(energy_mwh) AS energy
         FROM results_project_dispatch_by_technology_period
-        WHERE scenario_id = ?
-        GROUP BY period, load_zone, technology
-        ;"""
-    df = pd.read_sql(sql, conn, params=(scenario_id,)).fillna(0)
-
-    # df = pd.DataFrame(
-    #     columns=['period', 'load_zone', 'technology', 'energy'],
-    #     data=[[2020, 'Zone1', 'Solar', 10],
-    #           [2030, 'Zone1', 'Solar', 10],
-    #           [2040, 'Zone1', 'Solar', 10],
-    #           [2020, 'Zone1', 'Wind', 20],
-    #           [2030, 'Zone1', 'Wind', 20],
-    #           [2040, 'Zone1', 'Wind', 20],
-    #           [2020, 'Zone2', 'Solar', 0],
-    #           [2030, 'Zone2', 'Solar', 10],
-    #           [2040, 'Zone2', 'Solar', 20],
-    #           [2020, 'Zone2', 'Wind', 20],
-    #           [2030, 'Zone2', 'Wind', 30],
-    #           [2040, 'Zone2', 'Wind', 40]
-    #           ]
-    # )
-
+        INNER JOIN 
+        (SELECT scenario_name, scenario_id FROM scenarios
+         WHERE scenario_name in ({}) ) as scen_table
+        USING (scenario_id)
+        GROUP BY scenario, period, load_zone, technology;
+        """.format(",".join(["?"] * len(scenarios)))
+    df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     # Pivot technologies to wide format (for stack chart)
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
-    # value_cols = list(df['technology'].unique())
     df = pd.pivot_table(
         df,
-        index=['period', 'load_zone'],
+        index=['scenario', 'period', 'load_zone'],
         columns='technology',
         values='energy'
     ).fillna(0).reset_index()
 
     df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
-
     return df
 
 
@@ -275,135 +255,114 @@ def get_all_summary_data(conn, scenario_id):
 # Define callbacks
 def scenario_change(attr, old, new):
     """
-    When the selected scenario changes, update the cost, energy and capacity.
+    When the selected scenario changes, update the cost, energy and capacity
+    and re-draw the plots.
     """
-    # TODO: update cost, energy
-    src, x_factors = update_capacity_data(scenario=new,
-                         period=period_select.value,
-                         zone=zone_select.value,
-                         capacity_metric=capacity_select.value)
-    # Need to update x-axis separately (factors need to be list, not array!)
-    # cap_plot.x_range.factors = list(capacity_source.data["period_scenario"])
-    # cap_plot.x_range.factors = x_factors[1]
 
-    cap_plot = create_stacked_bar_plot(
-        source=src,
-        x_col=x_factors[0],
-        title="Capacity by Technology",
-        category_label="Technology",
-        y_label="Capacity (MW)"
-    )
-
-    # TODO: completely re-draw plot instead of updating data
-    middle_row.children[0] = cap_plot
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
 
 
 def period_change(attr, old, new):
     """
     When the selected period changes, update the cost, energy and capacity.
     """
-    # TODO: update cost, energy
-    src, x_factors = update_capacity_data(scenario=scenario_select.value,
-                         period=new,
-                         zone=zone_select.value,
-                         capacity_metric=capacity_select.value)
-    # Need to update x-axis separately (factors need to be list, not array!)
-    # cap_plot.x_range.factors = list(capacity_source.data["period_scenario"])
-    # cap_plot.x_range.factors = x_factors[1]
 
-    cap_plot = create_stacked_bar_plot(
-        source=src,
-        x_col=x_factors[0],
-        title="Capacity by Technology",
-        category_label="Technology",
-        y_label="Capacity (MW)"
-    )
-
-    # TODO: completely re-draw plot instead of updating data
-    middle_row.children[0] = cap_plot
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
 
 
 def zone_change(attr, old, new):
     """
     When the selected load zone changes, update the cost, energy and capacity.
     """
-    update_summary_data(zone=new)
-    update_cost_data(zone=new)
-    update_energy_data(zone=new)
-    update_capacity_data(scenario=scenario_select.value,
-                         period=period_select.value,
-                         zone=new,
-                         capacity_metric=capacity_select.value)
+
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
 
 
 def capacity_change(attr, old, new):
     """
     When the selected capacity metric changes, update the capacity.
     """
-    update_capacity_data(scenario=scenario_select.value,
-                         period=period_select.value,
-                         zone=zone_select.value,
-                         capacity_metric=new)
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
 
 
 # TODO: Update summary table when zone changes!
-def update_summary_data(zone):
+def get_summary_src(summary_df, zone):
     """
     Update the ColumnDataSource object 'summary_source' with the appropriate
     load_zone slice of the data.
     :param zone:
     :return:
     """
-    slice = summary[summary["load_zone"] == zone]
+    df = summary_df.copy()
+    slice = df[df["load_zone"] == zone]
     slice = slice.drop(['load_zone'], axis=1)
-    new_src = ColumnDataSource(slice)
-    summary_source.data.update(new_src.data)
-    # Can als do <cost_source.data = slice> but this is better?
+    src = ColumnDataSource(slice)
+    return src
 
 
-# TODO: deal with default zone more generally (dynamic link or "All" or first
-#  one)
-def update_cost_data(zone):
+def get_cost_src(cost_df, scenario, period, zone):
     """
-    Update the ColumnDataSource object 'cost_source' with the appropriate
-    load_zone slice of the data.
-    :param zone:
+    Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
     """
-    slice = cost[cost["load_zone"] == zone]
-    slice = slice.drop("load_zone", axis=1)  # drop because not stacked
-    new_src = ColumnDataSource(slice)
-    new_src.remove("index")  # only keep stackers and x_col
-    cost_source.data.update(new_src.data)
-    # Can als do <cost_source.data = slice> but '.update' is better?
+    scenario = scenario if isinstance(scenario, list) else [scenario]
+    period = period if isinstance(period, list) else [period]
+    df = cost_df.copy()
+
+    scenario_filter = df["scenario"].isin(scenario)
+    period_filter = df["period"].isin(period)
+    zone_filter = (df["load_zone"] == zone)
+
+    slice = df[period_filter & scenario_filter & zone_filter]
+    slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
+
+    x_col = ["period", "scenario"]
+    x_col_reordered = order_cols_by_nunique(slice, x_col)
+    slice = slice.set_index(x_col_reordered)
+
+    src = ColumnDataSource(slice)
+    x_col_src = "_".join(x_col_reordered)
+    return src, x_col_src
 
 
-def update_energy_data(zone):
+def get_energy_src(energy_df, scenario, period, zone):
     """
-    Update the ColumnDataSource object 'energy_source' with the appropriate
-    load_zone slice of the data.
-    :param zone:
+    Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
     """
-    slice = energy[energy["load_zone"] == zone]
-    slice = slice.drop("load_zone", axis=1)  # drop because not stacked
-    new_src = ColumnDataSource(slice)
-    new_src.remove("index")  # only keep stackers and x_col
-    energy_source.data.update(new_src.data)
+    scenario = scenario if isinstance(scenario, list) else [scenario]
+    period = period if isinstance(period, list) else [period]
+    df = energy_df.copy()
+
+    scenario_filter = df["scenario"].isin(scenario)
+    period_filter = df["period"].isin(period)
+    zone_filter = (df["load_zone"] == zone)
+
+    slice = df[period_filter & scenario_filter & zone_filter]
+    slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
+
+    x_col = ["period", "scenario"]
+    x_col_reordered = order_cols_by_nunique(slice, x_col)
+    slice = slice.set_index(x_col_reordered)
+
+    src = ColumnDataSource(slice)
+    x_col_src = "_".join(x_col_reordered)
+    return src, x_col_src
 
 
-def update_capacity_data(scenario, period, zone, capacity_metric):
+def get_cap_src(capacity_df, scenario, period, zone, capacity_metric):
     """
-    Update the ColumnDataSource object 'cost_source' with the appropriate
-    load_zone slice of the data, and with the appropriate capacity metric.
-    :param zone:
-    :param capacity_metric:
+    Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
     """
     # TODO: allow for multiple load zones (sum across zones)
     scenario = scenario if isinstance(scenario, list) else [scenario]
     period = period if isinstance(period, list) else [period]
-    df = capacity.copy()
+    df = capacity_df.copy()
 
     scenario_filter = df["scenario"].isin(scenario)
     period_filter = df["period"].isin(period)
@@ -415,23 +374,74 @@ def update_capacity_data(scenario, period, zone, capacity_metric):
     slice = slice.drop(["load_zone", "capacity_metric"], axis=1)  # drop because not stacked
 
     x_col = ["period", "scenario"]
-    slice = slice.set_index(x_col)
-    # x_col_reordered = order_cols_by_nunique(slice, x_col)
-    # slice = slice.set_index(x_col_reordered)
-    new_src = ColumnDataSource(slice)
-    # capacity_source.data.update(new_src.data)
+    x_col_reordered = order_cols_by_nunique(slice, x_col)
+    slice = slice.set_index(x_col_reordered)
 
-    # if x_col_reordered != x_col:
-    #     capacity_source.remove("_".join(x_col))
-    # x_factors = ("_".join(x_col_reordered),
-    #              list(capacity_source.data["_".join(x_col_reordered)]))
-    x_factors = ("_".join(x_col),
-                 list(new_src.data["_".join(x_col)]))
-    return new_src, x_factors
+    src = ColumnDataSource(slice)
+    x_col_src = "_".join(x_col_reordered)
+    return src, x_col_src
 
-    # Can't do this here because update_capacity_data is called before
-    # cap plot is created. Perhaps look into different way to initalize data?
-    # cap_plot.x_range.factors = list(capacity_source.data["period_scenario"])
+
+def get_summary_table(summary_src):
+    cols_to_use = [c for c in summary_src.data.keys()
+                   if c not in ['load_zone', 'stage', 'index']]
+    columns = [TableColumn(field=c, title=c) for c in cols_to_use]
+    summary_table = DataTable(columns=columns, source=summary_src, height=250)
+    return summary_table
+
+
+def draw_plots(scenario, period, zone, capacity_metric):
+    summary_src = get_summary_src(summary, zone)
+    summary_table = get_summary_table(summary_src)
+
+    cap_src, cap_x_col = get_cap_src(
+        capacity_df=capacity,
+        scenario=scenario,
+        period=period,
+        zone=zone,
+        capacity_metric=capacity_metric
+    )
+    cap_plot = create_stacked_bar_plot(
+        source=cap_src,
+        x_col=cap_x_col,
+        title="Capacity by Technology",
+        category_label="Technology",
+        y_label="Capacity (MW)"
+    )
+
+    energy_src, energy_x_col = get_energy_src(
+        energy_df=energy,
+        scenario=scenario,
+        period=period,
+        zone=zone
+    )
+    energy_plot = create_stacked_bar_plot(
+        source=energy_src,
+        x_col=energy_x_col,
+        title="Energy by Technology",
+        category_label="Technology",
+        y_label="Energy (MWh)"  # TODO: link to units
+    )
+
+    # TODO: refactor getting src data and creating a plot?
+    cost_src, cost_x_col = get_cost_src(
+        cost_df=cost,
+        scenario=scenario,
+        period=period,
+        zone=zone
+    )
+    cost_plot = create_stacked_bar_plot(
+        source=cost_src,
+        x_col=cost_x_col,
+        title="Cost by Component",
+        category_label="Cost Component",
+        y_label="Cost (million USD)"  # TODO: link to units
+    )
+
+    top_row.children[0] = summary_table
+    middle_row.children[0] = cap_plot
+    middle_row.children[1] = energy_plot
+    bottom_row.children[0] = cost_plot
 
 
 # Get the data (make sure we do this in global scope vs. in callbacks)
@@ -453,27 +463,36 @@ zone_select = Select(title="Select Load Zone:", value=zone_options[0],
 capacity_select = Select(title="Select Capacity Metric:", value=CAP_OPTIONS[2],
                          options=CAP_OPTIONS)
 
-# Get Data
-summary = get_all_summary_data(conn, scenario_id)
-cost = get_all_cost_data(conn, scenario_id)
+# Get data for all scenarios/periods/...
+summary = get_all_summary_data(conn, 23)
+cost = get_all_cost_data(conn, scenario_options)
 capacity = get_all_capacity_data(conn, scenario_options)
-energy = get_all_energy_data(conn, scenario_id)
+energy = get_all_energy_data(conn, scenario_options)
 
-# Iniitialize CDSs
-summary_source = ColumnDataSource()
-cost_source = ColumnDataSource()
-energy_source = ColumnDataSource()
-capacity_source = ColumnDataSource()
-# Update CDSs with initial values
-update_summary_data(zone=zone_select.value)
-update_cost_data(zone=zone_select.value)
-src, x_factors = update_capacity_data(scenario=scenario_select.value,
-                     period=period_select.value,
-                     zone=zone_select.value,
-                     capacity_metric=capacity_select.value)
-update_energy_data(zone=zone_select.value)
-
-# TODO: figure out initial order of x_cols here
+# Get data slice based on selected toggles
+summary_src = get_summary_src(
+    summary_df=summary,
+    zone=zone_select.value
+)
+cost_src, cost_x_col = get_cost_src(
+    cost_df=cost,
+    scenario=scenario_select.value,
+    period=period_select.value,
+    zone=zone_select.value
+)
+cap_src, cap_x_col = get_cap_src(
+    capacity_df=capacity,
+    scenario=scenario_select.value,
+    period=period_select.value,
+    zone=zone_select.value,
+    capacity_metric=capacity_select.value
+)
+energy_src, energy_x_col = get_energy_src(
+    energy_df=energy,
+    scenario=scenario_select.value,
+    period=period_select.value,
+    zone=zone_select.value
+)
 
 # Set up Title
 # TODO: somehow update zone (changing global var in callback doensn't work)
@@ -481,29 +500,27 @@ title = PreText(text="title goes here specifying active zone: {} "
                      "etc.".format('Zone1'))
 
 # Set up Bokeh DataTable for summary
-cols_to_use = [c for c in summary.columns if c not in ['load_zone', 'stage']]
-columns = [TableColumn(field=c, title=c) for c in cols_to_use]
-summary_table = DataTable(columns=columns, source=summary_source, height=250)
+summary_table = get_summary_table(summary_src)
 
 # Set up plots
 cost_plot = create_stacked_bar_plot(
-    source=cost_source,
-    x_col="period",
+    source=cost_src,
+    x_col=cost_x_col,
     title="Cost by Component",
     category_label="Cost Component",
     y_label="Cost (million USD)"  # TODO: link to units
     # TODO:set width and height to resp. (600, 300)
 )
 energy_plot = create_stacked_bar_plot(
-    source=energy_source,
-    x_col="period",  # dynamically update this or add scenario?
+    source=energy_src,
+    x_col=energy_x_col,
     title="Energy by Technology",
     category_label="Technology",
     y_label="Energy (MWh)"  # TODO: link to units
 )
 cap_plot = create_stacked_bar_plot(
-    source=src,
-    x_col=x_factors[0],  # TODO: dynamically update based on x_col order
+    source=cap_src,
+    x_col=cap_x_col,
     title="Capacity by Technology",
     category_label="Technology",
     y_label="Capacity (MW)"  # TODO: link to units
