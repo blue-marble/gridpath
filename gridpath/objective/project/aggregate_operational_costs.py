@@ -11,13 +11,25 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    Add operational costs to the objective-function dynamic components.
+    :param d:
+    :return:
+    """
+
+    getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
+    getattr(d, total_cost_components).append("Total_Fuel_Cost")
+    getattr(d, total_cost_components).append("Total_Startup_Cost")
+    getattr(d, total_cost_components).append("Total_Shutdown_Cost")
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Here, we sum up all operational costs and add them to the
-    objective-function dynamic components. Operational costs include
+    Here, we sum up all operational costs. Operational costs include
     variable O&M costs, fuel costs, startup costs, and shutdown costs.
 
     :math:`Total\_Variable\_OM\_Cost =
@@ -51,7 +63,6 @@ def add_model_components(m, d):
                    for (g, tmp) in mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
-    getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
 
     # Fuel cost
     def total_fuel_cost_rule(mod):
@@ -68,7 +79,6 @@ def add_model_components(m, d):
                    for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
-    getattr(d, total_cost_components).append("Total_Fuel_Cost")
 
     # Startup and shutdown costs
     def total_startup_cost_rule(mod):
@@ -85,7 +95,6 @@ def add_model_components(m, d):
                    for (g, tmp)
                    in mod.STARTUP_COST_PRJ_OPR_TMPS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
-    getattr(d, total_cost_components).append("Total_Startup_Cost")
 
     def total_shutdown_cost_rule(mod):
         """
@@ -101,4 +110,3 @@ def add_model_components(m, d):
                    for (g, tmp)
                    in mod.SHUTDOWN_COST_PRJ_OPR_TMPS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
-    getattr(d, total_cost_components).append("Total_Shutdown_Cost")

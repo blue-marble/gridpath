@@ -2480,6 +2480,18 @@ PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone,
 technology)
 );
 
+DROP TABLE IF EXISTS results_project_dispatch_by_technology_period;
+CREATE TABLE results_project_dispatch_by_technology_period (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+energy_mwh FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
+technology)
+);
 
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
 CREATE TABLE results_project_lf_reserves_up (
@@ -2703,7 +2715,6 @@ local_capacity_contribution_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-
 -- Capacity costs
 DROP TABLE IF EXISTS results_project_costs_capacity;
 CREATE TABLE results_project_costs_capacity (
@@ -2745,6 +2756,21 @@ shutdown_cost FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
+-- Operational Costs - Aggregated
+DROP TABLE IF EXISTS results_project_costs_operations_agg;
+CREATE TABLE results_project_costs_operations_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+variable_om_cost FLOAT,
+fuel_cost FLOAT,
+startup_cost FLOAT,
+shutdown_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+);
+
 DROP TABLE IF EXISTS results_project_fuel_burn;
 CREATE TABLE results_project_fuel_burn (
 scenario_id INTEGER,
@@ -2768,7 +2794,6 @@ total_fuel_burn_mmbtu FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-
 DROP TABLE IF EXISTS results_project_carbon_emissions;
 CREATE TABLE results_project_carbon_emissions (
 scenario_id INTEGER,
@@ -2787,6 +2812,19 @@ carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 carbon_emission_tons FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_carbon_emissions_by_technology_period;
+CREATE TABLE results_project_carbon_emissions_by_technology_period (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+carbon_emission_tons FLOAT,
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, period)
 );
 
 DROP TABLE IF EXISTS results_project_rps;
@@ -2889,6 +2927,18 @@ transmission_losses_lz_to FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 
+DROP TABLE IF EXISTS results_transmission_imports_exports_agg;
+CREATE TABLE results_transmission_imports_exports_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+imports FLOAT,
+exports FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone)
+);
+
 DROP TABLE IF EXISTS results_transmission_hurdle_costs;
 CREATE TABLE results_transmission_hurdle_costs (
 scenario_id INTEGER,
@@ -2906,6 +2956,18 @@ hurdle_cost_negative_direction FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 
+-- Transmission Costs - Aggregated
+DROP TABLE IF EXISTS results_transmission_hurdle_costs_agg;
+CREATE TABLE results_transmission_hurdle_costs_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+tx_hurdle_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+);
+
 DROP TABLE IF EXISTS results_transmission_carbon_emissions;
 CREATE TABLE results_transmission_carbon_emissions (
 scenario_id INTEGER,
@@ -2920,7 +2982,6 @@ carbon_emission_imports_tons FLOAT,
 carbon_emission_imports_tons_degen FLOAT,
 PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
 );
-
 
 DROP TABLE IF EXISTS results_system_load_balance;
 CREATE TABLE results_system_load_balance (
@@ -3114,7 +3175,6 @@ rps_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
 );
 
-
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;
 CREATE TABLE  results_system_prm (
@@ -3151,6 +3211,38 @@ local_capacity_shortage_mw FLOAT,
 dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
+);
+
+
+-- Total Costs
+DROP TABLE IF EXISTS results_system_costs;
+CREATE TABLE  results_system_costs (
+scenario_id INTEGER,
+--period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+Total_Capacity_Costs Float,
+Total_Tx_Capacity_Costs Float,
+Total_PRM_Group_Costs Float,
+Total_Variable_OM_Cost Float,
+Total_Fuel_Cost Float,
+Total_Startup_Cost Float,
+Total_Shutdown_Cost Float,
+Total_Hurdle_Cost Float,
+Total_Load_Balance_Penalty_Costs Float,
+Frequency_Response_Penalty_Costs Float,
+LF_Reserves_Down_Penalty_Costs Float,
+LF_Reserves_Up_Penalty_Costs Float,
+Regulation_Down_Penalty_Costs Float,
+Regulation_Up_Penalty_Costs Float,
+Spinning_Reserves_Penalty_Costs Float,
+Total_PRM_Shortage_Penalty_Costs Float,
+Total_Local_Capacity_Shortage_Penalty_Costs Float,
+Total_Carbon_Cap_Balance_Penalty_Costs Float,
+Total_RPS_Balance_Penalty_Costs Float,
+Total_Dynamic_ELCC_Tuning_Cost Float,
+Total_Import_Carbon_Tuning_Cost Float,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
 ---------------
@@ -3501,6 +3593,7 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+
 -- This view shows the possible operational timepoints for each project based
 -- based on its operational periods (see project_operational_periods), and
 -- the timepoints in the temporal subscenario (see inputs_temporal). It also
@@ -3525,6 +3618,63 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+
+-- Costs by load zone (for tx: by destination load zone)
+-- Note: does not include tx deliverability costs, tuning costs and
+-- violation penalties
+DROP VIEW IF EXISTS results_costs_by_period_load_zone;
+CREATE VIEW results_costs_by_period_load_zone AS
+SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
+tx_capacity_cost, tx_hurdle_cost
+FROM
+(SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+SUM(capacity_cost) AS capacity_cost
+FROM results_project_costs_capacity
+GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS cap_costs
+
+LEFT JOIN
+results_project_costs_operations_agg
+USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+
+LEFT JOIN
+(SELECT scenario_id, subproblem_id, stage_id, period, load_zone_to AS load_zone,
+SUM(capacity_cost) AS tx_capacity_cost
+FROM results_transmission_costs_capacity
+GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS tx_cap_costs
+USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+
+LEFT JOIN
+results_transmission_hurdle_costs_agg
+USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+;
+
+
+-- Costs by period (not including tuning costs and violation penalties)
+DROP VIEW IF EXISTS results_costs_by_period;
+CREATE VIEW results_costs_by_period AS
+SELECT scenario_id, subproblem_id, stage_id, period,
+capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
+tx_capacity_cost, tx_hurdle_cost, tx_deliverable_capacity_cost
+FROM
+(SELECT scenario_id, subproblem_id, stage_id, period,
+SUM(capacity_cost) AS capacity_cost,
+SUM(variable_om_cost) AS variable_om_cost,
+SUM(fuel_cost) AS fuel_cost,
+SUM(startup_cost) AS startup_cost,
+SUM(shutdown_cost) AS shutdown_cost,
+SUM(tx_capacity_cost) AS tx_capacity_cost,
+SUM(tx_hurdle_cost) AS tx_hurdle_cost
+FROM results_costs_by_period_load_zone
+GROUP BY scenario_id, subproblem_id, stage_id, period) AS agg_lz_costs
+
+LEFT JOIN
+(SELECT scenario_id, subproblem_id, stage_id, period,
+SUM(deliverable_capacity_cost) AS tx_deliverable_capacity_cost
+FROM results_project_prm_deliverability_group_capacity_and_costs
+GROUP BY scenario_id, subproblem_id, stage_id, period) AS tx_deliverable_costs
+USING (scenario_id, subproblem_id, stage_id, period)
+;
 
 -------------------------------------------------------------------------------
 ------------------------------ User Interface ---------------------------------

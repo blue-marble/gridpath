@@ -19,6 +19,23 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds the unserved energy and overgeneration to the load balance
+    dynamic components.
+
+    :param d:
+    :return:
+    """
+
+    getattr(d, load_balance_production_components).append(
+        "Unserved_Energy_MW_Expression"
+    )
+    getattr(d, load_balance_consumption_components).append(
+        "Overgeneration_MW_Expression"
+    )
+
+
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
@@ -26,10 +43,7 @@ def add_model_components(m, d):
 
     Here we add, the overgeneration and unserved-energy per unit costs
     are declared here as well as the overgeneration and unserved-energy
-    variables. Incurred violation costs are added to the objective function in
-    objective/aggregate_load_balance_penalties.py. Overgeneration is added
-    to the load-balance consumption components and unserved energy to the
-    load-balance production components.
+    variables.
 
     We also get all other production and consumption components and add them
     to the lhs and rhs of the load-balance constraint respectively. With the
@@ -75,13 +89,6 @@ def add_model_components(m, d):
     m.Unserved_Energy_MW_Expression = Expression(
         m.LOAD_ZONES, m.TMPS,
         rule=unserved_energy_expression_rule
-    )
-
-    getattr(d, load_balance_production_components).append(
-        "Unserved_Energy_MW_Expression"
-    )
-    getattr(d, load_balance_consumption_components).append(
-        "Overgeneration_MW_Expression"
     )
 
     def meet_load_rule(mod, z, tmp):

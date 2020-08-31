@@ -19,7 +19,8 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
+    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
+    process_stacked_plot_data, get_capacity_data
 
 
 def create_parser():
@@ -49,39 +50,17 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, load_zone, subproblem, stage,
-                      **kwargs):
+def get_plotting_data(conn, subproblem, stage, scenario_id=None,
+                      load_zone=None, period=None, **kwargs):
     """
-    Get retired capacity results by period/technology for a given
-    scenario/load_zone/subproblem/stage.
+    See get_capacity_data()
 
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
-
-    :param conn:
-    :param scenario_id:
-    :param load_zone:
-    :param subproblem:
-    :param stage:
-    :return:
     """
 
-    # Retired capacity by period and technology
-    sql = """SELECT period, technology, sum(retired_mw) as capacity_mw
-        FROM results_project_capacity
-        WHERE scenario_id = ?
-        AND load_zone = ?
-        AND subproblem_id = ?
-        AND stage_id = ?
-        GROUP BY period, technology;"""
-
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(scenario_id, load_zone, subproblem, stage)
-    )
-
-    return df
+    return get_capacity_data(conn, subproblem, stage, "retired_mw",
+                             scenario_id, load_zone, period)
 
 
 def main(args=None):
@@ -130,17 +109,25 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
-    plot = create_stacked_bar_plot(
+    source, x_col_reordered = process_stacked_plot_data(
         df=df,
+        y_col="capacity_mw",
+        x_col=["period", "scenario"],
+        category_col="technology"
+    )
+
+    # Multi-level index in CDS will be joined into one column with "_" separator
+    x_col_cds = "_".join(x_col_reordered)
+    x_col_label = ", ".join([x.capitalize() for x in x_col_reordered])
+    plot = create_stacked_bar_plot(
+        source=source,
+        x_col=x_col_cds,
+        x_label=x_col_label,
+        y_label="Retired Capacity ({})".format(power_unit),
+        category_label="Technology",
+        category_colors=tech_colors,
+        category_order=tech_plotting_order,
         title=plot_title,
-        y_axis_column="capacity_mw",
-        x_axis_column="period",
-        group_column="technology",
-        column_mapper={"capacity_mw": "Retired Capacity ({})".format(power_unit),
-                       "period": "Period",
-                       "technology": "Technology"},
-        group_colors=tech_colors,
-        group_order=tech_plotting_order,
         ylimit=parsed_args.ylimit
     )
 

@@ -19,6 +19,18 @@ from gridpath.auxiliary.dynamic_components import \
     local_capacity_balance_provision_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds contribution to local capacity provision components
+    :param d:
+    :return:
+    """
+
+    getattr(d, local_capacity_balance_provision_components).append(
+        "Total_Local_Capacity_Contribution_MW"
+    )
+
+
 def add_model_components(m, d):
     """
 
@@ -44,11 +56,6 @@ def add_model_components(m, d):
     m.Total_Local_Capacity_Contribution_MW = Expression(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
         rule=total_local_capacity_provision_rule
-    )
-
-    # Add contribtion to local capacity provision components
-    getattr(d, local_capacity_balance_provision_components).append(
-        "Total_Local_Capacity_Contribution_MW"
     )
 
 

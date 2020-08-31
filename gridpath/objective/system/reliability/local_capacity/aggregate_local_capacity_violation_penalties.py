@@ -6,6 +6,18 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    Add local capacity shortage penalty costs to cost components
+    :param d:
+    :return:
+    """
+
+    getattr(d, total_cost_components).append(
+        "Total_Local_Capacity_Shortage_Penalty_Costs"
+    )
+
+
 def add_model_components(m, d):
     """
 
@@ -21,8 +33,5 @@ def add_model_components(m, d):
                    * mod.discount_factor[p]
                    for (z, p) in
                    mod.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT)
-    m.Total_Load_Capacity_Shortage_Penalty_Costs = Expression(
+    m.Total_Local_Capacity_Shortage_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
-    getattr(d, total_cost_components).append(
-        "Total_Load_Capacity_Shortage_Penalty_Costs"
-    )

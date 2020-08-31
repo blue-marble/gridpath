@@ -20,6 +20,18 @@ from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
 
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    This method adds project emissions to carbon balance
+    :param d:
+    :return:
+    """
+
+    getattr(d, carbon_cap_balance_emission_components).append(
+        "Total_Carbon_Cap_Project_Emissions"
+    )
+
+
 def add_model_components(m, d):
     """
 
@@ -47,11 +59,6 @@ def add_model_components(m, d):
     m.Total_Carbon_Cap_Project_Emissions = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=total_carbon_emissions_rule
-    )
-
-    # Add to emission imports to carbon balance
-    getattr(d, carbon_cap_balance_emission_components).append(
-        "Total_Carbon_Cap_Project_Emissions"
     )
 
 
