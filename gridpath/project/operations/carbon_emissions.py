@@ -18,6 +18,7 @@ from gridpath.auxiliary.auxiliary import setup_results_import, \
     load_operational_type_modules
 from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
@@ -28,7 +29,7 @@ def add_model_components(m, d):
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Project_Carbon_Emissions`                                      |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                                  |
     |                                                                         |
     | The project's carbon emissions for each timepoint in which the project  |
     | could be operational. Note that this is an emissions *RATE* (per hour)  |
@@ -37,30 +38,21 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
 
     """
-
-    # Dynamic Components
-    ###########################################################################
-
-    imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
-    )
-
     # Expressions
     ###########################################################################
 
-    def carbon_emissions_rule(mod, g, tmp):
+    def carbon_emissions_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel). Multiply by the timepoint duration
         and timepoint weight to get the total emissions amount.
         """
 
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            carbon_emissions_rule(mod, g, tmp)
+        return mod.Total_Fuel_Burn_MMBtu[prj, tmp] * \
+            mod.co2_intensity_tons_per_mmbtu[mod.fuel[prj]]
 
     m.Project_Carbon_Emissions = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=carbon_emissions_rule
     )
 
@@ -78,15 +70,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "carbon_emissions_by_project.csv"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "carbon_emissions_by_project.csv"),
               "w", newline="") as carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "timepoint_weight",
                          "number_of_hours_in_timepoint", "load_zone",
                          "technology", "carbon_emissions_tons"])
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

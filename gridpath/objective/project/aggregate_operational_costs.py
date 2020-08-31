@@ -60,7 +60,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.PRJ_OPR_TMPS)
+                   for (g, tmp) in mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
 
@@ -76,7 +76,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.PRJ_OPR_TMPS)
+                   for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
 
@@ -93,7 +93,7 @@ def add_model_components(m, d):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.PRJ_OPR_TMPS)
+                   in mod.STARTUP_COST_PRJ_OPR_TMPS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
 
     def total_shutdown_cost_rule(mod):
@@ -108,5 +108,5 @@ def add_model_components(m, d):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.PRJ_OPR_TMPS)
+                   in mod.SHUTDOWN_COST_PRJ_OPR_TMPS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)

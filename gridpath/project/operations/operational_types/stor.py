@@ -81,14 +81,6 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_variable_om_cost_per_mwh`                                 |
-    | | *Defined over*: :code:`STOR`                                          |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Default*: :code:`0`                                                  |
-    |                                                                         |
-    | The variable operations and maintenance (O&M) cost for each project in  |
-    | $ per MWh.                                                              |
-    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_rps`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -241,11 +233,6 @@ def add_module_specific_components(m, d):
 
     # Optional Params
     ###########################################################################
-
-    m.stor_variable_om_cost_per_mwh = Param(
-        m.STOR, within=NonNegativeReals,
-        default=0
-    )
 
     m.stor_losses_factor_in_rps = Param(default=1)
 
@@ -554,34 +541,6 @@ def power_provision_rule(mod, s, tmp):
         - mod.Stor_Charge_MW[s, tmp]
 
 
-def online_capacity_rule(mod, g, tmp):
-    """
-    Since there is no commitment, all capacity is assumed to be online.
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
-def scheduled_curtailment_rule(mod, g, tmp):
-    """
-    Curtailment is not allowed.
-    """
-    return 0
-
-
-def subhourly_curtailment_rule(mod, g, tmp):
-    """
-    TODO: ignoring subhourly behavior for storage for now
-    """
-    return 0
-
-
-def subhourly_energy_delivered_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def rec_provision_rule(mod, g, tmp):
     """
     If modeled as eligible for RPS, losses incurred by storage (the sum
@@ -600,58 +559,12 @@ def rec_provision_rule(mod, g, tmp):
         * mod.stor_losses_factor_in_rps
 
 
-def fuel_burn_rule(mod, g, tmp):
-    """
-    Storage projects should not have fuel use.
-    """
-    return 0
-
-
-def fuel_cost_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
-def fuel_rule(mod, g):
-    """
-    """
-    return None
-
-
-def carbon_emissions_rule(mod, g, tmp):
-    """
-    """
-    return 0
-
-
 def variable_om_cost_rule(mod, g, tmp):
     """
     Variable O&M costs are applied only to the storage discharge, i.e. when the
     project is providing power to the system.
     """
-    return mod.Stor_Discharge_MW[g, tmp] * mod.stor_variable_om_cost_per_mwh[g]
-
-
-def startup_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
-
-
-def shutdown_cost_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of shutting down.
-    """
-    return 0
-
-
-def startup_fuel_burn_rule(mod, g, tmp):
-    """
-    Since there is no commitment, there is no concept of starting up.
-    """
-    return 0
+    return mod.Stor_Discharge_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
 def power_delta_rule(mod, g, tmp):

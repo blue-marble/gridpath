@@ -11,6 +11,7 @@ from pyomo.environ import Param, PercentFraction, Constraint
 
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def generic_add_model_components(
@@ -62,8 +63,12 @@ def generic_add_model_components(
         :return:
         """
         gen_op_type = mod.operational_type[g]
-        online_capacity = imported_operational_modules[gen_op_type].\
-            online_capacity_rule(mod, g, tmp)
+        online_capacity = \
+            imported_operational_modules[gen_op_type]\
+            .online_capacity_rule(mod, g, tmp) \
+            if hasattr(imported_operational_modules[gen_op_type],
+                       "online_capacity_rule") \
+            else op_type.online_capacity_rule(mod, g, tmp)
 
         if getattr(m, reserve_provision_ramp_rate_limit_param) == 1:
             return Constraint.Skip

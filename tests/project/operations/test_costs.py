@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from __future__ import print_function
 
-from builtins import str
-from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
+from tests.project.operations.common_functions import \
+    get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
@@ -83,6 +83,141 @@ class TestOperationalCosts(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
+        # Load test data as dataframes
+        projects_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab")
+            , sep="\t"
+        )
+
+        var_om_curve_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "variable_om_curves.tab")
+            , sep="\t"
+        )
+
+        startup_by_st_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "startup_chars.tab")
+            , sep="\t"
+        )
+
+        timepoints_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
+                sep="\t", usecols=['timepoint', 'period']
+            )
+
+        # Set: VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+        expected_var_om_simple_projects = sorted(
+            projects_df[
+                projects_df["variable_om_cost_per_mwh"] != "."
+                ]["project"].tolist()
+        )
+        expected_var_om_simple_prj_tmps = get_project_operational_timepoints(
+            expected_var_om_simple_projects
+        )
+
+        actual_var_om_simple_prj_tmps = \
+            sorted([(p, tmp)
+                    for (p, tmp) in instance.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS])
+
+        self.assertListEqual(expected_var_om_simple_prj_tmps,
+                             actual_var_om_simple_prj_tmps)
+
+        # Set: VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+        expected_var_om_curve_projects = sorted(
+            var_om_curve_df["project"].unique().tolist()
+        )
+
+        expected_var_om_curve_prj_tmps = get_project_operational_timepoints(
+            expected_var_om_curve_projects
+        )
+
+        actual_var_om_curve_prj_tmps = \
+            sorted([(p, tmp) for (p, tmp) in
+                    instance.VAR_OM_COST_CURVE_PRJS_OPR_TMPS])
+
+        self.assertListEqual(expected_var_om_curve_prj_tmps,
+                             actual_var_om_curve_prj_tmps)
+
+        # Set: VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS
+        expected_segments_by_prj_period = {
+            ("Disp_Binary_Commit", 2020): [0, 1],
+            ("Disp_Binary_Commit", 2030): [0],
+            ("Disp_Cont_Commit", 2020): [0],
+            ("Disp_Cont_Commit", 2030): [0]
+        }
+        expected_var_om_curve_prj_tmp_sgms = list()
+        for (prj, tmp) in expected_var_om_curve_prj_tmps:
+            prd = timepoints_df[
+                timepoints_df["timepoint"] == tmp
+                ].iloc[0]["period"]
+            segments = expected_segments_by_prj_period[prj, prd]
+            for sgm in segments:
+                expected_var_om_curve_prj_tmp_sgms.append((prj, tmp, sgm))
+
+        actual_var_om_curve_prj_tmp_sgms = \
+            sorted([(prj, tmp, sgm) for (prj, tmp, sgm) in
+                    instance.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS])
+
+        self.assertListEqual(expected_var_om_curve_prj_tmp_sgms,
+                             actual_var_om_curve_prj_tmp_sgms)
+
+        # Set: VAR_OM_COST_ALL_PRJS_OPR_TMPS
+        expected_var_om_all_prj_tmps = sorted(list(
+            set(expected_var_om_simple_prj_tmps
+                + expected_var_om_curve_prj_tmps)
+        ))
+
+        actual_var_om_all_prj_tmps = \
+            sorted([(p, tmp)
+                    for (p, tmp) in instance.VAR_OM_COST_ALL_PRJS_OPR_TMPS])
+
+        self.assertListEqual(expected_var_om_all_prj_tmps,
+                             actual_var_om_all_prj_tmps)
+
+        # Set: STARTUP_COST_PRJ_OPR_TMPS
+        expected_startup_cost_simple_projects = sorted(
+            projects_df[
+                projects_df["startup_cost_per_mw"] != "."
+                ]["project"].tolist()
+        )
+        expected_startup_by_st_projects = sorted(
+            startup_by_st_df["project"].unique().tolist()
+        )
+        expected_startup_cost_all_projects = sorted(list(set(
+            expected_startup_cost_simple_projects +
+            expected_startup_by_st_projects
+        )))
+        expected_startup_cost_all_prj_tmps = \
+            get_project_operational_timepoints(
+                expected_startup_cost_all_projects
+            )
+        actual_startup_cost_all_prj_tmps = \
+            sorted([(p, tmp)
+                    for (p, tmp) in instance.STARTUP_COST_PRJ_OPR_TMPS])
+
+        self.assertListEqual(expected_startup_cost_all_prj_tmps,
+                             actual_startup_cost_all_prj_tmps)
+
+        # Set: SHUTDOWN_COST_PRJ_OPR_TMPS
+        expected_shutdown_cost_projects = sorted(
+            projects_df[projects_df["shutdown_cost_per_mw"] != "."][
+                "project"
+            ].tolist()
+        )
+        expected_shutdown_cost_prj_tmps = get_project_operational_timepoints(
+            expected_shutdown_cost_projects
+        )
+
+        actual_shutdown_cost_prj_tmps = \
+            sorted([(p, tmp) for (p, tmp) in
+                    instance.SHUTDOWN_COST_PRJ_OPR_TMPS])
+
+        self.assertListEqual(expected_shutdown_cost_prj_tmps,
+                             actual_shutdown_cost_prj_tmps)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,35 +6,110 @@ The **gridpath.project.operations.costs** module is a project-level
 module that adds to the formulation components that describe the
 operations-related costs of projects (e.g. variable O&M costs, fuel costs,
 startup and shutdown costs).
+
+For the purpose, this module calls the respective method from the
+operational type modules.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
-from pyomo.environ import Var, Expression, Constraint, NonNegativeReals, value
+from pyomo.environ import Set, Var, Expression, Constraint, \
+    NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
     setup_results_import
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
     """
     The following Pyomo model components are defined in this module:
 
+     +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS`                               |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a simple variable O&M     |
+    | cost is specified and their operational timepoints.                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS`                          |
+    |                                                                         |
+    | The three-dimensional set of projects for which a VOM cost curve is     |
+    | specified along with the VOM curve segments and the project             |
+    | operational timepoints.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_CURVE_PRJS_OPR_TMPS`                               |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a VOM cost curve is       |
+    | specified along with their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`VAR_OM_COST_ALL_PRJS_OPR_TMPS`                                 |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which either or both a simple   |
+    | VOM or a VOM curve is specified along with their operational            |
+    | timepoints.                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_COST_PRJ_OPR_TMPS`                                     |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a startup cost is         |
+    | specified along with their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`SHUTDOWN_COST_PRJ_OPR_TMPS`                                    |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a shutdown cost curve is  |
+    | specified along with their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`Variable_OM_Curve_Cost`                                        |
+    | | *Defined over*: :code:`VAR_OM_COST_CURVE_PRJS_OPR_TMPS`               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Variable cost in each operational timepoint of projects with a VOM cost |
+    | curve.                                                                  |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Variable_OM_Curve_Constraint`                                  |
+    | | *Defined over*: :code:`VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS`          |
+    |                                                                         |
+    | Determines variable cost from the project in each timepoint based on    |
+    | its VOM curve.                                                          |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
+
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Variable_OM_Cost`                                              |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`VAR_OM_COST_ALL_PRJS_OPR_TMPS`                 |
     |                                                                         |
-    | This expression defines the variable cost of a project in all of its    |
-    | operational timepoints. We obtain the expression by calling the         |
-    | *variable_om_cost_rule* method of a project's *operational_type* module.|
+    | This is the variable cost incurred in each operational timepoints for   |
+    | projects for which either a simple VOM or a VOM curve is specified.     |
+    | If both are specified, the two are additive. We obtain the simple VOM   |
+    | by calling the *variable_om_cost_rule* method of a project's            |
+    | *operational_type* module. We obtain the VOM curve cost by calling the  |
+    | *variable_om_cost_by_ll_rule* method of a project's operational type,   |
+    | using that to create the *Variable_OM_Curve_Constraint* on the          |
+    | Variable_OM_Curve_Cost variable, and the using the variable in this     |
+    | expression.
     +-------------------------------------------------------------------------+
     | | :code:`Fuel_Cost`                                                     |
     | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
@@ -67,62 +142,200 @@ def add_model_components(m, d):
         getattr(d, required_operational_modules)
     )
 
+    # Sets
+    ###########################################################################
+
+    m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.VAR_OM_COST_SIMPLE_PRJS]
+    )
+
+    m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
+    )
+
+    m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod:
+        set((g, tmp)
+            for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+    )
+
+    # All VOM projects
+    m.VAR_OM_COST_ALL_PRJS_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: set(
+            mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+            | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+        )
+    )
+
+    m.STARTUP_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.STARTUP_COST_PRJS]
+    )
+
+    m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.SHUTDOWN_COST_PRJS]
+    )
+
+    # Variables
+    ###########################################################################
+
+    m.Variable_OM_Curve_Cost = Var(
+        m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    # Constraints
+    ###########################################################################
+
+    def variable_om_cost_curve_constraint_rule(mod, prj, tmp, s):
+        """
+        **Constraint Name**: GenCommitBin_Variable_OM_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_VOM_PRJS_OPR_TMPS_SGMS
+
+        Variable O&M cost by loading level is set by piecewise linear
+        representation of the input/output curve (variable O&M cost vs.loading
+        level).
+
+        Note: we assume that when projects are derated for availability, the
+        input/output curve is derated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very costly operating points.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "variable_om_cost_by_ll_rule"):
+            var_cost_by_ll = imported_operational_modules[gen_op_type]. \
+                variable_om_cost_by_ll_rule(mod, prj, tmp, s)
+        else:
+            var_cost_by_ll = \
+                op_type.variable_om_cost_by_ll_rule(mod, prj, tmp, s)
+
+        return mod.Variable_OM_Curve_Cost[prj, tmp] \
+            >= var_cost_by_ll
+
+    m.Variable_OM_Curve_Constraint = Constraint(
+        m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS,
+        rule=variable_om_cost_curve_constraint_rule
+    )
+
     # Expressions
     ###########################################################################
 
-    def variable_om_cost_rule(mod, g, tmp):
+    def variable_om_cost_rule(mod, prj, tmp):
         """
+        **Expression Name**: Variable_OM_Cost
+        **Defined Over**: VAR_OM_COST_ALL_PRJS_OPR_TMPS
+
+        This is the variable cost incurred in each operational timepoints for
+        projects for which either a simple VOM or a VOM curve is specified.
+        If both are specified, the two are additive.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            variable_om_cost_rule(mod, g, tmp)
+
+        # Simple VOM cost
+        gen_op_type = mod.operational_type[prj]
+        if prj in mod.VAR_OM_COST_SIMPLE_PRJS:
+            if hasattr(imported_operational_modules[gen_op_type],
+                       "variable_om_cost_rule"):
+                var_cost_simple = imported_operational_modules[gen_op_type]. \
+                    variable_om_cost_rule(mod, prj, tmp)
+            else:
+                var_cost_simple = op_type.variable_om_cost_rule(mod, prj, tmp)
+        else:
+            var_cost_simple = 0
+
+        # VOM curve cost
+        if prj in mod.VAR_OM_COST_CURVE_PRJS:
+            var_cost_curve = mod.Variable_OM_Curve_Cost[prj, tmp]
+        else:
+            var_cost_curve = 0
+
+        # The two are additive
+        return var_cost_simple + var_cost_curve
 
     m.Variable_OM_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.VAR_OM_COST_ALL_PRJS_OPR_TMPS,
         rule=variable_om_cost_rule
     )
 
-    def fuel_cost_rule(mod, g, tmp):
+    def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
-        **Defined Over**: PRJ_OPR_TMPS
+        **Defined Over**: FUEL_PRJS_OPR_TMPS
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_cost_rule(mod, g, tmp)
+        return mod.Total_Fuel_Burn_MMBtu[prj, tmp] * \
+            mod.fuel_price_per_mmbtu[
+                mod.fuel[prj],
+                mod.period[tmp],
+                mod.month[tmp]
+            ]
 
     m.Fuel_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_cost_rule
     )
 
-    def startup_cost_rule(mod, g, tmp):
+    def startup_cost_rule(mod, prj, tmp):
         """
         Startup costs are defined for some operational types while they are
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            startup_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_cost_simple_rule"):
+            startup_cost_simple = imported_operational_modules[gen_op_type]. \
+                startup_cost_simple_rule(mod, prj, tmp)
+        else:
+            startup_cost_simple = \
+                op_type.startup_cost_simple_rule(mod, prj, tmp)
+
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_cost_by_st_rule"):
+            startup_cost_by_st = imported_operational_modules[gen_op_type]. \
+                startup_cost_by_st_rule(mod, prj, tmp)
+        else:
+            startup_cost_by_st = op_type.startup_cost_by_st_rule(mod, prj, tmp)
+
+        return startup_cost_simple + startup_cost_by_st
 
     m.Startup_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.STARTUP_COST_PRJ_OPR_TMPS,
         rule=startup_cost_rule
     )
 
-    def shutdown_cost_rule(mod, g, tmp):
+    def shutdown_cost_rule(mod, prj, tmp):
         """
         Shutdown costs are defined for some operational types while they are
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            shutdown_cost_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "shutdown_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                shutdown_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.shutdown_cost_rule(mod, prj, tmp)
 
     m.Shutdown_Cost = Expression(
-        m.PRJ_OPR_TMPS,
+        m.SHUTDOWN_COST_PRJ_OPR_TMPS,
         rule=shutdown_cost_rule
     )
 
@@ -145,7 +358,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results",
                            "costs_operations.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -163,10 +377,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.hrs_in_tmp[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Variable_OM_Cost[p, tmp]),
-                value(m.Fuel_Cost[p, tmp]),
-                value(m.Startup_Cost[p, tmp]),
+                value(m.Variable_OM_Cost[p, tmp])
+                if p in m.VAR_OM_COST_ALL_PRJS else None,
+                value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
+                value(m.Startup_Cost[p, tmp])
+                if p in m.STARTUP_COST_PRJS else None,
                 value(m.Shutdown_Cost[p, tmp])
+                if p in m.SHUTDOWN_COST_PRJS else None
             ])
 
 

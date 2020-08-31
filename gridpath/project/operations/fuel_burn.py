@@ -7,24 +7,77 @@ both operational fuel burn for power production, and startup fuel burn (if
 applicable).
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
-from pyomo.environ import Expression, value, Param
+from pyomo.environ import Set, Var, Expression, Constraint, \
+    NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
+import gridpath.project.operations.operational_types as op_type
 
 
 def add_model_components(m, d):
     """
     The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`FUEL_PRJ_OPR_TMPS`                                             |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a fuel is specified and   |
+    | their operational timepoints.                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                                   |
+    |                                                                         |
+    | The three-dimensional set of projects for which a heat rate curve is    |
+    | specified along with the heat rate curve segments and the project       |
+    | operational timepoints.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`HR_CURVE_PRJS_OPR_TMPS`                                        |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which a heat rate curve is      |
+    | specified along with their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`STARTUP_FUEL_PRJ_OPR_TMPS`                                     |
+    | | *Within*: :code:`FUEL_PRJ_OPR_TMPS`                                   |
+    |                                                                         |
+    | The two-dimensional set of projects for which startup fuel burn is      |
+    | specified and their operational timepoints.                             |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`HR_Curve_Prj_Fuel_Burn`                                        |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS`                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Fuel burn in each operational timepoint of projects with a heat rate    |
+    | curve.                                                                  |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`HR_Curve_Prj_Fuel_Burn_Constraint`                             |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                   |
+    |                                                                         |
+    | Determines fuel burn from the project in each timepoint based on its    |
+    | heat rate curve.                                                        |
+    +-------------------------------------------------------------------------+
+
+    |                                                                         |
 
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
@@ -62,73 +115,141 @@ def add_model_components(m, d):
         getattr(d, required_operational_modules)
     )
 
-    # Derived Params
+    # Sets
     ###########################################################################
 
-    def fuel_rule(mod, g):
-        """
-        Fuel for each project (None if no fuel)
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].fuel_rule(mod, g)
+    m.FUEL_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.FUEL_PRJS]
+    )
 
-    m.fuel = Param(
-        m.PROJECTS,
-        initialize=fuel_rule,
+    m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+            for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
+            if g == _g and mod.period[tmp] == p)
+    )
+
+    m.HR_CURVE_PRJS_OPR_TMPS = Set(
+        dimen=2,
+        within=m.FUEL_PRJ_OPR_TMPS,
+        rule=lambda mod:
+        set((g, tmp)
+            for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS)
+    )
+
+    m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.FUEL_PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
+                          if p in mod.STARTUP_FUEL_PRJS]
+    )
+
+    # Variables
+    ###########################################################################
+
+    m.HR_Curve_Prj_Fuel_Burn = Var(
+        m.HR_CURVE_PRJS_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    # Constraints
+    ###########################################################################
+
+    def fuel_burn_by_ll_constraint_rule(mod, prj, tmp, s):
+        """
+        **Constraint Name**: HR_Curve_Prj_Fuel_Burn_Constraint
+        **Enforced Over**: HR_CURVE_PRJS_OPR_TMPS_SGMS
+
+        Fuel burn is set by piecewise linear representation of input/output
+        curve.
+
+        Note: we assume that when projects are de-rated for availability, the
+        input/output curve is de-rated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very inefficient operating points.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_burn_by_ll_rule"):
+            fuel_burn_by_ll = imported_operational_modules[gen_op_type]. \
+                fuel_burn_by_ll_rule(mod, prj, tmp, s)
+        else:
+            fuel_burn_by_ll = \
+                op_type.fuel_burn_by_ll_rule(mod, prj, tmp, s)
+
+        return mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] >= fuel_burn_by_ll
+
+    m.HR_Curve_Prj_Fuel_Burn_Constraint = Constraint(
+        m.HR_CURVE_PRJS_OPR_TMPS_SGMS,
+        rule=fuel_burn_by_ll_constraint_rule
     )
 
     # Expressions
     ###########################################################################
 
-    def fuel_burn_rule(mod, g, tmp):
+    def fuel_burn_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel)
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_burn_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "fuel_burn_rule"):
+            fuel_burn_simple = imported_operational_modules[gen_op_type]. \
+                fuel_burn_rule(mod, prj, tmp)
+        else:
+            fuel_burn_simple = op_type.fuel_burn_rule(mod, prj, tmp)
+
+        return fuel_burn_simple \
+            + (mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] if prj in mod.HR_CURVE_PRJS
+               else 0)
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=fuel_burn_rule
     )
 
-    def startup_fuel_burn_rule(mod, g, tmp):
+    def startup_fuel_burn_rule(mod, prj, tmp):
         """
         Startup fuel burn is defined for some operational types while
         they are zero for others. Get the appropriate expression for each
         generator based on its operational type.
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            startup_fuel_burn_rule(mod, g, tmp)
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "startup_fuel_burn_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                startup_fuel_burn_rule(mod, prj, tmp)
+        else:
+            return op_type.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.STARTUP_FUEL_PRJ_OPR_TMPS,
         rule=startup_fuel_burn_rule
     )
 
+    def total_fuel_burn_rule(mod, g, tmp):
+        """
+        *Expression Name*: :code:`Total_Fuel_Burn_MMBtu`
+        *Defined Over*: :code:`PRJ_OPR_TMPS`
+
+        Total fuel burn is the sum of operational fuel burn (power production)
+        and startup fuel burn.
+        """
+        return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
+            + (mod.Startup_Fuel_Burn_MMBtu[g, tmp]
+               if g in mod.STARTUP_FUEL_PRJS
+               else 0)
+
     m.Total_Fuel_Burn_MMBtu = Expression(
-        m.PRJ_OPR_TMPS,
+        m.FUEL_PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
-
-
-# Expression Rules
-###############################################################################
-
-def total_fuel_burn_rule(mod, g, tmp):
-    """
-    *Expression Name*: :code:`Total_Fuel_Burn_MMBtu`
-    *Defined Over*: :code:`PRJ_OPR_TMPS`
-
-    Total fuel burn is the sum of operational fuel burn (power production)
-    and startup fuel burn.
-    """
-    return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
-        + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
-
 
 # Input-Output
 ###############################################################################
@@ -155,7 +276,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
         )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -167,7 +288,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[p],
                 m.fuel[p],
                 value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
-                value(m.Startup_Fuel_Burn_MMBtu[p, tmp]),
+                value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
+                if p in m.STARTUP_FUEL_PRJS else None,
                 value(m.Total_Fuel_Burn_MMBtu[p, tmp])
             ])
 

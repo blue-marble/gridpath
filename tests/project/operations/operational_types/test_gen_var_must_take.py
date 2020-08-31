@@ -131,15 +131,6 @@ class TestGenVarMustTake(unittest.TestCase):
         }
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 
-        # Params: gen_var_must_take_variable_om_cost_per_mwh
-        expected_var_om_cost = {"Customer_PV": 0}
-        actual_var_om_cost = {
-            prj: instance.gen_var_must_take_variable_om_cost_per_mwh[prj]
-            for prj in instance.GEN_VAR_MUST_TAKE
-        }
-
-        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
-
 
 if __name__ == "__main__":
     unittest.main()
