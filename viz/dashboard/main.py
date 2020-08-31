@@ -278,13 +278,24 @@ def scenario_change(attr, old, new):
     When the selected scenario changes, update the cost, energy and capacity.
     """
     # TODO: update cost, energy
-    x_factors = update_capacity_data(scenario=new,
+    src, x_factors = update_capacity_data(scenario=new,
                          period=period_select.value,
                          zone=zone_select.value,
                          capacity_metric=capacity_select.value)
     # Need to update x-axis separately (factors need to be list, not array!)
     # cap_plot.x_range.factors = list(capacity_source.data["period_scenario"])
-    cap_plot.x_range.factors = x_factors[1]
+    # cap_plot.x_range.factors = x_factors[1]
+
+    cap_plot = create_stacked_bar_plot(
+        source=src,
+        x_col=x_factors[0],
+        title="Capacity by Technology",
+        category_label="Technology",
+        y_label="Capacity (MW)"
+    )
+
+    # TODO: completely re-draw plot instead of updating data
+    middle_row.children[0] = cap_plot
 
 
 def period_change(attr, old, new):
@@ -292,13 +303,24 @@ def period_change(attr, old, new):
     When the selected period changes, update the cost, energy and capacity.
     """
     # TODO: update cost, energy
-    x_factors = update_capacity_data(scenario=scenario_select.value,
+    src, x_factors = update_capacity_data(scenario=scenario_select.value,
                          period=new,
                          zone=zone_select.value,
                          capacity_metric=capacity_select.value)
     # Need to update x-axis separately (factors need to be list, not array!)
     # cap_plot.x_range.factors = list(capacity_source.data["period_scenario"])
-    cap_plot.x_range.factors = x_factors[1]
+    # cap_plot.x_range.factors = x_factors[1]
+
+    cap_plot = create_stacked_bar_plot(
+        source=src,
+        x_col=x_factors[0],
+        title="Capacity by Technology",
+        category_label="Technology",
+        y_label="Capacity (MW)"
+    )
+
+    # TODO: completely re-draw plot instead of updating data
+    middle_row.children[0] = cap_plot
 
 
 def zone_change(attr, old, new):
@@ -397,15 +419,15 @@ def update_capacity_data(scenario, period, zone, capacity_metric):
     # x_col_reordered = order_cols_by_nunique(slice, x_col)
     # slice = slice.set_index(x_col_reordered)
     new_src = ColumnDataSource(slice)
-    capacity_source.data.update(new_src.data)
+    # capacity_source.data.update(new_src.data)
 
     # if x_col_reordered != x_col:
     #     capacity_source.remove("_".join(x_col))
     # x_factors = ("_".join(x_col_reordered),
     #              list(capacity_source.data["_".join(x_col_reordered)]))
     x_factors = ("_".join(x_col),
-                 list(capacity_source.data["_".join(x_col)]))
-    return x_factors
+                 list(new_src.data["_".join(x_col)]))
+    return new_src, x_factors
 
     # Can't do this here because update_capacity_data is called before
     # cap plot is created. Perhaps look into different way to initalize data?
@@ -445,7 +467,7 @@ capacity_source = ColumnDataSource()
 # Update CDSs with initial values
 update_summary_data(zone=zone_select.value)
 update_cost_data(zone=zone_select.value)
-x_factors = update_capacity_data(scenario=scenario_select.value,
+src, x_factors = update_capacity_data(scenario=scenario_select.value,
                      period=period_select.value,
                      zone=zone_select.value,
                      capacity_metric=capacity_select.value)
@@ -480,18 +502,12 @@ energy_plot = create_stacked_bar_plot(
     y_label="Energy (MWh)"  # TODO: link to units
 )
 cap_plot = create_stacked_bar_plot(
-    source=capacity_source,
-    x_col="period_scenario",  # TODO: dynamically update based on x_col order
+    source=src,
+    x_col=x_factors[0],  # TODO: dynamically update based on x_col order
     title="Capacity by Technology",
     category_label="Technology",
     y_label="Capacity (MW)"  # TODO: link to units
 )
-
-# Set up callback behavior
-scenario_select.on_change('value', scenario_change)
-period_select.on_change('value', period_change)
-zone_select.on_change('value', zone_change)
-capacity_select.on_change('value', capacity_change)
 
 # Set up layout
 top_row = row(summary_table, column(scenario_select,
@@ -514,6 +530,12 @@ tab3 = Panel(child=policy_dummy, title='Policy Targets')
 tab4 = Panel(child=inputs_dummy, title='Inputs')
 # Put all the tabs into one application
 tabs = Tabs(tabs=[tab1, tab2, tab3, tab4])
+
+# Set up callback behavior
+scenario_select.on_change('value', scenario_change)
+period_select.on_change('value', period_change)
+zone_select.on_change('value', zone_change)
+capacity_select.on_change('value', capacity_change)
 
 # Set up curdoc
 curdoc().add_root(tabs)
