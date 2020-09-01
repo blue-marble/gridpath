@@ -39,7 +39,7 @@ from __future__ import division
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Binary, PercentFraction, Expression, value
+    Binary, PercentFraction, Boolean, Expression, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -654,13 +654,42 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
 
+    m.gen_commit_bin_allow_ramp_up_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_bin_allow_ramp_down_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
+    )
+
     m.gen_commit_bin_min_up_time_hours = Param(
         m.GEN_COMMIT_BIN,
         within=NonNegativeReals, default=0
     )
+
+    m.gen_commit_bin_allow_min_up_time_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
+    )
+
     m.gen_commit_bin_min_down_time_hours = Param(
         m.GEN_COMMIT_BIN,
         within=NonNegativeReals, default=0
+    )
+
+    m.gen_commit_bin_allow_min_down_time_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
     )
 
     m.gen_commit_bin_aux_consumption_frac_capacity = Param(
@@ -782,6 +811,26 @@ def add_module_specific_components(m, d):
     )
 
     m.GenCommitBin_Provide_Power_Shutdown_MW = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.GenCommitBin_Ramp_Up_Violation = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.GenCommitBin_Ramp_Down_Violation = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.GenCommitBin_Min_Up_Time_Violation = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.GenCommitBin_Min_Down_Time_Violation = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -1308,7 +1357,9 @@ def min_up_time_constraint_rule(mod, g, tmp):
     # Otherwise, if there was a start min_up_time or less ago, the unit has
     # to remain committed.
     else:
-        return mod.GenCommitBin_Commit[g, tmp] \
+        return mod.GenCommitBin_Commit[g, tmp] + \
+            mod.gen_commit_bin_allow_min_up_time_violation[g] * \
+            mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] \
             >= number_of_starts_min_up_time_or_less_hours_ago
 
 
@@ -1376,7 +1427,10 @@ def min_down_time_constraint_rule(mod, g, tmp):
     # Otherwise, if there was a shutdown min_down_time or less ago, the unit
     # has to remain shut down.
     else:
-        return 1 - mod.GenCommitBin_Commit[g, tmp] \
+        return 1 - \
+            (mod.GenCommitBin_Commit[g, tmp] -
+                mod.gen_commit_bin_allow_min_down_time_violation[g] *
+                mod.GenCommitBin_Min_Down_Time_Violation[g, tmp]) \
             >= number_of_stops_min_down_time_or_less_hours_ago
 
 
@@ -1443,7 +1497,9 @@ def ramp_up_constraint_rule(mod, g, tmp):
                 (mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
                  + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp]) \
                 - (prev_tmp_power_above_pmin - prev_tmp_downwards_reserves) \
-                <= prev_tmp_ramp_up_rate_mw_per_tmp
+                <= prev_tmp_ramp_up_rate_mw_per_tmp + \
+                mod.gen_commit_bin_allow_ramp_up_violation[g] * \
+                mod.GenCommitBin_Ramp_Up_Violation[g, tmp]
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1506,7 +1562,9 @@ def ramp_down_constraint_rule(mod, g, tmp):
                 - \
                 (mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
                  - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp]) \
-                <= prev_tmp_ramp_down_rate_mw_per_tmp
+                <= prev_tmp_ramp_down_rate_mw_per_tmp + \
+                mod.gen_commit_bin_allow_ramp_down_violation[g] * \
+                mod.GenCommitBin_Ramp_Down_Violation[g, tmp]
 
 
 # Startup Power
@@ -2063,6 +2121,33 @@ def fix_commitment(mod, g, tmp):
     mod.GenCommitBin_Commit[g, tmp] = \
         mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
     mod.GenCommitBin_Commit[g, tmp].fixed = True
+
+
+def operational_violation_cost_rule(mod, g, tmp):
+    """
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    ramp_up_violation = \
+        mod.GenCommitBin_Ramp_Up_Violation[g, tmp] * \
+        mod.ramp_up_violation_penalty[g]
+    ramp_down_violation = \
+        mod.GenCommitBin_Ramp_Down_Violation[g, tmp] * \
+        mod.ramp_down_violation_penalty[g]
+    min_up_time_violation = \
+        mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] * \
+        mod.min_up_time_violation_penalty[g]
+    min_down_time_violation = \
+        mod.GenCommitBin_Min_Down_Time_Violation[g, tmp] * \
+        mod.min_down_time_violation_penalty[g]
+
+    return ramp_up_violation \
+        + ramp_down_violation \
+        + min_up_time_violation \
+        + min_down_time_violation
 
 
 # Input-Output

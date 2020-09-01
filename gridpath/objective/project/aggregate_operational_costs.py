@@ -22,6 +22,9 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     getattr(d, total_cost_components).append("Total_Fuel_Cost")
     getattr(d, total_cost_components).append("Total_Startup_Cost")
     getattr(d, total_cost_components).append("Total_Shutdown_Cost")
+    getattr(d, total_cost_components).append(
+        "Total_Operational_Violation_Cost"
+    )
 
 
 def add_model_components(m, d):
@@ -60,7 +63,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS)
+                   for (g, tmp) in mod.VAR_OM_COST_ALL_PRJS_OPR_TMPS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
 
@@ -110,3 +113,19 @@ def add_model_components(m, d):
                    for (g, tmp)
                    in mod.SHUTDOWN_COST_PRJ_OPR_TMPS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
+
+    def total_operational_violation_cost_rule(mod):
+        """
+        Sum shutdown costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(mod.Operational_Violation_Cost[g, tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
+                   for (g, tmp)
+                   in mod.VIOL_ALL_PRJ_OPR_TMPS)
+    m.Total_Operational_Violation_Cost = Expression(
+        rule=total_operational_violation_cost_rule)

@@ -259,6 +259,20 @@ def add_model_components(m, d):
     # Fuel projects that incur fuel burn on startup
     m.STARTUP_FUEL_PRJS = Set(within=m.FUEL_PRJS)
 
+    # Projects that allow operational constraint violations
+    m.RAMP_UP_VIOL_PRJS = Set(within=m.PROJECTS)
+    m.RAMP_DOWN_VIOL_PRJS = Set(within=m.PROJECTS)
+    m.MIN_UP_TIME_VIOL_PRJS = Set(within=m.PROJECTS)
+    m.MIN_DOWN_TIME_VIOL_PRJS = Set(within=m.PROJECTS)
+
+    m.VIOL_ALL_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: set(
+            mod.RAMP_UP_VIOL_PRJS | mod.RAMP_DOWN_VIOL_PRJS
+            | mod.MIN_UP_TIME_VIOL_PRJS | mod.MIN_DOWN_TIME_VIOL_PRJS
+        )
+    )
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -311,6 +325,26 @@ def add_model_components(m, d):
         within=NonNegativeReals
     )
 
+    m.ramp_up_violation_penalty = Param(
+        m.RAMP_UP_VIOL_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.ramp_down_violation_penalty = Param(
+        m.RAMP_UP_VIOL_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.min_up_time_violation_penalty = Param(
+        m.MIN_UP_TIME_VIOL_PRJS,
+        within=NonNegativeReals
+    )
+
+    m.min_down_time_violation_penalty = Param(
+        m.MIN_DOWN_TIME_VIOL_PRJS,
+        within=NonNegativeReals
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -331,10 +365,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                               "inputs", "projects.tab"),
         select=("project", "variable_om_cost_per_mwh", "fuel",
                 "startup_fuel_mmbtu_per_mw", "startup_cost_per_mw",
-                "shutdown_cost_per_mw"),
+                "shutdown_cost_per_mw",
+                "ramp_up_violation_penalty",
+                "ramp_down_violation_penalty",
+                "min_up_time_violation_penalty",
+                "min_down_time_violation_penalty"),
         param=(m.variable_om_cost_per_mwh, m.fuel,
                m.startup_fuel_mmbtu_per_mw, m.startup_cost_per_mw,
-               m.shutdown_cost_per_mw)
+               m.shutdown_cost_per_mw,
+               m.ramp_up_violation_penalty,
+               m.ramp_down_violation_penalty,
+               m.min_up_time_violation_penalty,
+               m.min_down_time_violation_penalty)
     )
 
     data_portal.data()['VAR_OM_COST_SIMPLE_PRJS'] = {
@@ -355,6 +397,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()['SHUTDOWN_COST_PRJS'] = {
         None: list(data_portal.data()['shutdown_cost_per_mw'].keys())
+    }
+
+    data_portal.data()['RAMP_UP_VIOL_PRJS'] = {
+        None: list(data_portal.data()['ramp_up_violation_penalty'].keys())
+    }
+
+    data_portal.data()['RAMP_DOWN_VIOL_PRJS'] = {
+        None: list(data_portal.data()['ramp_down_violation_penalty'].keys())
+    }
+
+    data_portal.data()['MIN_UP_TIME_VIOL_PRJS'] = {
+        None: list(data_portal.data()['min_up_time_violation_penalty'].keys())
+    }
+
+    data_portal.data()['MIN_DOWN_TIME_VIOL_PRJS'] = {
+        None: list(data_portal.data()['min_down_time_violation_penalty'].keys()
+                   )
     }
 
     # VOM curves
@@ -484,7 +543,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         shutdown_plus_ramp_down_rate,
         ramp_up_when_on_rate,
         ramp_down_when_on_rate,
-        min_up_time_hours, min_down_time_hours,
+        ramp_up_violation_penalty,
+        ramp_down_violation_penalty,
+        min_up_time_hours, min_up_time_violation_penalty,
+        min_down_time_hours, min_down_time_violation_penalty,
         charging_efficiency, discharging_efficiency,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
@@ -605,15 +667,19 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         "shutdown_plus_ramp_down_rate",
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",
-        "min_up_time_hours", "min_down_time_hours",
+        "ramp_up_violation_penalty",
+        "ramp_down_violation_penalty",
+        "min_up_time_hours", "min_up_time_violation_penalty",
+        "min_down_time_hours", "min_down_time_violation_penalty",
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours", "maximum_duration_hours",
         "aux_consumption_frac_capacity", "aux_consumption_frac_power",
         "last_commitment_stage"
     ]
     append_to_input_file(
-        inputs_directory=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                      "inputs"),
+        inputs_directory=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs"
+        ),
         input_file="projects.tab",
         query_results=proj_opchar,
         index_n_columns=1,

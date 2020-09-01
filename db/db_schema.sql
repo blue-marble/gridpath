@@ -813,8 +813,12 @@ startup_plus_ramp_up_rate FLOAT,  -- Not used for gen_commit_lin/bin!
 shutdown_plus_ramp_down_rate FLOAT,
 ramp_up_when_on_rate FLOAT,
 ramp_down_when_on_rate FLOAT,
+ramp_up_violation_penalty FLOAT, -- leave NULL for hard constraints
+ramp_down_violation_penalty FLOAT, -- leave NULL for hard constraints
 min_up_time_hours INTEGER,
+min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
+min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
@@ -3228,6 +3232,7 @@ Total_Variable_OM_Cost Float,
 Total_Fuel_Cost Float,
 Total_Startup_Cost Float,
 Total_Shutdown_Cost Float,
+Total_Operational_Violation_Cost FLOAT,
 Total_Hurdle_Cost Float,
 Total_Load_Balance_Penalty_Costs Float,
 Frequency_Response_Penalty_Costs Float,

@@ -191,6 +191,13 @@ def add_model_components(m, d):
                           if p in mod.SHUTDOWN_COST_PRJS]
     )
 
+    m.VIOL_ALL_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.VIOL_ALL_PRJS]
+    )
+
     # Variables
     ###########################################################################
 
@@ -337,6 +344,23 @@ def add_model_components(m, d):
     m.Shutdown_Cost = Expression(
         m.SHUTDOWN_COST_PRJ_OPR_TMPS,
         rule=shutdown_cost_rule
+    )
+
+    def operational_violation_cost_rule(mod, prj, tmp):
+        """
+        Get any operational constraint violation costs.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "operational_violation_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                operational_violation_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.operational_violation_cost_rule(mod, prj, tmp)
+
+    m.Operational_Violation_Cost = Expression(
+        m.VIOL_ALL_PRJ_OPR_TMPS,
+        rule=operational_violation_cost_rule
     )
 
 
