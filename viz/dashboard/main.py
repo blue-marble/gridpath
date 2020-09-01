@@ -6,8 +6,6 @@ To run: navigate ./viz/ folder and run:
 "bokeh serve dashboard --show"
 
 TODO:
- - add summary cost table with all objective function costs
- - NEW: link summary plot to real data
  - what to do with subproblems? --> sum across them?
  - add stage selector
  - add tabs with more info:
@@ -176,6 +174,44 @@ def get_all_energy_data(conn, scenarios):
 
 
 # Data gathering functions
+def get_objective_cost_data(conn, scenarios):
+    scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
+    # TODO: sum over subproblem and select stage
+    sql = """
+    SELECT scenario_name AS scenario,
+    Total_Capacity_Costs,
+    Total_Tx_Capacity_Costs,
+    Total_PRM_Group_Costs,
+    Total_Variable_OM_Cost,
+    Total_Fuel_Cost,
+    Total_Startup_Cost,
+    Total_Shutdown_Cost,
+    Total_Hurdle_Cost,
+    Total_Load_Balance_Penalty_Costs,
+    Frequency_Response_Penalty_Costs,
+    LF_Reserves_Down_Penalty_Costs,
+    LF_Reserves_Up_Penalty_Costs,
+    Regulation_Down_Penalty_Costs,
+    Regulation_Up_Penalty_Costs,
+    Spinning_Reserves_Penalty_Costs,
+    Total_PRM_Shortage_Penalty_Costs,
+    Total_Local_Capacity_Shortage_Penalty_Costs,
+    Total_Carbon_Cap_Balance_Penalty_Costs,
+    Total_RPS_Balance_Penalty_Costs,
+    Total_Dynamic_ELCC_Tuning_Cost,
+    Total_Import_Carbon_Tuning_Cost
+    FROM results_system_costs
+    
+    INNER JOIN
+    (SELECT scenario_name, scenario_id FROM scenarios
+    WHERE scenario_name in ({}) ) AS scen_table
+    USING (scenario_id)
+    ;""".format(",".join(["?"] * len(scenarios)))
+
+    df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
+
+    return df
+
 def get_all_summary_data(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     # TODO: sum over subproblem/stage (?)
@@ -233,10 +269,43 @@ def get_all_summary_data(conn, scenarios):
     return df
 
 
+def get_objective_src(objective_df, scenario):
+    """
+    Update the ColumnDataSource object 'objective_source' with the appropriate
+    scenario slice of the data.
+    :param objective_df:
+    :param scenario:
+    :return:
+    """
+    scenario = scenario if isinstance(scenario, list) else [scenario]
+    df = objective_df.copy()
+
+    scenario_filter = df["scenario"].isin(scenario)
+    slice = df[scenario_filter]
+
+    # 'Unpivot' from wide to long format (move metrics into a col)
+    slice = pd.melt(
+        slice,
+        id_vars=['scenario'],
+        var_name='objective_metric',
+        value_name='value'
+    )
+    # # Pivot scenarios into columms
+    slice = pd.pivot_table(
+        slice,
+        index=['objective_metric'],
+        columns='scenario',
+        values='value'
+    ).reset_index().fillna(0)
+
+    src = ColumnDataSource(slice)
+    return src
+
+
 def get_summary_src(summary_df, scenario, period, zone):
     """
     Update the ColumnDataSource object 'summary_source' with the appropriate
-    load_zone slice of the data.
+    slice of the data.
     :param summary_df:
     :param zone:
     :return:
@@ -349,12 +418,12 @@ def get_cap_src(capacity_df, scenario, period, zone, capacity_metric):
     return src, x_col_src
 
 
-def get_summary_table(summary_src):
-    cols_to_use = [c for c in summary_src.data.keys()
+def create_datatable(src):
+    cols_to_use = [c for c in src.data.keys()
                    if c not in ['stage', 'index']]
     columns = [TableColumn(field=c, title=c) for c in cols_to_use]
     summary_table = DataTable(
-        columns=columns, source=summary_src,
+        columns=columns, source=src,
         index_position=None,
         fit_columns=True,
         # width=800,
@@ -404,10 +473,15 @@ def draw_plots(scenario, period, zone, capacity_metric):
         period=period,
         zone=zone
     )
+    objective_src = get_objective_src(
+        objective_df=objective,
+        scenario=scenario
+    )
 
     # Create Bokeh Plots and Tables
     title = PreText(text="Results: {} - {} - {}".format(scenario, period, zone))
-    summary_table = get_summary_table(summary_src)
+    summary_table = create_datatable(summary_src)
+    objective_table = create_datatable(objective_src)
     cap_plot = create_stacked_bar_plot(
         source=cap_src,
         x_col=cap_x_col,
@@ -433,6 +507,7 @@ def draw_plots(scenario, period, zone, capacity_metric):
     # Update layout with new plots
     layout.children[0] = title
     top_row.children[1] = summary_table
+    top_row.children[2] = objective_table
     middle_row.children[0] = cap_plot
     middle_row.children[1] = energy_plot
     bottom_row.children[0] = cost_plot
@@ -507,15 +582,17 @@ summary = get_all_summary_data(conn, scenario_options)
 cost = get_all_cost_data(conn, scenario_options)
 capacity = get_all_capacity_data(conn, scenario_options)
 energy = get_all_energy_data(conn, scenario_options)
+objective = get_objective_cost_data(conn, scenario_options)
 
 # Set up Bokeh Layout with placeholders
 title = PreText()
 summary_table = DataTable()
+objective_table = DataTable()
 cost_plot = figure()
 energy_plot = figure()
 cap_plot = figure()
 selectors = column(scenario_select, period_select, zone_select, capacity_select)
-top_row = row(selectors, summary_table)
+top_row = row(selectors, summary_table, objective_table)
 middle_row = row(cap_plot, energy_plot)
 bottom_row = row(cost_plot)
 layout = column(title, top_row, middle_row, bottom_row)
