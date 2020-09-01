@@ -817,22 +817,26 @@ def add_module_specific_components(m, d):
 
     m.GenCommitBin_Ramp_Up_Violation = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
+        within=NonNegativeReals,
+        initialize=0
     )
 
     m.GenCommitBin_Ramp_Down_Violation = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
+        within=NonNegativeReals,
+        initialize=0
     )
 
     m.GenCommitBin_Min_Up_Time_Violation = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
+        within=NonNegativeReals,
+        initialize=0
     )
 
     m.GenCommitBin_Min_Down_Time_Violation = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
+        within=NonNegativeReals,
+        initialize=0
     )
 
     # Expressions
@@ -2241,7 +2245,9 @@ def export_module_specific_results(mod, d,
                          "auxiliary_consumption_mw", "net_power_mw",
                          "committed_mw", "committed_units",
                          "started_units", "stopped_units",
-                         "synced_units", "active_startup_type"
+                         "synced_units", "active_startup_type",
+                         "ramp_up_violation", "ramp_down_violation",
+                         "min_up_time_violation", "min_down_time_violation"
                          ])
 
         for (p, tmp) in mod.GEN_COMMIT_BIN_OPR_TMPS:
@@ -2265,7 +2271,11 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitBin_Startup[p, tmp]),
                 value(mod.GenCommitBin_Shutdown[p, tmp]),
                 value(mod.GenCommitBin_Synced[p, tmp]),
-                value(mod.GenCommitBin_Active_Startup_Type[p, tmp])
+                value(mod.GenCommitBin_Active_Startup_Type[p, tmp]),
+                value(mod.GenCommitBin_Ramp_Up_Violation[p, tmp]),
+                value(mod.GenCommitBin_Ramp_Down_Violation[p, tmp]),
+                value(mod.GenCommitBin_Min_Up_Time_Violation[p, tmp]),
+                value(mod.GenCommitBin_Min_Down_Time_Violation[p, tmp])
             ])
 
     # Export any results that will be become inputs to a linked subproblem

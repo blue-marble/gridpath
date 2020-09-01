@@ -389,7 +389,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology",
-             "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost"]
+             "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost",
+             "operational_violation_cost"]
         )
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
@@ -407,7 +408,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Startup_Cost[p, tmp])
                 if p in m.STARTUP_COST_PRJS else None,
                 value(m.Shutdown_Cost[p, tmp])
-                if p in m.SHUTDOWN_COST_PRJS else None
+                if p in m.SHUTDOWN_COST_PRJS else None,
+                value(m.Operational_Violation_Cost[p, tmp])
+                if p in m.VIOL_ALL_PRJ_OPR_TMPS else None
             ])
 
 
