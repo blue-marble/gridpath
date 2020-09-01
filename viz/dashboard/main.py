@@ -6,6 +6,7 @@ To run: navigate ./viz/ folder and run:
 "bokeh serve dashboard --show"
 
 TODO:
+ - add summary cost table with all objective function costs
  - NEW: link summary plot to real data
  - what to do with subproblems? --> sum across them?
  - add stage selector
@@ -175,45 +176,60 @@ def get_all_energy_data(conn, scenarios):
 
 
 # Data gathering functions
-def get_all_summary_data(conn, scenario_id):
-    df = pd.DataFrame(
-        columns=['scenario', 'period', 'load_zone', 'total_cost', 'load',
-                 'average_cost', 'emissions', 'rps_gen_pct', 'curtailment_pct',
-                 'cumulative_new_capacity', 'unserved_energy'],
-        data=[['test', 2020, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test', 2030, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test', 2040, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test', 2020, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              ['test', 2030, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              ['test', 2040, 'Zone2', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test_tx_simple', 2020, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test_tx_simple', 2030, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test_tx_simple', 2040, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ['test_tx_simple', 2020, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              ['test_tx_simple', 2030, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              ['test_tx_simple', 2040, 'Zone2', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              ]
-    )
-    #  TODO: look at results tool RESOLVE for more metrics
-    # 'Unpivot' from wide to long format
-    # df = pd.melt(
-    #     df,
-    #     id_vars=['scenario', 'period', 'load_zone'],
-    #     var_name='summary_metric',
-    #     value_name='value'
-    # )
-    # TODO: sort metrics in a way that we want them (not alphabetically)
+def get_all_summary_data(conn, scenarios):
+    scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
+    # TODO: sum over subproblem/stage (?)
+    sql = """
+    SELECT scenario_name AS scenario, period, load_zone, 
+    capacity_cost, operational_cost, transmission_cost,
+    (ifnull(capacity_cost, 0) 
+     + ifnull(operational_cost, 0) 
+     + ifnull(transmission_cost, 0)) AS total_cost, 
+    load, 
+    (ifnull(capacity_cost, 0) 
+     + ifnull(operational_cost, 0) 
+     + ifnull(transmission_cost, 0))
+    /ifnull(load,0) AS average_cost, 
+    overgeneration, unserved_energy, carbon_emissions
+    
+    FROM (
+        SELECT scenario_id, period, load_zone, capacity_cost,
+        (variable_om_cost + fuel_cost + startup_cost + shutdown_cost) AS 
+        operational_cost,  
+        (tx_capacity_cost + tx_hurdle_cost) AS transmission_cost
+        FROM results_costs_by_period_load_zone
+        ) AS cost_table
+        
+    INNER JOIN 
+    -- Todo: PRE-AGG by period, deal with subproblem/stage
+    (SELECT scenario_id, period, load_zone, 
+    SUM(timepoint_weight * number_of_hours_in_timepoint * load_mw) AS load,
+    SUM(timepoint_weight * number_of_hours_in_timepoint * overgeneration_mw) 
+    AS overgeneration,
+    SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
+    AS unserved_energy
+    FROM results_system_load_balance
+    GROUP BY scenario_id, period, load_zone
+    ) AS load_table
+    USING (scenario_id, period, load_zone)
+    
+    INNER JOIN
+    (SELECT scenario_id, period, load_zone,
+    SUM(carbon_emission_tons) AS carbon_emissions
+    FROM results_project_carbon_emissions_by_technology_period
+    GROUP BY scenario_id, period, load_zone
+    ) AS carbon_table
+    USING(scenario_id, period, load_zone)
+    
+    INNER JOIN
+    (SELECT scenario_name, scenario_id FROM scenarios
+    WHERE scenario_name in ({}) ) AS scen_table
+    USING (scenario_id)
+    ;""".format(",".join(["?"] * len(scenarios)))
+
+    df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     df['period'] = df['period'].astype(str)  # Bokeh CDS needs string columns
 
-    # # Pivot periods into columms
-    # df = pd.pivot_table(
-    #     df,
-    #     index=['scenario', 'load_zone', 'summary_metric'],
-    #     columns='period',
-    #     values='value'
-    # ).fillna(0).reset_index()
-
-    # df = df.drop(["stage", "load_zone"], axis=1)
     return df
 
 
@@ -228,22 +244,28 @@ def get_summary_src(summary_df, scenario, period, zone):
     scenario = scenario if isinstance(scenario, list) else [scenario]
     period = period if isinstance(period, list) else [period]
     df = summary_df.copy()
-    # TODO: periods are already pivoted to columns so can't do the filter
-    # instead need to do the pivot AFTER the filtering
+
     scenario_filter = df["scenario"].isin(scenario)
     period_filter = df["period"].isin(period)
     zone_filter = (df["load_zone"] == zone)
 
     slice = df[period_filter & scenario_filter & zone_filter]
-    # slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
 
-    # Pivot periods into columms
-    # slice = pd.pivot_table(
-    #     slice,
-    #     index=['scenario', 'load_zone', 'summary_metric'],
-    #     columns='period',
-    #     values='value'
-    # ).fillna(0).reset_index()
+    # 'Unpivot' from wide to long format (move metrics into a col)
+    slice = pd.melt(
+        slice,
+        id_vars=['scenario', 'period', 'load_zone'],
+        var_name='summary_metric',
+        value_name='value'
+    )
+    # Pivot scenarios into columms
+    slice = pd.pivot_table(
+        slice,
+        index=['load_zone', 'period', 'summary_metric'],
+        columns='scenario',
+        values='value'
+    ).reset_index().fillna(0)
+    # TODO: custom sort metrics?
 
     src = ColumnDataSource(slice)
     return src
@@ -329,11 +351,15 @@ def get_cap_src(capacity_df, scenario, period, zone, capacity_metric):
 
 def get_summary_table(summary_src):
     cols_to_use = [c for c in summary_src.data.keys()
-                   if c not in ['load_zone', 'stage', 'index']]
+                   if c not in ['stage', 'index']]
     columns = [TableColumn(field=c, title=c) for c in cols_to_use]
-    summary_table = DataTable(columns=columns, source=summary_src,
-                              index_position=None,
-                              width=800, height=250)
+    summary_table = DataTable(
+        columns=columns, source=summary_src,
+        index_position=None,
+        fit_columns=True,
+        # width=800,
+        height=300
+    )
     return summary_table
 
 
@@ -477,7 +503,7 @@ capacity_select = Select(title="Select Capacity Metric:",
                          options=CAP_OPTIONS)
 
 # Get data for all scenarios/periods/... (note: global var, done once)
-summary = get_all_summary_data(conn, 23)
+summary = get_all_summary_data(conn, scenario_options)
 cost = get_all_cost_data(conn, scenario_options)
 capacity = get_all_capacity_data(conn, scenario_options)
 energy = get_all_energy_data(conn, scenario_options)
