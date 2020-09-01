@@ -418,7 +418,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 

@@ -253,6 +253,32 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
+        # Param: gen_commit_lin_allow_ramp_up_violation
+        expected_ramp_up_viol = {
+            "Disp_Cont_Commit": 1.0,
+            "Clunky_Old_Gen": 0,
+            "Clunky_Old_Gen2": 0
+        }
+        actual_ramp_up_viol = {
+            prj: instance.gen_commit_lin_allow_ramp_up_violation[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_ramp_up_viol,
+                             actual_ramp_up_viol)
+
+        # Param: gen_commit_lin_allow_ramp_down_violation
+        expected_ramp_down_viol = {
+            "Disp_Cont_Commit": 1.0,
+            "Clunky_Old_Gen": 0,
+            "Clunky_Old_Gen2": 0
+        }
+        actual_ramp_down_viol = {
+            prj: instance.gen_commit_lin_allow_ramp_down_violation[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_ramp_down_viol,
+                             actual_ramp_down_viol)
+        
         # Param: gen_commit_lin_min_up_time_hours
         expected_min_up_time = {"Disp_Cont_Commit": 3,
                                 "Clunky_Old_Gen": 0,
@@ -265,6 +291,19 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_min_up_time,
                              actual_min_up_time)
 
+        # Param: gen_commit_lin_allow_min_up_time_violation
+        expected_min_up_time_viol = {
+            "Disp_Cont_Commit": 1.0,
+            "Clunky_Old_Gen": 0,
+            "Clunky_Old_Gen2": 0
+        }
+        actual_min_up_time_viol = {
+            prj: instance.gen_commit_lin_allow_min_up_time_violation[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_min_up_time_viol,
+                             actual_min_up_time_viol)
+        
         # Param: gen_commit_lin_min_down_time_hours
         expected_min_down_time = {"Disp_Cont_Commit": 7,
                                   "Clunky_Old_Gen": 0,
@@ -276,6 +315,19 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
 
+        # Param: gen_commit_lin_allow_min_down_time_violation
+        expected_min_down_time_viol = {
+            "Disp_Cont_Commit": 1.0,
+            "Clunky_Old_Gen": 0,
+            "Clunky_Old_Gen2": 0
+        }
+        actual_min_down_time_viol = {
+            prj: instance.gen_commit_lin_allow_min_down_time_violation[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_min_down_time_viol,
+                             actual_min_down_time_viol)
+        
         # Param: gen_commit_lin_down_time_cutoff_hours
         expected_down_time_cutoff_hours = {("Disp_Cont_Commit", 1.0): 7,
                                            ("Disp_Cont_Commit", 2.0): 15,
