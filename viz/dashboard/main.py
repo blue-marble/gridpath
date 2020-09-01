@@ -6,20 +6,7 @@ To run: navigate ./viz/ folder and run:
 "bokeh serve dashboard --show"
 
 TODO:
- - hover tools break when multi-level x_col is reordered; update if reordering
- - make sure energy and and cost etc. work with multiple scenarios
- - re-arrange scenarios and periods
- - LATEST: deal with updating x-axis dynamically (doesn't change when CDS
-   changes) + also fix energy and cost chart to be similar to capacity
-    (deal with multiple scenarios and periods)
- - NEW: allow multiple zones
- - NEW: link capacity plots and energy plot to real data
  - NEW: link summary plot to real data
- - replace dummy data with real sql scripts pulling data
-     also requires adding database connection and parsers
- - add a PreText title that summaries everything
-   (which load_zones selected etc.)
- - allow "all zones" option
  - what to do with subproblems? --> sum across them?
  - add stage selector
  - add tabs with more info:
@@ -29,47 +16,19 @@ TODO:
     - violations table (unserved energy, reserves, rps, carbon, etc.)
     - duals table
  - add additional plots/info on main screen (think about what makes sense)
- - try and re-use existing stacked bar functionality
-    might have to break it out since want to use CDS as function arg
-    at the very least, should also use custom colors/order and custom units
- - could have a global variable that specifies whether dashboard is across
-   periods or across scenarios? (if across periods, specify scenario, if
-   across scenarios, specify periods)?
-   --> on UI side, would select scenario and have button to generate dashboard,
-   or similarly, select period, and generate dashboard that compares scenarios
  - New req/dependency: sqlalchemy (not sure why we didn't need it before?)
-
-Notes:
-    General idea should be to load in all data (all periods / load zones)
-    ONCE in general scope, and then have updater functions in callbacks
-    that slice out appropriate data (and perhaps do some pivoting)
-
-
-Questions:
-    how to integrate with UI
-    using Bokeh framework vs. using UI framework to combine charts and provide
-    interactivity (easier with Bokeh?)
-    duplicate efforts between the inputs overview and results overview? (how
-    to overcome; maybe re-use plotting functions? --> requires some rewrite).
 
 """
 
-from argparse import ArgumentParser
 from bokeh.models import Tabs, Panel, PreText, Select, ColumnDataSource, \
     DataTable, TableColumn, MultiSelect
+from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-
 import pandas as pd
 
-# GridPath modules
 from db.common_functions import connect_to_database
 from viz.common_functions import create_stacked_bar_plot, order_cols_by_nunique
-
-# TODO: base on actual data
-CAP_OPTIONS = ["new_build_capacity", "retired_capacity", "total_capacity",
-               "cumulative_new_build_capacity", "cumulative_retired_capacity"]
-DB_PATH = "../db/test.db"  # TODO: link to UI or parsed arg?
 
 
 def get_scenario_options(conn):
@@ -218,88 +177,74 @@ def get_all_energy_data(conn, scenarios):
 # Data gathering functions
 def get_all_summary_data(conn, scenario_id):
     df = pd.DataFrame(
-        columns=['period', 'load_zone', 'total_cost', 'load',
+        columns=['scenario', 'period', 'load_zone', 'total_cost', 'load',
                  'average_cost', 'emissions', 'rps_gen_pct', 'curtailment_pct',
                  'cumulative_new_capacity', 'unserved_energy'],
-        data=[[2020, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              [2030, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              [2040, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
-              [2020, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              [2030, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
-              [2040, 'Zone2', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+        data=[['test', 2020, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test', 2030, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test', 2040, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test', 2020, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
+              ['test', 2030, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
+              ['test', 2040, 'Zone2', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test_tx_simple', 2020, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test_tx_simple', 2030, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test_tx_simple', 2040, 'Zone1', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
+              ['test_tx_simple', 2020, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
+              ['test_tx_simple', 2030, 'Zone2', 10000, 5000, 40, 3000, 0.5, 0.02, 20000, 0],
+              ['test_tx_simple', 2040, 'Zone2', 20000, 8000, 50, 3000, 0.6, 0.04, 30000, 0],
               ]
     )
     #  TODO: look at results tool RESOLVE for more metrics
     # 'Unpivot' from wide to long format
-    df = pd.melt(
-        df,
-        id_vars=['period', 'load_zone'],
-        var_name='summary_metric',
-        value_name='value'
-    )
+    # df = pd.melt(
+    #     df,
+    #     id_vars=['scenario', 'period', 'load_zone'],
+    #     var_name='summary_metric',
+    #     value_name='value'
+    # )
     # TODO: sort metrics in a way that we want them (not alphabetically)
     df['period'] = df['period'].astype(str)  # Bokeh CDS needs string columns
 
-    # Pivot periods into columms
-    df = pd.pivot_table(
-        df,
-        index=['load_zone', 'summary_metric'],
-        columns='period',
-        values='value'
-    ).fillna(0).reset_index()
+    # # Pivot periods into columms
+    # df = pd.pivot_table(
+    #     df,
+    #     index=['scenario', 'load_zone', 'summary_metric'],
+    #     columns='period',
+    #     values='value'
+    # ).fillna(0).reset_index()
 
     # df = df.drop(["stage", "load_zone"], axis=1)
     return df
 
 
-# Define callbacks
-def scenario_change(attr, old, new):
-    """
-    When the selected scenario changes, update the cost, energy and capacity
-    and re-draw the plots.
-    """
-
-    draw_plots(scenario_select.value, period_select.value,
-               zone_select.value, capacity_select.value)
-
-
-def period_change(attr, old, new):
-    """
-    When the selected period changes, update the cost, energy and capacity.
-    """
-
-    draw_plots(scenario_select.value, period_select.value,
-               zone_select.value, capacity_select.value)
-
-
-def zone_change(attr, old, new):
-    """
-    When the selected load zone changes, update the cost, energy and capacity.
-    """
-
-    draw_plots(scenario_select.value, period_select.value,
-               zone_select.value, capacity_select.value)
-
-
-def capacity_change(attr, old, new):
-    """
-    When the selected capacity metric changes, update the capacity.
-    """
-    draw_plots(scenario_select.value, period_select.value,
-               zone_select.value, capacity_select.value)
-
-
-# TODO: Update summary table when zone changes!
-def get_summary_src(summary_df, zone):
+def get_summary_src(summary_df, scenario, period, zone):
     """
     Update the ColumnDataSource object 'summary_source' with the appropriate
     load_zone slice of the data.
+    :param summary_df:
     :param zone:
     :return:
     """
+    scenario = scenario if isinstance(scenario, list) else [scenario]
+    period = period if isinstance(period, list) else [period]
     df = summary_df.copy()
-    slice = df[df["load_zone"] == zone]
-    slice = slice.drop(['load_zone'], axis=1)
+    # TODO: periods are already pivoted to columns so can't do the filter
+    # instead need to do the pivot AFTER the filtering
+    scenario_filter = df["scenario"].isin(scenario)
+    period_filter = df["period"].isin(period)
+    zone_filter = (df["load_zone"] == zone)
+
+    slice = df[period_filter & scenario_filter & zone_filter]
+    # slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
+
+    # Pivot periods into columms
+    # slice = pd.pivot_table(
+    #     slice,
+    #     index=['scenario', 'load_zone', 'summary_metric'],
+    #     columns='period',
+    #     values='value'
+    # ).fillna(0).reset_index()
+
     src = ColumnDataSource(slice)
     return src
 
@@ -386,14 +331,28 @@ def get_summary_table(summary_src):
     cols_to_use = [c for c in summary_src.data.keys()
                    if c not in ['load_zone', 'stage', 'index']]
     columns = [TableColumn(field=c, title=c) for c in cols_to_use]
-    summary_table = DataTable(columns=columns, source=summary_src, height=250)
+    summary_table = DataTable(columns=columns, source=summary_src,
+                              index_position=None,
+                              width=800, height=250)
     return summary_table
 
 
 def draw_plots(scenario, period, zone, capacity_metric):
-    summary_src = get_summary_src(summary, zone)
-    summary_table = get_summary_table(summary_src)
+    """
+    (Re)draw plots: slice out appropriate data, convert to Bokeh CDS, and
+    create Bokeh plots.
 
+    Note that this requires that you have loaded all data (capacity, costs,
+    etc) into global variables, and have set up the layout as well with
+    global variables.
+    :param scenario:
+    :param period:
+    :param zone:
+    :param capacity_metric:
+    :return:
+    """
+
+    # Get data sources
     cap_src, cap_x_col = get_cap_src(
         capacity_df=capacity,
         scenario=scenario,
@@ -401,6 +360,28 @@ def draw_plots(scenario, period, zone, capacity_metric):
         zone=zone,
         capacity_metric=capacity_metric
     )
+    energy_src, energy_x_col = get_energy_src(
+        energy_df=energy,
+        scenario=scenario,
+        period=period,
+        zone=zone
+    )
+    cost_src, cost_x_col = get_cost_src(
+        cost_df=cost,
+        scenario=scenario,
+        period=period,
+        zone=zone
+    )
+    summary_src = get_summary_src(
+        summary_df=summary,
+        scenario=scenario,
+        period=period,
+        zone=zone
+    )
+
+    # Create Bokeh Plots and Tables
+    title = PreText(text="Results: {} - {} - {}".format(scenario, period, zone))
+    summary_table = get_summary_table(summary_src)
     cap_plot = create_stacked_bar_plot(
         source=cap_src,
         x_col=cap_x_col,
@@ -408,27 +389,12 @@ def draw_plots(scenario, period, zone, capacity_metric):
         category_label="Technology",
         y_label="Capacity (MW)"
     )
-
-    energy_src, energy_x_col = get_energy_src(
-        energy_df=energy,
-        scenario=scenario,
-        period=period,
-        zone=zone
-    )
     energy_plot = create_stacked_bar_plot(
         source=energy_src,
         x_col=energy_x_col,
         title="Energy by Technology",
         category_label="Technology",
         y_label="Energy (MWh)"  # TODO: link to units
-    )
-
-    # TODO: refactor getting src data and creating a plot?
-    cost_src, cost_x_col = get_cost_src(
-        cost_df=cost,
-        scenario=scenario,
-        period=period,
-        zone=zone
     )
     cost_plot = create_stacked_bar_plot(
         source=cost_src,
@@ -438,14 +404,58 @@ def draw_plots(scenario, period, zone, capacity_metric):
         y_label="Cost (million USD)"  # TODO: link to units
     )
 
-    top_row.children[0] = summary_table
+    # Update layout with new plots
+    layout.children[0] = title
+    top_row.children[1] = summary_table
     middle_row.children[0] = cap_plot
     middle_row.children[1] = energy_plot
     bottom_row.children[0] = cost_plot
 
 
-# Get the data (make sure we do this in global scope vs. in callbacks)
+# Define callbacks
+def scenario_change(attr, old, new):
+    """
+    When the selected scenario changes, get the appropriate data slice and
+    and re-draw the plots.
+    """
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
+
+
+def period_change(attr, old, new):
+    """
+    When the selected period changes, get the appropriate data slice and
+    re-draw the plots.
+    """
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
+
+
+def zone_change(attr, old, new):
+    """
+    When the selected load zone changes, get the appropriate data slice and
+    re-draw the plots.
+    """
+
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
+
+
+def capacity_change(attr, old, new):
+    """
+    When the selected capacity metric changes, get the appropriate data slice
+    and re-draw the plots.
+    """
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
+
+
+CAP_OPTIONS = ["new_build_capacity", "retired_capacity", "total_capacity",
+               "cumulative_new_build_capacity", "cumulative_retired_capacity"]
+DB_PATH = "../db/test.db"  # TODO: link to UI or parsed arg?
 conn = connect_to_database(db_path=DB_PATH)
+
+# Get drop down options
 scenario_options = get_scenario_options(conn)
 period_options = get_period_options(conn, scenario_options)
 zone_options = get_zone_options(conn, scenario_options)
@@ -454,83 +464,32 @@ zone_options = get_zone_options(conn, scenario_options)
 # Set up widgets
 scenario_select = MultiSelect(title="Select Scenario(s):",
                               value=scenario_options,
+                              # width=600,
                               options=scenario_options)
 period_select = MultiSelect(title="Select Period(s):",
                             value=period_options,
                             options=period_options)
-zone_select = Select(title="Select Load Zone:", value=zone_options[0],
+zone_select = Select(title="Select Load Zone:",
+                     value=zone_options[0],
                      options=zone_options)
-capacity_select = Select(title="Select Capacity Metric:", value=CAP_OPTIONS[2],
+capacity_select = Select(title="Select Capacity Metric:",
+                         value=CAP_OPTIONS[2],
                          options=CAP_OPTIONS)
 
-# Get data for all scenarios/periods/...
+# Get data for all scenarios/periods/... (note: global var, done once)
 summary = get_all_summary_data(conn, 23)
 cost = get_all_cost_data(conn, scenario_options)
 capacity = get_all_capacity_data(conn, scenario_options)
 energy = get_all_energy_data(conn, scenario_options)
 
-# Get data slice based on selected toggles
-summary_src = get_summary_src(
-    summary_df=summary,
-    zone=zone_select.value
-)
-cost_src, cost_x_col = get_cost_src(
-    cost_df=cost,
-    scenario=scenario_select.value,
-    period=period_select.value,
-    zone=zone_select.value
-)
-cap_src, cap_x_col = get_cap_src(
-    capacity_df=capacity,
-    scenario=scenario_select.value,
-    period=period_select.value,
-    zone=zone_select.value,
-    capacity_metric=capacity_select.value
-)
-energy_src, energy_x_col = get_energy_src(
-    energy_df=energy,
-    scenario=scenario_select.value,
-    period=period_select.value,
-    zone=zone_select.value
-)
-
-# Set up Title
-# TODO: somehow update zone (changing global var in callback doensn't work)
-title = PreText(text="title goes here specifying active zone: {} "
-                     "etc.".format('Zone1'))
-
-# Set up Bokeh DataTable for summary
-summary_table = get_summary_table(summary_src)
-
-# Set up plots
-cost_plot = create_stacked_bar_plot(
-    source=cost_src,
-    x_col=cost_x_col,
-    title="Cost by Component",
-    category_label="Cost Component",
-    y_label="Cost (million USD)"  # TODO: link to units
-    # TODO:set width and height to resp. (600, 300)
-)
-energy_plot = create_stacked_bar_plot(
-    source=energy_src,
-    x_col=energy_x_col,
-    title="Energy by Technology",
-    category_label="Technology",
-    y_label="Energy (MWh)"  # TODO: link to units
-)
-cap_plot = create_stacked_bar_plot(
-    source=cap_src,
-    x_col=cap_x_col,
-    title="Capacity by Technology",
-    category_label="Technology",
-    y_label="Capacity (MW)"  # TODO: link to units
-)
-
-# Set up layout
-top_row = row(summary_table, column(scenario_select,
-                                    period_select,
-                                    zone_select,
-                                    capacity_select))
+# Set up Bokeh Layout with placeholders
+title = PreText()
+summary_table = DataTable()
+cost_plot = figure()
+energy_plot = figure()
+cap_plot = figure()
+selectors = column(scenario_select, period_select, zone_select, capacity_select)
+top_row = row(selectors, summary_table)
 middle_row = row(cap_plot, energy_plot)
 bottom_row = row(cost_plot)
 layout = column(title, top_row, middle_row, bottom_row)
@@ -545,10 +504,13 @@ inputs_dummy = PreText(text='inputs summary here, e.g. loads (profile charts, mi
 tab2 = Panel(child=storage_dummy, title='Storage')
 tab3 = Panel(child=policy_dummy, title='Policy Targets')
 tab4 = Panel(child=inputs_dummy, title='Inputs')
-# Put all the tabs into one application
-tabs = Tabs(tabs=[tab1, tab2, tab3, tab4])
+tabs = Tabs(tabs=[tab1, tab2, tab3, tab4])  # Put all tabs in one application
 
-# Set up callback behavior
+# Draw Plots based on selected values
+draw_plots(scenario_select.value, period_select.value,
+           zone_select.value, capacity_select.value)
+
+# Set up callback behavior (redraw plots)
 scenario_select.on_change('value', scenario_change)
 period_select.on_change('value', period_change)
 zone_select.on_change('value', zone_change)
