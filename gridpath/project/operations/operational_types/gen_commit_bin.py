@@ -2455,7 +2455,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validate operational chars table inputs
     opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
                                  "gen_commit_bin")
-
-
-
-
