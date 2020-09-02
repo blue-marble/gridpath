@@ -2205,7 +2205,7 @@ def operational_violation_cost_rule(mod, g, tmp):
         mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
         mod.ramp_up_violation_penalty[g]
     ramp_down_violation = \
-        mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
+        mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp] * \
         mod.ramp_down_violation_penalty[g]
     min_up_time_violation = \
         mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] * \
