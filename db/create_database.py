@@ -3,6 +3,11 @@
 
 """
 Create the database and make schema.
+
+TODO: expand this description of the table naming conventions
+The schema for the GridPath SQLite database is in db_schema.sql
+Table names follow a pre-defined structure
+
 """
 
 from builtins import str
