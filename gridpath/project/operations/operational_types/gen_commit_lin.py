@@ -864,13 +864,13 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.GenCommitBin_Ramp_Up_Violation_MW = Var(
+    m.GenCommitLin_Ramp_Up_Violation_MW = Var(
         m.GEN_COMMIT_LIN_OPR_TMPS,
         within=NonNegativeReals,
         initialize=0
     )
 
-    m.GenCommitBin_Ramp_Down_Violation_MW = Var(
+    m.GenCommitLin_Ramp_Down_Violation_MW = Var(
         m.GEN_COMMIT_LIN_OPR_TMPS,
         within=NonNegativeReals,
         initialize=0
@@ -1552,7 +1552,7 @@ def ramp_up_constraint_rule(mod, g, tmp):
                 - (prev_tmp_power_above_pmin - prev_tmp_downwards_reserves) \
                 <= prev_tmp_ramp_up_rate_mw_per_tmp + \
                 mod.gen_commit_lin_allow_ramp_up_violation[g] * \
-                mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
+                mod.GenCommitLin_Ramp_Up_Violation_MW[g, tmp]
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1617,7 +1617,7 @@ def ramp_down_constraint_rule(mod, g, tmp):
                  - mod.GenCommitLin_Downwards_Reserves_MW[g, tmp]) \
                 <= prev_tmp_ramp_down_rate_mw_per_tmp + \
                 mod.gen_commit_lin_allow_ramp_down_violation[g] * \
-                mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp]
+                mod.GenCommitLin_Ramp_Down_Violation_MW[g, tmp]
 
 
 # Startup Power
@@ -2185,10 +2185,10 @@ def operational_violation_cost_rule(mod, g, tmp):
     :return:
     """
     ramp_up_violation = \
-        mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
+        mod.GenCommitLin_Ramp_Up_Violation_MW[g, tmp] * \
         mod.ramp_up_violation_penalty[g]
     ramp_down_violation = \
-        mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp] * \
+        mod.GenCommitLin_Ramp_Down_Violation_MW[g, tmp] * \
         mod.ramp_down_violation_penalty[g]
     min_up_time_violation = \
         mod.GenCommitLin_Min_Up_Time_Violation[g, tmp] * \
@@ -2321,8 +2321,8 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitLin_Shutdown[p, tmp]),
                 value(mod.GenCommitLin_Synced[p, tmp]),
                 value(mod.GenCommitLin_Active_Startup_Type[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Down_Violation_MW[p, tmp]),
+                value(mod.GenCommitLin_Ramp_Up_Violation_MW[p, tmp]),
+                value(mod.GenCommitLin_Ramp_Down_Violation_MW[p, tmp]),
                 value(mod.GenCommitLin_Min_Up_Time_Violation[p, tmp]),
                 value(mod.GenCommitLin_Min_Down_Time_Violation[p, tmp])
             ])

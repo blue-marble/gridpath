@@ -2339,7 +2339,7 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitBin_Synced[p, tmp]),
                 value(mod.GenCommitBin_Active_Startup_Type[p, tmp]),
                 value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
+                value(mod.GenCommitBin_Ramp_Down_Violation_MW[p, tmp]),
                 value(mod.GenCommitBin_Min_Up_Time_Violation[p, tmp]),
                 value(mod.GenCommitBin_Min_Down_Time_Violation[p, tmp])
             ])
