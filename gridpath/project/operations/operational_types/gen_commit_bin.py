@@ -2202,17 +2202,21 @@ def operational_violation_cost_rule(mod, g, tmp):
     :return:
     """
     ramp_up_violation = \
-        mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
-        mod.ramp_up_violation_penalty[g]
+        (mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] *
+         mod.ramp_up_violation_penalty[g])\
+        if mod.gen_commit_bin_allow_ramp_up_violation[g] else 0
     ramp_down_violation = \
-        mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp] * \
-        mod.ramp_down_violation_penalty[g]
+        (mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp] *
+         mod.ramp_down_violation_penalty[g]) \
+        if mod.gen_commit_bin_allow_ramp_down_violation[g] else 0
     min_up_time_violation = \
-        mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] * \
-        mod.min_up_time_violation_penalty[g]
+        (mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] *
+         mod.min_up_time_violation_penalty[g]) \
+        if mod.gen_commit_bin_allow_min_up_time_violation[g] else 0
     min_down_time_violation = \
-        mod.GenCommitBin_Min_Down_Time_Violation[g, tmp] * \
-        mod.min_down_time_violation_penalty[g]
+        (mod.GenCommitBin_Min_Down_Time_Violation[g, tmp] *
+         mod.min_down_time_violation_penalty[g]) \
+        if mod.gen_commit_bin_allow_min_down_time_violation[g] else 0
 
     return ramp_up_violation \
         + ramp_down_violation \
