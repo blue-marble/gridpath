@@ -67,6 +67,12 @@ def add_model_components(m, d):
     | The two-dimensional set of projects for which a shutdown cost curve is  |
     | specified along with their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`VIOL_ALL_PRJ_OPR_TMPS`                                         |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which an operational constraint |
+    | can be violated along with their operational timepoints.                |
+    +-------------------------------------------------------------------------+
 
     |                                                                         |
 
@@ -109,28 +115,36 @@ def add_model_components(m, d):
     | *variable_om_cost_by_ll_rule* method of a project's operational type,   |
     | using that to create the *Variable_OM_Curve_Constraint* on the          |
     | Variable_OM_Curve_Cost variable, and the using the variable in this     |
-    | expression.
+    | expression.                                                             |
     +-------------------------------------------------------------------------+
     | | :code:`Fuel_Cost`                                                     |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
     |                                                                         |
     | This expression defines the fuel cost of a project in all of its        |
     | operational timepoints. We obtain the expression by calling the         |
     | *fuel_cost_rule* method of a project's *operational_type* module.       |
     +-------------------------------------------------------------------------+
     | | :code:`Startup_Cost`                                                  |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`STARTUP_COST_PRJ_OPR_TMPS`                     |
     |                                                                         |
     | This expression defines the startup cost of a project in all of its     |
     | operational timepoints. We obtain the expression by calling the         |
     | *startup_cost_rule* method of a project's *operational_type* module.    |
     +-------------------------------------------------------------------------+
     | | :code:`Shutdown_Cost`                                                 |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`SHUTDOWN_COST_PRJ_OPR_TMPS`                    |
     |                                                                         |
     | This expression defines the shutdown cost of a project in all of its    |
     | operational timepoints. We obtain the expression by calling the         |
     | *shutdown_cost_rule* method of a project's *operational_type* module.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Operational_Violation_Cost`                                    |
+    | | *Defined over*: :code:`VIOL_ALL_PRJ_OPR_TMPS`                         |
+    |                                                                         |
+    | This expression defines the operational constraint violation cost of a  |
+    | project in all of its operational timepoints. We obtain the expression  |
+    | by calling the *operational_violation_cost_rule* method of a project's  |
+    | *operational_type* module.                                              |
     +-------------------------------------------------------------------------+
 
     """
@@ -189,6 +203,13 @@ def add_model_components(m, d):
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.SHUTDOWN_COST_PRJS]
+    )
+
+    m.VIOL_ALL_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.VIOL_ALL_PRJS]
     )
 
     # Variables
@@ -339,6 +360,23 @@ def add_model_components(m, d):
         rule=shutdown_cost_rule
     )
 
+    def operational_violation_cost_rule(mod, prj, tmp):
+        """
+        Get any operational constraint violation costs.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "operational_violation_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                operational_violation_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.operational_violation_cost_rule(mod, prj, tmp)
+
+    m.Operational_Violation_Cost = Expression(
+        m.VIOL_ALL_PRJ_OPR_TMPS,
+        rule=operational_violation_cost_rule
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -365,7 +403,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology",
-             "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost"]
+             "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost",
+             "operational_violation_cost"]
         )
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
@@ -383,7 +422,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Startup_Cost[p, tmp])
                 if p in m.STARTUP_COST_PRJS else None,
                 value(m.Shutdown_Cost[p, tmp])
-                if p in m.SHUTDOWN_COST_PRJS else None
+                if p in m.SHUTDOWN_COST_PRJS else None,
+                value(m.Operational_Violation_Cost[p, tmp])
+                if p in m.VIOL_ALL_PRJ_OPR_TMPS else None
             ])
 
 
@@ -391,7 +432,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 

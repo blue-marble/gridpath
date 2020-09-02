@@ -435,3 +435,11 @@ def subhourly_energy_delivered_rule(mod, prj, tmp):
     module, the default subhourly energy delivered is 0.
     """
     return 0
+
+
+def operational_violation_cost_rule(mod, prj, tmp):
+    """
+    If no operational_violation_cost_rule is specified, the default
+    operational violation cost is 0.
+    """
+    return 0

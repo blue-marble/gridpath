@@ -177,8 +177,8 @@ def update_dispatch_results_table(
 ):
     results = []
     with open(os.path.join(results_directory, results_file), "r") as \
-            capacity_file:
-        reader = csv.reader(capacity_file)
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
 
         header = next(reader)
 
@@ -209,13 +209,26 @@ def update_dispatch_results_table(
             auxiliary_consumption = get_column_row_value(
                 header, "auxiliary_consumption_mw", row)
             gross_power = get_column_row_value(header, "gross_power_mw", row)
+            ramp_up_violation = get_column_row_value(
+                header, "ramp_up_violation", row
+            )
+            ramp_down_violation = get_column_row_value(
+                header, "ramp_down_violation", row
+            )
+            min_up_time_violation = get_column_row_value(
+                header, "min_up_time_violation", row
+            )
+            min_down_time_violation = get_column_row_value(
+                header, "min_down_time_violation", row
+            )
 
             results.append(
                 (scheduled_curtailment_mw, subhourly_curtailment_mw,
                  subhourly_energy_delivered_mw, total_curtailment_mw,
                  committed_mw, committed_units, started_units,
                  stopped_units, synced_units, auxiliary_consumption,
-                 gross_power,
+                 gross_power, ramp_up_violation, ramp_down_violation,
+                 min_up_time_violation, min_down_time_violation,
                  scenario_id, project, period, subproblem, stage, timepoint)
             )
 
@@ -232,7 +245,11 @@ def update_dispatch_results_table(
         stopped_units = ?,
         synced_units = ?,
         auxiliary_consumption_mw = ?,
-        gross_power_mw = ?
+        gross_power_mw = ?,
+        ramp_up_violation = ?,
+        ramp_down_violation = ?,
+        min_up_time_violation = ?,
+        min_down_time_violation = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?

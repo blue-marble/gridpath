@@ -813,8 +813,12 @@ startup_plus_ramp_up_rate FLOAT,  -- Not used for gen_commit_lin/bin!
 shutdown_plus_ramp_down_rate FLOAT,
 ramp_up_when_on_rate FLOAT,
 ramp_down_when_on_rate FLOAT,
+ramp_up_violation_penalty FLOAT, -- leave NULL for hard constraints
+ramp_down_violation_penalty FLOAT, -- leave NULL for hard constraints
 min_up_time_hours INTEGER,
+min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
+min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
@@ -2423,12 +2427,16 @@ subhourly_energy_delivered_mw FLOAT,
 total_curtailment_mw FLOAT,
 committed_mw FLOAT,
 committed_units FLOAT,
-started_units INTEGER,
-stopped_units INTEGER,
-synced_units INTEGER,
-active_startup_type INTEGER,
+started_units FLOAT,
+stopped_units FLOAT,
+synced_units FLOAT,
+active_startup_type FLOAT,
 auxiliary_consumption_mw FLOAT,
 gross_power_mw FLOAT,
+ramp_up_violation FLOAT,
+ramp_down_violation FLOAT,
+min_up_time_violation FLOAT,
+min_down_time_violation FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
@@ -3228,6 +3236,7 @@ Total_Variable_OM_Cost Float,
 Total_Fuel_Cost Float,
 Total_Startup_Cost Float,
 Total_Shutdown_Cost Float,
+Total_Operational_Violation_Cost FLOAT,
 Total_Hurdle_Cost Float,
 Total_Load_Balance_Penalty_Costs Float,
 Frequency_Response_Penalty_Costs Float,
