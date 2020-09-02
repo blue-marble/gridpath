@@ -116,9 +116,8 @@ def add_model_components(m, d):
 
     def total_operational_violation_cost_rule(mod):
         """
-        Sum shutdown costs for the objective function term.
-        :param mod:
-        :return:
+        Sum operational constraint violation costs for the objective function
+        term.
         """
         return sum(mod.Operational_Violation_Cost[g, tmp]
                    * mod.hrs_in_tmp[tmp]
@@ -128,4 +127,5 @@ def add_model_components(m, d):
                    for (g, tmp)
                    in mod.VIOL_ALL_PRJ_OPR_TMPS)
     m.Total_Operational_Violation_Cost = Expression(
-        rule=total_operational_violation_cost_rule)
+        rule=total_operational_violation_cost_rule
+    )

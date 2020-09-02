@@ -67,6 +67,12 @@ def add_model_components(m, d):
     | The two-dimensional set of projects for which a shutdown cost curve is  |
     | specified along with their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`VIOL_ALL_PRJ_OPR_TMPS`                                         |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which an operational constraint |
+    | can be violated along with their operational timepoints.                |
+    +-------------------------------------------------------------------------+
 
     |                                                                         |
 
@@ -109,28 +115,36 @@ def add_model_components(m, d):
     | *variable_om_cost_by_ll_rule* method of a project's operational type,   |
     | using that to create the *Variable_OM_Curve_Constraint* on the          |
     | Variable_OM_Curve_Cost variable, and the using the variable in this     |
-    | expression.
+    | expression.                                                             |
     +-------------------------------------------------------------------------+
     | | :code:`Fuel_Cost`                                                     |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
     |                                                                         |
     | This expression defines the fuel cost of a project in all of its        |
     | operational timepoints. We obtain the expression by calling the         |
     | *fuel_cost_rule* method of a project's *operational_type* module.       |
     +-------------------------------------------------------------------------+
     | | :code:`Startup_Cost`                                                  |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`STARTUP_COST_PRJ_OPR_TMPS`                     |
     |                                                                         |
     | This expression defines the startup cost of a project in all of its     |
     | operational timepoints. We obtain the expression by calling the         |
     | *startup_cost_rule* method of a project's *operational_type* module.    |
     +-------------------------------------------------------------------------+
     | | :code:`Shutdown_Cost`                                                 |
-    | | *Defined over*: :code:`PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`SHUTDOWN_COST_PRJ_OPR_TMPS`                    |
     |                                                                         |
     | This expression defines the shutdown cost of a project in all of its    |
     | operational timepoints. We obtain the expression by calling the         |
     | *shutdown_cost_rule* method of a project's *operational_type* module.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Operational_Violation_Cost`                                    |
+    | | *Defined over*: :code:`VIOL_ALL_PRJ_OPR_TMPS`                         |
+    |                                                                         |
+    | This expression defines the operational constraint violation cost of a  |
+    | project in all of its operational timepoints. We obtain the expression  |
+    | by calling the *operational_violation_cost_rule* method of a project's  |
+    | *operational_type* module.                                              |
     +-------------------------------------------------------------------------+
 
     """

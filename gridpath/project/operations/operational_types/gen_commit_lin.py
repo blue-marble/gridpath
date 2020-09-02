@@ -181,6 +181,41 @@ def add_module_specific_components(m, d):
     | minimum down time. If the unit is fast-start without a minimum down     |
     | time, the user should input zero (rather than NULL)                     |
     +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +=========================================================================+
+    | | :code:`gen_commit_lin_allow_ramp_up_violation`                        |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the ramp up constraint can be violated. It is 1 if a |
+    | ramp_up_violation_penalty is specified for the project.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_allow_ramp_down_violation`                      |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the ramp down constraint can be violated. It is 1 if |
+    | a ramp_down_violation_penalty is specified for the project.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_allow_min_up_time_violation`                    |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the min up time constraint can be violated. It is 1  |
+    | if a min_up_time_violation_penalty is specified for the project.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_lin_allow_min_down_time_violation`                  |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the min down time constraint can be violated. It is  |
+    | 1 if a min_down_time_violation_penalty is specified for the project.    |
+    +-------------------------------------------------------------------------+
+
     |
 
     +-------------------------------------------------------------------------+
@@ -332,6 +367,34 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Power provision during shutdown in each timepoint in which the project  |
     | is shutting down (zero if project is committed or not shutting down).   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Ramp_Up_Violation_MW`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's ramp up constraint in each operational       |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Ramp_Up_Violation_MW`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's ramp down constraint in each operational     |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Min_Up_Time_Violation`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's min up time constraint in each operational   |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitLin_Min_Down_Time_Violation`                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's min down time constraint in each operational |
+    | timepoint.                                                              |
     +-------------------------------------------------------------------------+
 
     |

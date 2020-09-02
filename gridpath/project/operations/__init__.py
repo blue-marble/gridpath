@@ -115,6 +115,31 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which startup fuel burn is specified.           |
     +-------------------------------------------------------------------------+
+    | | :code:`RAMP_UP_VIOL_PRJS`                                             |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which ramp up constraints can be violated.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`RAMP_DOWN_VIOL_PRJS`                                           |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which ramp down constraints can be violated.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`MIN_UP_TIME_VIOL_PRJS`                                         |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which min up time constraints can be violated.  |
+    +-------------------------------------------------------------------------+
+    | | :code:`MIN_DOWN_TIME_VIOL_PRJS`                                       |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which min down time constraints can be violated.|
+    +-------------------------------------------------------------------------+
+    | | :code:`VIOL_ALL_PRJS`                                                 |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects for which an operational constraint can be violated.|
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -194,6 +219,33 @@ def add_model_components(m, d):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's fuel expenditure per MW started up.                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`ramp_up_violation_penalty`                                     |
+    | | *Defined over*: :code:`RAMP_UP_VIOL_PRJS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost for violating its ramp up constraint per unit energy.|
+    +-------------------------------------------------------------------------+
+    | | :code:`ramp_down_violation_penalty`                                   |
+    | | *Defined over*: :code:`RAMP_DOWN_VIOL_PRJS`                           |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost for violating its ramp down constraint per unit      |
+    | energy.                                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`min_up_time_violation_penalty`                                 |
+    | | *Defined over*: :code:`MIN_UP_TIME_VIOL_PRJS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost for violating its min up time constraint per         |
+    | violation instance.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`min_down_time_violation_penalty`                               |
+    | | *Defined over*: :code:`MIN_DOWN_TIME_VIOL_PRJS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost for violating its min down time constraint per       |
+    | violation instance.                                                     |
     +-------------------------------------------------------------------------+
     """
 
@@ -331,7 +383,7 @@ def add_model_components(m, d):
     )
 
     m.ramp_down_violation_penalty = Param(
-        m.RAMP_UP_VIOL_PRJS,
+        m.RAMP_DOWN_VIOL_PRJS,
         within=NonNegativeReals
     )
 

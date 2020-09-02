@@ -199,6 +199,41 @@ def add_module_specific_components(m, d):
     | minimum down time. If the unit is fast-start without a minimum down     |
     | time, the user should input zero (rather than NULL)                     |
     +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +=========================================================================+
+    | | :code:`gen_commit_bin_allow_ramp_up_violation`                        |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the ramp up constraint can be violated. It is 1 if a |
+    | ramp_up_violation_penalty is specified for the project.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_allow_ramp_down_violation`                      |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the ramp down constraint can be violated. It is 1 if |
+    | a ramp_down_violation_penalty is specified for the project.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_allow_min_up_time_violation`                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the min up time constraint can be violated. It is 1  |
+    | if a min_up_time_violation_penalty is specified for the project.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_allow_min_down_time_violation`                  |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`Boolean`                                             |
+    |                                                                         |
+    | Determines whether the min down time constraint can be violated. It is  |
+    | 1 if a min_down_time_violation_penalty is specified for the project.    |
+    +-------------------------------------------------------------------------+
+
     |
 
     +-------------------------------------------------------------------------+
@@ -350,6 +385,34 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Power provision during shutdown in each timepoint in which the project  |
     | is shutting down (zero if project is committed or not shutting down).   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Ramp_Up_Violation_MW`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's ramp up constraint in each operational       |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Ramp_Up_Violation_MW`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's ramp down constraint in each operational     |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Min_Up_Time_Violation`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's min up time constraint in each operational   |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Min_Down_Time_Violation`                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Violation of the project's min down time constraint in each operational |
+    | timepoint.                                                              |
     +-------------------------------------------------------------------------+
 
     |
@@ -654,42 +717,14 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
 
-    m.gen_commit_bin_allow_ramp_up_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
-    )
-
-    m.gen_commit_bin_allow_ramp_down_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
-    )
-
     m.gen_commit_bin_min_up_time_hours = Param(
         m.GEN_COMMIT_BIN,
         within=NonNegativeReals, default=0
     )
 
-    m.gen_commit_bin_allow_min_up_time_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
-    )
-
     m.gen_commit_bin_min_down_time_hours = Param(
         m.GEN_COMMIT_BIN,
         within=NonNegativeReals, default=0
-    )
-
-    m.gen_commit_bin_allow_min_down_time_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
     )
 
     m.gen_commit_bin_aux_consumption_frac_capacity = Param(
@@ -707,6 +742,37 @@ def add_module_specific_components(m, d):
     m.gen_commit_bin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES,
         within=NonNegativeReals
+    )
+
+    # Derived Params
+    ###########################################################################
+
+    m.gen_commit_bin_allow_ramp_up_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_bin_allow_ramp_down_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_bin_allow_min_up_time_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_bin_allow_min_down_time_violation = Param(
+        m.GEN_COMMIT_BIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
     )
 
     # Linked Params
@@ -815,13 +881,13 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    m.GenCommitBin_Ramp_Up_Violation = Var(
+    m.GenCommitBin_Ramp_Up_Violation_MW = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals,
         initialize=0
     )
 
-    m.GenCommitBin_Ramp_Down_Violation = Var(
+    m.GenCommitBin_Ramp_Up_Violation_MW = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals,
         initialize=0
@@ -1503,7 +1569,7 @@ def ramp_up_constraint_rule(mod, g, tmp):
                 - (prev_tmp_power_above_pmin - prev_tmp_downwards_reserves) \
                 <= prev_tmp_ramp_up_rate_mw_per_tmp + \
                 mod.gen_commit_bin_allow_ramp_up_violation[g] * \
-                mod.GenCommitBin_Ramp_Up_Violation[g, tmp]
+                mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1568,7 +1634,7 @@ def ramp_down_constraint_rule(mod, g, tmp):
                  - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp]) \
                 <= prev_tmp_ramp_down_rate_mw_per_tmp + \
                 mod.gen_commit_bin_allow_ramp_down_violation[g] * \
-                mod.GenCommitBin_Ramp_Down_Violation[g, tmp]
+                mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
 
 
 # Startup Power
@@ -2136,10 +2202,10 @@ def operational_violation_cost_rule(mod, g, tmp):
     :return:
     """
     ramp_up_violation = \
-        mod.GenCommitBin_Ramp_Up_Violation[g, tmp] * \
+        mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
         mod.ramp_up_violation_penalty[g]
     ramp_down_violation = \
-        mod.GenCommitBin_Ramp_Down_Violation[g, tmp] * \
+        mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] * \
         mod.ramp_down_violation_penalty[g]
     min_up_time_violation = \
         mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] * \
@@ -2272,8 +2338,8 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitBin_Shutdown[p, tmp]),
                 value(mod.GenCommitBin_Synced[p, tmp]),
                 value(mod.GenCommitBin_Active_Startup_Type[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Up_Violation[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Down_Violation[p, tmp]),
+                value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
+                value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
                 value(mod.GenCommitBin_Min_Up_Time_Violation[p, tmp]),
                 value(mod.GenCommitBin_Min_Down_Time_Violation[p, tmp])
             ])
