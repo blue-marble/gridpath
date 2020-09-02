@@ -47,19 +47,19 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The set of generators of the :code:`gen_commit_lin` operational type.   |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`                                   |
+    | | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`                             |
     | | *within*: :code:`GEN_COMMIT_LIN`                                      |
     |                                                                         |
     | The set of generators of the :code:`gen_commit_lin` operational type    |
     | that also have startup ramp rates specified.                            |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`                             |
+    | | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`                       |
     |                                                                         |
     | Two-dimensional set of generators of the the :code:`gen_commit_lin`     |
     | and their startup types (if the project is in                           |
-    | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`). Startup types are ordered from    |
-    | hottest to coldest, e.g. if there are 3 startup types the hottest start |
-    | is indicated by 1, and the coldest start is indicated by 3.             |
+    | :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`). Startup types are ordered   |
+    | from hottest to coldest, e.g. if there are 3 startup types the hottest  |
+    | start is indicated by 1, and the coldest start is indicated by 3.       |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_OPR_TMPS`                                       |
     |                                                                         |
@@ -70,7 +70,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_lin`     |
     | operational type, their operational timepoints, and their startup       |
-    | types (if the project is in :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`).       |
+    | types (if the project is in :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS`). |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_STR_TYPES_BY_PRJ`                               |
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
@@ -118,7 +118,7 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`                |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`       |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -167,7 +167,7 @@ def add_module_specific_components(m, d):
     | Auxiliary consumption as a fraction of gross power output.              |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_lin_down_time_cutoff_hours`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`             |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES`       |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's minimum down time cutoff to activate a given startup      |
@@ -375,7 +375,7 @@ def add_module_specific_components(m, d):
     | Violation of the project's ramp up constraint in each operational       |
     | timepoint.                                                              |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Ramp_Up_Violation_MW`                             |
+    | | :code:`GenCommitLin_Ramp_Down_Violation_MW`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
@@ -699,42 +699,15 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
 
-    m.gen_commit_lin_allow_ramp_up_violation = Param(
-        m.GEN_COMMIT_LIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
-    )
-
-    m.gen_commit_lin_allow_ramp_down_violation = Param(
-        m.GEN_COMMIT_LIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
-    )
 
     m.gen_commit_lin_min_up_time_hours = Param(
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
     )
 
-    m.gen_commit_lin_allow_min_up_time_violation = Param(
-        m.GEN_COMMIT_LIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
-    )
-
     m.gen_commit_lin_min_down_time_hours = Param(
         m.GEN_COMMIT_LIN,
         within=NonNegativeReals, default=0
-    )
-
-    m.gen_commit_lin_allow_min_down_time_violation = Param(
-        m.GEN_COMMIT_LIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
     )
 
     m.gen_commit_lin_aux_consumption_frac_capacity = Param(
@@ -752,6 +725,37 @@ def add_module_specific_components(m, d):
     m.gen_commit_lin_down_time_cutoff_hours = Param(
         m.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES,
         within=NonNegativeReals
+    )
+
+    # Derived Params
+    ###########################################################################
+
+    m.gen_commit_lin_allow_ramp_up_violation = Param(
+        m.GEN_COMMIT_LIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_lin_allow_ramp_down_violation = Param(
+        m.GEN_COMMIT_LIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_lin_allow_min_up_time_violation = Param(
+        m.GEN_COMMIT_LIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
+    )
+
+    m.gen_commit_lin_allow_min_down_time_violation = Param(
+        m.GEN_COMMIT_LIN,
+        within=Boolean,
+        initialize=lambda mod, prj:
+            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
     )
 
     # Linked Params

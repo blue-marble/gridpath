@@ -393,7 +393,7 @@ def add_module_specific_components(m, d):
     | Violation of the project's ramp up constraint in each operational       |
     | timepoint.                                                              |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Ramp_Up_Violation_MW`                             |
+    | | :code:`GenCommitBin_Ramp_Down_Violation_MW`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
@@ -887,7 +887,7 @@ def add_module_specific_components(m, d):
         initialize=0
     )
 
-    m.GenCommitBin_Ramp_Up_Violation_MW = Var(
+    m.GenCommitBin_Ramp_Down_Violation_MW = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         within=NonNegativeReals,
         initialize=0
@@ -1634,7 +1634,7 @@ def ramp_down_constraint_rule(mod, g, tmp):
                  - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp]) \
                 <= prev_tmp_ramp_down_rate_mw_per_tmp + \
                 mod.gen_commit_bin_allow_ramp_down_violation[g] * \
-                mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
+                mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp]
 
 
 # Startup Power
