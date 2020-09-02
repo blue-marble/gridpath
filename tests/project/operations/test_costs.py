@@ -218,6 +218,41 @@ class TestOperationalCosts(unittest.TestCase):
         self.assertListEqual(expected_shutdown_cost_prj_tmps,
                              actual_shutdown_cost_prj_tmps)
 
+        # Set: VIOL_ALL_PRJ_OPR_TMPS
+        expected_ramp_up_viol_projects = sorted(
+            projects_df[
+                projects_df["ramp_up_violation_penalty"] != "."
+                ]["project"].tolist()
+        )
+        expected_ramp_down_viol_projects = sorted(
+            projects_df[
+                projects_df["ramp_down_violation_penalty"] != "."
+                ]["project"].tolist()
+        )
+        expected_min_up_time_viol_projects = sorted(
+            projects_df[
+                projects_df["min_up_time_violation_penalty"] != "."
+                ]["project"].tolist()
+        )
+        expected_min_down_time_viol_projects = sorted(
+            projects_df[
+                projects_df["min_down_time_violation_penalty"] != "."
+                ]["project"].tolist()
+        )
+        expected_opr_viol_prj_tmps = get_project_operational_timepoints(
+            expected_ramp_up_viol_projects +
+            expected_ramp_down_viol_projects +
+            expected_min_up_time_viol_projects +
+            expected_min_down_time_viol_projects
+        )
+
+        actual_opr_viol_prj_tmps = \
+            sorted([(p, tmp) for (p, tmp) in
+                    instance.VIOL_ALL_PRJ_OPR_TMPS])
+
+        self.assertListEqual(expected_opr_viol_prj_tmps,
+                             actual_opr_viol_prj_tmps)
+
 
 if __name__ == "__main__":
     unittest.main()

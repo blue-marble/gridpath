@@ -305,6 +305,73 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_startup_fuel_projects,
                              actual_startup_fuel_projects)
 
+        # Set: RAMP_UP_VIOL_PRJS
+        expected_ramp_up_viol_projects = sorted(
+            projects_df[projects_df["ramp_up_violation_penalty"] != "."][
+                "project"].tolist()
+        )
+
+        actual_ramp_up_viol_projects = sorted(
+            [p for p in instance.RAMP_UP_VIOL_PRJS]
+        )
+
+        self.assertListEqual(expected_ramp_up_viol_projects,
+                             actual_ramp_up_viol_projects)
+
+        # Set: RAMP_DOWN_VIOL_PRJS
+        expected_ramp_down_viol_projects = sorted(
+            projects_df[projects_df["ramp_down_violation_penalty"] != "."][
+                "project"].tolist()
+        )
+
+        actual_ramp_down_viol_projects = sorted(
+            [p for p in instance.RAMP_DOWN_VIOL_PRJS]
+        )
+
+        self.assertListEqual(expected_ramp_down_viol_projects,
+                             actual_ramp_down_viol_projects)
+
+        # Set: MIN_UP_TIME_VIOL_PRJS
+        expected_min_up_time_viol_projects = sorted(
+            projects_df[projects_df["min_up_time_violation_penalty"] != "."][
+                "project"].tolist()
+        )
+
+        actual_min_up_time_viol_projects = sorted(
+            [p for p in instance.MIN_UP_TIME_VIOL_PRJS]
+        )
+
+        self.assertListEqual(expected_min_up_time_viol_projects,
+                             actual_min_up_time_viol_projects)
+
+        # Set: MIN_DOWN_TIME_VIOL_PRJS
+        expected_min_down_time_viol_projects = sorted(
+            projects_df[projects_df["min_down_time_violation_penalty"] != "."][
+                "project"].tolist()
+        )
+
+        actual_min_down_time_viol_projects = sorted(
+            [p for p in instance.MIN_DOWN_TIME_VIOL_PRJS]
+        )
+
+        self.assertListEqual(expected_min_down_time_viol_projects,
+                             actual_min_down_time_viol_projects)
+
+        # Set: VIOL_ALL_PRJS
+        expected_viol_all_projects = sorted(list(set(
+            expected_ramp_up_viol_projects
+            + expected_ramp_down_viol_projects
+            + expected_min_up_time_viol_projects
+            + expected_min_down_time_viol_projects
+        )))
+
+        actual_viol_all_projects = sorted(
+            [p for p in instance.VIOL_ALL_PRJS]
+        )
+
+        self.assertListEqual(expected_viol_all_projects,
+                             actual_viol_all_projects)
+
         # Param: variable_om_cost_per_mwh
         var_om_cost_df = \
             projects_df[projects_df["variable_om_cost_per_mwh"] != "."]
@@ -533,6 +600,78 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictEqual(expected_startup_fuel_by_prj,
                              actual_startup_fuel_by_prj)
+
+        # Param: ramp_up_violation_penalty
+        ramp_up_viol_df = \
+            projects_df[projects_df["ramp_up_violation_penalty"] != "."]
+        expected_ramp_up_viol_by_prj = OrderedDict(sorted(
+            dict(zip(ramp_up_viol_df["project"],
+                     pd.to_numeric(
+                         ramp_up_viol_df["ramp_up_violation_penalty"])
+                     )
+                 ).items())
+        )
+        actual_ramp_up_viol_by_prj = OrderedDict(sorted(
+            {p: instance.ramp_up_violation_penalty[p]
+             for p in instance.RAMP_UP_VIOL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_ramp_up_viol_by_prj,
+                             actual_ramp_up_viol_by_prj)
+
+        # Param: ramp_down_violation_penalty
+        ramp_down_viol_df = \
+            projects_df[projects_df["ramp_down_violation_penalty"] != "."]
+        expected_ramp_down_viol_by_prj = OrderedDict(sorted(
+            dict(zip(ramp_down_viol_df["project"],
+                     pd.to_numeric(
+                         ramp_down_viol_df["ramp_down_violation_penalty"])
+                     )
+                 ).items())
+        )
+        actual_ramp_down_viol_by_prj = OrderedDict(sorted(
+            {p: instance.ramp_down_violation_penalty[p]
+             for p in instance.RAMP_DOWN_VIOL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_ramp_down_viol_by_prj,
+                             actual_ramp_down_viol_by_prj)
+
+        # Param: min_up_time_violation_penalty
+        min_up_time_viol_df = \
+            projects_df[projects_df["min_up_time_violation_penalty"] != "."]
+        expected_min_up_time_viol_by_prj = OrderedDict(sorted(
+            dict(zip(min_up_time_viol_df["project"],
+                     pd.to_numeric(
+                         min_up_time_viol_df["min_up_time_violation_penalty"])
+                     )
+                 ).items())
+        )
+        actual_min_up_time_viol_by_prj = OrderedDict(sorted(
+            {p: instance.min_up_time_violation_penalty[p]
+             for p in instance.MIN_UP_TIME_VIOL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_min_up_time_viol_by_prj,
+                             actual_min_up_time_viol_by_prj)
+
+        # Param: min_down_time_violation_penalty
+        min_down_time_viol_df = \
+            projects_df[projects_df["min_down_time_violation_penalty"] != "."]
+        expected_min_down_time_viol_by_prj = OrderedDict(sorted(
+            dict(zip(min_down_time_viol_df["project"],
+                     pd.to_numeric(
+                         min_down_time_viol_df["min_down_time_violation_penalty"])
+                     )
+                 ).items())
+        )
+        actual_min_down_time_viol_by_prj = OrderedDict(sorted(
+            {p: instance.min_down_time_violation_penalty[p]
+             for p in instance.MIN_DOWN_TIME_VIOL_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_min_down_time_viol_by_prj,
+                             actual_min_down_time_viol_by_prj)
 
     def test_get_slopes_intercept_by_project_period_segment(self):
         """
