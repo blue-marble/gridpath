@@ -6,6 +6,7 @@ To run: navigate ./viz/ folder and run:
 "bokeh serve dashboard --show"
 
 TODO:
+ - fix order in datatable
  - what to do with subproblems? --> sum across them?
  - add stage selector
  - add tabs with more info:
@@ -70,14 +71,17 @@ def get_period_options(conn, scenarios):
     return period_options
 
 
-def get_stage_options(conn, scenario_id):
-    stage_options = [h[0] for h in conn.execute(
+def get_stage_options(conn, scenarios):
+    scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
+    stage_options = [str(s[0]) for s in conn.execute(
         """SELECT DISTINCT stage_id
         FROM inputs_temporal_subproblems_stages
-        WHERE temporal_scenario_id = (
-        SELECT temporal_scenario_id
-        FROM scenarios
-        WHERE scenario_id = {});""".format(scenario_id)
+        WHERE temporal_scenario_id in (
+            SELECT temporal_scenario_id
+            FROM scenarios
+            WHERE scenario_name in ({})
+        );""".format(",".join("?" * len(scenarios)))
+        , scenarios
     ).fetchall()]
 
     return stage_options
@@ -532,12 +536,20 @@ def period_change(attr, old, new):
                zone_select.value, capacity_select.value)
 
 
+def stage_change(attr, old, new):
+    """
+    When the selected stage changes, get the appropriate data slice and
+    re-draw the plots.
+    """
+    draw_plots(scenario_select.value, period_select.value,
+               zone_select.value, capacity_select.value)
+
+
 def zone_change(attr, old, new):
     """
     When the selected load zone changes, get the appropriate data slice and
     re-draw the plots.
     """
-
     draw_plots(scenario_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
@@ -559,6 +571,7 @@ conn = connect_to_database(db_path=DB_PATH)
 # Get drop down options
 scenario_options = get_scenario_options(conn)
 period_options = get_period_options(conn, scenario_options)
+stage_options = get_stage_options(conn, scenario_options)
 zone_options = get_zone_options(conn, scenario_options)
 # TODO: ideally dynamically update zone_options based on selected scenarios
 
@@ -570,6 +583,9 @@ scenario_select = MultiSelect(title="Select Scenario(s):",
 period_select = MultiSelect(title="Select Period(s):",
                             value=period_options,
                             options=period_options)
+stage_select = Select(title="Select Stage:",
+                      value=stage_options[0],
+                      options=stage_options)
 zone_select = Select(title="Select Load Zone:",
                      value=zone_options[0],
                      options=zone_options)
@@ -591,7 +607,8 @@ objective_table = DataTable()
 cost_plot = figure()
 energy_plot = figure()
 cap_plot = figure()
-selectors = column(scenario_select, period_select, zone_select, capacity_select)
+selectors = column(scenario_select, period_select,
+                   stage_select, zone_select, capacity_select)
 top_row = row(selectors, summary_table, objective_table)
 middle_row = row(cap_plot, energy_plot)
 bottom_row = row(cost_plot)
@@ -616,6 +633,7 @@ draw_plots(scenario_select.value, period_select.value,
 # Set up callback behavior (redraw plots)
 scenario_select.on_change('value', scenario_change)
 period_select.on_change('value', period_change)
+stage_select.on_change('value', stage_change)
 zone_select.on_change('value', zone_change)
 capacity_select.on_change('value', capacity_change)
 
