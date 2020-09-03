@@ -3,7 +3,10 @@
 
 """
 To run: navigate ./viz/ folder and run:
-"bokeh serve dashboard --show"
+"bokeh serve dashboard --show --args --database DB_PATH"
+Note: -- args can be used at as the last argument to add additional command
+line arguments to the script, see here:
+https://docs.bokeh.org/en/latest/docs/reference/command/subcommands/serve.html
 
 TODO:
  - don't include spinup/lookahead when summing across subproblems (and add
@@ -20,15 +23,26 @@ TODO:
 
 """
 
+from argparse import ArgumentParser
 from bokeh.models import Tabs, Panel, PreText, Select, MultiSelect, \
     ColumnDataSource, DataTable, TableColumn
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
 import pandas as pd
+import sys
 
 from db.common_functions import connect_to_database
 from viz.common_functions import create_stacked_bar_plot, order_cols_by_nunique
+
+
+def create_parser():
+    parser = ArgumentParser(add_help=True)
+    parser.add_argument("--database",
+                        default="../../db/io.db",
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../db/io.db")
+    return parser
 
 
 def get_scenario_options(conn):
@@ -473,7 +487,6 @@ def draw_plots(scenario, stage, period, zone, capacity_metric):
     :param capacity_metric:
     :return:
     """
-
     # Get data sources
     cap_src, cap_x_col = get_cap_src(
         capacity_df=capacity,
@@ -593,8 +606,12 @@ def capacity_change(attr, old, new):
 
 CAP_OPTIONS = ["new_build_capacity", "retired_capacity", "total_capacity",
                "cumulative_new_build_capacity", "cumulative_retired_capacity"]
-DB_PATH = "../db/test.db"  # TODO: link to UI or parsed arg?
-conn = connect_to_database(db_path=DB_PATH)
+
+# Parse arguments and connect to db
+parser = create_parser()
+args = sys.argv[1:]
+parsed_args = parser.parse_args(args=args)
+conn = connect_to_database(db_path=parsed_args.database)
 
 # Get drop down options
 scenario_options = get_scenario_options(conn)
