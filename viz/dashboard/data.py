@@ -21,7 +21,7 @@ class DataProvider(object):
                             "cumulative_retired_capacity"]
         # TODO: ideally dynamically update zone_options based on selected scenarios
 
-        # Get data for all scenarios/periods/... (note: global var, done once)
+        # Load data for all scenarios into a set of pandas DataFrames
         self.summary = get_all_summary_data(conn, self.scenario_options)
         self.objective = get_objective_cost_data(conn, self.scenario_options)
         self.cost = get_all_cost_data(conn, self.scenario_options)
