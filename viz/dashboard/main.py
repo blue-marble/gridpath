@@ -6,22 +6,22 @@ To run: navigate ./viz/ folder and run:
 "bokeh serve dashboard --show"
 
 TODO:
- - fix order in datatable
- - what to do with subproblems? --> sum across them?
- - add stage selector
+ - don't include spinup/lookahead when summing across subproblems (and add
+   some notes on dashboard to explain this?)
+ - formatting of data tables, titles, etc.
+ - bring in dynamic units into datatable headers
  - add tabs with more info:
-    - storage tab (on duration and charge/discharge behavior + losses?)
-    - transmission tab
-    - policy tab
-    - violations table (unserved energy, reserves, rps, carbon, etc.)
-    - duals table
- - add additional plots/info on main screen (think about what makes sense)
- - New req/dependency: sqlalchemy (not sure why we didn't need it before?)
+    - storage (on duration and charge/discharge behavior + losses?)
+    - transmission
+    - policy
+    - duals
+ - download data button(s) - requires customJS:
+ https://stackoverflow.com/questions/59950849/bokeh-chart-download-as-csv
 
 """
 
-from bokeh.models import Tabs, Panel, PreText, Select, ColumnDataSource, \
-    DataTable, TableColumn, MultiSelect
+from bokeh.models import Tabs, Panel, PreText, Select, MultiSelect, \
+    ColumnDataSource, DataTable, TableColumn
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
@@ -87,52 +87,65 @@ def get_stage_options(conn, scenarios):
     return stage_options
 
 
+def get_objective_metrics(conn):
+    data = conn.execute("""SELECT * FROM results_system_costs WHERE 0 = 1;""")
+    cols = [s[0] for s in data.description]
+    cols = cols[3:]  # remove scenario_id, subproblem_id, stage_id
+    return cols
+
+
 def get_all_cost_data(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    # TODO: add tx deliverability costs, but those aren't by zone!
+    # TODO: add tx deliverability costs, but those aren't by zone!?
     #  might just keep zone NULL and make sure filter can deal with it
-    # TODO: filter for subproblem/stage (?)
-    sql = """SELECT scenario_name AS scenario, period, load_zone,
-        capacity_cost, variable_om_cost, fuel_cost, startup_cost, 
-        shutdown_cost, tx_capacity_cost, tx_hurdle_cost
+    sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone,
+        SUM(capacity_cost) AS capacity_cost, 
+        SUM(variable_om_cost) AS variable_om_cost, 
+        SUM(fuel_cost) AS fuel_cost, 
+        SUM(startup_cost) AS startup_cost, 
+        SUM(shutdown_cost) AS shutdown_cost, 
+        SUM(tx_capacity_cost) AS tx_capacity_cost, 
+        SUM(tx_hurdle_cost) AS tx_hurdle_cost
         FROM results_costs_by_period_load_zone
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
-        USING (scenario_id);
-        """.format(",".join(["?"] * len(scenarios)))
+        USING (scenario_id)
+        GROUP BY scenario, stage_id, period, load_zone
+        ;""".format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
     return df
 
 
 def get_all_capacity_data(conn, scenarios):
-    # TODO: filter for subproblem/stage (?)
+    # Note: this averages capacity across subproblems within one period
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    sql = """SELECT scenario_name AS scenario, period, load_zone, technology, 
-        SUM(new_build_mw) AS new_build_capacity, 
-        SUM(retired_mw) AS retired_capacity, 
-        SUM(capacity_mw) AS total_capacity
+    sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone, 
+        technology, 
+        AVG(new_build_mw) AS new_build_capacity, 
+        AVG(retired_mw) AS retired_capacity, 
+        AVG(capacity_mw) AS total_capacity
         FROM results_project_capacity
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
-        GROUP BY scenario, period, load_zone, technology;
+        GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
 
     df["cumulative_new_build_capacity"] = df.groupby(
-        ["scenario", "load_zone", "technology"]
+        ["scenario", "stage_id", "load_zone", "technology"]
     )["new_build_capacity"].transform(pd.Series.cumsum)
     df["cumulative_retired_capacity"] = df.groupby(
-        ["scenario", "load_zone", "technology"]
+        ["scenario", "stage_id", "load_zone", "technology"]
     )["retired_capacity"].transform(pd.Series.cumsum)
 
     # 'Unpivot' capacity metrics from wide to long format
     df = pd.melt(
         df,
-        id_vars=['scenario', 'period', 'load_zone', 'technology'],
+        id_vars=['scenario', 'stage_id', 'period', 'load_zone', 'technology'],
         var_name='capacity_metric',
         value_name='capacity'
     )
@@ -141,7 +154,7 @@ def get_all_capacity_data(conn, scenarios):
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
     df = pd.pivot_table(
         df,
-        index=['scenario', 'period', 'load_zone', 'capacity_metric'],
+        index=['scenario', 'stage_id', 'period', 'load_zone', 'capacity_metric'],
         columns='technology',
         values='capacity'
     ).fillna(0).reset_index()
@@ -151,24 +164,24 @@ def get_all_capacity_data(conn, scenarios):
 
 
 def get_all_energy_data(conn, scenarios):
-    # TODO: filter/aggregate for subproblem/stage (?)
-    # TODO: don't return value and idx cols (?)
+    # note: this will aggregate across subproblems
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    sql = """SELECT scenario_name AS scenario, period, load_zone, technology, 
+    sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone, 
+        technology, 
         SUM(energy_mwh) AS energy
         FROM results_project_dispatch_by_technology_period
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
-        GROUP BY scenario, period, load_zone, technology;
+        GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     # Pivot technologies to wide format (for stack chart)
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
     df = pd.pivot_table(
         df,
-        index=['scenario', 'period', 'load_zone'],
+        index=['scenario', 'stage_id', 'period', 'load_zone'],
         columns='technology',
         values='energy'
     ).fillna(0).reset_index()
@@ -179,48 +192,33 @@ def get_all_energy_data(conn, scenarios):
 
 # Data gathering functions
 def get_objective_cost_data(conn, scenarios):
+    # note: this will include costs that are part of spinup/lookahead tmps!
+    # note: this will aggregate across subproblems
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    # TODO: sum over subproblem and select stage
-    sql = """
-    SELECT scenario_name AS scenario,
-    Total_Capacity_Costs,
-    Total_Tx_Capacity_Costs,
-    Total_PRM_Group_Costs,
-    Total_Variable_OM_Cost,
-    Total_Fuel_Cost,
-    Total_Startup_Cost,
-    Total_Shutdown_Cost,
-    Total_Hurdle_Cost,
-    Total_Load_Balance_Penalty_Costs,
-    Frequency_Response_Penalty_Costs,
-    LF_Reserves_Down_Penalty_Costs,
-    LF_Reserves_Up_Penalty_Costs,
-    Regulation_Down_Penalty_Costs,
-    Regulation_Up_Penalty_Costs,
-    Spinning_Reserves_Penalty_Costs,
-    Total_PRM_Shortage_Penalty_Costs,
-    Total_Local_Capacity_Shortage_Penalty_Costs,
-    Total_Carbon_Cap_Balance_Penalty_Costs,
-    Total_RPS_Balance_Penalty_Costs,
-    Total_Dynamic_ELCC_Tuning_Cost,
-    Total_Import_Carbon_Tuning_Cost
-    FROM results_system_costs
-    
-    INNER JOIN
-    (SELECT scenario_name, scenario_id FROM scenarios
-    WHERE scenario_name in ({}) ) AS scen_table
-    USING (scenario_id)
-    ;""".format(",".join(["?"] * len(scenarios)))
+    objective_metrics = get_objective_metrics(conn)
+    sql1 = """SELECT scenario_name AS scenario, stage_id, """
+    sql2 = ",".join(["SUM({}) AS {} ".format(c, c) for c in objective_metrics])
+    sql3 = """FROM results_system_costs
+        INNER JOIN
+        (SELECT scenario_name, scenario_id FROM scenarios
+        WHERE scenario_name in ({}) ) AS scen_table
+        USING (scenario_id)
+        
+        GROUP BY scenario, stage_id
+        ;""".format(",".join(["?"] * len(scenarios)))
+    sql = sql1 + sql2 + sql3
 
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
 
     return df
 
+
 def get_all_summary_data(conn, scenarios):
+    # TODO: could link summary columns to a python variable which can then be
+    #  reused when creating the categorical column
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    # TODO: sum over subproblem/stage (?)
     sql = """
-    SELECT scenario_name AS scenario, period, load_zone, 
+    SELECT scenario_name AS scenario, stage_id, period, load_zone, 
     capacity_cost, operational_cost, transmission_cost,
     (ifnull(capacity_cost, 0) 
      + ifnull(operational_cost, 0) 
@@ -233,33 +231,34 @@ def get_all_summary_data(conn, scenarios):
     overgeneration, unserved_energy, carbon_emissions
     
     FROM (
-        SELECT scenario_id, period, load_zone, capacity_cost,
-        (variable_om_cost + fuel_cost + startup_cost + shutdown_cost) AS 
+        SELECT scenario_id, stage_id, period, load_zone, 
+        SUM(capacity_cost) AS capacity_cost,
+        SUM(variable_om_cost + fuel_cost + startup_cost + shutdown_cost) AS 
         operational_cost,  
-        (tx_capacity_cost + tx_hurdle_cost) AS transmission_cost
+        SUM(tx_capacity_cost + tx_hurdle_cost) AS transmission_cost
         FROM results_costs_by_period_load_zone
+        GROUP BY scenario_id, stage_id, period, load_zone
         ) AS cost_table
         
     INNER JOIN 
-    -- Todo: PRE-AGG by period, deal with subproblem/stage
-    (SELECT scenario_id, period, load_zone, 
+    (SELECT scenario_id, stage_id, period, load_zone, 
     SUM(timepoint_weight * number_of_hours_in_timepoint * load_mw) AS load,
     SUM(timepoint_weight * number_of_hours_in_timepoint * overgeneration_mw) 
     AS overgeneration,
     SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
     AS unserved_energy
     FROM results_system_load_balance
-    GROUP BY scenario_id, period, load_zone
+    GROUP BY scenario_id, stage_id, period, load_zone
     ) AS load_table
-    USING (scenario_id, period, load_zone)
+    USING (scenario_id, stage_id, period, load_zone)
     
     INNER JOIN
-    (SELECT scenario_id, period, load_zone,
+    (SELECT scenario_id, stage_id, period, load_zone,
     SUM(carbon_emission_tons) AS carbon_emissions
     FROM results_project_carbon_emissions_by_technology_period
-    GROUP BY scenario_id, period, load_zone
+    GROUP BY scenario_id, stage_id, period, load_zone
     ) AS carbon_table
-    USING(scenario_id, period, load_zone)
+    USING(scenario_id, stage_id, period, load_zone)
     
     INNER JOIN
     (SELECT scenario_name, scenario_id FROM scenarios
@@ -273,7 +272,7 @@ def get_all_summary_data(conn, scenarios):
     return df
 
 
-def get_objective_src(objective_df, scenario):
+def get_objective_src(objective_df, scenario, stage):
     """
     Update the ColumnDataSource object 'objective_source' with the appropriate
     scenario slice of the data.
@@ -285,28 +284,37 @@ def get_objective_src(objective_df, scenario):
     df = objective_df.copy()
 
     scenario_filter = df["scenario"].isin(scenario)
-    slice = df[scenario_filter]
+    stage_filter = (df["stage_id"] == int(stage))
+    df = df[scenario_filter & stage_filter]
 
     # 'Unpivot' from wide to long format (move metrics into a col)
-    slice = pd.melt(
-        slice,
-        id_vars=['scenario'],
+    df = pd.melt(
+        df,
+        id_vars=['scenario', 'stage_id'],
         var_name='objective_metric',
         value_name='value'
     )
     # # Pivot scenarios into columms
-    slice = pd.pivot_table(
-        slice,
-        index=['objective_metric'],
+    df = pd.pivot_table(
+        df,
+        index=['stage_id', 'objective_metric'],
         columns='scenario',
         values='value'
     ).reset_index().fillna(0)
 
-    src = ColumnDataSource(slice)
+    # Convert to categorical for sorting
+    objective_metrics = get_objective_metrics(conn)
+    df['objective_metric'] = pd.Categorical(
+        values=df['objective_metric'],
+        categories=objective_metrics
+    )
+    df = df.sort_values(by=["objective_metric"])
+
+    src = ColumnDataSource(df)
     return src
 
 
-def get_summary_src(summary_df, scenario, period, zone):
+def get_summary_src(summary_df, scenario, stage, period, zone):
     """
     Update the ColumnDataSource object 'summary_source' with the appropriate
     slice of the data.
@@ -320,31 +328,40 @@ def get_summary_src(summary_df, scenario, period, zone):
 
     scenario_filter = df["scenario"].isin(scenario)
     period_filter = df["period"].isin(period)
+    stage_filter = (df["stage_id"] == int(stage))
     zone_filter = (df["load_zone"] == zone)
 
-    slice = df[period_filter & scenario_filter & zone_filter]
+    df = df[period_filter & stage_filter & scenario_filter & zone_filter]
 
     # 'Unpivot' from wide to long format (move metrics into a col)
-    slice = pd.melt(
-        slice,
-        id_vars=['scenario', 'period', 'load_zone'],
+    df = pd.melt(
+        df,
+        id_vars=['scenario', 'stage_id', 'period', 'load_zone'],
         var_name='summary_metric',
         value_name='value'
     )
     # Pivot scenarios into columms
-    slice = pd.pivot_table(
-        slice,
-        index=['load_zone', 'period', 'summary_metric'],
+    df = pd.pivot_table(
+        df,
+        index=['load_zone', 'stage_id', 'period', 'summary_metric'],
         columns='scenario',
         values='value'
     ).reset_index().fillna(0)
-    # TODO: custom sort metrics?
 
-    src = ColumnDataSource(slice)
+    # Convert to categorical for sorting
+    df['summary_metric'] = pd.Categorical(
+        values=df['summary_metric'],
+        categories=["capacity_cost", "operational_cost", "transmission_cost",
+                    "total_cost", "load", "average_cost", "overgeneration",
+                    "unserved_energy", "carbon_emissions"]
+    )
+    df = df.sort_values(by=["load_zone", "period", "summary_metric"])
+
+    src = ColumnDataSource(df)
     return src
 
 
-def get_cost_src(cost_df, scenario, period, zone):
+def get_cost_src(cost_df, scenario, stage, period, zone):
     """
     Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
@@ -354,22 +371,23 @@ def get_cost_src(cost_df, scenario, period, zone):
     df = cost_df.copy()
 
     scenario_filter = df["scenario"].isin(scenario)
+    stage_filter = (df["stage_id"] == int(stage))
     period_filter = df["period"].isin(period)
     zone_filter = (df["load_zone"] == zone)
 
-    slice = df[period_filter & scenario_filter & zone_filter]
-    slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
+    df = df[scenario_filter & stage_filter & period_filter & zone_filter]
+    df = df.drop(["load_zone", "stage_id"], axis=1)  # drop bc not stacked
 
     x_col = ["period", "scenario"]
-    x_col_reordered = order_cols_by_nunique(slice, x_col)
-    slice = slice.set_index(x_col_reordered)
+    x_col_reordered = order_cols_by_nunique(df, x_col)
+    df = df.set_index(x_col_reordered)
 
-    src = ColumnDataSource(slice)
+    src = ColumnDataSource(df)
     x_col_src = "_".join(x_col_reordered)
     return src, x_col_src
 
 
-def get_energy_src(energy_df, scenario, period, zone):
+def get_energy_src(energy_df, scenario, stage, period, zone):
     """
     Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
@@ -380,21 +398,22 @@ def get_energy_src(energy_df, scenario, period, zone):
 
     scenario_filter = df["scenario"].isin(scenario)
     period_filter = df["period"].isin(period)
+    stage_filter = (df["stage_id"] == int(stage))
     zone_filter = (df["load_zone"] == zone)
 
-    slice = df[period_filter & scenario_filter & zone_filter]
-    slice = slice.drop(["load_zone"], axis=1)  # drop because not stacked
+    df = df[scenario_filter & period_filter & stage_filter & zone_filter]
+    df = df.drop(["load_zone", "stage_id"], axis=1)  # drop bc not stacked
 
     x_col = ["period", "scenario"]
-    x_col_reordered = order_cols_by_nunique(slice, x_col)
-    slice = slice.set_index(x_col_reordered)
+    x_col_reordered = order_cols_by_nunique(df, x_col)
+    df = df.set_index(x_col_reordered)
 
-    src = ColumnDataSource(slice)
+    src = ColumnDataSource(df)
     x_col_src = "_".join(x_col_reordered)
     return src, x_col_src
 
 
-def get_cap_src(capacity_df, scenario, period, zone, capacity_metric):
+def get_cap_src(capacity_df, scenario, stage, period, zone, capacity_metric):
     """
     Create a Bokeh ColumnDataSource object with the appropriate sliced out data.
     :return:
@@ -406,25 +425,28 @@ def get_cap_src(capacity_df, scenario, period, zone, capacity_metric):
 
     scenario_filter = df["scenario"].isin(scenario)
     period_filter = df["period"].isin(period)
+    stage_filter = (df["stage_id"] == int(stage))
     zone_filter = (df["load_zone"] == zone)
     cap_metric_filter = (df["capacity_metric"] == capacity_metric)
 
-    slice = df[period_filter & scenario_filter & zone_filter &
+    df = df[scenario_filter & period_filter & stage_filter & zone_filter &
                cap_metric_filter]
-    slice = slice.drop(["load_zone", "capacity_metric"], axis=1)  # drop because not stacked
+    df = df.drop(["load_zone", "stage_id", "capacity_metric"], axis=1)
 
     x_col = ["period", "scenario"]
-    x_col_reordered = order_cols_by_nunique(slice, x_col)
-    slice = slice.set_index(x_col_reordered)
+    x_col_reordered = order_cols_by_nunique(df, x_col)
+    df = df.set_index(x_col_reordered)
 
-    src = ColumnDataSource(slice)
+    src = ColumnDataSource(df)
     x_col_src = "_".join(x_col_reordered)
     return src, x_col_src
 
 
 def create_datatable(src):
+    # TODO: use Bokeh NumberFormatter on number columns
+    # TableColumn(field=, title=, formatter=NumberFormatter(format='0,0[.]00')
     cols_to_use = [c for c in src.data.keys()
-                   if c not in ['stage', 'index']]
+                   if c not in ['stage_id', 'index']]
     columns = [TableColumn(field=c, title=c) for c in cols_to_use]
     summary_table = DataTable(
         columns=columns, source=src,
@@ -436,7 +458,7 @@ def create_datatable(src):
     return summary_table
 
 
-def draw_plots(scenario, period, zone, capacity_metric):
+def draw_plots(scenario, stage, period, zone, capacity_metric):
     """
     (Re)draw plots: slice out appropriate data, convert to Bokeh CDS, and
     create Bokeh plots.
@@ -445,6 +467,7 @@ def draw_plots(scenario, period, zone, capacity_metric):
     etc) into global variables, and have set up the layout as well with
     global variables.
     :param scenario:
+    :param stage:
     :param period:
     :param zone:
     :param capacity_metric:
@@ -455,6 +478,7 @@ def draw_plots(scenario, period, zone, capacity_metric):
     cap_src, cap_x_col = get_cap_src(
         capacity_df=capacity,
         scenario=scenario,
+        stage=stage,
         period=period,
         zone=zone,
         capacity_metric=capacity_metric
@@ -462,24 +486,28 @@ def draw_plots(scenario, period, zone, capacity_metric):
     energy_src, energy_x_col = get_energy_src(
         energy_df=energy,
         scenario=scenario,
+        stage=stage,
         period=period,
         zone=zone
     )
     cost_src, cost_x_col = get_cost_src(
         cost_df=cost,
         scenario=scenario,
+        stage=stage,
         period=period,
         zone=zone
     )
     summary_src = get_summary_src(
         summary_df=summary,
         scenario=scenario,
+        stage=stage,
         period=period,
         zone=zone
     )
     objective_src = get_objective_src(
         objective_df=objective,
-        scenario=scenario
+        scenario=scenario,
+        stage=stage
     )
 
     # Create Bokeh Plots and Tables
@@ -523,7 +551,7 @@ def scenario_change(attr, old, new):
     When the selected scenario changes, get the appropriate data slice and
     and re-draw the plots.
     """
-    draw_plots(scenario_select.value, period_select.value,
+    draw_plots(scenario_select.value, stage_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
 
@@ -532,7 +560,7 @@ def period_change(attr, old, new):
     When the selected period changes, get the appropriate data slice and
     re-draw the plots.
     """
-    draw_plots(scenario_select.value, period_select.value,
+    draw_plots(scenario_select.value, stage_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
 
@@ -541,7 +569,7 @@ def stage_change(attr, old, new):
     When the selected stage changes, get the appropriate data slice and
     re-draw the plots.
     """
-    draw_plots(scenario_select.value, period_select.value,
+    draw_plots(scenario_select.value, stage_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
 
@@ -550,7 +578,7 @@ def zone_change(attr, old, new):
     When the selected load zone changes, get the appropriate data slice and
     re-draw the plots.
     """
-    draw_plots(scenario_select.value, period_select.value,
+    draw_plots(scenario_select.value, stage_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
 
@@ -559,7 +587,7 @@ def capacity_change(attr, old, new):
     When the selected capacity metric changes, get the appropriate data slice
     and re-draw the plots.
     """
-    draw_plots(scenario_select.value, period_select.value,
+    draw_plots(scenario_select.value, stage_select.value, period_select.value,
                zone_select.value, capacity_select.value)
 
 
@@ -627,7 +655,7 @@ tab4 = Panel(child=inputs_dummy, title='Inputs')
 tabs = Tabs(tabs=[tab1, tab2, tab3, tab4])  # Put all tabs in one application
 
 # Draw Plots based on selected values
-draw_plots(scenario_select.value, period_select.value,
+draw_plots(scenario_select.value, stage_select.value, period_select.value,
            zone_select.value, capacity_select.value)
 
 # Set up callback behavior (redraw plots)
