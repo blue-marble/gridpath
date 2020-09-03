@@ -112,8 +112,9 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
             table, inputs_dir, project_flag, cols_to_exclude_str, \
                 custom_method, subscenario_type, filename = \
                 parse_row(row=row, csv_path=csv_path)
-            print("Importing data for subscenario {}, table {} from {}"
-                  "...".format(subscenario, table, inputs_dir))
+            if not quiet:
+                print("Importing data for subscenario {}, table {} from {}"
+                      "...".format(subscenario, table, inputs_dir))
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn, subscenario, table, subscenario_type, project_flag,
                 cols_to_exclude_str, custom_method, inputs_dir, filename, quiet

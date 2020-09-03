@@ -305,7 +305,8 @@ def read_all_csv_subscenarios_from_dir_and_insert_into_db(
     # If the subscenario is included, make a list of tuples for the subscenario
     # and inputs, and insert into the database via the relevant method
     for csv_file in csv_files:
-        print("...importing CSV {}".format(csv_file))
+        if not quiet:
+            print("...importing CSV {}".format(csv_file))
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
@@ -381,8 +382,9 @@ def read_all_dir_subscenarios_from_dir_and_insert_into_db(
         )
 
     for subscenario_directory in subscenario_directories:
-        print("...importing data from directory {}".format(
-            subscenario_directory))
+        if not quiet:
+            print("...importing data from directory {}".format(
+                subscenario_directory))
         get_subscenario_data_and_insert_into_db(
             conn=conn,
             quiet=quiet,
