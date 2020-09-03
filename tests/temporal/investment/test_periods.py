@@ -87,7 +87,7 @@ class TestPeriods(unittest.TestCase):
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
                 usecols=["timepoint", "period", "number_of_hours_in_timepoint",
-                         "timepoint_weight", "spinup_or_lookahead"]
+                         "timepoint_weight"]
             )
 
         # PERIODS set
@@ -186,8 +186,7 @@ class TestPeriods(unittest.TestCase):
         # Param: hours_in_subproblem_period
         timepoints_df["tot_hours"] = timepoints_df[
             "number_of_hours_in_timepoint"] * timepoints_df["timepoint_weight"]
-        subdf = timepoints_df[timepoints_df["spinup_or_lookahead"] == "."]
-        expected_hours_in_subproblem_period = subdf.groupby(["period"])[
+        expected_hours_in_subproblem_period = timepoints_df.groupby(["period"])[
             "tot_hours"].sum().to_dict()
 
         actual_hours_in_subproblem_period = \
