@@ -2825,7 +2825,6 @@ PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 DROP TABLE IF EXISTS results_project_carbon_emissions_by_technology_period;
 CREATE TABLE results_project_carbon_emissions_by_technology_period (
 scenario_id INTEGER,
-project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
