@@ -121,8 +121,7 @@ def add_model_components(m, d):
     |                                                                         |
     | The number of hours in each period for the current subproblem, taking   |
     | into account the timepoints in each period-subproblem, the number of    |
-    | hours in each timepoint, and their associated timepoint weights, and    |
-    | ignoring any spinup or lookahead timepoints.                            |
+    | hours in each timepoint, and their associated timepoint weights.        |
     | In capacity expansion mode with one subproblem, this should simply be   |
     | equal to :code:`hours_in_full_period`. In production simulation mode    |
     | with multiple subproblems within 1 period, this number is compared to   |
@@ -203,8 +202,7 @@ def add_model_components(m, d):
         within=NonNegativeReals,
         initialize=lambda mod, p:
         sum(mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_IN_PRD[p]
-            if not mod.spinup_or_lookahead[tmp])
+            for tmp in mod.TMPS_IN_PRD[p])
     )
 
 
