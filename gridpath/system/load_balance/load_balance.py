@@ -2,8 +2,27 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This module creates the load balance constraint from all production and
-consumption components added by other modules.
+The load-balance constraint in GridPath consists of production components
+and consumption components that are added by various GridPath modules
+depending on the selected features. The sum of the production components
+must equal the sum of the consumption components in each zone and timepoint.
+
+At a minimum, for each load zone and timepoint, the user must specify a
+static load requirement input as a consumption component. On the production
+side, the model aggregates the power output of projects in the respective
+load zone and timepoint.
+
+.. note:: Net power output from storage and demand-side resources can be
+    negative and is currently aggregated with the 'project' production
+    component.
+
+Net transmission into/out of the load zone is another possible production
+component (see :ref:`transmission-section-ref`).
+
+The user may also optionally allow unserved energy and/or overgeneration to be
+incurred by adding the respective variables to the production and
+consumption components respectively, and assigning a per unit cost for each
+load-balance violation type.
 """
 
 from __future__ import print_function

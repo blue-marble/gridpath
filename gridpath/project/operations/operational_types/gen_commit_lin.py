@@ -9,12 +9,6 @@ linear relaxation treatment can be helpful in situations when mixed-integer
 problem run-times are long and is similar to loosening the MIP gap (but can
 target specific generators). Please refer to the *gen_commit_bin* module for
 more information on the formulation.
-
-.. Note:: Some of the more complex constraints in this module such as the
-startup trajectories might show weird behavior in the linearized version, e.g.
-different fractions of the unit might be starting up and shutting down in the
-same timepoint. We don't recommend using this linearized version in combination
-with these complex constraints.
 """
 
 from __future__ import division
