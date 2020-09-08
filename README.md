@@ -10,9 +10,12 @@ GridPath is developed and tested on Python 3.7. Get Python
 [here](https://www.python.org/downloads/ "Python download").
 
 ## Packages
-You can install all needed Python packages, including those for the extra 
-features, by navigating to the GridPath root directory (which is where this 
-`README.md` file is located) and running:
+We highly recommend that you create a Python environment for your GridPath
+installation, e.g. via `venv`, [a lightweight environment manager](
+https://docs.python.org/3/library/venv.html, "venv") that is part of the 
+standard Python distribution. You can install all needed Python packages,
+including those for the extra features, by navigating to the GridPath root
+directory (which is where this `README.md` file is located) and running:
 ```bash
 pip install -e .[all]
 ```
