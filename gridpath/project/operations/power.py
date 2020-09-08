@@ -256,11 +256,11 @@ def process_results(db, c, subscenarios, quiet):
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
         FROM results_project_dispatch
         WHERE scenario_id = ?
@@ -288,15 +288,16 @@ def process_results(db, c, subscenarios, quiet):
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        energy_mwh)
+        spinup_or_lookahead, energy_mwh)
         SELECT
         scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead,
         SUM(power_mw * timepoint_weight * number_of_hours_in_timepoint ) AS 
         energy_mwh 
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology;"""
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)

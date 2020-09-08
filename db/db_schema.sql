@@ -2504,9 +2504,10 @@ stage_id INTEGER,
 period INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
+spinup_or_lookahead INTEGER,
 energy_mwh FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
-technology)
+technology, spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
