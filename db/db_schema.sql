@@ -2845,7 +2845,8 @@ stage_id INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
 carbon_emission_tons FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, period)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
+technology)
 );
 
 DROP TABLE IF EXISTS results_project_rps;
