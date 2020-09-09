@@ -1,27 +1,7 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-
-########
-Database
-########
-
-This chapter describes the following:
-
-* :ref:`database-structure-section-ref` : the structure of the database and its
-  associated tables
-* :ref:`building-the-database-section-ref` : instructions on how to build the
-  database
-* :ref:`database-testing-section-ref` : instructions on how to validate the
-  database inputs
-
-
-.. _database-structure-section-ref:
-
-Database Structure
-##################
-
 All tables names in the GridPath database start with one of seven prefixes:
 :code:`mod_`, :code:`subscenario_`, :code:`inputs_`, :code:`scenarios`,
 :code:`options_`, :code:`status_`, or :code:`ui_`. This structure is meant to
@@ -119,4 +99,6 @@ The :code:`viz_` Tables
 The :code:`viz_` tables are used in the GridPath visualization suite, for
 instance when determining in which color and order to plot the technologies in
 the dispatch plot.
+
+
 """

@@ -1,28 +1,64 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The *port_csvs_to_gridpath.py* script ports the input data provided through
-CSVS to the SQLite database, which is created using the create_database.py
-script. The csv_data_master.csv has the list of all the subscenarios and
-associated tables in the GridPath database. CSV data is imported if a path is
-specified for each table.
+The *port_csvs_to_db.py* script in the db directory ports the input data
+provided through CSV files to the GridPath SQLite database. This script
+assumes that the user has already created the database file and loaded
+the GridPath schema using the *create_database.py* script.
 
-The script will look for CSV files in each subscenario's subfolder. It is
-expecting that the CSV filenames will conform to a certain structure
-indicating the ID and name for the subscenarios, and contain the data for
-the subscenarios. See csvs_to_db_utilities.csvs_read for the  specific
-requirements depending on the function called from that module.
+The *port_csvs_to_db.py* script takes several arguments. For usage info, run:
 
-The scenario.csv under the scenario folder holds the input data for the
+>>> python port_csvs_to_db.py --help
+
+The user must specify the GridPath database path using the *--database* flag
+and the path to the directory where the CSVs are located using the
+*--csv_location* flag.
+
+>>> python port_csvs_to_db.py --database PATH/DO/DB --csv_location PATH/TO/CSVS
+
+
+Running the command above will look for the *csv_data_master.csv* file in
+the *PATH/TO/CSVS* directory and use the information in this file to
+determine which CSV files to import. The template *csv_data_master.csv* file
+is located in the *db/cvs_test_examples* directory. This file has the list
+of all the subscenarios and associated tables in the GridPath database. CSV
+data is imported if the user specifies a path in the *path* column of the file.
+This path should be relative to the *PATH/TO/CSVS* directory. Other columns
+of this file should not be modified by the user with the exception of the
+*cols_to_exclude_str* column. In this column, the user can specify a string,
+which, if it is the beginning of the header of a column in the CSV input file,
+will tell the port script to ignore the data in that column instead of
+attempting to import it.
+
+The script will look for CSV files in the path specified by the user for each
+subscenario.
+
+If no name has been specified for a subscenario/table in the  *filename* column
+of the *csv_data_master.csv* file, the script is expecting that the CSV
+filename will conform to a certain structure, indicating the ID and name of
+the subscenario the file contains data for, with the ID and name separated
+by an underscore. For example, to load data  for different project portfolio
+subscenarios, the user must first specify the path where the project
+portfoio CSVs are located in the *path* column of the
+*project_portfolio_scenario_id* row of the *csv_data_master.csv* file. In
+this directory, the user must include a file for each portfolio they want to
+be able to model, e.g. *1_base.csv* for project_portfolio_scenario_id 1 and
+*2_extra_project.csv* for project_portfolio_scenario_id 2. CSVs for
+subscenarios flagged with 1 in the *project_input* column of the
+*csv_data_master.csv* file require that the filename consist of the project
+name, subscenario ID, and subscenario name, separated by dashes, e.g. two
+profiles for a project named 'Solar' can be specified in the files named
+*Solar-1-base.csv* and *Solar-2-high.csv* respectively. Note that project
+filenames should not include dashes.
+
+A few subscenarios consist of multiple tables data for which is l
+
+The scenarios.csv under the scenario folder holds the input data for the
 subscenario, which indicates which subscenarios should be included in a
 particular scenario by providing the subscenario_id. Each scenario has a
 separate column. The user-defined name of the scenario should be entered as
 the name of the scenario column.
-
-The input params for this script include database file path (database),
-and csvs folder path (csv_location). The defaults are the
-"../db/io.db" database and "csvs" folder located under the "db" folder.
 
 """
 
