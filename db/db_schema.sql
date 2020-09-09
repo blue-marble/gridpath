@@ -2996,8 +2996,10 @@ load_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+spinup_or_lookahead INTEGER,
 tx_hurdle_cost FLOAT,
-PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_transmission_carbon_emissions;
