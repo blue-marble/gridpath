@@ -2965,9 +2965,11 @@ load_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+spinup_or_lookahead INTEGER,
 imports FLOAT,
 exports FLOAT,
-PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_transmission_hurdle_costs;
