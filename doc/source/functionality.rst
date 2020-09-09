@@ -2,7 +2,7 @@
 GridPath Functionality - High Level
 ###################################
 
-In this chapter, we discuss Gridpath's functionality at a high level. It is
+In this chapter, we discuss GridPath's functionality at a high level. It is
 subdivided into three sections:
 
 1. :ref:`approaches-section-ref`
