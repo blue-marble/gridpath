@@ -284,7 +284,7 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate dispatch by technology
+    # Aggregate dispatch by technology and period
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
@@ -296,8 +296,10 @@ def process_results(db, c, subscenarios, quiet):
         energy_mwh 
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead;"""
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
