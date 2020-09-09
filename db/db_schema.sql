@@ -2848,6 +2848,7 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
+spinup_or_lookahead INTEGER,
 carbon_emission_tons FLOAT,
 PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
 technology)
