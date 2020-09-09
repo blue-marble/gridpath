@@ -18,7 +18,7 @@ def temporal(conn, subscenario_id):
 
     # Subproblems
     subproblems_sql = """
-        INSERT OR IGNORE INTO inputs_temporal_subproblems
+        INSERT INTO inputs_temporal_subproblems
         (temporal_scenario_id, subproblem_id)
         SELECT DISTINCT temporal_scenario_id, subproblem_id
         FROM inputs_temporal
@@ -33,7 +33,7 @@ def temporal(conn, subscenario_id):
     # TODO: stage_name not currently included; decide whether to keep this
     #  column in the database and how to import data for it if we do want it
     stages_sql = """
-        INSERT OR IGNORE INTO inputs_temporal_subproblems_stages
+        INSERT INTO inputs_temporal_subproblems_stages
         (temporal_scenario_id, subproblem_id, stage_id)
         SELECT DISTINCT temporal_scenario_id, subproblem_id, stage_id
         FROM inputs_temporal
@@ -50,9 +50,11 @@ def temporal(conn, subscenario_id):
         USING (temporal_scenario_id, subproblem_id)
         WHERE temporal_scenario_id = ?
         """
-    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (subscenario_id,
-                                                  )).fetchall()
+    sid_stg_bt_hr = c.execute(
+        sid_stg_bt_hr_sql, (subscenario_id,)
+    ).fetchall()
 
+    hor_tmps_tuples_list = list()
     for (sid, stage, bt, hr) in sid_stg_bt_hr:
         tmp_start, tmp_end = c.execute(
             """SELECT tmp_start, tmp_end
@@ -79,13 +81,15 @@ def temporal(conn, subscenario_id):
 
         for tmp_tuple in tmps:
             tmp = tmp_tuple[0]
-            horizon_timepoints_sql = """
-                INSERT OR IGNORE INTO inputs_temporal_horizon_timepoints
-                (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
-                balancing_type_horizon, horizon)
-                VALUES (?, ?, ?, ?, ?, ?);
-                """
-            spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
-                                  data=(subscenario_id, sid, stage,
-                                        tmp, bt, hr),
-                                  many=False)
+
+            hor_tmps_tuples_list.append((subscenario_id, sid, stage, tmp, bt, hr))
+
+    horizon_timepoints_sql = """
+        INSERT INTO inputs_temporal_horizon_timepoints
+        (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
+        balancing_type_horizon, horizon)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
+                          data=hor_tmps_tuples_list)
