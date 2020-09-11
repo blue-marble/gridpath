@@ -36,84 +36,30 @@ Populating the Database
 
 .. automodule:: db.port_csvs_to_db
 
+GridPath Input Data
+###################
+
+***************
 Temporal Inputs
 ***************
 
-.. automodule:: db.csvs_test_examples.doc
+.. automodule:: db.csvs_test_examples.temporal.doc
 
-----------------
+****************
 Load Zone Inputs
-----------------
+****************
 
-**Relevant tables:**
+.. automodule:: db.csvs_test_examples.system_load.load_zones.doc
 
-+-------------------------------+----------------------------------------------+
-|:code:`scenarios` table column |:code:`load_zone_scenario_id`                 |
-+-------------------------------+----------------------------------------------+
-|:code:`scenario` table feature |N/A                                           |
-+-------------------------------+----------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_load_zones`     |
-+-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_load_zones`           |
-+-------------------------------+----------------------------------------------+
-
-The :code:`subscenarios_geography_load_zones` contains the IDs, names, and
-descriptions of the load zone scenarios to be available to the user. This
-table must be populated before data for the respective
-:code:`load_zone_scenario_id` can be imported into the input table.
-
-The user must decide the load zones will be, i.e. what is the unit at which
-load is met. There are some parameters associated with each load zone,
-e.g. unserved-energy and overgeneration penalties. The relevant database
-table is :code:`inputs_geography_load_zones` where the user must list the
-load zones along with whether unserved energy and overgeneration should be
-allowed in the load zone, and what the violation penalties would be. If a
-user wanted to create a different 'geography,' e.g. combine load zones, add
-a load zone, remove one, have a completely different set of load zones, etc.,
-they would need to create a new :code:`load_zone_scenario_id` and list the
-load zones. If a user wanted to keep the same load zones, but change the
-unserved energy or overgeneration penalties, they would also need to create
-a new :code:`load_zone_scenario_id`.
-
-Separately, each generator to be included in a scenario must be assigned a
-load zone to whose load-balance constraint it can contribute
-(see :ref:`project-geography-section-ref`).
-
-GridPath also includes other geographic layers, including those for
-operating reserves, reliability reserves, and policy requirements.
-
-A scenario's load zone geographic setup is selected via the
-:code:`load_zone_scenario_id` column of the :code:`scenarios` table.
-
-
------------
+***********
 System Load
------------
+***********
 
-**Relevant tables:**
+.. automodule:: db.csvs_test_examples.system_load.system_load.doc
 
-+-------------------------------+---------------------------------+
-|:code:`scenarios` table column |:code:`load_scenario_id`         |
-+-------------------------------+---------------------------------+
-|:code:`scenario` table feature |N/A                              |
-+-------------------------------+---------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_load` |
-+-------------------------------+---------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_load`       |
-+-------------------------------+---------------------------------+
-
-The load for each load zone must be specified the :code:`inputs_system_load`
-table under a :code:`load_scenario_id` key. If the load for one load zone
-changes but not for others, all must be included again under a different
-:code:`load_scenario_id`. The :code:`inputs_system_load` table can contain
-data for timepoints not included in a scenario. GridPath will only select
-the load for the relevant timepoints based on the
-:code:`temporal_scenario_id` selected by the user in the :code:`scenarios`
-table.
-
---------------
+**************
 Project Inputs
---------------
+**************
 
 Generator and storage resources in GridPath are called *projects*. Each
 project can be assigned different characteristics depending on the scenario,
@@ -124,43 +70,16 @@ import all projects that may be part of a scenario in the
 
 .. _project-geography-section-ref:
 
------------------
 Project Geography
------------------
+*****************
 
-**Relevant tables:**
-
-+-------------------------------+----------------------------------------+
-|:code:`scenarios` table column |:code:`project_load_zone_scenario_id`   |
-+-------------------------------+----------------------------------------+
-|:code:`scenario` table feature |N/A                                     |
-+-------------------------------+----------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_load_zones` |
-+-------------------------------+----------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_load_zones`       |
-+-------------------------------+----------------------------------------+
-
-Each *project* in a GridPath scenario must be assigned a load zone to whose
-load-balance constraint it will contribute. In the
-:code:`inputs_project_load_zones`, each
-:code:`project_load_zone_scenario_id` should list all projects with their load
-zones. For example, if a user initially had three load zones and assigned
-one of them to each project, then decided to combine two of those load
-zones into one, they would need to create a new
-:code:`project_load_zone_scenario_id` that includes all projects from the
-two combined zones with the new zone assigned to them as well as all
-projects from the zone that was not modified. This
-:code:`inputs_project_load_zones` table can include more projects that are
-modeled in a scenario, as GridPath will select only the subset of projects
-from the scenario's project portfolio (see
-:ref:`project-portfolio-section-ref`).
+.. automodule:: db.csvs_test_examples.project.project_load_zones.doc
 
 
 .. _project-portfolio-section-ref:
 
------------------
 Project Portfolio
------------------
+*****************
 
 **Relevant tables:**
 
@@ -197,15 +116,15 @@ descriptions must first be listed in the
 :code:`subscenarios_project_portfolios` table.
 
 
-------------------
 Specified Projects
-------------------
+******************
 
 .. _specified-project-capacity-section-ref:
 
 
+========
 Capacity
---------
+========
 
 **Relevant tables:**
 
@@ -244,8 +163,9 @@ re-inserted in the table under the new
 
 .. _specified-project-fixed-cost-section-ref:
 
+===========
 Fixed Costs
------------
+===========
 
 **Relevant tables:**
 
@@ -268,10 +188,10 @@ scenario via the :code:`project_specified_fixed_cost_scenario_id` subscenario.
 The treatment for specified project fixed cost inputs is similar to that for
 their capacity (see :ref:`specified-project-capacity-section-ref`).
 
-============
 New Projects
-============
+************
 
+=============
 Capital Costs
 =============
 
@@ -314,6 +234,7 @@ storage sizing.
 
 .. _new-project-potential-section-ref:
 
+=========
 Potential
 =========
 
@@ -339,9 +260,9 @@ and NULL values are interpreted by GridPath as no constraint. Projects that
 don't either a minimum or maximum cumulative new capacity constraints can be
 omitted from this table completely.
 
-====================
+
 Project Availability
-====================
+********************
 
 **Relevant tables:**
 
@@ -381,6 +302,7 @@ capacity derate is applied by GridPath. For projects of a :code:`binary` of
 :code:`continuous` availability type, a value in the
 :code:`endogenous_availability_scenario_id` is required.
 
+=========
 Exogenous
 =========
 
@@ -402,6 +324,7 @@ descriptions of each :code:`project` and
 derate for each combination is defined by stage and timepoint, and must be
 between 0 (full derate) and 1 (no derate).
 
+==========
 Endogenous
 ==========
 
@@ -426,9 +349,9 @@ each unavailability event in hours, and the minimum and maximum number of
 hours between unavailability events. Based on these inputs, GridPath determines
 the exact availability schedule endogenously.
 
-===================================
+
 Project Operational Characteristics
-===================================
+***********************************
 
 **Relevant tables:**
 
@@ -478,6 +401,7 @@ than project, so they are input in separate tables and linked to the
 :code:`inputs_project_operational_chars` via an ID column. These include
 heat rates, variable generator profiles, and hydro characteristics.
 
+=====================
 Heat Rates (OPTIONAL)
 =====================
 
@@ -504,6 +428,7 @@ data for projects that are not included in a GridPath scenario, as the
 relevant projects for a scenario will be pulled based on the scenario's
 project portfolio subscenario.
 
+======================================
 Variable Generator Profiles (OPTIONAL)
 ======================================
 
@@ -531,6 +456,7 @@ for projects and timepoints that are not included in a particular GridPath
 scenario: GridPath will select the subset of projects and timepoints based
 on the scenarios project portfolio and temporal subscenarios.
 
+============================================
 Hydro Operational Characteristics (OPTIONAL)
 ============================================
 
@@ -558,14 +484,14 @@ for projects and horizons that are not included in a particular GridPath
 scenario: GridPath will select the subset of projects and horizons based
 on the scenarios project portfolio and temporal subscenarios.
 
+******************************
 Transmission Inputs (OPTIONAL)
 ******************************
 
 Optional inputs needed if transmission feature is enabled for a scenario.
 
-======================
 Transmission Portfolio
-======================
+**********************
 
 Relevant tables:
 
@@ -579,9 +505,8 @@ Relevant tables:
 |:code:`input_` tables           |:code:`inputs_transmission_portfolios`        |
 +--------------------------------+----------------------------------------------+
 
-=======================
 Transmission Topography
-=======================
+***********************
 
 Relevant tables:
 
@@ -595,10 +520,10 @@ Relevant tables:
 |:code:`input_` tables           |:code:`inputs_transmission_load_zones`        |
 +--------------------------------+----------------------------------------------+
 
-======================
 Specified Transmission
-======================
+**********************
 
+========
 Capacity
 ========
 
@@ -615,10 +540,10 @@ Relevant tables:
 +--------------------------------+----------------------------------------------------+
 
 
-================
 New Transmission
-================
+****************
 
+=============
 Capital Costs
 =============
 
@@ -634,9 +559,8 @@ Relevant tables:
 |:code:`input_` tables           |:code:`inputs_transmission_new_cost`          |
 +--------------------------------+----------------------------------------------+
 
-========================================
 Transmission Operational Characteristics
-========================================
+****************************************
 
 +--------------------------------+----------------------------------------------------+
 |:code:`scenarios` table column  |:code:`transmission_operational_chars_scenario_id`  |
@@ -649,12 +573,12 @@ Transmission Operational Characteristics
 +--------------------------------+----------------------------------------------------+
 
 
+**********************
 Fuel Inputs (OPTIONAL)
 **********************
 
-====================
 Fuel Characteristics
-====================
+********************
 
 Relevant tables:
 
@@ -666,9 +590,8 @@ Relevant tables:
 |:code:`input_` tables           |:code:`inputs_project_fuels`       |
 +--------------------------------+-----------------------------------+
 
-===========
 Fuel Prices
-===========
+***********
 
 Relevant tables:
 
@@ -680,14 +603,14 @@ Relevant tables:
 |:code:`input_` tables           |:code:`inputs_project_fuel_prices`       |
 +--------------------------------+-----------------------------------------+
 
-
+*******************
 Reserves (OPTIONAL)
 *******************
 
-=============
 Regulation Up
-=============
+*************
 
+===============
 Balancing Areas
 ===============
 
@@ -703,6 +626,7 @@ Relevant tables:
 |:code:`input_` tables          |:code:`inputs_geography_regulation_up_bas`       |
 +-------------------------------+-------------------------------------------------+
 
+=====================
 Contributing Projects
 =====================
 
@@ -718,6 +642,7 @@ Relevant tables:
 |:code:`input_` tables          |:code:`inputs_project_regulation_up_bas`       |
 +-------------------------------+-----------------------------------------------+
 
+===========
 Requirement
 ===========
 
@@ -733,9 +658,9 @@ Relevant tables:
 |:code:`input_` tables          |:code:`inputs_system_regulation_up`       |
 +-------------------------------+------------------------------------------+
 
-===============
+
 Regulation Down
-===============
+***************
 
 Balancing Areas
 ===============

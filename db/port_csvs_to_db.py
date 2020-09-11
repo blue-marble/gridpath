@@ -38,7 +38,7 @@ If no name has been specified for a subscenario/table in the  *filename* column
 of the *csv_data_master.csv* file, the script is expecting that the CSV
 filename will conform to a certain structure, indicating the ID and name of
 the subscenario the file contains data for, with the ID and name separated
-by an underscore. For example, to load data  for different project portfolio
+by an underscore. For example, to load data for different project portfolio
 subscenarios, the user must first specify the path where the project
 portfoio CSVs are located in the *path* column of the
 *project_portfolio_scenario_id* row of the *csv_data_master.csv* file. In
@@ -52,13 +52,18 @@ profiles for a project named 'Solar' can be specified in the files named
 *Solar-1-base.csv* and *Solar-2-high.csv* respectively. Note that project
 filenames should not include dashes.
 
-A few subscenarios consist of multiple tables data for which is l
+A few subscenarios consist of multiple tables data for which is located
+inside CSVs in the same directory. For these subscenarios, the directory
+name should begin with the subscenario ID followed by an underscore and then
+the scenario name. The names of the files expected inside the directory are
+specified in the *csv_data_master.csv* file in the *filename* column. For
+example, a *temporal_scenario_id* directory must contain files named
+*period_params.csv*, *horizon_params.csv*, *structure.csv*, and
+*horizon_timepoints.csv*.
 
-The scenarios.csv under the scenario folder holds the input data for the
-subscenario, which indicates which subscenarios should be included in a
-particular scenario by providing the subscenario_id. Each scenario has a
-separate column. The user-defined name of the scenario should be entered as
-the name of the scenario column.
+The *scenarios.csv* under the scenario folder contains the subscenario ID
+specifications for each scenario to be loaded. The user-defined name of the
+scenario should be entered as the name of the scenario column.
 
 """
 
