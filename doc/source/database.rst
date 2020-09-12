@@ -81,39 +81,7 @@ Project Geography
 Project Portfolio
 *****************
 
-**Relevant tables:**
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_portfolio_scenario_id`         |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |N/A                                           |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_portfolios`       |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_portfolios`             |
-+--------------------------------+----------------------------------------------+
-
-A scenario's 'project portfolio' determines which projects to include in a
-scenario and how to treat each project’s capacity, e.g. is the capacity
-going to be available to the optimization as 'given' (specified), will there
-be decision variables associated with building capacity at this project, will
-the optimization have the option to retire the project, etc. In GridPath,
-this is called the project's *capacity_type* (see
-:ref:`project-capacity-type-section-ref`). You can view all implemented
-capacity types in the :code:`mod_capacity_types` table of the database.
-
-The relevant database table is for the projet
-portfolio data is :code:`inputs_project_portfolios`. The primary key of this
-table is the :code:`project_portfolio_scenario_id` and the name of the
-project. A new :code:`project_portfolio_scenario_id` is needed if the user
-wants to select a different list of projects to be included in a scenario or
-if she wants to keep the same list of projects but change a project’s capacity
-type. In the latter case, all projects that don’t require a 'capacity type'
-change would also have to be listed again in the database under the new
-:code:`project_portfolio_scenario_id`. All
-:code:`project_portfolio_scenario_id`'s along with their names and
-descriptions must first be listed in the
-:code:`subscenarios_project_portfolios` table.
+.. automodule:: db.csvs_test_examples.project.project_portfolios.doc
 
 
 Specified Projects
@@ -126,40 +94,7 @@ Specified Projects
 Capacity
 ========
 
-**Relevant tables:**
-
-+--------------------------------+------------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_specified_capacity_scenario_id`  |
-+--------------------------------+------------------------------------------------+
-|:code:`scenarios` table feature |N/A                                             |
-+--------------------------------+------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_specified_capacity` |
-+--------------------------------+------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_specified_capacity`       |
-+--------------------------------+------------------------------------------------+
-
-If the project portfolio includes project of the capacity types
-:code:`gen_spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
-:code:`stor_spec`, the user must select that amount of project capacity that
-the optimization should see as given (i.e. specified) in every period as
-well as the associated fixed O&M costs (see
-:ref:`specified-project-fixed-cost-section-ref`). Project
-capacities are in the :code:`inputs_project_specified_capacity` table. For
-:code:`gen_` capacity types, this table contains the project's power rating
-and for :code:`stor_spec` it also contains the storage project's energy rating.
-
-The primary key of this table includes the
-:code:`project_specified_capacity_scenario_id`, the project name, and the
-period. Note that this table can include projects that are not in the
-user’s portfolio: the utilities that pull the scenario data look at the
-scenario’s portfolio, pull the projects with the “specified” capacity types
-from that, and then get the capacity for only those projects (and for the
-periods selected based on the scenario's temporal setting). A new
-:code:`project_specified_capacity_scenario_id` would be needed if a user wanted
-to change the available capacity of even only a single project in a single
-period (and all other project-year-capacity data points would need to be
-re-inserted in the table under the new
-:code:`project_specified_capacity_scenario_id`).
+.. automodule:: db.csvs_test_examples.project.project_specified_capacity.doc
 
 .. _specified-project-fixed-cost-section-ref:
 
@@ -167,26 +102,7 @@ re-inserted in the table under the new
 Fixed Costs
 ===========
 
-**Relevant tables:**
-
-+--------------------------------+--------------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_specified_fixed_cost_scenario_id`  |
-+--------------------------------+--------------------------------------------------+
-|:code:`scenarios` table feature |N/A                                               |
-+--------------------------------+--------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_specified_fixed_cost` |
-+--------------------------------+--------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_specified_fixed_cost`       |
-+--------------------------------+--------------------------------------------------+
-
-If the project portfolio includes project of the capacity types
-:code:`gen_spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
-:code:`stor_spec`, the user must select the fixed O&M costs associated with
-the specified project capacity in every period. These can be varied by
-scenario via the :code:`project_specified_fixed_cost_scenario_id` subscenario.
-
-The treatment for specified project fixed cost inputs is similar to that for
-their capacity (see :ref:`specified-project-capacity-section-ref`).
+.. automodule:: db.csvs_test_examples.project.project_specified_fixed_cost.doc
 
 New Projects
 ************
@@ -195,42 +111,7 @@ New Projects
 Capital Costs
 =============
 
-**Relevant tables:**
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_new_cost_scenario_id`          |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |N/A                                           |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_new_cost`         |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_new_cost`               |
-+--------------------------------+----------------------------------------------+
-
-If the project portfolio includes projects of a 'new' capacity type
-(:code:`gen_new_bin`, :code:`gen_new_lin`, :code:`stor_new_bin`, or
-:code:`stor_new_lin`), the user must specify the cost for building a project
-in each period and, optionally, any minimum and maximum requirements on the
-total capacity to be build (see :ref:`new-project-potential-section-ref`).
-Similarly to the specified-project tables, the primary key is the
-combination of :code:`project_new_cost_scenario_id`, project, and period, so if
-the user wanted the change the cost of just a single project for a single
-period, all other project-period combinations would have to be re-inserted in
-the database along with the new project_new_cost_scenario_id. Also note that
-the :code:`inputs_project_new_cost` table can include projects that are not
-in a particular scenario’s portfolio and periods that are not in the
-scenario's temporal setup: each :code:`capacity_type` module has utilities
-that pull the scenario data and only look at the portfolio selected by the
-user, pull the projects with the 'new' *capacity types* from that list, and
-then get the cost for only those projects and for the periods selected in
-the temporal settings.
-
-Note that capital costs must be annualized outside of GridPath and input as
-$/MW-yr in the :code:`inputs_project_new_cost` table. For storage projects,
-GridPath also requires an annualized cost for the project's energy
-component, so both a $/MW-yr capacity component cost and a $/MWh-yr energy
-component cost is required, allowing GridPath to endogenously determine
-storage sizing.
+.. automodule:: db.csvs_test_examples.project.project_new_cost.doc
 
 .. _new-project-potential-section-ref:
 
@@ -238,251 +119,49 @@ storage sizing.
 Potential
 =========
 
-**Relevant tables:**
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_new_potential_scenario_id`     |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |N/A                                           |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_new_potential`    |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_new_potential`          |
-+--------------------------------+----------------------------------------------+
-
-If the project portfolio includes projects of a 'new' capacity type
-(:code:`gen_new_bin`, :code:`gen_new_lin`, :code:`stor_new_bin`, or
-:code:`stor_new_lin`), the user may specify the minimum and maximum
-cumulative new capacity to be built in each period in the
-:code:`inputs_project_new_potential` table. For storage project, the minimum
-and maximum energy capacity may also be specified. All columns are optional
-and NULL values are interpreted by GridPath as no constraint. Projects that
-don't either a minimum or maximum cumulative new capacity constraints can be
-omitted from this table completely.
+.. automodule:: db.csvs_test_examples.project.project_new_potential.doc
 
 
 Project Availability
 ********************
 
-**Relevant tables:**
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_availability_scenario_id`      |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |N/A                                           |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_availability`     |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_availability`           |
-+--------------------------------+----------------------------------------------+
-
-All projects in a GridPath scenario must be a assigned an *availability
-type*, which determines whether their capacity is operational in each
-timepoint in which the capacity exists. All implemented availability types are
-listed in the :code:`mod_availability_types` table.
-
-Each project's availability type are given in the
-:code:`inputs_project_availability`. The availability types currently
-implemented include :code:`exogenous` (availability is determined outside of
-a GridPath model via the data fed into it) and two endogenous types:
-:code:`binary` and :code:`continuous` that require certain inputs that
-determine how availability is constrained in the GridPath model. See the
-:ref:`project-availability-type-section-ref` section for more info. In
-addition to the project availability types, the
-:code:`inputs_project_availability` table contains the information for
-how to find any additional data needed to determine project availability with
-the :code:`exogenous_availability_scenario_id` and
-:code:`endogenous_availability_scenario` columns for the endogenous and
-exogenous types respectively. The IDs in the former column are linked to the
-data in the :code:`inputs_project_availability_exogenous` table and in the
-latter column to the :code:`inputs_project_availability_endogenous` table.
-For projects of the :code:`exogenous` availability type, if the value is in the
-:code:`exogenous_availability_scenario_id` column is NULL, no availability
-capacity derate is applied by GridPath. For projects of a :code:`binary` of
-:code:`continuous` availability type, a value in the
-:code:`endogenous_availability_scenario_id` is required.
+.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_types.doc
 
 =========
 Exogenous
 =========
 
-**Relevant tables:**
-
-+---------------------------+----------------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_availability_exogenous` |
-+---------------------------+----------------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_availability_exogenous`       |
-+---------------------------+----------------------------------------------------+
-
-Within each :code:`project_availability_scenario_id`, a project of the
-:code:`exogenous` *availability type* can point to a particular
-:code:`exogenous_availability_scenario_id`, the data for which is contained
-in the :code:`inputs_project_availability_exogenous` table. The names and
-descriptions of each :code:`project` and
-:code:`exogenous_availability_scenario_id` combination are in the
-:code:`subscenarios_project_availability_exogenous` table. The availability
-derate for each combination is defined by stage and timepoint, and must be
-between 0 (full derate) and 1 (no derate).
+.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_exogenous.doc
 
 ==========
 Endogenous
 ==========
 
-**Relevant tables:**
-
-+---------------------------+-----------------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_availability_endogenous` |
-+---------------------------+-----------------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_availability_endogenous`       |
-+---------------------------+-----------------------------------------------------+
-
-Within each :code:`project_availability_scenario_id`, a project of the
-:code:`binary` or :code:`continuous` *availability type* must point to a
-particular :code:`endogenous_availability_scenario_id`, the data for which
-is contained in the :code:`inputs_project_availability_endogenous` table. The
-names and descriptions of each :code:`project` and
-:code:`endogenous_availability_scenario_id` combination are in the
-:code:`subscenarios_project_availability_endogenous` table. For each
-combination, the user must define to the total number of hours that a
-project will be unavailable per period, the minimum and maximum length of
-each unavailability event in hours, and the minimum and maximum number of
-hours between unavailability events. Based on these inputs, GridPath determines
-the exact availability schedule endogenously.
+.. automodule:: db.csvs_test_examples.project.project_availability.project_availability_endogenous.doc
 
 
 Project Operational Characteristics
 ***********************************
 
-**Relevant tables:**
-
-+--------------------------------+-----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_operational_chars_scenario_id`  |
-+--------------------------------+-----------------------------------------------+
-|:code:`scenarios` table feature |N/A                                            |
-+--------------------------------+-----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_operational_chars` |
-+--------------------------------+-----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_operational_chars`       |
-+--------------------------------+-----------------------------------------------+
-
-The user must decide how to model the operations of *projects*, e.g. is this
-a fuel-based dispatchable (CCGT) or baseload project (nuclear), is it an
-intermittent plant, is it a battery, etc. In GridPath, this is called the
-project’s *operational type*. All implemented operational types are listed
-in the :code:`mod_operational_types` table.
-
-Each *operational type* has an associated set of characteristics, which must
-be included in the :code:`inputs_project_operational_chars` table. The primary
-key of this table is the :code:`project_operational_chars_scenario_id`,
-which is also the column that determines project operational characteristics
-for a scenario via the :code:`scenarios` table, and the project. If a
-project’s operational type changes (e.g. the user decides to model a coal
-plant as, say, :code:`gen_always_on` instead of :code:`gen_commit_bin`) or the
-user wants to modify one of its operating characteristics (e.g. its minimum
-loading level), then a new :code:`project_operational_chars_scenario_id` must
-be created and all projects listed again, even if the rest of the projects'
-operating types and characteristics do not change.
-
-The ability to provide each type of reserve is currently an 'operating
-characteristic' determined via the :code:`inputs_project_operational_chars`
-table.
-
-Not all operational types have all the characteristics in
-the :code:`inputs_project_operational_chars`. GridPath's validation suite
-does check whether certain required characteristic for an operational type are
-populated and warns the user if some characteristics that have been filled
-are actually not used by the respective operational type. See the matrix below
-for the required and optional characteristics for each operational type.
-
-.. image:: ../graphics/optype_opchar_matrix.png
-
-Several types of operational characteristics vary by dimensions are other
-than project, so they are input in separate tables and linked to the
-:code:`inputs_project_operational_chars` via an ID column. These include
-heat rates, variable generator profiles, and hydro characteristics.
+.. automodule:: db.csvs_test_examples.project.project_operational_chars.doc
 
 =====================
 Heat Rates (OPTIONAL)
 =====================
 
-**Relevant tables:**
-
-+---------------------------+----------------------------------------------+
-|key column                 |:code:`heat_rate_curves_scenario_id`          |
-+---------------------------+----------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_heat_rate_curves` |
-+---------------------------+----------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_heat_rate_curves`       |
-+---------------------------+----------------------------------------------+
-
-Fuel-based generators in GridPath require a heat-rate curve to be specified
-for the project. Heat rate curves are modeled via piecewise linear
-constraints and must be input in terms of an average heat rate for a load
-point. These data are in the :code:`inputs_project_heat_rate_curves` for
-each project that requires a heat rate, while the names and descriptions of
-the heat rate curves each project can be assigned are in the
-:code:`subscenarios_project_heat_rate_curves`. These two tables are linked
-to each other and to the :code:`inputs_project_operational_chars` via the
-:code:`heat_rate_curves_scenario_id` key column. The inputs table can contain
-data for projects that are not included in a GridPath scenario, as the
-relevant projects for a scenario will be pulled based on the scenario's
-project portfolio subscenario.
+.. automodule:: db.csvs_test_examples.project.project_heat_rate_curves.doc
 
 ======================================
 Variable Generator Profiles (OPTIONAL)
 ======================================
 
-**Relevant tables:**
-
-+---------------------------+---------------------------------------------------------+
-|key column                 |:code:`variable_generator_profile_scenario_id`           |
-+---------------------------+---------------------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_variable_generator_profiles` |
-+---------------------------+---------------------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_variable_generator_profiles`       |
-+---------------------------+---------------------------------------------------------+
-
-Variable generators in GridPath require a profile (power output as a fraction
-of capacity) to be specified for the project for each *timepoint* in which
-it can exist in a GridPath model. Profiles are in the
-:code:`inputs_project_variable_generator_profiles`
-for each variable project and timepoint, while the names and descriptions of
-the profiles each project can be assigned are in the
-:code:`subscenarios_project_variable_generator_profiles`. These two tables
-are linked to each other and to the :code:`inputs_project_operational_chars`
-via the :code:`variable_generator_profile_scenario_id` key column. The
-:code:`inputs_project_variable_generator_profiles` table can contain data
-for projects and timepoints that are not included in a particular GridPath
-scenario: GridPath will select the subset of projects and timepoints based
-on the scenarios project portfolio and temporal subscenarios.
+.. automodule:: db.csvs_test_examples.project.project_variable_generator_profiles.doc
 
 ============================================
 Hydro Operational Characteristics (OPTIONAL)
 ============================================
 
-**Relevant tables:**
-
-+---------------------------+-----------------------------------------------------+
-|key column                 |:code:`hydro_operational_chars_scenario_id`          |
-+---------------------------+-----------------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_hydro_operational_chars` |
-+---------------------------+-----------------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_hydro_operational_chars`       |
-+---------------------------+-----------------------------------------------------+
-
-Hydro generators in GridPath require that average power, minimum power, and
-maximum power be specified for the project for each *balancing
-type*/*horizon* in which it can exist in a GridPath model. These inputs are in
-the :code:`inputs_project_hydro_operational_chars`
-for each project, balancing type, and horizon, while the names and
-descriptions of the characteristis each project can be assigned are in the
-:code:`subscenarios_project_hydro_operational_chars`. These two tables
-are linked to each other and to the :code:`inputs_project_operational_chars`
-via the :code:`hydro_operational_chars_scenario_id` key column. The
-:code:`inputs_project_hydro_operational_chars` table can contain data
-for projects and horizons that are not included in a particular GridPath
-scenario: GridPath will select the subset of projects and horizons based
-on the scenarios project portfolio and temporal subscenarios.
+.. automodule:: db.csvs_test_examples.project.project_hydro_operational_chars.doc
 
 ******************************
 Transmission Inputs (OPTIONAL)
@@ -493,32 +172,12 @@ Optional inputs needed if transmission feature is enabled for a scenario.
 Transmission Portfolio
 **********************
 
-Relevant tables:
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`project_portfolio_scenario_id`         |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |:code:`of_transmission`                       |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_portfolios`  |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_portfolios`        |
-+--------------------------------+----------------------------------------------+
+.. automodule:: db.csvs_test_examples.transmission.transmission_portfolios.doc
 
 Transmission Topography
 ***********************
 
-Relevant tables:
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_load_zones_scenario_id`   |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |:code:`of_transmission`                       |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_load_zones`  |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_load_zones`        |
-+--------------------------------+----------------------------------------------+
+.. automodule:: db.csvs_test_examples.transmission.transmission_load_zones.doc
 
 Specified Transmission
 **********************
@@ -527,18 +186,7 @@ Specified Transmission
 Capacity
 ========
 
-Relevant tables:
-
-+--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_specified_capacity_scenario_id` |
-+--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table feature |:code:`of_transmission`                             |
-+--------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_specified_capacity`|
-+--------------------------------+----------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_specified_capacity`      |
-+--------------------------------+----------------------------------------------------+
-
+.. automodule:: db.csvs_test_examples.transmission.transmission_specified_capacity.doc
 
 New Transmission
 ****************
@@ -547,30 +195,12 @@ New Transmission
 Capital Costs
 =============
 
-Relevant tables:
-
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_new_cost_scenario_id`     |
-+--------------------------------+----------------------------------------------+
-|:code:`scenarios` table feature |:code:`of_transmission`                       |
-+--------------------------------+----------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_new_cost`    |
-+--------------------------------+----------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_new_cost`          |
-+--------------------------------+----------------------------------------------+
+.. automodule:: db.csvs_test_examples.transmission.transmission_new_cost.doc
 
 Transmission Operational Characteristics
 ****************************************
 
-+--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column  |:code:`transmission_operational_chars_scenario_id`  |
-+--------------------------------+----------------------------------------------------+
-|:code:`scenarios` table feature |:code:`of_transmission`                             |
-+--------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_transmission_operational_chars` |
-+--------------------------------+----------------------------------------------------+
-|:code:`input_` tables           |:code:`inputs_transmission_operational_chars`       |
-+--------------------------------+----------------------------------------------------+
+.. automodule:: db.csvs_test_examples.transmission.transmission_operational_chars.doc
 
 
 **********************
@@ -580,28 +210,13 @@ Fuel Inputs (OPTIONAL)
 Fuel Characteristics
 ********************
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.fuels.project_fuels.doc
 
-+--------------------------------+-----------------------------------+
-|:code:`scenarios` table column  |:code:`fuel_scenario_id`           |
-+--------------------------------+-----------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_fuels` |
-+--------------------------------+-----------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_fuels`       |
-+--------------------------------+-----------------------------------+
 
 Fuel Prices
 ***********
 
-Relevant tables:
-
-+--------------------------------+-----------------------------------------+
-|:code:`scenarios` table column  |:code:`fuel_price_scenario_id`           |
-+--------------------------------+-----------------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_fuel_prices` |
-+--------------------------------+-----------------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_fuel_prices`       |
-+--------------------------------+-----------------------------------------+
+.. automodule:: db.csvs_test_examples.fuels.project_fuel_prices.doc
 
 *******************
 Reserves (OPTIONAL)
@@ -614,50 +229,19 @@ Regulation Up
 Balancing Areas
 ===============
 
-Relevant tables:
-
-+-------------------------------+-------------------------------------------------+
-|:code:`scenarios` table column |:code:`regulation_up_ba_scenario_id`             |
-+-------------------------------+-------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_up`                         |
-+-------------------------------+-------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_regulation_up_bas` |
-+-------------------------------+-------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_regulation_up_bas`       |
-+-------------------------------+-------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.regulation_up.geography_regulation_up_bas.doc
 
 =====================
 Contributing Projects
 =====================
 
-Relevant tables:
-
-+-------------------------------+-----------------------------------------------+
-|:code:`scenarios` table column |:code:`project_regulation_up_ba_scenario_id`   |
-+-------------------------------+-----------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_up`                       |
-+-------------------------------+-----------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_regulation_up_bas` |
-+-------------------------------+-----------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_regulation_up_bas`       |
-+-------------------------------+-----------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.regulation_up.project_regulation_up_bas.doc
 
 ===========
 Requirement
 ===========
 
-Relevant tables:
-
-+-------------------------------+------------------------------------------+
-|:code:`scenarios` table column |:code:`regulation_up_scenario_id`         |
-+-------------------------------+------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_up`                  |
-+-------------------------------+------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_regulation_up` |
-+-------------------------------+------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_regulation_up`       |
-+-------------------------------+------------------------------------------+
-
+.. automodule:: db.csvs_test_examples.reserves.regulation_up.req.doc
 
 Regulation Down
 ***************
@@ -665,47 +249,18 @@ Regulation Down
 Balancing Areas
 ===============
 
-Relevant tables:
-
-+-------------------------------+---------------------------------------------------+
-|:code:`scenarios` table column |:code:`regulation_down_ba_scenario_id`             |
-+-------------------------------+---------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_down`                         |
-+-------------------------------+---------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_regulation_down_bas` |
-+-------------------------------+---------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_regulation_down_bas`       |
-+-------------------------------+---------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.regulation_down.geography_regulation_down_bas.doc
 
 Contributing Projects
 =====================
 
-Relevant tables:
-
-+-------------------------------+-------------------------------------------------+
-|:code:`scenarios` table column |:code:`project_regulation_down_ba_scenario_id`   |
-+-------------------------------+-------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_down`                       |
-+-------------------------------+-------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_regulation_down_bas` |
-+-------------------------------+-------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_regulation_down_bas`       |
-+-------------------------------+-------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.regulation_down.project_regulation_down_bas.doc
 
 Requirement
 ===========
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.regulation_down.req.doc
 
-+-------------------------------+--------------------------------------------+
-|:code:`scenarios` table column |:code:`regulation_down_scenario_id`         |
-+-------------------------------+--------------------------------------------+
-|:code:`scenario` table feature |:code:`of_regulation_down`                  |
-+-------------------------------+--------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_regulation_down` |
-+-------------------------------+--------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_regulation_down`       |
-+-------------------------------+--------------------------------------------+
 
 =================
 Spinning Reserves
@@ -714,47 +269,19 @@ Spinning Reserves
 Balancing Areas
 ===============
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.geography_spinning_reserves_bas.doc
 
-+-------------------------------+-----------------------------------------------------+
-|:code:`scenarios` table column |:code:`spinning_reserves_ba_scenario_id`             |
-+-------------------------------+-----------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_spinning_reserves`                         |
-+-------------------------------+-----------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_spinning_reserves_bas` |
-+-------------------------------+-----------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_spinning_reserves_bas`       |
-+-------------------------------+-----------------------------------------------------+
 
 Contributing Projects
 =====================
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.project_spinning_reserves_bas.doc
 
-+-------------------------------+---------------------------------------------------+
-|:code:`scenarios` table column |:code:`project_spinning_reserves_ba_scenario_id`   |
-+-------------------------------+---------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_spinning_reserves`                       |
-+-------------------------------+---------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_spinning_reserves_bas` |
-+-------------------------------+---------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_spinning_reserves_bas`       |
-+-------------------------------+---------------------------------------------------+
 
 Requirement
 ===========
 
-Relevant tables:
-
-+-------------------------------+----------------------------------------------+
-|:code:`scenarios` table column |:code:`spinning_reserves_scenario_id`         |
-+-------------------------------+----------------------------------------------+
-|:code:`scenario` table feature |:code:`of_spinning_reserves`                  |
-+-------------------------------+----------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_spinning_reserves` |
-+-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_spinning_reserves`       |
-+-------------------------------+----------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.spinning_reserves.req.doc
 
 ==========================
 Load-Following Reserves Up
@@ -763,47 +290,18 @@ Load-Following Reserves Up
 Balancing Areas
 ===============
 
-Relevant tables:
-
-+-------------------------------+--------------------------------------------------+
-|:code:`scenarios` table column |:code:`lf_reserves_up_ba_scenario_id`             |
-+-------------------------------+--------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_up`                         |
-+-------------------------------+--------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_lf_reserves_up_bas` |
-+-------------------------------+--------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_lf_reserves_up_bas`       |
-+-------------------------------+--------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.geography_lf_reserves_up_bas.doc
 
 Contributing Projects
 =====================
 
-Relevant tables:
-
-+-------------------------------+------------------------------------------------+
-|:code:`scenarios` table column |:code:`project_lf_reserves_up_ba_scenario_id`   |
-+-------------------------------+------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_up`                       |
-+-------------------------------+------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_lf_reserves_up_bas` |
-+-------------------------------+------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_lf_reserves_up_bas`       |
-+-------------------------------+------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.project_lf_reserves_up_bas.doc
 
 Requirement
 ===========
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.req.doc
 
-+-------------------------------+-------------------------------------------+
-|:code:`scenarios` table column |:code:`lf_reserves_up_scenario_id`         |
-+-------------------------------+-------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_up`                  |
-+-------------------------------+-------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_lf_reserves_up` |
-+-------------------------------+-------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_lf_reserves_up`       |
-+-------------------------------+-------------------------------------------+
 
 ============================
 Load-Following Reserves Down
@@ -812,47 +310,19 @@ Load-Following Reserves Down
 Balancing Areas
 ===============
 
-Relevant tables:
-
-+-------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column |:code:`lf_reserves_down_ba_scenario_id`             |
-+-------------------------------+----------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_down`                         |
-+-------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_lf_reserves_down_bas` |
-+-------------------------------+----------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_lf_reserves_down_bas`       |
-+-------------------------------+----------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_down.geography_lf_reserves_down_bas.doc
 
 Contributing Projects
 =====================
 
-Relevant tables:
-
-+-------------------------------+--------------------------------------------------+
-|:code:`scenarios` table column |:code:`project_lf_reserves_down_ba_scenario_id`   |
-+-------------------------------+--------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_down`                       |
-+-------------------------------+--------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_lf_reserves_down_bas` |
-+-------------------------------+--------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_lf_reserves_down_bas`       |
-+-------------------------------+--------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_down.project_lf_reserves_down_bas.doc
 
 Requirement
 ===========
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.lf_reserves_down.req.doc
 
-+-------------------------------+---------------------------------------------+
-|:code:`scenarios` table column |:code:`lf_reserves_down_scenario_id`         |
-+-------------------------------+---------------------------------------------+
-|:code:`scenario` table feature |:code:`of_lf_reserves_down`                  |
-+-------------------------------+---------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_lf_reserves_down` |
-+-------------------------------+---------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_lf_reserves_down`       |
-+-------------------------------+---------------------------------------------+
+
 
 ===========================
 Frequency Response Reserves
@@ -861,47 +331,19 @@ Frequency Response Reserves
 Balancing Areas
 ===============
 
-Relevant tables:
-
-+-------------------------------+------------------------------------------------------+
-|:code:`scenarios` table column |:code:`frequency_response_ba_scenario_id`             |
-+-------------------------------+------------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_frequency_response`                         |
-+-------------------------------+------------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_frequency_response_bas` |
-+-------------------------------+------------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_frequency_response_bas`       |
-+-------------------------------+------------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.frequency_response.geography_frequency_response_bas.doc
 
 Contributing Projects
 =====================
 
-Relevant tables:
-
-+-------------------------------+----------------------------------------------------+
-|:code:`scenarios` table column |:code:`project_frequency_response_ba_scenario_id`   |
-+-------------------------------+----------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_frequency_response`                       |
-+-------------------------------+----------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_frequency_response_bas` |
-+-------------------------------+----------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_frequency_response_bas`       |
-+-------------------------------+----------------------------------------------------+
+.. automodule:: db.csvs_test_examples.reserves.frequency_response.project_frequency_response_bas.doc
 
 Requirement
 ===========
 
-Relevant tables:
+.. automodule:: db.csvs_test_examples.reserves.frequency_response.req.doc
 
-+-------------------------------+-----------------------------------------------+
-|:code:`scenarios` table column |:code:`frequency_response_scenario_id`         |
-+-------------------------------+-----------------------------------------------+
-|:code:`scenario` table feature |:code:`of_frequency_response`                  |
-+-------------------------------+-----------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_frequency_response` |
-+-------------------------------+-----------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_frequency_response`       |
-+-------------------------------+-----------------------------------------------+
+
 
 Policy (OPTIONAL)
 *****************
@@ -913,53 +355,23 @@ Renewables Portfolio Standard (RPS)
 Policy Zones
 ============
 
-Relevant tables:
 
-+-------------------------------+-----------------------------------------+
-|:code:`scenarios` table column |:code:`rps_zone_scenario_id`             |
-+-------------------------------+-----------------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                           |
-+-------------------------------+-----------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_rps_zones` |
-+-------------------------------+-----------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_rps_zones`       |
-+-------------------------------+-----------------------------------------+
 
 Contributing Projects
 =====================
 
-Relevant tables:
 
-+-------------------------------+---------------------------------------+
-|:code:`scenarios` table column |:code:`project_rps_zone_scenario_id`   |
-+-------------------------------+---------------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                         |
-+-------------------------------+---------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_rps_zones` |
-+-------------------------------+---------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_rps_zones`       |
-+-------------------------------+---------------------------------------+
 
 Target
 ======
 
-Relevant tables:
 
-+-------------------------------+--------------------------------+
-|:code:`scenarios` table column |:code:`rps_scenario_id`         |
-+-------------------------------+--------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                  |
-+-------------------------------+--------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_rps` |
-+-------------------------------+--------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_rps`       |
-+-------------------------------+--------------------------------+
 
 ==========
 Carbon Cap
 ==========
 
-Relevant tables:
+**Relevant tables:**
 
 +-------------------------------+------------------------------------------------+
 |:code:`scenarios` table column |:code:`carbon_cap_zone_scenario_id`             |
@@ -974,7 +386,7 @@ Relevant tables:
 Contributing Projects
 =====================
 
-Relevant tables:
+**Relevant tables:**
 
 +-------------------------------+----------------------------------------------+
 |:code:`scenarios` table column |:code:`project_carbon_cap_zone_scenario_id`   |
@@ -989,7 +401,7 @@ Relevant tables:
 Target
 ======
 
-Relevant tables:
+**Relevant tables:**
 
 +-------------------------------+---------------------------------------+
 |:code:`scenarios` table column |:code:`carbon_cap_scenario_id`         |

@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 # Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
-"""
 
+"""
+\n
 **Relevant tables:**
 
 +-------------------------------+----------------------------------------------+
@@ -107,3 +109,21 @@ A scenario's temporal setup is selected via the :code:`temporal_scenario_id`
 column of the :code:`scenarios` table.
 
 """
+
+import os.path
+import webbrowser
+
+import docutils.core
+
+if __name__ == "__main__":
+    html=docutils.core.publish_string(
+        source=__doc__,
+        writer_name="html")
+
+    Html_file = open("html.html", "w")
+    Html_file.write(html.decode("utf-8"))
+    Html_file.close()
+
+    webbrowser.open('file://' + os.path.join(os.getcwd(), "html.html"))
+
+
