@@ -9,12 +9,6 @@ linear relaxation treatment can be helpful in situations when mixed-integer
 problem run-times are long and is similar to loosening the MIP gap (but can
 target specific generators). Please refer to the *gen_commit_bin* module for
 more information on the formulation.
-
-.. Note:: Some of the more complex constraints in this module such as the
-startup trajectories might show weird behavior in the linearized version, e.g.
-different fractions of the unit might be starting up and shutting down in the
-same timepoint. We don't recommend using this linearized version in combination
-with these complex constraints.
 """
 
 from __future__ import division
@@ -2104,6 +2098,17 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
         + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
         * mod.GenCommitLin_Pmax_MW[g, tmp] \
         * mod.GenCommitLin_Synced[g, tmp]
+
+
+def startup_cost_simple_rule(mod, g, tmp):
+    """
+    Simple startup costs are applied in each timepoint based on the amount of
+    capacity (in MW) that is started up in that timepoint and the startup cost
+    parameter.
+    """
+    return mod.GenCommitLin_Startup[g, tmp] \
+        * mod.GenCommitLin_Pmax_MW[g, tmp] \
+        * mod.startup_cost_per_mw[g]
 
 
 def startup_cost_by_st_rule(mod, g, tmp):

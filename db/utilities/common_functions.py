@@ -422,19 +422,23 @@ def get_directory_subscenarios(main_directory, quiet):
     # they conform to the requirements
     subscenario_dir_names = sorted(next(os.walk(main_directory))[1])
     for subscenario in subscenario_dir_names:
-        if not subscenario.split("_")[0].isdigit():
+        # Ignore "__pycache__" directory, which can be created when using
+        # local doc.py file
+        if subscenario == "__pycache__":
+            subscenario_dir_names.remove(subscenario)
+        elif not subscenario.split("_")[0].isdigit():
             warnings.warn(
                 "Subfolder `{}` does not start with an integer to "
-                "indicate the subscenario ID and CSV import script will fail. "
+                "indicate the subscenario ID and will not be imported. "
                 "Please follow the required folder naming structure "
                 "<subscenarioID_subscenarioName>, e.g. "
                 "'1_default4periods'.".format(subscenario)
             )
-
-        # Get the full path of the subscenario directory and append to the
-        # directory list
-        subscenario_directory = os.path.join(main_directory, subscenario)
-        subscenario_directories.append(subscenario_directory)
+        else:
+            # Get the full path of the subscenario directory and append to the
+            # directory list
+            subscenario_directory = os.path.join(main_directory, subscenario)
+            subscenario_directories.append(subscenario_directory)
 
     return subscenario_directories
 

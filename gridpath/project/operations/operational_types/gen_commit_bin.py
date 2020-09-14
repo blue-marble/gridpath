@@ -2112,6 +2112,17 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
         * mod.GenCommitBin_Synced[g, tmp]
 
 
+def startup_cost_simple_rule(mod, g, tmp):
+    """
+    Simple startup costs are applied in each timepoint based on the amount of
+    capacity (in MW) that is started up in that timepoint and the startup cost
+    parameter.
+    """
+    return mod.GenCommitBin_Startup[g, tmp] \
+        * mod.GenCommitBin_Pmax_MW[g, tmp] \
+        * mod.startup_cost_per_mw[g]
+
+
 def startup_cost_by_st_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity

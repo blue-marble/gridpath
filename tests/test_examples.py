@@ -7,7 +7,7 @@ import sqlite3
 import unittest
 
 from gridpath import run_end_to_end, validate_inputs
-from db import create_database, port_csvs_to_gridpath
+from db import create_database, port_csvs_to_db
 from db.common_functions import connect_to_database
 
 
@@ -117,7 +117,7 @@ class TestExamples(unittest.TestCase):
         create_database.main(["--database", DB_PATH])
 
         try:
-            port_csvs_to_gridpath.main(["--database", DB_PATH,
+            port_csvs_to_db.main(["--database", DB_PATH,
                                         "--csv_location", CSV_PATH,
                                         "--quiet"])
         except Exception as e:

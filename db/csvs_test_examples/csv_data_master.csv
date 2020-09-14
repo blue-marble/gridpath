@@ -1,9 +1,10 @@
 path,feature,subscenario,table,subscenario_type,custom_method,project_input,filename,cols_to_exclude_str,base_table,base_subscenario
 solver,core,solver_options_id,options_solver,simple,,0,,,,
-temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,,horizon,,
+temporal,core,temporal_scenario_id,temporal,dir_subsc_only,,0,,"ignore
+",,
 temporal,core,temporal_scenario_id,temporal_periods,dir_aux,,0,period_params.csv,,,
 temporal,core,temporal_scenario_id,temporal_horizons,dir_aux,,0,horizon_params.csv,,,
-temporal,core,temporal_scenario_id,temporal,dir_aux,,0,structure.csv,horizon,,
+temporal,core,temporal_scenario_id,temporal,dir_aux,,0,structure.csv,ignore,,
 temporal,core,temporal_scenario_id,temporal_horizon_timepoints_start_end,dir_aux,temporal,0,horizon_timepoints.csv,,,
 project/project_portfolios,core,project_portfolio_scenario_id,project_portfolios,simple,,0,,,,
 system_load/system_load,core,load_scenario_id,system_load,simple,,0,,,,

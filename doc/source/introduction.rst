@@ -29,7 +29,8 @@ What is GridPath?
 
 GridPath is a comprehensive grid analytics platform that integrates several
 types of power system modeling approaches, including multi-stage
-production-cost simulation and long-term capacity expansion.
+production-cost simulation and long-term capacity expansion. We intend to
+add capacity-adequacy and asset-valuation functionality in the near future.
 
 GridPath has a modular architecture that makes it possible to combine
 modules to create optimization problems with varying features and levels of
@@ -38,13 +39,16 @@ depending on the selected modules.
 
 The main variables fall into two categories:
 
-#. Capacity: whether (generator, storage, and/or transmission) capacity should be built or retired?
-#. Operations: how should available (generator, storage, and/or transmission) capacity be operated?
+#. Capacity: whether (generator, storage, and/or transmission) capacity
+should be built or retired?
+#. Operations: how should available (generator, storage, and/or
+transmission) capacity be operated?
 
 The main constraints include:
 
 #. Capacity: limits on the amount of capacity that can be deployed.
-#. Operations: limits on the operational capabilities of generation, storage, and transmission assets.
+#. Operations: limits on the operational capabilities of generation,
+storage, and transmission assets.
 #. System: meeting load, operating reserves, and reliability requirements.
 #. Policy: meeting policy targets.
 

@@ -31,6 +31,8 @@ import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
     PositiveIntegers, NonPositiveIntegers, Any
 
+from db.common_functions import spin_on_database_lock
+
 
 def add_model_components(m, d):
     """
@@ -97,16 +99,6 @@ def add_model_components(m, d):
     | The month that each timepoint belongs to. This is used to determine     |
     | fuel costs during that timepoint, among others.                         |
     +-------------------------------------------------------------------------+
-    | | :code:`spinup_or_lookahead`                                           |
-    | | *Defined over*: :code:`TMPS`                                          |
-    | | *Within*: :code:`Any`                                                 |
-    |                                                                         |
-    | Designates whether the timepoint is a part of a spinup or lookahead     |
-    | window. If it is a spinup or lookahead timepoint the costs incurred     |
-    | during these timepoints will be ignored when reporting the final costs. |
-    | Note that this is only used for reporting purposes; all timepoints      |
-    | (spinup/lookahead or not) are considered in the objective function.     |
-    +-------------------------------------------------------------------------+
 
     .. TODO:: varying timepoint durations haven't been extensiveliy tested
 
@@ -155,12 +147,6 @@ def add_model_components(m, d):
         within=m.MONTHS
     )
 
-    m.spinup_or_lookahead = Param(
-        m.TMPS,
-        within=Any,
-        default=False
-    )
-
     # Optional Params
     ###########################################################################
 
@@ -195,14 +181,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.tmp_weight,
                m.hrs_in_tmp,
                m.prev_stage_tmp_map,
-               m.month,
-               m.spinup_or_lookahead),
+               m.month),
         select=("timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "previous_stage_timepoint_map",
-                "month",
-                "spinup_or_lookahead")
+                "month")
     )
 
     # Load in any timepoints to link to the next subproblem and linked
@@ -255,8 +239,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, timepoint_weight,
-           number_of_hours_in_timepoint, previous_stage_timepoint_map, month,
-           spinup_or_lookahead
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
            FROM inputs_temporal
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -293,13 +276,81 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         # Write header
         writer.writerow(["timepoint", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map", "month",
-                         "spinup_or_lookahead"])
+                         "previous_stage_timepoint_map", "month"])
 
         # Write timepoints
         for row in timepoints:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def process_results(db, c, subscenarios, quiet):
+    """
+
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("add spinup_or_lookahead flag to dispatch")
+    # Figure out spinup_or_lookahead for each timepoint
+    tmp_flag = c.execute(
+        """SELECT stage_id, subproblem_id, timepoint, spinup_or_lookahead
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {}""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Update tables with spinup_or_lookahead_flag
+    tables_to_update = [
+        "results_project_availability_endogenous",
+        "results_project_dispatch",
+        "results_project_curtailment_variable",
+        "results_project_curtailment_hydro",
+        "results_project_dispatch_by_technology",
+        "results_project_lf_reserves_up",
+        "results_project_lf_reserves_down",
+        "results_project_regulation_up",
+        "results_project_regulation_down",
+        "results_project_frequency_response",
+        "results_project_spinning_reserves",
+        "results_project_costs_operations",
+        "results_project_fuel_burn",
+        "results_project_carbon_emissions",
+        "results_project_rps",
+        "results_transmission_imports_exports",
+        "results_transmission_operations",
+        "results_transmission_hurdle_costs",
+        "results_transmission_carbon_emissions",
+        "results_system_load_balance",
+        "results_system_lf_reserves_up_balance",
+        "results_system_lf_reserves_down_balance",
+        "results_system_regulation_up_balance",
+        "results_system_regulation_down_balance",
+        "results_system_frequency_response_balance",
+        "results_system_frequency_response_partial_balance",
+        "results_system_spinning_reserves_balance"
+    ]
+
+    # TODO: vectorize?
+    updates = []
+    for (stage, subproblem, timepoint, flag) in tmp_flag:
+        updates.append(
+            (flag, subscenarios.SCENARIO_ID, stage, subproblem, timepoint)
+        )
+    for tbl in tables_to_update:
+        sql = """
+            UPDATE {}
+            SET spinup_or_lookahead = ?
+            WHERE scenario_id = ?
+            AND stage_id = ?
+            AND subproblem_id = ?
+            AND timepoint = ?;
+            """.format(tbl)
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=updates)
 
 
 # Validation

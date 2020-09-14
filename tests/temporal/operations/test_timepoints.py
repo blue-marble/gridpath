@@ -65,7 +65,7 @@ class TestTimepoints(unittest.TestCase):
                 sep="\t",
                 usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
-                         "month", "spinup_or_lookahead"]
+                         "month"]
             )
 
         m, data = \
@@ -142,16 +142,6 @@ class TestTimepoints(unittest.TestCase):
 
         # Params: furthest_linked_tmp
         # TODO: not sure how to check that this param has not been initialized
-
-        # Params: spinup_or_lookahead
-        expected_spinup_or_lookahead = {tmp: False for tmp in instance.TMPS}
-        actual_spinup_or_lookahead = {tmp: instance.spinup_or_lookahead[tmp]
-                                      for tmp in instance.TMPS}
-        self.assertDictEqual(
-            expected_spinup_or_lookahead,
-            actual_spinup_or_lookahead,
-            msg="Data for param spinup_or_lookahead not loaded correctly"
-        )
 
     def test_linked_tmps(self):
         """

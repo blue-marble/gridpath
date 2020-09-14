@@ -319,20 +319,29 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[prj]
 
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "startup_cost_simple_rule"):
-            startup_cost_simple = imported_operational_modules[gen_op_type]. \
-                startup_cost_simple_rule(mod, prj, tmp)
+        if prj in mod.STARTUP_COST_SIMPLE_PRJS:
+            if hasattr(imported_operational_modules[gen_op_type],
+                       "startup_cost_simple_rule"):
+                startup_cost_simple = \
+                    imported_operational_modules[gen_op_type]. \
+                    startup_cost_simple_rule(mod, prj, tmp)
+            else:
+                startup_cost_simple = \
+                    op_type.startup_cost_simple_rule(mod, prj, tmp)
         else:
-            startup_cost_simple = \
-                op_type.startup_cost_simple_rule(mod, prj, tmp)
+            startup_cost_simple = 0
 
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "startup_cost_by_st_rule"):
-            startup_cost_by_st = imported_operational_modules[gen_op_type]. \
-                startup_cost_by_st_rule(mod, prj, tmp)
+        if prj in mod.STARTUP_BY_ST_PRJS:
+            if hasattr(imported_operational_modules[gen_op_type],
+                       "startup_cost_by_st_rule"):
+                startup_cost_by_st = \
+                    imported_operational_modules[gen_op_type]. \
+                    startup_cost_by_st_rule(mod, prj, tmp)
+            else:
+                startup_cost_by_st = \
+                    op_type.startup_cost_by_st_rule(mod, prj, tmp)
         else:
-            startup_cost_by_st = op_type.startup_cost_by_st_rule(mod, prj, tmp)
+            startup_cost_by_st = 0
 
         return startup_cost_simple + startup_cost_by_st
 
