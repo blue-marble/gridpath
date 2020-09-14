@@ -2,7 +2,7 @@
 GridPath Functionality - High Level
 ###################################
 
-In this chapter, we discuss Gridpath's functionality at a high level. It is
+In this chapter, we discuss GridPath's functionality at a high level. It is
 subdivided into three sections:
 
 1. :ref:`approaches-section-ref`
@@ -27,7 +27,7 @@ Production-Cost Simulation
 
 Production-cost simulation models, also called unit-commitment and dispatch
 models, simulate the operations of a specified power system with a high
-level fidelity -- at a high temporal resolution (e.g. hours to 5-minute
+level of fidelity -- at a high temporal resolution (e.g. hours to 5-minute
 segments) and considering the detailed operating characteristics of
 generators -- but generally over a fairly short period of time (e.g.
 optimizing a year one day at a time). These models are adept at optimizing
@@ -73,29 +73,24 @@ This simplification makes the linear optimization problem tractable. If the
 spatial resolution is small, the temporal resolution may be increased, and
 vice versa. An advantage of GridPath is that, unlike other similar
 platforms, it leaves the decision for where to simplify and where to add
-resolution is left up to the user, making it possible to tailor the problem
-formulation to the question at hand, the available computational resources,
-and the available time.
+resolution to the user, making it possible to tailor the problem formulation
+to the question at hand, the available computational resources, and the
+available time.
 
-After the system is “built” by a capacity-expansion problem, the system should
-be simulated for the entire year (or years) using a production-cost model to
-ensure that the decisions made using representative time slices produce a
-system that can operate reliably at every time point of the year. The
-production cost model takes a given electric system (similar to the
-Greening-the-Grid study that used the CEA plans) and solves the model to
-ensure demand equals supply, and all constraints like generator limits,
-transmission flows, ramp rates, and policy constraints are all met.
-
-Capacity-expansion and production cost models are therefore complementary.
-The former allows us to quickly explore many options for how the power
-system ought to evolve over time and find the optimal solution; the latter
-can help us ensure that the system we design does in fact perform as we
-intended (e.g. that it serves load reliably and meets policy targets).
+After the system is “built” by a capacity-expansion problem, the system may
+be simulated for the entire year (or years) using the production-cost
+functionality to ensure that the decisions made using representative time
+slices produce a system that can operate reliably at every time point of the
+year. Capacity-expansion and production cost models are therefore
+complementary. The former allows us to quickly explore many options for how
+the power system ought to evolve over time and find the optimal solution;
+the latter can help us ensure that the system we design does in fact perform
+as we intended (e.g. that it serves load reliably and meets policy targets).
 
 GridPath's architecture makes it possible for the same modules to be re-used
-in production-cost or capacity-expansion modeling settings, allowing for a
+in production-cost or capacity-expansion modeling setting, allowing for a
 seamless transition from one approach to the other, as datasets can be more
-easily reused.
+easily shared and reused.
 
 Linear, Mixed-Integer, and Non-Linear Formulations
 ==================================================
@@ -177,11 +172,11 @@ Within a production-cost simulation subproblem, some timepoints can be part
 of a spin-up or look-ahead segment. These are additional timepoints that are
 added to the subproblem's start and end but are ultimately discarded when
 calculating result metrics. They are there to more faithfully model the
-beginning and start of the subproblem. For example, if we had weekly subproblems
-we could add 24 hourly spinup timepoins (1 day) before the week, and 24
-hourly lookahead timepoints (1 day) after the week, resulting in 52 subproblems
-of 9 days. After solving each subproblem independently, the 2 edge days in each
-subproblem are discarded .
+beginning and start of the subproblem. For example, if we had weekly
+subproblems we could add 24 hourly spinup timepoins (1 day) before the week,
+and 24 hourly lookahead timepoints (1 day) after the week, resulting in 52
+subproblems of 9 days. After solving each subproblem independently, the 2
+edge days in each subproblem are discarded .
 
 Unlike in production-cost simulation, in capacity-expansion mode, we usually
 have only a single subproblem (and no spinup or lookahead timepoints).
@@ -192,16 +187,17 @@ Stages
 ------
 
 GridPath also has multi-stage commitment functionality, i.e. commitment
-decisions made for a subproblem can be fixed and then fed into a next stage with
-some updated parameters (e.g. an updated load and renewable output forecast).
-The number of stages is flexible and the timepoint resolution can change from
-stage to stage.
+decisions made for a subproblem can be fixed and then fed into a next stage
+with some updated parameters (e.g. an updated load and renewable output
+forecast). The number of stages is flexible and the timepoint resolution can
+change from stage to stage.
 
-For instance, the same day (subproblem) could first be modeled using a day-ahead
-hourly forecast ("DA stage"), then with an hour-ahead hourly forecast ("HA
-stage"), and finally with a real-time 5-minute forecast ("RT stage"). Commitment
-decisions for e.g. coal generators could be fixed in the DA stage, whereas
-commitment for e.g. gas turbines could be changed until the final RT stage.
+For instance, the same day (subproblem) could first be modeled using a
+day-ahead hourly forecast ("DA stage"), then with an hour-ahead hourly
+forecast ("HA stage"), and finally with a real-time 5-minute forecast ("RT
+stage"). Commitment decisions for e.g. coal generators could be fixed in the
+DA stage, whereas commitment for e.g. gas turbines could be changed until
+the final RT stage.
 
 In practice, this is achieved by assigning a stage to each timepoint and
 specifying a map between timepoints in each stage (see
@@ -397,56 +393,14 @@ Shiftable Load (*dr*)
 Load Balance
 ============
 
-The load-balance constraint in GridPath consists of production components
-and consumption components that are added by various GridPath modules
-depending on the selected features. The sum of the production components
-must equal the sum of the consumption components in each zone and timepoint.
-
-At a minimum, for each load zone and timepoint, the user must specify a
-static load requirement input as a consumption component. On the production
-side, the model aggregates the power output of projects in the respective
-load zone and timepoint.
-
-.. note:: Net power output from storage and demand-side resources can be
-    negative and is currently aggregated with the 'project' production
-    component.
-
-Net transmission into/out of the load zone is another possible production
-component (see :ref:`transmission-section-ref`).
-
-The user may also optionally allow unserved energy and/or overgeneration to be
-incurred by adding the respective variables to the production and
-consumption components respectively, and assigning a per unit cost for each
-load-balance violation type.
+.. automodule:: gridpath.system.load_balance.load_balance
 
 .. _objective-section-ref:
 
 Objective Function
 ==================
 
-GridPath's objective function consists of modularized components. This
-modularity allows for different objective functions to be defined. Here, we
-discuss the objective of minimizing total system costs.
-
-Its most basic version includes the aggregated project capacity costs and
-aggregated project operational costs, and any load-balance penalties
-incurred (i.e. the aggregated unserved energy and/or overgeneration costs).
-
-Other standard objective function components include:
-
-    * aggregated transmission line capacity investment costs
-    * aggregated transmission operational costs (hurdle rates)
-    * aggregated reserve violation penalties
-
-GridPath also can include custom objective function components that may not
-be standard for all systems. Examples currently include:
-
-    * local capacity shortage penalties
-    * planning reserve margin costs
-    * various tuning costs
-
-All costs are net present value costs, with a user-specified discount factor
-applied to call costs depending on the period in which they are incurred.
+.. automodule:: gridpath.objective.min_total_cost
 
 .. _optional-functionality-section-ref:
 
@@ -472,7 +426,7 @@ GridPath contains a number of modules that are optional. These modules are:
 Transmission
 ============
 In GridPath, the user can include transmission line flows and transmission
-topography by selecting the 'transimssion' feature and specifying the
+topography by selecting the 'transmission' feature and specifying the
 available transmission lines and which load zones they connect.
 
 For each load zone and timepoint, the net flow on all transmission lines
@@ -488,8 +442,8 @@ component and a transmission-operational-costs component to the objective
 function (see :ref:`objective-section-ref`).
 
 Like with GridPath 'projects,' transmission lines must be assigned a
-capacity type, which determines their capacity availability and costs, and an
-operational type, which determines their operational characteristics and costs.
+capacity type, which determines their capacity and costs, and an operational
+type, which determines their operational characteristics and costs.
 
 The transmission network in GridPath can currently be modeled using a linear
 transport model or using DC power flow (see Transmission Operational Types). In

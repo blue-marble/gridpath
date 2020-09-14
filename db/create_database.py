@@ -6,7 +6,10 @@ Create the database and make schema.
 
 TODO: expand this description of the table naming conventions
 The schema for the GridPath SQLite database is in db_schema.sql
-Table names follow a pre-defined structure
+Table names follow a pre-defined structure.
+
+
+.. _database-structure-section-ref:
 
 """
 
@@ -53,10 +56,9 @@ def parse_arguments(arguments):
 
 def create_database_schema(conn, parsed_arguments):
     """
-
     :param conn: database connection
     :param parsed_arguments:
-    :return:
+
     """
     schema_path = os.path.join(os.path.dirname(__file__),
                                parsed_arguments.db_schema)

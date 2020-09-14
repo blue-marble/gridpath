@@ -2,8 +2,29 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This module adds an objective function to the model, minimizing total system
-cost.
+GridPath's objective function consists of modularized components. This
+modularity allows for different objective functions to be defined. Here, we
+discuss the objective of minimizing total system costs.
+
+Its most basic version includes the aggregated project capacity costs and
+aggregated project operational costs, and any load-balance penalties
+incurred (i.e. the aggregated unserved energy and/or overgeneration costs).
+
+Other standard objective function components include:
+
+    * aggregated transmission line capacity investment costs
+    * aggregated transmission operational costs (hurdle rates)
+    * aggregated reserve violation penalties
+
+GridPath also can include custom objective function components that may not
+be standard for all systems. Examples currently include:
+
+    * local capacity shortage penalties
+    * planning reserve margin costs
+    * various tuning costs
+
+All costs are net present value costs, with a user-specified discount factor
+applied to call costs depending on the period in which they are incurred.
 """
 
 import csv

@@ -2,6 +2,8 @@
 
 -- Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+-- A description of the database schema structure is in db.__init__
+
 -----------------
 -- -- MODEL -- --
 -----------------
