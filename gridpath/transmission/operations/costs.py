@@ -408,7 +408,7 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate hurdle costs by period and load zone
+    # Aggregate hurdle costs by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_hurdle_costs_agg
         (scenario_id, subproblem_id, stage_id, period, load_zone, 

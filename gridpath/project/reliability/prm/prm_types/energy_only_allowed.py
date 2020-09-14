@@ -673,3 +673,45 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 
         spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
 
+    # Aggregate costs by period and break out into spinup_or_lookahead.
+
+    # Delete old resulst
+    del_sql = """
+        DELETE FROM 
+        results_project_prm_deliverability_group_capacity_and_costs_agg 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Insert new results
+    agg_sql = """
+        INSERT INTO 
+        results_project_prm_deliverability_group_capacity_and_costs_agg
+        (scenario_id, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem, 
+        deliverable_capacity_cost)
+
+        SELECT scenario_id, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem,
+        (deliverable_capacity_cost * fraction_of_hours_in_subproblem) 
+        AS deliverable_capacity_cost
+        FROM spinup_or_lookahead_ratios
+
+        -- Now that we have all scenario_id, subproblem_id, stage_id, period, 
+        -- and spinup_or_lookahead combinations add the deliverable capacity 
+        -- costs which will be derated by the fraction_of_hours_in_subproblem
+        INNER JOIN
+        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        SUM(deliverable_capacity_cost) AS deliverable_capacity_cost
+        FROM results_project_prm_deliverability_group_capacity_and_costs
+        WHERE scenario_id = ?
+        GROUP BY scenario_id, subproblem_id, stage_id, period
+        ) AS cap_table
+        USING (scenario_id, subproblem_id, stage_id, period)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)

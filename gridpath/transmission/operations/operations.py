@@ -238,8 +238,8 @@ def import_results_into_database(
 
 def process_results(db, c, subscenarios, quiet):
     """
-    Aggregate imports/exports by zone and period (numbers are based on flows
-    without accounting for losses!)
+    Aggregate imports/exports by zone, period and spinup_or_lookahead
+    (numbers are based on flows without accounting for losses!)
     TODO: add losses?
     :param db:
     :param c:
@@ -259,7 +259,7 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate imports/exports by period and load zone
+    # Aggregate imports/exports by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_imports_exports_agg
         (scenario_id, subproblem_id, stage_id, period, 

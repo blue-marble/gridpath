@@ -2678,6 +2678,22 @@ deliverable_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
+-- Deliverable capacity costs - Aggregated
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS
+results_project_prm_deliverability_group_capacity_and_costs_agg;
+CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs_agg (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+deliverable_capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, spinup_or_lookahead)
+);
+
 DROP TABLE IF EXISTS results_project_elcc_simple;
 CREATE TABLE results_project_elcc_simple (
 scenario_id INTEGER,
@@ -2756,6 +2772,24 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
+
+-- Capacity costs - Aggregated
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS results_project_costs_capacity_agg;
+CREATE TABLE results_project_costs_capacity_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead));
+
+
 DROP TABLE IF EXISTS results_project_costs_operations;
 CREATE TABLE results_project_costs_operations (
 scenario_id INTEGER,
@@ -2793,7 +2827,8 @@ variable_om_cost FLOAT,
 fuel_cost FLOAT,
 startup_cost FLOAT,
 shutdown_cost FLOAT,
-PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_fuel_burn;
@@ -2852,7 +2887,7 @@ technology VARCHAR(32),
 spinup_or_lookahead INTEGER,
 carbon_emission_tons FLOAT,
 PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
-technology)
+technology, spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_rps;
@@ -2921,6 +2956,24 @@ load_zone_to VARCHAR(32),
 capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
+
+
+-- Tx Capacity costs - Aggregated by "to_zone" load_zone
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS results_transmission_costs_capacity_agg;
+CREATE TABLE results_transmission_costs_capacity_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead));
+
 
 DROP TABLE IF EXISTS results_transmission_imports_exports;
 CREATE TABLE results_transmission_imports_exports (
@@ -3666,45 +3719,78 @@ USING (temporal_scenario_id, project, period)
 ;
 
 
+-- ratio of hrs that are (not) spinup/lookahead in each period-subproblem-stage
+DROP VIEW IF EXISTS spinup_or_lookahead_ratios;
+CREATE VIEW spinup_or_lookahead_ratios AS
+SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
+n_weighted_hours / n_total_hours AS fraction_of_hours_in_subproblem
+
+FROM
+
+(SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
+SUM(number_of_hours_in_timepoint * timepoint_weight) AS n_weighted_hours
+FROM inputs_temporal
+INNER JOIN
+(SELECT scenario_id, temporal_scenario_id FROM scenarios) as scen_tbl
+USING (temporal_scenario_id)
+GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead
+) AS weighted_hrs_tbl
+
+INNER JOIN (
+
+SELECT scenario_id, subproblem_id, stage_id, period,
+SUM(number_of_hours_in_timepoint * timepoint_weight) AS n_total_hours
+FROM inputs_temporal
+INNER JOIN
+(SELECT scenario_id, temporal_scenario_id FROM scenarios) as scen_tbl
+USING (temporal_scenario_id)
+GROUP BY scenario_id, subproblem_id, stage_id, period
+) AS total_tbl
+
+USING (scenario_id, subproblem_id, stage_id, period)
+;
+
+
 -- Costs by load zone (for tx: by destination load zone)
 -- Note: does not include tx deliverability costs, tuning costs and
 -- violation penalties
 DROP VIEW IF EXISTS results_costs_by_period_load_zone;
 CREATE VIEW results_costs_by_period_load_zone AS
 SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead,
 capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
 tx_capacity_cost, tx_hurdle_cost
 FROM
-(SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
-SUM(capacity_cost) AS capacity_cost
-FROM results_project_costs_capacity
-GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS cap_costs
+results_project_costs_capacity_agg
 
 LEFT JOIN
 results_project_costs_operations_agg
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead)
 
 LEFT JOIN
-(SELECT scenario_id, subproblem_id, stage_id, period, load_zone_to AS load_zone,
-SUM(capacity_cost) AS tx_capacity_cost
-FROM results_transmission_costs_capacity
-GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS tx_cap_costs
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+
+(SELECT scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead, capacity_cost AS tx_capacity_cost
+FROM results_transmission_costs_capacity_agg) AS tx_cap_cost_tbl
+USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead)
 
 LEFT JOIN
 results_transmission_hurdle_costs_agg
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead)
 ;
 
 
 -- Costs by period (not including tuning costs and violation penalties)
 DROP VIEW IF EXISTS results_costs_by_period;
 CREATE VIEW results_costs_by_period AS
-SELECT scenario_id, subproblem_id, stage_id, period,
+SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
 capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
-tx_capacity_cost, tx_hurdle_cost, tx_deliverable_capacity_cost
+tx_capacity_cost, tx_hurdle_cost, deliverable_capacity_cost
 FROM
-(SELECT scenario_id, subproblem_id, stage_id, period,
+(SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
 SUM(capacity_cost) AS capacity_cost,
 SUM(variable_om_cost) AS variable_om_cost,
 SUM(fuel_cost) AS fuel_cost,
@@ -3713,14 +3799,12 @@ SUM(shutdown_cost) AS shutdown_cost,
 SUM(tx_capacity_cost) AS tx_capacity_cost,
 SUM(tx_hurdle_cost) AS tx_hurdle_cost
 FROM results_costs_by_period_load_zone
-GROUP BY scenario_id, subproblem_id, stage_id, period) AS agg_lz_costs
+GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead) AS
+agg_lz_costs
 
 LEFT JOIN
-(SELECT scenario_id, subproblem_id, stage_id, period,
-SUM(deliverable_capacity_cost) AS tx_deliverable_capacity_cost
-FROM results_project_prm_deliverability_group_capacity_and_costs
-GROUP BY scenario_id, subproblem_id, stage_id, period) AS tx_deliverable_costs
-USING (scenario_id, subproblem_id, stage_id, period)
+results_project_prm_deliverability_group_capacity_and_costs_agg
+USING (scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead)
 ;
 
 -------------------------------------------------------------------------------

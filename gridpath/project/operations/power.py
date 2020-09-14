@@ -284,7 +284,7 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate dispatch by technology and period
+    # Aggregate dispatch by technology, period, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 

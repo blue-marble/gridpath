@@ -174,8 +174,7 @@ def import_results_into_database(
 
 def process_results(db, c, subscenarios, quiet):
     """
-    Aggregate dispatch by technology
-    Aggregate dispatch by period
+    Aggregate emissions by technology, period, and spinup_or_lookahead
     :param db:
     :param c:
     :param subscenarios:
@@ -185,7 +184,7 @@ def process_results(db, c, subscenarios, quiet):
     if not quiet:
         print("aggregate emissions by technology-period")
 
-    # Delete old dispatch by technology
+    # Delete old emissions by technology
     del_sql = """
         DELETE FROM results_project_carbon_emissions_by_technology_period 
         WHERE scenario_id = ?
@@ -194,7 +193,7 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate dispatch by technology
+    # Aggregate emissions by technology, period, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_project_carbon_emissions_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
@@ -205,8 +204,10 @@ def process_results(db, c, subscenarios, quiet):
         * number_of_hours_in_timepoint ) AS carbon_emission_tons 
         FROM results_project_carbon_emissions
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology, spinup_or_lookahead;"""
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
