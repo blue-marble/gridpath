@@ -355,64 +355,36 @@ Renewables Portfolio Standard (RPS)
 Policy Zones
 ============
 
-
+.. automodule:: db.csvs_test_examples.policy.rps.geography_rps_zones.doc
 
 Contributing Projects
 =====================
 
-
+.. automodule:: db.csvs_test_examples.policy.rps.project_rps_zones.doc
 
 Target
 ======
 
-
+.. automodule:: db.csvs_test_examples.policy.rps.system_rps_targets.doc
 
 ==========
 Carbon Cap
 ==========
 
-**Relevant tables:**
+Policy Zones
+============
 
-+-------------------------------+------------------------------------------------+
-|:code:`scenarios` table column |:code:`carbon_cap_zone_scenario_id`             |
-+-------------------------------+------------------------------------------------+
-|:code:`scenario` table feature |:code:`of_carbon_cap`                           |
-+-------------------------------+------------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_carbon_cap_zones` |
-+-------------------------------+------------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_carbon_cap_zones`       |
-+-------------------------------+------------------------------------------------+
+.. automodule:: db.csvs_test_examples.policy.carbon_cap.geography_carbon_cap_zones.doc
 
 Contributing Projects
 =====================
 
-**Relevant tables:**
-
-+-------------------------------+----------------------------------------------+
-|:code:`scenarios` table column |:code:`project_carbon_cap_zone_scenario_id`   |
-+-------------------------------+----------------------------------------------+
-|:code:`scenario` table feature |:code:`of_carbon_cap`                         |
-+-------------------------------+----------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_carbon_cap_zones` |
-+-------------------------------+----------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_carbon_cap_zones`       |
-+-------------------------------+----------------------------------------------+
+.. automodule:: db.csvs_test_examples.policy.carbon_cap.project_carbon_cap_zones.doc
 
 Target
 ======
 
-**Relevant tables:**
-
-+-------------------------------+---------------------------------------+
-|:code:`scenarios` table column |:code:`carbon_cap_scenario_id`         |
-+-------------------------------+---------------------------------------+
-|:code:`scenario` table feature |:code:`of_carbon_cap`                  |
-+-------------------------------+---------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_carbon_cap` |
-+-------------------------------+---------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_carbon_cap`       |
-+-------------------------------+---------------------------------------+
-
+.. automodule:: db.csvs_test_examples.policy.carbon_cap.system_carbon_cap_targets.doc
 
 .. _database-testing-section-ref:
 
