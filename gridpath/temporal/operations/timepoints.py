@@ -294,15 +294,7 @@ def process_results(db, c, subscenarios, quiet):
     :return:
     """
     if not quiet:
-        print("add spinup_or_lookahead flag to dispatch")
-    # Figure out spinup_or_lookahead for each timepoint
-    tmp_flag = c.execute(
-        """SELECT stage_id, subproblem_id, timepoint, spinup_or_lookahead
-        FROM inputs_temporal
-        WHERE temporal_scenario_id = {}""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID
-        )
-    ).fetchall()
+        print("add spinup_or_lookahead flag")
 
     # Update tables with spinup_or_lookahead_flag
     tables_to_update = [
@@ -335,22 +327,29 @@ def process_results(db, c, subscenarios, quiet):
         "results_system_spinning_reserves_balance"
     ]
 
-    # TODO: vectorize?
-    updates = []
-    for (stage, subproblem, timepoint, flag) in tmp_flag:
-        updates.append(
-            (flag, subscenarios.SCENARIO_ID, stage, subproblem, timepoint)
-        )
     for tbl in tables_to_update:
+        if not quiet:
+            print("... {}".format(tbl))
         sql = """
-            UPDATE {}
-            SET spinup_or_lookahead = ?
-            WHERE scenario_id = ?
-            AND stage_id = ?
-            AND subproblem_id = ?
-            AND timepoint = ?;
+            UPDATE results_project_dispatch
+            SET spinup_or_lookahead = (
+            SELECT spinup_or_lookahead
+            FROM inputs_temporal
+            WHERE temporal_scenario_id = (
+                SELECT temporal_scenario_id 
+                FROM scenarios 
+                WHERE scenario_id = ?
+                )
+            AND results_project_dispatch.subproblem_id = 
+            inputs_temporal.subproblem_id
+            AND results_project_dispatch.stage_id = inputs_temporal.stage_id
+            AND results_project_dispatch.timepoint = inputs_temporal.timepoint
+            );
             """.format(tbl)
-        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=updates)
+        spin_on_database_lock(
+            conn=db, cursor=c, sql=sql, data=(subscenarios.SCENARIO_ID, ),
+            many=False
+        )
 
 
 # Validation
