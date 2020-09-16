@@ -140,7 +140,7 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which an operational constraint can be violated.|
     +-------------------------------------------------------------------------+
-    | | :code:`CURTAILMENT_PRJS`                                              |
+    | | :code:`CURTAILMENT_COST_PRJS`                                         |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
     | The set of projects that incur cost if curtailed.                       |
