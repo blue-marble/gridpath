@@ -140,6 +140,11 @@ def add_model_components(m, d):
     |                                                                         |
     | The set of projects for which an operational constraint can be violated.|
     +-------------------------------------------------------------------------+
+    | | :code:`CURTAILMENT_COST_PRJS`                                         |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if curtailed.                       |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -247,6 +252,12 @@ def add_model_components(m, d):
     | The project's cost for violating its min down time constraint per       |
     | violation instance.                                                     |
     +-------------------------------------------------------------------------+
+    | | :code:`curtailment_cost_per_pwh`                                      |
+    | | *Defined over*: :code:`CURTAILMENT_COST_PRJS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost of curtailment per power-unitXhour.                  |
+    +-------------------------------------------------------------------------+
     """
 
     # Sets
@@ -325,6 +336,9 @@ def add_model_components(m, d):
         )
     )
 
+    # Projects with cost of curtailment
+    m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -397,6 +411,11 @@ def add_model_components(m, d):
         within=NonNegativeReals
     )
 
+    m.curtailment_cost_per_pwh = Param(
+        m.CURTAILMENT_COST_PRJS,
+        within=NonNegativeReals
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -421,14 +440,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 "ramp_up_violation_penalty",
                 "ramp_down_violation_penalty",
                 "min_up_time_violation_penalty",
-                "min_down_time_violation_penalty"),
+                "min_down_time_violation_penalty",
+                "curtailment_cost_per_pwh"),
         param=(m.variable_om_cost_per_mwh, m.fuel,
                m.startup_fuel_mmbtu_per_mw, m.startup_cost_per_mw,
                m.shutdown_cost_per_mw,
                m.ramp_up_violation_penalty,
                m.ramp_down_violation_penalty,
                m.min_up_time_violation_penalty,
-               m.min_down_time_violation_penalty)
+               m.min_down_time_violation_penalty,
+               m.curtailment_cost_per_pwh)
     )
 
     data_portal.data()['VAR_OM_COST_SIMPLE_PRJS'] = {
@@ -465,6 +486,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()['MIN_DOWN_TIME_VIOL_PRJS'] = {
         None: list(data_portal.data()['min_down_time_violation_penalty'].keys()
+                   )
+    }
+
+    data_portal.data()['CURTAILMENT_COST_PRJS'] = {
+        None: list(data_portal.data()['curtailment_cost_per_pwh'].keys()
                    )
     }
 
@@ -602,7 +628,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         charging_efficiency, discharging_efficiency,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
-        last_commitment_stage
+        last_commitment_stage, curtailment_cost_per_pwh
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -726,7 +752,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours", "maximum_duration_hours",
         "aux_consumption_frac_capacity", "aux_consumption_frac_power",
-        "last_commitment_stage"
+        "last_commitment_stage", "curtailment_cost_per_pwh"
     ]
     append_to_input_file(
         inputs_directory=os.path.join(

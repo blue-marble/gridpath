@@ -584,6 +584,13 @@ def scheduled_curtailment_rule(mod, g, tmp):
     return mod.GenHydro_Curtail_MW[g, tmp]
 
 
+def curtailment_cost_rule(mod, g, tmp):
+    """
+    """
+    return mod.GenHydro_Curtail_MW[g, tmp] \
+        * mod.curtailment_cost_per_pwh[g]
+
+
 def power_delta_rule(mod, g, tmp):
     """
     This rule is only used in tuning costs, so fine to skip for linked

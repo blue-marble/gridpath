@@ -25,6 +25,9 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     getattr(d, total_cost_components).append(
         "Total_Operational_Violation_Cost"
     )
+    getattr(d, total_cost_components).append(
+        "Total_Curtailment_Cost"
+    )
 
 
 def add_model_components(m, d):
@@ -129,3 +132,18 @@ def add_model_components(m, d):
     m.Total_Operational_Violation_Cost = Expression(
         rule=total_operational_violation_cost_rule
     )
+
+    def total_curtailment_cost_rule(mod):
+        """
+        Sum curtailment costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(mod.Curtailment_Cost[g, tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
+                   for (g, tmp)
+                   in mod.CURTAILMENT_COST_PRJ_OPR_TMPS)
+    m.Total_Curtailment_Cost = Expression(rule=total_curtailment_cost_rule)

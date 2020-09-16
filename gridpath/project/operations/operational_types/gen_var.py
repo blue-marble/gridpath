@@ -363,6 +363,15 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
+def curtailment_cost_rule(mod, g, tmp):
+    """
+    Apply curtailment cost to scheduled and subhourly curtailment
+    """
+    return (mod.GenVar_Scheduled_Curtailment_MW[g, tmp] +
+            mod.GenVar_Subhourly_Curtailment_MW[g, tmp]) \
+        * mod.curtailment_cost_per_pwh[g]
+
+
 def power_delta_rule(mod, g, tmp):
     """
     Curtailment is counted as part of the ramp here; excludes any ramping from
