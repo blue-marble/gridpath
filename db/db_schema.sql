@@ -829,6 +829,7 @@ aux_consumption_frac_capacity FLOAT,
 aux_consumption_frac_power FLOAT,
 last_commitment_stage INTEGER,
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
+curtailment_cost_per_pwh FLOAT, -- curtailment cost per unit-powerXhour
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max
 lf_reserves_up_derate FLOAT,
 lf_reserves_down_derate FLOAT,
