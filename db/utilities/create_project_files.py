@@ -48,12 +48,13 @@ def parse_arguments(args):
 
 
 def create_individual_csvs_from_aggregate_csv(
-        agg_csv_filepath, project_csv_folder, verbose,
+    agg_csv_filepath, project_csv_folder, verbose,
 ):
     """
     :param agg_csv_filepath: str; the path to the CSV with aggregated data
     :param project_csv_folder: str; the directory where to write the
         individual files
+    :param verbose: boolean; whether or not to print output
 
     Read the aggregated CSV file, check for some errors, and write
     individual files based on the data in the aggregated file.
