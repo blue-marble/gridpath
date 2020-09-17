@@ -38,8 +38,8 @@ def parse_arguments(args):
                         help="The scenario to load. If not specified, "
                              "the script will load data for all scenarios in "
                              "the CSV.")
-    parser.add_argument("--delete", default=False, action="store_true",
-                        help="Delete")
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print output.")
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -320,6 +320,7 @@ def main(args=None):
     db_path = parsed_args.database
     scenarios_csv = parsed_args.csv_path
     scenario = parsed_args.scenario
+    quiet = parsed_args.quiet
 
     # Check if database exists
     if not os.path.isfile(db_path):
@@ -342,7 +343,11 @@ def main(args=None):
     )
 
     # Iterate over the scenarios and check if this scenario name already exists
+    if not quiet:
+        print("Loading scenarios...")
     for scenario in scenarios:
+        if not quiet:
+            print("...{}".format(scenario))
         sid = check_if_scenario_name_exists(
             conn=db_conn, scenario_name=scenario
         )

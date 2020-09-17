@@ -131,7 +131,8 @@ class TestExamples(unittest.TestCase):
         try:
             scenario.main([
                 "--database", DB_PATH,
-                "--csv_path", SCENARIOS_CSV
+                "--csv_path", SCENARIOS_CSV,
+                "--quiet"
             ])
         except Exception as e:
             print("Error encountered during population of testing database "
