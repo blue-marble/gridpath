@@ -2,7 +2,8 @@
 # Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Create or update scenario.
+This script contains functions for creating or updating a scenario. You can
+create a single or multiple scenarios from a CSV.
 """
 
 from argparse import ArgumentParser
@@ -241,6 +242,11 @@ def delete_scenario_results(conn, scenario_id):
 
 
 def check_if_scenario_name_exists(conn, scenario_name):
+    """
+    :param conn: the database connection
+    :param scenario_name: str; the scenario name
+    :return: scenario_id; str or None
+    """
     c = conn.cursor()
 
     sql = "SELECT scenario_id FROM scenarios WHERE scenario_name = ?"
@@ -257,10 +263,19 @@ def check_if_scenario_name_exists(conn, scenario_name):
 
 
 def determine_scenarios_to_load(conn, scenarios_df, scenario_name=None):
+    """
+    :param conn: the database connection
+    :param scenarios_df: pandas dataframe; the scenarios CSV as dataframe
+    :param scenario_name: str; the scenario name
 
+    """
     c = conn.cursor()
+
+    # If no scenario is specified, we'll return all scenarios from the
+    # dataframe as list
     if scenario_name is None:
         scenarios_to_load = scenarios_df.columns.to_list()[1:]
+    # Otherwise, return only the scenario name specified in a list
     else:
         scenarios_to_load = [scenario_name]
 
@@ -271,17 +286,24 @@ def determine_scenarios_to_load(conn, scenarios_df, scenario_name=None):
 
 def load_scenario_from_df(conn, scenarios_df, scenario_name):
     """
+    :param conn: the database connection
+    :param scenarios_df: pandas dataframe; the scenarios CSV as dataframe
+    :param scenario_name: str; the scenario name
+
     Load scenario info from CSV. If scenario is not specified, load all;
     otherwise, load only the specified scenario.
     """
     c = conn.cursor()
 
+    # Convert the dataframe to dictionary
     scenario_info = scenarios_df.set_index(
         'optional_feature_or_subscenarios'
     )[scenario_name].to_dict()
 
+    # Add the scenario name
     scenario_info["scenario_name"] = scenario_name
 
+    # Create the scenario (add to scenarios table)
     create_scenario(
         io=conn, c=c, column_values_dict=scenario_info
     )
@@ -299,7 +321,7 @@ def main(args=None):
     scenarios_csv = parsed_args.csv_path
     scenario = parsed_args.scenario
 
-    # Do some checks
+    # Check if database exists
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "
@@ -308,22 +330,30 @@ def main(args=None):
             )
         )
 
+    # Connect to database
     db_conn = connect_to_database(db_path=db_path)
 
+    # Read in the CSV as dataframe
     csv_to_df = pd.read_csv(scenarios_csv)
 
+    # Determine which scenario the user wants to load
     scenarios = determine_scenarios_to_load(
         conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
     )
 
+    # Iterate over the scenarios and check if this scenario name already exists
     for scenario in scenarios:
         sid = check_if_scenario_name_exists(
             conn=db_conn, scenario_name=scenario
         )
+        # If the scenario name does not exist, load the data
         if sid is None:
             load_scenario_from_df(
                 conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
             )
+        # If the scenario name exists, ask the user if they want to delete
+        # prior data associated with this scenario and re-load the scenario
+        # info
         else:
             proceed = confirm(
                 prompt=
