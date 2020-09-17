@@ -2,8 +2,8 @@
 # Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This script contains functions for creating or updating a scenario. You can
-create a single or multiple scenarios from a CSV.
+This script contains functions for creating, updating, and deleting a
+scenario. You can create a single or multiple scenarios from a CSV.
 """
 
 from argparse import ArgumentParser
@@ -35,9 +35,13 @@ def parse_arguments(args):
                         default="../csvs_test_examples/scenarios.csv",
                         help="Path to the scenarios CSV.")
     parser.add_argument("--scenario",
-                        help="The scenario to load. If not specified, "
-                             "the script will load data for all scenarios in "
-                             "the CSV.")
+                        help="The scenario to load (or delete). If not "
+                             "specified, the script will load data for all "
+                             "scenarios in the CSV.")
+    parser.add_argument("--delete", default=False, action="store_true",
+                        help="Delete the specified scenario. WARNING: this "
+                             "will delete all prior results and data "
+                             "associated with this scenario.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
 
@@ -320,6 +324,7 @@ def main(args=None):
     db_path = parsed_args.database
     scenarios_csv = parsed_args.csv_path
     scenario = parsed_args.scenario
+    delete_flag = parsed_args.delete
     quiet = parsed_args.quiet
 
     # Check if database exists
@@ -334,49 +339,73 @@ def main(args=None):
     # Connect to database
     db_conn = connect_to_database(db_path=db_path)
 
-    # Read in the CSV as dataframe
-    csv_to_df = pd.read_csv(scenarios_csv)
-
-    # Determine which scenario the user wants to load
-    scenarios = determine_scenarios_to_load(
-        conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
-    )
-
-    # Iterate over the scenarios and check if this scenario name already exists
-    if not quiet:
-        print("Loading scenarios...")
-    for scenario in scenarios:
-        if not quiet:
-            print("...{}".format(scenario))
-        sid = check_if_scenario_name_exists(
-            conn=db_conn, scenario_name=scenario
-        )
-        # If the scenario name does not exist, load the data
-        if sid is None:
-            load_scenario_from_df(
-                conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
-            )
-        # If the scenario name exists, ask the user if they want to delete
-        # prior data associated with this scenario and re-load the scenario
-        # info
+    # Check if the user has requested that a scenario be deleted
+    if delete_flag:
+        if scenario is None:
+            raise ValueError("You must specify which scenario you'd like to "
+                             "delete with the '--delete' flag.")
         else:
             proceed = confirm(
                 prompt=
-                """There is already a scenario named '{}' in the 
-                database. Would you like to delete all data associated 
-                with this scenario and re-load the scenario definition info? 
-                WARNING: if you select 'yes' all prior results 
+                """WARNING: Would you like to delete all data associated 
+                with scenario '{}'? If you select 'yes' all prior results 
                 associated with scenario '{}' will be deleted."""
-                    .format(scenario, scenario)
+                .format(scenario, scenario)
             )
             if proceed:
-                delete_scenario(conn=db_conn, scenario_id=sid)
-                load_scenario_from_df(
-                    conn=db_conn, scenarios_df=csv_to_df,
-                    scenario_name=scenario
+                sid = check_if_scenario_name_exists(
+                    conn=db_conn, scenario_name=scenario
                 )
+                if sid is None:
+                    raise ValueError("Scenario {} not found in the "
+                                     "database.".format(scenario))
+                else:
+                    delete_scenario(conn=db_conn, scenario_id=sid)
+    # If a CSV is specified, we'll try to load data
+    if scenarios_csv is not None:
+        # Read in the CSV as dataframe
+        csv_to_df = pd.read_csv(scenarios_csv)
+
+        # Determine which scenario the user wants to load
+        scenarios = determine_scenarios_to_load(
+            conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
+        )
+
+        # Iterate over the scenarios and check if this scenario name already exists
+        if not quiet:
+            print("Loading scenarios...")
+        for scenario in scenarios:
+            if not quiet:
+                print("...{}".format(scenario))
+            sid = check_if_scenario_name_exists(
+                conn=db_conn, scenario_name=scenario
+            )
+            # If the scenario name does not exist, load the data
+            if sid is None:
+                load_scenario_from_df(
+                    conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
+                )
+            # If the scenario name exists, ask the user if they want to delete
+            # prior data associated with this scenario and re-load the scenario
+            # info
             else:
-                pass
+                proceed = confirm(
+                    prompt=
+                    """There is already a scenario named '{}' in the 
+                    database. Would you like to delete all data associated 
+                    with this scenario and re-load the scenario definition info? 
+                    WARNING: if you select 'yes' all prior results 
+                    associated with scenario '{}' will be deleted."""
+                        .format(scenario, scenario)
+                )
+                if proceed:
+                    delete_scenario(conn=db_conn, scenario_id=sid)
+                    load_scenario_from_df(
+                        conn=db_conn, scenarios_df=csv_to_df,
+                        scenario_name=scenario
+                    )
+                else:
+                    pass
 
 
 if __name__ == "__main__":
