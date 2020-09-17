@@ -14,7 +14,7 @@ Flask==1.1.2
 Flask-RESTful==0.3.8
 Flask-SocketIO==4.3.1
 greenlet==0.4.16
-GridPath==0.5.1
+GridPath==0.6.0
 idna==2.10
 imagesize==1.2.0
 itsdangerous==1.1.0
@@ -30,7 +30,7 @@ Pillow==7.2.0
 ply==3.11
 pscript==0.7.4
 psutil==5.7.2
-Pygments==2.7.0
+Pygments==2.7.1
 Pyomo==5.6.9
 pyparsing==2.4.7
 python-dateutil==2.8.1
