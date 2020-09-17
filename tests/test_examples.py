@@ -7,19 +7,19 @@ import sqlite3
 import unittest
 
 from gridpath import run_end_to_end, validate_inputs
-from db import create_database, port_csvs_to_db
+from db import create_database
 from db.common_functions import connect_to_database
+from db.utilities import port_csvs_to_db, scenario
 
 
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
-# expects
-# TODO: handle this more robustly? (e.g. db scripts expect you to be in
-#  db folder and changing directions all the time is not ideal.
+# expects; the rest of the global variables are relative paths from there
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join("..", "examples")
-DB_NAME = "test_examples"
-DB_PATH = os.path.join("..", "db", "{}.db".format(DB_NAME))
-CSV_PATH = "../db/csvs_test_examples"
+DB_NAME = "unittest_examples"
+DB_PATH = os.path.join("../db", "{}.db".format(DB_NAME))
+CSV_PATH = "../db//csvs_test_examples"
+SCENARIOS_CSV = os.path.join(CSV_PATH, "scenarios.csv")
 
 
 class TestExamples(unittest.TestCase):
@@ -117,28 +117,28 @@ class TestExamples(unittest.TestCase):
         create_database.main(["--database", DB_PATH])
 
         try:
-            port_csvs_to_db.main(["--database", DB_PATH,
-                                        "--csv_location", CSV_PATH,
-                                        "--quiet"])
+            port_csvs_to_db.main([
+                "--database", DB_PATH,
+                "--csv_location", CSV_PATH,
+                "--quiet"
+            ])
         except Exception as e:
             print("Error encountered during population of testing database "
                   "{}.db. Deleting database ...".format(DB_NAME))
             logging.exception(e)
             os.remove(DB_PATH)
 
-        # TODO: create in memory instead and pass around connection?
-
-        # self.conn = sqlite3.connect(":memory:")
-        # self.conn.execute("PRAGMA journal_mode=WAL")
-        # create_database.create_database_schema(
-        #     db=self.conn,
-        #     parsed_arguments=["--db_schema", "db_schema.sql"]
-        # )
-        # create_database.load_data(db=self.conn, omit_data=False)
-        # port_csvs_to_gridpath.load_csv_data(
-        #     conn=self.conn,
-        #     csv_path="../db/csvs_test_examples"
-        # )
+        try:
+            scenario.main([
+                "--database", DB_PATH,
+                "--csv_path", SCENARIOS_CSV,
+                "--quiet"
+            ])
+        except Exception as e:
+            print("Error encountered during population of testing database "
+                  "{}.db. Deleting database ...".format(DB_NAME))
+            logging.exception(e)
+            os.remove(DB_PATH)
 
     def test_example_test(self):
         """
@@ -782,6 +782,8 @@ class TestExamples(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
+        os.remove("{}-shm".format(DB_PATH))
+        os.remove("{}-wal".format(DB_PATH))
 
 
 if __name__ == "__main__":

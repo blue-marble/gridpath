@@ -623,10 +623,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(subscenarios, subproblem, stage, conn, "gen_always_on")
-
-    # Validate heat rate curves
-    validate_heat_rate_curves(subscenarios, subproblem, stage, conn,
-                              "gen_always_on")
-
-    # Validate VOM curves
-    validate_vom_curves(subscenarios, subproblem, stage, conn, "gen_always_on")

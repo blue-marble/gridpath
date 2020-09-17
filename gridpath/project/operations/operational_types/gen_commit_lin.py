@@ -1755,7 +1755,9 @@ def ramp_during_startup_by_st_constraint_rule(mod, g, tmp, s):
         return \
             mod.GenCommitLin_Provide_Power_Startup_By_ST_MW[g, tmp, s] \
             - prev_tmp_provide_power_startup \
-            <= prev_tmp_startup_ramp_rate_mw_per_tmp
+            <= prev_tmp_startup_ramp_rate_mw_per_tmp + \
+            mod.gen_commit_lin_allow_ramp_up_violation[g] * \
+            mod.GenCommitLin_Ramp_Up_Violation_MW[g, tmp]
 
 
 def increasing_startup_power_by_st_constraint_rule(mod, g, tmp, s):
@@ -1916,7 +1918,9 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
 
         return prev_tmp_provide_power_shutdown \
             - mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp] \
-            <= prev_tmp_shutdown_ramp_rate_mw_per_tmp
+            <= prev_tmp_shutdown_ramp_rate_mw_per_tmp + \
+            mod.gen_commit_lin_allow_ramp_down_violation[g] * \
+            mod.GenCommitLin_Ramp_Down_Violation_MW[g, tmp]
 
 
 def decreasing_shutdown_power_constraint_rule(mod, g, tmp):

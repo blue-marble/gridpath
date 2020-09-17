@@ -372,6 +372,19 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_viol_all_projects,
                              actual_viol_all_projects)
 
+        # Set: CURTAILMENT_COST_PRJS
+        expected_curtailment_cost_projects = sorted(
+            projects_df[
+                projects_df["curtailment_cost_per_pwh"] != "."
+                ]["project"].tolist()
+        )
+
+        actual_curtailment_cost_projects = \
+            sorted([p for p in instance.CURTAILMENT_COST_PRJS])
+
+        self.assertListEqual(expected_curtailment_cost_projects,
+                             actual_curtailment_cost_projects)
+
         # Param: variable_om_cost_per_mwh
         var_om_cost_df = \
             projects_df[projects_df["variable_om_cost_per_mwh"] != "."]
@@ -672,6 +685,22 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictEqual(expected_min_down_time_viol_by_prj,
                              actual_min_down_time_viol_by_prj)
+
+        # Param: curtailment_cost_per_pwh
+        curtailment_cost_df = \
+            projects_df[projects_df["curtailment_cost_per_pwh"] != "."]
+        expected_curtailment_cost_by_prj = OrderedDict(sorted(
+            dict(zip(curtailment_cost_df["project"],
+                     pd.to_numeric(curtailment_cost_df["curtailment_cost_per_pwh"]))
+                 ).items())
+        )
+        actual_curtailment_cost_by_prj = OrderedDict(sorted(
+            {p: instance.curtailment_cost_per_pwh[p]
+             for p in instance.CURTAILMENT_COST_PRJS}.items()
+        ))
+
+        self.assertDictEqual(expected_curtailment_cost_by_prj,
+                             actual_curtailment_cost_by_prj)
 
     def test_get_slopes_intercept_by_project_period_segment(self):
         """

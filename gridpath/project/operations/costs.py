@@ -73,6 +73,12 @@ def add_model_components(m, d):
     | The two-dimensional set of projects for which an operational constraint |
     | can be violated along with their operational timepoints.                |
     +-------------------------------------------------------------------------+
+    | | :code:`CURTAILMENT_COST_PRJ_OPR_TMPS`                                 |
+    | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
+    |                                                                         |
+    | The two-dimensional set of projects for which an curtailment costs are  |
+    | incurred along with their operational timepoints.                       |
+    +-------------------------------------------------------------------------+
 
     |                                                                         |
 
@@ -146,6 +152,13 @@ def add_model_components(m, d):
     | by calling the *operational_violation_cost_rule* method of a project's  |
     | *operational_type* module.                                              |
     +-------------------------------------------------------------------------+
+    | | :code:`Curtailment_Cost`                                              |
+    | | *Defined over*: :code:`CURTAILMENT_COST_PRJ_OPR_TMPS`                 |
+    |                                                                         |
+    | This expression defines the curtailment cost of a project in all of its |
+    | operational timepoints. We obtain the expression by calling the         |
+    | *curtailment_cost_rule* method of a project's *operational_type* module.|
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -210,6 +223,13 @@ def add_model_components(m, d):
         within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.VIOL_ALL_PRJS]
+    )
+
+    m.CURTAILMENT_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+                          if p in mod.CURTAILMENT_COST_PRJS]
     )
 
     # Variables
@@ -386,6 +406,25 @@ def add_model_components(m, d):
         rule=operational_violation_cost_rule
     )
 
+    def curtailment_cost_rule(mod, prj, tmp):
+        """
+        Curtailment costs are defined for some operational types while they are
+        zero for others. Get the appropriate expression for each generator
+        based on its operational type.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type],
+                   "curtailment_cost_rule"):
+            return imported_operational_modules[gen_op_type]. \
+                curtailment_cost_rule(mod, prj, tmp)
+        else:
+            return op_type.curtailment_cost_rule(mod, prj, tmp)
+
+    m.Curtailment_Cost = Expression(
+        m.CURTAILMENT_COST_PRJ_OPR_TMPS,
+        rule=curtailment_cost_rule
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -413,7 +452,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology",
              "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost",
-             "operational_violation_cost"]
+             "operational_violation_cost", "curtailment_cost"]
         )
         for (p, tmp) in m.PRJ_OPR_TMPS:
             writer.writerow([
@@ -433,7 +472,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Shutdown_Cost[p, tmp])
                 if p in m.SHUTDOWN_COST_PRJS else None,
                 value(m.Operational_Violation_Cost[p, tmp])
-                if p in m.VIOL_ALL_PRJ_OPR_TMPS else None
+                if p in m.VIOL_ALL_PRJ_OPR_TMPS else None,
+                value(m.Curtailment_Cost[p, tmp])
+                if p in m.CURTAILMENT_COST_PRJS else None,
             ])
 
 

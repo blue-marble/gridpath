@@ -443,3 +443,11 @@ def operational_violation_cost_rule(mod, prj, tmp):
     operational violation cost is 0.
     """
     return 0
+
+
+def curtailment_cost_rule(mod, prj, tmp):
+    """
+    If no curtailment_cost_rule is specified, the default curtailment cost
+    is 0.
+    """
+    return 0
