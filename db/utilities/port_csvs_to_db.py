@@ -67,16 +67,15 @@ scenario should be entered as the name of the scenario column.
 
 """
 
+from argparse import ArgumentParser
 import numpy as np
 import os
 import pandas as pd
 import sqlite3
 import sys
-from argparse import ArgumentParser
 
 # Data-import modules
-from db.common_functions import connect_to_database, spin_on_database_lock
-from db.utilities import scenario
+from db.common_functions import connect_to_database
 from db.utilities.common_functions import \
     load_all_subscenario_ids_from_dir_to_subscenario_table, \
     load_single_subscenario_id_from_dir_to_subscenario_table, \
@@ -96,10 +95,10 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--database", default="./io.db",
+    parser.add_argument("--database", default="../io.db",
                         help="The database file path relative to the current "
-                             "working directory. Defaults to ../db/io.db ")
-    parser.add_argument("--csv_location", default="./csvs_test_examples",
+                             "working directory. Defaults to ./io.db ")
+    parser.add_argument("--csv_location", default="../csvs_test_examples",
                         help="Path to the csvs folder including folder name "
                              "relative to the current working directory.")
     parser.add_argument("--subscenario",
@@ -162,24 +161,6 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
             )
         else:
             pass
-
-    # LOAD SCENARIOS DATA #
-    # A scenarios.csv file is expected in the csv_path directory
-    # TODO: maybe allow this to be skipped
-    scenarios_df = pd.read_csv(
-        os.path.join(csv_path, "scenarios.csv")
-    )
-
-    c = conn.cursor()
-    for sc in scenarios_df.columns.to_list()[1:]:
-        scenario_info = scenarios_df.set_index(
-            'optional_feature_or_subscenarios'
-        )[sc].to_dict()
-        scenario_info["scenario_name"] = sc
-
-        scenario.create_scenario(
-            io=conn, c=c, column_values_dict=scenario_info
-        )
 
 
 def load_all_subscenario_ids_from_directory(

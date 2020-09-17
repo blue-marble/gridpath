@@ -1,12 +1,48 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
 Create or update scenario.
 """
+
+from argparse import ArgumentParser
+import os.path
+import pandas as pd
+import sys
 import warnings
 
-from db.common_functions import spin_on_database_lock
+from db.common_functions import connect_to_database, \
+    spin_on_database_lock
+from db.utilities.common_functions import confirm
+
+
+def parse_arguments(args):
+    """
+    :param args: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
+    """
+    parser = ArgumentParser(add_help=True)
+
+    # Database name and location options
+    parser.add_argument("--database", default="../io.db",
+                        help="The database file path relative to the current "
+                             "working directory. Defaults to ../io.db ")
+    parser.add_argument("--csv_path",
+                        default="../csvs_test_examples/scenarios.csv",
+                        help="Path to the scenarios CSV.")
+    parser.add_argument("--scenario",
+                        help="The scenario to load. If not specified, "
+                             "the script will load data for all scenarios in "
+                             "the CSV.")
+    parser.add_argument("--delete", default=False, action="store_true",
+                        help="Delete")
+
+    parsed_arguments = parser.parse_known_args(args=args)[0]
+
+    return parsed_arguments
 
 
 def create_scenario(io, c, column_values_dict):
@@ -57,7 +93,7 @@ def create_scenario(io, c, column_values_dict):
                     column_values_data + (column_values_dict[column_name],)
 
     sql = """
-        INSERT OR IGNORE INTO scenarios ({}) VALUES ({});
+        INSERT INTO scenarios ({}) VALUES ({});
         """.format(column_names_sql_string, column_values_sql_string)
 
     spin_on_database_lock(conn=io, cursor=c, sql=sql, data=column_values_data,
@@ -203,3 +239,110 @@ def delete_scenario_results(conn, scenario_id):
         spin_on_database_lock(conn=conn, cursor=c, sql=sql,
                               data=(scenario_id,), many=False)
 
+
+def check_if_scenario_name_exists(conn, scenario_name):
+    c = conn.cursor()
+
+    sql = "SELECT scenario_id FROM scenarios WHERE scenario_name = ?"
+    query = c.execute(sql, (scenario_name, )).fetchone()
+
+    if query is None:
+        scenario_id = None
+    else:
+        scenario_id = query[0]
+
+    c.close()
+
+    return scenario_id
+
+
+def determine_scenarios_to_load(conn, scenarios_df, scenario_name=None):
+
+    c = conn.cursor()
+    if scenario_name is None:
+        scenarios_to_load = scenarios_df.columns.to_list()[1:]
+    else:
+        scenarios_to_load = [scenario_name]
+
+    c.close()
+
+    return scenarios_to_load
+
+
+def load_scenario_from_df(conn, scenarios_df, scenario_name):
+    """
+    Load scenario info from CSV. If scenario is not specified, load all;
+    otherwise, load only the specified scenario.
+    """
+    c = conn.cursor()
+
+    scenario_info = scenarios_df.set_index(
+        'optional_feature_or_subscenarios'
+    )[scenario_name].to_dict()
+
+    scenario_info["scenario_name"] = scenario_name
+
+    create_scenario(
+        io=conn, c=c, column_values_dict=scenario_info
+    )
+
+    c.close()
+
+
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+
+    parsed_args = parse_arguments(args=args)
+    # Get the database path
+    db_path = parsed_args.database
+    scenarios_csv = parsed_args.csv_path
+    scenario = parsed_args.scenario
+
+    # Do some checks
+    if not os.path.isfile(db_path):
+        raise OSError(
+            "The database file {} was not found. Did you mean to "
+            "specify a different database?".format(
+                os.path.abspath(db_path)
+            )
+        )
+
+    db_conn = connect_to_database(db_path=db_path)
+
+    csv_to_df = pd.read_csv(scenarios_csv)
+
+    scenarios = determine_scenarios_to_load(
+        conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
+    )
+
+    for scenario in scenarios:
+        sid = check_if_scenario_name_exists(
+            conn=db_conn, scenario_name=scenario
+        )
+        if sid is None:
+            load_scenario_from_df(
+                conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
+            )
+        else:
+            proceed = confirm(
+                prompt=
+                """There is already a scenario named '{}' in the 
+                database. Would you like to delete all data associated 
+                with this scenario and re-load the scenario definition info? 
+                WARNING: if you select 'yes' all prior results 
+                associated with scenario '{}' will be deleted."""
+                    .format(scenario, scenario)
+            )
+            if proceed:
+                delete_scenario(conn=db_conn, scenario_id=sid)
+                load_scenario_from_df(
+                    conn=db_conn, scenarios_df=csv_to_df,
+                    scenario_name=scenario
+                )
+            else:
+                pass
+
+
+if __name__ == "__main__":
+    main()
