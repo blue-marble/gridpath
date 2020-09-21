@@ -103,18 +103,21 @@ def generic_load_model_data(
     input_dir = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs")
 
-    tmp_params_to_load = \
-        (getattr(m, reserve_requirement_param),
-         m.frequency_response_requirement_partial_mw) \
-        if reserve_type == "frequency_response" \
-        else getattr(m, reserve_requirement_param)
-    data_portal.load(
-        filename=os.path.join(
-            input_dir,
-            "{}_tmp_requirement.tab".format(reserve_type)
-        ),
-        param=tmp_params_to_load
+    # Load by-tmp requriement if input file was written
+    by_tmp_req_filename = os.path.join(
+        input_dir,
+        "{}_tmp_requirement.tab".format(reserve_type)
     )
+    if os.path.exists(by_tmp_req_filename):
+        tmp_params_to_load = \
+            (getattr(m, reserve_requirement_param),
+             m.frequency_response_requirement_partial_mw) \
+            if reserve_type == "frequency_response" \
+            else getattr(m, reserve_requirement_param)
+        data_portal.load(
+            filename=by_tmp_req_filename,
+            param=tmp_params_to_load
+        )
 
     # If we have a RPS zone to load zone map input file, load it and the
     # percent requirement; otherwise, initialize the set as an empty list (
@@ -256,24 +259,28 @@ def generic_write_model_inputs(
     inputs_dir = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs"
     )
-    with open(os.path.join(inputs_dir,
-                           "{}_tmp_requirement.tab".format(reserve_type)
-                           ),
-              "w", newline=""
-              ) as tmp_req_file:
-        writer = csv.writer(tmp_req_file, delimiter="\t", lineterminator="\n")
 
-        # Write header
-        extra_column = \
-            ["partial_requirement"] \
-            if reserve_type == "frequency_response" \
-            else []
-        writer.writerow(
-            ["ba", "timepoint", "requirement"] + extra_column
-        )
+    # Write the by-timepoint requirement file if by-tmp requirement specified
+    timepoint_req = timepoint_req.fetchall()
+    if timepoint_req:
+        with open(os.path.join(inputs_dir,
+                               "{}_tmp_requirement.tab".format(reserve_type)
+                               ),
+                  "w", newline=""
+                  ) as tmp_req_file:
+            writer = csv.writer(tmp_req_file, delimiter="\t", lineterminator="\n")
 
-        for row in timepoint_req:
-            writer.writerow(row)
+            # Write header
+            extra_column = \
+                ["partial_requirement"] \
+                if reserve_type == "frequency_response" \
+                else []
+            writer.writerow(
+                ["ba", "timepoint", "requirement"] + extra_column
+            )
+
+            for row in timepoint_req:
+                writer.writerow(row)
 
     # Write the percent requirement files only if there's a mapping
     ba_lz_map_list = [row for row in percent_map]
