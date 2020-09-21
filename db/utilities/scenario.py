@@ -33,15 +33,17 @@ def parse_arguments(args):
                              "working directory. Defaults to ../io.db ")
     parser.add_argument("--csv_path",
                         default="../csvs_test_examples/scenarios.csv",
-                        help="Path to the scenarios CSV.")
+                        help="Path to the scenarios CSV. Defaults to "
+                             "../csvs_test_examples/scenarios.csv")
     parser.add_argument("--scenario",
                         help="The scenario to load (or delete). If not "
                              "specified, the script will load data for all "
                              "scenarios in the CSV.")
     parser.add_argument("--delete", default=False, action="store_true",
-                        help="Delete the specified scenario. WARNING: this "
-                             "will delete all prior results and data "
-                             "associated with this scenario.")
+                        help="Delete the specified scenario. No data "
+                             "will be imported. WARNING: this will delete "
+                             "all prior results and data associated with "
+                             "this scenario.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print output.")
 
@@ -361,8 +363,8 @@ def main(args=None):
                                      "database.".format(scenario))
                 else:
                     delete_scenario(conn=db_conn, scenario_id=sid)
-    # If a CSV is specified, we'll try to load data
-    if scenarios_csv is not None:
+    # If '--delete' not specified, try to load data
+    else:
         # Read in the CSV as dataframe
         csv_to_df = pd.read_csv(scenarios_csv)
 
