@@ -11,29 +11,10 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add operational costs to the objective-function dynamic components.
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
-    getattr(d, total_cost_components).append("Total_Fuel_Cost")
-    getattr(d, total_cost_components).append("Total_Startup_Cost")
-    getattr(d, total_cost_components).append("Total_Shutdown_Cost")
-    getattr(d, total_cost_components).append(
-        "Total_Operational_Violation_Cost"
-    )
-    getattr(d, total_cost_components).append(
-        "Total_Curtailment_Cost"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    :param di: the DynamicComponents class object we are adding components to
 
     Here, we sum up all operational costs. Operational costs include
     variable O&M costs, fuel costs, startup costs, and shutdown costs.
@@ -147,3 +128,28 @@ def add_model_components(m, d):
                    for (g, tmp)
                    in mod.CURTAILMENT_COST_PRJ_OPR_TMPS)
     m.Total_Curtailment_Cost = Expression(rule=total_curtailment_cost_rule)
+
+    record_dynamic_components(dynamic_components=dc)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add operational costs to the objective-function dynamic components.
+    """
+
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Variable_OM_Cost")
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Fuel_Cost")
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Startup_Cost")
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Shutdown_Cost")
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Operational_Violation_Cost"
+    )
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Curtailment_Cost"
+    )

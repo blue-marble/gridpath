@@ -20,7 +20,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 

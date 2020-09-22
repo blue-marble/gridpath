@@ -65,7 +65,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

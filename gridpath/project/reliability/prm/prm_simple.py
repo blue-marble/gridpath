@@ -19,7 +19,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, validate_missing_inputs
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

@@ -5,14 +5,10 @@
 from __future__ import absolute_import
 
 from .aggregate_reserve_violation_penalties import \
-    generic_determine_dynamic_components, generic_add_model_components
+    generic_record_dynamic_components, generic_add_model_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    generic_determine_dynamic_components(d, "Regulation_Down_Penalty_Costs")
-
-
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:
@@ -22,9 +18,17 @@ def add_model_components(m, d):
 
     generic_add_model_components(
         m,
-        d,
+        di,
+        dc,
         "REGULATION_DOWN_ZONES",
         "Regulation_Down_Violation_MW_Expression",
         "regulation_down_violation_penalty_per_mw",
         "Regulation_Down_Penalty_Costs"
         )
+
+    record_dynamic_components(dynamic_components=dc)
+
+
+def record_dynamic_components(dynamic_components):
+    generic_record_dynamic_components(dynamic_components,
+                                      "Regulation_Down_Penalty_Costs")

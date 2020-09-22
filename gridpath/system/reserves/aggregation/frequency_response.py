@@ -8,7 +8,7 @@ from pyomo.environ import Set, Expression
 from .reserve_aggregation import generic_add_model_components
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

@@ -13,7 +13,7 @@ from .reserve_balance import generic_add_model_components, \
     generic_import_results_to_database
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

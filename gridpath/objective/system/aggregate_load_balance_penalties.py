@@ -14,19 +14,7 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add total load balance penalty costs to cost components
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append(
-        "Total_Load_Balance_Penalty_Costs"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -56,3 +44,17 @@ def add_model_components(m, d):
                    for z in mod.LOAD_ZONES for tmp in mod.TMPS)
     m.Total_Load_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
+
+    record_dynamic_components(dynamic_components=dc)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add total load balance penalty costs to cost components
+    """
+
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Load_Balance_Penalty_Costs"
+    )

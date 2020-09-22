@@ -18,7 +18,7 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
     check_for_integer_subdirectories
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 
@@ -80,7 +80,7 @@ def add_model_components(m, d):
 
     # Dynamic Components
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        getattr(di, required_operational_modules)
     )
 
     # Sets

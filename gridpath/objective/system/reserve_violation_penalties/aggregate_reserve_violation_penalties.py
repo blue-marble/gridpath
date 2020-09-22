@@ -7,24 +7,25 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def generic_determine_dynamic_components(
-        d,
+def generic_record_dynamic_components(
+        dynamic_components,
         objective_function_reserve_penalty_cost_component
 ):
     """
     Add total reserve penalty to cost components dynamic components
 
-    :param d:
+    :param dynamic_components:
     :param objective_function_reserve_penalty_cost_component:
     :return:
     """
-    getattr(d, total_cost_components).append(
+    getattr(dynamic_components, total_cost_components).append(
         objective_function_reserve_penalty_cost_component)
 
 
 def generic_add_model_components(
         m,
-        d,
+        di,
+        dc,
         reserve_zone_set,
         reserve_violation_expression,
         reserve_violation_penalty_param,
@@ -33,7 +34,8 @@ def generic_add_model_components(
     """
     Aggregate reserve violation penalty costs
     :param m:
-    :param d:
+    :param di:
+    :param dc:
     :param reserve_zone_set:
     :param reserve_violation_expression:
     :param reserve_violation_penalty_param:

@@ -42,7 +42,7 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 from gridpath.auxiliary.auxiliary import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -62,7 +62,7 @@ def add_model_components(m, d):
     def total_cost_rule(mod):
 
         return sum(getattr(mod, c)
-                   for c in getattr(d, total_cost_components))
+                   for c in getattr(dc, total_cost_components))
 
     m.Total_Cost = Objective(rule=total_cost_rule, sense=minimize)
 

@@ -21,7 +21,7 @@ from gridpath.auxiliary.dynamic_components import \
     required_tx_operational_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 

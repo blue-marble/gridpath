@@ -22,7 +22,7 @@ from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules, setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 
@@ -46,7 +46,7 @@ def add_model_components(m, d):
     ###########################################################################
 
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        getattr(di, required_capacity_modules)
     )
 
     # Expressions

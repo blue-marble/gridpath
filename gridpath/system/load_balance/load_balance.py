@@ -38,24 +38,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    This method adds the unserved energy and overgeneration to the load balance
-    dynamic components.
-
-    :param d:
-    :return:
-    """
-
-    getattr(d, load_balance_production_components).append(
-        "Unserved_Energy_MW_Expression"
-    )
-    getattr(d, load_balance_consumption_components).append(
-        "Overgeneration_MW_Expression"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -110,6 +93,9 @@ def add_model_components(m, d):
         rule=unserved_energy_expression_rule
     )
 
+    # Add the unserved energy and overgeneration components to the load balance
+    record_dynamic_components(dynamic_components=dc)
+
     def meet_load_rule(mod, z, tmp):
         """
         The sum across all energy generation components added by other modules
@@ -122,17 +108,33 @@ def add_model_components(m, d):
         :return:
         """
         return sum(getattr(mod, component)[z, tmp]
-                   for component in getattr(d,
+                   for component in getattr(dc,
                                             load_balance_production_components)
                    ) \
             == \
             sum(getattr(mod, component)[z, tmp]
-                for component in getattr(d,
+                for component in getattr(dc,
                                          load_balance_consumption_components)
                 )
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TMPS,
                                         rule=meet_load_rule)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds the unserved energy and overgeneration to the load balance
+    dynamic components.
+    """
+
+    getattr(dynamic_components, load_balance_production_components).append(
+        "Unserved_Energy_MW_Expression"
+    )
+    getattr(dynamic_components, load_balance_consumption_components).append(
+        "Overgeneration_MW_Expression"
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

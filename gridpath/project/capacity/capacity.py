@@ -27,7 +27,7 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     storage_only_capacity_type_operational_period_sets
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types in the list of projects specified
@@ -109,11 +109,11 @@ def add_model_components(m, d):
 
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        getattr(di, required_capacity_modules)
     )
 
     # Add any components specific to the capacity type modules
-    for op_m in getattr(d, required_capacity_modules):
+    for op_m in getattr(di, required_capacity_modules):
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, d)
@@ -125,7 +125,7 @@ def add_model_components(m, d):
         dimen=2,
         within=m.PROJECTS * m.PERIODS,
         initialize=lambda mod:
-        join_sets(mod, getattr(d, capacity_type_operational_period_sets),),
+        join_sets(mod, getattr(di, capacity_type_operational_period_sets),),
     )  # assumes capacity types model components are already added!
 
     m.STOR_OPR_PRDS = Set(
@@ -133,7 +133,7 @@ def add_model_components(m, d):
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod:
         join_sets(mod, getattr(
-            d, storage_only_capacity_type_operational_period_sets)),
+            di, storage_only_capacity_type_operational_period_sets)),
     )  # assumes storage capacity type model components are already added!
 
     m.OPR_PRDS_BY_PRJ = Set(

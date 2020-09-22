@@ -17,7 +17,7 @@ from gridpath.auxiliary.auxiliary import \
 from gridpath.auxiliary.dynamic_components import required_capacity_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 
@@ -150,7 +150,7 @@ def add_model_components(m, d):
 
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        getattr(di, required_capacity_modules)
     )
 
     # Get the new and total capacity in the group for the respective

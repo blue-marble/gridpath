@@ -20,7 +20,7 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
     setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:
@@ -29,13 +29,14 @@ def add_model_components(m, d):
     """
     # Import needed operational modules
     imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+        load_operational_type_modules(getattr(di,
+                                              required_operational_modules))
 
     # Add any components specific to the operational modules
-    for op_m in getattr(d, required_operational_modules):
+    for op_m in getattr(di, required_operational_modules):
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+            imp_op_m.add_module_specific_components(m, di)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

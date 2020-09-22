@@ -53,7 +53,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
             df.tx_operational_type.unique())
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 

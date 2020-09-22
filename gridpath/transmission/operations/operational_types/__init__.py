@@ -13,7 +13,7 @@ from gridpath.auxiliary.dynamic_components import \
     required_tx_operational_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     Go through each relevant operational type and add the module components
     for that operational type.

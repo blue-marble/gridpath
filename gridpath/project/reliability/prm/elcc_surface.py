@@ -21,7 +21,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     get_param_dict
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

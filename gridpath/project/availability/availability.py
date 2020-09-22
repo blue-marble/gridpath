@@ -8,7 +8,7 @@ from gridpath.auxiliary.auxiliary import load_subtype_modules
 from gridpath.auxiliary.dynamic_components import required_availability_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:
@@ -18,10 +18,10 @@ def add_model_components(m, d):
     # Import needed availability type modules
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules))
+            getattr(di, required_availability_modules))
 
     # First, add any components specific to the availability type modules
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in getattr(di, required_availability_modules):
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, d)

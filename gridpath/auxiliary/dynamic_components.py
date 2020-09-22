@@ -52,7 +52,7 @@ total_cost_components = "total_cost_components"
 #  prm modules, reserve modules) vs. actual optimizaton model components such
 #  as the headroom and footroom variables vs. the names of constraint
 #  components
-class DynamicComponents(object):
+class DynamicInputs(object):
     """
     Here we initialize the class object and its components that will contain
     the dynamic inputs. When called, the GridPath modules will populate the
@@ -129,6 +129,17 @@ class DynamicComponents(object):
         setattr(self, reserve_variable_derate_params, dict())
         setattr(self, reserve_to_energy_adjustment_params, dict())
 
+
+class DynamicComponents(object):
+    """
+    Here we initialize the class object and its components that will contain
+    the dynamic inputs. When called, the GridPath modules will populate the
+    various class components based on the input data, which will then be
+    used to initialize model components, keep track of required submodules,
+    keep track of components added by modules to dynamic constraints, etc.
+    """
+
+    def __init__(self):
         # ### Constraint and objective function components ### #
 
         # Load balance constraint

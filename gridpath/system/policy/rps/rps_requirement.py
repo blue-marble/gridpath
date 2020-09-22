@@ -11,7 +11,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, \
     Expression
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

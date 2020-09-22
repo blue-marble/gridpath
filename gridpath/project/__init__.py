@@ -21,9 +21,9 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+def determine_dynamic_components(di, scenario_directory, subproblem, stage):
     """
-    :param d: the dynamic components class object we'll be adding to
+    :param di: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
     :param stage: if horizon subproblems exist, the horizon name; NOT USED
     :param stage: if stage subproblems exist, the stage name; NOT USED
@@ -60,19 +60,19 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
 
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
-    setattr(d, required_capacity_modules,
+    setattr(di, required_capacity_modules,
             project_df.capacity_type.unique()
             )
 
     # Required availability types
-    setattr(d, required_availability_modules,
+    setattr(di, required_availability_modules,
             project_df.availability_type.unique()
             )
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
     # (in projects.tab)
-    setattr(d, required_operational_modules,
+    setattr(di, required_operational_modules,
             project_df.operational_type.unique()
             )
 
@@ -85,15 +85,15 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     # specified for a project in projects.tab
     # We need to make the dictionaries first; it is the lists for each key
     # that are populated by the modules
-    setattr(d, headroom_variables,
+    setattr(di, headroom_variables,
             {r: [] for r in project_df.project}
             )
-    setattr(d, footroom_variables,
+    setattr(di, footroom_variables,
             {r: [] for r in project_df.project}
             )
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |

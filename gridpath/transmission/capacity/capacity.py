@@ -27,7 +27,7 @@ from gridpath.auxiliary.dynamic_components import \
     required_tx_capacity_modules, total_cost_components
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.

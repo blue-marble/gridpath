@@ -42,7 +42,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_single_input, validate_missing_inputs
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
     The following Pyomo model components are defined in this module:
 

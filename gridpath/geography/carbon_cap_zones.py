@@ -11,7 +11,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

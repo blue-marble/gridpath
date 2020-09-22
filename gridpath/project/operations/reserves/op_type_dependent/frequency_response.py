@@ -33,7 +33,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
-def add_model_components(m, d):
+def add_model_components(m, di, dc):
     """
 
     :param m:

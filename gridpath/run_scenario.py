@@ -27,7 +27,7 @@ from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
     get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
-from gridpath.auxiliary.dynamic_components import DynamicComponents
+from gridpath.auxiliary.dynamic_components import DynamicInputs
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
@@ -789,7 +789,7 @@ def set_up_gridpath_modules_and_components(scenario_directory, subproblem, stage
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data
-    dynamic_components = DynamicComponents()
+    dynamic_components = DynamicInputs()
     populate_dynamic_components(dynamic_components, loaded_modules,
                                 scenario_directory, subproblem, stage)
 
