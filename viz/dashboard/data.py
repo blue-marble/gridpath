@@ -260,14 +260,24 @@ def get_all_capacity_data(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone, 
         technology, 
-        AVG(new_build_mw) AS new_build_capacity, 
-        AVG(retired_mw) AS retired_capacity, 
-        AVG(capacity_mw) AS total_capacity
+        -- average across subproblems
+        AVG(new_build_capacity) AS new_build_capacity, 
+        AVG(retired_capacity) AS retired_capacity, 
+        AVG(total_capacity) AS total_capacity
+        FROM (
+        SELECT scenario_id, stage_id, period, load_zone, technology, 
+        -- sum across projects
+        SUM(new_build_mw) AS new_build_capacity, 
+        SUM(retired_mw) AS retired_capacity, 
+        SUM(capacity_mw) AS total_capacity
         FROM results_project_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
+        technology) AS agg_tbl
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
