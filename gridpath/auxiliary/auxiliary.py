@@ -4,13 +4,11 @@
 """
 Various auxiliary functions used in other modules
 """
-from __future__ import print_function
 
-
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
+import traceback
 
 from db.common_functions import spin_on_database_lock
 
@@ -68,7 +66,8 @@ def load_subtype_modules(
                         "ERROR! No " + str(a) + " function in subtype module "
                         + str(imp_m) + ".")
         except ImportError:
-            print("ERROR! Subtype module " + m + " not found.")
+            print("ERROR! Unable to import subtype module " + m + ".")
+            traceback.print_exc()
 
     return imported_subtype_modules
 

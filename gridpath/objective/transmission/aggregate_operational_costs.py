@@ -36,7 +36,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

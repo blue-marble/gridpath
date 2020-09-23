@@ -29,7 +29,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Total_Carbon_Cap_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

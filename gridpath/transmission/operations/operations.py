@@ -145,9 +145,21 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # TODO: does this belong here or in operational_types/__init__.py?
     #  (putting it here to be in line with projects/operations/power.py)
     # Module-specific transmission operational results
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
+
+    # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-        getattr(d, required_tx_operational_modules))
-    for op_m in getattr(d, required_tx_operational_modules):
+            required_tx_operational_modules
+    )
+    for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_operational_modules[op_m].\

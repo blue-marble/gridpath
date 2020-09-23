@@ -44,6 +44,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     generic_add_model_components(
         m=m,
         d=d,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_project_operational_timepoints_set=
         RESERVE_PRJ_OPR_TMPS_SET_NAME,

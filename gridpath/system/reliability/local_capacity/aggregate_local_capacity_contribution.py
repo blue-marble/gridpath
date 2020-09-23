@@ -46,7 +46,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=total_local_capacity_provision_rule
     )
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

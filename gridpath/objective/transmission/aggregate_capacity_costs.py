@@ -33,7 +33,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    for (g, p) in mod.TX_OPR_PRDS)
     m.Total_Tx_Capacity_Costs = Expression(rule=total_tx_capacity_cost_rule)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

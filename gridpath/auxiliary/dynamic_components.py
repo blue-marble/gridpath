@@ -57,6 +57,20 @@ class DynamicInputs(object):
         """
         Initialize the dynamic components.
         """
+
+        # Capacity-type modules will populate these lists if called
+        # These are the sets of project-operational_period by capacity type;
+        # the sets will be joined to make the final
+        # project-operational_period set that includes all projects
+        setattr(self, capacity_type_operational_period_sets, list())
+        setattr(self, storage_only_capacity_type_operational_period_sets,
+                list())
+
+        # PRM cost groups
+        setattr(self, prm_cost_group_sets, list())
+        setattr(self, prm_cost_group_prm_type, dict())
+
+
         # ### Operating reserves ### #
 
         # Reserve types -- the list of reserve types the user has requested

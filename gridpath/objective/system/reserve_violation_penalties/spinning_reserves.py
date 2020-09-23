@@ -18,15 +18,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     generic_add_model_components(
         m,
-        di,
-        dc,
+        d,
+        scenario_directory, subproblem, stage,
         "SPINNING_RESERVES_ZONES",
         "Spinning_Reserves_Violation_MW_Expression",
         "spinning_reserves_violation_penalty_per_mw",
         "Spinning_Reserves_Penalty_Costs"
         )
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

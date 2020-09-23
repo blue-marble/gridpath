@@ -13,7 +13,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components
 
 
-def add_model_components(m, d, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -39,7 +39,7 @@ def add_model_components(m, d, dc):
         Expression(m.LOAD_ZONES, m.TMPS,
                    rule=total_power_production_rule)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

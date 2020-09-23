@@ -129,7 +129,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    in mod.CURTAILMENT_COST_PRJ_OPR_TMPS)
     m.Total_Curtailment_Cost = Expression(rule=total_curtailment_cost_rule)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

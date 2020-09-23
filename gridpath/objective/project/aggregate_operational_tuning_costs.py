@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=total_ramp_tuning_cost_rule
     )
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def record_dynamic_components(dynamic_components):

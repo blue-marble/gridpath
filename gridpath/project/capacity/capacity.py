@@ -125,7 +125,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=2,
         within=m.PROJECTS * m.PERIODS,
         initialize=lambda mod:
-        join_sets(mod, getattr(di, capacity_type_operational_period_sets),),
+        join_sets(mod, getattr(d, capacity_type_operational_period_sets),),
     )  # assumes capacity types model components are already added!
 
     m.STOR_OPR_PRDS = Set(
@@ -133,7 +133,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod:
         join_sets(mod, getattr(
-            di, storage_only_capacity_type_operational_period_sets)),
+            d, storage_only_capacity_type_operational_period_sets)),
     )  # assumes storage capacity type model components are already added!
 
     m.OPR_PRDS_BY_PRJ = Set(
@@ -224,10 +224,16 @@ def operational_periods_by_project(prj, project_operational_periods):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+    required_capacity_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
     )
-    for op_m in getattr(d, required_capacity_modules):
+
+    # Import needed capacity type modules
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_modules
+    )
+    for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
@@ -268,10 +274,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     # Module-specific capacity results
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+    required_capacity_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
     )
-    for op_m in getattr(d, required_capacity_modules):
+
+    # Import needed capacity type modules
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_modules
+    )
+    for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_capacity_modules[
@@ -311,16 +323,16 @@ def summarize_results(d, scenario_directory, subproblem, stage):
                      "capacity_all.csv")
     )
 
-    # TODO: remove this since not used?
-    capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", 'period'],
-        as_index=True
-    ).sum()
-
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+    required_capacity_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
     )
-    for op_m in getattr(d, required_capacity_modules):
+
+    # Import needed capacity type modules
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_modules
+    )
+    for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "summarize_module_specific_results"):
             imported_capacity_modules[

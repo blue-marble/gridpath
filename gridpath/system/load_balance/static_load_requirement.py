@@ -41,7 +41,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS,
                              within=NonNegativeReals)
 
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

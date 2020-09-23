@@ -93,11 +93,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    required_availability_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "load_module_specific_data"):
             imported_availability_modules[op_m].load_module_specific_data(
@@ -119,11 +123,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
+    required_availability_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "export_module_specific_results"):
             imported_availability_modules[

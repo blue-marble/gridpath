@@ -94,7 +94,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Add the unserved energy and overgeneration components to the load balance
-    record_dynamic_components(dynamic_components=dc)
+    record_dynamic_components(dynamic_components=d)
 
     def meet_load_rule(mod, z, tmp):
         """
@@ -108,12 +108,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(getattr(mod, component)[z, tmp]
-                   for component in getattr(dc,
+                   for component in getattr(d,
                                             load_balance_production_components)
                    ) \
             == \
             sum(getattr(mod, component)[z, tmp]
-                for component in getattr(dc,
+                for component in getattr(d,
                                          load_balance_consumption_components)
                 )
 

@@ -120,7 +120,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+            imp_op_m.add_module_specific_components(
+                m, d, scenario_directory, subproblem, stage
+            )
 
     # Sets
     ###########################################################################
@@ -239,9 +241,25 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
-    for op_m in getattr(d, required_tx_capacity_modules):
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
@@ -261,10 +279,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
     # Module-specific results
-    imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
-    for op_m in getattr(d, required_tx_capacity_modules):
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
