@@ -13,9 +13,8 @@ import pandas as pd
 from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    required_availability_modules, required_operational_modules, \
-    headroom_variables, footroom_variables
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_values, validate_columns, \
     validate_missing_inputs
