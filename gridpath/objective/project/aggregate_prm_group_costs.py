@@ -10,7 +10,7 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Sum up all PRM group costs and add to the objective function.
     :param m:

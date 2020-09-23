@@ -13,7 +13,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here

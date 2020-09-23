@@ -10,7 +10,7 @@ from .aggregate_reserve_violation_penalties import \
     generic_record_dynamic_components, generic_add_model_components
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

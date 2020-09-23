@@ -9,38 +9,12 @@ import os.path
 import pandas as pd
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import required_prm_modules
 from gridpath.auxiliary.auxiliary import load_prm_type_modules
 
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-
-    :param d:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-
-    project_dynamic_data = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "prm_type"]
-    )
-
-    # Required modules are the unique set of generator PRM types
-    # This list will be used to know which PRM type modules to load
-    setattr(d, required_prm_modules,
-            [prm_type for prm_type in project_dynamic_data.prm_type.unique()
-             if prm_type != "."]
-            )
-
-
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -48,11 +22,21 @@ def add_model_components(m, di, dc):
     :return:
     """
     # Import needed PRM modules
-    imported_prm_modules = \
-        load_prm_type_modules(getattr(d, required_prm_modules))
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
+    required_prm_modules = [
+        prm_type for prm_type in project_df.prm_type.unique() if
+        prm_type != "."
+    ]
+
+    imported_prm_modules = load_prm_type_modules(required_prm_modules)
 
     # Add any components specific to the PRM modules
-    for prm_m in getattr(d, required_prm_modules):
+    for prm_m in required_prm_modules:
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_module_specific_components"):
             imp_prm_m.add_module_specific_components(m, d)
@@ -69,6 +53,8 @@ def add_model_components(m, di, dc):
     )
 
 
+# TODO: refactor importing prm modules as it's used several places in this
+#  module
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -80,9 +66,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    imported_prm_modules = \
-        load_prm_type_modules(getattr(d, required_prm_modules))
-    for prm_m in getattr(d, required_prm_modules):
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
+    required_prm_modules = [
+        prm_type for prm_type in project_df.prm_type.unique() if
+        prm_type != "."
+    ]
+
+    imported_prm_modules = load_prm_type_modules(required_prm_modules)
+
+    for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m],
                    "load_module_specific_data"):
             imported_prm_modules[prm_m].load_module_specific_data(
@@ -107,9 +104,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export module-specific results
     # Operational type modules
-    imported_prm_modules = \
-        load_prm_type_modules(getattr(d, required_prm_modules))
-    for prm_m in getattr(d, required_prm_modules):
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
+    required_prm_modules = [
+        prm_type for prm_type in project_df.prm_type.unique() if
+        prm_type != "."
+    ]
+
+    imported_prm_modules = load_prm_type_modules(required_prm_modules)
+
+    for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m],
                    "export_module_specific_results"):
             imported_prm_modules[prm_m]. \

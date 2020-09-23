@@ -7,7 +7,7 @@ from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_load_model_data, generic_write_model_inputs
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

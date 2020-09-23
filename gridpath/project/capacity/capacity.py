@@ -10,24 +10,19 @@ project capacity can then be used to constrain operations, contribute to
 reliability constraints, etc.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Expression, value, BuildAction
+from pyomo.environ import Set, Expression, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, join_sets, setup_results_import
-from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_gen_storage_capacity_type_modules, join_sets
+from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types in the list of projects specified
@@ -107,13 +102,18 @@ def add_model_components(m, di, dc):
     # Dynamic Components
     ###########################################################################
 
+    required_capacity_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
+    )
+
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(di, required_capacity_modules)
+        required_capacity_modules
     )
 
     # Add any components specific to the capacity type modules
-    for op_m in getattr(di, required_capacity_modules):
+    for op_m in required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, d)

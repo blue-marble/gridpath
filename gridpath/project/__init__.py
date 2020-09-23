@@ -21,7 +21,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def determine_dynamic_components(di, scenario_directory, subproblem, stage):
+def determine_dynamic_inputs(di, scenario_directory, subproblem, stage):
     """
     :param di: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -58,24 +58,6 @@ def determine_dynamic_components(di, scenario_directory, subproblem, stage):
         sep="\t"
     )
 
-    # Required modules are the unique set of generator capacity types
-    # This list will be used to know which capacity type modules to load
-    setattr(di, required_capacity_modules,
-            project_df.capacity_type.unique()
-            )
-
-    # Required availability types
-    setattr(di, required_availability_modules,
-            project_df.availability_type.unique()
-            )
-
-    # Required operational modules
-    # Will be determined based on operational_types specified in the data
-    # (in projects.tab)
-    setattr(di, required_operational_modules,
-            project_df.operational_type.unique()
-            )
-
     # From here on, the dynamic components will be further populated by the
     # modules
 
@@ -93,7 +75,7 @@ def determine_dynamic_components(di, scenario_directory, subproblem, stage):
             )
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |

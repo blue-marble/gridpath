@@ -9,7 +9,7 @@ from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     required_prm_modules, prm_cost_group_prm_type
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

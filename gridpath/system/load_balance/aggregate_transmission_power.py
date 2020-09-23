@@ -21,7 +21,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Add net transmitted power to load balance
     :param m:

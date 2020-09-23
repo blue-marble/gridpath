@@ -15,8 +15,27 @@ import pandas as pd
 from db.common_functions import spin_on_database_lock
 
 
+def get_required_subtype_modules(
+    scenario_directory, subproblem, stage, which_type
+):
+    """
+
+    """
+    project_df = pd.read_csv(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "projects.tab"
+        ),
+        sep="\t"
+    )
+
+    required_modules = project_df[which_type].unique()
+
+    return required_modules
+
+
 def load_subtype_modules(
-        required_subtype_modules, package, required_attributes
+    required_subtype_modules, package, required_attributes
 ):
     """
     Load subtype modules (e.g. capacity types, operational types, etc).

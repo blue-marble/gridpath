@@ -33,7 +33,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "SPINNING_RESERVES_PRJ_OPR_TMPS"
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

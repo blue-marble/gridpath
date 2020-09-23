@@ -22,7 +22,7 @@ from gridpath.transmission.operations.carbon_emissions import \
 
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Aggregate total imports of emissions and add to carbon balance constraint
     :param m:

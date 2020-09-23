@@ -15,14 +15,7 @@ from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules, setup_results_import
 
 
-# TODO: we should shorten the names of the capacity-type modules, e.g. to
-#   gen_specified, gen_specified_lin_ret, gen_new, stor_specified, stor_new,
-#   shift_load_supply_curve
-# TODO: We should decide on naming conventions for sets, variables, etc. in
-#  the capacity type modules
-
-
-def get_required_capacity_type_modules(scenario_id, c):
+def get_required_capacity_type_modules_from_db(scenario_id, c):
     """
     Get the required capacity type submodules based on the database inputs
     for the specified scenario_id. Required modules are the unique set of
@@ -73,7 +66,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Load in the required capacity type modules
     c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
-    required_capacity_type_modules = get_required_capacity_type_modules(
+    required_capacity_type_modules = get_required_capacity_type_modules_from_db(
         scenario_id, c)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
@@ -102,7 +95,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     c = conn.cursor()
     # Load in the required capacity type modules
     scenario_id = subscenarios.SCENARIO_ID
-    required_capacity_type_modules = get_required_capacity_type_modules(
+    required_capacity_type_modules = get_required_capacity_type_modules_from_db(
         scenario_id, c)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
@@ -190,7 +183,7 @@ def import_results_into_database(
                           many=False)
 
     # Load in the required capacity type modules
-    required_capacity_type_modules = get_required_capacity_type_modules(
+    required_capacity_type_modules = get_required_capacity_type_modules_from_db(
         scenario_id, c)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)

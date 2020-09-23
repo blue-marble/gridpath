@@ -11,23 +11,18 @@ reliability constraints, etc. The module also adds transmission costs which
 again depend on the line's *capacity_type*.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 from functools import reduce
 import os.path
+import pandas as pd
 from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
     setup_results_import
-from gridpath.auxiliary.dynamic_components import \
-    required_tx_capacity_modules, total_cost_components
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -101,16 +96,28 @@ def add_model_components(m, di, dc):
 
     """
 
-    # Dynamic Components - Subtypes
+    # Dynamic Inputs
     ###########################################################################
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
 
     # Import needed transmission capacity type modules for expression rules
     imported_tx_capacity_modules = load_tx_capacity_type_modules(
-        getattr(d, required_tx_capacity_modules)
+        required_tx_capacity_modules
     )
 
     # Add model components for each of the transmission capacity modules
-    for op_m in getattr(d, required_tx_capacity_modules):
+    for op_m in required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, d)

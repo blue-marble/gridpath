@@ -42,7 +42,7 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 from gridpath.auxiliary.auxiliary import setup_results_import
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from

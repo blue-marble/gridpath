@@ -17,7 +17,7 @@ from pyomo.environ import Set, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.reserves.reserve_provision import \
-    generic_determine_dynamic_components, generic_add_model_components, \
+    generic_determine_dynamic_inputs, generic_add_model_components, \
     generic_load_model_data, generic_get_inputs_from_database, \
     generic_validate_project_bas
 
@@ -43,7 +43,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+def determine_dynamic_inputs(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
@@ -53,7 +53,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    generic_determine_dynamic_components(
+    generic_determine_dynamic_inputs(
         d=d,
         scenario_directory=scenario_directory,
         subproblem=subproblem,
@@ -70,7 +70,7 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

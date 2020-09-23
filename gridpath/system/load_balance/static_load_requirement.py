@@ -25,7 +25,7 @@ def record_dynamic_components(dynamic_components):
         "static_load_mw")
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to

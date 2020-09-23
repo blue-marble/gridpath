@@ -12,13 +12,9 @@ from builtins import object
 
 # Create global variables for the dynamic component names, so that we can
 # more easily import the correct names into other modules
-required_capacity_modules = "required_capacity_modules"
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \
     "storage_only_capacity_type_operational_period_sets"
-required_availability_modules = "required_availability_modules"
-required_operational_modules = "required_operational_modules"
-required_prm_modules = "required_prm_modules"
 required_reserve_modules = "required_reserve_modules"
 
 headroom_variables = "headroom_variables"
@@ -29,9 +25,6 @@ reserve_to_energy_adjustment_params = \
 
 prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
-
-required_tx_capacity_modules = "required_tx_capacity_modules"
-required_tx_operational_modules = "required_tx_operational_modules"
 
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
@@ -64,39 +57,6 @@ class DynamicInputs(object):
         """
         Initialize the dynamic components.
         """
-
-        # ### Types ### #
-
-        # Capacity-type modules (the list of unique capacity types in the
-        # project list)
-        setattr(self, required_capacity_modules, list())
-        # Capacity-type modules will populate these lists if called
-        # These are the sets of project-operational_period by capacity type;
-        # the sets will be joined to make the final
-        # project-operational_period set that includes all projects
-        setattr(self, capacity_type_operational_period_sets, list())
-        setattr(self, storage_only_capacity_type_operational_period_sets,
-                list())
-
-        # Availability type modules (the list of unique availability types in
-        # the project list)
-        setattr(self, required_availability_modules, list())
-
-        # Operational type modules (the list of unique operational types in
-        # the project list)
-        setattr(self, required_operational_modules, list())
-
-        # PRM type modules (the list of unique prm types in the project list)
-        setattr(self, required_prm_modules, list())
-
-        # PRM cost groups
-        setattr(self, prm_cost_group_sets, list())
-        setattr(self, prm_cost_group_prm_type, dict())
-
-        # Transmission
-        setattr(self, required_tx_capacity_modules, list())
-        setattr(self, required_tx_operational_modules, list())
-
         # ### Operating reserves ### #
 
         # Reserve types -- the list of reserve types the user has requested

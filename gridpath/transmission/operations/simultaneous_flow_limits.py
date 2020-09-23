@@ -19,7 +19,7 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Integers, Expression, value
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

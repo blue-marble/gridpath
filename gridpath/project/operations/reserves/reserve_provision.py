@@ -23,7 +23,7 @@ from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
     reserve_to_energy_adjustment_params
 
 
-def generic_determine_dynamic_components(
+def generic_determine_dynamic_inputs(
         d, scenario_directory, subproblem, stage,
         reserve_module,
         headroom_or_footroom_dict,
@@ -42,7 +42,7 @@ def generic_determine_dynamic_components(
     :param headroom_or_footroom_dict: the headroom or footroom dictionary
         with projects as keys and list of headroom or footroom variables,
         respectively, as values; the keys are populated in the
-        *determine_dynamic_components* method of *gridpath.project.__init__*
+        *determine_dynamic_inputs* method of *gridpath.project.__init__*
     :param ba_column_name: the name of the column that determines the
         reserve balancing area for the projects in the *projects.tab* input
         file

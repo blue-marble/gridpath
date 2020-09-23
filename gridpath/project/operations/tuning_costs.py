@@ -14,13 +14,13 @@ import os.path
 from pyomo.environ import Param, Var, Expression, Constraint, \
     NonNegativeReals
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -91,11 +91,16 @@ def add_model_components(m, di, dc):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Input Params

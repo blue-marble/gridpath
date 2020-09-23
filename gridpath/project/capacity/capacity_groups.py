@@ -17,7 +17,7 @@ from gridpath.auxiliary.auxiliary import \
 from gridpath.auxiliary.dynamic_components import required_capacity_modules
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

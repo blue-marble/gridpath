@@ -19,7 +19,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

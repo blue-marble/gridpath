@@ -13,12 +13,12 @@ import os.path
 from pandas import read_csv
 from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    check_for_integer_subdirectories
+
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules, check_for_integer_subdirectories
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -78,9 +78,15 @@ def add_model_components(m, di, dc):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
+
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(di, required_operational_modules)
+        required_operational_modules
     )
 
     # Sets
@@ -133,7 +139,7 @@ def add_model_components(m, di, dc):
 # Commitment Functions
 ###############################################################################
 
-def fix_variables(m, d):
+def fix_variables(m, d, scenario_directory, subproblem, stage):
     """
     This function fixes the commitment of all fixed commitment projects by
     running the :code:`fix_commitment` function in the appropriate operational
@@ -141,11 +147,19 @@ def fix_variables(m, d):
 
     :param m:
     :param d:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
     :return:
     """
 
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        d.required_operational_modules
+        required_operational_modules
     )
 
     for g in m.FXD_COMMIT_PRJS:

@@ -6,22 +6,17 @@ This is a line-level module that adds to the formulation components that
 describe the amount of power flowing on each line.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.auxiliary import load_tx_operational_type_modules
-from gridpath.auxiliary.dynamic_components import \
-    required_tx_operational_modules
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -52,12 +47,23 @@ def add_model_components(m, di, dc):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
 
     # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            getattr(d, required_tx_operational_modules))
+            required_tx_operational_modules
+    )
 
     # TODO: should we add the module specific components here or in
     #  operational_types/__init__.py? Doing it in __init__.py to be consistent

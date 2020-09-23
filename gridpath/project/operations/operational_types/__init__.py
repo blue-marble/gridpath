@@ -20,7 +20,7 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
     setup_results_import
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

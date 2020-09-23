@@ -38,7 +38,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 
 
-def add_model_components(m, di, dc):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to

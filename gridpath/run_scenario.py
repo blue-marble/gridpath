@@ -404,14 +404,14 @@ def populate_dynamic_components(dynamic_components, loaded_modules,
     :param stage: the stage subproblem name
 
     We iterate over all required modules and call their
-    *determine_dynamic_components* method, if applicable, in order to add
+    *determine_dynamic_inputs* method, if applicable, in order to add
     the dynamic components to the *dynamic_components* class object,
     which we will then pass to the *add_model_components* module methods,
     so that the applicable components can be added to the abstract model.
     """
     for m in loaded_modules:
-        if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(dynamic_components,
+        if hasattr(m, 'determine_dynamic_inputs'):
+            m.determine_dynamic_inputs(dynamic_components,
                                            scenario_directory, subproblem, stage)
         else:
             pass
