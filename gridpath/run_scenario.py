@@ -27,7 +27,7 @@ from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
     get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
-from gridpath.auxiliary.dynamic_components import DynamicComponents
+from gridpath.auxiliary.dynamic_components import DynamicInputs
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
@@ -397,10 +397,10 @@ def save_results(scenario_directory, subproblem, stage,
             pass
 
 
-def populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, subproblem, stage):
+def populate_dynamic_inputs(dynamic_inputs, loaded_modules,
+                            scenario_directory, subproblem, stage):
     """
-    :param dynamic_components: the dynamic components class we're populating
+    :param dynamic_inputs: the dynamic components class we're populating
     :param loaded_modules: list of the needed imported modules (Python objects)
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -414,8 +414,9 @@ def populate_dynamic_components(dynamic_components, loaded_modules,
     """
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_inputs'):
-            m.determine_dynamic_inputs(dynamic_components,
-                                           scenario_directory, subproblem, stage)
+            print(m)
+            m.determine_dynamic_inputs(dynamic_inputs,
+                                        scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -801,9 +802,9 @@ def set_up_gridpath_modules_and_components(scenario_directory, subproblem, stage
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data
-    dynamic_components = DynamicComponents()
-    populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, subproblem, stage)
+    dynamic_components = DynamicInputs()
+    populate_dynamic_inputs(dynamic_components, loaded_modules,
+                            scenario_directory, subproblem, stage)
 
     return modules_to_use, loaded_modules, dynamic_components
 

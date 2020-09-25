@@ -18,7 +18,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, setup_results_import, cursor_to_df
-from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
+from gridpath.auxiliary.dynamic_components import \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params
 
@@ -38,7 +38,6 @@ def generic_determine_dynamic_inputs(
     :param scenario_directory: the base scenario directory
     :param stage: the horizon subproblem, not used here
     :param stage: the stage subproblem, not used here
-    :param reserve_module: which reserve module we are calling from
     :param headroom_or_footroom_dict: the headroom or footroom dictionary
         with projects as keys and list of headroom or footroom variables,
         respectively, as values; the keys are populated in the
@@ -57,14 +56,9 @@ def generic_determine_dynamic_inputs(
 
     This method populates the following 'dynamic components':
 
-    * required_reserve_modules
     * headroom_variables or footroom_variables
     * reserve_variable_derate_params
     * reserve_to_energy_adjustment_params
-
-    The *required_reserve_modules* list will be populated based on the
-    user-requested features, as the reserve modules will only call this
-    method if they are included in a requested feature.
 
     The *headroom_variables* and *footroom_variables* components are populated
     based on the data in the *projects.tab* input file.
@@ -98,7 +92,7 @@ def generic_determine_dynamic_inputs(
     .. note:: Currently, these de-rates are only used in the *variable*
         operational type and we need to add them to other operational types.
 
-    Advancec GridPath functionality also includes the ability to account for
+    Advanced GridPath functionality also includes the ability to account for
     the energy effects of reserve-provision. For example, when providing
     regulation-up during a timepoint, projects will occasionally be called
     upon, so they will produce extra energy above what was schedule for the
@@ -113,11 +107,6 @@ def generic_determine_dynamic_inputs(
     .. note:: Currently, these adjustments are only used in the *variable*
         operational type and we need to add them to other operational types.
     """
-
-    # Append the name of the reserve-type we're calling from the list of
-    # reserves requested by the user
-    # TODO: we could probably just get this from the requested features
-    getattr(d, required_reserve_modules).append(reserve_module)
 
     # Check which projects have been assigned a balancing area for the
     # current reserve type (i.e. they have a value in the column named
@@ -153,7 +142,6 @@ def generic_determine_dynamic_inputs(
                 getattr(d, headroom_or_footroom_dict)[generator].append(
                     reserve_provision_variable_name)
 
-    print(getattr(d, headroom_or_footroom_dict))
 
     # The names of the headroom/footroom derate params for each reserve
     # variable

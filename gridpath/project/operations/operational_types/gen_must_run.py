@@ -96,7 +96,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
         Upward reserves should be zero in every operational timepoint.
         """
-        print(getattr(d, headroom_variables)[g])
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
                 """project {} is of the 'gen_must_run' operational type and 

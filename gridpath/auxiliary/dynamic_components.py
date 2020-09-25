@@ -15,7 +15,6 @@ from builtins import object
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \
     "storage_only_capacity_type_operational_period_sets"
-required_reserve_modules = "required_reserve_modules"
 
 headroom_variables = "headroom_variables"
 footroom_variables = "footroom_variables"
@@ -45,7 +44,7 @@ total_cost_components = "total_cost_components"
 #  prm modules, reserve modules) vs. actual optimizaton model components such
 #  as the headroom and footroom variables vs. the names of constraint
 #  components
-class DynamicComponents(object):
+class DynamicInputs(object):
     """
     Here we initialize the class object and its components that will contain
     the dynamic inputs. When called, the GridPath modules will populate the
@@ -72,18 +71,6 @@ class DynamicComponents(object):
 
 
         # ### Operating reserves ### #
-
-        # Reserve types -- the list of reserve types the user has requested
-        # to be modeled
-        # Will be determined based on whether the user has specified a module
-        # This list is populated in
-        # *gridpath.operations.reserves.reserve_provision* when the respective
-        # reserve module is called (e.g. spinning reserves are added to this
-        # list when *gridpath.operations.reserves.spinning_reserves* is
-        # called, which in turn only happens if the 'spinning_reserves'
-        # feature is selected
-        setattr(self, required_reserve_modules, list())
-
         # Headroom and footroom variables
         # These will include the project as keys and a list as value for
         # each project; the list could be empty if the project is not

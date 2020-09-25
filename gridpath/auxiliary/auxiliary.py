@@ -86,20 +86,6 @@ def load_gen_storage_capacity_type_modules(required_capacity_modules):
     )
 
 
-def load_reserve_type_modules(required_reserve_modules):
-    """
-    Load a specified set of reserve modules
-    :param required_reserve_modules:
-    :return: dictionary with the imported subtype modules
-        {name of subtype module: Python module object}
-    """
-    return load_subtype_modules(
-        required_subtype_modules=required_reserve_modules,
-        package="gridpath.project.operations.reserves",
-        required_attributes=[]
-    )
-
-
 # TODO: add curtailment rules as required?
 def load_operational_type_modules(required_operational_modules):
     """

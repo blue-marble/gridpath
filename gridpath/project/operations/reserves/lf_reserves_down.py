@@ -64,6 +64,8 @@ def determine_dynamic_inputs(d, scenario_directory, subproblem, stage):
         reserve_balancing_area_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
     )
 
+    print(d.footroom_variables)
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """

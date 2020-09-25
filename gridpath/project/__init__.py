@@ -20,7 +20,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def determine_dynamic_inputs(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, scenario_directory, subproblem, stage):
     """
     :param di: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -143,7 +143,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | purposes in the results.                                                |
     +-------------------------------------------------------------------------+
 
-    TODO: all projects have VOM for now; is that what makes the most sense?
     TODO: considering technology is only used on the results side, should we
      keep it here?
     """
@@ -176,6 +175,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
+
+    # Start list of headroom and footroom variables by project
+    # TODO: should these functions be named record dynamic components or
+    #  actually have descriptive names depending on what they add
+    record_dynamic_components(d, scenario_directory, subproblem, stage)
 
 
 # Input-Output
