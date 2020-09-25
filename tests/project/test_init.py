@@ -58,7 +58,7 @@ class TestProjectInit(unittest.TestCase):
         d = DynamicInputs()
 
         # Add dynamic components
-        MODULE_BEING_TESTED.determine_dynamic_inputs(
+        MODULE_BEING_TESTED.record_dynamic_components(
             d, TEST_DATA_DIRECTORY, "", "")
 
         # # NOTE: keeping these hard-coded for they should be easy to update

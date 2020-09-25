@@ -415,7 +415,7 @@ def populate_dynamic_inputs(dynamic_inputs, loaded_modules,
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_inputs'):
             print(m)
-            m.determine_dynamic_inputs(dynamic_inputs,
+            m.record_dynamic_components(dynamic_inputs,
                                         scenario_directory, subproblem, stage)
         else:
             pass

@@ -58,8 +58,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    print(d.total_cost_components)
-
     # Define objective function
     def total_cost_rule(mod):
 

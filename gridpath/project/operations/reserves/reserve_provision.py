@@ -23,15 +23,15 @@ from gridpath.auxiliary.dynamic_components import \
     reserve_to_energy_adjustment_params
 
 
-def generic_determine_dynamic_inputs(
-        d, scenario_directory, subproblem, stage,
-        reserve_module,
-        headroom_or_footroom_dict,
-        ba_column_name,
-        reserve_provision_variable_name,
-        reserve_provision_derate_param_name,
-        reserve_to_energy_adjustment_param_name,
-        reserve_balancing_area_param_name
+def generic_record_dynamic_components(
+    d, scenario_directory, subproblem, stage,
+    reserve_module,
+    headroom_or_footroom_dict,
+    ba_column_name,
+    reserve_provision_variable_name,
+    reserve_provision_derate_param_name,
+    reserve_to_energy_adjustment_param_name,
+    reserve_balancing_area_param_name
 ):
     """
     :param d: the DynamicComponents class we'll be populating
