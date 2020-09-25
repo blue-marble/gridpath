@@ -26,7 +26,7 @@ from gridpath.auxiliary.validations import get_tx_lines, get_expected_dtypes, \
 
 
 # TODO: add fixed O&M costs similar to gen_spec
-def add_module_specific_components(
+def add_model_components(
         m, d, scenario_directory, subproblem, stage
 ):
     """

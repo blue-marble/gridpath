@@ -26,8 +26,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # First, add any components specific to the availability type modules
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     def availability_derate_rule(mod, g, tmp):
         """

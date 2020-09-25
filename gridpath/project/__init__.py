@@ -20,7 +20,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def determine_dynamic_inputs(di, scenario_directory, subproblem, stage):
+def determine_dynamic_inputs(d, scenario_directory, subproblem, stage):
     """
     :param di: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -66,10 +66,10 @@ def determine_dynamic_inputs(di, scenario_directory, subproblem, stage):
     # specified for a project in projects.tab
     # We need to make the dictionaries first; it is the lists for each key
     # that are populated by the modules
-    setattr(di, headroom_variables,
+    setattr(d, headroom_variables,
             {r: [] for r in project_df.project}
             )
-    setattr(di, footroom_variables,
+    setattr(d, footroom_variables,
             {r: [] for r in project_df.project}
             )
 

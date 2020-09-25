@@ -8,7 +8,7 @@ Fully deliverable projects (no energy-only allowed)
 from pyomo.environ import Set
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     
     :param m: 

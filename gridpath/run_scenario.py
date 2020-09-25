@@ -27,7 +27,7 @@ from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
     get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
-from gridpath.auxiliary.dynamic_components import DynamicInputs
+from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
@@ -150,7 +150,10 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     # Create the abstract model; some components are initialized here
     if not parsed_arguments.quiet:
         print("Building model...")
-    create_abstract_model(model, dynamic_components, loaded_modules)
+    create_abstract_model(
+        model, dynamic_components, loaded_modules, scenario_directory,
+        subproblem, stage
+    )
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
@@ -417,11 +420,17 @@ def populate_dynamic_components(dynamic_components, loaded_modules,
             pass
 
 
-def create_abstract_model(model, dynamic_components, loaded_modules):
+def create_abstract_model(
+    model, dynamic_components, loaded_modules, scenario_directory, subproblem,
+    stage
+):
     """
     :param model: the Pyomo AbstractModel object
     :param dynamic_components: the populated dynamic model components class
     :param loaded_modules: list of the required modules as Python objects
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
 
     To create the abstract model, we iterate over all required modules and
     call their *add_model_components* method to add components to the Pyomo
@@ -431,7 +440,10 @@ def create_abstract_model(model, dynamic_components, loaded_modules):
     """
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model, dynamic_components)
+            m.add_model_components(
+                model, dynamic_components, scenario_directory, subproblem,
+                stage
+            )
 
 
 def load_scenario_data(model, dynamic_components, loaded_modules,
@@ -789,7 +801,7 @@ def set_up_gridpath_modules_and_components(scenario_directory, subproblem, stage
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data
-    dynamic_components = DynamicInputs()
+    dynamic_components = DynamicComponents()
     populate_dynamic_components(dynamic_components, loaded_modules,
                                 scenario_directory, subproblem, stage)
 

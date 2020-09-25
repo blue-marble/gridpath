@@ -79,7 +79,7 @@ def generic_determine_dynamic_inputs(
     reserve-provision variable name (the *reserve_provision_variable_name*
     specified by the reserve module calling this method) will be added to
     the project's list of headroom/footroom variables. These lists will then be
-    passed to the 'add_module_specific_components' method of the
+    passed to the 'add_model_components' method of the
     operational-modules and used to build the appropriate operational
     constraints for each project, usually named the 'max power rule' (power +
     upward reserves must be less than or equal to online capacity) and 'min
@@ -152,6 +152,8 @@ def generic_determine_dynamic_inputs(
                     headers, ba_column_name)[0]] != ".":
                 getattr(d, headroom_or_footroom_dict)[generator].append(
                     reserve_provision_variable_name)
+
+    print(getattr(d, headroom_or_footroom_dict))
 
     # The names of the headroom/footroom derate params for each reserve
     # variable

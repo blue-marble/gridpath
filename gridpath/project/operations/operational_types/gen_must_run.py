@@ -33,7 +33,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, validate_opchars
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -96,6 +96,7 @@ def add_module_specific_components(m, d):
 
         Upward reserves should be zero in every operational timepoint.
         """
+        print(getattr(d, headroom_variables)[g])
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
                 """project {} is of the 'gen_must_run' operational type and 

@@ -24,7 +24,7 @@ from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     EOA: Energy-Only Allowed
     :param m: 

@@ -58,11 +58,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
+    print(d.total_cost_components)
+
     # Define objective function
     def total_cost_rule(mod):
 
         return sum(getattr(mod, c)
-                   for c in getattr(dc, total_cost_components))
+                   for c in getattr(d, total_cost_components))
 
     m.Total_Cost = Objective(rule=total_cost_rule, sense=minimize)
 
@@ -83,7 +85,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-
+    print("Exporting total cost components")
+    print(d.total_cost_components)
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
               "system_costs.csv"), "w", newline="") as f:
         writer = csv.writer(f)

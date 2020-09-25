@@ -28,7 +28,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     check_for_tmps_to_link, validate_opchars, validate_hydro_opchars
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

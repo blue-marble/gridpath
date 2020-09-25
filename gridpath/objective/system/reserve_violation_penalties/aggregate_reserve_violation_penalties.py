@@ -24,8 +24,8 @@ def generic_record_dynamic_components(
 
 def generic_add_model_components(
         m,
-        di,
-        dc,
+        d,
+        scenario_directory, subproblem, stage,
         reserve_zone_set,
         reserve_violation_expression,
         reserve_violation_penalty_param,

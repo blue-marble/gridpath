@@ -38,8 +38,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Add any components specific to the PRM modules
     for prm_m in required_prm_modules:
         imp_prm_m = imported_prm_modules[prm_m]
-        if hasattr(imp_prm_m, "add_module_specific_components"):
-            imp_prm_m.add_module_specific_components(m, d)
+        if hasattr(imp_prm_m, "add_model_components"):
+            imp_prm_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     # For each PRM project, get the ELCC-eligible capacity
     def elcc_eligible_capacity_rule(mod, g, p):

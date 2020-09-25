@@ -20,9 +20,10 @@ def record_dynamic_components(dynamic_components):
 
     This method adds the static load to the load balance dynamic components.
     """
-
+    print("Load dynamic components")
     getattr(dynamic_components, load_balance_consumption_components).append(
         "static_load_mw")
+    print(dynamic_components.load_balance_consumption_components)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

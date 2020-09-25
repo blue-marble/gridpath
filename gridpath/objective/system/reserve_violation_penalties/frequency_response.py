@@ -21,8 +21,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Total freq response requirement
     generic_add_model_components(
         m,
-        di,
-        dc,
+        d,
+        scenario_directory, subproblem, stage,
         "FREQUENCY_RESPONSE_BAS",
         "Frequency_Response_Violation_MW_Expression",
         "frequency_response_violation_penalty_per_mw",

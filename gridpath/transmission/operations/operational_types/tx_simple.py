@@ -16,7 +16,7 @@ from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
     Reals, PercentFraction
 
 
-def add_module_specific_components(
+def add_model_components(
         m, d, scenario_directory, subproblem, stage
 ):
     """

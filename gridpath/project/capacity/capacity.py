@@ -28,7 +28,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     set of distinct project capacity types in the list of projects specified
     by the user) and add the components specific to the respective
     *capacity_type* module. We do this by calling the
-    *add_module_specific_components* method of the capacity_type module if
+    *add_model_components* method of the capacity_type module if
     the method exists.
 
     Then, the following Pyomo model components are defined in this module:
@@ -115,8 +115,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Add any components specific to the capacity type modules
     for op_m in required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     # Sets
     ###########################################################################

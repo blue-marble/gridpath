@@ -31,7 +31,7 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     validate_idxs, validate_missing_inputs
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
      The following Pyomo model components are defined in this module:
 

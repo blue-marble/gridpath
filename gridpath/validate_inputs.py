@@ -245,7 +245,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
 
     assert subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID is not None
     c = conn.cursor()
-    req_cap_types = set(subscenarios.get_required_capacity_type_modules_from_db(c))
+    req_cap_types = set(subscenarios.get_required_capacity_type_modules(c))
 
     new_build_types = {
         "gen_new_lin,",

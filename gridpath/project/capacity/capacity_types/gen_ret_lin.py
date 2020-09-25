@@ -36,7 +36,7 @@ from gridpath.project.capacity.capacity_types.common_methods import \
     update_capacity_results_table
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

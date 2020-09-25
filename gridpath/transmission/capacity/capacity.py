@@ -119,8 +119,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Add model components for each of the transmission capacity modules
     for op_m in required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
                 m, d, scenario_directory, subproblem, stage
             )
 
