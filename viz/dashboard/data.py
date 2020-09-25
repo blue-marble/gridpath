@@ -322,6 +322,8 @@ def get_all_energy_data(conn, scenarios):
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
