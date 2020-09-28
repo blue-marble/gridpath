@@ -51,9 +51,6 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
-
     generic_record_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
@@ -78,6 +75,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+    record_dynamic_components(d, scenario_directory, subproblem, stage)
 
     generic_add_model_components(
         m=m,
