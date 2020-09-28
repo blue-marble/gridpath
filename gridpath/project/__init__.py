@@ -22,7 +22,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 
 def record_dynamic_components(d, scenario_directory, subproblem, stage):
     """
-    :param di: the dynamic components class object we'll be adding to
+    :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
     :param stage: if horizon subproblems exist, the horizon name; NOT USED
     :param stage: if stage subproblems exist, the stage name; NOT USED

@@ -34,8 +34,7 @@ def generic_add_model_components(
     """
     Aggregate reserve violation penalty costs
     :param m:
-    :param di:
-    :param dc:
+    :param d:
     :param reserve_zone_set:
     :param reserve_violation_expression:
     :param reserve_violation_penalty_param:
