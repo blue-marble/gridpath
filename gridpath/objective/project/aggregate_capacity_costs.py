@@ -14,7 +14,7 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
-    :param di: the DynamicComponents class object we are adding components to
+    :param d: the DynamicComponents class object we are adding components to
 
     Here, we sum up all capacity-related costs and add them to the
     objective-function dynamic components.
