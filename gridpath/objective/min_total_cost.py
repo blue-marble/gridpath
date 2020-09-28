@@ -83,8 +83,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-              "system_costs.csv"), "w", newline="") as f:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "system_costs.csv"
+            ),
+            "w",
+            newline=""
+    ) as f:
         writer = csv.writer(f)
         components = getattr(d, total_cost_components)
         writer.writerow(components)

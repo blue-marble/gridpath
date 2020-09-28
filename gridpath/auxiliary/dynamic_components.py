@@ -3,9 +3,9 @@
 
 """
 This module creates the DynamicComponents class, which contains the lists and
-dictionaries of the names of GridPath dynamic components. These are
-components that are populated by other GridPath modules based on the
-scenario input data.
+dictionaries of the names of dynamic optimization components. These are
+components that are populated by GridPath modules based on the selected
+features and the scenario input data.
 """
 
 from builtins import object
@@ -39,28 +39,25 @@ local_capacity_balance_provision_components = \
 total_cost_components = "total_cost_components"
 
 
-# TODO: should we have more than one of these depending on component type,
-#  e.g. a group for GP modules to use (e.g. capacity and operational types,
-#  prm modules, reserve modules) vs. actual optimizaton model components such
-#  as the headroom and footroom variables vs. the names of constraint
-#  components
 class DynamicComponents(object):
     """
     Here we initialize the class object and its components that will contain
-    the dynamic inputs. When called, the GridPath modules will populate the
-    various class components based on the input data, which will then be
-    used to initialize model components, keep track of required submodules,
-    keep track of components added by modules to dynamic constraints, etc.
+    the dynamic model components, i.e. lists and dictionary with the names
+    of the optimization components that are populated based on whether features
+    are selected (i.e. certain modules are called) and based on the scenario
+    input data.
     """
     def __init__(self):
         """
         Initialize the dynamic components.
         """
 
-        # Capacity-type modules will populate these lists if called
-        # These are the sets of project-operational_period by capacity type;
-        # the sets will be joined to make the final
+        # These are the names of the sets of project-operational_period by
+        # capacity type;
+        # The sets will be joined to make the final
         # project-operational_period set that includes all projects
+        # If called, the capacity-type modules will populate these lists with
+        # the name of the respective set for the capacity type
         setattr(self, capacity_type_operational_period_sets, list())
         setattr(self, storage_only_capacity_type_operational_period_sets,
                 list())

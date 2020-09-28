@@ -116,7 +116,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, subproblem, stage
+            )
 
     # Sets
     ###########################################################################

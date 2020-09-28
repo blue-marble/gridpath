@@ -4,13 +4,10 @@
 """
 
 """
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
+from pyomo.environ import Set, Param, Var, NonNegativeReals, \
     PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
@@ -25,7 +22,6 @@ from gridpath.auxiliary.dynamic_components import \
 
 def generic_record_dynamic_components(
     d, scenario_directory, subproblem, stage,
-    reserve_module,
     headroom_or_footroom_dict,
     ba_column_name,
     reserve_provision_variable_name,
@@ -113,9 +109,16 @@ def generic_record_dynamic_components(
     # 'ba_column_name'); add the variable name for the current reserve type
     # to the list of variables in the headroom/footroom dictionary for the
     # project
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"),
-              "r") as projects_file:
-        projects_file_reader = csv.reader(projects_file, delimiter="\t", lineterminator="\n")
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage),
+                "inputs", "projects.tab"
+            ),
+            "r"
+    ) as projects_file:
+        projects_file_reader = csv.reader(
+            projects_file, delimiter="\t", lineterminator="\n"
+        )
         headers = next(projects_file_reader)
         # Check that column names are not repeated
         check_list_items_are_unique(headers)
@@ -141,7 +144,6 @@ def generic_record_dynamic_components(
                     headers, ba_column_name)[0]] != ".":
                 getattr(d, headroom_or_footroom_dict)[generator].append(
                     reserve_provision_variable_name)
-
 
     # The names of the headroom/footroom derate params for each reserve
     # variable

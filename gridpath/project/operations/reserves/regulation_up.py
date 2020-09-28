@@ -4,13 +4,10 @@
 """
 Add project-level components for upward regulation reserves
 """
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 
+from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_record_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
@@ -20,7 +17,7 @@ from gridpath.project.operations.reserves.reserve_provision import \
 # Reserve-module variables
 MODULE_NAME = "regulation_up"
 # Dynamic components
-HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
+HEADROOM_OR_FOOTROOM_DICT_NAME = headroom_variables
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "regulation_up_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "regulation_up_derate"
@@ -56,7 +53,6 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
-        reserve_module=MODULE_NAME,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
