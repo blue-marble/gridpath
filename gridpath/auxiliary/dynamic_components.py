@@ -44,7 +44,7 @@ total_cost_components = "total_cost_components"
 #  prm modules, reserve modules) vs. actual optimizaton model components such
 #  as the headroom and footroom variables vs. the names of constraint
 #  components
-class DynamicInputs(object):
+class DynamicComponents(object):
     """
     Here we initialize the class object and its components that will contain
     the dynamic inputs. When called, the GridPath modules will populate the

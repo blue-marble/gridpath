@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from pyomo.environ import AbstractModel, DataPortal
-from gridpath.auxiliary.dynamic_components import DynamicInputs
+from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
 def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
@@ -16,7 +16,7 @@ def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
     :param stage:
     :return:
     """
-    d = DynamicInputs()
+    d = DynamicComponents()
 
     for mod in prereq_modules:
         if hasattr(mod, 'determine_dynamic_components'):
