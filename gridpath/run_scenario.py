@@ -175,7 +175,10 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     instance = create_problem_instance(model, scenario_data)
 
     # Fix variables if modules request so
-    instance = fix_variables(instance, dynamic_components, loaded_modules)
+    instance = fix_variables(
+        instance, dynamic_components, scenario_directory, subproblem, stage,
+        loaded_modules
+    )
 
     # Solve
     if not parsed_arguments.quiet:
@@ -490,10 +493,16 @@ def create_problem_instance(model, loaded_data):
     return instance
 
 
-def fix_variables(instance, dynamic_components, loaded_modules):
+def fix_variables(
+    instance, dynamic_components, scenario_directory, subproblem, stage,
+    loaded_modules
+):
     """
     :param instance: the compiled problem instance
     :param dynamic_components: the dynamic component class
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
     :param loaded_modules: list of imported GridPath modules as Python objects
     :return: the problem instance with the relevant variables fixed
 
@@ -503,7 +512,8 @@ def fix_variables(instance, dynamic_components, loaded_modules):
     """
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
-            m.fix_variables(instance, dynamic_components)
+            m.fix_variables(instance, dynamic_components,
+                            scenario_directory, subproblem, stage)
         else:
             pass
 
