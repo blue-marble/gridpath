@@ -246,6 +246,8 @@ def get_all_cost_data(conn, scenarios):
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone
         ;""".format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -258,14 +260,24 @@ def get_all_capacity_data(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone, 
         technology, 
-        AVG(new_build_mw) AS new_build_capacity, 
-        AVG(retired_mw) AS retired_capacity, 
-        AVG(capacity_mw) AS total_capacity
+        -- average across subproblems
+        AVG(new_build_capacity) AS new_build_capacity, 
+        AVG(retired_capacity) AS retired_capacity, 
+        AVG(total_capacity) AS total_capacity
+        FROM (
+        SELECT scenario_id, stage_id, period, load_zone, technology, 
+        -- sum across projects
+        SUM(new_build_mw) AS new_build_capacity, 
+        SUM(retired_mw) AS retired_capacity, 
+        SUM(capacity_mw) AS total_capacity
         FROM results_project_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
+        technology) AS agg_tbl
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -310,6 +322,8 @@ def get_all_energy_data(conn, scenarios):
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -373,6 +387,8 @@ def get_all_summary_data(conn, scenarios):
         operational_cost,  
         SUM(tx_capacity_cost + tx_hurdle_cost) AS transmission_cost
         FROM results_costs_by_period_load_zone
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario_id, stage_id, period, load_zone
         ) AS cost_table
 
@@ -384,6 +400,8 @@ def get_all_summary_data(conn, scenarios):
     SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
     AS unserved_energy
     FROM results_system_load_balance
+    WHERE spinup_or_lookahead IS NULL 
+    OR spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS load_table
     USING (scenario_id, stage_id, period, load_zone)
@@ -392,6 +410,8 @@ def get_all_summary_data(conn, scenarios):
     (SELECT scenario_id, stage_id, period, load_zone,
     SUM(carbon_emission_tons) AS carbon_emissions
     FROM results_project_carbon_emissions_by_technology_period
+    WHERE spinup_or_lookahead IS NULL 
+    OR spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS carbon_table
     USING(scenario_id, stage_id, period, load_zone)

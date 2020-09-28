@@ -180,3 +180,65 @@ def import_results_into_database(
         stage_id;""".format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+def process_results(db, c, subscenarios, quiet):
+    """
+    Aggregate capacity costs by load zone, and break out into
+    spinup_or_lookahead.
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate capacity costs by load zone")
+
+    # Delete old resulst
+    del_sql = """
+        DELETE FROM results_project_costs_capacity_agg 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+
+    # Insert new results
+    agg_sql = """
+        INSERT INTO results_project_costs_capacity_agg
+        (scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem, capacity_cost)
+        
+        SELECT scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem,
+        (capacity_cost * fraction_of_hours_in_subproblem) AS capacity_cost
+        FROM spinup_or_lookahead_ratios
+        
+        -- Add load_zones
+        LEFT JOIN
+        (SELECT scenario_id, load_zone
+        FROM inputs_geography_load_zones
+        INNER JOIN
+        (SELECT scenario_id, load_zone_scenario_id FROM scenarios
+        WHERE scenario_id = ?) AS scen_tbl
+        USING (load_zone_scenario_id)
+        ) AS lz_tbl
+        USING (scenario_id)
+
+        -- Now that we have all scenario_id, subproblem_id, stage_id, period, 
+        -- load_zone, and spinup_or_lookahead combinations add the capacity 
+        -- costs which will be derated by the fraction_of_hours_in_subproblem
+        INNER JOIN
+        (SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+        SUM(capacity_cost) AS capacity_cost
+        FROM results_project_costs_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
+        ) AS cap_table
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
+

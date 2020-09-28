@@ -408,40 +408,42 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate hurdle costs by period and load zone
+    # Aggregate hurdle costs by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_hurdle_costs_agg
         (scenario_id, subproblem_id, stage_id, period, load_zone, 
-        tx_hurdle_cost)
+        spinup_or_lookahead, tx_hurdle_cost)
         
         SELECT scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead,
         (pos_dir_hurdle_cost + neg_dir_hurdle_cost) AS tx_hurdle_cost
         
         FROM
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_to AS load_zone,
+        load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_positive_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS pos_dir_hurdle_cost
         FROM results_transmission_hurdle_costs
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ) AS pos_dir_hurdle_costs
         
         INNER JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_from AS load_zone,
+        load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_negative_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS neg_dir_hurdle_cost
         FROM results_transmission_hurdle_costs
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ) AS neg_dir_hurdle_costs
         
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead)
         ;"""
 
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,

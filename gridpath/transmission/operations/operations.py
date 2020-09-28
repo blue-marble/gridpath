@@ -238,8 +238,8 @@ def import_results_into_database(
 
 def process_results(db, c, subscenarios, quiet):
     """
-    Aggregate imports/exports by zone and period (numbers are based on flows
-    without accounting for losses!)
+    Aggregate imports/exports by zone, period and spinup_or_lookahead
+    (numbers are based on flows without accounting for losses!)
     TODO: add losses?
     :param db:
     :param c:
@@ -259,13 +259,14 @@ def process_results(db, c, subscenarios, quiet):
                           data=(subscenarios.SCENARIO_ID,),
                           many=False)
 
-    # Aggregate imports/exports by period and load zone
+    # Aggregate imports/exports by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_imports_exports_agg
         (scenario_id, subproblem_id, stage_id, period, 
-        load_zone, imports, exports)
+        load_zone, spinup_or_lookahead, imports, exports)
         
         SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead,
         (IFNULL(imports_pos_dir,0) + IFNULL(imports_neg_dir,0)) AS imports,
         (IFNULL(exports_pos_dir,0) + IFNULL(exports_neg_dir,0)) AS exports
         
@@ -274,40 +275,45 @@ def process_results(db, c, subscenarios, quiet):
         -- dummy required to make sure all load zones are included 
         -- (SQLite cannot do full outer join)
         
-        SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, load_zone
+        SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead
         FROM (
-            SELECT scenario_id, subproblem_id, stage_id, period, load_zone
+            SELECT scenario_id, subproblem_id, stage_id, period, load_zone, 
+            spinup_or_lookahead
             FROM (
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
-                load_zone_to AS load_zone
+                load_zone_to AS load_zone, spinup_or_lookahead
                 FROM results_transmission_operations
                 WHERE scenario_id = ?) AS dummy
                 
                 LEFT JOIN 
                 
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
-                load_zone_from AS load_zone
+                load_zone_from AS load_zone, spinup_or_lookahead
                 FROM results_transmission_operations
                 WHERE scenario_id = ?) AS dummy2
-                USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+                USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+                spinup_or_lookahead)
             ) AS left_join1
             
             UNION ALL
         
-            SELECT scenario_id, subproblem_id, stage_id, period, load_zone
+            SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+            spinup_or_lookahead
             FROM (
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
-                load_zone_from AS load_zone
+                load_zone_from AS load_zone, spinup_or_lookahead
                 FROM results_transmission_operations
                 WHERE scenario_id = ?) AS dummy3
                 
                 LEFT JOIN 
                 
                 (SELECT DISTINCT scenario_id, subproblem_id, stage_id, period, 
-                load_zone_to AS load_zone
+                load_zone_to AS load_zone, spinup_or_lookahead
                 FROM results_transmission_operations
                 WHERE scenario_id = ?) AS dummy4
-                USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+                USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+                spinup_or_lookahead)
             
             ) AS left_join2
         
@@ -318,56 +324,64 @@ def process_results(db, c, subscenarios, quiet):
         LEFT JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_to AS load_zone,
+        load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS imports_pos_dir
         FROM results_transmission_operations
         WHERE transmission_flow_mw > 0
         AND scenario_id = ?
-        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) 
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead) 
         AS imports_pos_dir
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead)
         
         LEFT JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_from AS load_zone,
+        load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS exports_pos_dir
         FROM results_transmission_operations
         WHERE transmission_flow_mw > 0
         AND scenario_id = ?
-        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) 
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead) 
         AS exports_pos_dir
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead)
         
         LEFT JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_from AS load_zone,
+        load_zone_from AS load_zone, spinup_or_lookahead,
         -SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS imports_neg_dir
         FROM results_transmission_operations
         WHERE transmission_flow_mw < 0
         AND scenario_id = ?
-        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) 
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead) 
         AS imports_neg_dir
-        USING (scenario_id, subproblem_id, stage_id,period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id,period, load_zone,
+        spinup_or_lookahead)
         
         LEFT JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_to AS load_zone,
+        load_zone_to AS load_zone, spinup_or_lookahead,
         -SUM(transmission_flow_mw * timepoint_weight * 
         number_of_hours_in_timepoint) AS exports_neg_dir
         FROM results_transmission_operations
         WHERE transmission_flow_mw < 0
         AND scenario_id = ?
-        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) 
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead) 
         AS exports_neg_dir
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead)
         
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ;"""
 
     scenario_ids = tuple([subscenarios.SCENARIO_ID] * 8)
