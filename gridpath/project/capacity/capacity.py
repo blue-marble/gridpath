@@ -294,14 +294,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
-def summarize_results(d, scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem, stage):
     """
-    Summarize capacity results
-    :param d:
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :return:
+
+    Summarize capacity results
     """
 
     summary_results_file = os.path.join(

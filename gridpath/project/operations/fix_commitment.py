@@ -248,7 +248,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
+def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -258,7 +258,6 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
     :param subproblem:
     :param stage:
     :param m:
-    :param d:
     :return:
     """
 
