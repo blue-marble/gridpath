@@ -25,6 +25,9 @@ reserve_to_energy_adjustment_params = \
 prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
 
+tx_capacity_type_operational_period_sets = \
+    "tx_capacity_type_operational_period_sets"
+
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
 
@@ -52,6 +55,7 @@ class DynamicComponents(object):
         Initialize the dynamic components.
         """
 
+        # ### Project sets and variables ### #
         # These are the names of the sets of project-operational_period by
         # capacity type;
         # The sets will be joined to make the final
@@ -65,7 +69,6 @@ class DynamicComponents(object):
         # PRM cost groups
         setattr(self, prm_cost_group_sets, list())
         setattr(self, prm_cost_group_prm_type, dict())
-
 
         # ### Operating reserves ### #
         # Headroom and footroom variables
@@ -87,8 +90,10 @@ class DynamicComponents(object):
         setattr(self, reserve_variable_derate_params, dict())
         setattr(self, reserve_to_energy_adjustment_params, dict())
 
-        # ### Constraint and objective function components ### #
+        # ### Transmission sets and variables ### #
+        setattr(self, tx_capacity_type_operational_period_sets, list())
 
+        # ### Constraint and objective function components ### #
         # Load balance constraint
         # Modules will add component names to these lists
         setattr(self, load_balance_production_components, list())

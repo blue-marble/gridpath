@@ -87,13 +87,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.load_zone_from = Param(m.TX_LINES, within=m.LOAD_ZONES)
     m.load_zone_to = Param(m.TX_LINES, within=m.LOAD_ZONES)
 
-    # Dynamic Components
-    ###########################################################################
-
-    # Capacity-type modules will populate this list if called
-    # List will be used to initialize TX_OPR_PRDS
-    m.tx_capacity_type_operational_period_sets = []
-
 
 # Input-Output
 ###############################################################################

@@ -25,6 +25,8 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.dynamic_components import \
+    tx_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, get_tx_lines, validate_dtypes, validate_values, \
     validate_idxs
@@ -192,7 +194,7 @@ def add_model_components(
     # Dynamic Components
     ###########################################################################
 
-    m.tx_capacity_type_operational_period_sets.append(
+    getattr(d, tx_capacity_type_operational_period_sets).append(
         "TX_NEW_LIN_OPR_PRDS",
     )
 

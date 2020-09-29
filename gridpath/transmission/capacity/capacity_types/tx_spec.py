@@ -20,6 +20,8 @@ import os.path
 from pyomo.environ import Set, Param, Reals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.dynamic_components import \
+    tx_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import get_tx_lines, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, \
     validate_idxs, validate_missing_inputs, validate_column_monotonicity
@@ -88,7 +90,7 @@ def add_model_components(
     # Dynamic Components
     ###########################################################################
 
-    m.tx_capacity_type_operational_period_sets.append(
+    getattr(d, tx_capacity_type_operational_period_sets).append(
         "TX_SPEC_OPR_PRDS"
     )
 

@@ -19,7 +19,9 @@ from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
-    setup_results_import
+    join_sets, setup_results_import
+from gridpath.auxiliary.dynamic_components import \
+    tx_capacity_type_operational_period_sets
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -129,8 +131,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_OPR_PRDS = Set(
         dimen=2, within=m.TX_LINES*m.PERIODS,
-        initialize=tx_opr_prds_init
-    )
+        initialize=lambda mod:
+        join_sets(mod, getattr(d, tx_capacity_type_operational_period_sets),),
+    )  # assumes capacity types model components are already added!
 
     m.TX_LINES_OPR_IN_PRD = Set(
         m.PERIODS,
@@ -146,7 +149,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_OPR_TMPS = Set(
         dimen=2,
-        rule=tx_opr_tmps_init
+        rule=lambda mod: [
+            (tx, tmp) for tx in mod.TX_LINES
+            for p in mod.OPR_PRDS_BY_TX_LINE[tx]
+            for tmp in mod.TMPS_IN_PRD[p]
+        ]
     )
 
     m.TX_LINES_OPR_IN_TMP = Set(
@@ -189,42 +196,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TX_OPR_PRDS,
         rule=tx_capacity_cost_rule
     )
-
-
-# Set Rules
-###############################################################################
-
-def tx_opr_prds_init(mod):
-    """
-    Get the TX_OPR_PRDS set by joining the sets in
-    tx_capacity_type_operational_period_sets; if list contains only a single
-    set, return just that set.
-
-    Note: this assumes that the dynamic components for the capacity_type
-    modules have been added already (which is when the
-    list "tx_capacity_type_operational_period_sets" is populated).
-    """
-    if len(mod.tx_capacity_type_operational_period_sets) == 0:
-        return []
-    elif len(mod.tx_capacity_type_operational_period_sets) == 1:
-        return getattr(mod, mod.tx_capacity_type_operational_period_sets[0])
-
-    else:
-        return reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
-                      mod.tx_capacity_type_operational_period_sets)
-
-
-def tx_opr_tmps_init(mod):
-    """
-    Get the TX_OPR_TMPS from the OPR_PRDS_BY_TX_LINE and TMPS_IN_PRD
-    sets.
-    """
-    tx_tmps = set()
-    for tx in mod.TX_LINES:
-        for p in mod.OPR_PRDS_BY_TX_LINE[tx]:
-            for tmp in mod.TMPS_IN_PRD[p]:
-                tx_tmps.add((tx, tmp))
-    return tx_tmps
 
 
 # Input-Output
