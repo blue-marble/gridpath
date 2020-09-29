@@ -577,6 +577,26 @@ subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
 );
 
 
+-- Market hubs
+-- This is the unit at which prices are specified in the model;
+-- it can be different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_market_hubs;
+CREATE TABLE subscenarios_geography_market_hubs (
+market_hub_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_local_capacity_zones;
+CREATE TABLE inputs_geography_local_capacity_zones (
+market_hub_scenario_id INTEGER,
+market_hub VARCHAR(32),
+PRIMARY KEY (market_hub_scenario_id, market_hub),
+FOREIGN KEY (market_hub_scenario_id) REFERENCES
+subscenarios_geography_market_hubs (market_hub_scenario_id)
+);
+
+
 -------------------
 -- -- PROJECT -- --
 -------------------
