@@ -1429,6 +1429,24 @@ subscenarios_project_local_capacity_chars
 (project_local_capacity_chars_scenario_id)
 );
 
+-- Project market hubs
+DROP TABLE IF EXISTS subscenarios_project_market_hubs;
+CREATE TABLE subscenarios_project_market_hubs (
+project_market_hub_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_market_hubs;
+CREATE TABLE inputs_project_market_hubs (
+project_market_hub_scenario_id INTEGER,
+project VARCHAR(64),
+market_hub VARCHAR(32),
+PRIMARY KEY (project_market_hub_scenario_id, project),
+FOREIGN KEY (project_market_hub_scenario_id)
+REFERENCES subscenarios_project_market_hubs (project_market_hub_scenario_id)
+);
+
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
 CREATE TABLE subscenarios_project_fuels (
@@ -2161,6 +2179,7 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
+project_market_hub_scenario_id INTEGER,
 project_specified_capacity_scenario_id INTEGER,
 project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -2270,6 +2289,8 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
+FOREIGN KEY (project_market_hub_scenario_id) REFERENCES
+    subscenarios_project_market_hubs (project_market_hub_scenario_id),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
     subscenarios_project_specified_capacity
         (project_specified_capacity_scenario_id),

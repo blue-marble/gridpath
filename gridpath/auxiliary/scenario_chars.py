@@ -385,6 +385,14 @@ class SubScenarios(object):
         self.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID = \
             "NULL" if p_lc_char_sid is None else p_lc_char_sid
 
+        p_mh_sid = cursor.execute(
+            """SELECT project_market_hub_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.PROJECT_MARKET_HUB_SCENARIO_ID = \
+            "NULL" if p_mh_sid is None else p_mh_sid
+
         p_ecap_sid = cursor.execute(
             """SELECT project_specified_capacity_scenario_id
                FROM scenarios
