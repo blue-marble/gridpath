@@ -17,7 +17,7 @@ def get_required_subtype_modules(
     scenario_directory, subproblem, stage, which_type
 ):
     """
-
+    Get a list of unique types from projects.tab.
     """
     project_df = pd.read_csv(
         os.path.join(

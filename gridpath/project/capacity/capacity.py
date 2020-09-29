@@ -99,7 +99,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
     required_capacity_modules = get_required_subtype_modules(

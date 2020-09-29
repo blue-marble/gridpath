@@ -20,60 +20,6 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    :param d: the dynamic components class object we'll be adding to
-    :param scenario_directory: the base scenario directory
-    :param stage: if horizon subproblems exist, the horizon name; NOT USED
-    :param stage: if stage subproblems exist, the stage name; NOT USED
-
-    This method adds several project-related 'dynamic components' to the
-    Python class object (created in *gridpath.auxiliary.dynamic_components*) we
-    use to pass around components that depend on the selected modules and
-    the scenario input data.
-
-    First, we get the unique sets of project 'capacity types' and 'operational
-    types.' We will use this lists to iterate over the required capacity-type
-    and operational-type modules, so that they can add the relevant params,
-    sets, variables, etc. to the model, load their data, export their
-    results, etc.
-
-    We will also set the keys for the headroom and footroom variable
-    dictionaries: the keys are all the projects included in the
-    'projects.tab' input file. The values of these dictionaries are
-    initially empty lists and will be populated later by each of included
-    the reserve (e.g regulation up) modules. E.g. if the user has requested to
-    model spinning reserves and project *r* has a value in the column
-    associated with the spinning-reserves balancing area, then the name of
-    project-level spinning-reserves-provision variable will be added to that
-    project's list of variables in the 'headroom_variables' dictionary. For
-    downward reserves, the associated variables are added to the
-    'footroom_variables' dictionary.
-    """
-
-    project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "projects.tab"),
-        sep="\t"
-    )
-
-    # From here on, the dynamic components will be further populated by the
-    # modules
-
-    # Reserve variables
-    # Will be determined based on whether the user has specified the
-    # respective reserve module AND based on whether a reserve zone is
-    # specified for a project in projects.tab
-    # We need to make the dictionaries first; it is the lists for each key
-    # that are populated by the modules
-    setattr(d, headroom_variables,
-            {r: [] for r in project_df.project}
-            )
-    setattr(d, footroom_variables,
-            {r: [] for r in project_df.project}
-            )
-
-
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
@@ -177,9 +123,47 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
 
     # Start list of headroom and footroom variables by project
-    # TODO: should these functions be named record dynamic components or
-    #  actually have descriptive names depending on what they add
     record_dynamic_components(d, scenario_directory, subproblem, stage)
+
+
+def record_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    :param d: the dynamic components class object we'll be adding to
+    :param scenario_directory: the base scenario directory
+    :param stage: if horizon subproblems exist, the horizon name; NOT USED
+    :param stage: if stage subproblems exist, the stage name; NOT USED
+
+    Set the keys for the headroom and footroom variable
+    dictionaries: the keys are all the projects included in the
+    'projects.tab' input file. The values of these dictionaries are
+    initially empty lists and will be populated later by each of included
+    the reserve (e.g regulation up) modules. E.g. if the user has requested to
+    model spinning reserves and project *r* has a value in the column
+    associated with the spinning-reserves balancing area, then the name of
+    project-level spinning-reserves-provision variable will be added to that
+    project's list of variables in the 'headroom_variables' dictionary. For
+    downward reserves, the associated variables are added to the
+    'footroom_variables' dictionary.
+    """
+
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "projects.tab"),
+        sep="\t"
+    )
+
+    # Reserve variables
+    # Will be determined based on whether the user has specified the
+    # respective reserve module AND based on whether a reserve zone is
+    # specified for a project in projects.tab
+    # We need to make the dictionaries first; it is the lists for each key
+    # that are populated by the modules
+    setattr(d, headroom_variables,
+            {r: [] for r in project_df.project}
+            )
+    setattr(d, footroom_variables,
+            {r: [] for r in project_df.project}
+            )
 
 
 # Input-Output
