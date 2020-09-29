@@ -2047,9 +2047,14 @@ def power_provision_rule(mod, g, tmp):
     Power provision for gen_commit_bin generators is a variable constrained
     constrained to be between the generator's minimum stable level and its
     capacity if the generator is committed and 0 otherwise.
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
     return mod.GenCommitBin_Provide_Power_MW[g, tmp] - \
-        mod.GenCommitBin_Auxiliary_Consumption_MW[g, tmp]
+        mod.GenCommitBin_Auxiliary_Consumption_MW[g, tmp] \
+        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
+           if g in mod.MARKET_HUB_PRJS else 0)
 
 
 def commitment_rule(mod, g, tmp):

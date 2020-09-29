@@ -1228,9 +1228,14 @@ def power_provision_rule(mod, g, tmp):
     Power provision for dispatchable-capacity-commit generators is a
     variable constrained to be between the minimum stable level (defined as
     a fraction of committed capacity) and the committed capacity.
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
     return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \
-        mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp]
+        mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp] \
+        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
+           if g in mod.MARKET_HUB_PRJS else 0)
 
 
 def commitment_rule(mod, g, tmp):

@@ -536,9 +536,14 @@ def power_provision_rule(mod, s, tmp):
     reserve-provision), and are also constrained by the storage state of
     charge (i.e. can't charge when the storage is full; can't discharge when
     storage is empty).
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
     return mod.Stor_Discharge_MW[s, tmp] \
-        - mod.Stor_Charge_MW[s, tmp]
+        - mod.Stor_Charge_MW[s, tmp] \
+        + ((mod.Buy_Power[s, tmp] - mod.Sell_Power[s, tmp])
+           if s in mod.MARKET_HUB_PRJS else 0)
 
 
 def rec_provision_rule(mod, g, tmp):

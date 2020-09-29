@@ -151,9 +151,14 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision for must run generators is simply their capacity in all
     timepoints when they are operational.
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp] \
+        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
+           if g in mod.MARKET_HUB_PRJS else 0)
 
 
 def fuel_burn_rule(mod, g, tmp):

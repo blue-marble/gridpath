@@ -321,9 +321,14 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision from variable generators is their capacity times the
     capacity factor in each timepoint minus any upward reserves/curtailment.
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
 
-    return mod.GenVar_Provide_Power_MW[g, tmp]
+    return mod.GenVar_Provide_Power_MW[g, tmp] \
+        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
+           if g in mod.MARKET_HUB_PRJS else 0)
 
 
 def variable_om_cost_rule(mod, g, tmp):

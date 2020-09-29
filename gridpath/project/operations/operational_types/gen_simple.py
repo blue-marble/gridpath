@@ -402,8 +402,13 @@ def ramp_down_rule(mod, g, tmp):
 def power_provision_rule(mod, g, tmp):
     """
     Power provision from simple generators is an endogenous variable.
+
+    The power provision for load-balance purposes is adjusted by whether
+    power is bought from or sold to a market hub.
     """
-    return mod.GenSimple_Provide_Power_MW[g, tmp]
+    return mod.GenSimple_Provide_Power_MW[g, tmp] \
+        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
+           if g in mod.MARKET_HUB_PRJS else 0)
 
 
 def fuel_burn_rule(mod, g, tmp):
