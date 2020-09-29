@@ -4,11 +4,11 @@
 from pyomo.environ import Expression
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_subtype_modules
-from gridpath.auxiliary.dynamic_components import required_availability_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_subtype_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -16,15 +16,18 @@ def add_model_components(m, d):
     :return:
     """
     # Import needed availability type modules
+    required_availability_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
-        load_availability_type_modules(
-            getattr(d, required_availability_modules))
+        load_availability_type_modules(required_availability_modules)
 
     # First, add any components specific to the availability type modules
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     def availability_derate_rule(mod, g, tmp):
         """
@@ -90,11 +93,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    required_availability_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "load_module_specific_data"):
             imported_availability_modules[op_m].load_module_specific_data(
@@ -116,11 +123,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
+    required_availability_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "export_module_specific_results"):
             imported_availability_modules[

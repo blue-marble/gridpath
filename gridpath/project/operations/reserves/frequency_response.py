@@ -5,10 +5,6 @@
 Add project-level components for frequency response reserves
 """
 
-from builtins import next
-from builtins import zip
-from builtins import str
-from builtins import range
 import csv
 import os.path
 import pandas as pd
@@ -16,15 +12,16 @@ from pyomo.environ import Set, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.project.operations.reserves.reserve_provision import \
-    generic_determine_dynamic_components, generic_add_model_components, \
+    generic_record_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_get_inputs_from_database, \
     generic_validate_project_bas
 
 # Reserve-module variables
 MODULE_NAME = "frequency_response"
 # Dynamic components
-HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
+HEADROOM_OR_FOOTROOM_DICT_NAME = headroom_variables
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "frequency_response_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = \
@@ -43,7 +40,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
@@ -53,12 +50,11 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    generic_determine_dynamic_components(
+    generic_record_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
-        reserve_module=MODULE_NAME,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
@@ -70,13 +66,15 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :return:
     """
+
+    record_dynamic_components(d, scenario_directory, subproblem, stage)
 
     generic_add_model_components(
         m=m,

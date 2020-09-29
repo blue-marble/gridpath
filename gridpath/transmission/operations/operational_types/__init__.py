@@ -7,25 +7,41 @@ modules to describe the various ways in which transmission-line operations are
 constrained in optimization problem, e.g. as a simple transport model, or DC
 OPF.
 """
+import os.path
+import pandas as pd
 
 from gridpath.auxiliary.auxiliary import load_tx_operational_type_modules
-from gridpath.auxiliary.dynamic_components import \
-    required_tx_operational_modules
 
 
-def add_model_components(m, d):
+# TODO: missing test for this module
+
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Go through each relevant operational type and add the module components
     for that operational type.
     """
     # Import needed transmission operational type modules
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
+
+    # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            getattr(d, required_tx_operational_modules))
+            required_tx_operational_modules
+    )
     # Add any components specific to the transmission operational modules
-    for op_m in getattr(d, required_tx_operational_modules):
+    for op_m in required_tx_operational_modules:
         imp_op_m = imported_tx_operational_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, subproblem, stage
+            )
 
 
 # Input-Output
@@ -45,9 +61,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
+
+    # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            getattr(d, required_tx_operational_modules))
-    for op_m in getattr(d, required_tx_operational_modules):
+            required_tx_operational_modules
+    )
+    for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_operational_modules[op_m].load_module_specific_data(

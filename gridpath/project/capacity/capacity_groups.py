@@ -12,12 +12,11 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
     load_gen_storage_capacity_type_modules, setup_results_import
-from gridpath.auxiliary.dynamic_components import required_capacity_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -149,8 +148,13 @@ def add_model_components(m, d):
     )
 
     # Import needed capacity type modules
+    required_capacity_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
+    )
+
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        required_capacity_modules
     )
 
     # Get the new and total capacity in the group for the respective

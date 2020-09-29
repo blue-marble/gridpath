@@ -20,17 +20,7 @@ from pyomo.environ import Param, Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add carbon import tunings costs to cost components
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append("Total_Import_Carbon_Tuning_Cost")
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -60,6 +50,19 @@ def add_model_components(m, d):
     m.Total_Import_Carbon_Tuning_Cost = Expression(
         rule=total_import_carbon_tuning_cost_rule
     )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add carbon import tunings costs to cost components
+    """
+
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_Import_Carbon_Tuning_Cost")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

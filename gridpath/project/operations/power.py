@@ -18,13 +18,12 @@ import pandas as pd
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import
-from gridpath.auxiliary.dynamic_components import required_operational_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -46,11 +45,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Expressions
@@ -120,14 +124,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def summarize_results(d, scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem, stage):
     """
-    Summarize operational results
-    :param d:
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :return:
+
+    Summarize operational results
     """
 
     summary_results_file = os.path.join(

@@ -2,14 +2,16 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 
+import os.path
+import pandas as pd
 from pyomo.environ import Set, Expression, Param
 
 from gridpath.auxiliary.auxiliary import join_sets, load_prm_type_modules
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
-    required_prm_modules, prm_cost_group_prm_type
+    prm_cost_group_prm_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -40,8 +42,18 @@ def add_model_components(m, d):
     )
 
     # Import all possible PRM modules
-    imported_prm_modules = \
-        load_prm_type_modules(getattr(d, required_prm_modules))
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
+    required_prm_modules = [
+        prm_type for prm_type in project_df.prm_type.unique() if
+        prm_type != "."
+    ]
+
+    imported_prm_modules = load_prm_type_modules(required_prm_modules)
 
     # For each PRM project type, get the group costs
     def group_cost_rule(mod, group, p):

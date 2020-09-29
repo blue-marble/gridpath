@@ -33,7 +33,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "LF_RESERVES_DOWN_PRJ_OPR_TMPS"
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -44,6 +44,9 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_project_operational_timepoints_set=
         RESERVE_PRJ_OPR_TMPS_SET_NAME,

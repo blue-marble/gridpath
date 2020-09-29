@@ -7,14 +7,10 @@ from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 from .aggregate_reserve_violation_penalties import \
-    generic_determine_dynamic_components, generic_add_model_components
+    generic_record_dynamic_components, generic_add_model_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    generic_determine_dynamic_components(d, "Frequency_Response_Penalty_Costs")
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -26,6 +22,7 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
+        scenario_directory, subproblem, stage,
         "FREQUENCY_RESPONSE_BAS",
         "Frequency_Response_Violation_MW_Expression",
         "frequency_response_violation_penalty_per_mw",
@@ -49,5 +46,12 @@ def add_model_components(m, d):
     m.Frequency_Response_Partial_Penalty_Costs = \
         Expression(rule=partial_frequency_response_penalty_costs_rule)
 
-    getattr(d, total_cost_components).append(
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    generic_record_dynamic_components(dynamic_components,
+                                      "Frequency_Response_Penalty_Costs")
+
+    getattr(dynamic_components, total_cost_components).append(
         "Frequency_Response_Partial_Penalty_Costs")

@@ -11,49 +11,13 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param
 
-from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
-    required_tx_operational_modules
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, get_load_zones, validate_dtypes, \
     validate_columns, validate_values, validate_missing_inputs
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Determine the required transmission capacity types and
-    transmission operational types based on the inputs in the
-    transmission_lines.tab file, and add this information to the
-    dynamic components.
-
-    :param d:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-
-    # Get the capacity and operational type of each transmission line
-    df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "transmission_lines.tab"),
-        sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
-                 "tx_operational_type"]
-    )
-
-    # Required capacity modules are the unique set of tx capacity types
-    # This list will be used to know which capacity modules to load
-    setattr(d, required_tx_capacity_modules,
-            df.tx_capacity_type.unique())
-
-    # Required operational modules are the unique set of tx operational types
-    # This list will be used to know which operational modules to load
-    setattr(d, required_tx_operational_modules,
-            df.tx_operational_type.unique())
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 

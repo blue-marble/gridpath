@@ -19,7 +19,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -105,14 +105,14 @@ def save_duals(m):
         ["rps_zone", "period", "dual"]
 
 
-def summarize_results(d, scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem, stage):
     """
-    Summarize RPS policy results
-    :param d:
-    :param problem_directory:
+    :param scenario_directory:
     :param subproblem:
     :param stage:
     :return:
+
+    Summarize RPS policy results
     """
 
     summary_results_file = os.path.join(

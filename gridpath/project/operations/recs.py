@@ -14,15 +14,14 @@ import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import, cursor_to_df
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules, setup_results_import, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
-from gridpath.auxiliary.dynamic_components import required_operational_modules
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -92,11 +91,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Sets

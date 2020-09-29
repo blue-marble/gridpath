@@ -46,7 +46,9 @@ import pandas as pd
 from pyomo.environ import Set, Var, Constraint, Reals, Param
 
 
-def add_module_specific_components(m, d):
+def add_model_components(
+        m, d, scenario_directory, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 

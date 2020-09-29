@@ -42,7 +42,7 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 from gridpath.auxiliary.auxiliary import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -83,9 +83,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-              "system_costs.csv"), "w", newline="") as f:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "system_costs.csv"
+            ),
+            "w",
+            newline=""
+    ) as f:
         writer = csv.writer(f)
         components = getattr(d, total_cost_components)
         writer.writerow(components)
@@ -96,10 +101,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
-
     :param scenario_id:
     :param c:
     :param db:

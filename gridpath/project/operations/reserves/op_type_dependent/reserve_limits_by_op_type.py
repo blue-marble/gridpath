@@ -9,18 +9,18 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, PercentFraction, Constraint
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
 def generic_add_model_components(
-        m, d,
-        reserve_projects_set,
-        reserve_project_operational_timepoints_set,
-        reserve_provision_variable_name,
-        reserve_provision_ramp_rate_limit_param,
-        reserve_provision_ramp_rate_limit_constraint
+    m, d, scenario_directory, subproblem, stage,
+    reserve_projects_set,
+    reserve_project_operational_timepoints_set,
+    reserve_provision_variable_name,
+    reserve_provision_ramp_rate_limit_param,
+    reserve_provision_ramp_rate_limit_constraint
 ):
     """
     Reserve-related components that will be used by the operational_type
@@ -50,8 +50,14 @@ def generic_add_model_components(
             )
 
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
 
     def reserve_provision_ramp_rate_limit_rule(mod, g, tmp):
         """

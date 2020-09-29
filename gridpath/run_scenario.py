@@ -8,10 +8,7 @@ already been written.
 The main() function of this script can also be called with the
 *gridpath_run* command when GridPath is installed.
 """
-from __future__ import print_function
 
-from builtins import str
-from builtins import object
 import argparse
 from csv import reader, writer
 import datetime
@@ -139,10 +136,11 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     """
     # Create pyomo abstract model class
     model = AbstractModel()
+    dynamic_components = DynamicComponents()
 
     # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules, dynamic_components = \
-        set_up_gridpath_modules_and_components(
+    modules_to_use, loaded_modules = \
+        set_up_gridpath_modules(
             scenario_directory=scenario_directory,
             subproblem=subproblem, stage=stage
         )
@@ -150,7 +148,10 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     # Create the abstract model; some components are initialized here
     if not parsed_arguments.quiet:
         print("Building model...")
-    create_abstract_model(model, dynamic_components, loaded_modules)
+    create_abstract_model(
+        model, dynamic_components, loaded_modules, scenario_directory,
+        subproblem, stage
+    )
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
@@ -164,22 +165,22 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
         scenario_directory, subproblem, stage
     )
 
-    # Build the problem instance; this will also call any BuildActions that
-    # construct the dynamic inputs
-    # TODO: pretty sure there aren't any BuildActions left (?)
     if not parsed_arguments.quiet:
         print("Creating problem instance...")
     instance = create_problem_instance(model, scenario_data)
 
     # Fix variables if modules request so
-    instance = fix_variables(instance, dynamic_components, loaded_modules)
+    instance = fix_variables(
+        instance, dynamic_components, scenario_directory, subproblem, stage,
+        loaded_modules
+    )
 
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return instance, results
+    return instance, results, dynamic_components
 
 
 def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
@@ -241,14 +242,14 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
             print("--- stage {}".format(stage))
 
     # Create problem instance and solve it
-    solved_instance, results = \
+    solved_instance, results, dynamic_components = \
         create_and_solve_problem(scenario_directory, subproblem, stage,
                                  parsed_arguments)
 
     # Save the scenario results to disk
     save_results(
         scenario_directory, subproblem, stage, solved_instance, results,
-        parsed_arguments
+        dynamic_components, parsed_arguments
     )
 
     # Summarize results
@@ -305,13 +306,16 @@ def run_scenario(structure, parsed_arguments):
     return objective_values
 
 
-def save_results(scenario_directory, subproblem, stage,
-                 instance, results, parsed_arguments):
+def save_results(
+    scenario_directory, subproblem, stage, instance, results,
+    dynamic_components, parsed_arguments
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance: model instance (solution loaded after solving by default)
+    :param dynamic_components:
     :param parsed_arguments:
     :return:
 
@@ -325,8 +329,9 @@ def save_results(scenario_directory, subproblem, stage,
         print("Saving results...")
 
     # TODO: how best to handle non-empty results directories?
-    results_directory = os.path.join(scenario_directory, str(subproblem), str(stage),
-                                     "results")
+    results_directory = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "results"
+    )
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
@@ -344,7 +349,8 @@ def save_results(scenario_directory, subproblem, stage,
                 "w", newline="") as f:
             f.write("optimal")
 
-        export_results(scenario_directory, subproblem, stage, instance)
+        export_results(scenario_directory, subproblem, stage, instance,
+                       dynamic_components)
 
         export_pass_through_inputs(scenario_directory, subproblem, stage,
                                    instance)
@@ -368,6 +374,8 @@ def save_results(scenario_directory, subproblem, stage,
                     "w", newline="") as f:
                 f.write("infeasible")
         # Something else is wrong
+        # TODO: should probably still attempt to export results in this
+        #  case, but raise a warning
         else:
             if not parsed_arguments.quiet:
                 print(
@@ -394,34 +402,17 @@ def save_results(scenario_directory, subproblem, stage,
             pass
 
 
-def populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, subproblem, stage):
-    """
-    :param dynamic_components: the dynamic components class we're populating
-    :param loaded_modules: list of the needed imported modules (Python objects)
-    :param scenario_directory: the main scenario directory
-    :param subproblem: the horizon subproblem name
-    :param stage: the stage subproblem name
-
-    We iterate over all required modules and call their
-    *determine_dynamic_components* method, if applicable, in order to add
-    the dynamic components to the *dynamic_components* class object,
-    which we will then pass to the *add_model_components* module methods,
-    so that the applicable components can be added to the abstract model.
-    """
-    for m in loaded_modules:
-        if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(dynamic_components,
-                                           scenario_directory, subproblem, stage)
-        else:
-            pass
-
-
-def create_abstract_model(model, dynamic_components, loaded_modules):
+def create_abstract_model(
+    model, dynamic_components, loaded_modules, scenario_directory, subproblem,
+    stage
+):
     """
     :param model: the Pyomo AbstractModel object
     :param dynamic_components: the populated dynamic model components class
     :param loaded_modules: list of the required modules as Python objects
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
 
     To create the abstract model, we iterate over all required modules and
     call their *add_model_components* method to add components to the Pyomo
@@ -431,7 +422,10 @@ def create_abstract_model(model, dynamic_components, loaded_modules):
     """
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model, dynamic_components)
+            m.add_model_components(
+                model, dynamic_components, scenario_directory, subproblem,
+                stage
+            )
 
 
 def load_scenario_data(model, dynamic_components, loaded_modules,
@@ -477,10 +471,16 @@ def create_problem_instance(model, loaded_data):
     return instance
 
 
-def fix_variables(instance, dynamic_components, loaded_modules):
+def fix_variables(
+    instance, dynamic_components, scenario_directory, subproblem, stage,
+    loaded_modules
+):
     """
     :param instance: the compiled problem instance
     :param dynamic_components: the dynamic component class
+    :param scenario_directory: str
+    :param subproblem: str
+    :param stage: str
     :param loaded_modules: list of imported GridPath modules as Python objects
     :return: the problem instance with the relevant variables fixed
 
@@ -490,7 +490,8 @@ def fix_variables(instance, dynamic_components, loaded_modules):
     """
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
-            m.fix_variables(instance, dynamic_components)
+            m.fix_variables(instance, dynamic_components,
+                            scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -592,27 +593,32 @@ def solve(instance, parsed_arguments):
     return results
 
 
-def export_results(scenario_directory, subproblem, stage, instance):
+def export_results(
+    scenario_directory, subproblem, stage, instance, dynamic_components
+):
     """
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :param instance:
+    :param dynamic_components:
     :return:
 
     Export results for each loaded module (if applicable)
     """
     # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules, dynamic_components = \
-        set_up_gridpath_modules_and_components(
+    modules_to_use, loaded_modules = \
+        set_up_gridpath_modules(
             scenario_directory=scenario_directory,
             subproblem=subproblem, stage=stage
         )
 
     for m in loaded_modules:
         if hasattr(m, "export_results"):
-            m.export_results(scenario_directory, subproblem, stage, instance,
-                             dynamic_components)
+            m.export_results(
+                scenario_directory, subproblem, stage, instance,
+                dynamic_components
+            )
     else:
         pass
 
@@ -632,8 +638,8 @@ def export_pass_through_inputs(
     Export pass through inputs for each loaded module (if applicable)
     """
     # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules, dynamic_components = \
-        set_up_gridpath_modules_and_components(
+    modules_to_use, loaded_modules = \
+        set_up_gridpath_modules(
             scenario_directory=scenario_directory,
             subproblem=subproblem, stage=stage
         )
@@ -641,8 +647,7 @@ def export_pass_through_inputs(
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
             m.export_pass_through_inputs(
-                scenario_directory, subproblem, stage,
-                instance, dynamic_components
+                scenario_directory, subproblem, stage, instance
             )
     else:
         pass
@@ -687,8 +692,8 @@ def save_duals(scenario_directory, subproblem, stage, instance):
     Save the duals of various constraints.
     """
     # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules, dynamic_components = \
-        set_up_gridpath_modules_and_components(
+    modules_to_use, loaded_modules = \
+        set_up_gridpath_modules(
             scenario_directory=scenario_directory,
             subproblem=subproblem, stage=stage
         )
@@ -747,8 +752,8 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
             print("Summarizing results...")
 
         # Determine/load modules and dynamic components
-        modules_to_use, loaded_modules, dynamic_components = \
-            set_up_gridpath_modules_and_components(
+        modules_to_use, loaded_modules = \
+            set_up_gridpath_modules(
                 scenario_directory=scenario_directory,
                 subproblem=subproblem, stage=stage
             )
@@ -768,15 +773,14 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
         # Go through the modules and get the appropriate results
         for m in loaded_modules:
             if hasattr(m, "summarize_results"):
-                m.summarize_results(dynamic_components, scenario_directory, subproblem,
-                                    stage)
+                m.summarize_results(scenario_directory, subproblem, stage)
         else:
             pass
     else:
         pass
 
 
-def set_up_gridpath_modules_and_components(scenario_directory, subproblem, stage):
+def set_up_gridpath_modules(scenario_directory, subproblem, stage):
     """
     :return: list of the names of the modules the scenario uses, list of the
         loaded modules, and the populated dynamic components for the scenario
@@ -789,11 +793,10 @@ def set_up_gridpath_modules_and_components(scenario_directory, subproblem, stage
     loaded_modules = load_modules(modules_to_use)
     # Determine the dynamic components based on the needed modules and input
     # data
-    dynamic_components = DynamicComponents()
-    populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, subproblem, stage)
+    # populate_dynamic_inputs(dynamic_components, loaded_modules,
+    #                         scenario_directory, subproblem, stage)
 
-    return modules_to_use, loaded_modules, dynamic_components
+    return modules_to_use, loaded_modules
 
 
 # Parse run options

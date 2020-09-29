@@ -4,19 +4,36 @@
 """
 Various auxiliary functions used in other modules
 """
-from __future__ import print_function
 
-
-from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
+import traceback
 
 from db.common_functions import spin_on_database_lock
 
 
+def get_required_subtype_modules(
+    scenario_directory, subproblem, stage, which_type
+):
+    """
+    Get a list of unique types from projects.tab.
+    """
+    project_df = pd.read_csv(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "projects.tab"
+        ),
+        sep="\t"
+    )
+
+    required_modules = project_df[which_type].unique()
+
+    return required_modules
+
+
 def load_subtype_modules(
-        required_subtype_modules, package, required_attributes
+    required_subtype_modules, package, required_attributes
 ):
     """
     Load subtype modules (e.g. capacity types, operational types, etc).
@@ -49,7 +66,8 @@ def load_subtype_modules(
                         "ERROR! No " + str(a) + " function in subtype module "
                         + str(imp_m) + ".")
         except ImportError:
-            print("ERROR! Subtype module " + m + " not found.")
+            print("ERROR! Unable to import subtype module " + m + ".")
+            traceback.print_exc()
 
     return imported_subtype_modules
 
@@ -65,20 +83,6 @@ def load_gen_storage_capacity_type_modules(required_capacity_modules):
         required_subtype_modules=required_capacity_modules,
         package="gridpath.project.capacity.capacity_types",
         required_attributes=["capacity_rule", "capacity_cost_rule"]
-    )
-
-
-def load_reserve_type_modules(required_reserve_modules):
-    """
-    Load a specified set of reserve modules
-    :param required_reserve_modules:
-    :return: dictionary with the imported subtype modules
-        {name of subtype module: Python module object}
-    """
-    return load_subtype_modules(
-        required_subtype_modules=required_reserve_modules,
-        package="gridpath.project.operations.reserves",
-        required_attributes=[]
     )
 
 

@@ -88,6 +88,10 @@ class TestExamples(unittest.TestCase):
             ["--database", DB_PATH,
              "--scenario", test,
              "--scenario_location", EXAMPLES_DIRECTORY,
+             # "--log",
+             # "--write_solver_files_to_logs_dir",
+             # "--keepfiles",
+             # "--symbolic",
              "--quiet",
              "--mute_solver_output",
              "--testing"]

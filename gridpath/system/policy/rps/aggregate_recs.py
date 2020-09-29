@@ -9,7 +9,7 @@ the RPS zone - period level.
 from pyomo.environ import Param, Set, Expression, value
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

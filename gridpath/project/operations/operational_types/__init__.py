@@ -15,12 +15,11 @@ import csv
 import os.path
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+    load_operational_type_modules, setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -28,14 +27,20 @@ def add_model_components(m, d):
     :return:
     """
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
 
     # Add any components specific to the operational modules
-    for op_m in getattr(d, required_operational_modules):
+    for op_m in required_operational_modules:
         imp_op_m = imported_operational_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -50,9 +55,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
@@ -77,9 +90,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export module-specific results
     # Operational type modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
+    required_operational_modules = get_required_subtype_modules(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\

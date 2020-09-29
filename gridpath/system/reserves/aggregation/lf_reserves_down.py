@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from .reserve_aggregation import generic_add_model_components
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

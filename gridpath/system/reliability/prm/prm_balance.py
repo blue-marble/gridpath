@@ -18,7 +18,7 @@ from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:

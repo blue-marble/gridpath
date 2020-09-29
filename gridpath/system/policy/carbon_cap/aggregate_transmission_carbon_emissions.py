@@ -21,19 +21,8 @@ from gridpath.transmission.operations.carbon_emissions import \
     calculate_carbon_emissions_imports
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    This method adds emission imports to carbon balance
-    :param d:
-    :return:
-    """
 
-    getattr(d, carbon_cap_balance_emission_components).append(
-        "Total_Carbon_Emission_Imports_Tons"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Aggregate total imports of emissions and add to carbon balance constraint
     :param m:
@@ -62,6 +51,20 @@ def add_model_components(m, d):
     m.Total_Carbon_Emission_Imports_Tons = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=total_carbon_emissions_imports_rule
+    )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds emission imports to carbon balance
+    """
+
+    getattr(dynamic_components, carbon_cap_balance_emission_components).append(
+        "Total_Carbon_Emission_Imports_Tons"
     )
 
 

@@ -10,17 +10,7 @@ from pyomo.environ import Expression
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add total prm group costs to cost components
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append("Total_PRM_Group_Costs")
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Sum up all PRM group costs and add to the objective function.
     :param m:
@@ -38,3 +28,16 @@ def add_model_components(m, d):
                    for p in mod.PERIODS)
     m.Total_PRM_Group_Costs = Expression(
         rule=total_capacity_threshold_cost_rule)
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add total prm group costs to cost components
+    """
+
+    getattr(dynamic_components, total_cost_components).append(
+        "Total_PRM_Group_Costs")

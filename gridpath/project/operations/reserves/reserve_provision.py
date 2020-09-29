@@ -4,13 +4,10 @@
 """
 
 """
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
+from pyomo.environ import Set, Param, Var, NonNegativeReals, \
     PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
@@ -18,31 +15,29 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, setup_results_import, cursor_to_df
-from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
+from gridpath.auxiliary.dynamic_components import \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params
 
 
-def generic_determine_dynamic_components(
-        d, scenario_directory, subproblem, stage,
-        reserve_module,
-        headroom_or_footroom_dict,
-        ba_column_name,
-        reserve_provision_variable_name,
-        reserve_provision_derate_param_name,
-        reserve_to_energy_adjustment_param_name,
-        reserve_balancing_area_param_name
+def generic_record_dynamic_components(
+    d, scenario_directory, subproblem, stage,
+    headroom_or_footroom_dict,
+    ba_column_name,
+    reserve_provision_variable_name,
+    reserve_provision_derate_param_name,
+    reserve_to_energy_adjustment_param_name,
+    reserve_balancing_area_param_name
 ):
     """
     :param d: the DynamicComponents class we'll be populating
     :param scenario_directory: the base scenario directory
     :param stage: the horizon subproblem, not used here
     :param stage: the stage subproblem, not used here
-    :param reserve_module: which reserve module we are calling from
     :param headroom_or_footroom_dict: the headroom or footroom dictionary
         with projects as keys and list of headroom or footroom variables,
         respectively, as values; the keys are populated in the
-        *determine_dynamic_components* method of *gridpath.project.__init__*
+        *determine_dynamic_inputs* method of *gridpath.project.__init__*
     :param ba_column_name: the name of the column that determines the
         reserve balancing area for the projects in the *projects.tab* input
         file
@@ -57,14 +52,9 @@ def generic_determine_dynamic_components(
 
     This method populates the following 'dynamic components':
 
-    * required_reserve_modules
     * headroom_variables or footroom_variables
     * reserve_variable_derate_params
     * reserve_to_energy_adjustment_params
-
-    The *required_reserve_modules* list will be populated based on the
-    user-requested features, as the reserve modules will only call this
-    method if they are included in a requested feature.
 
     The *headroom_variables* and *footroom_variables* components are populated
     based on the data in the *projects.tab* input file.
@@ -79,7 +69,7 @@ def generic_determine_dynamic_components(
     reserve-provision variable name (the *reserve_provision_variable_name*
     specified by the reserve module calling this method) will be added to
     the project's list of headroom/footroom variables. These lists will then be
-    passed to the 'add_module_specific_components' method of the
+    passed to the 'add_model_components' method of the
     operational-modules and used to build the appropriate operational
     constraints for each project, usually named the 'max power rule' (power +
     upward reserves must be less than or equal to online capacity) and 'min
@@ -98,7 +88,7 @@ def generic_determine_dynamic_components(
     .. note:: Currently, these de-rates are only used in the *variable*
         operational type and we need to add them to other operational types.
 
-    Advancec GridPath functionality also includes the ability to account for
+    Advanced GridPath functionality also includes the ability to account for
     the energy effects of reserve-provision. For example, when providing
     regulation-up during a timepoint, projects will occasionally be called
     upon, so they will produce extra energy above what was schedule for the
@@ -114,19 +104,21 @@ def generic_determine_dynamic_components(
         operational type and we need to add them to other operational types.
     """
 
-    # Append the name of the reserve-type we're calling from the list of
-    # reserves requested by the user
-    # TODO: we could probably just get this from the requested features
-    getattr(d, required_reserve_modules).append(reserve_module)
-
     # Check which projects have been assigned a balancing area for the
     # current reserve type (i.e. they have a value in the column named
     # 'ba_column_name'); add the variable name for the current reserve type
     # to the list of variables in the headroom/footroom dictionary for the
     # project
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"),
-              "r") as projects_file:
-        projects_file_reader = csv.reader(projects_file, delimiter="\t", lineterminator="\n")
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage),
+                "inputs", "projects.tab"
+            ),
+            "r"
+    ) as projects_file:
+        projects_file_reader = csv.reader(
+            projects_file, delimiter="\t", lineterminator="\n"
+        )
         headers = next(projects_file_reader)
         # Check that column names are not repeated
         check_list_items_are_unique(headers)

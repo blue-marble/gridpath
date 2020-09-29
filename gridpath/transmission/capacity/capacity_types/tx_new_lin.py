@@ -32,7 +32,9 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 
 # TODO: can we have different capacities depending on the direction
 # TODO: add fixed O&M costs similar to gen_new_lin
-def add_module_specific_components(m, d):
+def add_model_components(
+        m, d, scenario_directory, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
