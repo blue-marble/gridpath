@@ -587,8 +587,8 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_geography_local_capacity_zones;
-CREATE TABLE inputs_geography_local_capacity_zones (
+DROP TABLE IF EXISTS inputs_geography_market_hubs;
+CREATE TABLE inputs_geography_market_hubs (
 market_hub_scenario_id INTEGER,
 market_hub VARCHAR(32),
 PRIMARY KEY (market_hub_scenario_id, market_hub),
@@ -2142,6 +2142,7 @@ rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
+market_hub_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 project_availability_scenario_id INTEGER,
@@ -2219,6 +2220,8 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
     subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
+FOREIGN KEY (market_hub_scenario_id) REFERENCES
+    subscenarios_geography_market_hubs (market_hub_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
     subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
