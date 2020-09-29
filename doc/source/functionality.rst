@@ -400,7 +400,7 @@ Load Balance
 Objective Function
 ==================
 
-.. automodule:: gridpath.objective.min_total_cost
+.. automodule:: gridpath.objective.max_npv
 
 .. _optional-functionality-section-ref:
 

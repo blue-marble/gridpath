@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 from .aggregate_reserve_violation_penalties import \
     generic_record_dynamic_components, generic_add_model_components
 
@@ -53,5 +53,5 @@ def record_dynamic_components(dynamic_components):
     generic_record_dynamic_components(dynamic_components,
                                       "Frequency_Response_Penalty_Costs")
 
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Frequency_Response_Partial_Penalty_Costs")

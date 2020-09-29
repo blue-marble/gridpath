@@ -4,7 +4,8 @@
 """
 GridPath's objective function consists of modularized components. This
 modularity allows for different objective functions to be defined. Here, we
-discuss the objective of minimizing total system costs.
+discuss the objective of maximizing the net present value of revenues minus
+costs.
 
 Its most basic version includes the aggregated project capacity costs and
 aggregated project operational costs, and any load-balance penalties
@@ -23,8 +24,10 @@ be standard for all systems. Examples currently include:
     * planning reserve margin costs
     * various tuning costs
 
-All costs are net present value costs, with a user-specified discount factor
-applied to call costs depending on the period in which they are incurred.
+Market costs and revenues may also be included.
+
+All revenue and costs are in net present value terms, with a user-specified
+discount factor applied depending on the period.
 """
 
 import csv
@@ -34,11 +37,11 @@ import numpy as np
 import os
 
 
-from pyomo.environ import Objective, minimize, value
+from pyomo.environ import Expression, Objective, maximize, value
 
 from db.common_functions import spin_on_database_lock
-
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components, \
+    revenue_components
 from gridpath.auxiliary.auxiliary import setup_results_import
 
 
@@ -58,13 +61,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    # Define objective function
-    def total_cost_rule(mod):
-
+    # Aggregate all revenue
+    def total_revenue_rule(mod):
         return sum(getattr(mod, c)
-                   for c in getattr(d, total_cost_components))
+                   for c in getattr(d, revenue_components))
 
-    m.Total_Cost = Objective(rule=total_cost_rule, sense=minimize)
+    m.Total_Revenue = m.Expression(initialize=total_revenue_rule)
+
+    # Aggregate all costs
+    def total_cost_rule(mod):
+        return sum(getattr(mod, c)
+                   for c in getattr(d, cost_components))
+
+    m.Total_Cost = m.Expression(initialize=total_cost_rule)
+
+    # NPV
+    def npv_rule(mod):
+        return mod.Total_Revenue - mod.Total_Cost
+
+    m.NPV = Objective(rule=total_cost_rule, sense=maximize)
 
 
 # Input-Output
@@ -86,13 +101,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(
             os.path.join(
                 scenario_directory, str(subproblem), str(stage), "results",
-                "system_costs.csv"
+                "npv.csv"
             ),
             "w",
             newline=""
     ) as f:
         writer = csv.writer(f)
-        components = getattr(d, total_cost_components)
+        components = \
+            getattr(d, revenue_components) + getattr(d, cost_components)
         writer.writerow(components)
         writer.writerow((value(getattr(m, c)) for c in components))
 
@@ -121,7 +137,7 @@ def import_results_into_database(
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
-    df = pd.read_csv(os.path.join(results_directory, "system_costs.csv"))
+    df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
     df['scenario_id'] = scenario_id
     df['subproblem_id'] = subproblem
     df['stage_id'] = stage

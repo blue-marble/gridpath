@@ -4,7 +4,7 @@
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 
 
 def generic_record_dynamic_components(
@@ -18,7 +18,7 @@ def generic_record_dynamic_components(
     :param objective_function_reserve_penalty_cost_component:
     :return:
     """
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         objective_function_reserve_penalty_cost_component)
 
 
