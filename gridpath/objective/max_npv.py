@@ -127,7 +127,8 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # Fuel burned by project and timepoint
+    # TODO: change this to say NPV and have negatives for the cost
+    #  components or flag revenue and cost components
     if not quiet:
         print("results system cost")
     # Delete prior results and create temporary import table for ordering

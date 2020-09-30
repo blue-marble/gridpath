@@ -7,7 +7,7 @@ Define the market participation components for projects.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Var, NonNegativeReals
+from pyomo.environ import Set, Param, Var, NonNegativeReals, Constraint
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -30,9 +30,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals
     )
 
+    # TODO: should the buy variable be project or perhaps by load zone?
     m.Buy_Power = Var(
         m.MARKET_HUB_PRJ_OPR_TMPS,
         within=NonNegativeReals
+    )
+
+    def max_sales_by_project(mod, prj, tmp):
+        """
+        A project can't sell more power than produced at the project.
+        """
+        return mod.Sell_Power[prj, tmp] <= mod.Produce_Power_MW[prj, tmp]
+
+    m.Max_Sales_By_Project_Constraint = Constraint(
+        m.MARKET_HUB_PRJ_OPR_TMPS, rule=max_sales_by_project
     )
 
 
@@ -90,7 +101,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         );
         """,
         (subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-         subscenarios.PROJECT_MARKET_HUB_SCENARIO_ID,
+         subscenarios.LOAD_ZONE_MARKET_HUB_SCENARIO_ID,
          subscenarios.MARKET_HUB_SCENARIO_ID)
     )
 

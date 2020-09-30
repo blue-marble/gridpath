@@ -1429,24 +1429,6 @@ subscenarios_project_local_capacity_chars
 (project_local_capacity_chars_scenario_id)
 );
 
--- Project market hubs
-DROP TABLE IF EXISTS subscenarios_project_market_hubs;
-CREATE TABLE subscenarios_project_market_hubs (
-project_market_hub_scenario_id INTEGER PRIMARY KEY,
-name VARCHAR(32),
-description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_project_market_hubs;
-CREATE TABLE inputs_project_market_hubs (
-project_market_hub_scenario_id INTEGER,
-project VARCHAR(64),
-market_hub VARCHAR(32),
-PRIMARY KEY (project_market_hub_scenario_id, project),
-FOREIGN KEY (project_market_hub_scenario_id)
-REFERENCES subscenarios_project_market_hubs (project_market_hub_scenario_id)
-);
-
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
 CREATE TABLE subscenarios_project_fuels (
@@ -1483,7 +1465,6 @@ PRIMARY KEY (fuel_price_scenario_id, fuel, period, month),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
 subscenarios_project_fuel_prices (fuel_price_scenario_id)
 );
-
 
 
 ------------------
@@ -1714,6 +1695,27 @@ PRIMARY KEY (load_scenario_id, load_zone, stage_id, timepoint),
 FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 (load_scenario_id)
 );
+
+
+-- Markets
+-- Load zone market hubs
+DROP TABLE IF EXISTS subscenarios_load_zone_market_hubs;
+CREATE TABLE subscenarios_load_zone_market_hubs (
+load_zone_market_hub_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_load_zone_market_hubs;
+CREATE TABLE inputs_load_zone_market_hubs (
+load_zone_market_hub_scenario_id INTEGER,
+load_zone VARCHAR(64),
+market_hub VARCHAR(32),
+PRIMARY KEY (load_zone_market_hub_scenario_id, load_zone, market_hub),
+FOREIGN KEY (load_zone_market_hub_scenario_id)
+REFERENCES subscenarios_load_zone_market_hubs (load_zone_market_hub_scenario_id)
+);
+
 
 -- -- Reserves -- --
 
@@ -2147,6 +2149,7 @@ of_track_carbon_imports INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
+of_markets INTEGER,
 of_tuning INTEGER,
 temporal_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
@@ -2179,7 +2182,7 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
-project_market_hub_scenario_id INTEGER,
+load_zone_market_hub_scenario_id INTEGER,
 project_specified_capacity_scenario_id INTEGER,
 project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -2289,8 +2292,8 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
-FOREIGN KEY (project_market_hub_scenario_id) REFERENCES
-    subscenarios_project_market_hubs (project_market_hub_scenario_id),
+FOREIGN KEY (load_zone_market_hub_scenario_id) REFERENCES
+    subscenarios_load_zone_market_hubs (load_zone_market_hub_scenario_id),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
     subscenarios_project_specified_capacity
         (project_specified_capacity_scenario_id),
