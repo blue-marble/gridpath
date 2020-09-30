@@ -77,9 +77,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # NPV
     def npv_rule(mod):
-        return mod.Total_Revenue - mod.Total_Cost
+        return total_revenue_rule(mod) - total_cost_rule(mod)
 
-    m.NPV = Objective(rule=total_cost_rule, sense=maximize)
+    m.NPV = Objective(rule=npv_rule, sense=maximize)
 
 
 # Input-Output

@@ -263,7 +263,9 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
 
     # Return the objective function value (in 'testing' mode,
     # the value gets checked against the expected value)
-    return solved_instance.Total_Cost()
+    # TODO: this will need to have a variable for the name of the objective
+    #  function component once there are multiple possible objective functions
+    return solved_instance.NPV()
 
 
 def run_scenario(structure, parsed_arguments):
@@ -271,7 +273,7 @@ def run_scenario(structure, parsed_arguments):
     :param structure: the scenario structure object (i.e. horizon and stage
         subproblems)
     :param parsed_arguments:
-    :return: the objective function value (Total_Cost); only used in
+    :return: the objective function value (NPV); only used in
      'testing' mode.
 
     Check the scenario structure, iterate over all subproblems if they
@@ -663,7 +665,7 @@ def save_objective_function_value(scenario_directory, subproblem, stage,
     :param instance:
     :return:
     """
-    objective_function_value = instance.Total_Cost()
+    objective_function_value = instance.NPV()
 
     # Round objective function value of test examples
     if os.path.dirname(scenario_directory)[-8:] == 'examples':
