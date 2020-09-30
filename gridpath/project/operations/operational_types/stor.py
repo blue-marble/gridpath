@@ -541,9 +541,7 @@ def power_provision_rule(mod, s, tmp):
     power is bought from or sold to a market hub.
     """
     return mod.Stor_Discharge_MW[s, tmp] \
-        - mod.Stor_Charge_MW[s, tmp] \
-        + ((mod.Buy_Power[s, tmp] - mod.Sell_Power[s, tmp])
-           if s in mod.MARKET_HUB_PRJS else 0)
+        - mod.Stor_Charge_MW[s, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):

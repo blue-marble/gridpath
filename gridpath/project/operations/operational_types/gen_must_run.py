@@ -156,9 +156,7 @@ def power_provision_rule(mod, g, tmp):
     power is bought from or sold to a market hub.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
-           if g in mod.MARKET_HUB_PRJS else 0)
+        * mod.Availability_Derate[g, tmp]
 
 
 def fuel_burn_rule(mod, g, tmp):

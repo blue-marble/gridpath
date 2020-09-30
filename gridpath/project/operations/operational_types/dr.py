@@ -221,9 +221,7 @@ def power_provision_rule(mod, p, tmp):
     Provided power to the system is the load shifted down minus the load
     shifted up.
     """
-    return mod.DR_Shift_Down_MW[p, tmp] - mod.DR_Shift_Up_MW[p, tmp] \
-        + ((mod.Buy_Power[p, tmp] - mod.Sell_Power[p, tmp])
-           if p in mod.MARKET_HUB_PRJS else 0)
+    return mod.DR_Shift_Down_MW[p, tmp] - mod.DR_Shift_Up_MW[p, tmp]
 
 
 def power_delta_rule(mod, p, tmp):

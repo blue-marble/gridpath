@@ -567,9 +567,7 @@ def power_provision_rule(mod, g, tmp):
     The power provision for load-balance purposes is adjusted by whether
     power is bought from or sold to a market hub.
     """
-    return mod.GenHydro_Provide_Power_MW[g, tmp] \
-        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
-           if g in mod.MARKET_HUB_PRJS else 0)
+    return mod.GenHydro_Provide_Power_MW[g, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):

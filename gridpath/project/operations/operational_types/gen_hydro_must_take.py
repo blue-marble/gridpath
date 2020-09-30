@@ -523,9 +523,7 @@ def power_provision_rule(mod, g, tmp):
     The power provision for load-balance purposes is adjusted by whether
     power is bought from or sold to a market hub.
     """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
-        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
-           if g in mod.MARKET_HUB_PRJS else 0)
+    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
 
 
 def power_delta_rule(mod, g, tmp):

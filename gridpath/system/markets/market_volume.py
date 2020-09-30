@@ -2,7 +2,8 @@
 # Copyright 2020 Blue Marble Analytics LLC. All rights reserved.
 
 
-from pyomo.environ import Set, Expression
+from pyomo.environ import Set, Expression, Param, Constraint
+Infinity = float('inf')
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -14,6 +15,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TMPS,
         initialize=lambda mod, tmp:
         mod.MARKET_HUB_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
+    )
+
+    m.max_market_sales = Param(
+        m.MARKET_HUBS, m.TMPS,
+        default=Infinity
+    )
+
+    m.max_market_purchases = Param(
+        m.MARKET_HUBS, m.TMPS,
+        default=Infinity
     )
 
     def total_market_sales_rule(mod, hub, tmp):
@@ -36,4 +47,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Total_Market_Purchases = Expression(
         m.MARKET_HUBS, m.TMPS,
         initialize=total_market_purchases_rule
+    )
+
+    def max_market_sales_rule(mod, hub, tmp):
+        return mod.Total_Market_Sales[hub, tmp] \
+               <= mod.max_market_sales[hub, tmp]
+
+    m.Max_Market_Sales_Constraint = Constraint(
+        m.MARKET_HUBS, m.TMPS,
+        rule=max_market_sales_rule
+    )
+
+    def max_market_purchases_rule(mod, hub, tmp):
+        return mod.Total_Market_Purchases[hub, tmp] \
+               <= mod.max_market_purchases[hub, tmp]
+
+    m.Max_Market_Purchases_Constraint = Constraint(
+        m.MARKET_HUBS, m.TMPS,
+        rule=max_market_purchases_rule
     )

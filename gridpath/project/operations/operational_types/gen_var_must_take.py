@@ -174,9 +174,7 @@ def power_provision_rule(mod, g, tmp):
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * mod.gen_var_must_take_cap_factor[g, tmp] \
-        + ((mod.Buy_Power[g, tmp] - mod.Sell_Power[g, tmp])
-           if g in mod.MARKET_HUB_PRJS else 0)
+        * mod.gen_var_must_take_cap_factor[g, tmp]
 
 
 def power_delta_rule(mod, g, tmp):
