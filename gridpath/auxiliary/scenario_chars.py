@@ -291,6 +291,14 @@ class SubScenarios(object):
         self.MARKET_PRICE_SCENARIO_ID = \
             "NULL" if market_price_sid is None else market_price_sid
 
+        market_volume_sid = cursor.execute(
+            """SELECT market_volume_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.MARKET_VOLUME_SCENARIO_ID = \
+            "NULL" if market_volume_sid is None else market_volume_sid
+
         proj_portfolio_sid = cursor.execute(
             """SELECT project_portfolio_scenario_id
                FROM scenarios

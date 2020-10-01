@@ -614,6 +614,25 @@ FOREIGN KEY (market_price_scenario_id) REFERENCES
 subscenarios_market_prices (market_price_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_market_volume;
+CREATE TABLE subscenarios_market_volume (
+market_volume_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume;
+CREATE TABLE inputs_market_volume (
+market_volume_scenario_id INTEGER,
+market VARCHAR(32),
+timepoint INTEGER,
+max_market_sales FLOAT,
+max_market_purchases FLOAT,
+PRIMARY KEY (market_volume_scenario_id, market, timepoint),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+subscenarios_market_volume (market_volume_scenario_id)
+);
+
 
 -------------------
 -- -- PROJECT -- --
@@ -2231,6 +2250,7 @@ prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 market_price_scenario_id INTEGER,
+market_volume_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
@@ -2385,6 +2405,8 @@ FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
         (local_capacity_requirement_scenario_id),
 FOREIGN KEY (market_price_scenario_id) REFERENCES
     subscenarios_market_prices (market_price_scenario_id),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+    subscenarios_market_volume (market_volume_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
