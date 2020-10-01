@@ -3184,6 +3184,25 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_market_participation;
+CREATE TABLE results_system_market_participation (
+scenario_id INTEGER,
+load_zone VARCHAR(32),
+market VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+spinup_or_lookahead INTEGER,
+sell_power FLOAT,
+buy_power FLOAT,
+PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
 CREATE TABLE results_system_lf_reserves_up_balance (
 scenario_id INTEGER,
