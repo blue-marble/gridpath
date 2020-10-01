@@ -17,6 +17,7 @@ class OptionalFeatures(object):
 
         self.SCENARIO_ID = scenario_id
 
+        # TODO: refactor this
         self.OPTIONAL_FEATURE_TRANSMISSION = cursor.execute(
             """SELECT of_transmission
                FROM scenarios
@@ -107,6 +108,12 @@ class OptionalFeatures(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.OPTIONAL_FEATURE_MARKETS = cursor.execute(
+            """SELECT of_markets
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.OPTIONAL_FEATURE_TUNING = cursor.execute(
             """SELECT of_tuning
                FROM scenarios
@@ -150,6 +157,8 @@ class OptionalFeatures(object):
             feature_list.append("elcc_surface")
         if self.OPTIONAL_FEATURE_LOCAL_CAPACITY:
             feature_list.append("local_capacity")
+        if self.OPTIONAL_FEATURE_MARKETS:
+            feature_list.append("markets")
         if self.OPTIONAL_FEATURE_TUNING:
             feature_list.append("tuning")
 
