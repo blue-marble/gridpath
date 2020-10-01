@@ -13,7 +13,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Price by market and timepoint
     # Prices are allowed to be negative
     m.market_price = Param(
-        m.MARKET, m.TMPS,
+        m.MARKETS, m.TMPS,
         within=Reals
     )
 
@@ -98,6 +98,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerows(["market", "timepoint", "price"])
+        writer.writerow(["market", "timepoint", "price"])
         for row in prices:
             writer.writerow(row)

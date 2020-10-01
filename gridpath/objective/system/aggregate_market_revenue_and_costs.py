@@ -22,27 +22,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     def total_market_revenue_rule(mod):
         return sum(
-            mod.Total_Market_Sales[hub, tmp]
-            * mod.market_price[hub]
+            mod.Total_Market_Sales[market, tmp]
+            * mod.market_price[market, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for hub in mod.MARKETS for tmp in mod.TMPS
+            for market in mod.MARKETS for tmp in mod.TMPS
         )
-    m.Total_Market_Revenue = Expression(initialize=total_market_revenue_rule)
+    m.Total_Market_Revenue = Expression(rule=total_market_revenue_rule)
 
     def total_market_cost_rule(mod):
         return sum(
-            mod.Total_Market_Purchases[hub, tmp]
-            * mod.market_price[hub]
+            mod.Total_Market_Purchases[market, tmp]
+            * mod.market_price[market, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for hub in mod.MARKETS for tmp in mod.TMPS
+            for market in mod.MARKETS for tmp in mod.TMPS
         )
-    m.Total_Market_Cost = Expression(initialize=total_market_cost_rule)
+    m.Total_Market_Cost = Expression(rule=total_market_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
 

@@ -10,13 +10,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     """
-
-    m.MARKET_PRJS_OPRTNL_IN_TMP = Set(
-        m.TMPS,
-        initialize=lambda mod, tmp:
-        mod.MARKET_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
-    )
-
     m.max_market_sales = Param(
         m.MARKETS, m.TMPS,
         default=Infinity
@@ -27,26 +20,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         default=Infinity
     )
 
-    def total_market_sales_rule(mod, hub, tmp):
-        sum(mod.Sell_Power[prj, tmp]
-            for prj in mod.MARKET_PRJS_OPRTNL_IN_TMP[tmp]
-            if mod.market[prj] == hub
+    def total_market_sales_rule(mod, market, tmp):
+        return sum(mod.Sell_Power[lz, mrkt, tmp]
+            for (lz, mrkt) in mod.LZ_MARKETS
+            if mrkt == market
             )
 
     m.Total_Market_Sales = Expression(
         m.MARKETS, m.TMPS,
-        initialize=total_market_sales_rule
+        rule=total_market_sales_rule
     )
 
-    def total_market_purchases_rule(mod, hub, tmp):
-        sum(mod.Buy_Power[prj, tmp]
-            for prj in mod.MARKET_PRJS_OPRTNL_IN_TMP[tmp]
-            if mod.market[prj] == hub
+    def total_market_purchases_rule(mod, market, tmp):
+        return sum(mod.Buy_Power[lz, mrkt, tmp]
+            for (lz, mrkt) in mod.LZ_MARKETS
+            if mrkt == market
             )
 
     m.Total_Market_Purchases = Expression(
         m.MARKETS, m.TMPS,
-        initialize=total_market_purchases_rule
+        rule=total_market_purchases_rule
     )
 
     def max_market_sales_rule(mod, hub, tmp):

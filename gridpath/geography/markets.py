@@ -55,7 +55,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     markets = c.execute(
         """SELECT market
-        FROM markets
+        FROM inputs_geography_markets
         WHERE market_scenario_id = {};
         """.format(
             subscenarios.MARKET_SCENARIO_ID

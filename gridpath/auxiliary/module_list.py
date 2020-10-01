@@ -57,7 +57,6 @@ def all_modules_list():
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
-        "system.markets.volume",
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
@@ -129,6 +128,7 @@ def all_modules_list():
         "system.reliability.local_capacity"
         ".aggregate_local_capacity_contribution",
         "system.reliability.local_capacity.local_capacity_balance",
+        "system.markets.volume",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_prm_group_costs",
         "objective.project.aggregate_operational_costs",
@@ -267,8 +267,8 @@ def optional_modules_list():
         "markets": [
             "geography.markets",
             "system.markets.prices",
-            "system.markets.volume",
             "system.load_balance.market_participation",
+            "system.markets.volume",
             "objective.system.aggregate_market_revenue_and_costs"
             ],
         "tuning": [

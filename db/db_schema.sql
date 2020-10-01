@@ -3410,6 +3410,8 @@ Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_RPS_Balance_Penalty_Costs Float,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
+Total_Market_Cost FLOAT,
+Total_Market_Revenue FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

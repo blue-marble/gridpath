@@ -784,6 +784,15 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective("2periods_new_build_capgroups",
                                      -5266183794340.191)
 
+    def test_example_test_markets(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+
+        self.check_validation("test_markets")
+        self.run_and_check_objective("test_markets", -3504300478278.3403)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

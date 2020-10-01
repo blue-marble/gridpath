@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Power_Sold = Expression(
         m.LOAD_ZONES, m.TMPS,
-        initialize=total_power_sold_from_zone_rule
+        rule=total_power_sold_from_zone_rule
     )
 
     def total_power_sold_to_zone_rule(mod, z, tmp):
@@ -57,7 +57,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Power_Bought = Expression(
         m.LOAD_ZONES, m.TMPS,
-        initialize=total_power_sold_to_zone_rule
+        rule=total_power_sold_to_zone_rule
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -159,6 +159,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerows(["load_zone", "market"])
+        writer.writerow(["load_zone", "market"])
         for row in load_zone_markets:
             writer.writerow(row)
