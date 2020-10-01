@@ -169,6 +169,7 @@ class SubScenarios(object):
         """
         self.SCENARIO_ID = scenario_id
 
+        # TODO: refactor this
         temporal_sid = cursor.execute(
             """SELECT temporal_scenario_id
                FROM scenarios
@@ -272,6 +273,14 @@ class SubScenarios(object):
         ).fetchone()[0]
         self.MARKET_HUB_SCENARIO_ID = \
             "NULL" if market_hub_sid is None else market_hub_sid
+
+        market_hub_price_sid = cursor.execute(
+            """SELECT market_hub_price_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.MARKET_HUB_PRICE_SCENARIO_ID = \
+            "NULL" if market_hub_price_sid is None else market_hub_price_sid
 
         proj_portfolio_sid = cursor.execute(
             """SELECT project_portfolio_scenario_id

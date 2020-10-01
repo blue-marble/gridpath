@@ -596,6 +596,24 @@ FOREIGN KEY (market_hub_scenario_id) REFERENCES
 subscenarios_geography_market_hubs (market_hub_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_market_hub_prices;
+CREATE TABLE subscenarios_market_hub_prices (
+market_hub_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_hub_prices;
+CREATE TABLE inputs_market_hub_prices (
+market_hub_price_scenario_id INTEGER,
+market_hub VARCHAR(32),
+timepoint INTEGER,
+market_hub_price FLOAT,
+PRIMARY KEY (market_hub_price_scenario_id, market_hub, timepoint),
+FOREIGN KEY (market_hub_price_scenario_id) REFERENCES
+subscenarios_market_hub_prices (market_hub_price_scenario_id)
+);
+
 
 -------------------
 -- -- PROJECT -- --
@@ -2212,6 +2230,7 @@ carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
+market_hub_price_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
@@ -2364,6 +2383,8 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
+FOREIGN KEY (market_hub_price_scenario_id) REFERENCES
+    subscenarios_market_hub_prices (market_hub_price_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
