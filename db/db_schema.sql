@@ -580,38 +580,38 @@ subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
 -- Market hubs
 -- This is the unit at which prices are specified in the model;
 -- it can be different from the load zones
-DROP TABLE IF EXISTS subscenarios_geography_market_hubs;
-CREATE TABLE subscenarios_geography_market_hubs (
-market_hub_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_geography_markets;
+CREATE TABLE subscenarios_geography_markets (
+market_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_geography_market_hubs;
-CREATE TABLE inputs_geography_market_hubs (
-market_hub_scenario_id INTEGER,
-market_hub VARCHAR(32),
-PRIMARY KEY (market_hub_scenario_id, market_hub),
-FOREIGN KEY (market_hub_scenario_id) REFERENCES
-subscenarios_geography_market_hubs (market_hub_scenario_id)
+DROP TABLE IF EXISTS inputs_geography_markets;
+CREATE TABLE inputs_geography_markets (
+market_scenario_id INTEGER,
+market VARCHAR(32),
+PRIMARY KEY (market_scenario_id, market),
+FOREIGN KEY (market_scenario_id) REFERENCES
+subscenarios_geography_markets (market_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_market_hub_prices;
-CREATE TABLE subscenarios_market_hub_prices (
-market_hub_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_market_prices;
+CREATE TABLE subscenarios_market_prices (
+market_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_market_hub_prices;
-CREATE TABLE inputs_market_hub_prices (
-market_hub_price_scenario_id INTEGER,
-market_hub VARCHAR(32),
+DROP TABLE IF EXISTS inputs_market_prices;
+CREATE TABLE inputs_market_prices (
+market_price_scenario_id INTEGER,
+market VARCHAR(32),
 timepoint INTEGER,
-market_hub_price FLOAT,
-PRIMARY KEY (market_hub_price_scenario_id, market_hub, timepoint),
-FOREIGN KEY (market_hub_price_scenario_id) REFERENCES
-subscenarios_market_hub_prices (market_hub_price_scenario_id)
+market_price FLOAT,
+PRIMARY KEY (market_price_scenario_id, market, timepoint),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+subscenarios_market_prices (market_price_scenario_id)
 );
 
 
@@ -1716,22 +1716,22 @@ FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 
 
 -- Markets
--- Load zone market hubs
-DROP TABLE IF EXISTS subscenarios_load_zone_market_hubs;
-CREATE TABLE subscenarios_load_zone_market_hubs (
-load_zone_market_hub_scenario_id INTEGER PRIMARY KEY,
+-- Load zone markets
+DROP TABLE IF EXISTS subscenarios_load_zone_markets;
+CREATE TABLE subscenarios_load_zone_markets (
+load_zone_market_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_load_zone_market_hubs;
-CREATE TABLE inputs_load_zone_market_hubs (
-load_zone_market_hub_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_load_zone_markets;
+CREATE TABLE inputs_load_zone_markets (
+load_zone_market_scenario_id INTEGER,
 load_zone VARCHAR(64),
-market_hub VARCHAR(32),
-PRIMARY KEY (load_zone_market_hub_scenario_id, load_zone, market_hub),
-FOREIGN KEY (load_zone_market_hub_scenario_id)
-REFERENCES subscenarios_load_zone_market_hubs (load_zone_market_hub_scenario_id)
+market VARCHAR(32),
+PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
+FOREIGN KEY (load_zone_market_scenario_id)
+REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)
 );
 
 
@@ -2181,7 +2181,7 @@ rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
-market_hub_scenario_id INTEGER,
+market_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 project_availability_scenario_id INTEGER,
@@ -2200,7 +2200,7 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
-load_zone_market_hub_scenario_id INTEGER,
+load_zone_market_scenario_id INTEGER,
 project_specified_capacity_scenario_id INTEGER,
 project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -2230,7 +2230,7 @@ carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
-market_hub_price_scenario_id INTEGER,
+market_price_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
@@ -2261,8 +2261,8 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
     subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
-FOREIGN KEY (market_hub_scenario_id) REFERENCES
-    subscenarios_geography_market_hubs (market_hub_scenario_id),
+FOREIGN KEY (market_scenario_id) REFERENCES
+    subscenarios_geography_markets (market_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
     subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -2311,8 +2311,8 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
-FOREIGN KEY (load_zone_market_hub_scenario_id) REFERENCES
-    subscenarios_load_zone_market_hubs (load_zone_market_hub_scenario_id),
+FOREIGN KEY (load_zone_market_scenario_id) REFERENCES
+    subscenarios_load_zone_markets (load_zone_market_scenario_id),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
     subscenarios_project_specified_capacity
         (project_specified_capacity_scenario_id),
@@ -2383,8 +2383,8 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
-FOREIGN KEY (market_hub_price_scenario_id) REFERENCES
-    subscenarios_market_hub_prices (market_hub_price_scenario_id),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+    subscenarios_market_prices (market_price_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)

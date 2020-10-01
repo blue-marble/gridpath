@@ -266,21 +266,21 @@ class SubScenarios(object):
         self.LOCAL_CAPACITY_ZONE_SCENARIO_ID = \
             "NULL" if loc_cap_zone_sid is None else loc_cap_zone_sid
 
-        market_hub_sid = cursor.execute(
-            """SELECT market_hub_scenario_id
+        market_sid = cursor.execute(
+            """SELECT market_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.MARKET_HUB_SCENARIO_ID = \
-            "NULL" if market_hub_sid is None else market_hub_sid
+        self.MARKET_SCENARIO_ID = \
+            "NULL" if market_sid is None else market_sid
 
-        market_hub_price_sid = cursor.execute(
-            """SELECT market_hub_price_scenario_id
+        market_price_sid = cursor.execute(
+            """SELECT market_price_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.MARKET_HUB_PRICE_SCENARIO_ID = \
-            "NULL" if market_hub_price_sid is None else market_hub_price_sid
+        self.MARKET_PRICE_SCENARIO_ID = \
+            "NULL" if market_price_sid is None else market_price_sid
 
         proj_portfolio_sid = cursor.execute(
             """SELECT project_portfolio_scenario_id
@@ -395,11 +395,11 @@ class SubScenarios(object):
             "NULL" if p_lc_char_sid is None else p_lc_char_sid
 
         lz_mh_sid = cursor.execute(
-            """SELECT load_zone_market_hub_scenario_id
+            """SELECT load_zone_market_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
-        self.LOAD_ZONE_MARKET_HUB_SCENARIO_ID = \
+        self.LOAD_ZONE_MARKET_SCENARIO_ID = \
             "NULL" if lz_mh_sid is None else lz_mh_sid
 
         p_ecap_sid = cursor.execute(

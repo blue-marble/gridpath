@@ -14,29 +14,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    m.LZ_MARKET_HUBS = Set(dimen=2, within=m.LOAD_ZONES*m.MARKET_HUBS)
+    m.LZ_MARKETS = Set(dimen=2, within=m.LOAD_ZONES*m.MARKETS)
 
-    m.MARKET_HUB_LZS = Set(
+    m.MARKET_LZS = Set(
         within=m.LOAD_ZONES,
-        initialize=lambda mod: set([lz for (lz, hub) in mod.LZ_MARKET_HUBS])
+        initialize=lambda mod: set([lz for (lz, hub) in mod.LZ_MARKETS])
     )
 
-    m.MARKET_HUBS_BY_LZ = Set(
-        m.MARKET_HUB_LZS,
-        within=m.MARKET_HUBS,
+    m.MARKETS_BY_LZ = Set(
+        m.MARKET_LZS,
+        within=m.MARKETS,
         initialize=lambda mod, lz:
-        [hub for (zone, hub) in mod.LZ_MARKET_HUBS if zone == lz]
+        [hub for (zone, hub) in mod.LZ_MARKETS if zone == lz]
     )
 
-    m.Sell_Power = Var(m.LZ_MARKET_HUBS, m.TMPS, within=NonNegativeReals)
+    m.Sell_Power = Var(m.LZ_MARKETS, m.TMPS, within=NonNegativeReals)
 
-    m.Buy_Power = Var(m.LZ_MARKET_HUBS, m.TMPS, within=NonNegativeReals)
+    m.Buy_Power = Var(m.LZ_MARKETS, m.TMPS, within=NonNegativeReals)
 
     def total_power_sold_from_zone_rule(mod, z, tmp):
-        if z in mod.MARKET_HUB_LZS:
+        if z in mod.MARKET_LZS:
             return sum(
                 mod.Sell_Power[z, hub, tmp]
-                for hub in mod.MARKET_HUBS_BY_LZ[z]
+                for hub in mod.MARKETS_BY_LZ[z]
             )
         else:
             return 0
@@ -47,10 +47,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def total_power_sold_to_zone_rule(mod, z, tmp):
-        if z in mod.MARKET_HUB_LZS:
+        if z in mod.MARKET_LZS:
             return sum(
                 mod.Buy_Power[z, hub, tmp]
-                for hub in mod.MARKET_HUBS_BY_LZ[z]
+                for hub in mod.MARKETS_BY_LZ[z]
             )
         else:
             return 0
@@ -83,9 +83,9 @@ def load_model_data(
     data_portal.load(
         filename=os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",
-            "load_zone_market_hubs.tab"
+            "load_zone_markets.tab"
         ),
-        set=m.LZ_MARKET_HUBS
+        set=m.LZ_MARKETS
     )
 
 
@@ -101,12 +101,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     stage = 1 if stage == "" else stage
     c = conn.cursor()
 
-    # Get load zones and their market hubs; only include load zones that are
-    # in the load_zone_scenario_id and market hubs that are in the
-    # market_hub_scenario_id
-    load_zone_market_hubs = c.execute(
+    # Get load zones and their markets; only include load zones that are
+    # in the load_zone_scenario_id and markets that are in the
+    # market_scenario_id
+    load_zone_markets = c.execute(
         """
-        SELECT load_zone, market_hub
+        SELECT load_zone, market
         FROM
         -- Get included load_zones only
         (SELECT load_zone
@@ -114,26 +114,26 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             WHERE load_zone_scenario_id = ?
         ) as lz_tbl
         LEFT OUTER JOIN 
-        -- Get market hubs for those load zones
-        (SELECT load_zone, market_hub
-            FROM inputs_load_zone_market_hubs
-            WHERE load_zone_market_hub_scenario_id = ?
+        -- Get markets for those load zones
+        (SELECT load_zone, market
+            FROM inputs_load_zone_markets
+            WHERE load_zone_market_scenario_id = ?
         ) as lz_mh_tbl
         USING (load_zone)
-        -- Filter out load zones whose market hub is not included in our 
-        -- market_hub_scenario_id
-        WHERE market_hub in (
-            SELECT market_hub
-                FROM inputs_geography_market_hubs
-                WHERE market_hub_scenario_id = ?
+        -- Filter out load zones whose market is not included in our 
+        -- market_scenario_id
+        WHERE market in (
+            SELECT market
+                FROM inputs_geography_markets
+                WHERE market_scenario_id = ?
         );
         """,
         (subscenarios.LOAD_SCENARIO_ID,
-         subscenarios.LOAD_ZONE_MARKET_HUB_SCENARIO_ID,
-         subscenarios.MARKET_HUB_SCENARIO_ID)
+         subscenarios.LOAD_ZONE_MARKET_SCENARIO_ID,
+         subscenarios.MARKET_SCENARIO_ID)
     )
 
-    return load_zone_market_hubs
+    return load_zone_markets
 
 
 def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
@@ -145,20 +145,20 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :param conn: database connection
 
     Get inputs from database and write out the model input
-    load_zone_market_hubs.tab file.
+    load_zone_markets.tab file.
     """
 
-    load_zone_market_hubs = get_inputs_from_database(
+    load_zone_markets = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(
             os.path.join(
                 scenario_directory, str(subproblem), str(stage), "inputs",
-                "load_zone_market_hubs.tab"
+                "load_zone_markets.tab"
             ), "w", newline=""
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerows(["load_zone", "market_hub"])
-        for row in load_zone_market_hubs:
+        writer.writerows(["load_zone", "market"])
+        for row in load_zone_markets:
             writer.writerow(row)

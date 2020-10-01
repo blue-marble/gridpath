@@ -13,7 +13,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Price by market and timepoint
     # Prices are allowed to be negative
     m.market_price = Param(
-        m.MARKET_HUB, m.TMPS,
+        m.MARKET, m.TMPS,
         within=Reals
     )
 
@@ -46,12 +46,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     prices = c.execute(
         """
-        SELECT market_hub, timepoint, market_hub_price
-        -- Get prices for included market hubs only
+        SELECT market, timepoint, market_price
+        -- Get prices for included markets only
         FROM (
-            SELECT market_hub
-            FROM inputs_geography_market_hubs
-            WHERE market_hub_scenario_id = ?
+            SELECT market
+            FROM inputs_geography_markets
+            WHERE market_scenario_id = ?
         ) as market_tbl
         -- Get prices for included timepoints only
         CROSS JOIN (
@@ -59,16 +59,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             WHERE temporal_scenario_id = ?
         ) as tmp_tbl
         LEFT OUTER JOIN (
-            SELECT market_hub, timepoint, market_price
-            FROM inputs_market_hub_prices
-            WHERE market_hub_price_scenario_id = ?
+            SELECT market, timepoint, market_price
+            FROM inputs_market_prices
+            WHERE market_price_scenario_id = ?
         ) as price_tbl
-        USING (market_hub, timepoint)
+        USING (market, timepoint)
         ;
         """,
-        (subscenarios.MARKET_HUB_SCENARIO_ID,
+        (subscenarios.MARKET_SCENARIO_ID,
          subscenarios.TEMPORAL_SCENARIO_ID,
-         subscenarios.MARKET_HUB_PRICE_SCENARIO_ID)
+         subscenarios.MARKET_PRICE_SCENARIO_ID)
     )
 
     return prices
@@ -98,6 +98,6 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerows(["market_hub", "timepoint", "price"])
+        writer.writerows(["market", "timepoint", "price"])
         for row in prices:
             writer.writerow(row)

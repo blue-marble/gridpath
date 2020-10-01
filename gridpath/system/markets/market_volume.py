@@ -11,41 +11,41 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    m.MARKET_HUB_PRJS_OPRTNL_IN_TMP = Set(
+    m.MARKET_PRJS_OPRTNL_IN_TMP = Set(
         m.TMPS,
         initialize=lambda mod, tmp:
-        mod.MARKET_HUB_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
+        mod.MARKET_PRJS & mod.OPR_PRJS_IN_TMP[tmp]
     )
 
     m.max_market_sales = Param(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         default=Infinity
     )
 
     m.max_market_purchases = Param(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         default=Infinity
     )
 
     def total_market_sales_rule(mod, hub, tmp):
         sum(mod.Sell_Power[prj, tmp]
-            for prj in mod.MARKET_HUB_PRJS_OPRTNL_IN_TMP[tmp]
-            if mod.market_hub[prj] == hub
+            for prj in mod.MARKET_PRJS_OPRTNL_IN_TMP[tmp]
+            if mod.market[prj] == hub
             )
 
     m.Total_Market_Sales = Expression(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         initialize=total_market_sales_rule
     )
 
     def total_market_purchases_rule(mod, hub, tmp):
         sum(mod.Buy_Power[prj, tmp]
-            for prj in mod.MARKET_HUB_PRJS_OPRTNL_IN_TMP[tmp]
-            if mod.market_hub[prj] == hub
+            for prj in mod.MARKET_PRJS_OPRTNL_IN_TMP[tmp]
+            if mod.market[prj] == hub
             )
 
     m.Total_Market_Purchases = Expression(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         initialize=total_market_purchases_rule
     )
 
@@ -54,7 +54,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                <= mod.max_market_sales[hub, tmp]
 
     m.Max_Market_Sales_Constraint = Constraint(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         rule=max_market_sales_rule
     )
 
@@ -63,6 +63,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                <= mod.max_market_purchases[hub, tmp]
 
     m.Max_Market_Purchases_Constraint = Constraint(
-        m.MARKET_HUBS, m.TMPS,
+        m.MARKETS, m.TMPS,
         rule=max_market_purchases_rule
     )

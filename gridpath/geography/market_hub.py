@@ -19,7 +19,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.MARKET_HUBS = Set()
+    m.MARKETS = Set()
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -36,9 +36,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",
-            "market_hubs.tab"
+            "markets.tab"
         ),
-        set=m.MARKET_HUBS
+        set=m.MARKETS
     )
 
 
@@ -53,16 +53,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
-    market_hubs = c.execute(
-        """SELECT market_hub
-        FROM market_hubs
-        WHERE market_hub_scenario_id = {};
+    markets = c.execute(
+        """SELECT market
+        FROM markets
+        WHERE market_scenario_id = {};
         """.format(
-            subscenarios.MARKET_HUB_SCENARIO_ID
+            subscenarios.MARKET_SCENARIO_ID
         )
     )
 
-    return market_hubs
+    return markets
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -89,19 +89,19 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    market_hubs = get_inputs_from_database(
+    markets = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     with open(
             os.path.join(
                 scenario_directory, str(subproblem), str(stage), "inputs",
-                "market_hubs.tab"
+                "markets.tab"
             ), "w", newline=""
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["market_hub"])
+        writer.writerow(["market"])
 
-        for row in market_hubs:
+        for row in markets:
             writer.writerow([row[0]])

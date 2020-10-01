@@ -2049,7 +2049,7 @@ def power_provision_rule(mod, g, tmp):
     capacity if the generator is committed and 0 otherwise.
 
     The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market hub.
+    power is bought from or sold to a market.
     """
     return mod.GenCommitBin_Provide_Power_MW[g, tmp] - \
         mod.GenCommitBin_Auxiliary_Consumption_MW[g, tmp]

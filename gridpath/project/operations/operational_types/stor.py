@@ -538,7 +538,7 @@ def power_provision_rule(mod, s, tmp):
     storage is empty).
 
     The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market hub.
+    power is bought from or sold to a market.
     """
     return mod.Stor_Discharge_MW[s, tmp] \
         - mod.Stor_Charge_MW[s, tmp]

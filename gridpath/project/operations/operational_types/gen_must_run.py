@@ -153,7 +153,7 @@ def power_provision_rule(mod, g, tmp):
     timepoints when they are operational.
 
     The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market hub.
+    power is bought from or sold to a market.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]

@@ -446,7 +446,7 @@ def power_provision_rule(mod, g, tmp):
     between the generator's minimum stable level and its capacity.
 
     The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market hub.
+    power is bought from or sold to a market.
     """
     return mod.GenAlwaysOn_Provide_Power_MW[g, tmp]
 

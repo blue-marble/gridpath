@@ -404,7 +404,7 @@ def power_provision_rule(mod, g, tmp):
     Power provision from simple generators is an endogenous variable.
 
     The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market hub.
+    power is bought from or sold to a market.
     """
     return mod.GenSimple_Provide_Power_MW[g, tmp]
 

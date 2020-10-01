@@ -28,7 +28,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for hub in mod.MARKET_HUBS for tmp in mod.TMPS
+            for hub in mod.MARKETS for tmp in mod.TMPS
         )
     m.Total_Market_Revenue = Expression(initialize=total_market_revenue_rule)
 
@@ -40,7 +40,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for hub in mod.MARKET_HUBS for tmp in mod.TMPS
+            for hub in mod.MARKETS for tmp in mod.TMPS
         )
     m.Total_Market_Cost = Expression(initialize=total_market_cost_rule)
 
