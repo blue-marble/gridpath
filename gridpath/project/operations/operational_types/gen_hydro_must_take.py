@@ -519,9 +519,6 @@ def ramp_down_rule(mod, g, tmp):
 def power_provision_rule(mod, g, tmp):
     """
     Power provision from must-take hydro.
-
-    The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market.
     """
     return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
 

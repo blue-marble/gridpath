@@ -167,9 +167,6 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision from variable must-take generators is their capacity times
     the capacity factor in each timepoint.
-
-    The power provision for load-balance purposes is adjusted by whether
-    power is bought from or sold to a market.
     """
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
