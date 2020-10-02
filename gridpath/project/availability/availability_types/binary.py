@@ -401,7 +401,7 @@ def export_module_specific_results(
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -442,7 +442,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
 
@@ -455,8 +455,8 @@ def write_module_specific_model_inputs(
     """
 
     endogenous_availability_params = get_inputs_from_database(
-        subscenarios=subscenarios, subproblem=subproblem, stage=stage,
-        conn=conn
+        scenario_id=scenario_id, subscenarios=subscenarios,
+        subproblem=subproblem, stage=stage, conn=conn
     )
 
     # Check if project_availability_endogenous.tab exists; only write header
@@ -512,7 +512,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -521,7 +521,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    params = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    params = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     df = cursor_to_df(params)
 
@@ -532,7 +532,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -548,7 +548,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                   "available_hours_between_events_min"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -561,7 +561,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             "unavailable_hours_per_period"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

@@ -293,7 +293,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -339,7 +339,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage,
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage,
                        conn):
     """
     Get inputs from database and write out the model input
@@ -352,7 +352,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage,
     :return:
     """
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_zone_dict = dict()
@@ -476,7 +476,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -516,7 +516,7 @@ def process_results(db, c, subscenarios, quiet):
     results = []
     for (prj, zone) in project_zones:
         results.append(
-            (zone, subscenarios.SCENARIO_ID, prj)
+            (zone, scenario_id, prj)
         )
 
     for tbl in tables_to_update:
@@ -532,7 +532,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -544,7 +544,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Get the projects and RPS zones
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_zones)
@@ -564,7 +564,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check that each RPS zone has at least one project assigned to it
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

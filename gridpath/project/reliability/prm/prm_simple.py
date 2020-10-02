@@ -100,7 +100,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -130,7 +130,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_fractions
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -141,7 +141,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     project_fractions = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     df = cursor_to_df(project_fractions)
@@ -149,7 +149,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Make sure fraction is specified
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -161,7 +161,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Make sure fraction is specified
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -171,7 +171,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -183,7 +183,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     project_fractions = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_frac_dict = dict()

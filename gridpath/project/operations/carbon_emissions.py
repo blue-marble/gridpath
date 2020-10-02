@@ -168,7 +168,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate emissions by technology, period, and spinup_or_lookahead
     :param db:
@@ -186,7 +186,7 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate emissions by technology, period, and spinup_or_lookahead
@@ -205,5 +205,5 @@ def process_results(db, c, subscenarios, quiet):
         ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)

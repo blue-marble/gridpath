@@ -171,7 +171,7 @@ def get_required_prm_type_modules(
     return required_prm_type_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -200,12 +200,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_prm_modules[prm_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files.
     :param scenario_directory: string, the scenario directory
@@ -234,7 +234,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_prm_modules[prm_m]. \
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -287,7 +287,7 @@ def import_results_into_database(
             pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -318,7 +318,8 @@ def process_results(db, c, subscenarios, quiet):
                    "process_module_specific_results"):
             imported_prm_modules[prm_m]. \
                 process_module_specific_results(
-                db=db, c=c, subscenarios=subscenarios, quiet=quiet
+                db=db, c=c, scenario_id=scenario_id,
+                subscenarios=subscenarios, quiet=quiet
             )
         else:
             pass

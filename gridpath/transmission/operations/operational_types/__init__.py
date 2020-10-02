@@ -140,7 +140,7 @@ def get_required_tx_opchar_modules(scenario_id, c):
 # Database
 ###############################################################################
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Go through each relevant operational type and write the model inputs
     for that operational type based on the database.
@@ -155,7 +155,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -166,7 +166,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_tx_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -204,7 +204,7 @@ def import_results_into_database(
             pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Go through each relevant operational type and process the results
     for that operational type.
@@ -217,7 +217,7 @@ def process_results(db, c, subscenarios, quiet):
     """
 
     # Load in the required operational modules
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -228,7 +228,7 @@ def process_results(db, c, subscenarios, quiet):
                    "process_module_specific_results"):
             imported_tx_operational_modules[op_m]. \
                 process_module_specific_results(
-                    db, c, subscenarios, quiet)
+                    db, c, scenario_id, subscenarios, quiet)
         else:
             pass
 
@@ -236,7 +236,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Go through each relevant operational type and validate the database inputs
     for that operational type.
@@ -250,7 +250,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -261,6 +261,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_tx_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass

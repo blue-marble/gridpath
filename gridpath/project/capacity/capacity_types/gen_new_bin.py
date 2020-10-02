@@ -435,7 +435,7 @@ def summarize_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -493,7 +493,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -508,7 +508,7 @@ def write_module_specific_model_inputs(
     """
 
     new_gen_costs, new_gen_build_size = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_binary_build_generator_vintage_costs.tab"),
@@ -568,7 +568,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -580,9 +580,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
-    projects = get_projects(conn, subscenarios, "capacity_type", "gen_new_bin")
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_new_bin")
 
     # Convert input data into pandas DataFrame
     cost_df = cursor_to_df(new_gen_costs)
@@ -603,7 +603,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(cost_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -618,7 +618,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -631,7 +631,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(bld_size_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -646,7 +646,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -659,7 +659,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     msg = "Expected cost data for at least one vintage."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -674,7 +674,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that all binary new build projects have build size specified
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

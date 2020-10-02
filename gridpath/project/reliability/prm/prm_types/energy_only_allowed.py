@@ -355,7 +355,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -407,7 +407,7 @@ def get_module_specific_inputs_from_database(
     return group_threshold_costs, project_deliverability_groups
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -420,11 +420,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
     #   get_module_specific_inputs_from_database(
-    #       subscenarios, subproblem, stage, conn)
+    #       scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -440,7 +440,7 @@ def write_module_specific_model_inputs(
 
     group_threshold_costs, project_deliverability_groups = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
+            scenario_id, subscenarios, subproblem, stage, conn)
 
     if group_threshold_costs:
         with open(os.path.join(
@@ -631,7 +631,7 @@ def import_module_specific_results_into_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, subscenarios, quiet):
+def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -648,7 +648,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         """SELECT project, period, energy_only_capacity_mw
         FROM results_project_prm_deliverability
             WHERE scenario_id = {};""".format(
-            subscenarios.SCENARIO_ID
+            scenario_id
         )
     ).fetchall()
 
@@ -660,7 +660,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
     results = []
     for row in project_period_eocap:
         results.append(
-            (row[2], subscenarios.SCENARIO_ID, row[0], row[1])
+            (row[2], scenario_id, row[0], row[1])
         )
 
     for table in tables_to_update:
@@ -682,7 +682,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Insert new results
@@ -713,5 +713,5 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         ;"""
 
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)

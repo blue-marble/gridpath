@@ -34,8 +34,9 @@ def launch_scenario_process(
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    scenario_name = get_scenario_name_from_scenario_id(cursor=c,
-                                                       scenario_id=scenario_id)
+    scenario_name = get_scenario_name_from_scenario_id(
+      cursor=c, scenario_id=scenario_id
+    )
 
     # First, check if the scenario is already running
     run_status, process_id = check_scenario_run_status(
@@ -98,8 +99,9 @@ def stop_scenario_run(db_path, scenario_id):
     :param scenario_id:
     :return:
     """
-    run_status, process_id = check_scenario_run_status(db_path=db_path,
-                                                       scenario_id=scenario_id)
+    run_status, process_id = check_scenario_run_status(
+      db_path=db_path, scenario_id=scenario_id
+    )
     if run_status != "running":
         # TODO: Tell user scenario is not running
         pass
@@ -155,7 +157,8 @@ def connect_to_db_and_update_run_status(db_path, scenario_id, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
     scenario_name = get_scenario_name_from_scenario_id(
-      cursor=c, scenario_id=scenario_id)
+      cursor=c, scenario_id=scenario_id
+    )
     # Check if running from queue
     queue_order_id = check_if_in_queue(
         db_path, scenario_id

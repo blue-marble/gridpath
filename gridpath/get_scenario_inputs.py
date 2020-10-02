@@ -10,9 +10,6 @@ The main() function of this script can also be called with the
 *gridpath_get_inputs* command when GridPath is installed.
 """
 
-from __future__ import print_function
-
-from builtins import str
 from argparse import ArgumentParser
 import csv
 import os.path
@@ -29,7 +26,7 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       subscenarios, conn):
+                       scenario_id, subscenarios, conn):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
@@ -82,6 +79,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                 if hasattr(m, "write_model_inputs"):
                     m.write_model_inputs(
                         scenario_directory=scenario_directory,
+                        scenario_id=scenario_id,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
@@ -160,8 +158,8 @@ def write_features_csv(scenario_directory, feature_list):
 
 
 def write_scenario_description(
-        scenario_directory, scenario_id, scenario_name,
-        optional_features, subscenarios
+    scenario_directory, scenario_id, scenario_name,
+    optional_features, subscenarios
 ):
     """
 
@@ -172,6 +170,9 @@ def write_scenario_description(
     :param subscenarios:
     :return:
     """
+    feature_list = optional_features.get_all_available_features()
+    subscenario_list = subscenarios.get_all_available_subscenarios()
+
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w", newline="") as \
             scenario_description_file:
@@ -187,172 +188,18 @@ def write_scenario_description(
         )
 
         # Optional features
-        writer.writerow(
-            ["of_transmission",
-             optional_features.OPTIONAL_FEATURE_TRANSMISSION]
-        )
-        writer.writerow(
-            ["of_transmission_hurdle_rates",
-             optional_features.OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES]
-        )
-        writer.writerow(
-            ["of_simultaneous_flow_limits",
-             optional_features.OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS]
-        )
-        writer.writerow(
-            ["of_lf_reserves_up",
-             optional_features.OPTIONAL_FEATURE_LF_RESERVES_UP]
-        )
-        writer.writerow(
-            ["of_lf_reserves_down",
-             optional_features.OPTIONAL_FEATURE_LF_RESERVES_DOWN]
-        )
-        writer.writerow(
-            ["of_regulation_up",
-             optional_features.OPTIONAL_FEATURE_REGULATION_UP]
-        )
-        writer.writerow(
-            ["of_regulation_down",
-             optional_features.OPTIONAL_FEATURE_REGULATION_DOWN]
-        )
-        writer.writerow(
-            ["of_frequency_response",
-             optional_features.OPTIONAL_FEATURE_FREQUENCY_RESPONSE]
-        )
-        writer.writerow(
-            ["of_spinning_reserves",
-             optional_features.OPTIONAL_FEATURE_SPINNING_RESERVES]
-        )
-        writer.writerow(
-            ["of_rps", optional_features.OPTIONAL_FEATURE_RPS]
-        )
-        writer.writerow(
-            ["of_carbon_cap", optional_features.OPTIONAL_FEATURE_CARBON_CAP]
-        )
-        writer.writerow(
-            ["of_track_carbon_imports",
-             optional_features.OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS]
-        )
-        writer.writerow(
-            ["of_prm", optional_features.OPTIONAL_FEATURE_PRM]
-        )
-        writer.writerow(
-            ["of_elcc_surface",
-             optional_features.OPTIONAL_FEATURE_ELCC_SURFACE]
-        )
-        writer.writerow(
-            ["of_local_capacity",
-             optional_features.OPTIONAL_FEATURE_LOCAL_CAPACITY]
-        )
+        for feature in feature_list:
+            writer.writerow([
+                "of_{}".format(feature),
+                getattr(optional_features, "OF_{}".format(feature.upper()))
+            ])
 
         # Subscenarios
-        writer.writerow(["temporal_scenario_id",
-                         subscenarios.TEMPORAL_SCENARIO_ID])
-        writer.writerow(["load_zone_scenario_id",
-                         subscenarios.LOAD_ZONE_SCENARIO_ID])
-        writer.writerow(["lf_reserves_up_ba_scenario_id",
-                         subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID])
-        writer.writerow(["lf_reserves_down_ba_scenario_id",
-                         subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID])
-        writer.writerow(["frequency_response_ba_scenario_id",
-                         subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID])
-        writer.writerow(["rps_zone_scenario_id",
-                         subscenarios.RPS_ZONE_SCENARIO_ID])
-        writer.writerow(["carbon_cap_zone_scenario_id",
-                         subscenarios.CARBON_CAP_ZONE_SCENARIO_ID])
-        writer.writerow(["prm_zone_scenario_id",
-                         subscenarios.PRM_ZONE_SCENARIO_ID])
-        writer.writerow(["local_capacity_zone_scenario_id",
-                         subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID])
-        writer.writerow(["project_portfolio_scenario_id",
-                         subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID])
-        writer.writerow(["project_load_zone_scenario_id",
-                         subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID])
-        writer.writerow(["project_lf_reserves_up_ba_scenario_id",
-                         subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID])
-        writer.writerow(["project_lf_reserves_down_ba_scenario_id",
-                         subscenarios.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID])
-        writer.writerow(["project_frequency_response_ba_scenario_id",
-                         subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID
-                         ])
-        writer.writerow(["project_spinning_reserves_ba_scenario_id",
-                         subscenarios.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID]
-                        )
-        writer.writerow(["project_rps_zone_scenario_id",
-                         subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID])
-        writer.writerow(["project_carbon_cap_zone_scenario_id",
-                         subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID])
-        writer.writerow(["project_prm_zone_scenario_id",
-                         subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID])
-        writer.writerow(["project_elcc_chars_scenario_id",
-                         subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID])
-        writer.writerow(["project_local_capacity_zone_scenario_id",
-                         subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID])
-        writer.writerow(["project_local_capacity_chars_scenario_id",
-                         subscenarios.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID]
-                        )
-        writer.writerow(["project_specified_capacity_scenario_id",
-                         subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID])
-        writer.writerow(["project_specified_fixed_cost_scenario_id",
-                         subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID])
-        writer.writerow(["project_operational_chars_scenario_id",
-                         subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID])
-        writer.writerow(["project_availability_scenario_id",
-                         subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID])
-        writer.writerow(["fuel_scenario_id",
-                         subscenarios.FUEL_SCENARIO_ID])
-        writer.writerow(["fuel_price_scenario_id",
-                         subscenarios.FUEL_PRICE_SCENARIO_ID])
-        writer.writerow(["project_new_cost_scenario_id",
-                         subscenarios.PROJECT_NEW_COST_SCENARIO_ID])
-        writer.writerow(["project_new_potential_scenario_id",
-                         subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID])
-        writer.writerow(["prm_energy_only_scenario_id",
-                         subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID])
-        writer.writerow(["transmission_portfolio_scenario_id",
-                         subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID])
-        writer.writerow(["transmission_load_zone_scenario_id",
-                         subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID])
-        writer.writerow(["transmission_specified_capacity_scenario_id",
-                         subscenarios.
-                        TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID])
-        writer.writerow(["transmission_operational_chars_scenario_id",
-                         subscenarios.
-                        TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID])
-        writer.writerow(["transmission_hurdle_rate_scenario_id",
-                         subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID])
-        writer.writerow(["transmission_carbon_cap_zone_scenario_id",
-                         subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID]
-                        )
-        writer.writerow(["transmission_simultaneous_flow_limit_scenario_id",
-                         subscenarios.
-                        TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID])
-        writer.writerow([
-            "transmission_simultaneous_flow_limit_line_group_scenario_id",
-            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID]
-        )
-        writer.writerow(["load_scenario_id",
-                         subscenarios.LOAD_SCENARIO_ID])
-        writer.writerow(["lf_reserves_up_scenario_id",
-                         subscenarios.LF_RESERVES_UP_SCENARIO_ID])
-        writer.writerow(["lf_reserves_down_scenario_id",
-                         subscenarios.LF_RESERVES_DOWN_SCENARIO_ID])
-        writer.writerow(["frequency_response_scenario_id",
-                         subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID])
-        writer.writerow(["spinning_reserves_scenario_id",
-                         subscenarios.SPINNING_RESERVES_SCENARIO_ID])
-        writer.writerow(["rps_target_scenario_id",
-                         subscenarios.RPS_TARGET_SCENARIO_ID])
-        writer.writerow(["carbon_cap_target_scenario_id",
-                         subscenarios.CARBON_CAP_TARGET_SCENARIO_ID])
-        writer.writerow(["prm_requirement_scenario_id",
-                         subscenarios.PRM_REQUIREMENT_SCENARIO_ID])
-        writer.writerow(["local_capacity_requirement_scenario_id",
-                         subscenarios.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID])
-        writer.writerow(["elcc_surface_scenario_id",
-                         subscenarios.ELCC_SURFACE_SCENARIO_ID])
-        writer.writerow(["tuning_scenario_id",
-                         subscenarios.TUNING_SCENARIO_ID])
+        for subscenario in subscenario_list:
+            writer.writerow([
+                subscenario,
+                getattr(subscenarios, subscenario.upper())
+            ])
 
 
 def write_units_csv(scenario_directory, conn):
@@ -447,17 +294,17 @@ def main(args=None):
     )
     create_directory_if_not_exists(directory=scenario_directory)
 
-    # Get scenario characteristics (features, subscenarios, subproblems)
+    # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     # TODO: it seems these fail silently if empty; we may want to implement
     #  some validation
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-    solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
+    optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
+    subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
+    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
-    feature_list = optional_features.determine_feature_list()
+    feature_list = optional_features.get_active_features()
     # If any subproblem's stage list is non-empty, we have stages, so set
     # the stages_flag to True to pass to determine_modules below
     # This tells the determine_modules function to include the
@@ -477,6 +324,7 @@ def main(args=None):
         scenario_directory=scenario_directory,
         subproblems=subproblems,
         loaded_modules=loaded_modules,
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         conn=conn)
 

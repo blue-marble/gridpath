@@ -352,7 +352,7 @@ def generic_export_module_specific_results(
 
 
 def generic_get_inputs_from_database(
-        subscenarios, subproblem, stage, conn,
+        scenario_id, subscenarios, subproblem, stage, conn,
         reserve_type, project_ba_subscenario_id, ba_subscenario_id
         ):
     """
@@ -434,7 +434,7 @@ def generic_get_inputs_from_database(
 
 
 def generic_validate_project_bas(
-        subscenarios, subproblem, stage, conn,
+        scenario_id, subscenarios, subproblem, stage, conn,
         reserve_type, project_ba_subscenario_id, ba_subscenario_id
 ):
     """
@@ -453,6 +453,7 @@ def generic_validate_project_bas(
     stage = 1 if stage == "" else stage
 
     project_bas, prj_derates = generic_get_inputs_from_database(
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -486,7 +487,7 @@ def generic_validate_project_bas(
     # Check that each reserve BA has at least one project assigned to it
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -503,7 +504,7 @@ def generic_validate_project_bas(
     msg = "Project has a reserve derate specified but no relevant BA."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

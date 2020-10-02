@@ -754,7 +754,7 @@ def export_module_specific_results(mod, d,
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -765,12 +765,12 @@ def get_module_specific_inputs_from_database(
     """
 
     return get_hydro_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type="gen_hydro"
+        scenario_id, subscenarios, subproblem, stage, conn, op_type="gen_hydro"
     )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -784,7 +784,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
@@ -816,7 +816,7 @@ def import_module_specific_results_to_database(
     )
 
 
-def process_module_specific_results(db, c, subscenarios, quiet):
+def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment.
     :param db:
@@ -834,7 +834,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate hydro curtailment (just scheduled curtailment)
@@ -870,15 +870,15 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         ORDER BY subproblem_id, stage_id, load_zone, timepoint;
         """
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,
-                                subscenarios.SCENARIO_ID),
+                          data=(scenario_id,
+                                scenario_id),
                           many=False)
 
 
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -889,8 +889,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "gen_hydro")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_hydro")
 
     # Validate hydro opchars input table
-    validate_hydro_opchars(subscenarios, subproblem, stage, conn,
+    validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                            "gen_hydro")

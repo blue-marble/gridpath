@@ -90,7 +90,7 @@ def load_model_data(
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -137,7 +137,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return load_zone_markets
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
@@ -150,7 +150,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     load_zone_markets = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(
             os.path.join(

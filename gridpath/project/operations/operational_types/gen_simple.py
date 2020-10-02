@@ -540,7 +540,7 @@ def export_module_specific_results(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -551,7 +551,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "gen_simple")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_simple")
 
     # Other module specific validations
 
@@ -583,7 +583,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that there is only one load point (constant heat rate)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

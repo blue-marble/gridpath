@@ -163,7 +163,7 @@ def get_required_opchar_modules(scenario_id, c):
     return required_opchar_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -175,7 +175,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -186,12 +186,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files
     :param scenario_directory: string, the scenario directory
@@ -204,7 +204,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -215,7 +215,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -314,7 +314,7 @@ def import_results_into_database(
             pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -325,7 +325,7 @@ def process_results(db, c, subscenarios, quiet):
     """
 
     # Load in the required operational modules
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -336,7 +336,7 @@ def process_results(db, c, subscenarios, quiet):
                    "process_module_specific_results"):
             imported_operational_modules[op_m]. \
                 process_module_specific_results(
-                    db, c, subscenarios, quiet)
+                    db, c, scenario_id, subscenarios, quiet)
         else:
             pass
 

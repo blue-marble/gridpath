@@ -481,7 +481,7 @@ def export_module_specific_results(mod, d,
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -492,12 +492,12 @@ def get_module_specific_inputs_from_database(
     """
 
     return get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_var"
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var"
     )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -511,7 +511,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "variable_generator_profiles.tab"
 
     write_tab_file_model_inputs(
@@ -543,7 +543,7 @@ def import_module_specific_results_to_database(
     )
 
 
-def process_module_specific_results(db, c, subscenarios, quiet):
+def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment
     :param db:
@@ -561,7 +561,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?;
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate variable curtailment (just scheduled curtailment)
@@ -598,7 +598,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 
     spin_on_database_lock(
         conn=db, cursor=c, sql=insert_sql,
-        data=(subscenarios.SCENARIO_ID, subscenarios.SCENARIO_ID),
+        data=(scenario_id, scenario_id),
         many=False
     )
 
@@ -606,7 +606,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -617,7 +617,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "gen_var")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")
 
     # Validate var profiles input table
-    validate_var_profiles(subscenarios, subproblem, stage, conn, "gen_var")
+    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")

@@ -254,7 +254,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate imports/exports by zone, period and spinup_or_lookahead
     (numbers are based on flows without accounting for losses!)
@@ -274,7 +274,7 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate imports/exports by period, load zone, and spinup_or_lookahead
@@ -402,7 +402,7 @@ def process_results(db, c, subscenarios, quiet):
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ;"""
 
-    scenario_ids = tuple([subscenarios.SCENARIO_ID] * 8)
+    scenario_ids = tuple([scenario_id] * 8)
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
                           data=scenario_ids,
                           many=False)

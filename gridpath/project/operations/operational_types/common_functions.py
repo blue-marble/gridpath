@@ -542,7 +542,7 @@ def load_var_profile_inputs(
 
 
 def get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type
+        scenario_id, subscenarios, subproblem, stage, conn, op_type
 ):
     """
     Select only profiles of projects in the portfolio
@@ -610,7 +610,7 @@ def get_var_profile_inputs_from_database(
     return variable_profiles
 
 
-def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
+def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op_type):
     """
 
     :param subscenarios:
@@ -621,7 +621,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
     :return:
     """
     var_profiles = get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type
+        scenario_id, subscenarios, subproblem, stage, conn, op_type
     )
 
     # Convert input data into pandas DataFrame
@@ -632,7 +632,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
     # Check for missing inputs
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -644,7 +644,7 @@ def validate_var_profiles(subscenarios, subproblem, stage, conn, op_type):
     # Check for sign (should be percent fraction)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -703,7 +703,7 @@ def load_hydro_opchars(data_portal, scenario_directory, subproblem,
 
 
 def get_hydro_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type
+        scenario_id, subscenarios, subproblem, stage, conn, op_type
 ):
     """
     Get the hydro-specific operational characteristics from the
@@ -773,7 +773,7 @@ def get_hydro_inputs_from_database(
     return hydro_chars
 
 
-def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
+def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
     """
 
     :param subscenarios:
@@ -784,7 +784,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     :return:
     """
     hydro_chars = get_hydro_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type
+        scenario_id, subscenarios, subproblem, stage, conn, op_type
     )
 
     # Convert input data into pandas DataFrame
@@ -796,7 +796,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     # Check for missing inputs
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -808,7 +808,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     # Check for sign (should be percent fraction)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -820,7 +820,7 @@ def validate_hydro_opchars(subscenarios, subproblem, stage, conn, op_type):
     # Check min <= avg <= sign
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -925,7 +925,7 @@ def check_for_tmps_to_link(
         return [], {}
 
 
-def get_optype_inputs_from_db(subscenarios, conn, op_type):
+def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
     """
 
     :param subscenarios:
@@ -974,7 +974,7 @@ def get_optype_inputs_from_db(subscenarios, conn, op_type):
     return df
 
 
-def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
+def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type):
     """
 
     :param subscenarios:
@@ -989,7 +989,7 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
     #  required for any?
 
     # Get the opchar inputs for this operational type
-    df = get_optype_inputs_from_db(subscenarios, conn, op_type)
+    df = get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type)
 
     # Get the required, optional, and other columns with their types
     required_columns_types, optional_columns_types, other_columns_types = \
@@ -1000,7 +1000,7 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
     # Check that required inputs are present
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1012,7 +1012,7 @@ def validate_opchars(subscenarios, subproblem, stage, conn, op_type):
     # Check that other (not required or optional) inputs are not present
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

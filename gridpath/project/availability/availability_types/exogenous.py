@@ -136,7 +136,7 @@ def load_module_specific_data(
 ###############################################################################
 
 def get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios:
@@ -205,7 +205,7 @@ def get_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param scenario_directory:
@@ -216,7 +216,7 @@ def write_module_specific_model_inputs(
     :return:
     """
     availabilities = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     ).fetchall()
 
     if availabilities:
@@ -235,7 +235,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -244,7 +244,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
     availabilities = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     df = cursor_to_df(availabilities)
@@ -258,7 +258,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -274,7 +274,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
           "disappear."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -287,7 +287,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     if "availability" not in error_columns:
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
