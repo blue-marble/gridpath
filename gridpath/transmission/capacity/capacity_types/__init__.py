@@ -11,7 +11,8 @@ built, available to be retired, etc.
 import pandas as pd
 import os.path
 
-from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules
+from gridpath.transmission.capacity.common_functions import \
+    load_tx_capacity_type_modules
 
 
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):

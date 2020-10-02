@@ -14,7 +14,8 @@ import os.path
 from pyomo.environ import Param, Var, Expression, Constraint, \
     NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint

@@ -9,7 +9,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.auxiliary import load_prm_type_modules
+from gridpath.project.reliability.prm.common_functions import \
+    load_prm_type_modules
 
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'

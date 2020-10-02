@@ -6,7 +6,9 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, Param
 
-from gridpath.auxiliary.auxiliary import join_sets, load_prm_type_modules
+from gridpath.auxiliary.auxiliary import join_sets
+from gridpath.project.reliability.prm.common_functions import \
+    load_prm_type_modules
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 

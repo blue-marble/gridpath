@@ -18,7 +18,8 @@ import pandas as pd
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 

@@ -15,7 +15,9 @@ from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
-    load_operational_type_modules, cursor_to_df
+    cursor_to_df
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs

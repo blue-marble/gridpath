@@ -10,7 +10,8 @@ OPF.
 import os.path
 import pandas as pd
 
-from gridpath.auxiliary.auxiliary import load_tx_operational_type_modules
+from gridpath.transmission.operations.common_functions import \
+    load_tx_operational_type_modules
 
 
 # TODO: missing test for this module

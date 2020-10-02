@@ -15,7 +15,9 @@ from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
-    load_operational_type_modules, check_for_integer_subdirectories
+    check_for_integer_subdirectories
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

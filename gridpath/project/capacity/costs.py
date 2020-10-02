@@ -17,7 +17,8 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.capacity.common_functions import \
     load_gen_storage_capacity_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
 

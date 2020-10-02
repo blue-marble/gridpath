@@ -17,7 +17,8 @@ from pyomo.environ import Set, Var, Expression, Constraint, \
     NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.operations.operational_types as op_type
