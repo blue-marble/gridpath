@@ -172,7 +172,7 @@ def write_scenario_description(
     :param subscenarios:
     :return:
     """
-    feature_list = optional_features.determine_feature_list()
+    feature_list = optional_features.get_all_available_features()
 
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w", newline="") as \
@@ -191,7 +191,7 @@ def write_scenario_description(
         # Optional features
         for feature in feature_list:
             writer.writerow([
-                feature,
+                "of_{}".format(feature),
                 getattr(optional_features, "OF_{}".format(feature.upper()))
             ])
 
@@ -407,7 +407,7 @@ def main(args=None):
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
-    feature_list = optional_features.determine_feature_list()
+    feature_list = optional_features.determine_active_features()
     # If any subproblem's stage list is non-empty, we have stages, so set
     # the stages_flag to True to pass to determine_modules below
     # This tells the determine_modules function to include the

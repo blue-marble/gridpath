@@ -163,7 +163,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
     """
 
     subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
-    feature_list = optional_features.determine_feature_list()
+    feature_list = optional_features.determine_active_features()
 
     errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
@@ -424,7 +424,7 @@ def main(args=None):
     # are specified (otherwise will get errors when loading data)
     if is_valid:
         # Load modules for all requested features
-        feature_list = optional_features.determine_feature_list()
+        feature_list = optional_features.determine_active_features()
         # If any subproblem's stage list is non-empty, we have stages, so set
         # the stages_flag to True to pass to determine_modules below
         # This tells the determine_modules function to include the

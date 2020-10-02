@@ -14,29 +14,12 @@ class OptionalFeatures(object):
         :param cursor:
         :param scenario_id: 
         """
+        of_column_names = [
+            n for n in get_scenario_table_columns(conn=conn)
+            if n.startswith("of_")
+        ]
 
-        self.SCENARIO_ID = scenario_id
-
-        for of in [
-            "of_transmission",
-            "of_transmission_hurdle_rates",
-            "of_simultaneous_flow_limits",
-            "of_lf_reserves_up",
-            "of_lf_reserves_down",
-            "of_regulation_up",
-            "of_regulation_down",
-            "of_frequency_response",
-            "of_spinning_reserves",
-            "of_rps",
-            "of_carbon_cap",
-            "of_track_carbon_imports",
-            "of_prm",
-            "of_elcc_surface",
-            "of_local_capacity",
-            "of_markets",
-            "of_tuning"
-
-        ]:
+        for of in of_column_names:
             setattr(
                 self,
                 of.upper(),
@@ -45,18 +28,25 @@ class OptionalFeatures(object):
                 )
             )
 
-    def determine_feature_list(self):
+    def get_all_available_features(self):
+        all_features = [
+            attr[3:].lower() for attr, value in self.__dict__.items()
+        ]
+
+        return all_features
+
+    def determine_active_features(self):
         """
         Get list of requested features
         :return: 
         """
-        feature_list = list()
+        active_features = list()
 
         for attr, value in self.__dict__.items():
-            if value and attr is not "SCENARIO_ID":
-                feature_list.append(attr[3:].lower())
+            if value:
+                active_features.append(attr[3:].lower())
 
-        return feature_list
+        return active_features
 
 
 class SubScenarios(object):
@@ -742,3 +732,18 @@ def db_column_to_self(column, conn, scenario_id):
     self = "NULL" if query is None and not of else query
 
     return self
+
+
+def get_scenario_table_columns(conn):
+    c = conn.cursor()
+
+    scenario_query = c.execute(
+        """
+        SELECT * FROM scenarios;
+        """
+    )
+    column_names = [
+        description[0] for description in scenario_query.description
+    ]
+
+    return column_names

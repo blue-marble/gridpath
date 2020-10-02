@@ -15,6 +15,8 @@ of_track_carbon_imports,
 of_prm,1
 of_elcc_surface,
 of_local_capacity,
+of_markets,
+of_tuning,
 temporal_scenario_id,6
 load_zone_scenario_id,1
 lf_reserves_up_ba_scenario_id,1
