@@ -50,7 +50,7 @@ def get_subscenario_info(
     start with an integer (the subscenario ID), followed by an underscore,
     and then the subscenario name.
 
-    For project-level subscenarios, we're expecting the file name to start
+    For project-level scenario_id, subscenarios, we're expecting the file name to start
     with the project name, followed by a dash, an integer (the subscenario
     ID), followed by a dash, and then the subscenario name
 

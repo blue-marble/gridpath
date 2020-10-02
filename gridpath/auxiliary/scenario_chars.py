@@ -60,8 +60,6 @@ class SubScenarios(object):
         :param cursor: 
         :param scenario_id: 
         """
-        self.SCENARIO_ID = scenario_id
-
         subscenario_column_names = [
             n for n in get_scenario_table_columns(conn=conn)
             if n.endswith("_scenario_id")
@@ -107,7 +105,7 @@ class SubScenarios(object):
 
     # TODO: refactor this in capacity_types/__init__? (similar functions are
     #   used in prm_types/operational_types etc.
-    def get_required_capacity_type_modules(self, c):
+    def get_required_capacity_type_modules(self, c, scenario_id):
         """
         Get the required capacity type submodules based on the database inputs
         for the specified scenario_id. Required modules are the unique set of
@@ -129,7 +127,7 @@ class SubScenarios(object):
         project_portfolio_scenario_id = c.execute(
             """SELECT project_portfolio_scenario_id 
             FROM scenarios 
-            WHERE scenario_id = {}""".format(self.SCENARIO_ID)
+            WHERE scenario_id = {}""".format(scenario_id)
         ).fetchone()[0]
 
         required_capacity_type_modules = [
@@ -189,7 +187,6 @@ class SolverOptions(object):
         """
         cursor = conn.cursor()
 
-        self.SCENARIO_ID = scenario_id
         self.SOLVER_OPTIONS_ID = cursor.execute("""
             SELECT solver_options_id 
             FROM scenarios 

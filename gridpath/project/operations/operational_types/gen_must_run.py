@@ -194,7 +194,7 @@ def load_module_specific_data(mod, data_portal,
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -205,7 +205,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                                  "gen_must_run")
 
     # Other module specific validations
@@ -238,7 +238,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that there is only one load point (constant heat rate)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -252,7 +252,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_must_run can't provide any
     # reserves
-    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    projects_by_reserve = get_projects_by_reserve(scenario_id, subscenarios, conn)
     for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
         reserve_errors = validate_idxs(
@@ -263,7 +263,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

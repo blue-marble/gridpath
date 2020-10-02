@@ -26,7 +26,7 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       subscenarios, conn):
+                       scenario_id, subscenarios, conn):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
@@ -79,6 +79,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                 if hasattr(m, "write_model_inputs"):
                     m.write_model_inputs(
                         scenario_directory=scenario_directory,
+                        scenario_id=scenario_id,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
@@ -293,7 +294,7 @@ def main(args=None):
     )
     create_directory_if_not_exists(directory=scenario_directory)
 
-    # Get scenario characteristics (features, subscenarios, subproblems)
+    # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     # TODO: it seems these fail silently if empty; we may want to implement
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
@@ -323,6 +324,7 @@ def main(args=None):
         scenario_directory=scenario_directory,
         subproblems=subproblems,
         loaded_modules=loaded_modules,
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         conn=conn)
 

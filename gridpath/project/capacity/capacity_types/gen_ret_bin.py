@@ -378,7 +378,7 @@ def summarize_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -421,7 +421,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -435,7 +435,7 @@ def write_module_specific_model_inputs(
     """
 
     ep_capacities = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # If specified_generation_period_params.tab file already exists, append
     # rows to it
@@ -497,7 +497,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -508,9 +508,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     gen_ret_bin_params = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
-    projects = get_projects(conn, subscenarios, "capacity_type", "gen_ret_bin")
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_ret_bin")
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(gen_ret_bin_params)
@@ -527,7 +527,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -543,7 +543,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -557,7 +557,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     msg = "Expected specified capacity & fixed costs for at least one period."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -574,7 +574,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

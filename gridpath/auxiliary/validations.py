@@ -107,7 +107,7 @@ def get_expected_dtypes(conn, tables):
     return expected_dtypes
 
 
-def get_projects_by_reserve(subscenarios, conn):
+def get_projects_by_reserve(scenario_id, subscenarios, conn):
     """
     Get a list of projects that can provide reserves for each applicable
     reserve type. Whether a project can provide a certain reserve type is
@@ -153,7 +153,7 @@ def get_projects_by_reserve(subscenarios, conn):
     return result
 
 
-def get_projects(conn, subscenarios, col, col_value):
+def get_projects(conn, scenario_id, subscenarios, col, col_value):
     """
     Get projects for which the column value of "col" is equal to "col_value".
     E.g. "get the projects of operational type gen_commit_lin".
@@ -180,7 +180,7 @@ def get_projects(conn, subscenarios, col, col_value):
     return projects
 
 
-def get_tx_lines(conn, subscenarios, col, col_value):
+def get_tx_lines(conn, scenario_id, subscenarios, col, col_value):
     """
     Get tx_lines for which the column value of "col" is equal to "col_value".
     E.g. "get the tx_lines of operational type tx_dcopf".

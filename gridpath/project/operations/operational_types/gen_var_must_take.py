@@ -239,7 +239,7 @@ def load_module_specific_data(mod, data_portal,
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -249,12 +249,12 @@ def get_module_specific_inputs_from_database(
     :return: cursor object with query results
     """
     return get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
     )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -268,7 +268,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "variable_generator_profiles.tab"
 
     write_tab_file_model_inputs(
@@ -279,7 +279,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -290,11 +290,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                                  "gen_var_must_take")
 
     # Validate var profiles input table
-    validate_var_profiles(subscenarios, subproblem, stage, conn,
+    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn,
                           "gen_var_must_take")
 
     # Other module specific validations
@@ -302,7 +302,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_var_must_take can't
     # provide any reserves
-    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    projects_by_reserve = get_projects_by_reserve(scenario_id, subscenarios, conn)
     for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
         reserve_errors = validate_idxs(
@@ -313,7 +313,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

@@ -25,7 +25,7 @@ from gridpath.auxiliary.scenario_chars import SubScenarios
 
 
 def process_results(
-        loaded_modules, db, cursor, subscenarios, quiet
+        loaded_modules, db, cursor, scenario_id, subscenarios, quiet
 ):
     """
     
@@ -39,7 +39,7 @@ def process_results(
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(
-                db, cursor, subscenarios, quiet)
+                db, cursor, scenario_id, subscenarios, quiet)
         else:
             pass
 
@@ -102,7 +102,8 @@ def main(args=None):
 
     process_results(
         loaded_modules=loaded_modules, db=conn, cursor=c,
-        subscenarios=subscenarios, quiet=parsed_arguments.quiet
+        scenario_id=scenario_id, subscenarios=subscenarios,
+        quiet=parsed_arguments.quiet
     )
 
     # Close the database connection

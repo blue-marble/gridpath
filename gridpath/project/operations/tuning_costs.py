@@ -227,7 +227,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -250,7 +250,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return ramp_tuning_cost
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file (to be precise, amend it).
@@ -262,7 +262,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     ramp_tuning_cost = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
@@ -302,7 +302,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -313,6 +313,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # ramp_tuning_cost = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs

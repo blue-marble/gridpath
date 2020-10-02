@@ -473,7 +473,7 @@ def summarize_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -556,7 +556,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -576,7 +576,7 @@ def write_module_specific_model_inputs(
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
+            scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve_potential.tab"),
@@ -687,7 +687,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -699,8 +699,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
-    projects = get_projects(conn, subscenarios, "capacity_type", "dr_new")
+            scenario_id, subscenarios, subproblem, stage, conn)
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "dr_new")
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(min_max_builds)
@@ -712,7 +712,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     cols = ["min_cumulative_new_build_mwh", "max_cumulative_new_build_mwh"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -724,7 +724,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check for missing supply curve inputs
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

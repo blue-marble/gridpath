@@ -38,7 +38,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -48,7 +48,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     return \
         generic_get_inputs_from_database(
-            subscenarios=subscenarios,
+            scenario_id=scenario_id,
+        subscenarios=subscenarios,
             subproblem=subproblem, stage=stage, conn=conn,
             reserve_type="lf_reserves_down",
             reserve_type_ba_subscenario_id
@@ -58,7 +59,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -70,11 +71,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # lf_reserves_down = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -88,7 +89,7 @@ def write_model_inputs(
     """
 
     tmp_req, percent_req, percent_map = \
-        get_inputs_from_database(subscenarios, subproblem, stage, conn)
+        get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     generic_write_model_inputs(
         scenario_directory=scenario_directory,

@@ -661,7 +661,7 @@ def export_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -671,11 +671,11 @@ def get_module_specific_inputs_from_database(
     :return: cursor object with query results
     """
     return get_hydro_inputs_from_database(
-        subscenarios, subproblem, stage, conn, op_type="gen_hydro_must_take")
+        scenario_id, subscenarios, subproblem, stage, conn, op_type="gen_hydro_must_take")
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -689,7 +689,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
@@ -700,7 +700,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -711,9 +711,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn,
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                      "gen_hydro_must_take")
 
     # Validate hydro opchars input table
-    validate_hydro_opchars(subscenarios, subproblem, stage, conn,
+    validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                            "gen_hydro_must_take")

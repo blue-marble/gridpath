@@ -157,7 +157,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -211,7 +211,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return projects
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file.
@@ -223,7 +223,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
@@ -253,7 +253,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -266,7 +266,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
 
     # Get the project inputs
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(projects)
@@ -282,7 +282,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -297,7 +297,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -316,7 +316,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -334,7 +334,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -352,7 +352,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -366,7 +366,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "specified in the inputs_project_availability table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -381,7 +381,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "inputs_project_operational_chars table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -398,7 +398,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "specified in the inputs_project_load_zones table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

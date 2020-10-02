@@ -50,7 +50,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -64,7 +64,7 @@ def write_model_inputs(
     """
     c = conn.cursor()
     # Load in the required capacity type modules
-    scenario_id = subscenarios.SCENARIO_ID
+    scenario_id = scenario_id
     required_availability_type_modules = \
         get_required_availability_type_modules(scenario_id, c)
 
@@ -77,7 +77,7 @@ def write_model_inputs(
                    "write_module_specific_model_inputs"):
             imported_availability_type_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -185,7 +185,7 @@ def import_results_into_database(
             pass
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     :param subscenarios:
@@ -196,7 +196,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+    scenario_id = scenario_id
     required_opchar_modules = get_required_availability_type_modules(
         scenario_id, c)
 
@@ -209,7 +209,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                subscenarios, subproblem, stage, conn)
+                scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 

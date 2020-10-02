@@ -225,7 +225,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -253,7 +253,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return timepoints
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     timepoints.tab file.
@@ -266,7 +266,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     timepoints = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
@@ -284,7 +284,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
             writer.writerow(replace_nulls)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -347,7 +347,7 @@ def process_results(db, c, subscenarios, quiet):
             );
             """.format(tbl)
         spin_on_database_lock(
-            conn=db, cursor=c, sql=sql, data=(subscenarios.SCENARIO_ID, ),
+            conn=db, cursor=c, sql=sql, data=(scenario_id, ),
             many=False
         )
 
@@ -355,7 +355,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -365,7 +365,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
     # timepoints = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
     # validate timepoint inputs
 
     # TODO: could gather the timepoints from the previous stage (if any) and

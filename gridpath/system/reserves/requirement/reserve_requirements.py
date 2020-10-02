@@ -142,7 +142,7 @@ def generic_load_model_data(
 
 
 def generic_get_inputs_from_database(
-    subscenarios, subproblem, stage, conn, reserve_type,
+    scenario_id, subscenarios, subproblem, stage, conn, reserve_type,
     reserve_type_ba_subscenario_id, reserve_type_req_subscenario_id
 ):
     """
