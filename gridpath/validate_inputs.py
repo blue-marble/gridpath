@@ -159,9 +159,8 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
     :return:
     """
 
-    subscenario_ids_by_feature = \
-        subscenarios.determine_subscenarios_by_feature(conn)
-    feature_list = optional_features.determine_active_features()
+    subscenario_ids_by_feature = determine_subscenarios_by_feature(conn)
+    feature_list = optional_features.get_active_features()
 
     errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
@@ -208,8 +207,7 @@ def validate_required_subscenario_ids(scenario_id, subscenarios, conn):
     :return: boolean, True if all required subscenario_ids are specified
     """
 
-    required_subscenario_ids = \
-        subscenarios.determine_subscenarios_by_feature(conn)["core"]
+    required_subscenario_ids = determine_subscenarios_by_feature(conn)["core"]
 
     errors = []
     for sc_id in required_subscenario_ids:
@@ -243,9 +241,9 @@ def validate_data_dependent_subscenario_ids(scenario_id, subscenarios, conn):
     """
 
     assert subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID is not None
-    c = conn.cursor()
+
     req_cap_types = set(
-        subscenarios.get_required_capacity_type_modules(c, scenario_id)
+        get_required_capacity_type_modules(conn, scenario_id)
     )
 
     new_build_types = {
@@ -379,6 +377,69 @@ def parse_arguments(args):
     return parsed_arguments
 
 
+def determine_subscenarios_by_feature(conn):
+    """
+
+    :param conn:
+    :return:
+    """
+    c = conn.cursor()
+
+    feature_sc = c.execute(
+        """SELECT feature, subscenario_id
+        FROM mod_feature_subscenarios"""
+    ).fetchall()
+    feature_sc_dict = {}
+    for f, sc in feature_sc:
+        if f in feature_sc_dict:
+            feature_sc_dict[f].append(sc.upper())
+        else:
+            feature_sc_dict[f] = [sc.upper()]
+    return feature_sc_dict
+
+
+# TODO: refactor this in capacity_types/__init__? (similar functions are
+#   used in prm_types/operational_types etc.
+def get_required_capacity_type_modules(conn, scenario_id):
+    """
+    :param c: database cursor
+    :return: List of the required capacity type submodules
+
+    Get the required capacity type submodules based on the database inputs
+    for the specified scenario_id. Required modules are the unique set of
+    generator capacity types in the scenario's portfolio. Get the list based
+    on the project_operational_chars_scenario_id of the scenario_id.
+
+    This list will be used to know for which capacity type submodules we
+    should validate inputs, get inputs from database , or save results to
+    database. It is also used to figure out which suscenario_ids are required
+    inputs (e.g. cost inputs are required when there are new build resources)
+
+    Note: once we have determined the dynamic components, this information
+    will also be stored in the DynamicComponents class object.
+
+    """
+    c = conn.cursor()
+
+    project_portfolio_scenario_id = c.execute(
+        """SELECT project_portfolio_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(scenario_id)
+    ).fetchone()[0]
+
+    required_capacity_type_modules = [
+        p[0] for p in c.execute(
+            """SELECT DISTINCT capacity_type 
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}""".format(
+                project_portfolio_scenario_id
+            )
+        ).fetchall()
+    ]
+
+    return required_capacity_type_modules
+
+
 def main(args=None):
     """
 
@@ -425,7 +486,7 @@ def main(args=None):
     # are specified (otherwise will get errors when loading data)
     if is_valid:
         # Load modules for all requested features
-        feature_list = optional_features.determine_active_features()
+        feature_list = optional_features.get_active_features()
         # If any subproblem's stage list is non-empty, we have stages, so set
         # the stages_flag to True to pass to determine_modules below
         # This tells the determine_modules function to include the

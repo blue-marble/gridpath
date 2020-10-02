@@ -452,7 +452,7 @@ def write_module_specific_model_inputs(
     """
 
     endogenous_availability_params = get_inputs_from_database(
-        subscenarios=scenario_id, subscenarios, subproblem=subproblem, stage=stage,
+        scenario_id=scenario_id, subscenarios= subscenarios, subproblem=subproblem, stage=stage,
         conn=conn
     )
 

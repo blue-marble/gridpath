@@ -304,7 +304,7 @@ def main(args=None):
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
-    feature_list = optional_features.determine_active_features()
+    feature_list = optional_features.get_active_features()
     # If any subproblem's stage list is non-empty, we have stages, so set
     # the stages_flag to True to pass to determine_modules below
     # This tells the determine_modules function to include the
