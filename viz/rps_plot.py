@@ -22,7 +22,7 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
     get_parent_parser, get_unit
 

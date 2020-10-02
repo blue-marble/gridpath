@@ -12,8 +12,9 @@ import os.path
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, setup_results_import, \
-    get_required_capacity_types_from_database
+    load_gen_storage_capacity_type_modules
+from gridpath.auxiliary.db_interface import \
+    get_required_capacity_types_from_database, setup_results_import
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):

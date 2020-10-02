@@ -18,7 +18,8 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
-    load_gen_storage_capacity_type_modules, setup_results_import
+    load_gen_storage_capacity_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

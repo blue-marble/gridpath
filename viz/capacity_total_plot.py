@@ -14,7 +14,7 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from viz.common_functions import process_stacked_plot_data, \
     create_stacked_bar_plot, show_plot, get_capacity_data, \
     get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit

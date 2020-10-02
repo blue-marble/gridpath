@@ -15,7 +15,7 @@ import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 

@@ -26,7 +26,7 @@ from gridpath.common_functions import get_db_parser, get_solve_parser, \
     Logging, determine_scenario_directory
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 
 
 def parse_arguments(args):

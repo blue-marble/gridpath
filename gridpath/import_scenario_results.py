@@ -18,7 +18,7 @@ import os.path
 import pandas as pd
 import sys
 
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
 from db.common_functions import connect_to_database, spin_on_database_lock

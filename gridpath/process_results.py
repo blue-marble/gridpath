@@ -19,7 +19,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubScenarios
 

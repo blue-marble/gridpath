@@ -8,7 +8,8 @@ from pyomo.environ import Set, Var, Expression, NonNegativeReals, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """

@@ -33,7 +33,7 @@ import os.path
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 

@@ -13,8 +13,8 @@ import sys
 from argparse import ArgumentParser
 
 from db.common_functions import connect_to_database, spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
-    get_required_capacity_types_from_database
+from gridpath.auxiliary.db_interface import \
+    get_required_capacity_types_from_database, get_scenario_id_and_name
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_cols_equal
 from gridpath.common_functions import get_db_parser

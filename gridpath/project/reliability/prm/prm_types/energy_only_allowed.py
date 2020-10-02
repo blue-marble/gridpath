@@ -17,7 +17,7 @@ from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 

@@ -11,7 +11,7 @@ import pandas as pd
 from pyomo.environ import Set, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_record_dynamic_components, generic_add_model_components, \

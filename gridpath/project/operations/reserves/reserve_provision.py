@@ -14,7 +14,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, setup_results_import, cursor_to_df
+    find_list_item_position, cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params

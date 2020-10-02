@@ -16,7 +16,7 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Binary, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     get_param_dict
 

@@ -30,7 +30,8 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, value, \
     Reals, Expression, Constraint
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
