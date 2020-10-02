@@ -413,7 +413,7 @@ def main(args=None):
     # TODO: this is very similar to what's in get_scenario_inputs.py,
     #  so we should consolidate
     # Get scenario characteristics (features, subscenarios, subproblems)
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
+    optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 

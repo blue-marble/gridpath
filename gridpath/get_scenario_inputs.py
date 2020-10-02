@@ -160,8 +160,8 @@ def write_features_csv(scenario_directory, feature_list):
 
 
 def write_scenario_description(
-        scenario_directory, scenario_id, scenario_name,
-        optional_features, subscenarios
+    scenario_directory, scenario_id, scenario_name,
+    optional_features, subscenarios
 ):
     """
 
@@ -172,6 +172,8 @@ def write_scenario_description(
     :param subscenarios:
     :return:
     """
+    feature_list = optional_features.determine_feature_list()
+
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w", newline="") as \
             scenario_description_file:
@@ -187,63 +189,11 @@ def write_scenario_description(
         )
 
         # Optional features
-        writer.writerow(
-            ["of_transmission",
-             optional_features.OPTIONAL_FEATURE_TRANSMISSION]
-        )
-        writer.writerow(
-            ["of_transmission_hurdle_rates",
-             optional_features.OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES]
-        )
-        writer.writerow(
-            ["of_simultaneous_flow_limits",
-             optional_features.OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS]
-        )
-        writer.writerow(
-            ["of_lf_reserves_up",
-             optional_features.OPTIONAL_FEATURE_LF_RESERVES_UP]
-        )
-        writer.writerow(
-            ["of_lf_reserves_down",
-             optional_features.OPTIONAL_FEATURE_LF_RESERVES_DOWN]
-        )
-        writer.writerow(
-            ["of_regulation_up",
-             optional_features.OPTIONAL_FEATURE_REGULATION_UP]
-        )
-        writer.writerow(
-            ["of_regulation_down",
-             optional_features.OPTIONAL_FEATURE_REGULATION_DOWN]
-        )
-        writer.writerow(
-            ["of_frequency_response",
-             optional_features.OPTIONAL_FEATURE_FREQUENCY_RESPONSE]
-        )
-        writer.writerow(
-            ["of_spinning_reserves",
-             optional_features.OPTIONAL_FEATURE_SPINNING_RESERVES]
-        )
-        writer.writerow(
-            ["of_rps", optional_features.OPTIONAL_FEATURE_RPS]
-        )
-        writer.writerow(
-            ["of_carbon_cap", optional_features.OPTIONAL_FEATURE_CARBON_CAP]
-        )
-        writer.writerow(
-            ["of_track_carbon_imports",
-             optional_features.OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS]
-        )
-        writer.writerow(
-            ["of_prm", optional_features.OPTIONAL_FEATURE_PRM]
-        )
-        writer.writerow(
-            ["of_elcc_surface",
-             optional_features.OPTIONAL_FEATURE_ELCC_SURFACE]
-        )
-        writer.writerow(
-            ["of_local_capacity",
-             optional_features.OPTIONAL_FEATURE_LOCAL_CAPACITY]
-        )
+        for feature in feature_list:
+            writer.writerow([
+                feature,
+                getattr(optional_features, "OF_{}".format(feature.upper()))
+            ])
 
         # Subscenarios
         writer.writerow(["temporal_scenario_id",
@@ -450,7 +400,7 @@ def main(args=None):
     # Get scenario characteristics (features, subscenarios, subproblems)
     # TODO: it seems these fail silently if empty; we may want to implement
     #  some validation
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
+    optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
     solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)

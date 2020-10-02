@@ -9,7 +9,7 @@ from builtins import object
 
 
 class OptionalFeatures(object):
-    def __init__(self, cursor, scenario_id):
+    def __init__(self, conn, scenario_id):
         """
         :param cursor:
         :param scenario_id: 
@@ -17,108 +17,33 @@ class OptionalFeatures(object):
 
         self.SCENARIO_ID = scenario_id
 
-        # TODO: refactor this
-        self.OPTIONAL_FEATURE_TRANSMISSION = cursor.execute(
-            """SELECT of_transmission
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
+        for of in [
+            "of_transmission",
+            "of_transmission_hurdle_rates",
+            "of_simultaneous_flow_limits",
+            "of_lf_reserves_up",
+            "of_lf_reserves_down",
+            "of_regulation_up",
+            "of_regulation_down",
+            "of_frequency_response",
+            "of_spinning_reserves",
+            "of_rps",
+            "of_carbon_cap",
+            "of_track_carbon_imports",
+            "of_prm",
+            "of_elcc_surface",
+            "of_local_capacity",
+            "of_markets",
+            "of_tuning"
 
-        self.OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES = cursor.execute(
-            """SELECT of_transmission_hurdle_rates
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS = cursor.execute(
-            """SELECT of_simultaneous_flow_limits
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_LF_RESERVES_UP = cursor.execute(
-            """SELECT of_lf_reserves_up
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_LF_RESERVES_DOWN = cursor.execute(
-            """SELECT of_lf_reserves_down
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_REGULATION_UP = cursor.execute(
-            """SELECT of_regulation_up
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_REGULATION_DOWN = cursor.execute(
-            """SELECT of_regulation_down
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_FREQUENCY_RESPONSE = cursor.execute(
-            """SELECT of_frequency_response
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_SPINNING_RESERVES = cursor.execute(
-            """SELECT of_spinning_reserves
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_RPS = cursor.execute(
-            """SELECT of_rps
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_CARBON_CAP = cursor.execute(
-            """SELECT of_carbon_cap
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS = cursor.execute(
-            """SELECT of_track_carbon_imports
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_PRM = cursor.execute(
-            """SELECT of_prm
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_ELCC_SURFACE = cursor.execute(
-            """SELECT of_elcc_surface
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_LOCAL_CAPACITY = cursor.execute(
-            """SELECT of_local_capacity
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_MARKETS = cursor.execute(
-            """SELECT of_markets
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-        self.OPTIONAL_FEATURE_TUNING = cursor.execute(
-            """SELECT of_tuning
-               FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
+        ]:
+            setattr(
+                self,
+                of.upper(),
+                db_column_to_self(
+                    column=of, conn=conn, scenario_id=scenario_id
+                )
+            )
 
     def determine_feature_list(self):
         """
@@ -127,40 +52,9 @@ class OptionalFeatures(object):
         """
         feature_list = list()
 
-        if self.OPTIONAL_FEATURE_TRANSMISSION:
-            feature_list.append("transmission")
-        if self.OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES:
-            feature_list.append("transmission_hurdle_rates")
-        if self.OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS:
-            feature_list.append("simultaneous_flow_limits")
-        if self.OPTIONAL_FEATURE_LF_RESERVES_UP:
-            feature_list.append("lf_reserves_up")
-        if self.OPTIONAL_FEATURE_LF_RESERVES_DOWN:
-            feature_list.append("lf_reserves_down")
-        if self.OPTIONAL_FEATURE_REGULATION_UP:
-            feature_list.append("regulation_up")
-        if self.OPTIONAL_FEATURE_REGULATION_DOWN:
-            feature_list.append("regulation_down")
-        if self.OPTIONAL_FEATURE_FREQUENCY_RESPONSE:
-            feature_list.append("frequency_response")
-        if self.OPTIONAL_FEATURE_SPINNING_RESERVES:
-            feature_list.append("spinning_reserves")
-        if self.OPTIONAL_FEATURE_RPS:
-            feature_list.append("rps")
-        if self.OPTIONAL_FEATURE_CARBON_CAP:
-            feature_list.append("carbon_cap")
-        if self.OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS:
-            feature_list.append("track_carbon_imports")
-        if self.OPTIONAL_FEATURE_PRM:
-            feature_list.append("prm")
-        if self.OPTIONAL_FEATURE_ELCC_SURFACE:
-            feature_list.append("elcc_surface")
-        if self.OPTIONAL_FEATURE_LOCAL_CAPACITY:
-            feature_list.append("local_capacity")
-        if self.OPTIONAL_FEATURE_MARKETS:
-            feature_list.append("markets")
-        if self.OPTIONAL_FEATURE_TUNING:
-            feature_list.append("tuning")
+        for attr, value in self.__dict__.items():
+            if value and attr is not "SCENARIO_ID":
+                feature_list.append(attr[3:].lower())
 
         return feature_list
 
@@ -833,3 +727,18 @@ class SolverOptions(object):
                     """.format(self.SOLVER_OPTIONS_ID)
                 ).fetchall() if row[0] is not None and row[0] is not ""
             }
+
+
+def db_column_to_self(column, conn, scenario_id):
+    of = True if column.startswith("of") else False
+    c = conn.cursor()
+    query = c.execute(
+        """SELECT {}
+           FROM scenarios
+           WHERE scenario_id = ?;""".format(column),
+        (scenario_id,)
+    ).fetchone()[0]
+
+    self = "NULL" if query is None and not of else query
+
+    return self
