@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
 
 """
 Scenario characteristics in database.
