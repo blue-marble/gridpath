@@ -98,7 +98,7 @@ def main(args=None):
     loaded_modules = load_modules(modules_to_use)
 
     # Subscenarios
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
 
     process_results(
         loaded_modules=loaded_modules, db=conn, cursor=c,

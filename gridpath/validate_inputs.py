@@ -7,10 +7,6 @@ calls their *validate_inputs()* method, which performs various validations
 of the input data and scenario setup.
 """
 
-
-from __future__ import print_function
-
-from builtins import str
 import pandas as pd
 import sqlite3
 import sys
@@ -162,7 +158,8 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
     :return:
     """
 
-    subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
+    subscenario_ids_by_feature = \
+        subscenarios.determine_subscenarios_by_feature(conn)
     feature_list = optional_features.determine_active_features()
 
     errors = {"High": [], "Low": []}  # errors by severity
@@ -210,7 +207,8 @@ def validate_required_subscenario_ids(subscenarios, conn):
     :return: boolean, True if all required subscenario_ids are specified
     """
 
-    required_subscenario_ids = subscenarios.subscenario_ids_by_feature["core"]
+    required_subscenario_ids = \
+        subscenarios.determine_subscenarios_by_feature(conn)["core"]
 
     errors = []
     for sc_id in required_subscenario_ids:
@@ -414,7 +412,7 @@ def main(args=None):
     #  so we should consolidate
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 
     # Check whether subscenario_ids are valid
