@@ -28,7 +28,7 @@ import os.path
 from pyomo.environ import Param, Set, Var, NonNegativeReals, Reals, \
     PercentFraction, PositiveReals, Constraint, Expression, value
 
-from gridpath.auxiliary.auxiliary import subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -182,7 +182,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
     m.GEN_ALWAYS_ON = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "gen_always_on")
+        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_always_on")
     )
 
     m.GEN_ALWAYS_ON_OPR_TMPS = Set(

@@ -11,7 +11,7 @@ of this operational type cannot provide operational reserves .
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_projects_by_reserve, validate_idxs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -78,8 +78,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_VAR_MUST_TAKE = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type",
-                                         "gen_var_must_take")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_var_must_take"
+        )
     )
 
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(

@@ -23,7 +23,7 @@ import warnings
 from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
     PositiveReals
 
-from gridpath.auxiliary.auxiliary import subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_projects_by_reserve, validate_idxs, \
     validate_single_input
@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_MUST_RUN = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "gen_must_run")
+        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_must_run")
     )
 
     m.GEN_MUST_RUN_OPR_TMPS = Set(

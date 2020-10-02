@@ -22,7 +22,7 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import \
     footroom_variables, headroom_variables, reserve_variable_derate_params
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
@@ -133,7 +133,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
     m.GEN_VAR = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "gen_var"))
+        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_var"))
 
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,

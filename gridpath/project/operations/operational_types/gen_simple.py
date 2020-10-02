@@ -21,7 +21,7 @@ import os
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals, Param, \
     PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_single_input
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -155,7 +155,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_SIMPLE = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "gen_simple")
+        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_simple")
     )
 
     m.GEN_SIMPLE_OPR_TMPS = Set(
