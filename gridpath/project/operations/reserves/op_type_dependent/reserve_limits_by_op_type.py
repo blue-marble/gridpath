@@ -9,7 +9,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, PercentFraction, Constraint
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
@@ -50,7 +50,7 @@ def generic_add_model_components(
             )
 
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )

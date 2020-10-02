@@ -17,7 +17,7 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_gen_storage_capacity_type_modules, setup_results_import
 
 
@@ -44,7 +44,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules(
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="capacity_type"
     )

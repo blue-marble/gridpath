@@ -15,7 +15,7 @@ import csv
 import os.path
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_operational_type_modules, setup_results_import
 
 
@@ -27,7 +27,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )
@@ -55,7 +55,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )
@@ -90,7 +90,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export module-specific results
     # Operational type modules
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )

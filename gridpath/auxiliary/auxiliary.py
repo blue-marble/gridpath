@@ -13,7 +13,7 @@ import traceback
 from db.common_functions import spin_on_database_lock
 
 
-def get_required_subtype_modules(
+def get_required_subtype_modules_from_projects_file(
     scenario_directory, subproblem, stage, which_type
 ):
     """
@@ -30,6 +30,36 @@ def get_required_subtype_modules(
     required_modules = project_df[which_type].unique()
 
     return required_modules
+
+
+def get_required_capacity_types_from_database(conn, scenario_id):
+    """
+    Get the required type modules based on the database inputs
+    for the specified scenario_id. Required modules are the unique set of
+    generator capacity types in the scenario's portfolio.
+
+    :param conn: database connection
+    :param scenario_id: int, user-specified scenario ID
+    :return: List of the required type modules
+    """
+    c = conn.cursor()
+
+    project_portfolio_scenario_id = c.execute(
+        """SELECT project_portfolio_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(scenario_id)
+    ).fetchone()[0]
+
+    required_capacity_type_modules = [
+        p[0] for p in c.execute(
+            """SELECT DISTINCT capacity_type 
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = ?""",
+            (project_portfolio_scenario_id, )
+        ).fetchall()
+    ]
+
+    return required_capacity_type_modules
 
 
 def load_subtype_modules(

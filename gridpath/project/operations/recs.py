@@ -14,7 +14,7 @@ import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_operational_type_modules, setup_results_import, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
@@ -94,7 +94,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )

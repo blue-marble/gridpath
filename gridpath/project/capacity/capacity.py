@@ -15,7 +15,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_gen_storage_capacity_type_modules, join_sets
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
@@ -102,7 +102,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules(
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="capacity_type"
     )
@@ -226,7 +226,7 @@ def operational_periods_by_project(prj, project_operational_periods):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    required_capacity_modules = get_required_subtype_modules(
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="capacity_type"
     )
@@ -276,7 +276,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     # Module-specific capacity results
-    required_capacity_modules = get_required_subtype_modules(
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="capacity_type"
     )
@@ -325,7 +325,7 @@ def summarize_results(scenario_directory, subproblem, stage):
                      "capacity_all.csv")
     )
 
-    required_capacity_modules = get_required_subtype_modules(
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="capacity_type"
     )

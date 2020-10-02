@@ -13,7 +13,8 @@ import sys
 from argparse import ArgumentParser
 
 from db.common_functions import connect_to_database, spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
+    get_required_capacity_types_from_database
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_cols_equal
 from gridpath.common_functions import get_db_parser
@@ -243,7 +244,7 @@ def validate_data_dependent_subscenario_ids(scenario_id, subscenarios, conn):
     assert subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID is not None
 
     req_cap_types = set(
-        get_required_capacity_type_modules(conn, scenario_id)
+        get_required_capacity_types_from_database(conn, scenario_id)
     )
 
     new_build_types = {
@@ -396,48 +397,6 @@ def determine_subscenarios_by_feature(conn):
         else:
             feature_sc_dict[f] = [sc.upper()]
     return feature_sc_dict
-
-
-# TODO: refactor this in capacity_types/__init__? (similar functions are
-#   used in prm_types/operational_types etc.
-def get_required_capacity_type_modules(conn, scenario_id):
-    """
-    :param c: database cursor
-    :return: List of the required capacity type submodules
-
-    Get the required capacity type submodules based on the database inputs
-    for the specified scenario_id. Required modules are the unique set of
-    generator capacity types in the scenario's portfolio. Get the list based
-    on the project_operational_chars_scenario_id of the scenario_id.
-
-    This list will be used to know for which capacity type submodules we
-    should validate inputs, get inputs from database , or save results to
-    database. It is also used to figure out which suscenario_ids are required
-    inputs (e.g. cost inputs are required when there are new build resources)
-
-    Note: once we have determined the dynamic components, this information
-    will also be stored in the DynamicComponents class object.
-
-    """
-    c = conn.cursor()
-
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
-    ).fetchone()[0]
-
-    required_capacity_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT capacity_type 
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}""".format(
-                project_portfolio_scenario_id
-            )
-        ).fetchall()
-    ]
-
-    return required_capacity_type_modules
 
 
 def main(args=None):

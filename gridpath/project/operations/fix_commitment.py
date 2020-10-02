@@ -14,7 +14,7 @@ from pandas import read_csv
 from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules, \
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
     load_operational_type_modules, check_for_integer_subdirectories
 
 
@@ -80,7 +80,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Dynamic Inputs
 
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )
@@ -153,7 +153,7 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    required_operational_modules = get_required_subtype_modules(
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, which_type="operational_type"
     )

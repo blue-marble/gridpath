@@ -12,45 +12,8 @@ import os.path
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, setup_results_import
-
-
-def get_required_capacity_type_modules(scenario_id, c):
-    """
-    Get the required capacity type submodules based on the database inputs
-    for the specified scenario_id. Required modules are the unique set of
-    generator capacity types in the scenario's portfolio. Get the list based
-    on the project_operational_chars_scenario_id of the scenario_id.
-
-    This list will be used to know for which capacity type submodules we
-    should validate inputs, get inputs from database , or save results to
-    database.
-
-    Note: once we have determined the dynamic components, this information
-    will also be stored in the DynamicComponents class object.
-
-    :param scenario_id: user-specified scenario ID
-    :param c: database cursor
-    :return: List of the required capacity type submodules
-    """
-
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
-    ).fetchone()[0]
-
-    required_capacity_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT capacity_type 
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}""".format(
-                project_portfolio_scenario_id
-            )
-        ).fetchall()
-    ]
-
-    return required_capacity_type_modules
+    load_gen_storage_capacity_type_modules, setup_results_import, \
+    get_required_capacity_types_from_database
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -64,10 +27,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Load in the required capacity type modules
-    c = conn.cursor()
-
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(conn, scenario_id,)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 
@@ -95,8 +56,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     c = conn.cursor()
     # Load in the required capacity type modules
 
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(conn, scenario_id)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 
@@ -113,7 +74,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 # TODO: move this to gridpath.project.capacity.__init__?
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -183,8 +144,8 @@ def import_results_into_database(
                           many=False)
 
     # Load in the required capacity type modules
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(db, scenario_id)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 
