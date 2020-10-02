@@ -39,7 +39,7 @@ of the *csv_data_master.csv* file, the script is expecting that the CSV
 filename will conform to a certain structure, indicating the ID and name of
 the subscenario the file contains data for, with the ID and name separated
 by an underscore. For example, to load data for different project portfolio
-scenario_id, subscenarios, the user must first specify the path where the project
+subscenarios, the user must first specify the path where the project
 portfoio CSVs are located in the *path* column of the
 *project_portfolio_scenario_id* row of the *csv_data_master.csv* file. In
 this directory, the user must include a file for each portfolio they want to
@@ -53,7 +53,7 @@ profiles for a project named 'Solar' can be specified in the files named
 filenames should not include dashes.
 
 A few subscenarios consist of multiple tables data for which is located
-inside CSVs in the same directory. For these scenario_id, subscenarios, the directory
+inside CSVs in the same directory. For these subscenarios, the directory
 name should begin with the subscenario ID followed by an underscore and then
 the scenario name. The names of the files expected inside the directory are
 specified in the *csv_data_master.csv* file in the *filename* column. For

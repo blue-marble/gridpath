@@ -64,7 +64,7 @@ def write_model_inputs(
     """
     c = conn.cursor()
     # Load in the required capacity type modules
-    scenario_id = scenario_id
+
     required_availability_type_modules = \
         get_required_availability_type_modules(scenario_id, c)
 
@@ -196,7 +196,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = scenario_id
+
     required_opchar_modules = get_required_availability_type_modules(
         scenario_id, c)
 

@@ -155,7 +155,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = scenario_id
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -217,7 +217,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     # Load in the required operational modules
-    scenario_id = scenario_id
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -250,7 +250,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = scenario_id
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)

@@ -65,7 +65,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Load in the required capacity type modules
     c = conn.cursor()
-    scenario_id = scenario_id
+
     required_capacity_type_modules = get_required_capacity_type_modules(
         scenario_id, c)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
@@ -94,7 +94,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
     c = conn.cursor()
     # Load in the required capacity type modules
-    scenario_id = scenario_id
+
     required_capacity_type_modules = get_required_capacity_type_modules(
         scenario_id, c)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(

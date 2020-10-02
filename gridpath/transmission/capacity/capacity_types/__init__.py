@@ -69,7 +69,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Load in the required tx capacity type modules
-    scenario_id = scenario_id
+
     required_capacity_type_modules = get_required_capacity_type_modules(
         scenario_id, subscenarios, conn)
     imported_capacity_type_modules = load_tx_capacity_type_modules(
