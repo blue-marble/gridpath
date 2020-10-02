@@ -146,12 +146,13 @@ class SubScenarios(object):
 
 
 class SubProblems(object):
-    def __init__(self, cursor, scenario_id):
+    def __init__(self, conn, scenario_id):
         """
 
-        :param cursor:
+        :param conn:
         :param scenario_id:
         """
+        cursor = conn.cursor()
 
         # TODO: make sure there is data integrity between subproblems_stages
         #   and inputs_temporal_horizons and inputs_temporal
@@ -181,11 +182,12 @@ class SubProblems(object):
 
 
 class SolverOptions(object):
-    def __init__(self, cursor, scenario_id):
+    def __init__(self, conn, scenario_id):
         """
         :param cursor:
         :param scenario_id:
         """
+        cursor = conn.cursor()
 
         self.SCENARIO_ID = scenario_id
         self.SOLVER_OPTIONS_ID = cursor.execute("""

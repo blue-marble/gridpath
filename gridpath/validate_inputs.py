@@ -413,7 +413,7 @@ def main(args=None):
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
 
     # Check whether subscenario_ids are valid
     is_valid = validate_subscenario_ids(subscenarios, optional_features, conn)

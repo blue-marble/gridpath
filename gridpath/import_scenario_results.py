@@ -187,7 +187,7 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
         c=c, script="import_scenario_results")
 
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(

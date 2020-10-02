@@ -298,8 +298,8 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-    solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
