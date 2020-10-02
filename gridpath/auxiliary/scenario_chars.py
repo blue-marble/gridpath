@@ -17,6 +17,7 @@ class OptionalFeatures(object):
 
         self.SCENARIO_ID = scenario_id
 
+        # TODO: refactor this
         self.OPTIONAL_FEATURE_TRANSMISSION = cursor.execute(
             """SELECT of_transmission
                FROM scenarios
@@ -107,6 +108,12 @@ class OptionalFeatures(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.OPTIONAL_FEATURE_MARKETS = cursor.execute(
+            """SELECT of_markets
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.OPTIONAL_FEATURE_TUNING = cursor.execute(
             """SELECT of_tuning
                FROM scenarios
@@ -150,6 +157,8 @@ class OptionalFeatures(object):
             feature_list.append("elcc_surface")
         if self.OPTIONAL_FEATURE_LOCAL_CAPACITY:
             feature_list.append("local_capacity")
+        if self.OPTIONAL_FEATURE_MARKETS:
+            feature_list.append("markets")
         if self.OPTIONAL_FEATURE_TUNING:
             feature_list.append("tuning")
 
@@ -169,6 +178,7 @@ class SubScenarios(object):
         """
         self.SCENARIO_ID = scenario_id
 
+        # TODO: refactor this
         temporal_sid = cursor.execute(
             """SELECT temporal_scenario_id
                FROM scenarios
@@ -264,6 +274,30 @@ class SubScenarios(object):
         ).fetchone()[0]
         self.LOCAL_CAPACITY_ZONE_SCENARIO_ID = \
             "NULL" if loc_cap_zone_sid is None else loc_cap_zone_sid
+
+        market_sid = cursor.execute(
+            """SELECT market_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.MARKET_SCENARIO_ID = \
+            "NULL" if market_sid is None else market_sid
+
+        market_price_sid = cursor.execute(
+            """SELECT market_price_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.MARKET_PRICE_SCENARIO_ID = \
+            "NULL" if market_price_sid is None else market_price_sid
+
+        market_volume_sid = cursor.execute(
+            """SELECT market_volume_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.MARKET_VOLUME_SCENARIO_ID = \
+            "NULL" if market_volume_sid is None else market_volume_sid
 
         proj_portfolio_sid = cursor.execute(
             """SELECT project_portfolio_scenario_id
@@ -376,6 +410,14 @@ class SubScenarios(object):
         ).fetchone()[0]
         self.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID = \
             "NULL" if p_lc_char_sid is None else p_lc_char_sid
+
+        lz_mh_sid = cursor.execute(
+            """SELECT load_zone_market_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.LOAD_ZONE_MARKET_SCENARIO_ID = \
+            "NULL" if lz_mh_sid is None else lz_mh_sid
 
         p_ecap_sid = cursor.execute(
             """SELECT project_specified_capacity_scenario_id

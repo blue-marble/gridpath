@@ -8,7 +8,7 @@ objective function.
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -139,17 +139,17 @@ def record_dynamic_components(dynamic_components):
     Add operational costs to the objective-function dynamic components.
     """
 
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Variable_OM_Cost")
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Fuel_Cost")
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Startup_Cost")
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Shutdown_Cost")
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Operational_Violation_Cost"
     )
-    getattr(dynamic_components, total_cost_components).append(
+    getattr(dynamic_components, cost_components).append(
         "Total_Curtailment_Cost"
     )

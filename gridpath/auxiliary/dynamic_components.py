@@ -39,7 +39,8 @@ prm_balance_provision_components = \
 local_capacity_balance_provision_components = \
     "local_capacity_balance_provision_components"
 
-total_cost_components = "total_cost_components"
+cost_components = "cost_components"
+revenue_components = "revenue_components"
 
 
 class DynamicComponents(object):
@@ -111,6 +112,7 @@ class DynamicComponents(object):
         # Modules will add component names to this list
         setattr(self, local_capacity_balance_provision_components, list())
 
-        # Objective function
+        # Objective functions
         # Modules will add component names to this list
-        setattr(self, total_cost_components, list())
+        setattr(self, cost_components, list())
+        setattr(self, revenue_components, list())

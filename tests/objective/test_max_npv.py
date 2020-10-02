@@ -16,7 +16,7 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = []
-NAME_OF_MODULE_BEING_TESTED = "objective.min_total_cost"
+NAME_OF_MODULE_BEING_TESTED = "objective.max_npv"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -34,7 +34,7 @@ except ImportError:
           " to test.")
 
 
-class TestRegulationUp(unittest.TestCase):
+class TestMaxNPV(unittest.TestCase):
     """
 
     """
@@ -49,6 +49,7 @@ class TestRegulationUp(unittest.TestCase):
                               subproblem="",
                               stage=""
                               )
+
 
 if __name__ == "__main__":
     unittest.main()

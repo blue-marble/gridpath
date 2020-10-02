@@ -468,7 +468,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
        :code:`GenAlwaysOn_Variable_OM_Cost_By_LL` decision variable. If no
-       variable O&M curve inputs are provided, this component will be zero.
+       varxiable O&M curve inputs are provided, this component will be zero.
 
     Most users will only use the first component, which is specified in the
     operational characteristics table.  Only operational types with

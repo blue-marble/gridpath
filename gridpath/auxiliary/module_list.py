@@ -44,6 +44,7 @@ def all_modules_list():
         "geography.carbon_cap_zones",
         "geography.prm_zones",
         "geography.local_capacity_zones",
+        "geography.markets",
         "system.load_balance.static_load_requirement",
         "system.reserves.requirement.lf_reserves_up",
         "system.reserves.requirement.lf_reserves_down",
@@ -55,6 +56,7 @@ def all_modules_list():
         "system.policy.carbon_cap.carbon_cap",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity.local_capacity_requirement",
+        "system.markets.prices",
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
@@ -101,6 +103,7 @@ def all_modules_list():
         "transmission.operations.carbon_emissions",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
+        "system.load_balance.market_participation",
         "system.load_balance.load_balance",
         "system.reserves.aggregation.lf_reserves_up",
         "system.reserves.aggregation.regulation_up",
@@ -125,6 +128,7 @@ def all_modules_list():
         "system.reliability.local_capacity"
         ".aggregate_local_capacity_contribution",
         "system.reliability.local_capacity.local_capacity_balance",
+        "system.markets.volume",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_prm_group_costs",
         "objective.project.aggregate_operational_costs",
@@ -145,7 +149,8 @@ def all_modules_list():
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
-        "objective.min_total_cost"
+        "objective.system.aggregate_market_revenue_and_costs",
+        "objective.max_npv"
     ]
     return all_modules
 
@@ -248,8 +253,8 @@ def optional_modules_list():
              "objective.system.reliability.prm."
              "aggregate_prm_violation_penalties"
              ],
-        "local_capacity":
-            ["geography.local_capacity_zones",
+        "local_capacity": [
+            "geography.local_capacity_zones",
              "system.reliability.local_capacity.local_capacity_requirement",
              "project.reliability.local_capacity",
              "project.reliability.local_capacity.local_capacity_contribution",
@@ -258,7 +263,14 @@ def optional_modules_list():
              "system.reliability.local_capacity.local_capacity_balance",
              "objective.system.reliability.local_capacity"
              ".aggregate_local_capacity_violation_penalties",
-             ],
+            ],
+        "markets": [
+            "geography.markets",
+            "system.markets.prices",
+            "system.load_balance.market_participation",
+            "system.markets.volume",
+            "objective.system.aggregate_market_revenue_and_costs"
+            ],
         "tuning": [
             "project.operations.tuning_costs",
             "objective.project.aggregate_operational_tuning_costs"

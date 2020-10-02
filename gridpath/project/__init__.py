@@ -13,8 +13,6 @@ import pandas as pd
 from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_values, validate_columns, \
     validate_missing_inputs
@@ -121,49 +119,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
-
-    # Start list of headroom and footroom variables by project
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
-
-
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    :param d: the dynamic components class object we'll be adding to
-    :param scenario_directory: the base scenario directory
-    :param stage: if horizon subproblems exist, the horizon name; NOT USED
-    :param stage: if stage subproblems exist, the stage name; NOT USED
-
-    Set the keys for the headroom and footroom variable
-    dictionaries: the keys are all the projects included in the
-    'projects.tab' input file. The values of these dictionaries are
-    initially empty lists and will be populated later by each of included
-    the reserve (e.g regulation up) modules. E.g. if the user has requested to
-    model spinning reserves and project *r* has a value in the column
-    associated with the spinning-reserves balancing area, then the name of
-    project-level spinning-reserves-provision variable will be added to that
-    project's list of variables in the 'headroom_variables' dictionary. For
-    downward reserves, the associated variables are added to the
-    'footroom_variables' dictionary.
-    """
-
-    project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "projects.tab"),
-        sep="\t"
-    )
-
-    # Reserve variables
-    # Will be determined based on whether the user has specified the
-    # respective reserve module AND based on whether a reserve zone is
-    # specified for a project in projects.tab
-    # We need to make the dictionaries first; it is the lists for each key
-    # that are populated by the modules
-    setattr(d, headroom_variables,
-            {r: [] for r in project_df.project}
-            )
-    setattr(d, footroom_variables,
-            {r: [] for r in project_df.project}
-            )
 
 
 # Input-Output

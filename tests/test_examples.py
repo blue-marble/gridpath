@@ -151,7 +151,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test")
-        self.run_and_check_objective("test", 3796309121478.12)
+        self.run_and_check_objective("test", -3796309121478.12)
 
     def test_example_test_no_overgen_allowed(self):
         """
@@ -162,7 +162,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_no_overgen_allowed")
         self.run_and_check_objective("test_no_overgen_allowed",
-                                     5256303226874.182)
+                                     -5256303226874.182)
 
     def test_example_test_new_build_storage(self):
         """
@@ -173,7 +173,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage")
         self.run_and_check_objective("test_new_build_storage",
-                                     448459119.992)
+                                     -448459119.992)
 
     def test_example_test_new_binary_build_storage(self):
         """
@@ -184,7 +184,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_binary_build_storage")
         self.run_and_check_objective("test_new_binary_build_storage",
-                                     448459187.848)
+                                     -448459187.848)
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
@@ -195,7 +195,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage_cumulative_min_max")
         self.run_and_check_objective("test_new_build_storage_cumulative_min_max",
-                                     456169238.38699996)
+                                     -456169238.38699996)
 
     def test_example_test_no_reserves(self):
         """
@@ -205,7 +205,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_no_reserves")
-        self.run_and_check_objective("test_no_reserves", 233812049.889)
+        self.run_and_check_objective("test_no_reserves", -233812049.889)
 
     def test_example_test_w_hydro(self):
         """
@@ -214,7 +214,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_w_hydro")
-        self.run_and_check_objective("test_w_hydro", 214913823.36742803)
+        self.run_and_check_objective("test_w_hydro", -214913823.36742803)
 
     def test_example_test_w_storage(self):
         """
@@ -223,7 +223,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_w_storage")
-        self.run_and_check_objective("test_w_storage", 237985313.88900003)
+        self.run_and_check_objective("test_w_storage", -237985313.88900003)
 
     def test_example_2horizons(self):
         """
@@ -232,7 +232,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2horizons")
-        self.run_and_check_objective("2horizons", 3796309121478.1226)
+        self.run_and_check_objective("2horizons", -3796309121478.1226)
 
     def test_example_2horizons_w_hydro(self):
         """
@@ -242,7 +242,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2horizons_w_hydro")
-        self.run_and_check_objective("2horizons_w_hydro", 219136981.90835398)
+        self.run_and_check_objective("2horizons_w_hydro", -219136981.90835398)
 
     def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
         """
@@ -263,7 +263,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2horizons_w_hydro_and_nuclear_binary_availability")
         self.run_and_check_objective(
             "2horizons_w_hydro_and_nuclear_binary_availability",
-            179455911.23328674
+            -179455911.23328674
         )
 
     def test_example_2horizons_w_hydro_w_balancing_types(self):
@@ -279,7 +279,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2horizons_w_hydro_w_balancing_types")
         self.run_and_check_objective("2horizons_w_hydro_w_balancing_types",
-                                     214913823.367428)
+                                     -214913823.367428)
 
     def test_example_2periods(self):
         """
@@ -288,7 +288,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2periods")
-        self.run_and_check_objective("2periods", 75926182429562.45)
+        self.run_and_check_objective("2periods", -75926182429562.45)
 
     def test_example_2periods_new_build(self):
         """
@@ -296,7 +296,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2periods_new_build")
-        self.run_and_check_objective("2periods_new_build", 10085845900.191605)
+        self.run_and_check_objective("2periods_new_build", -10085845900.191605)
 
     def test_example_2periods_new_build_2zones(self):
         """
@@ -307,7 +307,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_2zones")
         self.run_and_check_objective("2periods_new_build_2zones",
-                                     20171691806.955837)
+                                     -20171691806.955837)
 
     def test_example_2periods_new_build_2zones_new_build_transmission(self):
         """
@@ -319,7 +319,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_2zones_new_build_transmission")
         self.run_and_check_objective(
             "2periods_new_build_2zones_new_build_transmission",
-            7028494941419.333
+            -7028494941419.333
         )
 
     def test_example_2periods_new_build_2zones_singleBA(self):
@@ -332,7 +332,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_2zones_singleBA")
         self.run_and_check_objective("2periods_new_build_2zones_singleBA",
-                                     20171691752.98445)
+                                     -20171691752.98445)
 
     def test_example_2periods_new_build_2zones_transmission(self):
         """
@@ -343,7 +343,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_2zones_transmission")
         self.run_and_check_objective("2periods_new_build_2zones_transmission",
-                                     220771078212318.25)
+                                     -220771078212318.25)
 
     def test_example_2periods_new_build_2zones_transmission_w_losses(self):
         """
@@ -355,7 +355,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_2zones_transmission_w_losses")
         self.run_and_check_objective(
             "2periods_new_build_2zones_transmission_w_losses",
-            238291078037118.25
+            -238291078037118.25
         )
 
     def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(
@@ -372,7 +372,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_2zones_transmission_w_losses_opp_dir")
         self.run_and_check_objective(
             "2periods_new_build_2zones_transmission_w_losses_opp_dir",
-            238291078037118.25
+            -238291078037118.25
         )
 
     def test_example_2periods_new_build_rps(self):
@@ -384,7 +384,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps")
         self.run_and_check_objective("2periods_new_build_rps",
-                                     6852354310.25219)
+                                     -6852354310.25219)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -398,7 +398,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_percent_target")
         self.run_and_check_objective("2periods_new_build_rps_percent_target",
-                                     6853489111.712191)
+                                     -6853489111.712191)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -409,7 +409,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_cumulative_min_max")
         self.run_and_check_objective("2periods_new_build_cumulative_min_max",
-                                     27166044526940.195)
+                                     -27166044526940.195)
 
     def test_example_single_stage_prod_cost(self):
         """
@@ -420,9 +420,9 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("single_stage_prod_cost")
         self.run_and_check_objective("single_stage_prod_cost",
-                                     {"1": 1265436373826.0408,
-                                      "2": 1265436373826.0408,
-                                      "3": 1265436373826.0408})
+                                     {"1": -1265436373826.0408,
+                                      "2": -1265436373826.0408,
+                                      "3": -1265436373826.0408})
 
     def test_example_single_stage_prod_cost_linked_subproblems(self):
         """
@@ -434,9 +434,9 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective(
             "single_stage_prod_cost_linked_subproblems",
             {
-                "1": 1265436373826.0408,
-                "2": 1265436373826.0408,
-                "3": 1265436373826.0408
+                "1": -1265436373826.0408,
+                "2": -1265436373826.0408,
+                "3": -1265436373826.0408
             }
         )
 
@@ -449,15 +449,15 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("multi_stage_prod_cost")
         self.run_and_check_objective("multi_stage_prod_cost",
-                                     {"1": {"1": 1265436373826.0408,
-                                            "2": 1265436373826.0408,
-                                            "3": 1265436373826.099},
-                                      "2": {"1": 1265436373826.0408,
-                                            "2": 1265436373826.0408,
-                                            "3": 1265436373826.099},
-                                      "3": {"1": 1265436373826.0408,
-                                            "2": 1265436373826.0408,
-                                            "3": 1265436373826.099}})
+                                     {"1": {"1": -1265436373826.0408,
+                                            "2": -1265436373826.0408,
+                                            "3": -1265436373826.099},
+                                      "2": {"1": -1265436373826.0408,
+                                            "2": -1265436373826.0408,
+                                            "3": -1265436373826.099},
+                                      "3": {"1": -1265436373826.0408,
+                                            "2": -1265436373826.0408,
+                                            "3": -1265436373826.099}})
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
@@ -469,15 +469,15 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("multi_stage_prod_cost_w_hydro")
         self.run_and_check_objective("multi_stage_prod_cost_w_hydro",
-                                     {"1": {"1": 1411433910806.1167,
-                                            "2": 1411433910806.1167,
-                                            "3": 1411433910806.175},
-                                      "2": {"1": 1411433910806.1167,
-                                            "2": 1411433910806.1167,
-                                            "3": 1411433910806.175},
-                                      "3": {"1": 1411433910806.1167,
-                                            "2": 1411433910806.1167,
-                                            "3": 1411433910806.175}})
+                                     {"1": {"1": -1411433910806.1167,
+                                            "2": -1411433910806.1167,
+                                            "3": -1411433910806.175},
+                                      "2": {"1": -1411433910806.1167,
+                                            "2": -1411433910806.1167,
+                                            "3": -1411433910806.175},
+                                      "3": {"1": -1411433910806.1167,
+                                            "2": -1411433910806.1167,
+                                            "3": -1411433910806.175}})
 
     def test_example_multi_stage_prod_cost_linked_subproblems(self):
         """
@@ -490,19 +490,19 @@ class TestExamples(unittest.TestCase):
             "multi_stage_prod_cost_linked_subproblems",
             {
                 "1": {
-                    "1": 1265436373826.0408,
-                    "2": 1265436373826.0408,
-                    "3": 1265436372366.0408
+                    "1": -1265436373826.0408,
+                    "2": -1265436373826.0408,
+                    "3": -1265436372366.0408
                 },
                 "2": {
-                    "1": 1265436373826.0408,
-                    "2": 1265436373826.0408,
-                    "3": 1265436372366.0408
+                    "1": -1265436373826.0408,
+                    "2": -1265436373826.0408,
+                    "3": -1265436372366.0408
                 },
                 "3": {
-                    "1": 1265436373826.0408,
-                    "2": 1265436373826.0408,
-                    "3": 1265436372366.0408
+                    "1": -1265436373826.0408,
+                    "2": -1265436373826.0408,
+                    "3": -1265436372366.0408
                 }
             }
         )
@@ -517,7 +517,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_gen_lin_econ_retirement")
         self.run_and_check_objective("2periods_gen_lin_econ_retirement",
-                                     75926125638846.83)
+                                     -75926125638846.83)
 
     def test_example_2periods_gen_bin_econ_retirement(self):
         """
@@ -529,7 +529,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_gen_bin_econ_retirement")
         self.run_and_check_objective("2periods_gen_bin_econ_retirement",
-                                     75926182429562.45)
+                                     -75926182429562.45)
 
     def test_example_variable_gen_reserves(self):
         """
@@ -541,7 +541,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_variable_gen_reserves")
         self.run_and_check_objective("test_variable_gen_reserves",
-                                     1343499590014.7651)
+                                     -1343499590014.7651)
 
     def test_example_2periods_new_build_rps_variable_reserves(self):
         """
@@ -552,7 +552,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_variable_reserves")
         self.run_and_check_objective("2periods_new_build_rps_variable_reserves",
-                                     4980266823.194146)
+                                     -4980266823.194146)
 
     def test_example_2periods_new_build_rps_variable_reserves_subhourly_adj(
             self):
@@ -565,7 +565,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_variable_reserves_subhourly_adj")
         self.run_and_check_objective(
             "2periods_new_build_rps_variable_reserves_subhourly_adj",
-            4980266823.194146
+            -4980266823.194146
         )
 
     def test_example_test_ramp_up_constraints(self):
@@ -577,7 +577,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_ramp_up_constraints")
         self.run_and_check_objective("test_ramp_up_constraints",
-                                     3796309121478.1226)
+                                     -3796309121478.1226)
 
     def test_example_test_ramp_up_and_down_constraints(self):
         """
@@ -589,7 +589,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_ramp_up_and_down_constraints")
         self.run_and_check_objective("test_ramp_up_and_down_constraints",
-                                     4730755816658.181)
+                                     -4730755816658.181)
 
     def test_example_2periods_new_build_rps_w_rps_ineligible_storage(self):
         """
@@ -601,7 +601,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_ineligible_storage",
-            6807756610.25219
+            -6807756610.25219
         )
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
@@ -614,7 +614,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_eligible_storage",
-            6807756610.25219
+            -6807756610.25219
         )
 
     def test_example_test_new_solar(self):
@@ -625,7 +625,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_new_solar")
-        self.run_and_check_objective("test_new_solar", 3796301348838.3267)
+        self.run_and_check_objective("test_new_solar", -3796301348838.3267)
 
     def test_example_test_new_binary_solar(self):
         """
@@ -635,7 +635,8 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_new_binary_solar")
-        self.run_and_check_objective("test_new_binary_solar", 3796300848658.342)
+        self.run_and_check_objective("test_new_binary_solar",
+                                     -3796300848658.342)
 
     def test_example_test_new_solar_carbon_cap(self):
         """
@@ -646,7 +647,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_solar_carbon_cap")
         self.run_and_check_objective("test_new_solar_carbon_cap",
-                                     58282515304521.79)
+                                     -58282515304521.79)
 
     def test_example_test_new_solar_carbon_cap_2zones_tx(self):
         """
@@ -657,7 +658,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_solar_carbon_cap_2zones_tx")
         self.run_and_check_objective("test_new_solar_carbon_cap_2zones_tx",
-                                     58248087935073.625)
+                                     -58248087935073.625)
 
     def test_example_test_new_solar_carbon_cap_2zones_dont_count_tx(self):
         """
@@ -669,7 +670,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_solar_carbon_cap_2zones_dont_count_tx")
         self.run_and_check_objective(
             "test_new_solar_carbon_cap_2zones_dont_count_tx",
-            56530649982951.8
+            -56530649982951.8
         )
 
     def test_example_2periods_new_build_simple_prm(self):
@@ -682,7 +683,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_simple_prm")
         self.run_and_check_objective("2periods_new_build_simple_prm",
-                                     10153045900.191605)
+                                     -10153045900.191605)
 
     def test_example_2periods_new_build_local_capacity(self):
         """
@@ -694,7 +695,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_local_capacity")
         self.run_and_check_objective("2periods_new_build_local_capacity",
-                                     10087189902.382917)
+                                     -10087189902.382917)
 
     def test_example_test_tx_dcopf(self):
         """
@@ -704,7 +705,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_tx_dcopf")
-        self.run_and_check_objective("test_tx_dcopf", 58248351050674.516)
+        self.run_and_check_objective("test_tx_dcopf", -58248351050674.516)
 
     def test_example_test_tx_simple(self):
         """
@@ -714,7 +715,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_tx_simple")
-        self.run_and_check_objective("test_tx_simple", 58248338996673.625)
+        self.run_and_check_objective("test_tx_simple", -58248338996673.625)
 
     def test_example_test_startup_shutdown_rates(self):
         """
@@ -726,7 +727,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_startup_shutdown_rates")
         self.run_and_check_objective("test_startup_shutdown_rates",
-                                     560795927282.9794)
+                                     -560795927282.9794)
 
     def test_no_fuels(self):
         """
@@ -736,7 +737,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_no_fuels")
-        self.run_and_check_objective("test_no_fuels", 3796000221920.0)
+        self.run_and_check_objective("test_no_fuels", -3796000221920.0)
 
     def test_variable_om_curves(self):
         """
@@ -748,7 +749,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_variable_om_curves")
         self.run_and_check_objective("test_variable_om_curves",
-                                     3796309193923.3223)
+                                     -3796309193923.3223)
 
     def test_aux_cons(self):
         """
@@ -761,7 +762,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_aux_cons")
-        self.run_and_check_objective("test_aux_cons", 3664910801437.807)
+        self.run_and_check_objective("test_aux_cons", -3664910801437.807)
 
     def test_example_test_w_lf_down_percent_req(self):
         """
@@ -772,7 +773,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_w_lf_down_percent_req")
         self.run_and_check_objective("test_w_lf_down_percent_req",
-                                     6643312468674.122)
+                                     -6643312468674.122)
 
     def test_example_2periods_new_build_capgroups(self):
         """
@@ -781,7 +782,16 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_capgroups")
         self.run_and_check_objective("2periods_new_build_capgroups",
-                                     5266183794340.191)
+                                     -5266183794340.191)
+
+    def test_example_test_markets(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+
+        self.check_validation("test_markets")
+        self.run_and_check_objective("test_markets", -3504300478278.3403)
 
     @classmethod
     def tearDownClass(cls):

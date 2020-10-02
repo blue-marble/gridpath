@@ -260,9 +260,9 @@ gridpath.objective.system.aggregate_load_balance_penalties
 .. automodule:: gridpath.objective.system.aggregate_load_balance_penalties
     :members: add_model_components
 
-gridpath.objective.min_total_cost
+gridpath.objective.max_npv
 ---------------------------------
-.. automodule:: gridpath.objective.min_total_cost
+.. automodule:: gridpath.objective.max_npv
     :members: add_model_components
 
 

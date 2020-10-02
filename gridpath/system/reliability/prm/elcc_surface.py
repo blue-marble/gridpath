@@ -15,7 +15,7 @@ from pyomo.environ import Param, Var, Set, NonNegativeReals, Constraint, \
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
-    prm_balance_provision_components, total_cost_components
+    prm_balance_provision_components, cost_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

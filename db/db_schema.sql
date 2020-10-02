@@ -577,6 +577,63 @@ subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
 );
 
 
+-- Market hubs
+-- This is the unit at which prices are specified in the model;
+-- it can be different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_markets;
+CREATE TABLE subscenarios_geography_markets (
+market_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_markets;
+CREATE TABLE inputs_geography_markets (
+market_scenario_id INTEGER,
+market VARCHAR(32),
+PRIMARY KEY (market_scenario_id, market),
+FOREIGN KEY (market_scenario_id) REFERENCES
+subscenarios_geography_markets (market_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_market_prices;
+CREATE TABLE subscenarios_market_prices (
+market_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_prices;
+CREATE TABLE inputs_market_prices (
+market_price_scenario_id INTEGER,
+market VARCHAR(32),
+timepoint INTEGER,
+market_price FLOAT,
+PRIMARY KEY (market_price_scenario_id, market, timepoint),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+subscenarios_market_prices (market_price_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_market_volume;
+CREATE TABLE subscenarios_market_volume (
+market_volume_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume;
+CREATE TABLE inputs_market_volume (
+market_volume_scenario_id INTEGER,
+market VARCHAR(32),
+timepoint INTEGER,
+max_market_sales FLOAT,
+max_market_purchases FLOAT,
+PRIMARY KEY (market_volume_scenario_id, market, timepoint),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+subscenarios_market_volume (market_volume_scenario_id)
+);
+
+
 -------------------
 -- -- PROJECT -- --
 -------------------
@@ -1447,7 +1504,6 @@ subscenarios_project_fuel_prices (fuel_price_scenario_id)
 );
 
 
-
 ------------------
 -- TRANSMISSION --
 ------------------
@@ -1676,6 +1732,27 @@ PRIMARY KEY (load_scenario_id, load_zone, stage_id, timepoint),
 FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 (load_scenario_id)
 );
+
+
+-- Markets
+-- Load zone markets
+DROP TABLE IF EXISTS subscenarios_load_zone_markets;
+CREATE TABLE subscenarios_load_zone_markets (
+load_zone_market_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_load_zone_markets;
+CREATE TABLE inputs_load_zone_markets (
+load_zone_market_scenario_id INTEGER,
+load_zone VARCHAR(64),
+market VARCHAR(32),
+PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
+FOREIGN KEY (load_zone_market_scenario_id)
+REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)
+);
+
 
 -- -- Reserves -- --
 
@@ -2109,6 +2186,7 @@ of_track_carbon_imports INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
+of_markets INTEGER,
 of_tuning INTEGER,
 temporal_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
@@ -2122,6 +2200,7 @@ rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
+market_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 project_availability_scenario_id INTEGER,
@@ -2140,6 +2219,7 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
+load_zone_market_scenario_id INTEGER,
 project_specified_capacity_scenario_id INTEGER,
 project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -2169,6 +2249,8 @@ carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
+market_price_scenario_id INTEGER,
+market_volume_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
@@ -2199,6 +2281,8 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
     subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
+FOREIGN KEY (market_scenario_id) REFERENCES
+    subscenarios_geography_markets (market_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
     subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -2247,6 +2331,8 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
+FOREIGN KEY (load_zone_market_scenario_id) REFERENCES
+    subscenarios_load_zone_markets (load_zone_market_scenario_id),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
     subscenarios_project_specified_capacity
         (project_specified_capacity_scenario_id),
@@ -2317,6 +2403,10 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+    subscenarios_market_prices (market_price_scenario_id),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+    subscenarios_market_volume (market_volume_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
@@ -3094,6 +3184,25 @@ marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
+DROP TABLE IF EXISTS results_system_market_participation;
+CREATE TABLE results_system_market_participation (
+scenario_id INTEGER,
+load_zone VARCHAR(32),
+market VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+spinup_or_lookahead INTEGER,
+sell_power FLOAT,
+buy_power FLOAT,
+PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
 CREATE TABLE results_system_lf_reserves_up_balance (
 scenario_id INTEGER,
@@ -3342,6 +3451,8 @@ Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_RPS_Balance_Penalty_Costs Float,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
+Total_Market_Cost FLOAT,
+Total_Market_Revenue FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
