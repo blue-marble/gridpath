@@ -91,9 +91,7 @@ def join_sets(mod, set_list):
     return joined_set
 
 
-# TODO: make this function even more generic, so that we can initialize a
-#  subset of any set, not just PROJECTS
-def generator_subset_init(generator_parameter, expected_type):
+def subset_init(set_name, param_name, param_value):
     """
     Initialize subsets of generators by subtype based on subtype flags.
     Need to return a function with the model as argument, i.e. 'lambda mod'
@@ -101,13 +99,15 @@ def generator_subset_init(generator_parameter, expected_type):
     generators after data is loaded; then we can pass the abstract model to the
     initialization function.
 
-    :param generator_parameter:
-    :param expected_type:
+    :param set_name:
+    :param param_name:
+    :param param_value:
     :return:
     """
-    return lambda mod: \
-        list(g for g in mod.PROJECTS if getattr(mod, generator_parameter)[g]
-             == expected_type)
+    return lambda mod: [
+        i for i in getattr(mod, set_name)
+        if getattr(mod, param_name)[i] == param_value
+    ]
 
 
 def check_list_has_single_item(l, error_msg):

@@ -27,7 +27,7 @@ import os.path
 from pyomo.environ import Var, Set, Constraint, Param, Expression, \
     NonNegativeReals, PercentFraction, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -207,8 +207,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.STOR = Set(
         within=m.PROJECTS,
-        initialize=
-        generator_subset_init("operational_type", "stor")
+        initialize=subset_init("PROJECTS", "operational_type", "stor")
     )
 
     m.STOR_OPR_TMPS = Set(

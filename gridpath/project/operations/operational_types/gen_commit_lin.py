@@ -18,7 +18,7 @@ import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     PercentFraction, Boolean, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -615,7 +615,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_commit_lin")
+        initialize=subset_init("PROJECTS", "operational_type", "gen_commit_lin")
     )
 
     m.GEN_COMMIT_LIN_OPR_TMPS = Set(

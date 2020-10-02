@@ -21,7 +21,7 @@ from pyomo.environ import Var, Set, Param, Constraint, \
     Expression, NonNegativeReals, PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -208,7 +208,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_HYDRO = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_hydro")
+        initialize=subset_init("PROJECTS", "operational_type", "gen_hydro")
     )
 
     m.GEN_HYDRO_OPR_HRZS = Set(dimen=2)
