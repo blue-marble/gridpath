@@ -68,17 +68,16 @@ code.
 Requirements
 ============
 
-GridPath is written and tested in Python 3, uses an SQLite database to store
-input and output data, and requires a solver to produce results.
-
 Python
 ------
 
-Running GridPath's source requires a Python 3 installation and several
-Python packages. You can get the official CPython distribution `here
+Running GridPath requires a Python 3 installation and several Python
+packages. You can get the official CPython distribution `here
 <https://www.python.org/downloads/>`_, the Anaconda Python distribution
 `here <https://www.anaconda.com/distribution/>`_, or `another Python
-distribution <https://wiki.python.org/moin/PythonDistributions>`_.
+distribution <https://wiki.python.org/moin/PythonDistributions>`_. GridPath
+is written and tested in Python 3.8 and we do not recommend using other Python
+versions.
 
 
 .. _python-virtual-env-section-ref:

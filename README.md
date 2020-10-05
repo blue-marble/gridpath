@@ -6,7 +6,7 @@ model.
 # Installation
 
 ## Python
-GridPath is developed and tested on Python 3.7. Get Python 
+GridPath is developed and tested on Python 3.8. Get Python 3.8
 [here](https://www.python.org/downloads/ "Python download").
 
 ## Packages

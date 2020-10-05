@@ -146,7 +146,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for row in zip(projects["project"],
                    projects["frequency_response_ba"],
                    projects["frequency_response_partial"]):
-        if row[1] is not "." and int(float(row[2])) == 1:
+        if row[1] != "." and int(float(row[2])) == 1:
             project_fr_partial_list.append(row[0])
         else:
             pass
