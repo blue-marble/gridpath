@@ -155,7 +155,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_SIMPLE = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_simple")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_simple"
+        )
     )
 
     m.GEN_SIMPLE_OPR_TMPS = Set(

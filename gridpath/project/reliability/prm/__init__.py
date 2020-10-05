@@ -12,7 +12,8 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df, \
+    subset_init_by_param_value
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs, validate_missing_inputs
 
@@ -33,11 +34,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 "fully_deliverable_energy_limited"]
     )
 
-    m.PRM_PROJECTS_BY_PRM_ZONE = \
-        Set(m.PRM_ZONES, within=m.PRM_PROJECTS,
-            initialize=lambda mod, prm_z:
-            [p for p in mod.PRM_PROJECTS
-             if mod.prm_zone[p] == prm_z])
+    m.PRM_PROJECTS_BY_PRM_ZONE = Set(
+        m.PRM_ZONES,
+        within=m.PRM_PROJECTS,
+        initialize=lambda mod, prm_z: subset_init_by_param_value(
+            mod, "PRM_PROJECTS", "prm_zone", prm_z
+        )
+    )
 
     # Get operational carbon cap projects - timepoints combinations
     m.PRM_PRJ_OPR_PRDS = Set(
