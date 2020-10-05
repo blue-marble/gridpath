@@ -615,7 +615,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_commit_lin")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_commit_lin"
+        )
     )
 
     m.GEN_COMMIT_LIN_OPR_TMPS = Set(

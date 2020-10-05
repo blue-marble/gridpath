@@ -74,7 +74,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_MUST_RUN = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_must_run")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_must_run"
+        )
     )
 
     m.GEN_MUST_RUN_OPR_TMPS = Set(

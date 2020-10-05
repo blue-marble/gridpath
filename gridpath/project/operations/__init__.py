@@ -300,7 +300,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
         initialize=lambda mod: set(
-            [p for p in mod.STARTUP_COST_SIMPLE_PRJS ] +
+            [p for p in mod.STARTUP_COST_SIMPLE_PRJS] +
             [p for p in mod.STARTUP_BY_ST_PRJS]
         )
     )

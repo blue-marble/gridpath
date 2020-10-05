@@ -133,7 +133,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
     m.GEN_VAR = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_var"))
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_var"
+        )
+    )
 
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,

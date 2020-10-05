@@ -106,21 +106,6 @@ def subset_init_by_param_value(mod, set_name, param_name, param_value):
     ]
 
 
-def subset_init_by_set_membership(mod, set_name, member_set):
-    """
-    Initialize subset based on a param flag.
-
-    :param set_name:
-    :param param_name:
-    :param param_value:
-    :return:
-    """
-    return [
-        i for i in getattr(mod, set_name)
-        if i in getattr(mod, member_set)
-    ]
-
-
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)
