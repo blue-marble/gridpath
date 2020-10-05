@@ -75,7 +75,7 @@ class SubScenarios(object):
     def get_all_available_subscenarios(self):
         all_subscenarios = [
             attr.lower() for attr, value in self.__dict__.items()
-            if attr is not "SCENARIO_ID"
+            if attr != "SCENARIO_ID"
         ]
 
         return all_subscenarios
@@ -158,7 +158,7 @@ class SolverOptions(object):
                     FROM inputs_options_solver
                     WHERE solver_options_id = {};
                     """.format(self.SOLVER_OPTIONS_ID)
-                ).fetchall() if row[0] is not None and row[0] is not ""
+                ).fetchall() if row[0] is not None and row[0] != ""
             }
 
 
