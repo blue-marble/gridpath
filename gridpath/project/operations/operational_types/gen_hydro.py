@@ -208,7 +208,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_HYDRO = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(mod, "PROJECTS", "operational_type", "gen_hydro")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_hydro"
+        )
     )
 
     m.GEN_HYDRO_OPR_HRZS = Set(dimen=2)
