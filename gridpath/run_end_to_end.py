@@ -271,10 +271,15 @@ def main(args=None):
         get_scenario_inputs.main(args=args)
     except Exception as e:
         logging.exception(e)
-        remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
-        update_run_status(db_path, scenario, 3)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
         print("Error encountered when getting inputs from the database for "
-              "scenario {}.".format(scenario))
+              "scenario {}. End time: {}.".format(scenario, end_time))
         sys.exit(1)
     try:
         # make sure run_scenario.py gets the required --scenario argument
@@ -282,38 +287,54 @@ def main(args=None):
         expected_objective_values = run_scenario.main(args=run_scenario_args)
     except Exception as e:
         logging.exception(e)
-        remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
-        update_run_status(db_path, scenario, 3)
-        print("Error encountered when running scenario {}.".format(scenario))
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
+        print("Error encountered when running scenario {}. End time: {}."
+              .format(scenario, end_time))
         sys.exit(1)
 
     try:
         import_scenario_results.main(args=args)
     except Exception as e:
         logging.exception(e)
-        remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
-        update_run_status(db_path, scenario, 3)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
         print("Error encountered when importing results for "
-              "scenario {}.".format(scenario))
+              "scenario {}. End time: {}.".format(scenario, end_time))
         sys.exit(1)
 
     try:
         process_results.main(args=args)
     except Exception as e:
         logging.exception(e)
-        remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
-        update_run_status(db_path, scenario, 3)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
         print('Error encountered when importing results for '
-              'scenario {}.'.format(scenario))
+              'scenario {}. End time: {}.'.format(scenario, end_time))
         sys.exit(1)
 
     # If we make it here, mark run as complete and update run end time
-    end_time = datetime.datetime.now()
-    remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
-    update_run_status(db_path, scenario, 2)
-    record_end_time(
-        db_path=db_path, scenario=scenario,
-        process_id=process_id, end_time=end_time
+    end_time = update_db_for_run_end(
+        db_path=db_path,
+        scenario=scenario,
+        queue_order_id=queue_order_id,
+        process_id=process_id,
+        run_status_id=2
     )
     # TODO: should the process ID be set back to NULL?
     if not parsed_args.quiet:
@@ -327,6 +348,25 @@ def main(args=None):
 
     # Return expected objective values (for testing)
     return expected_objective_values
+
+
+def update_db_for_run_end(
+    db_path, scenario, queue_order_id, process_id, run_status_id
+):
+    """
+    Make the necessary database updates when a run ends (remove from queue,
+    update the run status, and record the end time).
+    """
+
+    end_time = datetime.datetime.now()
+    remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
+    update_run_status(db_path, scenario, run_status_id)
+    record_end_time(
+        db_path=db_path, scenario=scenario,
+        process_id=process_id, end_time=end_time
+    )
+
+    return end_time
 
 
 # TODO: need to make sure that the database can be closed properly, pending
