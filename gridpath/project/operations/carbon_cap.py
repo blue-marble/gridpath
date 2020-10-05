@@ -11,11 +11,11 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Param, Set
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.auxiliary import cursor_to_df, \
+    subset_init_by_param_value
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
@@ -87,9 +87,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CRBN_PRJS_BY_CARBON_CAP_ZONE = Set(
         m.CARBON_CAP_ZONES,
         within=m.CRBN_PRJS,
-        initialize=lambda mod, co2_z:
-        [p for p in mod.CRBN_PRJS
-         if mod.carbon_cap_zone[p] == co2_z]
+        initialize=lambda mod, co2_z: subset_init_by_param_value(
+            mod, "CRBN_PRJS", "carbon_cap_zone", co2_z
+        )
     )
 
     m.CRBN_PRJ_OPR_TMPS = Set(

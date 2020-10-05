@@ -15,7 +15,7 @@ Efficiency losses are not currently implemented.
 
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
@@ -96,7 +96,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.DR = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "dr")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "dr"
+        )
     )
 
     m.DR_OPR_TMPS = Set(

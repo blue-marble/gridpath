@@ -4,18 +4,15 @@
 """
 Contributions to ELCC surface
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
-from builtins import range
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    Binary, Expression, value
+from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, \
+    value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     get_param_dict
@@ -33,8 +30,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.ELCC_SURFACE_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [p for p in mod.PRM_PROJECTS if
-                                mod.contributes_to_elcc_surface[p]]
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PRM_PROJECTS", "contributes_to_elcc_surface", 1
+        )
     )
 
     m.elcc_surface_cap_factor = Param(
@@ -44,9 +42,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE = \
         Set(m.PRM_ZONES, within=m.ELCC_SURFACE_PROJECTS,
-            initialize=lambda mod, prm_z:
-            [p for p in mod.ELCC_SURFACE_PROJECTS
-             if mod.prm_zone[p] == prm_z])
+            initialize=lambda mod, prm_z: subset_init_by_param_value(
+                mod, "ELCC_SURFACE_PROJECTS", "prm_zone", prm_z
+                )
+            )
 
     # Define the ELCC surface
     # Surface is limited to 1000 facets

@@ -91,20 +91,16 @@ def join_sets(mod, set_list):
     return joined_set
 
 
-def subset_init(set_name, param_name, param_value):
+def subset_init_by_param_value(mod, set_name, param_name, param_value):
     """
-    Initialize subsets of generators by subtype based on subtype flags.
-    Need to return a function with the model as argument, i.e. 'lambda mod'
-    because we can only iterate over the
-    generators after data is loaded; then we can pass the abstract model to the
-    initialization function.
+    Initialize subset based on a param value.
 
     :param set_name:
     :param param_name:
     :param param_value:
     :return:
     """
-    return lambda mod: [
+    return [
         i for i in getattr(mod, set_name)
         if getattr(mod, param_name)[i] == param_value
     ]

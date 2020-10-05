@@ -42,7 +42,7 @@ import os.path
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
     NonPositiveReals, PercentFraction, Reals, value, Expression
 
-from gridpath.auxiliary.auxiliary import subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -383,7 +383,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
     m.GEN_COMMIT_CAP = Set(
         within=m.PROJECTS,
-        initialize=subset_init("PROJECTS", "operational_type", "gen_commit_cap")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_commit_cap"
+        )
     )
 
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
