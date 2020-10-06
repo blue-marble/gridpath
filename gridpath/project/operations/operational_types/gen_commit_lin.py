@@ -622,7 +622,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_COMMIT_LIN)
     )
@@ -646,7 +646,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
             if g == _g)
@@ -662,7 +662,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
             for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
             if g == _g)

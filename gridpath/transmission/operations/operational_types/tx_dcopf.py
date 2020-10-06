@@ -175,13 +175,13 @@ def add_model_components(
 
     m.TX_DCOPF = Set(
         within=m.TX_LINES,
-        rule=lambda mod: set(l for l in mod.TX_LINES if
+        initialize=lambda mod: set(l for l in mod.TX_LINES if
                              mod.tx_operational_type[l] == "tx_dcopf")
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
         dimen=2, within=m.TX_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
             set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_DCOPF))
 
@@ -190,33 +190,33 @@ def add_model_components(
 
     m.PRDS_CYCLES_ZONES = Set(
         dimen=3,
-        rule=periods_cycles_zones_init,
+        initialize=periods_cycles_zones_init,
         ordered=True
     )
 
     m.PRDS_CYCLES = Set(
         dimen=2,
-        rule=period_cycles_init
+        initialize=period_cycles_init
     )
 
     # Note: This assumes timepoints are unique across periods
     m.CYCLES_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod: set((c, tmp)
+        initialize=lambda mod: set((c, tmp)
                              for (p, c) in mod.PRDS_CYCLES
                              for tmp in mod.TMPS_IN_PRD[p])
     )
 
     m.ZONES_IN_PRD_CYCLE = Set(
         m.PRDS_CYCLES,
-        rule=zones_by_period_cycle_init,
+        initialize=zones_by_period_cycle_init,
         ordered=True
     )
 
     m.PRDS_CYCLES_TX_DCOPF = Set(
         dimen=3,
         within=m.PRDS_CYCLES * m.TX_LINES,
-        rule=periods_cycles_transmission_lines_init
+        initialize=periods_cycles_transmission_lines_init
     )
 
     m.TX_DCOPF_IN_PRD_CYCLE = Set(

@@ -141,7 +141,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.AVL_CONT_OPR_PRDS = Set(
         dimen=2, within=m.PRJ_OPR_PRDS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
             if g in mod.AVL_CONT)
     )
@@ -150,7 +150,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     #  modules and availability type modules
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.AVL_CONT)
     )

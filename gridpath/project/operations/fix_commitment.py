@@ -100,14 +100,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.FNL_COMMIT_PRJS)
     )
 
     m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.FXD_COMMIT_PRJS)
     )

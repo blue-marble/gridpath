@@ -94,7 +94,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CRBN_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
          if p in mod.CRBN_PRJS]
     )

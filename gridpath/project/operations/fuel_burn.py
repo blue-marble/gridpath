@@ -126,13 +126,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.FUEL_PRJS]
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
             if g == _g and mod.period[tmp] == p)
@@ -141,7 +141,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp)
             for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS)
     )
@@ -149,7 +149,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
                           if p in mod.STARTUP_FUEL_PRJS]
     )
 

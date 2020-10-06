@@ -214,7 +214,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.STOR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.STOR)
     )
