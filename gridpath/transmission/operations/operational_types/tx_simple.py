@@ -133,16 +133,18 @@ def add_model_components(
 
     m.TX_SIMPLE = Set(
         within=m.TX_LINES,
-        initialize=lambda mod: set(l for l in mod.TX_LINES if
-                             mod.tx_operational_type[l] == "tx_simple")
+        initialize=lambda mod: list(
+            set(l for l in mod.TX_LINES
+                if mod.tx_operational_type[l] == "tx_simple")
+        )
     )
 
     m.TX_SIMPLE_OPR_TMPS = Set(
         dimen=2, within=m.TX_OPR_TMPS,
-        initialize=lambda mod:
-            set((l, tmp)
-                for (l, tmp) in mod.TX_OPR_TMPS
+        initialize=lambda mod: list(
+            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_SIMPLE)
+        )
     )
 
     # Params

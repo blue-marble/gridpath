@@ -175,15 +175,18 @@ def add_model_components(
 
     m.TX_DCOPF = Set(
         within=m.TX_LINES,
-        initialize=lambda mod: set(l for l in mod.TX_LINES if
-                             mod.tx_operational_type[l] == "tx_dcopf")
+        initialize=lambda mod: list(
+            set(l for l in mod.TX_LINES
+                if mod.tx_operational_type[l] == "tx_dcopf")
+        )
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
         dimen=2, within=m.TX_OPR_TMPS,
-        initialize=lambda mod:
+        initialize=lambda mod: list(
             set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_DCOPF))
+    )
 
     # Derived Sets
     ###########################################################################
@@ -202,9 +205,10 @@ def add_model_components(
     # Note: This assumes timepoints are unique across periods
     m.CYCLES_OPR_TMPS = Set(
         dimen=2,
-        initialize=lambda mod: set((c, tmp)
-                             for (p, c) in mod.PRDS_CYCLES
-                             for tmp in mod.TMPS_IN_PRD[p])
+        initialize=lambda mod: list(
+            set((c, tmp) for (p, c) in mod.PRDS_CYCLES
+                for tmp in  mod.TMPS_IN_PRD[p])
+        )
     )
 
     m.ZONES_IN_PRD_CYCLE = Set(
@@ -310,7 +314,7 @@ def period_cycles_init(mod):
     Determine the period-cycle combinations from the larger PRDS_CYCLES_ZONES
     set. Note: set() will remove duplicates.
     """
-    return set([(p, c) for (p, c, z) in mod.PRDS_CYCLES_ZONES])
+    return list(set([(p, c) for (p, c, z) in mod.PRDS_CYCLES_ZONES]))
 
 
 def zones_by_period_cycle_init(mod, period, cycle):

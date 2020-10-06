@@ -144,18 +144,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.AVL_BIN_OPR_PRDS = Set(
         dimen=2, within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
             if g in mod.AVL_BIN)
+        )
     )
 
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
     m.AVL_BIN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.AVL_BIN)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.AVL_BIN)
+        )
     )
 
     # Required Input Params

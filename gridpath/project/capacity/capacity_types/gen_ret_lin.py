@@ -114,15 +114,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_RET_LIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_LIN = Set(
-        initialize=lambda mod: set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS)
+        initialize=lambda mod: list(
+            set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS)
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_LIN = Set(
         m.GEN_RET_LIN,
-        initialize=lambda mod, prj:
-            set(period for (project, period)
-                in mod.GEN_RET_LIN_OPR_PRDS
+        initialize=lambda mod, prj: list(
+            set(period for (project, period) in mod.GEN_RET_LIN_OPR_PRDS
                 if project == prj)
+        )
     )
 
     # Required Params

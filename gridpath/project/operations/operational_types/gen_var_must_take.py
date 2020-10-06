@@ -85,9 +85,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_VAR_MUST_TAKE)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_VAR_MUST_TAKE)
+        )
     )
 
     # Required Params

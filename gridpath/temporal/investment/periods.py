@@ -173,8 +173,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TMPS_IN_PRD = Set(
         m.PERIODS,
-        initialize=lambda mod, p:
-        set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)
+        initialize=lambda mod, p: list(
+            set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)
+        )
     )
 
     m.NOT_FIRST_PRDS = Set(

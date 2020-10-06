@@ -662,10 +662,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES = Set(
         dimen=2,
         ordered=True,
-        initialize=lambda mod: list(
+        initialize=lambda mod: sorted(list(
             (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
             if mod.operational_type[prj] == "gen_commit_bin"
-        )
+        ))
     )
 
     m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES = Set(
@@ -1084,8 +1084,9 @@ def get_startup_types_by_project(mod, g):
     Get indexed set of startup types by project, ordered from hottest to
     coldest.
     """
-    types = [s for (_g, s) in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
-             if g == _g]
+    types = sorted([s for (_g, s) in
+                    mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
+             if g == _g])
     return types
 
 

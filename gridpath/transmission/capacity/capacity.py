@@ -139,14 +139,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_LINES_OPR_IN_PRD = Set(
         m.PERIODS,
-        initialize=lambda mod, period:
-        set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)
+        initialize=lambda mod, period: list(
+            set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)
+        )
     )
 
     m.OPR_PRDS_BY_TX_LINE = Set(
         m.TX_LINES,
-        initialize=lambda mod, tx:
-        set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)
+        initialize=lambda mod, tx: list(
+            set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)
+        )
     )
 
     m.TX_OPR_TMPS = Set(
@@ -160,8 +162,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_LINES_OPR_IN_TMP = Set(
         m.TMPS,
-        initialize=lambda mod, tmp:
-        set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)
+        initialize=lambda mod, tmp: list(
+            set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)
+        )
     )
 
     # Expressions

@@ -216,9 +216,9 @@ def op_gens_by_tmp(mod, tmp):
 def operational_periods_by_project(prj, project_operational_periods):
     """
     """
-    return set(
-        period for (project, period) in project_operational_periods
-        if project == prj
+    return list(
+        set(period for (project, period) in project_operational_periods
+            if project == prj)
     )
 
 

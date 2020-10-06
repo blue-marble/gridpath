@@ -104,15 +104,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.SIM_FLOW_LMT_TMPS = Set(
         dimen=2,
-        initialize=lambda mod:
-        set((g, tmp)
-            for (g, p) in mod.SIM_FLOW_LMT_PRDS
-            for tmp in mod.TMPS_IN_PRD[p])
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, p) in mod.SIM_FLOW_LMT_PRDS
+                for tmp in mod.TMPS_IN_PRD[p])
+        )
     )
 
     m.SIM_FLOW_LMTS = Set(
-        initialize=lambda mod:
-        set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        initialize=lambda mod: list(
+            set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        )
     )
 
     m.SIM_FLOW_LMT_TX_LINES = Set(
@@ -122,9 +123,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TX_LINES_BY_SIM_FLOW_LMT = Set(
         m.SIM_FLOW_LMTS,
-        initialize=lambda mod, limit:
-        set(tx_line for (group, tx_line)
-            in mod.SIM_FLOW_LMT_TX_LINES if group == limit)
+        initialize=lambda mod, limit: list(
+            set(tx_line for (group, tx_line)
+                in mod.SIM_FLOW_LMT_TX_LINES if group == limit)
+        )
     )
 
     # Required Input Params

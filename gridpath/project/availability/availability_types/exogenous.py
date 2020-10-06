@@ -64,9 +64,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     #  modules and availability type modules
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.AVL_EXOG)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.AVL_EXOG)
+        )
     )
 
     # Required Params

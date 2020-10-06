@@ -273,15 +273,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
     m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+        initialize=lambda mod: list(
+            set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+            )
         )
     )
 
     m.VAR_OM_COST_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS
+        initialize=lambda mod: list(
+            set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)
         )
     )
 
@@ -291,17 +292,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: set(
-            [p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]
+        initialize=lambda mod: list(
+            set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES])
         )
     )
 
     # All startup cost projects
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            [p for p in mod.STARTUP_COST_SIMPLE_PRJS] +
-            [p for p in mod.STARTUP_BY_ST_PRJS]
+        initialize=lambda mod: list(
+            set([p for p in mod.STARTUP_COST_SIMPLE_PRJS] +
+                [p for p in mod.STARTUP_BY_ST_PRJS])
         )
     )
 
@@ -316,8 +317,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
-        initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS]
+        initialize=lambda mod: list(
+            set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])
         )
     )
 
@@ -332,9 +333,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.VIOL_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            mod.RAMP_UP_VIOL_PRJS | mod.RAMP_DOWN_VIOL_PRJS
-            | mod.MIN_UP_TIME_VIOL_PRJS | mod.MIN_DOWN_TIME_VIOL_PRJS
+        initialize=lambda mod: list(
+            set(mod.RAMP_UP_VIOL_PRJS | mod.RAMP_DOWN_VIOL_PRJS
+                | mod.MIN_UP_TIME_VIOL_PRJS | mod.MIN_DOWN_TIME_VIOL_PRJS)
         )
     )
 
