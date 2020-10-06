@@ -38,7 +38,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Get operational local capacity projects - timepoints combinations
     m.LOCAL_CAPACITY_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        rule=lambda mod: [(prj, p) for (prj, p) in
+        initialize=lambda mod: [(prj, p) for (prj, p) in
                           mod.PRJ_OPR_PRDS
                           if prj in mod.LOCAL_CAPACITY_PROJECTS]
     )

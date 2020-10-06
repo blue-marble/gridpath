@@ -120,7 +120,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.CRB_TX_OPR_TMPS = Set(
         within=m.TX_OPR_TMPS,
-        rule=lambda mod: [(tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS
+        initialize=lambda mod: [(tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS
                           if tx in mod.CRB_TX_LINES]
     )
 

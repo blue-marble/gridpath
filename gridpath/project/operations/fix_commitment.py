@@ -100,14 +100,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FNL_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.FNL_COMMIT_PRJS)
     )
 
     m.FXD_COMMIT_PRJ_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.FXD_COMMIT_PRJS)
     )
@@ -226,7 +226,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["FNL_COMMIT_PRJS"] = {None: get_fnl_commit_prjs()}
 
     # FXD_COMMIT_PRJS
-    fxd_commit_prjs = set(fixed_commitment_df["project"].tolist())
+    fxd_commit_prjs = list(set(fixed_commitment_df["project"].tolist()))
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
     if len(fxd_commit_prjs) > 0:

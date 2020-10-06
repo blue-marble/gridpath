@@ -81,9 +81,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_MUST_RUN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_MUST_RUN)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_MUST_RUN)
+        )
     )
 
     # Constraints

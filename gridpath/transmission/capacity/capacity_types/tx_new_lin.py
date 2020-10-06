@@ -214,9 +214,9 @@ def operational_periods_by_new_build_transmission_vintage(mod, g, v):
 
 
 def new_build_transmission_operational_periods(mod):
-    return set(
-        (g, p) for (g, v) in mod.TX_NEW_LIN_VNTS
-        for p in mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[g, v]
+    return list(
+        set((g, p) for (g, v) in mod.TX_NEW_LIN_VNTS
+            for p in mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[g, v])
     )
 
 

@@ -622,9 +622,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_COMMIT_LIN)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_COMMIT_LIN)
+        )
     )
 
     m.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS = Set(
@@ -638,18 +639,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES = Set(
         dimen=2,
         ordered=True,
-        initialize=lambda mod: list(
+        initialize=lambda mod: sorted(list(
             (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
             if mod.operational_type[prj] == "gen_commit_lin"
-        )
+        ))
     )
 
     m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
+        initialize=lambda mod: list(
+            set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+                for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+                if g == _g)
+        )
     )
 
     m.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ = Set(
@@ -662,10 +664,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
-            for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
+        initialize=lambda mod: list(
+            set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
+                for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+                if g == _g)
+        )
     )
 
     # Required Params
@@ -1061,8 +1064,9 @@ def get_startup_types_by_project(mod, g):
     Get indexed set of startup types by project, ordered from hottest to
     coldest.
     """
-    types = [s for (_g, s) in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-             if g == _g]
+    types = sorted([s for (_g, s) in
+                    mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+             if g == _g])
     return types
 
 

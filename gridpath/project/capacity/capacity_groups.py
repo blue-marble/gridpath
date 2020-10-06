@@ -124,7 +124,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.CAPACITY_GROUPS = Set(
-        rule=lambda mod: set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS])
+        initialize=lambda mod: list(
+            set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS])
+        )
     )
 
     m.PROJECTS_IN_CAPACITY_GROUP = Set(

@@ -103,17 +103,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.DR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.DR)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.DR)
+        )
     )
 
     m.DR_OPR_HRZS = Set(
         dimen=2,
-        rule=lambda mod:
-        set((g, mod.horizon[tmp, mod.balancing_type_project[g]])
-            for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.DR)
+        initialize=lambda mod: list(
+            set((g, mod.horizon[tmp, mod.balancing_type_project[g]])
+                for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.DR)
+        )
     )
 
     # Variables

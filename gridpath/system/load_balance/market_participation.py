@@ -20,7 +20,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.MARKET_LZS = Set(
         within=m.LOAD_ZONES,
-        initialize=lambda mod: set([lz for (lz, hub) in mod.LZ_MARKETS])
+        initialize=lambda mod: list(set([lz for (lz, hub) in mod.LZ_MARKETS]))
     )
 
     m.MARKETS_BY_LZ = Set(
