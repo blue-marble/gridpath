@@ -88,10 +88,10 @@ class TestExamples(unittest.TestCase):
             ["--database", DB_PATH,
              "--scenario", test,
              "--scenario_location", EXAMPLES_DIRECTORY,
-             # "--log",
-             # "--write_solver_files_to_logs_dir",
-             # "--keepfiles",
-             # "--symbolic",
+             "--log",
+             "--write_solver_files_to_logs_dir",
+             "--keepfiles",
+             "--symbolic",
              "--quiet",
              "--mute_solver_output",
              "--testing"]
@@ -792,6 +792,17 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_markets")
         self.run_and_check_objective("test_markets", -3504300478278.3403)
+
+
+    def test_example_2horizons_linked(self):
+        """
+        Check validation and objective function value of "2horizons_linked"
+        example
+        :return:
+        """
+
+        self.check_validation("2horizons_linked")
+        self.run_and_check_objective("2horizons_linked", -3796309109798.1226)
 
     @classmethod
     def tearDownClass(cls):
