@@ -2,52 +2,55 @@
 Intro to GridPath
 *****************
 
+GridPath is a versatile grid-analytics platform that seamlessly integrates
+several power-system planning approaches -- including production-cost,
+capacity-expansion, asset-valuation, and reliability modeling -- within the
+same software ecosystem. As multiple approaches are often used sequentially or
+iteratively in system planning, the seamless interface among them within the
+same modeling platform reduces the labor-intensive data-translation
+requirements and can speed up insight-generation in the planning process.
+
 Motivation
 ==========
 
-Transitioning to a low-carbon electricity system poses numerous new
-challenges to system planners and operators. Variable renewable energy
-technologies such as wind and solar introduce variability and uncertainty to
-system operations, requiring thoughtful integration through resource
-diversity and interconnection as well as the deployment of balancing
-technologies such as energy storage and demand response. Technology
-characteristics and costs as well as the policy landscape are evolving
-rapidly, introducing uncertainty and risk that can result in financial losses,
-jeopardize grid reliability, and/or create environmental damage. In that
-context, robust planning becomes increasingly important and advanced software
-tools can help to rapidly and continuously evaluate and plan the electricity
-system.
+Traditional power-system models are often not designed to address the many
+new questions arising from the shift to low-carbon resources, storage
+deployment, widespread electric vehicle and building electrification, load
+participation in system operations, etc. This was the main motivation for
+GridPath's development.  Transitioning to a low-carbon electricity system
+poses numerous new challenges to system planners and operators. Variable
+renewable energy technologies such as wind and solar introduce variability
+and uncertainty to system operations, requiring thoughtful integration
+through resource diversity and interconnection as well as the deployment of
+balancing technologies such as energy storage and demand response. Technology
+characteristics and costs as well as the policy landscape are also evolving
+rapidly. Improperly accounting for the uncertainty and risk can result in
+financial losses, jeopardize grid reliability, and/or create environmental
+damage. In that context, robust planning becomes increasingly important and
+advanced software tools specifically designed understand deeply-decarbonized
+grids can help to rapidly and continuously evaluate and plan the evolving
+electricity system.
 
-Traditional power-system models are often not designed to address the many new
-questions arising from the shift to low-carbon resources, storage deployment,
-widespread electric vehicle and building electrification, and load
-participation in system operations. This was the main motivation for
-GridPath's development. Unlike other power system tools that can be cumbersome
-to adapt and extend, GridPath is built for today’s and tomorrow’s world: it
-has a highly flexible, modular architecture that facilitates its application
-to different systems and regions as well as the incorporation of emergent
-technologies and resources with non-standard characteristics (renewables,
-storage, demand response, and so on). This makes the GridPath platform
-well-equipped to quickly and seamlessly add critical functionality around
-new technologies, policies, or practices, and tackle emergent questions
-about the pathways to and dynamics of deeply decarbonized electricity systems.
+Architecture
+============
+
+Unlike other power system tools that can be cumbersome to adapt and extend,
+GridPath is built for today’s and tomorrow’s world: it has a highly
+flexible, modular architecture that facilitates its application to different
+systems and regions as well as the incorporation of emergent technologies
+and resources with non-standard characteristics (renewables, storage, demand
+response, and so on). This makes the GridPath platform well-equipped to
+quickly and seamlessly add critical functionality around new technologies,
+policies, or practices, and tackle emergent questions about the pathways to
+and dynamics of deeply decarbonized electricity systems.
 
 Our goal is to create a transparent and user-friendly platform that
 facilitates quick model development and rapid adaptation. GridPath includes a
 user interface, database-building tools, a results-visualization suite, and
 extensive validation and testing suites.
 
-
-What is GridPath?
+Functionality
 =================
-
-GridPath is a versatile grid-analytics platform that integrates several
-power-system planning approaches, including production-cost,
-capacity-expansion, asset-valuation, and reliability modeling. As multiple
-approaches are often used sequentially or iteratively in system planning,
-the seamless interface among them within the same modeling platform reduces
-the labor-intensive data-translation requirements among them and can speed
-up insight-generation in the planning process.
 
 GridPath's modular architecture makes it possible to combine modules to
 create optimization problems with varying features and levels of complexity.
@@ -58,10 +61,9 @@ GridPath has a highly flexible temporal and spatial span and resolution. Each
 generation, storage, and transmission asset in GridPath can be modeled
 with a user-specified level of detail. The decision for what to simplify and
 what requires a detailed treatment is left up to the user and can vary
-depending on the application of interest. GridPath’s flexibilty and
+depending on the application of interest. GridPath’s flexibility and
 modularity facilitates its application to different systems and regions as
 well as to different planning questions.
-
 
 GridPath can simulate the operations of the power system, capturing the
 capabilities of and constraints on generation, storage, and transmission
