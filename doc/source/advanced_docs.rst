@@ -84,39 +84,39 @@ gridpath.project.capacity.capacity_types
 
 gridpath.project.capacity.capacity_types.gen_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_spec.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec.add_model_components
 
 gridpath.project.capacity.capacity_types.gen_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin.add_model_components
 
 gridpath.project.capacity.capacity_types.gen_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin.add_model_components
 
 gridpath.project.capacity.capacity_types.gen_ret_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin.add_model_components
 
 gridpath.project.capacity.capacity_types.gen_ret_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin.add_model_components
 
 gridpath.project.capacity.capacity_types.stor_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_spec.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec.add_model_components
 
 gridpath.project.capacity.capacity_types.stor_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin.add_model_components
 
 gridpath.project.capacity.capacity_types.stor_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin.add_model_components
 
 gridpath.project.capacity.capacity_types.dr_new
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_model_components
 
 Project Availability
 --------------------
@@ -127,15 +127,15 @@ gridpath.project.availability.availability
 
 gridpath.project.availability.availability_types.exogenous
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.availability.availability_types.exogenous.add_module_specific_components
+.. automodule:: gridpath.project.availability.availability_types.exogenous.add_model_components
 
 gridpath.project.availability.availability_types.binary
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.availability.availability_types.binary.add_module_specific_components
+.. automodule:: gridpath.project.availability.availability_types.binary.add_model_components
 
 gridpath.project.availability.availability_types.continuous
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.availability.availability_types.continuous.add_module_specific_components
+.. automodule:: gridpath.project.availability.availability_types.continuous.add_model_components
 
 Project Operations
 ------------------
@@ -171,51 +171,51 @@ gridpath.project.operations.tuning_costs
 
 gridpath.project.capacity.operational_types.gen_simple
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_simple.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_simple.add_model_components
 
 gridpath.project.capacity.operational_types.gen_must_run
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_must_run.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run.add_model_components
 
 gridpath.project.capacity.operational_types.gen_always_on
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_always_on.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on.add_model_components
 
 gridpath.project.capacity.operational_types.gen_commit_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin.add_model_components
 
 gridpath.project.capacity.operational_types.gen_commit_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin.add_model_components
 
 gridpath.project.capacity.operational_types.gen_commit_cap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_model_components
 
 gridpath.project.capacity.operational_types.gen_hydro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_hydro.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro.add_model_components
 
 gridpath.project.capacity.operational_types.gen_hydro_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take.add_model_components
 
 gridpath.project.capacity.operational_types.gen_var
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_var.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_var.add_model_components
 
 gridpath.project.capacity.operational_types.gen_var_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take.add_model_components
 
 gridpath.project.capacity.operational_types.stor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.stor.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.stor.add_model_components
 
 gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.dr.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.dr.add_model_components
 
 
 Load Balance
@@ -293,11 +293,11 @@ gridpath.transmission.capacity.capacity_types
 
 gridpath.transmission.capacity.capacity_types.tx_spec
 -----------------------------------------------------
-.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec.add_module_specific_components
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec.add_model_components
 
 gridpath.transmission.capacity.capacity_types.tx_new_lin
 ---------------------------------------------------------
-.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin.add_module_specific_components
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin.add_model_components
 
 gridpath.transmission.capacity.capacity
 ---------------------------------------
@@ -309,11 +309,11 @@ gridpath.transmission.operations.operational_types
 
 gridpath.transmission.operations.operational_types.tx_simple
 ------------------------------------------------------------
-.. automodule:: gridpath.transmission.operations.operational_types.tx_simple.add_module_specific_components
+.. automodule:: gridpath.transmission.operations.operational_types.tx_simple.add_model_components
 
 gridpath.transmission.operations.operational_types.tx_dcopf
 -----------------------------------------------------------
-.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf.add_module_specific_components
+.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf.add_model_components
 
 gridpath.transmission.operations.operations
 -------------------------------------------

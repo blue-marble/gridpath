@@ -34,7 +34,7 @@ Creating the Database
 Populating the Database
 ***********************
 
-.. automodule:: db.port_csvs_to_db
+.. automodule:: db.utilities.port_csvs_to_db
 
 GridPath Input Data
 ###################
