@@ -1,4 +1,16 @@
-# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from flask_restful import Resource
 
@@ -22,7 +34,7 @@ class ScenarioNewAPI(Resource):
         c = conn.cursor()
 
         all_tables = c.execute(
-            """SELECT ui_table 
+            """SELECT ui_table
             FROM ui_scenario_detail_table_metadata
             WHERE include = 1
             ORDER BY ui_table_id ASC;"""
@@ -55,7 +67,7 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     """
     # Get and set the table caption for this table
     table_caption = c.execute(
-      """SELECT ui_table_caption 
+      """SELECT ui_table_caption
       FROM ui_scenario_detail_table_metadata
       WHERE ui_table = '{}'
       AND include = 1;""".format(ui_table_name_in_db)
@@ -68,8 +80,8 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     }
 
     row_metadata = c.execute(
-      """SELECT ui_table_row, 
-      ui_row_caption, ui_row_db_subscenario_table_id_column, 
+      """SELECT ui_table_row,
+      ui_row_caption, ui_row_db_subscenario_table_id_column,
       ui_row_db_subscenario_table
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}'
