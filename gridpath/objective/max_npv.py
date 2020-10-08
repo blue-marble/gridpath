@@ -1,10 +1,22 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 GridPath's objective function consists of modularized components. This
 modularity allows for different objective functions to be defined. Here, we
-discuss the objective of minimizing total system costs.
+discuss the objective of maximizing the net present value of revenues minus
+costs.
 
 Its most basic version includes the aggregated project capacity costs and
 aggregated project operational costs, and any load-balance penalties
@@ -23,8 +35,10 @@ be standard for all systems. Examples currently include:
     * planning reserve margin costs
     * various tuning costs
 
-All costs are net present value costs, with a user-specified discount factor
-applied to call costs depending on the period in which they are incurred.
+Market costs and revenues may also be included.
+
+All revenue and costs are in net present value terms, with a user-specified
+discount factor applied depending on the period.
 """
 
 import csv
@@ -34,15 +48,15 @@ import numpy as np
 import os
 
 
-from pyomo.environ import Objective, minimize, value
+from pyomo.environ import Expression, Objective, maximize, value
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.dynamic_components import cost_components, \
+    revenue_components
+from gridpath.auxiliary.db_interface import setup_results_import
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
-from gridpath.auxiliary.auxiliary import setup_results_import
 
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -58,13 +72,25 @@ def add_model_components(m, d):
 
     """
 
-    # Define objective function
-    def total_cost_rule(mod):
-
+    # Aggregate all revenue
+    def total_revenue_rule(mod):
         return sum(getattr(mod, c)
-                   for c in getattr(d, total_cost_components))
+                   for c in getattr(d, revenue_components))
 
-    m.Total_Cost = Objective(rule=total_cost_rule, sense=minimize)
+    m.Total_Revenue = m.Expression(initialize=total_revenue_rule)
+
+    # Aggregate all costs
+    def total_cost_rule(mod):
+        return sum(getattr(mod, c)
+                   for c in getattr(d, cost_components))
+
+    m.Total_Cost = m.Expression(initialize=total_cost_rule)
+
+    # NPV
+    def npv_rule(mod):
+        return total_revenue_rule(mod) - total_cost_rule(mod)
+
+    m.NPV = Objective(rule=npv_rule, sense=maximize)
 
 
 # Input-Output
@@ -83,11 +109,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-              "system_costs.csv"), "w", newline="") as f:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "npv.csv"
+            ),
+            "w",
+            newline=""
+    ) as f:
         writer = csv.writer(f)
-        components = getattr(d, total_cost_components)
+        components = \
+            getattr(d, revenue_components) + getattr(d, cost_components)
         writer.writerow(components)
         writer.writerow((value(getattr(m, c)) for c in components))
 
@@ -96,10 +128,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 ###############################################################################
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
-
     :param scenario_id:
     :param c:
     :param db:
@@ -107,7 +138,8 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # Fuel burned by project and timepoint
+    # TODO: change this to say NPV and have negatives for the cost
+    #  components or flag revenue and cost components
     if not quiet:
         print("results system cost")
     # Delete prior results and create temporary import table for ordering
@@ -117,7 +149,7 @@ def import_results_into_database(
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
-    df = pd.read_csv(os.path.join(results_directory, "system_costs.csv"))
+    df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
     df['scenario_id'] = scenario_id
     df['subproblem_id'] = subproblem
     df['stage_id'] = stage

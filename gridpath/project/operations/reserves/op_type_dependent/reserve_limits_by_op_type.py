@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -9,18 +20,19 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, PercentFraction, Constraint
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
 def generic_add_model_components(
-        m, d,
-        reserve_projects_set,
-        reserve_project_operational_timepoints_set,
-        reserve_provision_variable_name,
-        reserve_provision_ramp_rate_limit_param,
-        reserve_provision_ramp_rate_limit_constraint
+    m, d, scenario_directory, subproblem, stage,
+    reserve_projects_set,
+    reserve_project_operational_timepoints_set,
+    reserve_provision_variable_name,
+    reserve_provision_ramp_rate_limit_param,
+    reserve_provision_ramp_rate_limit_constraint
 ):
     """
     Reserve-related components that will be used by the operational_type
@@ -50,8 +62,14 @@ def generic_add_model_components(
             )
 
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
 
     def reserve_provision_ramp_rate_limit_rule(mod, g, tmp):
         """

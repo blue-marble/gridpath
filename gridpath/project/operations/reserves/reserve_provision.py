@@ -1,48 +1,55 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
 """
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
+from pyomo.environ import Set, Param, Var, NonNegativeReals, \
     PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, setup_results_import, cursor_to_df
-from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
+    find_list_item_position, cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import \
     reserve_variable_derate_params, \
     reserve_to_energy_adjustment_params
 
 
-def generic_determine_dynamic_components(
-        d, scenario_directory, subproblem, stage,
-        reserve_module,
-        headroom_or_footroom_dict,
-        ba_column_name,
-        reserve_provision_variable_name,
-        reserve_provision_derate_param_name,
-        reserve_to_energy_adjustment_param_name,
-        reserve_balancing_area_param_name
+def generic_record_dynamic_components(
+    d, scenario_directory, subproblem, stage,
+    headroom_or_footroom_dict,
+    ba_column_name,
+    reserve_provision_variable_name,
+    reserve_provision_derate_param_name,
+    reserve_to_energy_adjustment_param_name,
+    reserve_balancing_area_param_name
 ):
     """
     :param d: the DynamicComponents class we'll be populating
     :param scenario_directory: the base scenario directory
     :param stage: the horizon subproblem, not used here
     :param stage: the stage subproblem, not used here
-    :param reserve_module: which reserve module we are calling from
     :param headroom_or_footroom_dict: the headroom or footroom dictionary
         with projects as keys and list of headroom or footroom variables,
         respectively, as values; the keys are populated in the
-        *determine_dynamic_components* method of *gridpath.project.__init__*
+        *determine_dynamic_inputs* method of *gridpath.project.__init__*
     :param ba_column_name: the name of the column that determines the
         reserve balancing area for the projects in the *projects.tab* input
         file
@@ -57,14 +64,9 @@ def generic_determine_dynamic_components(
 
     This method populates the following 'dynamic components':
 
-    * required_reserve_modules
     * headroom_variables or footroom_variables
     * reserve_variable_derate_params
     * reserve_to_energy_adjustment_params
-
-    The *required_reserve_modules* list will be populated based on the
-    user-requested features, as the reserve modules will only call this
-    method if they are included in a requested feature.
 
     The *headroom_variables* and *footroom_variables* components are populated
     based on the data in the *projects.tab* input file.
@@ -79,7 +81,7 @@ def generic_determine_dynamic_components(
     reserve-provision variable name (the *reserve_provision_variable_name*
     specified by the reserve module calling this method) will be added to
     the project's list of headroom/footroom variables. These lists will then be
-    passed to the 'add_module_specific_components' method of the
+    passed to the 'add_model_components' method of the
     operational-modules and used to build the appropriate operational
     constraints for each project, usually named the 'max power rule' (power +
     upward reserves must be less than or equal to online capacity) and 'min
@@ -98,7 +100,7 @@ def generic_determine_dynamic_components(
     .. note:: Currently, these de-rates are only used in the *variable*
         operational type and we need to add them to other operational types.
 
-    Advancec GridPath functionality also includes the ability to account for
+    Advanced GridPath functionality also includes the ability to account for
     the energy effects of reserve-provision. For example, when providing
     regulation-up during a timepoint, projects will occasionally be called
     upon, so they will produce extra energy above what was schedule for the
@@ -114,19 +116,21 @@ def generic_determine_dynamic_components(
         operational type and we need to add them to other operational types.
     """
 
-    # Append the name of the reserve-type we're calling from the list of
-    # reserves requested by the user
-    # TODO: we could probably just get this from the requested features
-    getattr(d, required_reserve_modules).append(reserve_module)
-
     # Check which projects have been assigned a balancing area for the
     # current reserve type (i.e. they have a value in the column named
     # 'ba_column_name'); add the variable name for the current reserve type
     # to the list of variables in the headroom/footroom dictionary for the
     # project
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"),
-              "r") as projects_file:
-        projects_file_reader = csv.reader(projects_file, delimiter="\t", lineterminator="\n")
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage),
+                "inputs", "projects.tab"
+            ),
+            "r"
+    ) as projects_file:
+        projects_file_reader = csv.reader(
+            projects_file, delimiter="\t", lineterminator="\n"
+        )
         headers = next(projects_file_reader)
         # Check that column names are not repeated
         check_list_items_are_unique(headers)
@@ -208,7 +212,7 @@ def generic_add_model_components(m, d,
 
     setattr(m, reserve_project_operational_timepoints_set,
             Set(dimen=2,
-                rule=lambda mod:
+                initialize=lambda mod:
                 set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                     if g in getattr(mod, reserve_projects_set))
                 )
@@ -360,7 +364,7 @@ def generic_export_module_specific_results(
 
 
 def generic_get_inputs_from_database(
-        subscenarios, subproblem, stage, conn,
+        scenario_id, subscenarios, subproblem, stage, conn,
         reserve_type, project_ba_subscenario_id, ba_subscenario_id
         ):
     """
@@ -442,7 +446,7 @@ def generic_get_inputs_from_database(
 
 
 def generic_validate_project_bas(
-        subscenarios, subproblem, stage, conn,
+        scenario_id, subscenarios, subproblem, stage, conn,
         reserve_type, project_ba_subscenario_id, ba_subscenario_id
 ):
     """
@@ -461,6 +465,7 @@ def generic_validate_project_bas(
     stage = 1 if stage == "" else stage
 
     project_bas, prj_derates = generic_get_inputs_from_database(
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -494,7 +499,7 @@ def generic_validate_project_bas(
     # Check that each reserve BA has at least one project assigned to it
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -511,7 +516,7 @@ def generic_validate_project_bas(
     msg = "Project has a reserve derate specified but no relevant BA."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

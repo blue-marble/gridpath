@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Carbon emissions from each carbonaceous project.
@@ -14,14 +25,10 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import, \
-    load_operational_type_modules
-from gridpath.auxiliary.dynamic_components import \
-    required_operational_modules
-import gridpath.project.operations.operational_types as op_type
+from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -172,10 +179,9 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
-    Aggregate dispatch by technology
-    Aggregate dispatch by period
+    Aggregate emissions by technology, period, and spinup_or_lookahead
     :param db:
     :param c:
     :param subscenarios:
@@ -185,28 +191,30 @@ def process_results(db, c, subscenarios, quiet):
     if not quiet:
         print("aggregate emissions by technology-period")
 
-    # Delete old dispatch by technology
+    # Delete old emissions by technology
     del_sql = """
         DELETE FROM results_project_carbon_emissions_by_technology_period 
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
-    # Aggregate dispatch by technology
+    # Aggregate emissions by technology, period, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_project_carbon_emissions_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        carbon_emission_tons)
+        spinup_or_lookahead, carbon_emission_tons)
         SELECT
         scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        SUM(carbon_emission_tons * timepoint_weight
+        spinup_or_lookahead, SUM(carbon_emission_tons * timepoint_weight
         * number_of_hours_in_timepoint ) AS carbon_emission_tons 
         FROM results_project_carbon_emissions
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology;"""
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)

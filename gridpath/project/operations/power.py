@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.project.capacity.capacity** module is a project-level
@@ -18,13 +29,13 @@ import pandas as pd
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import
-from gridpath.auxiliary.dynamic_components import required_operational_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -46,11 +57,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Expressions
@@ -120,14 +136,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def summarize_results(d, scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem, stage):
     """
-    Summarize operational results
-    :param d:
     :param scenario_directory:
     :param subproblem:
     :param stage:
     :return:
+
+    Summarize operational results
     """
 
     summary_results_file = os.path.join(
@@ -230,7 +246,7 @@ def import_results_into_database(
     pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate dispatch by technology
     Aggregate dispatch by technology and period
@@ -249,18 +265,18 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate dispatch by technology
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology
         (scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
         FROM results_project_dispatch
         WHERE scenario_id = ?
@@ -269,7 +285,7 @@ def process_results(db, c, subscenarios, quiet):
         ORDER BY subproblem_id, stage_id, timepoint, 
         load_zone, technology;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     if not quiet:
@@ -281,22 +297,25 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
-    # Aggregate dispatch by technology
+    # Aggregate dispatch by technology, period, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_project_dispatch_by_technology_period
         (scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
-        energy_mwh)
+        spinup_or_lookahead, energy_mwh)
         SELECT
         scenario_id, subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead,
         SUM(power_mw * timepoint_weight * number_of_hours_in_timepoint ) AS 
         energy_mwh 
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone, technology
-        ORDER BY subproblem_id, stage_id, period, load_zone, technology;"""
+        GROUP BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
+        spinup_or_lookahead;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)

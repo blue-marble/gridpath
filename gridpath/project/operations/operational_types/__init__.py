@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Describe operational constraints on generation, storage, and DR projects.
@@ -15,12 +26,13 @@ import csv
 import os.path
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -28,14 +40,20 @@ def add_model_components(m, d):
     :return:
     """
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
 
     # Add any components specific to the operational modules
-    for op_m in getattr(d, required_operational_modules):
+    for op_m in required_operational_modules:
         imp_op_m = imported_operational_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -50,9 +68,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
@@ -77,9 +103,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export module-specific results
     # Operational type modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
@@ -142,7 +176,7 @@ def get_required_opchar_modules(scenario_id, c):
     return required_opchar_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -154,7 +188,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -165,12 +199,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files
     :param scenario_directory: string, the scenario directory
@@ -183,7 +217,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -194,7 +228,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -293,7 +327,7 @@ def import_results_into_database(
             pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -304,7 +338,7 @@ def process_results(db, c, subscenarios, quiet):
     """
 
     # Load in the required operational modules
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
@@ -315,7 +349,7 @@ def process_results(db, c, subscenarios, quiet):
                    "process_module_specific_results"):
             imported_operational_modules[op_m]. \
                 process_module_specific_results(
-                    db, c, subscenarios, quiet)
+                    db, c, scenario_id, subscenarios, quiet)
         else:
             pass
 
@@ -326,7 +360,7 @@ def process_results(db, c, subscenarios, quiet):
 def power_provision_rule(mod, prj, tmp):
     """
     If no power_provision_rule is specified in an operational type module, the
-    default power provision is 0.
+    default power provision for load-balance purposes is 0.
     """
     return 0
 

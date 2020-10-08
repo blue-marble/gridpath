@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module adds the main load-balance consumption component, the static
@@ -14,17 +25,17 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(dynamic_components):
     """
+    :param dynamic_components:
+
     This method adds the static load to the load balance dynamic components.
-    :param d:
-    :return:
     """
+    getattr(dynamic_components, load_balance_consumption_components).append(
+        "static_load_mw")
 
-    getattr(d, load_balance_consumption_components).append("static_load_mw")
 
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -39,6 +50,8 @@ def add_model_components(m, d):
     # Static load
     m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS,
                              within=NonNegativeReals)
+
+    record_dynamic_components(dynamic_components=d)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -60,7 +73,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -106,7 +119,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return loads
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -118,10 +131,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # loads = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     load_mw.tab file.
@@ -134,7 +147,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     loads = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "load_mw.tab"), "w", newline="") as \

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.project.operations.costs** module is a project-level
@@ -17,13 +28,14 @@ from pyomo.environ import Set, Var, Expression, Constraint, \
     NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
-    setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -162,11 +174,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Sets
@@ -175,60 +192,62 @@ def add_model_components(m, d):
     m.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.VAR_OM_COST_SIMPLE_PRJS]
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p)
+        initialize=lambda mod: list(
+            set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+                for _g, p, s in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS
+                if g == _g and mod.period[tmp] == p)
+        )
     )
 
     m.VAR_OM_COST_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp)
-            for (g, tmp, s) in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp, s)
+                in mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS_SGMS)
+        )
     )
 
     # All VOM projects
     m.VAR_OM_COST_ALL_PRJS_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: set(
-            mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
-            | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS
+        initialize=lambda mod: list(
+            set(mod.VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS
+                | mod.VAR_OM_COST_CURVE_PRJS_OPR_TMPS)
         )
     )
 
     m.STARTUP_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.STARTUP_COST_PRJS]
     )
 
     m.SHUTDOWN_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.SHUTDOWN_COST_PRJS]
     )
 
     m.VIOL_ALL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.VIOL_ALL_PRJS]
     )
 
     m.CURTAILMENT_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.CURTAILMENT_COST_PRJS]
     )
 
@@ -562,7 +581,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate costs by zone and period
     TODO: by technology too?
@@ -581,15 +600,17 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate operational costs by period and load zone
     agg_sql = """
         INSERT INTO results_project_costs_operations_agg
         (scenario_id, subproblem_id, stage_id, period, 
-        load_zone, variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
+        load_zone, spinup_or_lookahead, 
+        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
         SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+        spinup_or_lookahead,
         SUM(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
         AS fuel_cost,
         SUM(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
@@ -598,9 +619,9 @@ def process_results(db, c, subscenarios, quiet):
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
         FROM results_project_costs_operations
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ;"""
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.project.capacity.costs** module is a project-level
@@ -17,12 +28,13 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import required_capacity_modules
-from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.capacity.common_functions import \
+    load_gen_storage_capacity_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -42,11 +54,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
+    )
+
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        required_capacity_modules
     )
 
     # Expressions
@@ -180,3 +197,65 @@ def import_results_into_database(
         stage_id;""".format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+def process_results(db, c, scenario_id, subscenarios, quiet):
+    """
+    Aggregate capacity costs by load zone, and break out into
+    spinup_or_lookahead.
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate capacity costs by load zone")
+
+    # Delete old resulst
+    del_sql = """
+        DELETE FROM results_project_costs_capacity_agg 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(scenario_id,),
+                          many=False)
+
+    # Insert new results
+    agg_sql = """
+        INSERT INTO results_project_costs_capacity_agg
+        (scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem, capacity_cost)
+        
+        SELECT scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem,
+        (capacity_cost * fraction_of_hours_in_subproblem) AS capacity_cost
+        FROM spinup_or_lookahead_ratios
+        
+        -- Add load_zones
+        LEFT JOIN
+        (SELECT scenario_id, load_zone
+        FROM inputs_geography_load_zones
+        INNER JOIN
+        (SELECT scenario_id, load_zone_scenario_id FROM scenarios
+        WHERE scenario_id = ?) AS scen_tbl
+        USING (load_zone_scenario_id)
+        ) AS lz_tbl
+        USING (scenario_id)
+
+        -- Now that we have all scenario_id, subproblem_id, stage_id, period, 
+        -- load_zone, and spinup_or_lookahead combinations add the capacity 
+        -- costs which will be derated by the fraction_of_hours_in_subproblem
+        INNER JOIN
+        (SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+        SUM(capacity_cost) AS capacity_cost
+        FROM results_project_costs_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
+        ) AS cap_table
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(scenario_id,),
+                          many=False)
+

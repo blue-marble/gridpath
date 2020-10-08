@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type is the same as the *gen_commit_bin* operational type,
@@ -18,7 +29,7 @@ import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     PercentFraction, Boolean, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -30,7 +41,7 @@ from gridpath.project.common_functions import \
     check_boundary_type
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -615,14 +626,17 @@ def add_module_specific_components(m, d):
 
     m.GEN_COMMIT_LIN = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_commit_lin")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_commit_lin"
+        )
     )
 
     m.GEN_COMMIT_LIN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_COMMIT_LIN)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_COMMIT_LIN)
+        )
     )
 
     m.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS = Set(
@@ -636,18 +650,19 @@ def add_module_specific_components(m, d):
     m.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES = Set(
         dimen=2,
         ordered=True,
-        initialize=lambda mod: list(
+        initialize=lambda mod: sorted(list(
             (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
             if mod.operational_type[prj] == "gen_commit_lin"
-        )
+        ))
     )
 
     m.GEN_COMMIT_LIN_OPR_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
+        initialize=lambda mod: list(
+            set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+                for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+                if g == _g)
+        )
     )
 
     m.GEN_COMMIT_LIN_STR_TYPES_BY_PRJ = Set(
@@ -660,10 +675,11 @@ def add_module_specific_components(m, d):
 
     m.GEN_COMMIT_LIN_LINKED_TMPS_STR_TYPES = Set(
         dimen=3,
-        rule=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
-            for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
+        initialize=lambda mod: list(
+            set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_LIN_LINKED_TMPS
+                for _g, s in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+                if g == _g)
+        )
     )
 
     # Required Params
@@ -1059,8 +1075,9 @@ def get_startup_types_by_project(mod, g):
     Get indexed set of startup types by project, ordered from hottest to
     coldest.
     """
-    types = [s for (_g, s) in mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
-             if g == _g]
+    types = sorted([s for (_g, s) in
+                    mod.GEN_COMMIT_LIN_STARTUP_BY_ST_PRJS_TYPES
+             if g == _g])
     return types
 
 
@@ -2501,7 +2518,7 @@ def import_module_specific_results_to_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
 
@@ -2513,5 +2530,5 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                                 "gen_commit_lin")

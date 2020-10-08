@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 For each project assigned this *availability type*, the user may specify an
@@ -22,7 +33,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.project.common_functions import determine_project_subset
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -64,9 +75,10 @@ def add_module_specific_components(m, d):
     #  modules and availability type modules
     m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.AVL_EXOG)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.AVL_EXOG)
+        )
     )
 
     # Required Params
@@ -136,7 +148,7 @@ def load_module_specific_data(
 ###############################################################################
 
 def get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios:
@@ -205,7 +217,7 @@ def get_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param scenario_directory:
@@ -216,7 +228,7 @@ def write_module_specific_model_inputs(
     :return:
     """
     availabilities = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     ).fetchall()
 
     if availabilities:
@@ -235,7 +247,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -244,7 +256,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
     availabilities = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     df = cursor_to_df(availabilities)
@@ -258,7 +270,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -274,7 +286,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
           "disappear."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -287,7 +299,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     if "availability" not in error_columns:
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

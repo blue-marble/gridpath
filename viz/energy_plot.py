@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Make plot of energy by period and technology for a specified zone/stage
@@ -13,7 +24,7 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
     get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
     process_stacked_plot_data
@@ -65,34 +76,16 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     # TODO: add curtailment and imports? What about storage charging?
 
     # Energy by period and technology
-    # Spinup/lookahead timepoints are ignored by adding the resp. column tag
-    # through inner joins and adding a conditional to ignore those timepoints
-    sql = """SELECT period, technology, 
-        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)
-        as energy_mwh
-        FROM results_project_dispatch_by_technology
-        
-        -- add temporal scenario id so we can join timepoints table
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, scenario_id
-        FROM scenarios)
-        USING (scenario_id)
-        
-        -- filter out spinup_or_lookahead timepoints
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
-        spinup_or_lookahead
-        FROM inputs_temporal)
-        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
-        
+    sql = """
+        SELECT period, technology, 
+        SUM(energy_mwh) AS energy_mwh
+        FROM results_project_dispatch_by_technology_period
         WHERE scenario_id = ?
         AND load_zone = ?
         AND stage_id = ?
-        AND spinup_or_lookahead is NULL
-        
-        GROUP BY period, technology"""
+        AND (spinup_or_lookahead is NULL OR spinup_or_lookahead = 0)
+        GROUP BY period, technology;
+        """
 
     df = pd.read_sql(
         sql,

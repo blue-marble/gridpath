@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Make plot of capacity factor by period and project for a specified
@@ -18,7 +29,7 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
     get_parent_parser, get_tech_colors
 
@@ -94,13 +105,13 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             
             (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
             spinup_or_lookahead
-            FROM inputs_temporal)
+            FROM inputs_temporal
+            WHERE spinup_or_lookahead is NULL)
             USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
             
             WHERE scenario_id = ?
             AND stage_id = ?
             AND load_zone = ?
-            AND spinup_or_lookahead is NULL
             
             group by period, project) 
             

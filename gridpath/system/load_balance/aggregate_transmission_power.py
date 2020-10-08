@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module aggregates the net power flow in/out of a load zone on all
@@ -16,29 +27,12 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    This method adds the transmission to/from to the load balance dynamic
-    components.
-    :param d:
-    :return:
-    """
-
-    getattr(d, load_balance_production_components).append(
-        "Transmission_to_Zone_MW"
-    )
-
-    getattr(d, load_balance_consumption_components).append(
-        "Transmission_from_Zone_MW"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Add net transmitted power to load balance
     :param m:
@@ -79,6 +73,26 @@ def add_model_components(m, d):
         )
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TMPS,
                                              rule=total_transmission_from_rule)
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+    :return:
+
+    This method adds the transmission to/from to the load balance dynamic
+    components.
+    """
+
+    getattr(dynamic_components, load_balance_production_components).append(
+        "Transmission_to_Zone_MW"
+    )
+
+    getattr(dynamic_components, load_balance_consumption_components).append(
+        "Transmission_from_Zone_MW"
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

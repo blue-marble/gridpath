@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 GridPath organizes timepoints into *balancing types* and *horizons* that
@@ -42,7 +53,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_single_input, validate_missing_inputs
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -360,7 +371,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -401,7 +412,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return horizons, horizon_timepoints
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     horizons.tab file.
@@ -414,7 +425,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     horizons, horizon_timepoints = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
               "w", newline="") as horizons_tab_file:
@@ -442,7 +453,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -453,7 +464,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     hrzs, hrz_tmps = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     c = conn.cursor()
@@ -482,7 +493,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df_hrzs, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -495,7 +506,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df_hrz_tmps, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -510,7 +521,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -525,7 +536,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -539,7 +550,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     msg = "All timepoints within a horizon should belong to the same period."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -555,7 +566,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Make sure there are no missing horizon inputs
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

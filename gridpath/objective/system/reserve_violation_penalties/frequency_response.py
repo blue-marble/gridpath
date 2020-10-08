@@ -1,20 +1,27 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import absolute_import
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 from .aggregate_reserve_violation_penalties import \
-    generic_determine_dynamic_components, generic_add_model_components
+    generic_record_dynamic_components, generic_add_model_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    generic_determine_dynamic_components(d, "Frequency_Response_Penalty_Costs")
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -26,6 +33,7 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
+        scenario_directory, subproblem, stage,
         "FREQUENCY_RESPONSE_BAS",
         "Frequency_Response_Violation_MW_Expression",
         "frequency_response_violation_penalty_per_mw",
@@ -49,5 +57,12 @@ def add_model_components(m, d):
     m.Frequency_Response_Partial_Penalty_Costs = \
         Expression(rule=partial_frequency_response_penalty_costs_rule)
 
-    getattr(d, total_cost_components).append(
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    generic_record_dynamic_components(dynamic_components,
+                                      "Frequency_Response_Penalty_Costs")
+
+    getattr(dynamic_components, cost_components).append(
         "Frequency_Response_Partial_Penalty_Costs")

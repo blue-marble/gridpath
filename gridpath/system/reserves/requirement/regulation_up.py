@@ -1,12 +1,23 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_get_inputs_from_database, generic_add_model_components, \
     generic_load_model_data, generic_write_model_inputs
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -37,7 +48,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -47,7 +58,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     return \
         generic_get_inputs_from_database(
-            subscenarios=subscenarios,
+            scenario_id=scenario_id,
+        subscenarios=subscenarios,
             subproblem=subproblem, stage=stage, conn=conn,
             reserve_type="regulation_up",
             reserve_type_ba_subscenario_id
@@ -57,7 +69,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -69,10 +81,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # regulation_up = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     regulation_up_requirement.tab file.
@@ -85,7 +97,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     tmp_req, percent_req, percent_map = \
-        get_inputs_from_database(subscenarios, subproblem, stage, conn)
+        get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     generic_write_model_inputs(
         scenario_directory=scenario_directory,

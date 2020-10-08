@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Storage projects with additional constraints on deliverability based on their 
@@ -19,7 +30,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, validate_missing_inputs
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     FDDL: Fully Deliverable Duration Limited
     :param m: 
@@ -124,7 +135,7 @@ def load_module_specific_data(
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -154,7 +165,7 @@ def get_module_specific_inputs_from_database(
     return project_zone_dur
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -165,7 +176,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     project_zone_dur = get_module_specific_inputs_from_database(
-       subscenarios, subproblem, stage, conn
+       scenario_id, subscenarios, subproblem, stage, conn
     )
 
     df = cursor_to_df(project_zone_dur)
@@ -174,7 +185,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Make sure param sign is as expected
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -186,7 +197,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Make sure param is specified
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -197,7 +208,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -211,7 +222,7 @@ def write_module_specific_model_inputs(
     """
 
     project_zone_dur = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     # Only assign a min duration to projects that contribute to a PRM zone in

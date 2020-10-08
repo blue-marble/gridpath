@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This capacity type describes generators with the same characteristics as
@@ -28,7 +39,7 @@ from gridpath.project.capacity.capacity_types.common_methods import \
     update_capacity_results_table
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -107,16 +118,17 @@ def add_module_specific_components(m, d):
     m.GEN_RET_BIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_BIN = Set(
-        initialize=lambda mod:
+        initialize=lambda mod: list(
             set(g for (g, p) in mod.GEN_RET_BIN_OPR_PRDS)
+        )
     )
 
     m.OPR_PRDS_BY_GEN_RET_BIN = Set(
         m.GEN_RET_BIN,
-        initialize=lambda mod, prj:
-            set(period for (project, period)
-                in mod.GEN_RET_BIN_OPR_PRDS
-                if project == prj)
+        initialize=lambda mod, prj: list(
+                set(period for (project, period) in mod.GEN_RET_BIN_OPR_PRDS
+                    if project == prj)
+        )
     )
 
     # Required Params
@@ -378,7 +390,7 @@ def summarize_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -421,7 +433,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -435,7 +447,7 @@ def write_module_specific_model_inputs(
     """
 
     ep_capacities = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # If specified_generation_period_params.tab file already exists, append
     # rows to it
@@ -497,7 +509,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -508,9 +520,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     gen_ret_bin_params = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
-    projects = get_projects(conn, subscenarios, "capacity_type", "gen_ret_bin")
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_ret_bin")
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(gen_ret_bin_params)
@@ -527,7 +539,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -543,7 +555,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -557,7 +569,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     msg = "Expected specified capacity & fixed costs for at least one period."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -574,7 +586,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

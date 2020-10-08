@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type is like the *gen_var* type with two main differences.
@@ -11,7 +22,7 @@ of this operational type cannot provide operational reserves .
 from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_projects_by_reserve, validate_idxs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -24,7 +35,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -78,15 +89,17 @@ def add_module_specific_components(m, d):
 
     m.GEN_VAR_MUST_TAKE = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type",
-                                         "gen_var_must_take")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_var_must_take"
+        )
     )
 
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_VAR_MUST_TAKE)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_VAR_MUST_TAKE)
+        )
     )
 
     # Required Params
@@ -239,7 +252,7 @@ def load_module_specific_data(mod, data_portal,
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -249,12 +262,12 @@ def get_module_specific_inputs_from_database(
     :return: cursor object with query results
     """
     return get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_var_must_take"
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
     )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -268,7 +281,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "variable_generator_profiles.tab"
 
     write_tab_file_model_inputs(
@@ -279,7 +292,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -290,11 +303,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                                  "gen_var_must_take")
 
     # Validate var profiles input table
-    validate_var_profiles(subscenarios, subproblem, stage, conn,
+    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn,
                           "gen_var_must_take")
 
     # Other module specific validations
@@ -302,7 +315,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_var_must_take can't
     # provide any reserves
-    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    projects_by_reserve = get_projects_by_reserve(scenario_id, subscenarios, conn)
     for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
         reserve_errors = validate_idxs(
@@ -313,7 +326,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

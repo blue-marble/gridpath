@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.transmission.operations.operational_types** package contains
@@ -7,25 +18,42 @@ modules to describe the various ways in which transmission-line operations are
 constrained in optimization problem, e.g. as a simple transport model, or DC
 OPF.
 """
+import os.path
+import pandas as pd
 
-from gridpath.auxiliary.auxiliary import load_tx_operational_type_modules
-from gridpath.auxiliary.dynamic_components import \
-    required_tx_operational_modules
+from gridpath.transmission.operations.common_functions import \
+    load_tx_operational_type_modules
 
 
-def add_model_components(m, d):
+# TODO: missing test for this module
+
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Go through each relevant operational type and add the module components
     for that operational type.
     """
     # Import needed transmission operational type modules
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
+
+    # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            getattr(d, required_tx_operational_modules))
+            required_tx_operational_modules
+    )
     # Add any components specific to the transmission operational modules
-    for op_m in getattr(d, required_tx_operational_modules):
+    for op_m in required_tx_operational_modules:
         imp_op_m = imported_tx_operational_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, subproblem, stage
+            )
 
 
 # Input-Output
@@ -45,9 +73,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    required_tx_operational_modules = df.tx_operational_type.unique()
+
+    # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            getattr(d, required_tx_operational_modules))
-    for op_m in getattr(d, required_tx_operational_modules):
+            required_tx_operational_modules
+    )
+    for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_operational_modules[op_m].load_module_specific_data(
@@ -112,7 +152,7 @@ def get_required_tx_opchar_modules(scenario_id, c):
 # Database
 ###############################################################################
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Go through each relevant operational type and write the model inputs
     for that operational type based on the database.
@@ -127,7 +167,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -138,7 +178,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_tx_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -176,7 +216,7 @@ def import_results_into_database(
             pass
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Go through each relevant operational type and process the results
     for that operational type.
@@ -189,7 +229,7 @@ def process_results(db, c, subscenarios, quiet):
     """
 
     # Load in the required operational modules
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -200,7 +240,7 @@ def process_results(db, c, subscenarios, quiet):
                    "process_module_specific_results"):
             imported_tx_operational_modules[op_m]. \
                 process_module_specific_results(
-                    db, c, subscenarios, quiet)
+                    db, c, scenario_id, subscenarios, quiet)
         else:
             pass
 
@@ -208,7 +248,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Go through each relevant operational type and validate the database inputs
     for that operational type.
@@ -222,7 +262,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
     imported_tx_operational_modules = load_tx_operational_type_modules(
         required_tx_opchar_modules)
@@ -233,6 +273,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_tx_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Aggregate simple local capacity contribution from the project level to the
@@ -14,24 +25,12 @@ import os.path
 from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     local_capacity_balance_provision_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    This method adds contribution to local capacity provision components
-    :param d:
-    :return:
-    """
-
-    getattr(d, local_capacity_balance_provision_components).append(
-        "Total_Local_Capacity_Contribution_MW"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -56,6 +55,21 @@ def add_model_components(m, d):
     m.Total_Local_Capacity_Contribution_MW = Expression(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
         rule=total_local_capacity_provision_rule
+    )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds contribution to local capacity provision components
+    """
+
+    getattr(dynamic_components,
+            local_capacity_balance_provision_components).append(
+        "Total_Local_Capacity_Contribution_MW"
     )
 
 

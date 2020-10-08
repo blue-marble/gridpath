@@ -1,18 +1,27 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Add project-level components for upward load-following reserves
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
 
+from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.project.operations.reserves.reserve_provision import \
-    generic_determine_dynamic_components, generic_add_model_components, \
+    generic_record_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
     generic_import_results_into_database, generic_get_inputs_from_database, \
     generic_validate_project_bas
@@ -21,7 +30,7 @@ from gridpath.project.operations.reserves.reserve_provision import \
 # Reserve-module variables
 MODULE_NAME = "lf_reserves_up"
 # Dynamic components
-HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
+HEADROOM_OR_FOOTROOM_DICT_NAME = headroom_variables
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_derate"
@@ -39,7 +48,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "LF_RESERVES_UP_PRJ_OPR_TMPS"
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
@@ -49,12 +58,11 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    generic_determine_dynamic_components(
+    generic_record_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
-        reserve_module=MODULE_NAME,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
@@ -66,13 +74,15 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :return:
     """
+
+    record_dynamic_components(d, scenario_directory, subproblem, stage)
 
     generic_add_model_components(
         m=m,
@@ -145,7 +155,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -158,6 +168,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     # Get project BAs
     project_bas, prj_derates = generic_get_inputs_from_database(
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -172,7 +183,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_bas, prj_derates
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -183,6 +194,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     generic_validate_project_bas(
+        scenario_id=scenario_id,
         subscenarios=subscenarios,
         subproblem=subproblem,
         stage=stage,
@@ -194,7 +206,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -206,7 +218,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     project_bas, prj_derates = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_ba_dict = dict()

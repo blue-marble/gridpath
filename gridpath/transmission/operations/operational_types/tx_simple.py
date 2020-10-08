@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type describes transmission lines whose flows are simulated
@@ -16,7 +27,9 @@ from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
     Reals, PercentFraction
 
 
-def add_module_specific_components(m, d):
+def add_model_components(
+        m, d, scenario_directory, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -131,16 +144,18 @@ def add_module_specific_components(m, d):
 
     m.TX_SIMPLE = Set(
         within=m.TX_LINES,
-        rule=lambda mod: set(l for l in mod.TX_LINES if
-                             mod.tx_operational_type[l] == "tx_simple")
+        initialize=lambda mod: list(
+            set(l for l in mod.TX_LINES
+                if mod.tx_operational_type[l] == "tx_simple")
+        )
     )
 
     m.TX_SIMPLE_OPR_TMPS = Set(
         dimen=2, within=m.TX_OPR_TMPS,
-        rule=lambda mod:
-            set((l, tmp)
-                for (l, tmp) in mod.TX_OPR_TMPS
+        initialize=lambda mod: list(
+            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_SIMPLE)
+        )
     )
 
     # Params

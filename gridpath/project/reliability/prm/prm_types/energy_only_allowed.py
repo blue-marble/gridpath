@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Projects that can be partly or fully 'energy-only,' i.e. some of the capacity
@@ -17,14 +28,14 @@ from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     EOA: Energy-Only Allowed
     :param m: 
@@ -355,7 +366,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -407,7 +418,7 @@ def get_module_specific_inputs_from_database(
     return group_threshold_costs, project_deliverability_groups
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -420,11 +431,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
     #   get_module_specific_inputs_from_database(
-    #       subscenarios, subproblem, stage, conn)
+    #       scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -440,7 +451,7 @@ def write_module_specific_model_inputs(
 
     group_threshold_costs, project_deliverability_groups = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
+            scenario_id, subscenarios, subproblem, stage, conn)
 
     if group_threshold_costs:
         with open(os.path.join(
@@ -631,7 +642,7 @@ def import_module_specific_results_into_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, subscenarios, quiet):
+def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -648,7 +659,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         """SELECT project, period, energy_only_capacity_mw
         FROM results_project_prm_deliverability
             WHERE scenario_id = {};""".format(
-            subscenarios.SCENARIO_ID
+            scenario_id
         )
     ).fetchall()
 
@@ -660,7 +671,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
     results = []
     for row in project_period_eocap:
         results.append(
-            (row[2], subscenarios.SCENARIO_ID, row[0], row[1])
+            (row[2], scenario_id, row[0], row[1])
         )
 
     for table in tables_to_update:
@@ -673,3 +684,45 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 
         spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
 
+    # Aggregate costs by period and break out into spinup_or_lookahead.
+
+    # Delete old resulst
+    del_sql = """
+        DELETE FROM 
+        results_project_prm_deliverability_group_capacity_and_costs_agg 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(scenario_id,),
+                          many=False)
+
+    # Insert new results
+    agg_sql = """
+        INSERT INTO 
+        results_project_prm_deliverability_group_capacity_and_costs_agg
+        (scenario_id, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem, 
+        deliverable_capacity_cost)
+
+        SELECT scenario_id, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem,
+        (deliverable_capacity_cost * fraction_of_hours_in_subproblem) 
+        AS deliverable_capacity_cost
+        FROM spinup_or_lookahead_ratios
+
+        -- Now that we have all scenario_id, subproblem_id, stage_id, period, 
+        -- and spinup_or_lookahead combinations add the deliverable capacity 
+        -- costs which will be derated by the fraction_of_hours_in_subproblem
+        INNER JOIN
+        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        SUM(deliverable_capacity_cost) AS deliverable_capacity_cost
+        FROM results_project_prm_deliverability_group_capacity_and_costs
+        WHERE scenario_id = ?
+        GROUP BY scenario_id, subproblem_id, stage_id, period
+        ) AS cap_table
+        USING (scenario_id, subproblem_id, stage_id, period)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(scenario_id,),
+                          many=False)

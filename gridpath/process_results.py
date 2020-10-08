@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This script iterates over all modules required for a GridPath scenario and
@@ -19,13 +30,13 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.common_functions import determine_scenario_directory, \
     get_db_parser, get_required_e2e_arguments_parser
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubScenarios
 
 
 def process_results(
-        loaded_modules, db, cursor, subscenarios, quiet
+        loaded_modules, db, cursor, scenario_id, subscenarios, quiet
 ):
     """
     
@@ -39,7 +50,7 @@ def process_results(
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(
-                db, cursor, subscenarios, quiet)
+                db, cursor, scenario_id, subscenarios, quiet)
         else:
             pass
 
@@ -98,11 +109,12 @@ def main(args=None):
     loaded_modules = load_modules(modules_to_use)
 
     # Subscenarios
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
 
     process_results(
         loaded_modules=loaded_modules, db=conn, cursor=c,
-        subscenarios=subscenarios, quiet=parsed_arguments.quiet
+        scenario_id=scenario_id, subscenarios=subscenarios,
+        quiet=parsed_arguments.quiet
     )
 
     # Close the database connection

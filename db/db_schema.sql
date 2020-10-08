@@ -1,6 +1,18 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
--- Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+-- Copyright 2016-2020 Blue Marble Analytics LLC.
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
 
 -- A description of the database schema structure is in db.__init__
 
@@ -574,6 +586,63 @@ violation_penalty_per_mw FLOAT DEFAULT 0,
 PRIMARY KEY (local_capacity_zone_scenario_id, local_capacity_zone),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
 subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+);
+
+
+-- Market hubs
+-- This is the unit at which prices are specified in the model;
+-- it can be different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_markets;
+CREATE TABLE subscenarios_geography_markets (
+market_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_markets;
+CREATE TABLE inputs_geography_markets (
+market_scenario_id INTEGER,
+market VARCHAR(32),
+PRIMARY KEY (market_scenario_id, market),
+FOREIGN KEY (market_scenario_id) REFERENCES
+subscenarios_geography_markets (market_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_market_prices;
+CREATE TABLE subscenarios_market_prices (
+market_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_prices;
+CREATE TABLE inputs_market_prices (
+market_price_scenario_id INTEGER,
+market VARCHAR(32),
+timepoint INTEGER,
+market_price FLOAT,
+PRIMARY KEY (market_price_scenario_id, market, timepoint),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+subscenarios_market_prices (market_price_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_market_volume;
+CREATE TABLE subscenarios_market_volume (
+market_volume_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_market_volume;
+CREATE TABLE inputs_market_volume (
+market_volume_scenario_id INTEGER,
+market VARCHAR(32),
+timepoint INTEGER,
+max_market_sales FLOAT,
+max_market_purchases FLOAT,
+PRIMARY KEY (market_volume_scenario_id, market, timepoint),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+subscenarios_market_volume (market_volume_scenario_id)
 );
 
 
@@ -1447,7 +1516,6 @@ subscenarios_project_fuel_prices (fuel_price_scenario_id)
 );
 
 
-
 ------------------
 -- TRANSMISSION --
 ------------------
@@ -1676,6 +1744,27 @@ PRIMARY KEY (load_scenario_id, load_zone, stage_id, timepoint),
 FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 (load_scenario_id)
 );
+
+
+-- Markets
+-- Load zone markets
+DROP TABLE IF EXISTS subscenarios_load_zone_markets;
+CREATE TABLE subscenarios_load_zone_markets (
+load_zone_market_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_load_zone_markets;
+CREATE TABLE inputs_load_zone_markets (
+load_zone_market_scenario_id INTEGER,
+load_zone VARCHAR(64),
+market VARCHAR(32),
+PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
+FOREIGN KEY (load_zone_market_scenario_id)
+REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)
+);
+
 
 -- -- Reserves -- --
 
@@ -2109,6 +2198,7 @@ of_track_carbon_imports INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
+of_markets INTEGER,
 of_tuning INTEGER,
 temporal_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
@@ -2122,6 +2212,7 @@ rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
+market_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 project_availability_scenario_id INTEGER,
@@ -2140,6 +2231,7 @@ project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
+load_zone_market_scenario_id INTEGER,
 project_specified_capacity_scenario_id INTEGER,
 project_specified_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -2169,6 +2261,8 @@ carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
+market_price_scenario_id INTEGER,
+market_volume_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
@@ -2199,6 +2293,8 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
     subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
+FOREIGN KEY (market_scenario_id) REFERENCES
+    subscenarios_geography_markets (market_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
     subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -2247,6 +2343,8 @@ FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
+FOREIGN KEY (load_zone_market_scenario_id) REFERENCES
+    subscenarios_load_zone_markets (load_zone_market_scenario_id),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
     subscenarios_project_specified_capacity
         (project_specified_capacity_scenario_id),
@@ -2317,6 +2415,10 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
+FOREIGN KEY (market_price_scenario_id) REFERENCES
+    subscenarios_market_prices (market_price_scenario_id),
+FOREIGN KEY (market_volume_scenario_id) REFERENCES
+    subscenarios_market_volume (market_volume_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
     subscenarios_tuning (tuning_scenario_id),
 FOREIGN KEY (solver_options_id)
@@ -2504,9 +2606,10 @@ stage_id INTEGER,
 period INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
+spinup_or_lookahead INTEGER,
 energy_mwh FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
-technology)
+technology, spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
@@ -2677,6 +2780,22 @@ deliverable_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
+-- Deliverable capacity costs - Aggregated
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS
+results_project_prm_deliverability_group_capacity_and_costs_agg;
+CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs_agg (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+deliverable_capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, spinup_or_lookahead)
+);
+
 DROP TABLE IF EXISTS results_project_elcc_simple;
 CREATE TABLE results_project_elcc_simple (
 scenario_id INTEGER,
@@ -2755,6 +2874,24 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
+
+-- Capacity costs - Aggregated
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS results_project_costs_capacity_agg;
+CREATE TABLE results_project_costs_capacity_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead));
+
+
 DROP TABLE IF EXISTS results_project_costs_operations;
 CREATE TABLE results_project_costs_operations (
 scenario_id INTEGER,
@@ -2787,11 +2924,13 @@ load_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+spinup_or_lookahead INTEGER,
 variable_om_cost FLOAT,
 fuel_cost FLOAT,
 startup_cost FLOAT,
 shutdown_cost FLOAT,
-PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_fuel_burn;
@@ -2847,9 +2986,10 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 load_zone VARCHAR(32),
 technology VARCHAR(32),
+spinup_or_lookahead INTEGER,
 carbon_emission_tons FLOAT,
 PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
-technology)
+technology, spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_project_rps;
@@ -2919,6 +3059,24 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
+
+-- Tx Capacity costs - Aggregated by "to_zone" load_zone
+-- (and broken out by spinup_or_lookahead; fraction sums up to 1 between the
+-- spinup_or_lookahead and the non-spinup_or_lookahead timepoints)
+DROP TABLE IF EXISTS results_transmission_costs_capacity_agg;
+CREATE TABLE results_transmission_costs_capacity_agg (
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+spinup_or_lookahead INTEGER,
+fraction_of_hours_in_subproblem FLOAT,
+capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead));
+
+
 DROP TABLE IF EXISTS results_transmission_imports_exports;
 CREATE TABLE results_transmission_imports_exports (
 scenario_id INTEGER,
@@ -2962,9 +3120,11 @@ load_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+spinup_or_lookahead INTEGER,
 imports FLOAT,
 exports FLOAT,
-PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, period, load_zone,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_transmission_hurdle_costs;
@@ -2993,8 +3153,10 @@ load_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+spinup_or_lookahead INTEGER,
 tx_hurdle_cost FLOAT,
-PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead)
 );
 
 DROP TABLE IF EXISTS results_transmission_carbon_emissions;
@@ -3031,6 +3193,25 @@ overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
+PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_market_participation;
+CREATE TABLE results_system_market_participation (
+scenario_id INTEGER,
+load_zone VARCHAR(32),
+market VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+spinup_or_lookahead INTEGER,
+sell_power FLOAT,
+buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
@@ -3282,6 +3463,8 @@ Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_RPS_Balance_Penalty_Costs Float,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
+Total_Market_Cost FLOAT,
+Total_Market_Revenue FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
@@ -3659,45 +3842,94 @@ USING (temporal_scenario_id, project, period)
 ;
 
 
+-- ratio of hrs that are (not) spinup/lookahead in each period-subproblem-stage
+DROP VIEW IF EXISTS spinup_or_lookahead_ratios;
+CREATE VIEW spinup_or_lookahead_ratios AS
+SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
+n_weighted_hours / n_total_hours AS fraction_of_hours_in_subproblem
+
+FROM
+
+(SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
+SUM(number_of_hours_in_timepoint * timepoint_weight) AS n_weighted_hours
+FROM inputs_temporal
+INNER JOIN
+(SELECT scenario_id, temporal_scenario_id FROM scenarios) as scen_tbl
+USING (temporal_scenario_id)
+GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead
+) AS weighted_hrs_tbl
+
+INNER JOIN (
+
+SELECT scenario_id, subproblem_id, stage_id, period,
+SUM(number_of_hours_in_timepoint * timepoint_weight) AS n_total_hours
+FROM inputs_temporal
+INNER JOIN
+(SELECT scenario_id, temporal_scenario_id FROM scenarios) as scen_tbl
+USING (temporal_scenario_id)
+GROUP BY scenario_id, subproblem_id, stage_id, period
+) AS total_tbl
+
+USING (scenario_id, subproblem_id, stage_id, period)
+;
+
+
 -- Costs by load zone (for tx: by destination load zone)
 -- Note: does not include tx deliverability costs, tuning costs and
 -- violation penalties
 DROP VIEW IF EXISTS results_costs_by_period_load_zone;
 CREATE VIEW results_costs_by_period_load_zone AS
-SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
+SELECT a.scenario_id, a.subproblem_id, a.stage_id, a.period, a.load_zone,
+a.spinup_or_lookahead,
 capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
 tx_capacity_cost, tx_hurdle_cost
 FROM
-(SELECT scenario_id, subproblem_id, stage_id, period, load_zone,
-SUM(capacity_cost) AS capacity_cost
-FROM results_project_costs_capacity
-GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS cap_costs
+results_project_costs_capacity_agg AS a
 
 LEFT JOIN
-results_project_costs_operations_agg
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+results_project_costs_operations_agg as b
+ON (a.scenario_id = b.scenario_id
+    AND a.subproblem_id = b.subproblem_id
+    AND a.stage_id = b.stage_id
+    AND a.period = b.period
+    AND a.load_zone = b.load_zone
+    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
+)  -- use "IS" to join on null values too
 
 LEFT JOIN
-(SELECT scenario_id, subproblem_id, stage_id, period, load_zone_to AS load_zone,
-SUM(capacity_cost) AS tx_capacity_cost
-FROM results_transmission_costs_capacity
-GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone) AS tx_cap_costs
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+
+(SELECT scenario_id, load_zone, period, subproblem_id, stage_id,
+spinup_or_lookahead, capacity_cost AS tx_capacity_cost
+FROM results_transmission_costs_capacity_agg) AS c
+ON (a.scenario_id = c.scenario_id
+    AND a.subproblem_id = c.subproblem_id
+    AND a.stage_id = c.stage_id
+    AND a.period = c.period
+    AND a.load_zone = c.load_zone
+    AND a.spinup_or_lookahead IS c.spinup_or_lookahead
+)  -- use "IS" to join on null values too
 
 LEFT JOIN
-results_transmission_hurdle_costs_agg
-USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+results_transmission_hurdle_costs_agg as d
+ON (a.scenario_id = d.scenario_id
+    AND a.subproblem_id = d.subproblem_id
+    AND a.stage_id = d.stage_id
+    AND a.period = d.period
+    AND a.load_zone = d.load_zone
+    AND a.spinup_or_lookahead IS d.spinup_or_lookahead
+)  -- use "IS" to join on null values too
 ;
 
 
 -- Costs by period (not including tuning costs and violation penalties)
 DROP VIEW IF EXISTS results_costs_by_period;
 CREATE VIEW results_costs_by_period AS
-SELECT scenario_id, subproblem_id, stage_id, period,
+SELECT a.scenario_id, a.subproblem_id, a.stage_id, a.period,
+a.spinup_or_lookahead,
 capacity_cost, variable_om_cost, fuel_cost, startup_cost, shutdown_cost,
-tx_capacity_cost, tx_hurdle_cost, tx_deliverable_capacity_cost
+tx_capacity_cost, tx_hurdle_cost, deliverable_capacity_cost
 FROM
-(SELECT scenario_id, subproblem_id, stage_id, period,
+(SELECT scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead,
 SUM(capacity_cost) AS capacity_cost,
 SUM(variable_om_cost) AS variable_om_cost,
 SUM(fuel_cost) AS fuel_cost,
@@ -3706,14 +3938,16 @@ SUM(shutdown_cost) AS shutdown_cost,
 SUM(tx_capacity_cost) AS tx_capacity_cost,
 SUM(tx_hurdle_cost) AS tx_hurdle_cost
 FROM results_costs_by_period_load_zone
-GROUP BY scenario_id, subproblem_id, stage_id, period) AS agg_lz_costs
+GROUP BY scenario_id, subproblem_id, stage_id, period, spinup_or_lookahead) AS a
 
 LEFT JOIN
-(SELECT scenario_id, subproblem_id, stage_id, period,
-SUM(deliverable_capacity_cost) AS tx_deliverable_capacity_cost
-FROM results_project_prm_deliverability_group_capacity_and_costs
-GROUP BY scenario_id, subproblem_id, stage_id, period) AS tx_deliverable_costs
-USING (scenario_id, subproblem_id, stage_id, period)
+results_project_prm_deliverability_group_capacity_and_costs_agg as b
+ON (a.scenario_id = b.scenario_id
+    AND a.subproblem_id = b.subproblem_id
+    AND a.stage_id = b.stage_id
+    AND a.period = b.period
+    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
+)  -- use "IS" to join on null values too
 ;
 
 -------------------------------------------------------------------------------

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Subtracting a small amount from the objective function when the Dynamic_ELCC
@@ -13,20 +24,10 @@ import csv
 import os.path
 from pyomo.environ import Param, Expression
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add total dynamic ELCC tuning costs to cost components
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append("Total_Dynamic_ELCC_Tuning_Cost")
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -59,6 +60,19 @@ def add_model_components(m, d):
         rule=total_elcc_tuning_cost_rule
     )
 
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add total dynamic ELCC tuning costs to cost components
+    """
+
+    getattr(dynamic_components, cost_components).append(
+        "Total_Dynamic_ELCC_Tuning_Cost")
+
     
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -84,7 +98,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -106,7 +120,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return dynamic_elcc_tuning_cost
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -118,10 +132,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # dynamic_elcc_tuning_cost = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file.
@@ -134,7 +148,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     dynamic_elcc_tuning_cost = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import print_function
 
@@ -45,83 +56,6 @@ class TestProjectInit(unittest.TestCase):
     """
 
     """
-    def test_determine_dynamic_components(self):
-        """
-        Test if dynamic components are loaded correctly
-        :return:
-        """
-
-        # Create dynamic components class to use
-        class DynamicComponents(object):
-            def __init__(self):
-                pass
-        d = DynamicComponents()
-
-        # Add dynamic components
-        MODULE_BEING_TESTED.determine_dynamic_components(
-            d, TEST_DATA_DIRECTORY, "", "")
-
-        # NOTE: keeping these hard-coded for they should be easy to update
-        # if new types are added
-        # Check if capacity type modules are as expected
-        expected_required_capacity_modules = sorted([
-            "gen_new_lin", "gen_new_bin",
-            "stor_new_lin", "stor_new_bin",
-            "stor_spec",
-            "gen_spec",
-            "gen_ret_lin",
-            "gen_ret_bin",
-            "dr_new"
-        ])
-        actual_required_capacity_modules = \
-            sorted(getattr(d, "required_capacity_modules"))
-        self.assertListEqual(expected_required_capacity_modules,
-                             actual_required_capacity_modules)
-
-        # Check if availability type modules are as expected
-        expected_required_availability_modules = sorted(
-            ["exogenous", "binary", "continuous"]
-        )
-        actual_required_availability_modules = \
-            sorted(getattr(d, "required_availability_modules"))
-        self.assertListEqual(expected_required_availability_modules,
-                             actual_required_availability_modules)
-
-        # Check if operational type modules are as expected
-        expected_required_operational_modules = sorted([
-            "gen_commit_cap", "gen_hydro",
-            "gen_hydro_must_take", "gen_must_run",
-            "stor", "gen_var", "gen_commit_bin",
-            "gen_commit_lin", "gen_simple",
-            "gen_var_must_take", "gen_always_on", "dr"
-        ])
-        actual_required_operational_modules = \
-            sorted(getattr(d, "required_operational_modules"))
-        self.assertListEqual(expected_required_operational_modules,
-                             actual_required_operational_modules)
-
-        projects_df = \
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
-                sep="\t", usecols=['project']
-            )
-        projects_list = projects_df['project'].tolist()
-        # Check if headroom variables dictionaries are as expected
-        expected_headroom_var_dict = {
-            prj: [] for prj in projects_list
-        }
-        actual_headroom_var_dict = getattr(d, "headroom_variables")
-        self.assertDictEqual(expected_headroom_var_dict,
-                             actual_headroom_var_dict)
-
-        # Check if footroom variables dictionaries are as expected
-        expected_footroom_var_dict = {
-            prj: [] for prj in projects_list
-        }
-        actual_footroom_var_dict = getattr(d, "footroom_variables")
-        self.assertDictEqual(expected_footroom_var_dict,
-                             actual_footroom_var_dict)
-
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components

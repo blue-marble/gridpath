@@ -1,14 +1,25 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from pyomo.environ import Expression
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_subtype_modules
-from gridpath.auxiliary.dynamic_components import required_availability_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+    load_subtype_modules
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -16,15 +27,18 @@ def add_model_components(m, d):
     :return:
     """
     # Import needed availability type modules
+    required_availability_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
-        load_availability_type_modules(
-            getattr(d, required_availability_modules))
+        load_availability_type_modules(required_availability_modules)
 
     # First, add any components specific to the availability type modules
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     def availability_derate_rule(mod, g, tmp):
         """
@@ -47,7 +61,7 @@ def add_model_components(m, d):
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -61,7 +75,7 @@ def write_model_inputs(
     """
     c = conn.cursor()
     # Load in the required capacity type modules
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_availability_type_modules = \
         get_required_availability_type_modules(scenario_id, c)
 
@@ -74,7 +88,7 @@ def write_model_inputs(
                    "write_module_specific_model_inputs"):
             imported_availability_type_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
@@ -90,11 +104,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    required_availability_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "load_module_specific_data"):
             imported_availability_modules[op_m].load_module_specific_data(
@@ -116,11 +134,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
+    required_availability_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="availability_type"
+    )
     imported_availability_modules = \
         load_availability_type_modules(
-            getattr(d, required_availability_modules)
+            required_availability_modules
         )
-    for op_m in getattr(d, required_availability_modules):
+    for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
                    "export_module_specific_results"):
             imported_availability_modules[
@@ -174,7 +196,7 @@ def import_results_into_database(
             pass
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     :param subscenarios:
@@ -185,7 +207,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     # Load in the required operational modules
     c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
+
     required_opchar_modules = get_required_availability_type_modules(
         scenario_id, c)
 
@@ -198,7 +220,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                subscenarios, subproblem, stage, conn)
+                scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 

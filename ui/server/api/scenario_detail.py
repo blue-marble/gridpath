@@ -1,4 +1,16 @@
-# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import datetime
 from flask_restful import Resource
@@ -29,12 +41,12 @@ class ScenarioDetailAPI(Resource):
           SELECT scenarios.scenario_name, scenarios.scenario_description,
             scenarios_view.validation_status,
             scenarios_view.run_status,
-            scenarios.run_process_id, 
+            scenarios.run_process_id,
             scenarios.run_start_time,
             scenarios.run_end_time
           FROM scenarios
           JOIN scenarios_view
-            USING (scenario_id) 
+            USING (scenario_id)
           WHERE scenario_id = {}
           """.format(scenario_id)
         ).fetchone()
@@ -62,9 +74,9 @@ class ScenarioDetailAPI(Resource):
         # TODO: should probably specify the default solver somewhere in the
         #  code and use that parameter here
         scenario_detail_api["solver"] = \
-            "cbc" if SolverOptions(cursor=c, scenario_id=scenario_id).SOLVER \
+            "cbc" if SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER \
             is None \
-            else SolverOptions(cursor=c, scenario_id=scenario_id).SOLVER
+            else SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER
 
         # Get the UI table structure and make a dictionary of scenarios_view
         # columns with their ui_table_name_in_db and ui_table_row_name_in_db
@@ -119,7 +131,7 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api["editScenarioValues"] = scenario_edit_api
 
         all_tables = c.execute(
-            """SELECT ui_table 
+            """SELECT ui_table
             FROM ui_scenario_detail_table_metadata
             WHERE include = 1
             ORDER BY ui_table_id ASC;"""
@@ -152,7 +164,7 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
 
     # Get and set the table caption for this table
     table_caption = c.execute(
-        """SELECT ui_table, ui_table_caption 
+        """SELECT ui_table, ui_table_caption
         FROM ui_scenario_detail_table_metadata
         WHERE ui_table = '{}'
         AND include = 1;""".format(ui_table_name_in_db)
@@ -166,8 +178,8 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
     scenario_detail_table_api["scenarioDetailTableRows"] = list()
 
     row_metadata = c.execute(
-        """SELECT ui_table_row, ui_row_caption, 
-        ui_row_db_scenarios_view_column, ui_row_db_input_table 
+        """SELECT ui_table_row, ui_row_caption,
+        ui_row_db_scenarios_view_column, ui_row_db_input_table
         FROM ui_scenario_detail_table_row_metadata
         WHERE ui_table = '{}'
         AND include = 1;""".format(ui_table_name_in_db)

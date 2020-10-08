@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Make plot of costs by period for a certain scenario/zone/stage
@@ -13,7 +24,7 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
     get_parent_parser, get_unit, process_stacked_plot_data
 
@@ -62,110 +73,39 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     :return:
     """
 
-    # TODO: move this into a view that keeps all scenarios and periods
-    #   and then select from it? (but full table takes 19s to load, whereas
-    #   a slice is much faster!) Perhaps we can move each cost by scen/period
-    #   into a view, but that won't make things faster, just shorter queries?
     # TODO: will this work when there are no capacity cost (left join would
     #   start with empty capacity table
     # TODO: what hurdle rates should we include? load_zone_to, load_zone_from
     #   or both?
-    # TODO: add new transmisison costs?
+    # TODO: add new transmission costs?
 
     # Note: fuel cost and variable O&M cost are actually cost *rates* in $/hr
     #  and should be multiplied by the timepoint duration to get the actual
     #  cost.
 
     # System costs by scenario and period -- by source and total
-    # Spinup/lookahead timepoints are ignored by adding the resp. column tag
-    # through inner joins and adding a conditional to ignore those timepoints
+    # Ignores spinup_or_lookahead costs
     sql = """SELECT period,
-        capacity_cost/1000000 as Capacity,
-        fuel_cost/1000000 as Fuel,
-        variable_om_cost/1000000 as Variable_OM,
-        startup_cost/1000000 as Startups,
-        shutdown_cost/1000000 as Shutdowns,
-        hurdle_cost/1000000 as Hurdle_Rates
-
-        FROM
-        
-        (SELECT scenario_id, period, sum(capacity_cost) AS capacity_cost
-        FROM  results_project_costs_capacity
+        SUM(capacity_cost)/1000000 as Capacity, 
+        SUM(fuel_cost)/1000000 as Fuel,
+        SUM(variable_om_cost)/1000000 as Variable_OM,
+        SUM(startup_cost)/1000000 as Startups, 
+        SUM(shutdown_cost)/1000000 as Shutdowns,
+        SUM(tx_capacity_cost)/1000000 as Transmission_Capacity, 
+        SUM(tx_hurdle_cost)/1000000 as Hurdle_Rates
+        FROM results_costs_by_period_load_zone
         WHERE scenario_id = ?
         AND stage_id = ?
         AND load_zone = ?
-        GROUP BY scenario_id, period) AS cap_costs
-
-        LEFT JOIN
-
-        (SELECT scenario_id, period, 
-        sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
-        AS fuel_cost,
-        sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
-        AS variable_om_cost,
-        sum(startup_cost * timepoint_weight) AS startup_cost,
-        sum(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_costs_operations
-        
-        -- add temporal scenario id so we can join timepoints table
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
-        USING (scenario_id)
-        
-        -- filter out spinup_or_lookahead timepoints
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
-        spinup_or_lookahead
-        FROM inputs_temporal)
-        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
-        
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone = ?
-        AND spinup_or_lookahead is NULL
-        
-        GROUP BY scenario_id, period) AS operational_costs
-        USING (scenario_id, period)
-
-        LEFT JOIN
-
-        (SELECT scenario_id, period, 
-        sum((hurdle_cost_positive_direction + hurdle_cost_negative_direction) * 
-        timepoint_weight * number_of_hours_in_timepoint) AS hurdle_cost
-        FROM
-        results_transmission_hurdle_costs
-        
-        -- add temporal scenario id so we can join timepoints table
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
-        USING (scenario_id)
-        
-        -- filter out spinup_or_lookahead timepoints
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
-        spinup_or_lookahead
-        FROM inputs_temporal)
-        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
-        
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone_to = ?
-        AND spinup_or_lookahead is NULL
-        
-        GROUP BY scenario_id, period) AS hurdle_costs
-        USING (scenario_id, period)
-        ;"""
+        AND (spinup_or_lookahead is NULL OR spinup_or_lookahead = 0)
+        GROUP BY period
+        ;
+        """
 
     df = pd.read_sql(
         sql,
         con=conn,
-        params=(scenario_id, stage, load_zone,
-                scenario_id, stage, load_zone,
-                scenario_id, stage, load_zone)
+        params=(scenario_id, stage, load_zone)
     )
 
     # Melt dataframe from wide format to long
@@ -174,7 +114,8 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         df,
         id_vars=['period'],
         value_vars=['Capacity', 'Fuel', 'Variable_OM',
-                    'Startups', 'Shutdowns', 'Hurdle_Rates'],
+                    'Startups', 'Shutdowns',
+                    'Transmission_Capacity', 'Hurdle_Rates'],
         var_name='Cost Component',
         value_name='Cost'
     )

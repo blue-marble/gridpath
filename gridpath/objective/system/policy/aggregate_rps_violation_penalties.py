@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module adds RPS shortage penalty costs to the objective function.
@@ -8,22 +19,10 @@ This module adds RPS shortage penalty costs to the objective function.
 import os.path
 from pyomo.environ import Param, Expression, NonNegativeReals
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
+from gridpath.auxiliary.dynamic_components import cost_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    Add total rps balance penalty costs to cost components
-    :param d:
-    :return:
-    """
-
-    getattr(d, total_cost_components).append(
-        "Total_RPS_Balance_Penalty_Costs"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
@@ -39,3 +38,17 @@ def add_model_components(m, d):
                    for (z, p) in mod.RPS_ZONE_PERIODS_WITH_RPS)
     m.Total_RPS_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    Add total rps balance penalty costs to cost components
+    """
+
+    getattr(dynamic_components, cost_components).append(
+        "Total_RPS_Balance_Penalty_Costs"
+    )

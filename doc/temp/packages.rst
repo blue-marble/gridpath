@@ -320,7 +320,7 @@ Modules in this package add expressions to the objective function.
 
 .. automodule:: gridpath.objective.__init__
     :members:
-.. automodule:: gridpath.objective.min_total_cost
+.. automodule:: gridpath.objective.max_npv
     :members:
 .. automodule:: gridpath.objective.project.__init__
     :members:

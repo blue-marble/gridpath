@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This is a Tx-line-level module that adds to the formulation components that
@@ -18,13 +29,14 @@ from pyomo.environ import Param, Var, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, validate_values, \
     validate_missing_inputs
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -234,7 +246,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -273,7 +285,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -287,7 +299,7 @@ def write_model_inputs(
     """
 
     hurdle_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_hurdle_rates.tab"),
               "w", newline="") as sim_flows_file:
@@ -385,7 +397,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate costs by zone and period. Costs are allocated to the destination
     zone. I.e. positive direction hurdle costs are allocated to the to-zone
@@ -405,55 +417,57 @@ def process_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
-    # Aggregate hurdle costs by period and load zone
+    # Aggregate hurdle costs by period, load zone, and spinup_or_lookahead
     agg_sql = """
         INSERT INTO results_transmission_hurdle_costs_agg
         (scenario_id, subproblem_id, stage_id, period, load_zone, 
-        tx_hurdle_cost)
+        spinup_or_lookahead, tx_hurdle_cost)
         
         SELECT scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead,
         (pos_dir_hurdle_cost + neg_dir_hurdle_cost) AS tx_hurdle_cost
         
         FROM
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_to AS load_zone,
+        load_zone_to AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_positive_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS pos_dir_hurdle_cost
         FROM results_transmission_hurdle_costs
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ) AS pos_dir_hurdle_costs
         
         INNER JOIN
         
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        load_zone_from AS load_zone,
+        load_zone_from AS load_zone, spinup_or_lookahead,
         SUM(hurdle_cost_negative_direction * timepoint_weight * 
         number_of_hours_in_timepoint) AS neg_dir_hurdle_cost
         FROM results_transmission_hurdle_costs
         WHERE scenario_id = ?
-        GROUP BY subproblem_id, stage_id, period, load_zone
-        ORDER BY subproblem_id, stage_id, period, load_zone
+        GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
+        ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ) AS neg_dir_hurdle_costs
         
-        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone, 
+        spinup_or_lookahead)
         ;"""
 
     spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(subscenarios.SCENARIO_ID,
-                                subscenarios.SCENARIO_ID),
+                          data=(scenario_id,
+                                scenario_id),
                           many=False)
 
 
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -464,7 +478,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     hurdle_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     df = cursor_to_df(hurdle_rates)
@@ -479,7 +493,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -494,7 +508,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -511,7 +525,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             "hurdle_rate_negative_direction_per_mwh"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

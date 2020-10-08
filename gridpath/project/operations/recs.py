@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Get RECs for each project
@@ -14,15 +25,17 @@ import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
-    setup_results_import, cursor_to_df
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
+    cursor_to_df
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
-from gridpath.auxiliary.dynamic_components import required_operational_modules
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -92,11 +105,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Sets
@@ -106,7 +124,7 @@ def add_model_components(m, d):
 
     m.RPS_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.RPS_PRJS]
     )
 
@@ -289,7 +307,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -335,7 +353,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage,
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage,
                        conn):
     """
     Get inputs from database and write out the model input
@@ -348,7 +366,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage,
     :return:
     """
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_zone_dict = dict()
@@ -472,7 +490,7 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -512,7 +530,7 @@ def process_results(db, c, subscenarios, quiet):
     results = []
     for (prj, zone) in project_zones:
         results.append(
-            (zone, subscenarios.SCENARIO_ID, prj)
+            (zone, scenario_id, prj)
         )
 
     for tbl in tables_to_update:
@@ -528,7 +546,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -540,7 +558,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Get the projects and RPS zones
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_zones)
@@ -560,7 +578,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check that each RPS zone has at least one project assigned to it
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

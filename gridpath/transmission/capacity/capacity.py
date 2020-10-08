@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This is a line-level module that adds to the formulation components that
@@ -11,23 +22,22 @@ reliability constraints, etc. The module also adds transmission costs which
 again depend on the line's *capacity_type*.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 from functools import reduce
 import os.path
+import pandas as pd
 from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
-    setup_results_import
+from gridpath.auxiliary.auxiliary import join_sets
+from gridpath.transmission.capacity.common_functions import \
+    load_tx_capacity_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
-    required_tx_capacity_modules, total_cost_components
+    tx_capacity_type_operational_period_sets
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -101,49 +111,71 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components - Subtypes
+    # Dynamic Inputs
     ###########################################################################
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
 
     # Import needed transmission capacity type modules for expression rules
     imported_tx_capacity_modules = load_tx_capacity_type_modules(
-        getattr(d, required_tx_capacity_modules)
+        required_tx_capacity_modules
     )
 
     # Add model components for each of the transmission capacity modules
-    for op_m in getattr(d, required_tx_capacity_modules):
+    for op_m in required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
+        if hasattr(imp_op_m, "add_model_components"):
+            imp_op_m.add_model_components(
+                m, d, scenario_directory, subproblem, stage
+            )
 
     # Sets
     ###########################################################################
 
     m.TX_OPR_PRDS = Set(
         dimen=2, within=m.TX_LINES*m.PERIODS,
-        initialize=tx_opr_prds_init
-    )
+        initialize=lambda mod:
+        join_sets(mod, getattr(d, tx_capacity_type_operational_period_sets),),
+    )  # assumes capacity types model components are already added!
 
     m.TX_LINES_OPR_IN_PRD = Set(
         m.PERIODS,
-        rule=lambda mod, period:
-        set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)
+        initialize=lambda mod, period: list(
+            set(tx for (tx, p) in mod.TX_OPR_PRDS if p == period)
+        )
     )
 
     m.OPR_PRDS_BY_TX_LINE = Set(
         m.TX_LINES,
-        rule=lambda mod, tx:
-        set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)
+        initialize=lambda mod, tx: list(
+            set(p for (l, p) in mod.TX_OPR_PRDS if l == tx)
+        )
     )
 
     m.TX_OPR_TMPS = Set(
         dimen=2,
-        rule=tx_opr_tmps_init
+        initialize=lambda mod: [
+            (tx, tmp) for tx in mod.TX_LINES
+            for p in mod.OPR_PRDS_BY_TX_LINE[tx]
+            for tmp in mod.TMPS_IN_PRD[p]
+        ]
     )
 
     m.TX_LINES_OPR_IN_TMP = Set(
         m.TMPS,
-        rule=lambda mod, tmp:
-        set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)
+        initialize=lambda mod, tmp: list(
+            set(tx for (tx, t) in mod.TX_OPR_TMPS if t == tmp)
+        )
     )
 
     # Expressions
@@ -182,42 +214,6 @@ def add_model_components(m, d):
     )
 
 
-# Set Rules
-###############################################################################
-
-def tx_opr_prds_init(mod):
-    """
-    Get the TX_OPR_PRDS set by joining the sets in
-    tx_capacity_type_operational_period_sets; if list contains only a single
-    set, return just that set.
-
-    Note: this assumes that the dynamic components for the capacity_type
-    modules have been added already (which is when the
-    list "tx_capacity_type_operational_period_sets" is populated).
-    """
-    if len(mod.tx_capacity_type_operational_period_sets) == 0:
-        return []
-    elif len(mod.tx_capacity_type_operational_period_sets) == 1:
-        return getattr(mod, mod.tx_capacity_type_operational_period_sets[0])
-
-    else:
-        return reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
-                      mod.tx_capacity_type_operational_period_sets)
-
-
-def tx_opr_tmps_init(mod):
-    """
-    Get the TX_OPR_TMPS from the OPR_PRDS_BY_TX_LINE and TMPS_IN_PRD
-    sets.
-    """
-    tx_tmps = set()
-    for tx in mod.TX_LINES:
-        for p in mod.OPR_PRDS_BY_TX_LINE[tx]:
-            for tmp in mod.TMPS_IN_PRD[p]:
-                tx_tmps.add((tx, tmp))
-    return tx_tmps
-
-
 # Input-Output
 ###############################################################################
 
@@ -232,9 +228,25 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
-    for op_m in getattr(d, required_tx_capacity_modules):
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
@@ -254,10 +266,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+                 "tx_operational_type"]
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
     # Module-specific results
-    imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
-    for op_m in getattr(d, required_tx_capacity_modules):
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add model components for each of the transmission capacity modules
+    for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
@@ -432,3 +460,66 @@ def import_results_into_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+def process_results(db, c, scenario_id, subscenarios, quiet):
+    """
+    Aggregate capacity costs by "to_zone" load zone, and break out into
+    spinup_or_lookahead.
+    :param db:
+    :param c:
+    :param subscenarios:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("aggregate tx capacity costs by load zone")
+
+    # Delete old resulst
+    del_sql = """
+        DELETE FROM results_transmission_costs_capacity_agg 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(scenario_id,),
+                          many=False)
+
+    # Insert new results
+    agg_sql = """
+        INSERT INTO results_transmission_costs_capacity_agg
+        (scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem, capacity_cost)
+
+        SELECT scenario_id, load_zone, period, subproblem_id, stage_id,
+        spinup_or_lookahead, fraction_of_hours_in_subproblem,
+        (capacity_cost * fraction_of_hours_in_subproblem) AS capacity_cost
+        FROM spinup_or_lookahead_ratios
+
+        -- Add load_zones
+        LEFT JOIN
+        (SELECT scenario_id, load_zone
+        FROM inputs_geography_load_zones
+        INNER JOIN
+        (SELECT scenario_id, load_zone_scenario_id FROM scenarios
+        WHERE scenario_id = ?) AS scen_tbl
+        USING (load_zone_scenario_id)
+        ) AS lz_tbl
+        USING (scenario_id)
+
+        -- Now that we have all scenario_id, subproblem_id, stage_id, period, 
+        -- load_zone, and spinup_or_lookahead combinations add the tx capacity 
+        -- costs which will be derated by the fraction_of_hours_in_subproblem
+        INNER JOIN
+        (SELECT scenario_id, subproblem_id, stage_id, period, 
+        load_zone_to AS load_zone,
+        SUM(capacity_cost) AS capacity_cost
+        FROM results_transmission_costs_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone
+        ) AS cap_table
+        USING (scenario_id, subproblem_id, stage_id, period, load_zone)
+        ;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(scenario_id,),
+                          many=False)
+

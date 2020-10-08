@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Local capacity projects and the zone they contribute to
@@ -15,7 +26,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -38,7 +49,7 @@ def add_model_components(m, d):
     # Get operational local capacity projects - timepoints combinations
     m.LOCAL_CAPACITY_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        rule=lambda mod: [(prj, p) for (prj, p) in
+        initialize=lambda mod: [(prj, p) for (prj, p) in
                           mod.PRJ_OPR_PRDS
                           if prj in mod.LOCAL_CAPACITY_PROJECTS]
     )
@@ -66,7 +77,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -103,7 +114,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_zones
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -114,7 +125,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     # Convert input data into pandas DataFrame
@@ -135,7 +146,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check that each local capacity zone has at least one project assigned to it
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -152,7 +163,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     #  checking for mismatching zones doesn't really make sense?
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -164,7 +175,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     prj_zones_dict = {p: "." if z is None else z for (p, z) in project_zones}
 

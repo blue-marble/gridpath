@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Aggregate carbon emissions from the project-timepoint level to
@@ -15,24 +26,12 @@ import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    This method adds project emissions to carbon balance
-    :param d:
-    :return:
-    """
-
-    getattr(d, carbon_cap_balance_emission_components).append(
-        "Total_Carbon_Cap_Project_Emissions"
-    )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -59,6 +58,20 @@ def add_model_components(m, d):
     m.Total_Carbon_Cap_Project_Emissions = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=total_carbon_emissions_rule
+    )
+
+    record_dynamic_components(dynamic_components=d)
+
+
+def record_dynamic_components(dynamic_components):
+    """
+    :param dynamic_components:
+
+    This method adds project emissions to carbon balance
+    """
+
+    getattr(dynamic_components, carbon_cap_balance_emission_components).append(
+        "Total_Carbon_Cap_Project_Emissions"
     )
 
 

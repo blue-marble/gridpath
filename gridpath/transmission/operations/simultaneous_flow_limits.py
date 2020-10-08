@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module enforces limits on flows across groups of transmission lines.
@@ -19,7 +30,7 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Integers, Expression, value
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -104,15 +115,16 @@ def add_model_components(m, d):
 
     m.SIM_FLOW_LMT_TMPS = Set(
         dimen=2,
-        rule=lambda mod:
-        set((g, tmp)
-            for (g, p) in mod.SIM_FLOW_LMT_PRDS
-            for tmp in mod.TMPS_IN_PRD[p])
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, p) in mod.SIM_FLOW_LMT_PRDS
+                for tmp in mod.TMPS_IN_PRD[p])
+        )
     )
 
     m.SIM_FLOW_LMTS = Set(
-        rule=lambda mod:
-        set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        initialize=lambda mod: list(
+            set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
+        )
     )
 
     m.SIM_FLOW_LMT_TX_LINES = Set(
@@ -122,9 +134,10 @@ def add_model_components(m, d):
 
     m.TX_LINES_BY_SIM_FLOW_LMT = Set(
         m.SIM_FLOW_LMTS,
-        rule=lambda mod, limit:
-        set(tx_line for (group, tx_line)
-            in mod.SIM_FLOW_LMT_TX_LINES if group == limit)
+        initialize=lambda mod, limit: list(
+            set(tx_line for (group, tx_line)
+                in mod.SIM_FLOW_LMT_TX_LINES if group == limit)
+        )
     )
 
     # Required Input Params
@@ -255,7 +268,7 @@ def save_duals(m):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -310,7 +323,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -325,7 +338,7 @@ def write_model_inputs(
     """
 
     flow_limits, limit_lines = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -361,7 +374,7 @@ def write_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -373,5 +386,5 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # flow_limits, limit_lines = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
 

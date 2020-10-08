@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 *Timepoints* are the finest resolution over which operational decisions are
@@ -34,7 +45,7 @@ from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
 from db.common_functions import spin_on_database_lock
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -225,7 +236,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -253,7 +264,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return timepoints
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     timepoints.tab file.
@@ -266,7 +277,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
 
     timepoints = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
@@ -284,7 +295,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
             writer.writerow(replace_nulls)
 
 
-def process_results(db, c, subscenarios, quiet):
+def process_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:
@@ -347,7 +358,7 @@ def process_results(db, c, subscenarios, quiet):
             );
             """.format(tbl)
         spin_on_database_lock(
-            conn=db, cursor=c, sql=sql, data=(subscenarios.SCENARIO_ID, ),
+            conn=db, cursor=c, sql=sql, data=(scenario_id, ),
             many=False
         )
 
@@ -355,7 +366,7 @@ def process_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -365,7 +376,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
     # timepoints = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
+    #     scenario_id, subscenarios, subproblem, stage, conn)
     # validate timepoint inputs
 
     # TODO: could gather the timepoints from the previous stage (if any) and

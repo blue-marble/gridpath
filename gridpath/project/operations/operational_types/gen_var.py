@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type describes generator projects whose power output is equal
@@ -22,7 +33,7 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import \
     footroom_variables, headroom_variables, reserve_variable_derate_params
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
@@ -36,7 +47,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_opchars, validate_var_profiles, load_optype_module_specific_data
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -133,13 +144,17 @@ def add_module_specific_components(m, d):
     ###########################################################################
     m.GEN_VAR = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_var"))
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_var"
+        )
+    )
 
     m.GEN_VAR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_VAR)
+        )
     )
 
     # Required Params
@@ -481,7 +496,7 @@ def export_module_specific_results(mod, d,
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -492,12 +507,12 @@ def get_module_specific_inputs_from_database(
     """
 
     return get_var_profile_inputs_from_database(
-        subscenarios, subproblem, stage, conn, "gen_var"
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var"
     )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -511,7 +526,7 @@ def write_module_specific_model_inputs(
     """
 
     data = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
     fname = "variable_generator_profiles.tab"
 
     write_tab_file_model_inputs(
@@ -543,7 +558,7 @@ def import_module_specific_results_to_database(
     )
 
 
-def process_module_specific_results(db, c, subscenarios, quiet):
+def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment
     :param db:
@@ -561,7 +576,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
         WHERE scenario_id = ?;
         """
     spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(subscenarios.SCENARIO_ID,),
+                          data=(scenario_id,),
                           many=False)
 
     # Aggregate variable curtailment (just scheduled curtailment)
@@ -598,7 +613,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 
     spin_on_database_lock(
         conn=db, cursor=c, sql=insert_sql,
-        data=(subscenarios.SCENARIO_ID, subscenarios.SCENARIO_ID),
+        data=(scenario_id, scenario_id),
         many=False
     )
 
@@ -606,7 +621,7 @@ def process_module_specific_results(db, c, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -617,7 +632,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "gen_var")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")
 
     # Validate var profiles input table
-    validate_var_profiles(subscenarios, subproblem, stage, conn, "gen_var")
+    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")

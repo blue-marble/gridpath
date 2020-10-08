@@ -1,27 +1,35 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Contributions to ELCC surface
 """
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
-from builtins import range
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    Binary, Expression, value
+from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, \
+    value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     get_param_dict
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -33,8 +41,9 @@ def add_model_components(m, d):
 
     m.ELCC_SURFACE_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod: [p for p in mod.PRM_PROJECTS if
-                                mod.contributes_to_elcc_surface[p]]
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PRM_PROJECTS", "contributes_to_elcc_surface", 1
+        )
     )
 
     m.elcc_surface_cap_factor = Param(
@@ -44,9 +53,10 @@ def add_model_components(m, d):
 
     m.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE = \
         Set(m.PRM_ZONES, within=m.ELCC_SURFACE_PROJECTS,
-            initialize=lambda mod, prm_z:
-            [p for p in mod.ELCC_SURFACE_PROJECTS
-             if mod.prm_zone[p] == prm_z])
+            initialize=lambda mod, prm_z: subset_init_by_param_value(
+                mod, "ELCC_SURFACE_PROJECTS", "prm_zone", prm_z
+                )
+            )
 
     # Define the ELCC surface
     # Surface is limited to 1000 facets
@@ -194,7 +204,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -291,7 +301,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return project_contr_cf, coefficients, elcc_norm_loads
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -302,12 +312,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # project_contr, coefficients = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     scenario_id, subscenarios, subproblem, stage, conn
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and
@@ -320,7 +330,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     project_contr_cf, coefficients, elcc_norm_loads = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_contr_cf_dict = dict()

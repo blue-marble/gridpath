@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module keeps track of fuel burn for each project. Fuel burn consists of
@@ -13,14 +24,14 @@ from pyomo.environ import Set, Var, Expression, Constraint, \
     NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
-from gridpath.auxiliary.dynamic_components import \
-    required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.operations.common_functions import \
+    load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -108,11 +119,16 @@ def add_model_components(m, d):
 
     """
 
-    # Dynamic Components
+    # Dynamic Inputs
     ###########################################################################
 
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="operational_type"
+    )
+
     imported_operational_modules = load_operational_type_modules(
-        getattr(d, required_operational_modules)
+        required_operational_modules
     )
 
     # Sets
@@ -121,13 +137,13 @@ def add_model_components(m, d):
     m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
                           if p in mod.FUEL_PRJS]
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
             if g == _g and mod.period[tmp] == p)
@@ -136,7 +152,7 @@ def add_model_components(m, d):
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod:
         set((g, tmp)
             for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS)
     )
@@ -144,7 +160,7 @@ def add_model_components(m, d):
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        rule=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
+        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
                           if p in mod.STARTUP_FUEL_PRJS]
     )
 

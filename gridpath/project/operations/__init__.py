@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.project.operations** package contains modules to describe the
@@ -32,13 +43,15 @@ from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, \
     PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, get_expected_dtypes, validate_dtypes, \
     validate_piecewise_curves, validate_startup_shutdown_rate_inputs
 from gridpath.project.common_functions import append_to_input_file
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
      The following Pyomo model components are defined in this module:
 
@@ -271,15 +284,16 @@ def add_model_components(m, d):
     )
     m.VAR_OM_COST_CURVE_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+        initialize=lambda mod: list(
+            set([prj for (prj, p, s) in mod.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS]
+            )
         )
     )
 
     m.VAR_OM_COST_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS
+        initialize=lambda mod: list(
+            set(mod.VAR_OM_COST_SIMPLE_PRJS | mod.VAR_OM_COST_CURVE_PRJS)
         )
     )
 
@@ -289,17 +303,17 @@ def add_model_components(m, d):
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: set(
-            [p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]
+        initialize=lambda mod: list(
+            set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES])
         )
     )
 
     # All startup cost projects
     m.STARTUP_COST_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            [p for p in mod.STARTUP_COST_SIMPLE_PRJS ] +
-            [p for p in mod.STARTUP_BY_ST_PRJS]
+        initialize=lambda mod: list(
+            set([p for p in mod.STARTUP_COST_SIMPLE_PRJS] +
+                [p for p in mod.STARTUP_BY_ST_PRJS])
         )
     )
 
@@ -314,8 +328,8 @@ def add_model_components(m, d):
 
     m.HR_CURVE_PRJS = Set(
         within=m.FUEL_PRJS,
-        initialize=lambda mod: set(
-            [prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS]
+        initialize=lambda mod: list(
+            set([prj for (prj, p, s) in mod.HR_CURVE_PRJS_PRDS_SGMS])
         )
     )
 
@@ -330,9 +344,9 @@ def add_model_components(m, d):
 
     m.VIOL_ALL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            mod.RAMP_UP_VIOL_PRJS | mod.RAMP_DOWN_VIOL_PRJS
-            | mod.MIN_UP_TIME_VIOL_PRJS | mod.MIN_DOWN_TIME_VIOL_PRJS
+        initialize=lambda mod: list(
+            set(mod.RAMP_UP_VIOL_PRJS | mod.RAMP_DOWN_VIOL_PRJS
+                | mod.MIN_UP_TIME_VIOL_PRJS | mod.MIN_DOWN_TIME_VIOL_PRJS)
         )
     )
 
@@ -415,6 +429,49 @@ def add_model_components(m, d):
         m.CURTAILMENT_COST_PRJS,
         within=NonNegativeReals
     )
+
+    # Start list of headroom and footroom variables by project
+    record_dynamic_components(d, scenario_directory, subproblem, stage)
+
+
+def record_dynamic_components(d, scenario_directory, subproblem, stage):
+    """
+    :param d: the dynamic components class object we'll be adding to
+    :param scenario_directory: the base scenario directory
+    :param stage: if horizon subproblems exist, the horizon name; NOT USED
+    :param stage: if stage subproblems exist, the stage name; NOT USED
+
+    Set the keys for the headroom and footroom variable
+    dictionaries: the keys are all the projects included in the
+    'projects.tab' input file. The values of these dictionaries are
+    initially empty lists and will be populated later by each of included
+    the reserve (e.g regulation up) modules. E.g. if the user has requested to
+    model spinning reserves and project *r* has a value in the column
+    associated with the spinning-reserves balancing area, then the name of
+    project-level spinning-reserves-provision variable will be added to that
+    project's list of variables in the 'headroom_variables' dictionary. For
+    downward reserves, the associated variables are added to the
+    'footroom_variables' dictionary.
+    """
+
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "projects.tab"),
+        sep="\t"
+    )
+
+    # Reserve variables
+    # Will be determined based on whether the user has specified the
+    # respective reserve module AND based on whether a reserve zone is
+    # specified for a project in projects.tab
+    # We need to make the dictionaries first; it is the lists for each key
+    # that are populated by the modules
+    setattr(d, headroom_variables,
+            {r: [] for r in project_df.project}
+            )
+    setattr(d, footroom_variables,
+            {r: [] for r in project_df.project}
+            )
 
 
 # Input-Output
@@ -601,7 +658,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -721,7 +778,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return proj_opchar, heat_rates, vom_curves, startup_chars
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model inputs
     :param scenario_directory: string, the scenario directory
@@ -732,7 +789,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
     proj_opchar, heat_rate_curves, vom_curves, startup_chars = \
-        get_inputs_from_database(subscenarios, subproblem, stage, conn)
+        get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Update the projects.tab file
     new_columns = [
@@ -793,7 +850,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -805,7 +862,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Get the project input data
     proj_opchar, heat_rates, vom_curves, startup_chars = \
-        get_inputs_from_database(subscenarios, subproblem, stage, conn)
+        get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -818,7 +875,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(prj_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -833,7 +890,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -846,7 +903,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     if "min_stable_level_fraction" not in error_columns:
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,
@@ -866,7 +923,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(hr_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -881,7 +938,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -901,7 +958,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # prjs_w_hr = hr_df["project"].unique()  # prjs w hr inputs and matching hr id
     # write_validation_to_database(
     #     conn=conn,
-    #     scenario_id=subscenarios.SCENARIO_ID,
+    #     scenario_id=scenario_id,
     #     subproblem_id=subproblem,
     #     stage_id=stage,
     #     gridpath_module=__name__,
@@ -919,7 +976,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check that specified heat rate curves inputs are valid:
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -942,7 +999,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(vom_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -957,7 +1014,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -969,7 +1026,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Check that specified vom curves inputs are valid:
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -1039,7 +1096,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

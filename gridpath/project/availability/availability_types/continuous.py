@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This *availability type* is formulated like the *binary* type except that
@@ -24,7 +35,7 @@ from gridpath.project.common_functions import determine_project_subset, \
     check_if_boundary_type_and_first_timepoint
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -141,18 +152,20 @@ def add_module_specific_components(m, d):
 
     m.AVL_CONT_OPR_PRDS = Set(
         dimen=2, within=m.PRJ_OPR_PRDS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
-            if g in mod.AVL_CONT)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
+                if g in mod.AVL_CONT)
+        )
     )
 
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
     m.AVL_CONT_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.AVL_CONT)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.AVL_CONT)
+        )
     )
 
     # Required Input Params
@@ -398,7 +411,7 @@ def export_module_specific_results(
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -439,7 +452,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
 
@@ -452,7 +465,7 @@ def write_module_specific_model_inputs(
     """
 
     endogenous_availability_params = get_inputs_from_database(
-        subscenarios=subscenarios, subproblem=subproblem, stage=stage,
+        scenario_id=scenario_id, subscenarios= subscenarios, subproblem=subproblem, stage=stage,
         conn=conn
     )
 
@@ -485,7 +498,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -494,7 +507,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    params = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    params = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     df = cursor_to_df(params)
 
@@ -505,7 +518,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -521,7 +534,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                   "available_hours_between_events_min"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -534,7 +547,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             "unavailable_hours_per_period"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

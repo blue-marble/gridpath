@@ -1,15 +1,30 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
+import os.path
+import pandas as pd
 from pyomo.environ import Set, Expression, Param
 
-from gridpath.auxiliary.auxiliary import join_sets, load_prm_type_modules
+from gridpath.auxiliary.auxiliary import join_sets
+from gridpath.project.reliability.prm.common_functions import \
+    load_prm_type_modules
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
-    required_prm_modules, prm_cost_group_prm_type
+    prm_cost_group_prm_type
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -40,8 +55,18 @@ def add_model_components(m, d):
     )
 
     # Import all possible PRM modules
-    imported_prm_modules = \
-        load_prm_type_modules(getattr(d, required_prm_modules))
+    project_df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage),
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
+    required_prm_modules = [
+        prm_type for prm_type in project_df.prm_type.unique() if
+        prm_type != "."
+    ]
+
+    imported_prm_modules = load_prm_type_modules(required_prm_modules)
 
     # For each PRM project type, get the group costs
     def group_cost_rule(mod, group, p):

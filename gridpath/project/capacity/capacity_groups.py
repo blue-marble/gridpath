@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2020 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Minimum and maximum new and total capacity by period and project group.
@@ -12,12 +23,13 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, setup_results_import
-from gridpath.auxiliary.dynamic_components import required_capacity_modules
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.project.capacity.common_functions import \
+    load_gen_storage_capacity_type_modules
+from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -123,7 +135,9 @@ def add_model_components(m, d):
     m.CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.CAPACITY_GROUPS = Set(
-        rule=lambda mod: set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS])
+        initialize=lambda mod: list(
+            set([g for (g, p) in mod.CAPACITY_GROUP_PERIODS])
+        )
     )
 
     m.PROJECTS_IN_CAPACITY_GROUP = Set(
@@ -149,8 +163,13 @@ def add_model_components(m, d):
     )
 
     # Import needed capacity type modules
+    required_capacity_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, which_type="capacity_type"
+    )
+
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
-        getattr(d, required_capacity_modules)
+        required_capacity_modules
     )
 
     # Get the new and total capacity in the group for the respective
@@ -322,7 +341,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -356,12 +375,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     """
     cap_grp_reqs, cap_grp_prj = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
     )
 
     # Write the input files only if a subscenario is specified

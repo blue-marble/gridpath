@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type describes transmission lines whose flows are simulated
@@ -46,7 +57,9 @@ import pandas as pd
 from pyomo.environ import Set, Var, Constraint, Reals, Param
 
 
-def add_module_specific_components(m, d):
+def add_model_components(
+        m, d, scenario_directory, subproblem, stage
+):
     """
     The following Pyomo model components are defined in this module:
 
@@ -173,48 +186,52 @@ def add_module_specific_components(m, d):
 
     m.TX_DCOPF = Set(
         within=m.TX_LINES,
-        rule=lambda mod: set(l for l in mod.TX_LINES if
-                             mod.tx_operational_type[l] == "tx_dcopf")
+        initialize=lambda mod: list(
+            set(l for l in mod.TX_LINES
+                if mod.tx_operational_type[l] == "tx_dcopf")
+        )
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
         dimen=2, within=m.TX_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod: list(
             set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_DCOPF))
+    )
 
     # Derived Sets
     ###########################################################################
 
     m.PRDS_CYCLES_ZONES = Set(
         dimen=3,
-        rule=periods_cycles_zones_init,
+        initialize=periods_cycles_zones_init,
         ordered=True
     )
 
     m.PRDS_CYCLES = Set(
         dimen=2,
-        rule=period_cycles_init
+        initialize=period_cycles_init
     )
 
     # Note: This assumes timepoints are unique across periods
     m.CYCLES_OPR_TMPS = Set(
         dimen=2,
-        rule=lambda mod: set((c, tmp)
-                             for (p, c) in mod.PRDS_CYCLES
-                             for tmp in mod.TMPS_IN_PRD[p])
+        initialize=lambda mod: list(
+            set((c, tmp) for (p, c) in mod.PRDS_CYCLES
+                for tmp in  mod.TMPS_IN_PRD[p])
+        )
     )
 
     m.ZONES_IN_PRD_CYCLE = Set(
         m.PRDS_CYCLES,
-        rule=zones_by_period_cycle_init,
+        initialize=zones_by_period_cycle_init,
         ordered=True
     )
 
     m.PRDS_CYCLES_TX_DCOPF = Set(
         dimen=3,
         within=m.PRDS_CYCLES * m.TX_LINES,
-        rule=periods_cycles_transmission_lines_init
+        initialize=periods_cycles_transmission_lines_init
     )
 
     m.TX_DCOPF_IN_PRD_CYCLE = Set(
@@ -308,7 +325,7 @@ def period_cycles_init(mod):
     Determine the period-cycle combinations from the larger PRDS_CYCLES_ZONES
     set. Note: set() will remove duplicates.
     """
-    return set([(p, c) for (p, c, z) in mod.PRDS_CYCLES_ZONES])
+    return list(set([(p, c) for (p, c, z) in mod.PRDS_CYCLES_ZONES]))
 
 
 def zones_by_period_cycle_init(mod, period, cycle):

@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The **gridpath.project.capacity.capacity_types** package contains modules to
@@ -11,56 +22,13 @@ import csv
 import os.path
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, setup_results_import
+from gridpath.project.capacity.common_functions import \
+    load_gen_storage_capacity_type_modules
+from gridpath.auxiliary.db_interface import \
+    get_required_capacity_types_from_database, setup_results_import
 
 
-# TODO: we should shorten the names of the capacity-type modules, e.g. to
-#   gen_specified, gen_specified_lin_ret, gen_new, stor_specified, stor_new,
-#   shift_load_supply_curve
-# TODO: We should decide on naming conventions for sets, variables, etc. in
-#  the capacity type modules
-
-
-def get_required_capacity_type_modules(scenario_id, c):
-    """
-    Get the required capacity type submodules based on the database inputs
-    for the specified scenario_id. Required modules are the unique set of
-    generator capacity types in the scenario's portfolio. Get the list based
-    on the project_operational_chars_scenario_id of the scenario_id.
-
-    This list will be used to know for which capacity type submodules we
-    should validate inputs, get inputs from database , or save results to
-    database.
-
-    Note: once we have determined the dynamic components, this information
-    will also be stored in the DynamicComponents class object.
-
-    :param scenario_id: user-specified scenario ID
-    :param c: database cursor
-    :return: List of the required capacity type submodules
-    """
-
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
-    ).fetchone()[0]
-
-    required_capacity_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT capacity_type 
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}""".format(
-                project_portfolio_scenario_id
-            )
-        ).fetchall()
-    ]
-
-    return required_capacity_type_modules
-
-
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -71,10 +39,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Load in the required capacity type modules
-    c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(conn, scenario_id,)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 
@@ -84,12 +50,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                    "validate_module_specific_inputs"):
             imported_capacity_type_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
+                    scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files
     :param scenario_directory: string, the scenario directory
@@ -101,9 +67,9 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     """
     c = conn.cursor()
     # Load in the required capacity type modules
-    scenario_id = subscenarios.SCENARIO_ID
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(conn, scenario_id)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 
@@ -113,14 +79,14 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
                    "write_module_specific_model_inputs"):
             imported_capacity_type_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -190,8 +156,8 @@ def import_results_into_database(
                           many=False)
 
     # Load in the required capacity type modules
-    required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, c)
+    required_capacity_type_modules = \
+        get_required_capacity_types_from_database(db, scenario_id)
     imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
         required_capacity_type_modules)
 

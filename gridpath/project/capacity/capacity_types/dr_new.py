@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This capacity type describes a supply curve for new shiftable load (DR; demand
@@ -30,7 +41,8 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, value, \
     Reals, Expression, Constraint
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import, cursor_to_df
+from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -38,7 +50,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs, validate_idxs, get_projects
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -473,7 +485,7 @@ def summarize_module_specific_results(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -556,7 +568,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -576,7 +588,7 @@ def write_module_specific_model_inputs(
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
+            scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                            "new_shiftable_load_supply_curve_potential.tab"),
@@ -687,7 +699,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -699,8 +711,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
-    projects = get_projects(conn, subscenarios, "capacity_type", "dr_new")
+            scenario_id, subscenarios, subproblem, stage, conn)
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "dr_new")
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(min_max_builds)
@@ -712,7 +724,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     cols = ["min_cumulative_new_build_mwh", "max_cumulative_new_build_mwh"]
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -724,7 +736,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check for missing supply curve inputs
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

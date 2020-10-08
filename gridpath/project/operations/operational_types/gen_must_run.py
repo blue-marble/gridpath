@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type describes must-run generators that produce constant
@@ -23,7 +34,7 @@ import warnings
 from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
     PositiveReals
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_projects_by_reserve, validate_idxs, \
     validate_single_input
@@ -33,7 +44,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, validate_opchars
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -74,14 +85,17 @@ def add_module_specific_components(m, d):
 
     m.GEN_MUST_RUN = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_must_run")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_must_run"
+        )
     )
 
     m.GEN_MUST_RUN_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_MUST_RUN)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.GEN_MUST_RUN)
+        )
     )
 
     # Constraints
@@ -194,7 +208,7 @@ def load_module_specific_data(mod, data_portal,
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -205,7 +219,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(subscenarios, subproblem, stage, conn,
+    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
                                  "gen_must_run")
 
     # Other module specific validations
@@ -238,7 +252,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that there is only one load point (constant heat rate)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -252,7 +266,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since gen_must_run can't provide any
     # reserves
-    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    projects_by_reserve = get_projects_by_reserve(scenario_id, subscenarios, conn)
     for reserve, projects_w_ba in projects_by_reserve.items():
         table = "inputs_project_" + reserve + "_bas"
         reserve_errors = validate_idxs(
@@ -263,7 +277,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
         write_validation_to_database(
             conn=conn,
-            scenario_id=subscenarios.SCENARIO_ID,
+            scenario_id=scenario_id,
             subproblem_id=subproblem,
             stage_id=stage,
             gridpath_module=__name__,

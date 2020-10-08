@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from pyomo.environ import AbstractModel
 import unittest
@@ -23,20 +34,20 @@ class TestAuxiliary(unittest.TestCase):
         self.assertListEqual(set_list_empty_actual, [])
 
         # If single set in list
-        mod.set1 = {1, 2, 3}
+        mod.set1 = [1, 2, 3]
         set_list_single_set = ["set1"]
-        single_set_expected = {1, 2, 3}
+        single_set_expected = [1, 2, 3]
         single_set_actual = \
             auxiliary_module_to_test.join_sets(mod, set_list_single_set)
-        self.assertSetEqual(single_set_expected, single_set_actual)
+        self.assertListEqual(single_set_expected, single_set_actual)
 
         # If more than one set
-        mod.set2 = {4, 5, 6}
+        mod.set2 = [4, 5, 6]
         set_list_two_sets = ["set1", "set2"]
-        two_sets_joined_expected = {1, 2, 3, 4, 5, 6}
+        two_sets_joined_expected = [1, 2, 3, 4, 5, 6]
         two_sets_joined_actual = \
             auxiliary_module_to_test.join_sets(mod, set_list_two_sets)
-        self.assertSetEqual(two_sets_joined_expected, two_sets_joined_actual)
+        self.assertListEqual(two_sets_joined_expected, two_sets_joined_actual)
 
     def test_check_list_has_single_item(self):
         """

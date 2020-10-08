@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This operational type describes a generic storage resource. It can be
@@ -27,7 +38,7 @@ import os.path
 from pyomo.environ import Var, Set, Constraint, Param, Expression, \
     NonNegativeReals, PercentFraction, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -36,7 +47,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     load_optype_module_specific_data, check_for_tmps_to_link, validate_opchars
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -207,15 +218,17 @@ def add_module_specific_components(m, d):
 
     m.STOR = Set(
         within=m.PROJECTS,
-        initialize=
-        generator_subset_init("operational_type", "stor")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "stor"
+        )
     )
 
     m.STOR_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.STOR)
+        initialize=lambda mod: list(
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in mod.STOR)
+        )
     )
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
@@ -712,7 +725,7 @@ def export_module_specific_results(mod, d,
                     ])
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -723,4 +736,4 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "stor")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "stor")

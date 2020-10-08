@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 This module describes the operations of generation projects that that must
@@ -25,10 +36,10 @@ from __future__ import division
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, NonNegativeReals, Reals, \
-    PercentFraction, PositiveReals, Constraint, Expression, value
+from pyomo.environ import Param, Set, Var, NonNegativeReals,PercentFraction, \
+    Constraint, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, cursor_to_df
+from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.common_functions import \
@@ -39,7 +50,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_opchars
 
 
-def add_module_specific_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -182,14 +193,17 @@ def add_module_specific_components(m, d):
     ###########################################################################
     m.GEN_ALWAYS_ON = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init("operational_type", "gen_always_on")
+        initialize=lambda mod: subset_init_by_param_value(
+            mod, "PROJECTS", "operational_type", "gen_always_on"
+        )
     )
 
     m.GEN_ALWAYS_ON_OPR_TMPS = Set(
         dimen=2, within=m.PRJ_OPR_TMPS,
-        rule=lambda mod:
+        initialize=lambda mod: list(
             set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                 if g in mod.GEN_ALWAYS_ON)
+        )
     )
 
     m.GEN_ALWAYS_ON_LINKED_TMPS = Set(dimen=2)
@@ -468,7 +482,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
        similar to the heat rates. The idea is to represent higher variable cost
        rates at lower loading levels. This is captured in the
        :code:`GenAlwaysOn_Variable_OM_Cost_By_LL` decision variable. If no
-       variable O&M curve inputs are provided, this component will be zero.
+       varxiable O&M curve inputs are provided, this component will be zero.
 
     Most users will only use the first component, which is specified in the
     operational characteristics table.  Only operational types with
@@ -611,7 +625,7 @@ def export_module_specific_results(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -622,4 +636,4 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(subscenarios, subproblem, stage, conn, "gen_always_on")
+    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_always_on")

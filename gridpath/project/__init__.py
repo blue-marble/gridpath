@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 The 'project' package contains modules to describe the available
@@ -13,87 +24,12 @@ import pandas as pd
 from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    required_availability_modules, required_operational_modules, \
-    headroom_variables, footroom_variables
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_values, validate_columns, \
     validate_missing_inputs
 
 
-def determine_dynamic_components(d, scenario_directory, subproblem, stage):
-    """
-    :param d: the dynamic components class object we'll be adding to
-    :param scenario_directory: the base scenario directory
-    :param stage: if horizon subproblems exist, the horizon name; NOT USED
-    :param stage: if stage subproblems exist, the stage name; NOT USED
-
-    This method adds several project-related 'dynamic components' to the
-    Python class object (created in *gridpath.auxiliary.dynamic_components*) we
-    use to pass around components that depend on the selected modules and
-    the scenario input data.
-
-    First, we get the unique sets of project 'capacity types' and 'operational
-    types.' We will use this lists to iterate over the required capacity-type
-    and operational-type modules, so that they can add the relevant params,
-    sets, variables, etc. to the model, load their data, export their
-    results, etc.
-
-    We will also set the keys for the headroom and footroom variable
-    dictionaries: the keys are all the projects included in the
-    'projects.tab' input file. The values of these dictionaries are
-    initially empty lists and will be populated later by each of included
-    the reserve (e.g regulation up) modules. E.g. if the user has requested to
-    model spinning reserves and project *r* has a value in the column
-    associated with the spinning-reserves balancing area, then the name of
-    project-level spinning-reserves-provision variable will be added to that
-    project's list of variables in the 'headroom_variables' dictionary. For
-    downward reserves, the associated variables are added to the
-    'footroom_variables' dictionary.
-    """
-
-    project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "projects.tab"),
-        sep="\t"
-    )
-
-    # Required modules are the unique set of generator capacity types
-    # This list will be used to know which capacity type modules to load
-    setattr(d, required_capacity_modules,
-            project_df.capacity_type.unique()
-            )
-
-    # Required availability types
-    setattr(d, required_availability_modules,
-            project_df.availability_type.unique()
-            )
-
-    # Required operational modules
-    # Will be determined based on operational_types specified in the data
-    # (in projects.tab)
-    setattr(d, required_operational_modules,
-            project_df.operational_type.unique()
-            )
-
-    # From here on, the dynamic components will be further populated by the
-    # modules
-
-    # Reserve variables
-    # Will be determined based on whether the user has specified the
-    # respective reserve module AND based on whether a reserve zone is
-    # specified for a project in projects.tab
-    # We need to make the dictionaries first; it is the lists for each key
-    # that are populated by the modules
-    setattr(d, headroom_variables,
-            {r: [] for r in project_df.project}
-            )
-    setattr(d, footroom_variables,
-            {r: [] for r in project_df.project}
-            )
-
-
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
@@ -162,7 +98,6 @@ def add_model_components(m, d):
     | purposes in the results.                                                |
     +-------------------------------------------------------------------------+
 
-    TODO: all projects have VOM for now; is that what makes the most sense?
     TODO: considering technology is only used on the results side, should we
      keep it here?
     """
@@ -233,7 +168,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
-def get_inputs_from_database(subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -287,7 +222,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return projects
 
 
-def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file.
@@ -299,7 +234,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
     :return:
     """
 
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
@@ -329,7 +264,7 @@ def write_model_inputs(scenario_directory, subscenarios, subproblem, stage, conn
 # Validation
 ###############################################################################
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -342,7 +277,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
 
     # Get the project inputs
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(projects)
@@ -358,7 +293,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -373,7 +308,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -392,7 +327,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -410,7 +345,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -428,7 +363,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -442,7 +377,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "specified in the inputs_project_availability table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -457,7 +392,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "inputs_project_operational_chars table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
@@ -474,7 +409,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
           "specified in the inputs_project_load_zones table."
     write_validation_to_database(
         conn=conn,
-        scenario_id=subscenarios.SCENARIO_ID,
+        scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,

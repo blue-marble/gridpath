@@ -1,12 +1,13 @@
 # Welcome to GridPath
 
-GridPath is a production-cost simulation and capacity-expansion power system 
-model.
+GridPath is a versatile power-system planning platform capable of a range of
+planning approaches including production-cost, capacity-expansion, 
+asset-valuation, and reliability modeling.
 
 # Installation
 
 ## Python
-GridPath is developed and tested on Python 3.7. Get Python 
+GridPath is developed and tested on Python 3.8. Get Python 3.8
 [here](https://www.python.org/downloads/ "Python download").
 
 ## Packages

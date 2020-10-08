@@ -1,5 +1,16 @@
-#!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2020 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import pandas as pd
 from bokeh.models import ColumnDataSource
@@ -246,6 +257,8 @@ def get_all_cost_data(conn, scenarios):
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone
         ;""".format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -258,14 +271,24 @@ def get_all_capacity_data(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     sql = """SELECT scenario_name AS scenario, stage_id, period, load_zone, 
         technology, 
-        AVG(new_build_mw) AS new_build_capacity, 
-        AVG(retired_mw) AS retired_capacity, 
-        AVG(capacity_mw) AS total_capacity
+        -- average across subproblems
+        AVG(new_build_capacity) AS new_build_capacity, 
+        AVG(retired_capacity) AS retired_capacity, 
+        AVG(total_capacity) AS total_capacity
+        FROM (
+        SELECT scenario_id, stage_id, period, load_zone, technology, 
+        -- sum across projects
+        SUM(new_build_mw) AS new_build_capacity, 
+        SUM(retired_mw) AS retired_capacity, 
+        SUM(capacity_mw) AS total_capacity
         FROM results_project_capacity
+        GROUP BY scenario_id, subproblem_id, stage_id, period, load_zone, 
+        technology) AS agg_tbl
         INNER JOIN 
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -310,6 +333,8 @@ def get_all_energy_data(conn, scenarios):
         (SELECT scenario_name, scenario_id FROM scenarios
          WHERE scenario_name in ({}) ) as scen_table
         USING (scenario_id)
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone, technology;
         """.format(",".join(["?"] * len(scenarios)))
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -373,6 +398,8 @@ def get_all_summary_data(conn, scenarios):
         operational_cost,  
         SUM(tx_capacity_cost + tx_hurdle_cost) AS transmission_cost
         FROM results_costs_by_period_load_zone
+        WHERE spinup_or_lookahead IS NULL 
+        OR spinup_or_lookahead = 0
         GROUP BY scenario_id, stage_id, period, load_zone
         ) AS cost_table
 
@@ -384,6 +411,8 @@ def get_all_summary_data(conn, scenarios):
     SUM(timepoint_weight * number_of_hours_in_timepoint * unserved_energy_mw) 
     AS unserved_energy
     FROM results_system_load_balance
+    WHERE spinup_or_lookahead IS NULL 
+    OR spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS load_table
     USING (scenario_id, stage_id, period, load_zone)
@@ -392,6 +421,8 @@ def get_all_summary_data(conn, scenarios):
     (SELECT scenario_id, stage_id, period, load_zone,
     SUM(carbon_emission_tons) AS carbon_emissions
     FROM results_project_carbon_emissions_by_technology_period
+    WHERE spinup_or_lookahead IS NULL 
+    OR spinup_or_lookahead = 0
     GROUP BY scenario_id, stage_id, period, load_zone
     ) AS carbon_table
     USING(scenario_id, stage_id, period, load_zone)
