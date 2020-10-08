@@ -1,6 +1,5 @@
 alabaster==0.7.12
 aniso8601==8.0.0
-appdirs==1.4.4
 Babel==2.8.0
 bokeh==1.3.4
 certifi==2020.6.20
@@ -14,7 +13,7 @@ Flask==1.1.2
 Flask-RESTful==0.3.8
 Flask-SocketIO==4.3.1
 greenlet==0.4.17
-GridPath==0.6.1
+GridPath==0.7.0
 idna==2.10
 imagesize==1.2.0
 itsdangerous==1.1.0
@@ -25,7 +24,7 @@ networkx==2.5
 nose==1.3.7
 numpy==1.19.2
 packaging==20.4
-pandas==1.1.2
+pandas==1.1.3
 Pillow==7.2.0
 ply==3.11
 pscript==0.7.4
