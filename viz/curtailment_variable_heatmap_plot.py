@@ -108,14 +108,14 @@ def get_plotting_data(conn, scenario_id, load_zone, period, stage, **kwargs):
         
         (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
         spinup_or_lookahead
-        FROM inputs_temporal)
+        FROM inputs_temporal
+        WHERE spinup_or_lookahead is NULL)
         USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
         
         WHERE scenario_id = ?
         AND load_zone = ?
         AND period = ?
         AND stage_id = ?       
-        AND spinup_or_lookahead is NULL
         
         GROUP BY month, hour_of_day
         ORDER BY month, hour_of_day
