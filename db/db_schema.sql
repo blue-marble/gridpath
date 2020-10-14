@@ -3896,8 +3896,8 @@ ON (a.scenario_id = b.scenario_id
     AND a.stage_id = b.stage_id
     AND a.period = b.period
     AND a.load_zone = b.load_zone
-    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = b.spinup_or_lookahead
+)
 
 LEFT JOIN
 
@@ -3909,8 +3909,8 @@ ON (a.scenario_id = c.scenario_id
     AND a.stage_id = c.stage_id
     AND a.period = c.period
     AND a.load_zone = c.load_zone
-    AND a.spinup_or_lookahead IS c.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = c.spinup_or_lookahead
+)
 
 LEFT JOIN
 results_transmission_hurdle_costs_agg as d
@@ -3919,8 +3919,8 @@ ON (a.scenario_id = d.scenario_id
     AND a.stage_id = d.stage_id
     AND a.period = d.period
     AND a.load_zone = d.load_zone
-    AND a.spinup_or_lookahead IS d.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = d.spinup_or_lookahead
+)
 ;
 
 
@@ -3949,8 +3949,8 @@ ON (a.scenario_id = b.scenario_id
     AND a.subproblem_id = b.subproblem_id
     AND a.stage_id = b.stage_id
     AND a.period = b.period
-    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = b.spinup_or_lookahead
+)
 ;
 
 -------------------------------------------------------------------------------
