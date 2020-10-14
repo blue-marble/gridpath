@@ -2872,8 +2872,8 @@ technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
-capacity_cost_in_subproblem FLOAT,
 capacity_cost FLOAT,
+capacity_cost_wo_spinup_or_lookahead FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 

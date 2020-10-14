@@ -74,17 +74,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Get capacity cost for each generator's respective capacity module.
 
         Note that capacity cost inputs and calculations in the modules are on
-        an annual basis. Therefore, if the subproblem is less than a year we
-        adjust the costs down.
+        an annual basis. Therefore, if the subproblem's period is less than a
+        year we adjust the costs down.
         """
         return imported_capacity_modules[mod.capacity_type[g]].\
             capacity_cost_rule(mod, g, p) \
             * mod.hours_in_subproblem_period[p] \
             / mod.hours_in_full_period[p]
-
-    # TODO: right now hours in spinup and lookahead tmps are not included in
-    #  the "hours_in_subproblem". If that is not okay (not sure why), we could
-    #  move the adjustment to a post-processing step (same for tx cap costs)
 
     m.Capacity_Cost_in_Period = Expression(
         m.PRJ_OPR_PRDS,
@@ -196,6 +192,29 @@ def import_results_into_database(
         ORDER BY scenario_id, project, period, subproblem_id, 
         stage_id;""".format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
+
+    # Update the capacity cost removing the fraction attributable to the
+    # spinup and lookahead hours
+    update_sql = """
+        UPDATE results_project_costs_capacity
+        SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
+            SELECT fraction_of_hours_in_subproblem
+            FROM spinup_or_lookahead_ratios
+            WHERE spinup_or_lookahead = 0
+            AND results_project_costs_capacity.scenario_id = 
+            spinup_or_lookahead_ratios.scenario_id
+            AND results_project_costs_capacity.subproblem_id = 
+            spinup_or_lookahead_ratios.subproblem_id
+            AND results_project_costs_capacity.stage_id = 
+            spinup_or_lookahead_ratios.stage_id
+            AND results_project_costs_capacity.period = 
+            spinup_or_lookahead_ratios.period
+        )
+        ;
+    """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(),
                           many=False)
 
 
