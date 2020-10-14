@@ -461,6 +461,29 @@ def import_results_into_database(
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
 
+    # Update the capacity cost removing the fraction attributable to the
+    # spinup and lookahead hours
+    update_sql = """
+        UPDATE results_transmission_costs_capacity
+        SET capacity_cost_wo_spinup_or_lookahead = capacity_cost * (
+            SELECT fraction_of_hours_in_subproblem
+            FROM spinup_or_lookahead_ratios
+            WHERE spinup_or_lookahead = 0
+            AND results_transmission_costs_capacity.scenario_id = 
+            spinup_or_lookahead_ratios.scenario_id
+            AND results_transmission_costs_capacity.subproblem_id = 
+            spinup_or_lookahead_ratios.subproblem_id
+            AND results_transmission_costs_capacity.stage_id = 
+            spinup_or_lookahead_ratios.stage_id
+            AND results_transmission_costs_capacity.period = 
+            spinup_or_lookahead_ratios.period
+        )
+        ;
+    """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(),
+                          many=False)
+
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
