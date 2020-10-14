@@ -257,6 +257,7 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 -- the previous timepoints for the first horizon of the next subproblem
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
+-- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal (
 temporal_scenario_id INTEGER,
@@ -267,7 +268,7 @@ period INTEGER,
 number_of_hours_in_timepoint INTEGER,
 timepoint_weight FLOAT,
 previous_stage_timepoint_map INTEGER,
-spinup_or_lookahead INTEGER,
+spinup_or_lookahead INTEGER NOT NULL,
 linked_timepoint INTEGER, -- should be non-positive
 month INTEGER,
 hour_of_day FLOAT,  -- FLOAT to accommodate subhourly timepoints
@@ -2866,10 +2867,12 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 hours_in_full_period FLOAT,
 hours_in_subproblem_period FLOAT,
+spinup_or_lookahead_hours_in_subproblem_period FLOAT,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
+capacity_cost_in_subproblem FLOAT,
 capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
