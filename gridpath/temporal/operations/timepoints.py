@@ -43,6 +43,8 @@ from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
     PositiveIntegers, NonPositiveIntegers, Any
 
 from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import \
+    determine_table_subset_by_start_and_column
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -308,41 +310,16 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         print("add spinup_or_lookahead flag")
 
     # Update tables with spinup_or_lookahead_flag
-    tables_to_update = [
-        "results_project_availability_endogenous",
-        "results_project_dispatch",
-        "results_project_curtailment_variable",
-        "results_project_curtailment_hydro",
-        "results_project_dispatch_by_technology",
-        "results_project_lf_reserves_up",
-        "results_project_lf_reserves_down",
-        "results_project_regulation_up",
-        "results_project_regulation_down",
-        "results_project_frequency_response",
-        "results_project_spinning_reserves",
-        "results_project_costs_operations",
-        "results_project_fuel_burn",
-        "results_project_carbon_emissions",
-        "results_project_rps",
-        "results_transmission_imports_exports",
-        "results_transmission_operations",
-        "results_transmission_hurdle_costs",
-        "results_transmission_carbon_emissions",
-        "results_system_load_balance",
-        "results_system_lf_reserves_up_balance",
-        "results_system_lf_reserves_down_balance",
-        "results_system_regulation_up_balance",
-        "results_system_regulation_down_balance",
-        "results_system_frequency_response_balance",
-        "results_system_frequency_response_partial_balance",
-        "results_system_spinning_reserves_balance"
-    ]
+    tables_to_update = determine_table_subset_by_start_and_column(
+        conn=db, tbl_start="results_",
+        cols=["timepoint", "spinup_or_lookahead"]
+    )
 
     for tbl in tables_to_update:
         if not quiet:
             print("... {}".format(tbl))
         sql = """
-            UPDATE results_project_dispatch
+            UPDATE {}
             SET spinup_or_lookahead = (
             SELECT spinup_or_lookahead
             FROM inputs_temporal
@@ -351,12 +328,13 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
                 FROM scenarios 
                 WHERE scenario_id = ?
                 )
-            AND results_project_dispatch.subproblem_id = 
+            AND {}.subproblem_id = 
             inputs_temporal.subproblem_id
-            AND results_project_dispatch.stage_id = inputs_temporal.stage_id
-            AND results_project_dispatch.timepoint = inputs_temporal.timepoint
+            AND {}.stage_id = inputs_temporal.stage_id
+            AND {}.timepoint = inputs_temporal.timepoint
             );
-            """.format(tbl)
+            """.format(tbl, tbl, tbl, tbl)
+
         spin_on_database_lock(
             conn=db, cursor=c, sql=sql, data=(scenario_id, ),
             many=False

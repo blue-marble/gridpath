@@ -150,3 +150,71 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
 
     spin_on_database_lock(conn=conn, cursor=cursor, sql=temp_tbl_sql,
                           data=(), many=False)
+
+
+def update_prj_zone_column(
+    conn, scenario_id, subscenarios, subscenario, subsc_tbl, prj_tbl, col
+):
+    """
+    :param conn:
+    :param scenario_id:
+    :param subscenarios:
+    :param subscenario:
+    :param prj_tbl:
+    :param col:
+
+    Update a column of a project table based on the scenario's relevant
+    subscenario ID.
+    """
+    c = conn.cursor()
+
+    # Determine the zones for each project
+    project_zones = c.execute(
+        """SELECT project, {}
+            FROM {}
+            WHERE {} = {}""".format(
+            col,
+            subsc_tbl,
+            subscenario,
+            getattr(subscenarios, subscenario.upper())
+        )
+    ).fetchall()
+
+    updates = []
+    for (prj, zone) in project_zones:
+        updates.append((zone, scenario_id, prj))
+
+    sql = """
+        UPDATE {}
+        SET {} = ?
+        WHERE scenario_id = ?
+        AND project = ?;
+        """.format(prj_tbl, col)
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=updates)
+
+
+def determine_table_subset_by_start_and_column(conn, tbl_start, cols):
+    """
+    :param conn:
+    :param tbl_start: str
+    :param cols: list of column names
+    :return: list of table names
+
+    Determine which tables that start with a particular string have a
+    particular column.
+    """
+    all_tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    table_subset = []
+
+    c = conn.cursor()
+    for tbl_tuple in all_tables:
+        table = tbl_tuple[0]
+        if table.startswith(tbl_start):
+            table_data_query = c.execute(
+              """SELECT * FROM {};""".format(table)
+            )
+            column_names = [s[0] for s in table_data_query.description]
+            if all(col in column_names for col in cols):
+                table_subset.append(table)
+
+    return table_subset
