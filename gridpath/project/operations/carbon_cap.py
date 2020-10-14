@@ -16,17 +16,14 @@
 Carbon emissions from each carbonaceous project.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df, \
     subset_init_by_param_value
+from gridpath.auxiliary.db_interface import update_prj_zone_column, \
+    determine_table_subset_by_start_and_column
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
 
@@ -245,58 +242,18 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     if not quiet:
         print("update carbon cap zones")
-    # Figure out carbon_cap zone for each project
-    project_zones = c.execute(
-        """SELECT project, carbon_cap_zone
-        FROM inputs_project_carbon_cap_zones
-            WHERE project_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
-        )
-    ).fetchall()
 
-    # Update tables with carbon cap zone
-    tables_to_update = [
-        "results_project_capacity",
-        "results_project_dispatch",
-        "results_project_fuel_burn",
-        "results_project_frequency_response",
-        "results_project_lf_reserves_up",
-        "results_project_lf_reserves_down",
-        "results_project_regulation_up",
-        "results_project_regulation_down",
-        "results_project_costs_capacity",
-        "results_project_costs_operations",
-        "results_project_carbon_emissions",
-        "results_project_elcc_simple",
-        "results_project_elcc_surface"
-    ]
+    tables_to_update = determine_table_subset_by_start_and_column(
+        conn=db, tbl_start="results_project_", cols=["carbon_cap_zone"]
+    )
 
-    updates = []
-    for (prj, zone) in project_zones:
-        updates.append(
-            (zone, scenario_id, prj)
-        )
     for tbl in tables_to_update:
-        sql = """
-            UPDATE {}
-            SET carbon_cap_zone = ?
-            WHERE scenario_id = ?
-            AND project = ?;
-            """.format(tbl)
-        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=updates)
-
-    # Set carbon_cap_zone to 'no_carbon_cap' for all other projects
-    # This helps for later joins (can't join on NULL values)
-    for tbl in tables_to_update:
-        no_cc_sql = """
-            UPDATE {}
-            SET carbon_cap_zone = 'no_carbon_cap'
-            WHERE scenario_id = ?
-            AND carbon_cap_zone IS NULL;
-            """.format(tbl)
-        spin_on_database_lock(conn=db, cursor=c, sql=no_cc_sql,
-                              data=(scenario_id,),
-                              many=False)
+        update_prj_zone_column(
+            conn=db, scenario_id=scenario_id, subscenarios=subscenarios,
+            subscenario="project_carbon_cap_zone_scenario_id",
+            subsc_tbl="inputs_project_carbon_cap_zones",
+            prj_tbl=tbl, col="carbon_cap_zone"
+        )
 
 
 # Validation

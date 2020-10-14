@@ -16,17 +16,15 @@
 Get RECs for each project
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
-    cursor_to_df
+from gridpath.auxiliary.auxiliary import \
+    get_required_subtype_modules_from_projects_file, cursor_to_df
+from gridpath.auxiliary.db_interface import update_prj_zone_column, \
+    determine_table_subset_by_start_and_column
 from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
@@ -501,46 +499,18 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     if not quiet:
         print("update rps zones")
-    # Figure out RPS zone for each project
-    project_zones = c.execute(
-        """SELECT project, rps_zone
-        FROM inputs_project_rps_zones
-            WHERE project_rps_zone_scenario_id = {}""".format(
-            subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID
-        )
-    ).fetchall()
 
-    # Update tables with RPS zone
-    tables_to_update = [
-        "results_project_capacity",
-        "results_project_dispatch",
-        "results_project_fuel_burn",
-        "results_project_frequency_response",
-        "results_project_lf_reserves_up",
-        "results_project_lf_reserves_down",
-        "results_project_regulation_up",
-        "results_project_regulation_down",
-        "results_project_costs_capacity",
-        "results_project_costs_operations",
-        "results_project_carbon_emissions",
-        "results_project_elcc_simple",
-        "results_project_elcc_surface"
-    ]
-
-    results = []
-    for (prj, zone) in project_zones:
-        results.append(
-            (zone, scenario_id, prj)
-        )
+    tables_to_update = determine_table_subset_by_start_and_column(
+        conn=db, tbl_start="results_project_", cols=["rps_zone"]
+    )
 
     for tbl in tables_to_update:
-        sql = """
-            UPDATE {}
-            SET rps_zone = ?
-            WHERE scenario_id = ?
-            AND project = ?;
-            """.format(tbl)
-        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
+        update_prj_zone_column(
+            conn=db, scenario_id=scenario_id, subscenarios=subscenarios,
+            subscenario="project_rps_zone_scenario_id",
+            subsc_tbl="inputs_project_rps_zones",
+            prj_tbl=tbl, col="rps_zone"
+        )
 
 
 # Validation
