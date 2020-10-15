@@ -257,6 +257,7 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 -- the previous timepoints for the first horizon of the next subproblem
 -- (subproblem_id + 1) BUT ONLY IF the first horizon of the next subproblem has
 -- a 'linked' boundary
+-- The spinup_or_lookahead is not NULL, as we rely on 0s downstream
 DROP TABLE IF EXISTS inputs_temporal;
 CREATE TABLE inputs_temporal (
 temporal_scenario_id INTEGER,
@@ -267,7 +268,7 @@ period INTEGER,
 number_of_hours_in_timepoint INTEGER,
 timepoint_weight FLOAT,
 previous_stage_timepoint_map INTEGER,
-spinup_or_lookahead INTEGER,
+spinup_or_lookahead INTEGER NOT NULL,
 linked_timepoint INTEGER, -- should be non-positive
 month INTEGER,
 hour_of_day FLOAT,  -- FLOAT to accommodate subhourly timepoints
@@ -2871,6 +2872,7 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_cost FLOAT,
+capacity_cost_wo_spinup_or_lookahead FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -3056,6 +3058,7 @@ hours_in_subproblem_period FLOAT,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 capacity_cost FLOAT,
+capacity_cost_wo_spinup_or_lookahead FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
@@ -3893,8 +3896,8 @@ ON (a.scenario_id = b.scenario_id
     AND a.stage_id = b.stage_id
     AND a.period = b.period
     AND a.load_zone = b.load_zone
-    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = b.spinup_or_lookahead
+)
 
 LEFT JOIN
 
@@ -3906,8 +3909,8 @@ ON (a.scenario_id = c.scenario_id
     AND a.stage_id = c.stage_id
     AND a.period = c.period
     AND a.load_zone = c.load_zone
-    AND a.spinup_or_lookahead IS c.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = c.spinup_or_lookahead
+)
 
 LEFT JOIN
 results_transmission_hurdle_costs_agg as d
@@ -3916,8 +3919,8 @@ ON (a.scenario_id = d.scenario_id
     AND a.stage_id = d.stage_id
     AND a.period = d.period
     AND a.load_zone = d.load_zone
-    AND a.spinup_or_lookahead IS d.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = d.spinup_or_lookahead
+)
 ;
 
 
@@ -3946,8 +3949,8 @@ ON (a.scenario_id = b.scenario_id
     AND a.subproblem_id = b.subproblem_id
     AND a.stage_id = b.stage_id
     AND a.period = b.period
-    AND a.spinup_or_lookahead IS b.spinup_or_lookahead
-)  -- use "IS" to join on null values too
+    AND a.spinup_or_lookahead = b.spinup_or_lookahead
+)
 ;
 
 -------------------------------------------------------------------------------

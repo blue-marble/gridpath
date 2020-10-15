@@ -13,7 +13,7 @@ Flask==1.1.2
 Flask-RESTful==0.3.8
 Flask-SocketIO==4.3.1
 greenlet==0.4.17
-GridPath==0.7.0
+GridPath==0.7.1
 idna==2.10
 imagesize==1.2.0
 itsdangerous==1.1.0

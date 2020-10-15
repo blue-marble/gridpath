@@ -95,7 +95,7 @@ def validate_hours_in_subproblem_period(scenario_id, subscenarios, conn):
             (SELECT temporal_scenario_id, stage_id, period,
             sum(number_of_hours_in_timepoint * timepoint_weight) as n_hours
             FROM inputs_temporal
-            WHERE spinup_or_lookahead IS NULL
+            WHERE spinup_or_lookahead = 0
             AND temporal_scenario_id = {}
             GROUP BY temporal_scenario_id, stage_id, period
             ) AS tmp_table
