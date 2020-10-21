@@ -807,8 +807,10 @@ class TestExamples(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
-        os.remove("{}-shm".format(DB_PATH))
-        os.remove("{}-wal".format(DB_PATH))
+        for temp_file_ext in ["-shm", "-wal"]:
+            temp_file = "{}{}".format(DB_PATH, temp_file_ext)
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
 
 if __name__ == "__main__":

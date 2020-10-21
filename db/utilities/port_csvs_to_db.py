@@ -355,7 +355,6 @@ def main(args=None):
         # Load all IDs for a subscenario-table
         load_all_subscenario_ids_from_directory(
             conn, csv_path, csv_data_master, parsed_args.subscenario,
-            parsed_args.delete,
             parsed_args.quiet
         )
     else:
