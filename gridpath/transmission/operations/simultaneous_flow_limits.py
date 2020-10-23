@@ -315,7 +315,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID,
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID
+            subscenarios
+            .TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_GROUP_SCENARIO_ID
         )
     )
 
