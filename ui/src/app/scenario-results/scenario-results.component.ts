@@ -61,9 +61,7 @@ export class ScenarioResultsComponent implements OnInit {
     private location: Location,
     private formBuilder: FormBuilder
 
-  ) { }
-
-  ngOnInit() {
+  ) {
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
@@ -80,6 +78,10 @@ export class ScenarioResultsComponent implements OnInit {
     // // //// Plots //// //
     // Make the plot forms
     this.makeResultsPlotForms(this.scenarioID);
+  }
+
+  ngOnInit() {
+
   }
 
   // //// Tables //// //
