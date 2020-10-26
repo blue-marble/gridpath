@@ -78,10 +78,13 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     }
 
     // Embed the plots to compare
-    this.embedBasePlot();
-    this.comparePlotsHTMLTargets = [];
-    this.comparePlotsJSON = [];
-    this.embedComparePlots();
+    if (this.formValues !== undefined) {
+      this.embedBasePlot();
+      this.comparePlotsHTMLTargets = [];
+      this.comparePlotsJSON = [];
+      this.embedComparePlots();
+    }
+
   }
 
   getComparisonTableData(): void {

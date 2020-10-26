@@ -81,7 +81,9 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     // Make the scenarios table (and selection form)
     this.allScenarios = [];
     this.getScenarios();
+  }
 
+  ngOnInit() {
     // Make the buttons
     console.log('Starting values: ', this.startingValues);
     this.allTableButtons = [];
@@ -89,9 +91,6 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.getFormOptions(this.baseScenario);
     this.allPlotFormGroups = [];
     this.makeResultsPlotForms();
-  }
-
-  ngOnInit() {
   }
 
   getScenarios(): void {

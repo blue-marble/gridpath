@@ -80,7 +80,7 @@
   color: midnightblue
 }
 
-#yMaxLabel {
+#yMaxLabel, #startTimepointLabel, #endTimepointLabel, #horizonLabel {
   font-size: small;
   font-weight: lighter;
   background: aliceblue;
