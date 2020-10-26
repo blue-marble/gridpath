@@ -9,6 +9,10 @@
 
   <h5>{{scenarioName}} Scenario Results</h5>
 <!-- Navigation bar for which results to show -->
+  <div>
+    <button class="navbar-results-button"
+            (click)="clearResults()">Clear Results</button>
+  </div>
 <!--  Results Buttons (no options)-->
   <h6 id="tables-title">Results Tables</h6>
   <div class="navbar navbar-expand-sm" id="tables-navbar">
@@ -18,7 +22,7 @@
             <div id="tableBox">{{button.caption}}
               <div class="btn-group">
                 <button [id]="button.table" class="navbar-results-button"
-                        (click)="showTable(button.table)">
+                        (click)="showResultsTable(scenarioID, button.table)">
                   Show Table
                 </button>
                 <button class="navbar-results-button"
@@ -36,10 +40,6 @@
   <h6 id="plots-title">Results Plots</h6>
   <div class="navbar navbar-expand-sm" id="plots-navbar">
     <ul class="navbar-nav">
-      <li>
-        <button class="navbar-results-button"
-                (click)="clearPlots()">Clear Plots</button>
-      </li>
       <ng-container *ngFor="let formGroup of allPlotFormGroups">
         <li class="form-group-list-item">
           <div id="plotFormCaption">{{formGroup.value['caption']}}</div>
@@ -149,7 +149,8 @@
       <div [id]="plotHTMLTarget" *ngIf="resultsToShow==plotHTMLTarget"></div>
       <!--  Results tables -->
       <table class="scenario-results-table"
-             *ngIf="resultsToShow==resultsTable.table">
+             *ngIf="resultsTable !== undefined &&
+             resultsToShow==resultsTable.table">
         <caption>{{resultsTable.caption}}</caption>
         <tr>
              <ng-container *ngFor="let column of resultsTable.columns">

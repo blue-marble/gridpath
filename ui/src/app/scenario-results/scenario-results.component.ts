@@ -33,7 +33,7 @@ export class ScenarioResultsComponent implements OnInit {
   allTableButtons: {table: string, caption: string}[];
   // The results table structure (to create the HTML for the table)
   resultsTable: ScenarioResultsTable;
-  // Which results table to show (by running getResultsTable in ngOnInit
+  // Which results table to show (by running showResultsTable)
   // with tableToShow as argument)
   tableToShow: string;
 
@@ -61,9 +61,7 @@ export class ScenarioResultsComponent implements OnInit {
     private location: Location,
     private formBuilder: FormBuilder
 
-  ) { }
-
-  ngOnInit() {
+  ) {
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
@@ -74,21 +72,16 @@ export class ScenarioResultsComponent implements OnInit {
     this.getScenarioName(this.scenarioID);
 
     // //// Tables //// //
-    // Make the results buttons
-    this.allTableButtons = [];
+    // Make the table results buttons
     this.makeResultsTableButtons();
-    // Initialize the resultsTable
-    this.resultsTable = {} as ScenarioResultsTable;
-    // Get data
-    this.getResultsTable(this.scenarioID, this.tableToShow);
 
-    // //// Plots //// //
+    // // //// Plots //// //
     // Make the plot forms
-    this.getFormOptions(this.scenarioID);
-    this.allPlotFormGroups = [];
-    this.makeResultsPlotForms();
-    // Get and embed the plot
-    this.getResultsPlot(this.scenarioID, this.plotFormValue);
+    this.makeResultsPlotForms(this.scenarioID);
+  }
+
+  ngOnInit() {
+
   }
 
   // //// Tables //// //
@@ -96,22 +89,18 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsIncludedTables()
       .subscribe(includedTables => {
         this.allTableButtons = includedTables;
+        console.log(this.allTableButtons);
       });
   }
 
-  showTable(tableToShow): void {
-    // Set the values needed to display the table after ngOnInit
-    this.tableToShow = tableToShow;
-    this.resultsToShow = tableToShow;
-
-    // Refresh the view
-    this.ngOnInit();
-  }
-
-  getResultsTable(scenarioID, table): void {
+  showResultsTable(scenarioID, table): void {
     this.scenarioResultsService.getResultsTable(scenarioID, table)
       .subscribe(inputTableRows => {
         this.resultsTable = inputTableRows;
+        // Set the values needed to display the table after ngOnInit
+        this.tableToShow = table;
+        this.resultsToShow = table;
+        this.ngOnInit();
       });
   }
 
@@ -140,35 +129,38 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   // //// Plots //// //
-  getFormOptions(scenarioID): void {
+  // Make the plot forms; we need to access to formOptions when iterating
+  // over the forms, so get those first
+  makeResultsPlotForms(scenarioID): void {
+
+    this.allPlotFormGroups = [];
+
     this.scenarioResultsService.getOptions(scenarioID)
       .subscribe(options => {
         this.formOptions = options;
-      });
-  }
 
-  makeResultsPlotForms(): void {
-    this.scenarioResultsService.getResultsIncludedPlots()
-      .subscribe(includedPlots => {
-        for (const plot of includedPlots) {
-          const form = this.formBuilder.group({
-            plotType: plot.plotType,
-            caption: plot.caption,
-            loadZone: plot.loadZone,
-            rpsZone: plot.rpsZone,
-            carbonCapZone: plot.carbonCapZone,
-            period: plot.period,
-            horizon: plot.horizon,
-            startTimepoint: plot.startTimepoint,
-            endTimepoint: plot.endTimepoint,
-            subproblem: plot.subproblem,
-            stage: plot.stage,
-            project: plot.project,
-            commitProject: plot.commitProject,
-            yMax: null
-          });
-          this.allPlotFormGroups.push(form);
-        }
+        this.scenarioResultsService.getResultsIncludedPlots()
+        .subscribe(includedPlots => {
+          for (const plot of includedPlots) {
+            const form = this.formBuilder.group({
+              plotType: plot.plotType,
+              caption: plot.caption,
+              loadZone: plot.loadZone,
+              rpsZone: plot.rpsZone,
+              carbonCapZone: plot.carbonCapZone,
+              period: plot.period,
+              horizon: plot.horizon,
+              startTimepoint: plot.startTimepoint,
+              endTimepoint: plot.endTimepoint,
+              subproblem: plot.subproblem,
+              stage: plot.stage,
+              project: plot.project,
+              commitProject: plot.commitProject,
+              yMax: null
+            });
+            this.allPlotFormGroups.push(form);
+          }
+        });
       });
   }
 
@@ -198,6 +190,8 @@ export class ScenarioResultsComponent implements OnInit {
       ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
+        this.resultsPlot = resultsPlot.plotJSON;
+        Bokeh.embed.embed_item(this.resultsPlot);
         this.ngOnInit();
       });
     }
@@ -212,23 +206,6 @@ export class ScenarioResultsComponent implements OnInit {
       );
     }
 
-  }
-
-  // This function is called in ngOnInit
-  getResultsPlot(scenarioID, formGroup): void {
-
-    const formValues = getFormGroupValues(formGroup);
-    this.scenarioResultsService.getResultsPlot(
-      scenarioID, formValues.plotType, formValues.loadZone,
-      formValues.rpsZone, formValues.carbonCapZone,
-      formValues.period, formValues.horizon,
-      formValues.startTimepoint, formValues.endTimepoint,
-      formValues.subproblem, formValues.stage,
-      formValues.project, formValues.commitProject, formValues.yMax
-    ).subscribe(resultsPlot => {
-        this.resultsPlot = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.resultsPlot);
-      });
   }
 
   downloadPlotData(targetPath, formGroup): void {
@@ -255,7 +232,7 @@ export class ScenarioResultsComponent implements OnInit {
         );
   }
 
-  clearPlots(): void {
+  clearResults(): void {
     this.resultsToShow = null;
     this.ngOnInit();
   }
