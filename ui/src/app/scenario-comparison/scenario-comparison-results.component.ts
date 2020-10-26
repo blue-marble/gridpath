@@ -73,7 +73,9 @@ export class ScenarioComparisonResultsComponent implements OnInit {
 
     // Create the comparison table to show
     this.allRowsData = [];
-    this.getComparisonTableData();
+    if (this.tableToShow !== undefined) {
+      this.getComparisonTableData();
+    }
 
     // Embed the plots to compare
     this.embedBasePlot();
