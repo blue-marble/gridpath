@@ -74,31 +74,6 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["periodOptions"] = ['Select Period'] + period_options
 
-        # TODO: are these unique or do we need to separate by period; in fact,
-        #  is separating by period a better user experience regardless
-        horizon_options = [h[0] for h in c.execute(
-          """SELECT horizon FROM inputs_temporal_horizons
-          WHERE temporal_scenario_id = (
-          SELECT temporal_scenario_id
-          FROM scenarios
-          WHERE scenario_id = {});""".format(scenario_id)
-        ).fetchall()]
-        options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
-
-        timepoint_options = [t[0] for t in c.execute(
-            """SELECT timepoint FROM inputs_temporal
-            WHERE temporal_scenario_id = (
-            SELECT temporal_scenario_id
-            FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["startTimepointOptions"] = ['Select Starting Timepoint']\
-                                                + timepoint_options
-        # TODO: keep track of start timepoint since end has to be >= start
-        #  timepoint options also depend on stage
-        options_api["endTimepointOptions"] = ['Select Ending Timepoint'] \
-                                                + timepoint_options
-
         subproblem_options = [h[0] for h in c.execute(
             """SELECT DISTINCT subproblem_id
             FROM inputs_temporal_subproblems

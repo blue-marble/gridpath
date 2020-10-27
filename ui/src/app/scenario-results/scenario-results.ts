@@ -17,9 +17,6 @@ export class ResultsOptions {
   rpsZoneOptions: [];
   carbonCapZoneOptions: [];
   periodOptions: [];
-  horizonOptions: [];
-  startTimepointOptions: [];
-  endTimepointOptions: [];
   subproblemOptions: [];
   stageOptions: [];
   projectOptions: [];

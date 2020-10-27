@@ -3455,6 +3455,7 @@ Total_Curtailment_Cost FLOAT,
 Total_Hurdle_Cost Float,
 Total_Load_Balance_Penalty_Costs Float,
 Frequency_Response_Penalty_Costs Float,
+Frequency_Response_Partial_Penalty_Costs FLOAT,
 LF_Reserves_Down_Penalty_Costs Float,
 LF_Reserves_Up_Penalty_Costs Float,
 Regulation_Down_Penalty_Costs Float,
@@ -3994,17 +3995,17 @@ CREATE TABLE ui_scenario_results_plot_metadata (
 results_plot VARCHAR(64) PRIMARY KEY,
 include INTEGER,
 caption VARCHAR(64),
-load_zone_form_control INTEGER,
-rps_zone_form_control INTEGER,
-carbon_cap_zone_form_control INTEGER,
-period_form_control INTEGER,
-horizon_form_control INTEGER,
-start_timepoint_form_control INTEGER,
-end_timepoint_form_control INTEGER,
-subproblem_form_control INTEGER,
-stage_form_control INTEGER,
-project_form_control INTEGER,
-commit_project_form_control INTEGER
+load_zone_form_control INTEGER,  -- select
+rps_zone_form_control INTEGER,  -- select
+carbon_cap_zone_form_control INTEGER,  -- select
+period_form_control INTEGER,  -- select
+horizon_form_control INTEGER,  -- input
+start_timepoint_form_control INTEGER,  -- input
+end_timepoint_form_control INTEGER,  -- input
+subproblem_form_control INTEGER,  -- select
+stage_form_control INTEGER,  -- select
+project_form_control INTEGER,  -- select
+commit_project_form_control INTEGER  -- select
 );
 
 ---------------------

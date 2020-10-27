@@ -129,27 +129,21 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
-                <select class="custom-select" formControlName="horizon"
-                        *ngIf="formGroup.value['horizon'] !== 'default'">
-                  <ng-container
-                    *ngFor="let opt of formOptions.horizonOptions">
-                    <option>{{opt}}</option>
-                  </ng-container>
-                </select>
-                <select class="custom-select" formControlName="startTimepoint"
-                        *ngIf="formGroup.value['startTimepoint']!=='default'">
-                  <ng-container
-                    *ngFor="let opt of formOptions.startTimepointOptions">
-                    <option>{{opt}}</option>
-                  </ng-container>
-                </select>
-                <select class="custom-select" formControlName="endTimepoint"
-                        *ngIf="formGroup.value['endTimepoint']!=='default'">
-                  <ng-container
-                    *ngFor="let opt of formOptions.endTimepointOptions">
-                    <option>{{opt}}</option>
-                  </ng-container>
-                </select>
+                <p *ngIf="formGroup.value['horizon'] !== 'default'">
+                  <label id="horizonLabel"> Horizon:
+                    <input type="text" formControlName="horizon">
+                  </label>
+                </p>
+                <p *ngIf="formGroup.value['startTimepoint'] !== 'default'">
+                  <label id="startTimepointLabel"> Start Timepoint:
+                    <input type="text" formControlName="startTimepoint">
+                  </label>
+                </p>
+                <p *ngIf="formGroup.value['endTimepoint'] !== 'default'">
+                  <label id="endTimepointLabel"> End Timepoint:
+                    <input type="text" formControlName="endTimepoint">
+                  </label>
+                </p>
                 <select class="custom-select" formControlName="subproblem"
                         *ngIf="formGroup.value['subproblem'] !== 'default'">
                   <ng-container

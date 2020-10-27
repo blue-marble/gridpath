@@ -29,6 +29,7 @@ from importlib import import_module
 import os.path
 import pandas as pd
 import sys
+import traceback
 
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 
@@ -442,7 +443,8 @@ def load_modules(modules_to_use):
             imported_module = import_module("."+m, package='gridpath')
             loaded_modules.append(imported_module)
         except ImportError:
-            print("ERROR! Module " + str(m) + " not found.")
+            print("ERROR! Unable to import module " + str(m) + ".")
+            traceback.print_exc()
             sys.exit(1)
 
     return loaded_modules

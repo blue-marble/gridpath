@@ -84,6 +84,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Make the buttons
     console.log('Starting values: ', this.startingValues);
     this.allTableButtons = [];
     this.makeResultsTableButtons();
