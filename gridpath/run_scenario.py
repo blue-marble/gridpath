@@ -276,7 +276,10 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     # the value gets checked against the expected value)
     # TODO: this will need to have a variable for the name of the objective
     #  function component once there are multiple possible objective functions
-    return solved_instance.NPV()
+    if results.solver.termination_condition != "infeasible":
+        return solved_instance.NPV()
+    else:
+        warnings.warn("WARNING: the problem was infeasible!")
 
 
 def run_scenario(structure, parsed_arguments):
@@ -351,17 +354,25 @@ def save_results(
     # Check if a solution was found and only export results if so; save the
     # solver status, which will be used to determine the behavior of other
     # scripts
-    if (results.solver.status == SolverStatus.ok) and (
-            results.solver.termination_condition
-            == TerminationCondition.optimal):
+    with open(
+            os.path.join(results_directory, "solver_status.txt"),
+            "w", newline="") as f:
+        f.write(results.solver.status)
+    with open(
+            os.path.join(results_directory, "termination_condition.txt"),
+            "w", newline="") as f:
+        f.write(results.solver.termination_condition)
+
+    if results.solver.status == SolverStatus.ok:
         if not parsed_arguments.quiet:
-            print("Optimal solution found.")
-
-        with open(
-                os.path.join(results_directory, "solver_status.txt"),
-                "w", newline="") as f:
-            f.write("optimal")
-
+            print("Solver termination condition: {}.".format(
+                results.solver.termination_condition))
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                print("Optimal solution found.")
+            else:
+                print("Solution is not optimal.")
+        # Continue with results export
         export_results(scenario_directory, subproblem, stage, instance,
                        dynamic_components)
 
@@ -373,46 +384,26 @@ def save_results(
         )
 
         save_duals(scenario_directory, subproblem, stage, instance)
-
-    # If solver status wasn't optimal record that
+    # If solver status is not ok, don't export results and print some
+    # messages for the user
     else:
-        # Problem is infeasible
         if results.solver.termination_condition \
                 == TerminationCondition.infeasible:
             if not parsed_arguments.quiet:
                 print("Problem was infeasible. Results not exported for "
                       "subproblem {}, stage {}.".format(subproblem, stage))
-            with open(
-                    os.path.join(results_directory, "solver_status.txt"),
-                    "w", newline="") as f:
-                f.write("infeasible")
-        # Something else is wrong
-        # TODO: should probably still attempt to export results in this
-        #  case, but raise a warning
-        else:
-            if not parsed_arguments.quiet:
-                print(
-                    "Solver status: {}. Results not exported for "
-                    "subproblem {}, stage {}.".format(
-                      results.solver.status, subproblem, stage
+            # If subproblems are linked, exit since we don't have linked inputs
+            # for the next subproblem; otherwise, move on to the next
+            # subproblem
+            if os.path.exists(
+                    os.path.join(scenario_directory, "linked_subproblems_map.csv")
+            ):
+                raise Exception(
+                    "Subproblem {}, stage {} was infeasible. "
+                    "Exiting linked subproblem run.".format(subproblem, stage)
                     )
-                )
-            with open(
-                    os.path.join(results_directory, "solver_status.txt"),
-                    "w", newline="") as f:
-                f.write(str(results.solver.status))
-        # If subproblems are linked, exit since we don't have linked inputs
-        # for the next subproblem; otherwise, move on to the next subproblem
-        if os.path.exists(
-                os.path.join(scenario_directory, "linked_subproblems_map.csv")
-        ):
-            raise Exception("Subproblem {}, stage {} was infeasible. "
-                            "Exiting linked subproblem run.".format(
-                                subproblem, stage
-                            )
-            )
-        else:
-            pass
+            else:
+                pass
 
 
 def create_abstract_model(
@@ -760,7 +751,7 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     ), "r") as f:
         solver_status = f.read()
 
-    if solver_status == "optimal":
+    if solver_status == "ok":
         if not parsed_arguments.quiet:
             print("Summarizing results...")
 
