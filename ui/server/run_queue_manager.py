@@ -58,17 +58,17 @@ def manage_queue(db_path):
                     """.format(next_scenario_to_run[0])
                     ).fetchone()[0]
 
-                    solver_query = c.execute("""
-                        SELECT DISTINCT solver
-                        FROM inputs_options_solver
-                        WHERE solver_options_id = {};
-                        """.format(solver_options_id)
-                    ).fetchone()
-                    if solver_query is None:
+                    if solver_options_id is None:
                         # TODO: we should specify the default solver as a
                         #  global variable somewhere
                         solver = 'cbc'
                     else:
+                        solver_query = c.execute("""
+                              SELECT DISTINCT solver
+                              FROM inputs_options_solver
+                              WHERE solver_options_id = {};
+                              """.format(solver_options_id)
+                                                 ).fetchone()
                         # Check that there's only one solver specified for the
                         # solver_options_id
                         one_solver_check = c.execute("""
