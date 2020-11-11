@@ -98,6 +98,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The fraction of storage losses that count against the RPS target.       |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_charging_capacity_multiplier`                             |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`1.0`                                                |
+    |                                                                         |
+    | The storage project's charging capacity multiplier to be used if the    |
+    | charging capacity is different from the nameplate capacity.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_discharging_capacity_multiplier`                          |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`1.0`                                                |
+    |                                                                         |
+    | The storage project's discharging capacity multiplier to be used if the |
+    | discharging capacity is different from the nameplate capacity.          |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -244,6 +260,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=PercentFraction
     )
 
+    m.stor_charging_capacity_multiplier = Param(
+        m.STOR, within=NonNegativeReals, default=1.0
+    )
+
+    m.stor_discharging_capacity_multiplier = Param(
+        m.STOR, within=NonNegativeReals, default=1.0
+    )
+
     # Optional Params
     ###########################################################################
 
@@ -363,7 +387,8 @@ def max_discharge_rule(mod, s, tmp):
     """
     return mod.Stor_Discharge_MW[s, tmp] \
         <= mod.Capacity_MW[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp]
+        * mod.Availability_Derate[s, tmp] \
+        * mod.stor_discharging_capacity_multiplier[s]
 
 
 def max_charge_rule(mod, s, tmp):
@@ -374,8 +399,9 @@ def max_charge_rule(mod, s, tmp):
     Storage charging power can't exceed available capacity.
     """
     return mod.Stor_Charge_MW[s, tmp] \
-        <= mod.Capacity_MW[s, mod.period[tmp]]\
-        * mod.Availability_Derate[s, tmp]
+        <= mod.Capacity_MW[s, mod.period[tmp]] \
+        * mod.Availability_Derate[s, tmp] \
+        * mod.stor_charging_capacity_multiplier[s]
 
 
 # TODO: adjust storage energy for reserves provided

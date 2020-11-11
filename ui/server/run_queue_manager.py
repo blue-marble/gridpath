@@ -50,23 +50,46 @@ def manage_queue(db_path):
                         GROUP BY scenario_id
                     """).fetchone()
 
-                    # # Get the requested solver
-                    solver_query = c.execute("""
-                        SELECT name
-                        FROM subscenarios_options_solver
-                        WHERE solver_options_id = (
-                            SELECT solver_options_id
+                    # Get the requested solver
+                    solver_options_id = c.execute("""
+                        SELECT solver_options_id
                             FROM scenarios
                             WHERE scenario_id = {}
-                            );
-                        """.format(next_scenario_to_run[0])
-                                       ).fetchone()
-                    if solver_query is None:
-                        # TODO: we shoud specify the default solver as a
+                    """.format(next_scenario_to_run[0])
+                    ).fetchone()[0]
+
+                    if solver_options_id is None:
+                        # TODO: we should specify the default solver as a
                         #  global variable somewhere
                         solver = 'cbc'
                     else:
-                        solver = solver_query[0]
+                        solver_query = c.execute("""
+                              SELECT DISTINCT solver
+                              FROM inputs_options_solver
+                              WHERE solver_options_id = {};
+                              """.format(solver_options_id)
+                                                 ).fetchone()
+                        # Check that there's only one solver specified for the
+                        # solver_options_id
+                        one_solver_check = c.execute("""
+                              SELECT COUNT()
+                              FROM (
+                                  SELECT DISTINCT solver
+                                  FROM inputs_options_solver
+                                  WHERE solver_options_id = {}
+                                  )
+                              ;
+                              """.format(solver_options_id)
+                        ).fetchone()[0]
+                        if one_solver_check > 1:
+                            raise ValueError("""
+                              Only one solver can be specified per
+                              solver_options_id. Check the solver_options_id {}
+                              in the the inputs_options_solver table.
+                            """.format(solver_options_id)
+                        )
+                        else:
+                            solver = solver_query[0]
                     sio.emit(
                         "launch_scenario_process",
                         {"scenario": next_scenario_to_run[0], "solver": solver,
