@@ -893,6 +893,8 @@ min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
+charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
+discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,

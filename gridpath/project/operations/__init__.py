@@ -683,6 +683,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
         charging_efficiency, discharging_efficiency,
+        charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh
@@ -807,6 +808,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         "min_up_time_hours", "min_up_time_violation_penalty",
         "min_down_time_hours", "min_down_time_violation_penalty",
         "charging_efficiency", "discharging_efficiency",
+        "charging_capacity_multiplier", "discharging_capacity_multiplier",
         "minimum_duration_hours", "maximum_duration_hours",
         "aux_consumption_frac_capacity", "aux_consumption_frac_power",
         "last_commitment_stage", "curtailment_cost_per_pwh"
@@ -1072,6 +1074,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "ramp_up_when_on_rate", "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
         "charging_efficiency", "discharging_efficiency",
+        "charging_capacity_multiplier", "discharging_capacity_multiplier",
         "minimum_duration_hours", "maximum_duration_hours",
         "aux_consumption_frac_capacity", "aux_consumption_frac_power"
     ]

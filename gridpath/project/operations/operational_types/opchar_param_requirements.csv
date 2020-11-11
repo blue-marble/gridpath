@@ -9,5 +9,7 @@ min_up_time_hours,float,,,optional,optional,optional,,,,,,,
 min_down_time_hours,float,,,optional,optional,optional,,,,,,,
 charging_efficiency,float,,,,,,,,,,,,required
 discharging_efficiency,float,,,,,,,,,,,,required
+charging_capacity_multiplier,float,,,,,,,,,,,,optional
+discharging_capacity_multiplier,float,,,,,,,,,,,,optional
 aux_consumption_frac_capacity,float,,,optional,optional,optional,,,,,,,
 aux_consumption_frac_power,float,,,optional,optional,optional,,,,,,,
