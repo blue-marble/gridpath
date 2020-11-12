@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import {NavigationExtras, Router} from '@angular/router';
+import * as Bokeh from '@bokeh/bokehjs/build/js/lib/embed';
 
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
-
-const Bokeh = ( window as any ).require('bokehjs');
 
 
 @Component({
@@ -115,7 +114,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
       ).subscribe(resultsPlot => {
         this.basePlotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.basePlotJSON = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.basePlotJSON);
+        Bokeh.embed_item(this.basePlotJSON);
       });
   }
 
@@ -131,7 +130,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
       ).subscribe(resultsPlot => {
         this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);
         this.comparePlotsJSON.push(resultsPlot.plotJSON);
-        Bokeh.embed.embed_item(resultsPlot.plotJSON);
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
     }
   }
