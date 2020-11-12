@@ -25,6 +25,9 @@ export class ScenarioResultsComponent implements OnInit {
 
   // Which results to show; we use an *ngIf in the table <table> and plot
   // <div> definitions to determine whether to show the respective result
+  // A particular table is shown if the *ngIf is set to the table name
+  // All plots are shown within the same div if resultsToShow is set to
+  // 'plotDiv'
   resultsToShow: string;
 
   // //// Tables //// //
@@ -41,12 +44,6 @@ export class ScenarioResultsComponent implements OnInit {
   allPlotFormGroups: FormGroup[];
   // The possible options for the forms
   formOptions: ResultsOptions;
-
-  // The target_id of the plot we'll show; we'll get this from the JSON
-  // object and set it before embedding the plot
-  plotHTMLTarget: string;
-  // The JSON plot object
-  resultsPlot: any;
 
   // To get the right route for which scenario to use
   scenarioID: number;
@@ -159,9 +156,7 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  // This function is called when a user requests a plot; this will change
-  // some values, namely the plotHTMLTarget and then call ngOnInit, which
-  // in turn calls getResultPlot
+  // This function is called when a user requests a plot
   showPlotOrDownloadData(formGroup): void {
 
     // Figure out which button was pressed
@@ -171,7 +166,7 @@ export class ScenarioResultsComponent implements OnInit {
     const formValues = getFormGroupValues(formGroup);
 
     if (buttonName === 'showPlot') {
-      this.resultsToShow = 'plot_div';
+      this.resultsToShow = 'plotDiv';
 
       this.scenarioResultsService.getResultsPlot(
         this.scenarioID, formValues.plotType, formValues.loadZone,
@@ -181,8 +176,8 @@ export class ScenarioResultsComponent implements OnInit {
           formValues.subproblem, formValues.stage,
           formValues.project, formValues.commitProject, formValues.yMax
       ).subscribe(resultsPlot => {
-        this.resultsPlot = resultsPlot.plotJSON;
-        Bokeh.embed_item(this.resultsPlot);
+        // Embed the plot; all plots have 'plotHTMLTarget' as their target_id
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
     }
 
