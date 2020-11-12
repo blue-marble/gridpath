@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormBuilder } from '@angular/forms';
+import * as Bokeh from '@bokeh/bokehjs/build/js/lib/embed';
 
 const electron = ( window as any ).require('electron');
 
@@ -9,8 +10,6 @@ import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 import {socketConnect} from '../app.component';
-
-const Bokeh = ( window as any ).require('bokehjs');
 
 
 @Component({
@@ -191,7 +190,7 @@ export class ScenarioResultsComponent implements OnInit {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
         this.resultsPlot = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.resultsPlot);
+        Bokeh.embed_item(this.resultsPlot);
         this.ngOnInit();
       });
     }
