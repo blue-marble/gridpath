@@ -42,10 +42,6 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     yMax: number
   };
 
-  basePlotHTMLTarget: string;
-  basePlotJSON: any;
-  comparePlotsHTMLTargets: string[];
-  comparePlotsJSON: any[];
 
   constructor(
     private location: Location,
@@ -79,8 +75,6 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     // Embed the plots to compare
     if (this.formValues !== undefined) {
       this.embedBasePlot();
-      this.comparePlotsHTMLTargets = [];
-      this.comparePlotsJSON = [];
       this.embedComparePlots();
     }
 
