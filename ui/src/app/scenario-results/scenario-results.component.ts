@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormBuilder } from '@angular/forms';
+import * as Bokeh from '@bokeh/bokehjs/build/js/lib/embed';
 
 const electron = ( window as any ).require('electron');
 
@@ -9,8 +10,6 @@ import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 import {socketConnect} from '../app.component';
-
-const Bokeh = ( window as any ).require('bokehjs');
 
 
 @Component({
@@ -26,6 +25,9 @@ export class ScenarioResultsComponent implements OnInit {
 
   // Which results to show; we use an *ngIf in the table <table> and plot
   // <div> definitions to determine whether to show the respective result
+  // A particular table is shown if the *ngIf is set to the table name
+  // All plots are shown within the same div if resultsToShow is set to
+  // 'plotDiv'
   resultsToShow: string;
 
   // //// Tables //// //
@@ -42,13 +44,6 @@ export class ScenarioResultsComponent implements OnInit {
   allPlotFormGroups: FormGroup[];
   // The possible options for the forms
   formOptions: ResultsOptions;
-  // The value of the submitted plot form
-  plotFormValue: {};
-  // The target_id of the plot we'll show; we'll get this from the JSON
-  // object and set it before embedding the plot
-  plotHTMLTarget: string;
-  // The JSON plot object
-  resultsPlot: any;
 
   // To get the right route for which scenario to use
   scenarioID: number;
@@ -80,9 +75,7 @@ export class ScenarioResultsComponent implements OnInit {
     this.makeResultsPlotForms(this.scenarioID);
   }
 
-  ngOnInit() {
-
-  }
+  ngOnInit() {}
 
   // //// Tables //// //
   makeResultsTableButtons(): void {
@@ -99,8 +92,7 @@ export class ScenarioResultsComponent implements OnInit {
         this.resultsTable = inputTableRows;
         // Set the values needed to display the table after ngOnInit
         this.tableToShow = table;
-        this.resultsToShow = table;
-        this.ngOnInit();
+        this.resultsToShow = this.tableToShow;
       });
   }
 
@@ -164,22 +156,18 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  // This function is called when a user requests a plot; this will change
-  // some values, namely the plotHTMLTarget and then call ngOnInit, which
-  // in turn calls getResultPlot
+  // This function is called when a user requests a plot
   showPlotOrDownloadData(formGroup): void {
 
     // Figure out which button was pressed
     const buttonName = document.activeElement.getAttribute('Name');
     console.log(buttonName);
 
-    // We need to set the plotFormValue and plotHTMLTarget before
-    // calling ngOnInit to be able to embed the plot
-    this.plotFormValue = formGroup;
-
     const formValues = getFormGroupValues(formGroup);
 
     if (buttonName === 'showPlot') {
+      this.resultsToShow = 'plotDiv';
+
       this.scenarioResultsService.getResultsPlot(
         this.scenarioID, formValues.plotType, formValues.loadZone,
           formValues.rpsZone, formValues.carbonCapZone,
@@ -188,11 +176,8 @@ export class ScenarioResultsComponent implements OnInit {
           formValues.subproblem, formValues.stage,
           formValues.project, formValues.commitProject, formValues.yMax
       ).subscribe(resultsPlot => {
-        this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
-        this.resultsToShow = resultsPlot.plotJSON.target_id;
-        this.resultsPlot = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.resultsPlot);
-        this.ngOnInit();
+        // Embed the plot; all plots have 'plotHTMLTarget' as their target_id
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
     }
 
@@ -234,7 +219,7 @@ export class ScenarioResultsComponent implements OnInit {
 
   clearResults(): void {
     this.resultsToShow = null;
-    this.ngOnInit();
+
   }
 
   getScenarioName(scenarioID): void {

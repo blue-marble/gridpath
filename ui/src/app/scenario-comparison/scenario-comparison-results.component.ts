@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import {NavigationExtras, Router} from '@angular/router';
+import * as Bokeh from '@bokeh/bokehjs/build/js/lib/embed';
 
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
-
-const Bokeh = ( window as any ).require('bokehjs');
 
 
 @Component({
@@ -43,10 +42,6 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     yMax: number
   };
 
-  basePlotHTMLTarget: string;
-  basePlotJSON: any;
-  comparePlotsHTMLTargets: string[];
-  comparePlotsJSON: any[];
 
   constructor(
     private location: Location,
@@ -80,8 +75,6 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     // Embed the plots to compare
     if (this.formValues !== undefined) {
       this.embedBasePlot();
-      this.comparePlotsHTMLTargets = [];
-      this.comparePlotsJSON = [];
       this.embedComparePlots();
     }
 
@@ -113,9 +106,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
           this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
-        this.basePlotHTMLTarget = resultsPlot.plotJSON.target_id;
-        this.basePlotJSON = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.basePlotJSON);
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
   }
 
@@ -129,9 +120,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
           this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
-        this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);
-        this.comparePlotsJSON.push(resultsPlot.plotJSON);
-        Bokeh.embed.embed_item(resultsPlot.plotJSON);
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
     }
   }

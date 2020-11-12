@@ -138,10 +138,10 @@
 
 <!--  Row for the results -->
   <div class="row">
+    <!--  Plots -->
+    <div id="plotHTMLTarget" *ngIf="resultsToShow=='plotDiv'"></div>
     <div class="col overflow-x-auto">
-      <!--  Plots -->
-      <div [id]="plotHTMLTarget" *ngIf="resultsToShow==plotHTMLTarget"></div>
-      <!--  Results tables -->
+       <!--  Results tables -->
       <table class="scenario-results-table"
              *ngIf="resultsTable !== undefined &&
              resultsToShow==resultsTable.table">
