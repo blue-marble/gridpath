@@ -37,12 +37,11 @@ def show_hide_legend(plot):
 
     :param plot:
     """
-    def show_hide_legend_py(legend=plot.legend[0]):
-        legend.visible = not legend.visible
-
     plot.js_on_event(
         events.DoubleTap,
-        CustomJS.from_py_func(show_hide_legend_py)
+        CustomJS(
+            args=dict(legend=plot.legend[0]),
+            code='legend.visible = !legend.visible')
     )
 
 
