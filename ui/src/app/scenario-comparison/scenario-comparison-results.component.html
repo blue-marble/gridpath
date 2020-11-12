@@ -27,11 +27,7 @@
       </table>
 
       <!--  Plots -->
-      <div [id]="basePlotHTMLTarget" *ngIf="resultType == 'plot'"></div>
-      <ng-container *ngFor="let comparePlotHTMLTarget of
-      comparePlotsHTMLTargets">
-        <div [id]="comparePlotHTMLTarget" *ngIf="resultType == 'plot'"></div>
-      </ng-container>
+      <div id="plotHTMLTarget" *ngIf="resultType == 'plot'"></div>
     </div>
   </div>
 

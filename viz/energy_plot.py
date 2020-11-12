@@ -165,7 +165,7 @@ def main(args=None):
 
     # Return plot in json format if requested
     if parsed_args.return_json:
-        return json_item(plot, plot_name)
+        return json_item(plot, "plotHTMLTarget")
 
 
 if __name__ == "__main__":
