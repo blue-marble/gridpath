@@ -41,8 +41,7 @@ export class ScenarioResultsComponent implements OnInit {
   allPlotFormGroups: FormGroup[];
   // The possible options for the forms
   formOptions: ResultsOptions;
-  // The value of the submitted plot form
-  plotFormValue: {};
+
   // The target_id of the plot we'll show; we'll get this from the JSON
   // object and set it before embedding the plot
   plotHTMLTarget: string;
@@ -79,9 +78,7 @@ export class ScenarioResultsComponent implements OnInit {
     this.makeResultsPlotForms(this.scenarioID);
   }
 
-  ngOnInit() {
-
-  }
+  ngOnInit() {}
 
   // //// Tables //// //
   makeResultsTableButtons(): void {
@@ -98,8 +95,7 @@ export class ScenarioResultsComponent implements OnInit {
         this.resultsTable = inputTableRows;
         // Set the values needed to display the table after ngOnInit
         this.tableToShow = table;
-        this.resultsToShow = table;
-        this.ngOnInit();
+        this.resultsToShow = this.tableToShow;
       });
   }
 
@@ -172,13 +168,11 @@ export class ScenarioResultsComponent implements OnInit {
     const buttonName = document.activeElement.getAttribute('Name');
     console.log(buttonName);
 
-    // We need to set the plotFormValue and plotHTMLTarget before
-    // calling ngOnInit to be able to embed the plot
-    this.plotFormValue = formGroup;
-
     const formValues = getFormGroupValues(formGroup);
 
     if (buttonName === 'showPlot') {
+      this.resultsToShow = 'plot_div';
+
       this.scenarioResultsService.getResultsPlot(
         this.scenarioID, formValues.plotType, formValues.loadZone,
           formValues.rpsZone, formValues.carbonCapZone,
@@ -187,11 +181,8 @@ export class ScenarioResultsComponent implements OnInit {
           formValues.subproblem, formValues.stage,
           formValues.project, formValues.commitProject, formValues.yMax
       ).subscribe(resultsPlot => {
-        this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
-        this.resultsToShow = resultsPlot.plotJSON.target_id;
         this.resultsPlot = resultsPlot.plotJSON;
         Bokeh.embed_item(this.resultsPlot);
-        this.ngOnInit();
       });
     }
 
@@ -233,7 +224,7 @@ export class ScenarioResultsComponent implements OnInit {
 
   clearResults(): void {
     this.resultsToShow = null;
-    this.ngOnInit();
+
   }
 
   getScenarioName(scenarioID): void {

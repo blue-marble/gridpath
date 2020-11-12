@@ -112,9 +112,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
           this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
-        this.basePlotHTMLTarget = resultsPlot.plotJSON.target_id;
-        this.basePlotJSON = resultsPlot.plotJSON;
-        Bokeh.embed_item(this.basePlotJSON);
+        Bokeh.embed_item(resultsPlot.plotJSON);
       });
   }
 
@@ -128,8 +126,6 @@ export class ScenarioComparisonResultsComponent implements OnInit {
           this.formValues.subproblem, this.formValues.stage,
           this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
-        this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);
-        this.comparePlotsJSON.push(resultsPlot.plotJSON);
         Bokeh.embed_item(resultsPlot.plotJSON);
       });
     }
