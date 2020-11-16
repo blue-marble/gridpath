@@ -81,7 +81,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     |                                                                         |
     | Indexed set that describes the startup types for each project of the    |
-    | :code:`gen_commit_lin`operational type.                                 |
+    | :code:`gen_commit_lin` operational type.                                |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_LINKED_TMPS`                                    |
     |                                                                         |
@@ -454,7 +454,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's upward ramp-able capacity (in MW) during startup in each  |
     | operational timepoint. Depends on the                                   |
-    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st                   |
+    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`                  |
     | availability and capacity in the timepoint, and the timepoint's         |
     | duration.                                                               |
     +-------------------------------------------------------------------------+
@@ -466,7 +466,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | :code:`gen_commit_lin_shutdown_plus_ramp_down_rate`, the availability   |
     | and capacity in the timepoint, and the timepoint's duration.            |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Active_Startup_Type          `                    |
+    | | :code:`GenCommitLin_Active_Startup_Type`                              |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's active startup type in each operational timepoint,        |

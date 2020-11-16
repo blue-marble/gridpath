@@ -216,7 +216,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`STOR_OPR_TMPS`                                 |
     |                                                                         |
     | Can't provide more upward reserves (times sustained duration required)  |
-    |than available energy in storage in that timepoint.                      |
+    | than available energy in storage in that timepoint.                     |
     +-------------------------------------------------------------------------+
     | | :code:`Stor_Max_Footroom_Energy_Constraint`                           |
     | | *Defined over*: :code:`STOR_OPR_TMPS`                                 |

@@ -59,7 +59,7 @@ Projects
 gridpath.project.__init__
 -------------------------
 .. automodule:: gridpath.project.__init__
-    :members: determine_dynamic_components, add_model_components
+    :members: add_model_components
 
 Project Capacity
 ----------------
@@ -362,7 +362,7 @@ gridpath.project.operations.reserves.reserve_provision
 ------------------------------------------------------
 
 .. automodule:: gridpath.project.operations.reserves.reserve_provision
-    :members: generic_determine_dynamic_components
+    :members: generic_record_dynamic_components
 
 
 

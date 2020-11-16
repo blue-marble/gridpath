@@ -44,7 +44,7 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
-     The following Pyomo model components are defined in this module:
+    The following Pyomo model components are defined in this module:
 
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
