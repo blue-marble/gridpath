@@ -29,10 +29,11 @@ Costs for this operational type include fuel costs and variable O&M costs.
 
 """
 
+import csv
 import os
 import warnings
 from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
-    PositiveReals
+    PositiveReals, PercentFraction, Expression, value
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -59,6 +60,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+    
+    |
+    
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_must_run_aux_consumption_frac_capacity`                    |
+    | | *Defined over*: :code:`GEN_MUST_RUN`                                  |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of capacity. This would be          |
+    | incurred all timepoints when capacity is available.                     |
     +-------------------------------------------------------------------------+
 
     |
@@ -96,6 +111,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
                 if g in mod.GEN_MUST_RUN)
         )
+    )
+    
+    # Optional Params
+    ###########################################################################
+
+    m.gen_must_run_aux_consumption_frac_capacity = Param(
+        m.GEN_MUST_RUN,
+        within=PercentFraction,
+        default=0
+    )
+
+    # Expressions
+    ###########################################################################
+
+    def auxiliary_consumption_rule(mod, g, tmp):
+        """
+        **Expression Name**: GenMustRun_Auxiliary_Consumption_MW
+        **Defined Over**: GEN_MUST_RUN_OPR_TMPS
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
+            * mod.gen_must_run_aux_consumption_frac_capacity[g]
+
+    m.GenMustRun_Auxiliary_Consumption_MW = Expression(
+        m.GEN_MUST_RUN_OPR_TMPS,
+        rule=auxiliary_consumption_rule
     )
 
     # Constraints
@@ -164,10 +205,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 def power_provision_rule(mod, g, tmp):
     """
     Power provision for must run generators is simply their capacity in all
-    timepoints when they are operational.
+    timepoints when they are operational minus any auxiliary power consumption.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp] \
+        * (1 - mod.gen_must_run_aux_consumption_frac_capacity[g])
 
 
 def fuel_burn_rule(mod, g, tmp):
@@ -203,6 +245,51 @@ def load_module_specific_data(mod, data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_must_run"
     )
+
+
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param mod:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "dispatch_gen_must_run.csv"),
+              "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
+                         "technology", "load_zone", "power_mw",
+                         "gross_power_mw",
+                         "auxiliary_consumption_mw"
+                         ])
+
+        for (p, tmp) in mod.GEN_MUST_RUN_OPR_TMPS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
+                tmp,
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
+                value(mod.Capacity_MW[p, mod.period[tmp]])
+                * value(mod.Availability_Derate[p, tmp])
+                * (1 - mod.gen_must_run_aux_consumption_frac_capacity[p]),
+                value(mod.Capacity_MW[p, mod.period[tmp]])
+                * value(mod.Availability_Derate[p, tmp]),
+                value(mod.Capacity_MW[p, mod.period[tmp]])
+                * value(mod.Availability_Derate[p, tmp])
+                * mod.gen_must_run_aux_consumption_frac_capacity[p]
+            ])
 
 
 # Validation

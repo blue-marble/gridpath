@@ -12,6 +12,6 @@ discharging_efficiency,float,,,,,,,,,,,,required
 charging_capacity_multiplier,float,,,,,,,,,,,,optional
 discharging_capacity_multiplier,float,,,,,,,,,,,,optional
 aux_consumption_frac_capacity,float,,,optional,optional,optional,"optional
-",optional	,,,,,
+",optional,optional,,,,
 aux_consumption_frac_power,float,,,optional,optional,optional,"optional
 ",optional,,,,,

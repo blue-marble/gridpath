@@ -125,7 +125,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | Auxiliary consumption as a fraction of capacity. This would be          |
-    | in all timepoints when capacity is available.                           |
+    | incurred in all timepoints when capacity is available.                  |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_aux_consumption_frac_power`                          |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
