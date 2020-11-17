@@ -140,6 +140,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's downward reserve provision in the linked timepoints.      |
     +-------------------------------------------------------------------------+
+
     |
 
     +-------------------------------------------------------------------------+

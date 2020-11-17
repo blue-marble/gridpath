@@ -808,7 +808,7 @@ def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
     :return: the parsed known argument values (<class 'argparse.Namespace'>
-    Python object)
+        Python object)
 
     Parse the known arguments.
     """

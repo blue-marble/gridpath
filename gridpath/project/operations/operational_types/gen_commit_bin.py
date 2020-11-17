@@ -105,7 +105,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
     |                                                                         |
     | Indexed set that describes the startup types for each project of the    |
-    | :code:`gen_commit_bin`operational type.                                 |
+    | :code:`gen_commit_bin` operational type.                                |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_LINKED_TMPS`                                    |
     |                                                                         |
@@ -490,7 +490,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | :code:`gen_commit_bin_shutdown_plus_ramp_down_rate`, the availability   |
     | and capacity in the timepoint, and the timepoint's duration.            |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Active_Startup_Type          `                    |
+    | | :code:`GenCommitBin_Active_Startup_Type`                              |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's active startup type in each operational timepoint,        |
