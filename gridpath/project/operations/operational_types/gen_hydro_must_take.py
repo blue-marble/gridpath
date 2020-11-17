@@ -701,8 +701,7 @@ def export_module_specific_results(
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp])
-                - value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.Power_Provision_MW[p, tmp]),
                 value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp]),
                 value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[p, tmp])
             ])

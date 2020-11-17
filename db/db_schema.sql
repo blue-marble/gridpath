@@ -2530,7 +2530,7 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-power_mw FLOAT,  -- net power in case there's auxiliary consumption
+power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,

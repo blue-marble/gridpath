@@ -1443,7 +1443,7 @@ def export_module_specific_results(
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "technology", "load_zone",
+                         "technology", "load_zone", "power_mw",
                          "gross_power_mw",
                          "auxiliary_consumption_mw", "net_power_mw",
                          "committed_mw", "committed_units"
@@ -1462,6 +1462,7 @@ def export_module_specific_results(
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
+                value(mod.Power_Provision_MW[p, tmp]),
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
                 value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]) -

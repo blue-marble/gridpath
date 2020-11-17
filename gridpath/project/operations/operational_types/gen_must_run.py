@@ -281,9 +281,7 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.Capacity_MW[p, mod.period[tmp]])
-                * value(mod.Availability_Derate[p, tmp])
-                * (1 - mod.gen_must_run_aux_consumption_frac_capacity[p]),
+                value(mod.Power_Provision_MW[p, tmp]),
                 value(mod.Capacity_MW[p, mod.period[tmp]])
                 * value(mod.Availability_Derate[p, tmp]),
                 value(mod.Capacity_MW[p, mod.period[tmp]])
