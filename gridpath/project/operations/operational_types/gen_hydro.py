@@ -124,7 +124,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
-    | Auxiliary consumption as a fraction of committed capacity.              |
+    | Auxiliary consumption as a fraction of capacity. This would be          |
+    | in all timepoints when capacity is available.                           |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_aux_consumption_frac_power`                          |
     | | *Defined over*: :code:`GEN_HYDRO`                                     |
@@ -185,6 +186,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Curtailment in MW from this project in each timepoint in which the      |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
+
+    |
 
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
@@ -366,7 +369,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def auxiliary_consumption_rule(mod, g, tmp):
         """
         **Expression Name**: GenHydro_Auxiliary_Consumption_MW
-        **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+        **Defined Over**: GEN_HYDRO_OPR_TMPS
         """
         return mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp] \

@@ -19,9 +19,6 @@ output is must-take, i.e. curtailment is not allowed.
 
 """
 
-from __future__ import print_function
-
-from builtins import str
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, \
@@ -116,6 +113,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_must_take_aux_consumption_frac_capacity`             |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of capacity. This would be          |
+    | in all timepoints when capacity is available.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_must_take_aux_consumption_frac_power`                |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE`                           |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -152,6 +164,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenHydroMustTake_Auxiliary_Consumption_MW`                     |
+    | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -251,6 +275,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=PercentFraction, default=1
     )
 
+    m.gen_hydro_must_take_aux_consumption_frac_capacity = Param(
+        m.GEN_HYDRO_MUST_TAKE,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_hydro_must_take_aux_consumption_frac_power = Param(
+        m.GEN_HYDRO_MUST_TAKE,
+        within=PercentFraction,
+        default=0
+    )
+
     # Linked Params
     ###########################################################################
 
@@ -295,6 +331,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GenHydroMustTake_Downwards_Reserves_MW = Expression(
         m.GEN_HYDRO_MUST_TAKE_OPR_TMPS,
         rule=downwards_reserve_rule)
+
+    def auxiliary_consumption_rule(mod, g, tmp):
+        """
+        **Expression Name**: GenHydroMustTake_Auxiliary_Consumption_MW
+        **Defined Over**: GEN_HYDRO_MUST_TAKE_OPR_TMPS
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
+            * mod.gen_hydro_must_take_aux_consumption_frac_capacity[g] \
+            + mod.GenHydroMustTake_Gross_Power_MW[g, tmp] \
+            * mod.gen_hydro_must_take_aux_consumption_frac_power[g]
+
+    m.GenHydroMustTake_Auxiliary_Consumption_MW = Expression(
+        m.GEN_HYDRO_MUST_TAKE_OPR_TMPS,
+        rule=auxiliary_consumption_rule
+    )
 
     # Constraints
     ###########################################################################
@@ -535,7 +587,8 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision from must-take hydro.
     """
-    return mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
+    return mod.GenHydroMustTake_Gross_Power_MW[g, tmp] \
+        - mod.GenHydroMustTake_Auxiliary_Consumption_MW[g, tmp]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -625,6 +678,34 @@ def export_module_specific_results(
     :param d:
     :return:
     """
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "dispatch_gen_hydro_must_take.csv"),
+              "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
+                         "technology", "load_zone", "power_mw",
+                         "gross_power_mw",
+                         "auxiliary_consumption_mw"
+                         ])
+
+        for (p, tmp) in mod.GEN_HYDRO_MUST_TAKE_OPR_TMPS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
+                tmp,
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
+                value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp])
+                - value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[p, tmp]),
+                value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp]),
+                value(mod.GenHydroMustTake_Auxiliary_Consumption_MW[p, tmp])
+            ])
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
