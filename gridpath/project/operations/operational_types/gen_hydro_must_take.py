@@ -146,7 +146,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenHydroMustTake_Provide_Power_MW`                             |
+    | | :code:`GenHydroMustTake_Gross_Power_MW`                               |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -272,7 +272,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variables
     ###########################################################################
 
-    m.GenHydroMustTake_Provide_Power_MW = Var(
+    m.GenHydroMustTake_Gross_Power_MW = Var(
         m.GEN_HYDRO_MUST_TAKE_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -343,7 +343,7 @@ def max_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's maximum power output is 900 MW.
     """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
+    return mod.GenHydroMustTake_Gross_Power_MW[g, tmp] \
         + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp] \
         <= mod.gen_hydro_must_take_max_power_fraction[
             g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -366,7 +366,7 @@ def min_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's minimum power output is 300 MW.
     """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
+    return mod.GenHydroMustTake_Gross_Power_MW[g, tmp] \
         - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp] \
         >= mod.gen_hydro_must_take_min_power_fraction[
             g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -400,7 +400,7 @@ def energy_budget_rule(mod, g, h):
     the budget would be half, i.e. 42,000 MWh, even though the average power
     fraction is the same!
     """
-    return sum(mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+    return sum(mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
                * mod.hrs_in_tmp[tmp]
                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[g], h]) \
@@ -446,7 +446,7 @@ def ramp_up_rule(mod, g, tmp):
                     mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenHydroMustTake_Provide_Power_MW[
+                mod.GenHydroMustTake_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
             prev_tmp_downwards_reserves = \
@@ -460,7 +460,7 @@ def ramp_up_rule(mod, g, tmp):
                 >= 1:
             return Constraint.Skip
         else:
-            return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+            return (mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
                     + mod.GenHydroMustTake_Upwards_Reserves_MW[g, tmp]) \
                    - (prev_tmp_power - prev_tmp_downwards_reserves) \
                    <= \
@@ -504,7 +504,7 @@ def ramp_down_rule(mod, g, tmp):
                     mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenHydroMustTake_Provide_Power_MW[
+                mod.GenHydroMustTake_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
             prev_tmp_upwards_reserves = \
@@ -518,7 +518,7 @@ def ramp_down_rule(mod, g, tmp):
                 >= 1:
             return Constraint.Skip
         else:
-            return (mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+            return (mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
                     - mod.GenHydroMustTake_Downwards_Reserves_MW[g, tmp]) \
                    - (prev_tmp_power + prev_tmp_upwards_reserves) \
                    >= \
@@ -535,7 +535,7 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision from must-take hydro.
     """
-    return mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
+    return mod.GenHydroMustTake_Gross_Power_MW[g, tmp]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -559,8 +559,8 @@ def power_delta_rule(mod, g, tmp):
     ):
         pass
     else:
-        return mod.GenHydroMustTake_Provide_Power_MW[g, tmp] \
-            - mod.GenHydroMustTake_Provide_Power_MW[g, mod.prev_tmp[
+        return mod.GenHydroMustTake_Gross_Power_MW[g, tmp] \
+            - mod.GenHydroMustTake_Gross_Power_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
 
 
@@ -658,7 +658,7 @@ def export_module_specific_results(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        max(value(mod.GenHydroMustTake_Provide_Power_MW_[
+                        max(value(mod.GenHydroMustTake_Gross_Power_MW_[
                                       p, tmp]),
                             0
                             ),

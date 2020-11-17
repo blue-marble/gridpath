@@ -173,8 +173,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | Power provision in MW from this project in each timepoint in which the  |
+    | Gross power in MW from this project in each timepoint in which the      |
     | project is operational (capacity exists and the project is available).  |
+    | We'll subtract curtailment and auxiliary consumption from this for      |
+    | load balance purposes.                                                  |
     +-------------------------------------------------------------------------+
     | | :code:`GenHydro_Curtail_MW`                                           |
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
@@ -241,6 +243,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Limits the allowed project downward ramp based on the                   |
     | :code:`gen_hydro_ramp_down_when_on_rate`.                               |
     +-------------------------------------------------------------------------+
+    | Curtailment                                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Max_Curtailment_Constraint`                           |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | Limits the allowed curtailment to the available power.                  |
+    +-------------------------------------------------------------------------+
 
     """
     # Sets
@@ -294,7 +303,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_HYDRO,
         within=PercentFraction, default=1
     )
-    
+
     m.gen_hydro_aux_consumption_frac_capacity = Param(
         m.GEN_HYDRO,
         within=PercentFraction,
@@ -404,6 +413,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=ramp_down_rule
     )
 
+    m.GenHydro_Max_Curtailment_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=max_curtailment_rule
+    )
+
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -424,6 +438,7 @@ def max_power_rule(mod, g, tmp):
     fully available, the project's maximum power output is 900 MW.
     """
     return mod.GenHydro_Gross_Power_MW[g, tmp] \
+        - mod.GenHydro_Curtail_MW[g, tmp] \
         + mod.GenHydro_Upwards_Reserves_MW[g, tmp] \
         <= mod.gen_hydro_max_power_fraction[
                g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -447,6 +462,7 @@ def min_power_rule(mod, g, tmp):
     fully available, the project's minimum power output is 300 MW.
     """
     return mod.GenHydro_Gross_Power_MW[g, tmp] \
+        - mod.GenHydro_Curtail_MW[g, tmp] \
         - mod.GenHydro_Downwards_Reserves_MW[g, tmp] \
         >= mod.gen_hydro_min_power_fraction[
                g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -594,7 +610,6 @@ def ramp_down_rule(mod, g, tmp):
                 mod.GenHydro_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
-
             prev_tmp_upwards_reserves = \
                 mod.GenHydro_Upwards_Reserves_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
@@ -617,15 +632,25 @@ def ramp_down_rule(mod, g, tmp):
                 * mod.Availability_Derate[g, tmp]
 
 
+def max_curtailment_rule(mod, g, tmp):
+    """
+    Can't curtail more than the available power (i.e. can't act as net load).
+    """
+    return mod.GenHydro_Curtail_MW[g, tmp] \
+        <= mod.GenHydro_Gross_Power_MW[g, tmp]
+
+
 # Operational Type Methods
 ###############################################################################
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from curtailable hydro.
+    Power provision from curtailable hydro is the gross power minus
+    curtailment.
     """
-    return mod.GenHydro_Gross_Power_MW[g, tmp] - \
-        mod.GenHydro_Auxiliary_Consumption_MW[g, tmp]
+    return mod.GenHydro_Gross_Power_MW[g, tmp] \
+        - mod.GenHydro_Curtail_MW[g, tmp] \
+        - mod.GenHydro_Auxiliary_Consumption_MW[g, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -673,8 +698,8 @@ def power_delta_rule(mod, g, tmp):
         pass
     else:
         return mod.GenHydro_Gross_Power_MW[g, tmp] \
-           - mod.GenHydro_Gross_Power_MW[g, mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]]]
+               - mod.GenHydro_Gross_Power_MW[g, mod.prev_tmp[
+                    tmp, mod.balancing_type_project[g]]]
 
 
 # Input-Output
@@ -719,7 +744,6 @@ def load_module_specific_data(m, data_portal,
             index=m.GEN_HYDRO_LINKED_TMPS,
             param=(
                 m.gen_hydro_linked_power,
-                m.gen_hydro_linked_curtailment,
                 m.gen_hydro_linked_upwards_reserves,
                 m.gen_hydro_linked_downwards_reserves
             )
@@ -739,16 +763,15 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "dispatch_gen_hydro.csv"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "technology", "load_zone",
-                         "power_mw", "scheduled_curtailment_mw", 
-                         "auxiliary_consumption", "gross_power"
+                         "technology", "load_zone", "power_mw",
+                         "gross_power_mw", "scheduled_curtailment_mw"
                          ])
 
         for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
@@ -762,9 +785,10 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
+                value(mod.GenHydro_Gross_Power_MW[p, tmp])
+                - value(mod.GenHydro_Curtail_MW[p, tmp]),
                 value(mod.GenHydro_Gross_Power_MW[p, tmp]),
-                value(mod.GenHydro_Curtail_MW[p, tmp]),
-                value(mod.GenHydro)
+                value(mod.GenHydro_Curtail_MW[p, tmp])
             ])
 
     # If there's a linked_subproblems_map CSV file, check which of the
@@ -791,7 +815,6 @@ def export_module_specific_results(mod, d,
             writer.writerow(
                 ["project", "linked_timepoint",
                  "linked_provide_power",
-                 "linked_provide_curtailment",
                  "linked_upward_reserves",
                  "linked_downward_reserves"]
             )
@@ -801,7 +824,6 @@ def export_module_specific_results(mod, d,
                         p,
                         tmp_linked_tmp_dict[tmp],
                         max(value(mod.GenHydro_Gross_Power_MW[p, tmp]), 0),
-                        max(value(mod.GenHydro_Curtail_MW[p, tmp]), 0),
                         max(value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
                             0),
                         max(value(mod.GenHydro_Downwards_Reserves_MW[p, tmp]),
