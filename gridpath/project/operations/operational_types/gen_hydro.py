@@ -195,12 +195,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's auxiliary consumption (power consumed on-site and not     |
     | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`GenHydro_Auxiliary_Consumption_MW`                             |
-    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
-    |                                                                         |
-    | The project's auxiliary consumption (power consumed on-site and not     |
-    | sent to the grid) in each timepoint.                                    |
-    +-------------------------------------------------------------------------+
 
     |
 
@@ -371,7 +365,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def auxiliary_consumption_rule(mod, g, tmp):
         """
-        **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
+        **Expression Name**: GenHydro_Auxiliary_Consumption_MW
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
         return mod.Capacity_MW[g, mod.period[tmp]] \
@@ -771,7 +765,8 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone", "power_mw",
-                         "gross_power_mw", "scheduled_curtailment_mw"
+                         "gross_power_mw", "scheduled_curtailment_mw",
+                         "auxiliary_consumption_mw"
                          ])
 
         for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
@@ -788,7 +783,8 @@ def export_module_specific_results(mod, d,
                 value(mod.GenHydro_Gross_Power_MW[p, tmp])
                 - value(mod.GenHydro_Curtail_MW[p, tmp]),
                 value(mod.GenHydro_Gross_Power_MW[p, tmp]),
-                value(mod.GenHydro_Curtail_MW[p, tmp])
+                value(mod.GenHydro_Curtail_MW[p, tmp]),
+                value(mod.GenHydro_Auxiliary_Consumption_MW[p, tmp])
             ])
 
     # If there's a linked_subproblems_map CSV file, check which of the
