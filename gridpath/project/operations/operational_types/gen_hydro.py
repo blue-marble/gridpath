@@ -713,7 +713,7 @@ def export_module_specific_results(mod, d,
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "technology", "load_zone",
+                         "technology", "load_zone", "power_mw",
                          "gross_power_mw", "scheduled_curtailment_mw"
                          ])
 
@@ -728,6 +728,8 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
+                value(mod.GenHydro_Gross_Power_MW[p, tmp])
+                - value(mod.GenHydro_Curtail_MW[p, tmp]),
                 value(mod.GenHydro_Gross_Power_MW[p, tmp]),
                 value(mod.GenHydro_Curtail_MW[p, tmp])
             ])
