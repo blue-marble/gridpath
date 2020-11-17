@@ -24,8 +24,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-from __future__ import print_function
-
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, \
@@ -121,6 +119,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_aux_consumption_frac_capacity`                       |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of committed capacity.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_aux_consumption_frac_power`                          |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -157,7 +169,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenHydro_Provide_Power_MW`                                     |
+    | | :code:`GenHydro_Gross_Power_MW`                                     |
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -170,6 +182,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Curtailment in MW from this project in each timepoint in which the      |
     | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenHydro_Auxiliary_Consumption_MW`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Auxiliary_Consumption_MW`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -266,6 +294,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_HYDRO,
         within=PercentFraction, default=1
     )
+    
+    m.gen_hydro_aux_consumption_frac_capacity = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_hydro_aux_consumption_frac_power = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction,
+        default=0
+    )
 
     # Linked Params
     ###########################################################################
@@ -293,7 +333,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variables
     ###########################################################################
 
-    m.GenHydro_Provide_Power_MW = Var(
+    m.GenHydro_Gross_Power_MW = Var(
         m.GEN_HYDRO_OPR_TMPS,
         within=NonNegativeReals
     )
@@ -319,6 +359,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GenHydro_Downwards_Reserves_MW = Expression(
         m.GEN_HYDRO_OPR_TMPS,
         rule=downwards_reserve_rule)
+
+    def auxiliary_consumption_rule(mod, g, tmp):
+        """
+        **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
+        **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
+            * mod.gen_hydro_aux_consumption_frac_capacity[g] \
+            + mod.GenHydro_Gross_Power_MW[g, tmp] \
+            * mod.gen_hydro_aux_consumption_frac_power[g]
+
+    m.GenHydro_Auxiliary_Consumption_MW = Expression(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=auxiliary_consumption_rule
+    )
 
     # Constraints
     ###########################################################################
@@ -367,7 +423,7 @@ def max_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's maximum power output is 900 MW.
     """
-    return mod.GenHydro_Provide_Power_MW[g, tmp] \
+    return mod.GenHydro_Gross_Power_MW[g, tmp] \
         + mod.GenHydro_Upwards_Reserves_MW[g, tmp] \
         <= mod.gen_hydro_max_power_fraction[
                g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -390,7 +446,7 @@ def min_power_rule(mod, g, tmp):
     variable, depending on the capacity type) is 1,000 MW and the project is
     fully available, the project's minimum power output is 300 MW.
     """
-    return mod.GenHydro_Provide_Power_MW[g, tmp] \
+    return mod.GenHydro_Gross_Power_MW[g, tmp] \
         - mod.GenHydro_Downwards_Reserves_MW[g, tmp] \
         >= mod.gen_hydro_min_power_fraction[
                g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -424,8 +480,7 @@ def energy_budget_rule(mod, g, h):
     the budget would be half, i.e. 42,000 MWh, even though the average power
     fraction is the same!
     """
-    return sum((mod.GenHydro_Provide_Power_MW[g, tmp] +
-                mod.GenHydro_Curtail_MW[g, tmp])
+    return sum(mod.GenHydro_Gross_Power_MW[g, tmp]
                * mod.hrs_in_tmp[tmp]
                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[g], h]
@@ -475,11 +530,7 @@ def ramp_up_rule(mod, g, tmp):
                     mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenHydro_Provide_Power_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_curtailment = \
-                mod.GenHydro_Curtail_MW[
+                mod.GenHydro_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
             prev_tmp_downwards_reserves = \
@@ -493,8 +544,7 @@ def ramp_up_rule(mod, g, tmp):
                 >= 1:
             return Constraint.Skip
         else:
-            return (mod.GenHydro_Provide_Power_MW[g, tmp]
-                    + mod.GenHydro_Curtail_MW[g, tmp]
+            return (mod.GenHydro_Gross_Power_MW[g, tmp]
                     + mod.GenHydro_Upwards_Reserves_MW[g, tmp]) \
                 - (prev_tmp_power + prev_tmp_curtailment
                    - prev_tmp_downwards_reserves) \
@@ -541,13 +591,10 @@ def ramp_down_rule(mod, g, tmp):
                     mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenHydro_Provide_Power_MW[
+                mod.GenHydro_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
-            prev_tmp_curtailment = \
-                mod.GenHydro_Curtail_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
+
             prev_tmp_upwards_reserves = \
                 mod.GenHydro_Upwards_Reserves_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
@@ -559,8 +606,7 @@ def ramp_down_rule(mod, g, tmp):
                 >= 1:
             return Constraint.Skip
         else:
-            return (mod.GenHydro_Provide_Power_MW[g, tmp]
-                    + mod.GenHydro_Curtail_MW[g, tmp]
+            return (mod.GenHydro_Gross_Power_MW[g, tmp]
                     - mod.GenHydro_Downwards_Reserves_MW[g, tmp]) \
                 - (prev_tmp_power + prev_tmp_curtailment
                    + prev_tmp_upwards_reserves) \
@@ -578,7 +624,8 @@ def power_provision_rule(mod, g, tmp):
     """
     Power provision from curtailable hydro.
     """
-    return mod.GenHydro_Provide_Power_MW[g, tmp]
+    return mod.GenHydro_Gross_Power_MW[g, tmp] - \
+        mod.GenHydro_Auxiliary_Consumption_MW[g, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -587,8 +634,7 @@ def variable_om_cost_rule(mod, g, tmp):
     curtailed).
     """
     return \
-        (mod.GenHydro_Provide_Power_MW[g, tmp] +
-            mod.GenHydro_Curtail_MW[g, tmp]) \
+        mod.GenHydro_Gross_Power_MW[g, tmp] \
         * mod.variable_om_cost_per_mwh[g]
 
 
@@ -626,12 +672,9 @@ def power_delta_rule(mod, g, tmp):
     ):
         pass
     else:
-        return (mod.GenHydro_Provide_Power_MW[g, tmp] +
-                mod.GenHydro_Curtail_MW[g, tmp]) \
-               - (mod.GenHydro_Provide_Power_MW[g, mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]]
-                  + mod.GenHydro_Curtail_MW[g, mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]])
+        return mod.GenHydro_Gross_Power_MW[g, tmp] \
+           - mod.GenHydro_Gross_Power_MW[g, mod.prev_tmp[
+                tmp, mod.balancing_type_project[g]]]
 
 
 # Input-Output
@@ -704,7 +747,8 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
-                         "power_mw", "scheduled_curtailment_mw"
+                         "power_mw", "scheduled_curtailment_mw", 
+                         "auxiliary_consumption", "gross_power"
                          ])
 
         for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
@@ -718,8 +762,9 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.GenHydro_Provide_Power_MW[p, tmp]),
-                value(mod.GenHydro_Curtail_MW[p, tmp])
+                value(mod.GenHydro_Gross_Power_MW[p, tmp]),
+                value(mod.GenHydro_Curtail_MW[p, tmp]),
+                value(mod.GenHydro)
             ])
 
     # If there's a linked_subproblems_map CSV file, check which of the
@@ -755,7 +800,7 @@ def export_module_specific_results(mod, d,
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        max(value(mod.GenHydro_Provide_Power_MW[p, tmp]), 0),
+                        max(value(mod.GenHydro_Gross_Power_MW[p, tmp]), 0),
                         max(value(mod.GenHydro_Curtail_MW[p, tmp]), 0),
                         max(value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]),
                             0),
