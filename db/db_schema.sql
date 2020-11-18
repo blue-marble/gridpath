@@ -1039,7 +1039,7 @@ subscenarios_project_variable_generator_profiles
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
 CREATE TABLE subscenarios_project_hydro_operational_chars (
 project VARCHAR(64),
-hydro_operational_chars_scenario_id,
+hydro_operational_chars_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (project, hydro_operational_chars_scenario_id)
