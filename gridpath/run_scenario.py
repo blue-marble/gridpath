@@ -33,8 +33,11 @@ import warnings
 
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
-    get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
-    create_logs_directory_if_not_exists, Logging
+    get_scenario_name_parser, get_required_e2e_arguments_parser, \
+    get_solve_parser, create_logs_directory_if_not_exists, Logging
+from gridpath.auxiliary.scenario_chars import \
+    ScenarioSubproblemStructureDisk, ScenarioSubproblemStructureDB, \
+    ScenarioDirectoryStructure
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
@@ -282,7 +285,7 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
         warnings.warn("WARNING: the problem was infeasible!")
 
 
-def run_scenario(structure, parsed_arguments):
+def run_scenario(structure, directory_structure, parsed_arguments):
     """
     :param structure: the scenario structure object (i.e. horizon and stage
         subproblems)
@@ -319,6 +322,15 @@ def run_scenario(structure, parsed_arguments):
                             structure.main_scenario_directory,
                             subproblem, stage,
                             parsed_arguments)
+
+    for subproblem in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM\
+            .keys():
+        for stage in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM[
+            subproblem].keys():
+            print(subproblem, stage, directory_structure
+                  .STAGE_DIRECTORIES_BY_SUBPROBLEM[
+                      subproblem][stage])
+
     return objective_values
 
 
@@ -847,12 +859,29 @@ def main(args=None):
     parsed_args = parse_arguments(args)
 
     # Figure out the scenario structure (i.e. horizons and stages)
+    subproblem_structure = ScenarioSubproblemStructureDisk(
+        main_scenarios_directory=parsed_args.scenario_location,
+        scenario=parsed_args.scenario
+    )
+
+    scenario_directory = determine_scenario_directory(
+        scenario_location=parsed_args.scenario_location,
+        scenario_name=parsed_args.scenario
+        )
+
+    directory_structure = ScenarioDirectoryStructure(
+        scenario_directory=scenario_directory,
+        subproblem_structure=subproblem_structure
+    )
+
+    # Figure out the scenario structure (i.e. horizons and stages)
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
 
     # Run the scenario (can be multiple optimization subproblems)
     expected_objective_values = run_scenario(
-        scenario_structure, parsed_args)
+        scenario_structure, directory_structure, parsed_args
+    )
 
     # Return the objective function values (used in testing)
     return expected_objective_values
