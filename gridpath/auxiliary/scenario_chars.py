@@ -272,20 +272,19 @@ class ScenarioSubproblemStructureDisk(object):
     over and solve each subproblem.
     """
 
-    def __init__(self, main_scenarios_directory, scenario, subproblem=None):
+    def __init__(self, scenario_directory, subproblem=None):
         # Check if the scenario actually exists
-        if not os.path.exists(main_scenarios_directory):
+        if not os.path.exists(scenario_directory):
             raise IOError("""
-                Scenario '{}/{}' does not exist. Please verify
-                scenario name and scenario directory
-            """.format(main_scenarios_directory, scenario)
-                          )
+                Scenario directory '{}' does not exist. Please verify the
+                scenario name and location.
+            """.format(scenario_directory))
 
         # Check if there are subproblem directories
         # If there aren't, we only have 1 subproblem
         self.ALL_SUBPROBLEMS = \
-            check_for_integer_subdirectories(main_scenarios_directory) \
-                if check_for_integer_subdirectories(main_scenarios_directory) \
+            check_for_integer_subdirectories(scenario_directory) \
+                if check_for_integer_subdirectories(scenario_directory) \
                 else [1]
 
         # Make dictionary for the stages by subproblem, starting with empty
@@ -299,11 +298,11 @@ class ScenarioSubproblemStructureDisk(object):
         for subproblem in self.ALL_SUBPROBLEMS:
             if len(self.ALL_SUBPROBLEMS) == 1:
                 subproblem_dir = os.path.join(
-                    main_scenarios_directory, ""
+                    scenario_directory, ""
                 )
             else:
                 subproblem_dir = os.path.join(
-                    main_scenarios_directory, subproblem
+                    scenario_directory, str(subproblem)
                 )
             stages = \
                 check_for_integer_subdirectories(subproblem_dir) \

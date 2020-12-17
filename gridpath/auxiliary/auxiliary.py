@@ -183,7 +183,7 @@ def check_for_integer_subdirectories(main_directory):
     We do rely on order downstream, so make sure these are sorted.
     """
     subdirectories = sorted(
-        [d for d in next(os.walk(main_directory))[1] if is_integer(d)],
+        [int(d) for d in next(os.walk(main_directory))[1] if is_integer(d)],
         key=int
     )
 

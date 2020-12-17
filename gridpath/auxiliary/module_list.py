@@ -386,7 +386,7 @@ def determine_modules(
             # If so, check if there are stages in the subproblem
             for subproblem in subproblems:
                 stages = check_for_integer_subdirectories(
-                    os.path.join(scenario_directory, subproblem)
+                    os.path.join(scenario_directory, str(subproblem))
                 )
                 # If we find stages in any subproblem, break out of the loop
                 # and keep the fix_commitment module

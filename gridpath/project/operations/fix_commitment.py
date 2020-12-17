@@ -198,9 +198,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
 
-    stages = check_for_integer_subdirectories(
+    stages = [str(s) for s in check_for_integer_subdirectories(
         os.path.join(scenario_directory, subproblem)
-    )
+    )]
 
     fixed_commitment_df = read_csv(
         os.path.join(scenario_directory, subproblem,

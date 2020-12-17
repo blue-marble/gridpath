@@ -81,7 +81,7 @@ class ScenarioStructure(object):
         if self.subproblems:
             for subproblem in self.subproblems:
                 subproblem_dir = os.path.join(
-                    self.main_scenario_directory, subproblem
+                    self.main_scenario_directory, str(subproblem)
                 )
                 stages = check_for_integer_subdirectories(subproblem_dir)
                 # If the list isn't empty, update the stage dictionary and
@@ -299,37 +299,54 @@ def run_scenario(structure, directory_structure, parsed_arguments):
     The objective function is returned, but it's only really used if we
     are in 'testing' mode.
     """
-    # If no subproblem directories (empty list), run main problem
-    if not structure.subproblems:
-        objective_values = run_optimization(
-            structure.main_scenario_directory, "", "", parsed_arguments)
-    else:
-        # Create dictionary with which we'll keep track
-        # of subproblem objective function values
-        objective_values = {}
-        for subproblem in structure.subproblems:
-            # If no stages in this subproblem (empty list), run the subproblem
-            if not structure.stages_by_subproblem[subproblem]:
-                objective_values[subproblem] = run_optimization(
-                    structure.main_scenario_directory, subproblem, "",
-                    parsed_arguments)
-            # Otherwise, run the stage problem
-            else:
-                objective_values[subproblem] = {}
-                for stage in structure.stages_by_subproblem[subproblem]:
-                    objective_values[subproblem][stage] = \
-                        run_optimization(
-                            structure.main_scenario_directory,
-                            subproblem, stage,
-                            parsed_arguments)
+    # # If no subproblem directories (empty list), run main problem
+    # if not structure.subproblems:
+    #     objective_values = run_optimization(
+    #         structure.main_scenario_directory, "", "", parsed_arguments)
+    # else:
+    #     # Create dictionary with which we'll keep track
+    #     # of subproblem objective function values
+    #     objective_values = {}
+    #     for subproblem in structure.subproblems:
+    #         # If no stages in this subproblem (empty list), run the subproblem
+    #         if not structure.stages_by_subproblem[subproblem]:
+    #             objective_values[subproblem] = run_optimization(
+    #                 structure.main_scenario_directory, subproblem, "",
+    #                 parsed_arguments)
+    #         # Otherwise, run the stage problem
+    #         else:
+    #             objective_values[subproblem] = {}
+    #             for stage in structure.stages_by_subproblem[subproblem]:
+    #                 objective_values[subproblem][stage] = \
+    #                     run_optimization(
+    #                         structure.main_scenario_directory,
+    #                         subproblem, stage,
+    #                         parsed_arguments)
 
+    objective_values = {}
     for subproblem in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM\
             .keys():
+        objective_values[subproblem] = {}
+        temp_subproblem_for_dir = \
+            "" if len(directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM.keys(
+            )) == 1 else str(subproblem)
         for stage in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM[
             subproblem].keys():
+            temp_stage_for_dir = \
+                "" if len(
+                    directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM[
+                        subproblem].keys(
+                    )) == 1 else str(stage)
             print(subproblem, stage, directory_structure
                   .STAGE_DIRECTORIES_BY_SUBPROBLEM[
                       subproblem][stage])
+            objective_values[subproblem][stage] = \
+                run_optimization(
+                    structure.main_scenario_directory,
+                    temp_subproblem_for_dir,
+                    temp_stage_for_dir,
+                    parsed_arguments
+                )
 
     return objective_values
 
@@ -858,16 +875,15 @@ def main(args=None):
     # Parse arguments
     parsed_args = parse_arguments(args)
 
-    # Figure out the scenario structure (i.e. horizons and stages)
-    subproblem_structure = ScenarioSubproblemStructureDisk(
-        main_scenarios_directory=parsed_args.scenario_location,
-        scenario=parsed_args.scenario
-    )
-
     scenario_directory = determine_scenario_directory(
         scenario_location=parsed_args.scenario_location,
         scenario_name=parsed_args.scenario
         )
+
+    # Figure out the scenario structure (i.e. horizons and stages)
+    subproblem_structure = ScenarioSubproblemStructureDisk(
+        scenario_directory=scenario_directory
+    )
 
     directory_structure = ScenarioDirectoryStructure(
         scenario_directory=scenario_directory,
