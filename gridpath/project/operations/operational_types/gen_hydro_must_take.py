@@ -566,8 +566,10 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(m, data_portal,
-                              subproblem_stage_directory):
+def load_module_specific_data(
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -582,15 +584,16 @@ def load_module_specific_data(m, data_portal,
     # ramp rates)
     projects = load_optype_module_specific_data(
         mod=m, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_hydro_must_take"
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_hydro_must_take"
     )
 
     # Load hydro operational data from hydro-specific input files
     load_hydro_opchars(
         data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_hydro_must_take", projects=projects
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_hydro_must_take",
+        projects=projects
     )
 
     # Linked timepoint params
@@ -613,7 +616,7 @@ def load_module_specific_data(m, data_portal,
 
 
 def export_module_specific_results(
-        mod, d, subproblem_stage_directory
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
 ):
     """
 
@@ -685,11 +688,13 @@ def get_module_specific_inputs_from_database(
     :return: cursor object with query results
     """
     return get_hydro_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn, op_type="gen_hydro_must_take")
+        scenario_id, subscenarios, subproblem, stage, conn,
+        op_type="gen_hydro_must_take"
+    )
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -707,7 +712,7 @@ def write_module_specific_model_inputs(
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
-        subproblem_stage_directory, fname, data
+        scenario_directory, subproblem, stage, fname, data
     )
 
 

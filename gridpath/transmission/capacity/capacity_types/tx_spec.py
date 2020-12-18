@@ -128,10 +128,12 @@ def tx_capacity_cost_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(m, data_portal, scenario_directory,
-                              subproblem, stage):
+def load_module_specific_data(
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
+):
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "specified_transmission_line_capacities.tab"),
         select=("transmission_line", "period",
                 "specified_tx_min_mw", "specified_tx_max_mw"),

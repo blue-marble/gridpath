@@ -90,7 +90,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "prm_project_elcc_simple_contribution.csv"),
               "w", newline="") as \
             results_file:

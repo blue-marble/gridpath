@@ -63,7 +63,7 @@ def add_model_components(m, d, subproblem_stage_directory):
     ###########################################################################
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -130,7 +130,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     """
 
     # Transmission flows for all lines
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "transmission_operations.csv"), "w", newline="") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
@@ -158,7 +158,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     #  (putting it here to be in line with projects/operations/power.py)
     # Module-specific transmission operational results
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",

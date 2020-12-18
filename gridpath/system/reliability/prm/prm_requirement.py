@@ -51,7 +51,7 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+    data_portal.load(filename=os.path.join(subproblem_stage_directory,
                                            "inputs", "prm_requirement.tab"),
                      index=m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
                      param=m.prm_requirement_mw,

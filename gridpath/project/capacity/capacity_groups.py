@@ -317,7 +317,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
 
     if os.path.exists(req_file) and os.path.exists(prj_file):
         with open(os.path.join(
-                scenario_directory, str(subproblem), str(stage), "results",
+                subproblem_stage_directory, "results",
                 "capacity_groups.csv"
         ), "w", newline="") as f:
             writer = csv.writer(f)

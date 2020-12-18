@@ -460,8 +460,7 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              subproblem_stage_directory):
+def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_portal, subproblem_stage_directory):
     """
 
     :param mod:
@@ -474,13 +473,13 @@ def load_module_specific_data(mod, data_portal,
 
     projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_simple"
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_simple"
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
+            subproblem_stage_directory, "inputs",
             "gen_simple_linked_timepoint_params.tab"
         )
     if os.path.exists(linked_inputs_filename):
@@ -498,7 +497,7 @@ def load_module_specific_data(mod, data_portal,
 
 
 def export_module_specific_results(
-        mod, d, subproblem_stage_directory
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
 ):
     """
     :param scenario_directory:

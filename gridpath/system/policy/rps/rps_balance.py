@@ -75,7 +75,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "rps.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period",
@@ -141,13 +141,13 @@ def summarize_results(scenario_directory, subproblem_stage_directory):
 
     # Get the main RPS results file
     rps_df = \
-        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+        pd.read_csv(os.path.join(subproblem_stage_directory, "results",
                                  "rps.csv")
                     )
 
     # Get the RPS dual results
     rps_duals_df = \
-        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+        pd.read_csv(os.path.join(subproblem_stage_directory, "results",
                                  "RPS_Target_Constraint.csv")
                     )
 

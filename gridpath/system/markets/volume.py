@@ -74,12 +74,12 @@ def add_model_components(m, d, subproblem_stage_directory):
 
 
 def load_model_data(
-    m, d, data_portal, subproblem_stage_directory
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
 ):
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "market_volume.tab"
+            subproblem_stage_directory, "inputs", "market_volume.tab"
         ),
         param=(m.max_market_sales, m.max_market_purchases)
     )

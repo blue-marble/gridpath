@@ -661,8 +661,8 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     )
 
 
-def load_hydro_opchars(data_portal, scenario_directory, subproblem,
-                       stage, op_type, projects):
+def load_hydro_opchars(data_portal, subproblem_stage_directory, op_type,
+                       projects):
     """
     Load hydro operational data from hydro-specific input files
     Determine subset of project-horizons in hydro budgets file
@@ -682,7 +682,7 @@ def load_hydro_opchars(data_portal, scenario_directory, subproblem,
     max = dict()
 
     prj_hor_opchar_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "hydro_conventional_horizon_params.tab"),
         sep="\t",
         usecols=["project", "horizon", "average_power_fraction",
@@ -841,8 +841,9 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     )
 
 
-def load_startup_chars(data_portal, scenario_directory, subproblem,
-                       stage, op_type, projects):
+def load_startup_chars(
+    data_portal, subproblem_stage_directory, op_type, projects
+):
     """
 
     :param data_portal:
@@ -855,7 +856,7 @@ def load_startup_chars(data_portal, scenario_directory, subproblem,
     """
 
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
+        subproblem_stage_directory,
         "inputs", "startup_chars.tab"
     )
 

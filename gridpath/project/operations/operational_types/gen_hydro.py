@@ -637,8 +637,10 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_module_specific_data(m, data_portal,
-                              subproblem_stage_directory):
+def load_module_specific_data(
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -653,20 +655,19 @@ def load_module_specific_data(m, data_portal,
     # ramp rates)
     projects = load_optype_module_specific_data(
         mod=m, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_hydro"
+        subproblem_stage_directory=subproblem_stage_directory, op_type="gen_hydro"
     )
 
     # Load hydro operational data from hydro-specific input files
     load_hydro_opchars(
         data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_hydro", projects=projects
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_hydro", projects=projects
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
+            subproblem_stage_directory, "inputs",
             "gen_hydro_linked_timepoint_params.tab"
         )
     if os.path.exists(linked_inputs_filename):
@@ -684,8 +685,9 @@ def load_module_specific_data(m, data_portal,
         pass
 
 
-def export_module_specific_results(mod, d,
-                                   subproblem_stage_directory):
+def export_module_specific_results(
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
+):
     """
 
     :param scenario_directory:
@@ -695,7 +697,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -801,7 +803,7 @@ def write_module_specific_model_inputs(
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
-        subproblem_stage_directory, fname, data
+        scenario_directory, subproblem, stage, fname, data
     )
 
 

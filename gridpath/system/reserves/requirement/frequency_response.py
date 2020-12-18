@@ -63,8 +63,7 @@ def load_model_data(
     """
     generic_load_model_data(
         m=m, d=d, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         reserve_requirement_param="frequency_response_requirement_mw",
         reserve_zone_load_zone_set="FR_BA_LZ",
         reserve_requirement_percent_param="fr_per_req",

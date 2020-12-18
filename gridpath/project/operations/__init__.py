@@ -555,11 +555,11 @@ def load_model_data(
 
     # VOM curves
     vom_curves_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
+        subproblem_stage_directory,
         "inputs", "variable_om_curves.tab"
     )
     periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
+        subproblem_stage_directory,
         "inputs", "periods.tab"
     )
 
@@ -586,7 +586,7 @@ def load_model_data(
 
     # Startup chars
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
+        subproblem_stage_directory,
         "inputs", "startup_chars.tab"
     )
 

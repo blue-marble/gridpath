@@ -104,7 +104,8 @@ def availability_derate_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
 ):
     """
     :param m:

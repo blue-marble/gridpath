@@ -182,10 +182,11 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+        subproblem_stage_directory
 ):
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "storage_specified_capacities.tab"),
         index=m.STOR_SPEC_OPR_PRDS,
         select=("project", "period",
@@ -204,7 +205,7 @@ def load_module_specific_data(
 ###############################################################################
 
 def get_module_specific_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+    scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info

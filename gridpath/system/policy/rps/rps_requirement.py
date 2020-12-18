@@ -104,7 +104,7 @@ def load_model_data(
     """
     # Load the targets
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+        filename=os.path.join(subproblem_stage_directory,
                               "inputs", "rps_targets.tab"),
         index=m.RPS_ZONE_PERIODS_WITH_RPS,
         param=(m.rps_target_mwh, m.rps_target_percentage, )
@@ -113,7 +113,7 @@ def load_model_data(
     # If we have a RPS zone to load zone map input file, load it; otherwise,
     # initialize RPS_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs",
+        subproblem_stage_directory, "inputs",
         "rps_target_load_zone_map.tab"
     )
     if os.path.exists(map_filename):

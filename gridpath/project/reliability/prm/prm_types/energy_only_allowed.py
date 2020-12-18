@@ -257,7 +257,7 @@ def group_cost_rule(mod, group, period):
 
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal, subproblem_stage_directory
 ):
     """
     Optionally load data for costs incurred only when a capacity threshold 

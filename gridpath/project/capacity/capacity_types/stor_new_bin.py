@@ -380,8 +380,10 @@ def new_capacity_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(m, data_portal,
-                              subproblem_stage_directory):
+def load_module_specific_data(
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -396,7 +398,7 @@ def load_module_specific_data(m, data_portal,
     #   because binary storage and generator use same build size param name
     #   in the columns.
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "new_binary_build_storage_vintage_costs.tab"),
         index=m.STOR_NEW_BIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
@@ -408,7 +410,7 @@ def load_module_specific_data(m, data_portal,
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "new_binary_build_storage_size.tab"),
         index=m.STOR_NEW_BIN,
         select=("project", "binary_build_size_mw", "binary_build_size_mwh"),
@@ -426,7 +428,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d, 
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "capacity_stor_new_bin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "vintage", "technology", "load_zone",

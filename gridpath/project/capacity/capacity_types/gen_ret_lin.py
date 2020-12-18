@@ -276,7 +276,8 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
 ):
     """
 
@@ -292,7 +293,7 @@ def load_module_specific_data(
         gen_ret_lin_projects = list()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+            os.path.join(subproblem_stage_directory, "inputs",
                          "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type"]
@@ -312,7 +313,7 @@ def load_module_specific_data(
         gen_ret_lin_capacity_mw_dict = dict()
         gen_ret_lin_fixed_cost_per_mw_yr_dict = dict()
         df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+            os.path.join(subproblem_stage_directory, "inputs",
                          "specified_generation_period_params.tab"),
             sep="\t"
         )
@@ -350,7 +351,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        subproblem_stage_directory, m, d
+    scenario_directory, subproblem, stage, m, d, subproblem_stage_directory
 ):
     """
     Export gen_ret_lin retirement results.
@@ -361,7 +362,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "capacity_gen_ret_lin"
                            ".csv"), "w", newline="") as f:
         writer = csv.writer(f)

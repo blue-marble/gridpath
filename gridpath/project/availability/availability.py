@@ -121,7 +121,8 @@ def load_model_data(
         if hasattr(imported_availability_modules[op_m],
                    "load_module_specific_data"):
             imported_availability_modules[op_m].load_module_specific_data(
-                m, data_portal, subproblem_stage_directory)
+                scenario_directory, subproblem, stage, m, data_portal,
+                subproblem_stage_directory)
         else:
             pass
 
@@ -153,7 +154,8 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
                    "export_module_specific_results"):
             imported_availability_modules[
                 op_m].export_module_specific_results(
-                subproblem_stage_directory, m, d
+                scenario_directory, subproblem,
+                stage, m, d, subproblem_stage_directory
             )
         else:
             pass

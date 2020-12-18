@@ -91,11 +91,12 @@ def record_dynamic_components(dynamic_components):
 
 
 def load_model_data(
-    m, d, data_portal, subproblem_stage_directory
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
 ):
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
+            subproblem_stage_directory, "inputs",
             "load_zone_markets.tab"
         ),
         set=m.LZ_MARKETS
@@ -189,7 +190,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     """
     with open(
             os.path.join(
-                scenario_directory, str(subproblem), str(stage), "results",
+                subproblem_stage_directory, "results",
                 "market_participation.csv"
             ), "w", newline="") as results_file:
         writer = csv.writer(results_file)

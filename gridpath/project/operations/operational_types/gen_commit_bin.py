@@ -2256,8 +2256,10 @@ def operational_violation_cost_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              subproblem_stage_directory):
+def load_module_specific_data(
+    scenario_directory, subproblem, stage, mod, data_portal,
+    subproblem_stage_directory
+):
     """
     :param mod:
     :param data_portal:
@@ -2270,20 +2272,21 @@ def load_module_specific_data(mod, data_portal,
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin"
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_commit_bin"
     )
 
     # Load data from startup_chars.tab (if it exists)
     load_startup_chars(
         data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin", projects=projects
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_commit_bin",
+        projects=projects
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
+            subproblem_stage_directory, "inputs",
             "gen_commit_bin_linked_timepoint_params.tab"
         )
     if os.path.exists(linked_inputs_filename):
@@ -2308,7 +2311,7 @@ def load_module_specific_data(mod, data_portal,
 
     # Linked timepoint params (by startup type)
     linked_startup_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
+            subproblem_stage_directory, "inputs",
             "gen_commit_bin_linked_timepoint_str_type_params.tab"
         )
     if os.path.exists(linked_startup_inputs_filename):
@@ -2323,8 +2326,10 @@ def load_module_specific_data(mod, data_portal,
         pass
 
 
-def export_module_specific_results(mod, d,
-                                   subproblem_stage_directory):
+def export_module_specific_results(
+    scenario_directory, subproblem, stage, mod, d,
+    subproblem_stage_directory
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -2333,7 +2338,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "dispatch_binary_commit.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -2379,12 +2384,13 @@ def export_module_specific_results(mod, d,
 
     # Export any results that will be become inputs to a linked subproblem
     export_linked_subproblem_inputs(
-        mod, d, subproblem_stage_directory
+        scenario_directory, subproblem, stage, mod, d,
+        subproblem_stage_directory
     )
 
 
 def export_linked_subproblem_inputs(
-        mod, d, subproblem_stage_directory
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -2402,9 +2408,9 @@ def export_linked_subproblem_inputs(
 
         # Export params by project and timepoint
         with open(os.path.join(
-                scenario_directory, next_subproblem, stage, "inputs",
-                "gen_commit_bin_linked_timepoint_params.tab"
-        ), "w", newline=""
+                  subproblem_stage_directory, "inputs",
+                  "gen_commit_bin_linked_timepoint_params.tab"
+                  ), "w", newline=""
         ) as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
@@ -2476,7 +2482,7 @@ def export_linked_subproblem_inputs(
             # into the next subproblem
             if mod.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES:
                 with open(os.path.join(
-                        scenario_directory, next_subproblem, stage, "inputs",
+                        subproblem_stage_directory, "inputs",
                         "gen_commit_bin_linked_timepoint_str_type_params.tab"
                 ), "w", newline=""
                 ) as f:
@@ -2515,7 +2521,7 @@ def export_linked_subproblem_inputs(
 ###############################################################################
 
 def import_module_specific_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     :param scenario_id:

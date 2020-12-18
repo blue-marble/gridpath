@@ -39,8 +39,7 @@ def load_model_data(
 
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "market_prices.tab"
+            subproblem_stage_directory, "inputs", "market_prices.tab"
         ),
         param=m.market_price
     )

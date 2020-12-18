@@ -663,7 +663,8 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-    m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
 ):
     """
 
@@ -680,7 +681,7 @@ def load_module_specific_data(
         stor_max_duration = dict()
 
         _df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage),
+            os.path.join(subproblem_stage_directory,
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type",
@@ -711,7 +712,7 @@ def load_module_specific_data(
     # TODO: throw an error when a project of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+        filename=os.path.join(subproblem_stage_directory,
                               "inputs", "new_build_storage_vintage_costs.tab"),
         index=m.STOR_NEW_LIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
@@ -733,7 +734,7 @@ def load_module_specific_data(
     max_cumulative_mwh = dict()
 
     header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
@@ -745,7 +746,7 @@ def load_module_specific_data(
     used_columns = [c for c in dynamic_columns if c in header]
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t",
         usecols=["project", "vintage"] + used_columns
@@ -844,7 +845,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        subproblem_stage_directory, m, d
+    scenario_directory, subproblem, stage, m, d, subproblem_stage_directory
 ):
     """
     Export new build storage results.
@@ -855,7 +856,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "capacity_stor_new_lin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "vintage", "technology", "load_zone",

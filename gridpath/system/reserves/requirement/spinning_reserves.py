@@ -42,8 +42,7 @@ def load_model_data(
 ):
     generic_load_model_data(
         m=m, d=d, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         reserve_requirement_param="spinning_reserves_requirement_mw",
         reserve_zone_load_zone_set="SPIN_BA_LZ",
         reserve_requirement_percent_param="spin_per_req",

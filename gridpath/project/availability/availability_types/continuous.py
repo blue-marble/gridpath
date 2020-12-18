@@ -323,7 +323,8 @@ def availability_derate_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
 ):
     """
     :param m:
@@ -335,8 +336,8 @@ def load_module_specific_data(
     """
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
-        scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="availability_type",
+        subproblem_stage_directory=subproblem_stage_directory,
+        column="availability_type",
         type="continuous"
     )
 
@@ -346,7 +347,7 @@ def load_module_specific_data(
     avl_cont_min_unavl_hrs_per_event_dict = {}
     avl_cont_min_avl_hrs_between_events_dict = {}
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+    with open(os.path.join(subproblem_stage_directory,
                            "inputs", "project_availability_endogenous.tab"),
               "r") as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -368,7 +369,8 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        subproblem_stage_directory, m, d):
+    scenario_directory, subproblem, stage, m, d, subproblem_stage_directory
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -379,7 +381,7 @@ def export_module_specific_results(
     :return: Nothing
     """
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "project_availability_endogenous_continuous.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)

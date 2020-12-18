@@ -48,10 +48,8 @@ def load_model_data(
     :return:
     """
     data_portal.load(
-        filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "markets.tab"
-        ),
+        filename=os.path.join(subproblem_stage_directory, "inputs",
+                              "markets.tab"),
         set=m.MARKETS
     )
 

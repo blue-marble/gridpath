@@ -115,7 +115,7 @@ def add_model_components(m, d, subproblem_stage_directory):
     ###########################################################################
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -232,7 +232,7 @@ def load_model_data(
     :return:
     """
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -253,7 +253,8 @@ def load_model_data(
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, subproblem_stage_directory)
+                scenario_directory, subproblem, stage, m, data_portal,
+                subproblem_stage_directory)
         else:
             pass
 
@@ -270,7 +271,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     """
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -298,7 +299,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
             pass
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "transmission_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
@@ -315,7 +316,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
             ])
 
     # Export transmission capacity costs
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
               "costs_transmission_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(

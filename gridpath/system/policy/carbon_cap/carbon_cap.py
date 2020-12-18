@@ -52,7 +52,7 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+    data_portal.load(filename=os.path.join(subproblem_stage_directory,
                                            "inputs", "carbon_cap.tab"),
                      index=m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
                      param=m.carbon_cap_target,

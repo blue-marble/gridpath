@@ -115,9 +115,7 @@ def load_model_data(
         m=m,
         d=d,
         data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
         RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,

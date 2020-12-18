@@ -93,10 +93,11 @@ def add_model_components(m, d, subproblem_stage_directory):
 
     # Dynamic Inputs
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
@@ -167,8 +168,8 @@ def fix_variables(m, d, subproblem_stage_directory):
     """
 
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        subproblem_stage_directory=subproblem_stage_directory,
+        which_type="operational_type"
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -202,11 +203,11 @@ def load_model_data(
     """
 
     stages = [str(s) for s in check_for_integer_subdirectories(
-        os.path.join(scenario_directory, subproblem)
+        os.path.join(scenario_directory, str(subproblem))
     )]
 
     fixed_commitment_df = read_csv(
-        os.path.join(scenario_directory, subproblem,
+        os.path.join(scenario_directory, str(subproblem),
                      "pass_through_inputs", "fixed_commitment.tab"),
         sep='\t',
         dtype={"stage": str}
@@ -221,7 +222,7 @@ def load_model_data(
         """
         fnl_commit_prjs = list()
         df = read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage),
+            os.path.join(subproblem_stage_directory,
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "last_commitment_stage"],
@@ -231,7 +232,7 @@ def load_model_data(
         for prj, s in zip(df["project"], df["last_commitment_stage"]):
             if s == ".":
                 pass
-            elif s == stage or stages.index(s) < stages.index(stage):
+            elif s == str(stage) or stages.index(s) < stages.index(str(stage)):
                 fnl_commit_prjs.append(prj)
             else:
                 pass
@@ -249,7 +250,7 @@ def load_model_data(
         fixed_commitment_df["stage_index"] = fixed_commitment_df.apply(
             lambda row: stages.index(row["stage"]), axis=1)
         relevant_commitment_df = fixed_commitment_df[
-            fixed_commitment_df["stage_index"] == stages.index(stage) - 1
+            fixed_commitment_df["stage_index"] == stages.index(str(stage)) - 1
         ]
         projects_timepoints = list(zip(relevant_commitment_df["project"],
                                        relevant_commitment_df["timepoint"]))
@@ -264,7 +265,9 @@ def load_model_data(
         pass
 
 
-def export_pass_through_inputs(subproblem_stage_directory, m):
+def export_pass_through_inputs(
+    scenario_directory, subproblem, stage, subproblem_stage_directory, m
+):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages
@@ -278,7 +281,7 @@ def export_pass_through_inputs(subproblem_stage_directory, m):
     """
 
     df = read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "last_commitment_stage"]
@@ -288,7 +291,7 @@ def export_pass_through_inputs(subproblem_stage_directory, m):
         zip(df["project"], df["last_commitment_stage"])
     )
 
-    with open(os.path.join(scenario_directory, subproblem,
+    with open(os.path.join(scenario_directory, str(subproblem),
                            "pass_through_inputs", "fixed_commitment.tab"),
               "a") as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file,

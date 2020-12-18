@@ -346,7 +346,8 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+        subproblem_stage_directory
 ):
     """
 
@@ -363,8 +364,7 @@ def load_module_specific_data(
         max_fraction = dict()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage),
-                         "inputs", "projects.tab"),
+            os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type", "minimum_duration_hours"]
         )
@@ -404,7 +404,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        subproblem_stage_directory, m, d
+    subproblem_stage_directory, m, d, subproblem_stage_directory
 ):
     """
     Export new DR results.
@@ -415,7 +415,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "capacity_dr_new.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -631,7 +631,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 

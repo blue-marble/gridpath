@@ -432,6 +432,9 @@ def save_results(
         )
 
         export_pass_through_inputs(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
             subproblem_stage_directory=subproblem_stage_directory,
             loaded_modules=loaded_modules,
             instance=instance
@@ -688,7 +691,8 @@ def export_results(
 
 
 def export_pass_through_inputs(
-    loaded_modules, subproblem_stage_directory, instance
+    scenario_directory, subproblem, stage, loaded_modules,
+    subproblem_stage_directory, instance
 ):
     """
     :param scenario_directory:
@@ -704,6 +708,7 @@ def export_pass_through_inputs(
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
             m.export_pass_through_inputs(
+                scenario_directory, subproblem, stage,
                 subproblem_stage_directory, instance
             )
     else:

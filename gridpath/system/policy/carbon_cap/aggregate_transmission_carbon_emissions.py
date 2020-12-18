@@ -101,7 +101,8 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
                )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
+def export_results(scenario_directory, subproblem, stage, m, d,
+                   subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -111,7 +112,7 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+    with open(os.path.join(subproblem_stage_directory,
                            "results", "carbon_cap_total_transmission.csv"),
               "w", newline="") as carbon_results_file:
         writer = csv.writer(carbon_results_file)

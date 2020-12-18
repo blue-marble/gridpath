@@ -56,7 +56,7 @@ def add_model_components(m, d, subproblem_stage_directory):
 
     # Import all possible PRM modules
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "prm_type"]

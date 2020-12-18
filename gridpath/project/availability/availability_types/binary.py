@@ -327,7 +327,8 @@ def availability_derate_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-    m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal,
+    subproblem_stage_directory
 ):
     """
     :param m:
@@ -339,8 +340,8 @@ def load_module_specific_data(
     """
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
-        scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="availability_type",
+        subproblem_stage_directory=subproblem_stage_directory,
+        column="availability_type",
         type="binary"
     )
 
@@ -371,7 +372,8 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-    subproblem_stage_directory, m, d):
+    scenario_directory, subproblem, stage, m, d, subproblem_stage_directory
+):
     """
     Export operations results.
     :param scenario_directory:
@@ -455,7 +457,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
 
@@ -475,7 +477,7 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        subproblem_stage_directory, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "project_availability_endogenous.tab"
     )
 

@@ -140,7 +140,7 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, subproblem_stage_directory
+    scenario_directory, subproblem, stage, m, data_portal, subproblem_stage_directory
 ):
     """
 

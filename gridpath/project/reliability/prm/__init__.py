@@ -76,7 +76,7 @@ def load_model_data(
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+    data_portal.load(filename=os.path.join(subproblem_stage_directory,
                                            "inputs", "projects.tab"),
                      select=("project", "prm_zone", "prm_type"),
                      param=(m.prm_zone, m.prm_type)

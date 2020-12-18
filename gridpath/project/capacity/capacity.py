@@ -257,7 +257,8 @@ def load_model_data(
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, subproblem_stage_directory)
+                scenario_directory, subproblem, stage, m, data_portal,
+                subproblem_stage_directory)
         else:
             pass
 
@@ -309,7 +310,8 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
                    "export_module_specific_results"):
             imported_capacity_modules[
                 op_m].export_module_specific_results(
-                subproblem_stage_directory, m, d
+                scenario_directory, subproblem, stage, m, d,
+                subproblem_stage_directory
             )
         else:
             pass
@@ -359,7 +361,8 @@ def summarize_results(scenario_directory, subproblem_stage_directory):
                    "summarize_module_specific_results"):
             imported_capacity_modules[
                 op_m].summarize_module_specific_results(
-                subproblem_stage_directory, summary_results_file
+                scenario_directory, subproblem_stage_directory,
+                summary_results_file
             )
         else:
             pass
