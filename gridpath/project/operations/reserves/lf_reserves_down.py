@@ -46,7 +46,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "LF_RESERVES_DOWN_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, subproblem_stage_directory):
     """
 
     :param d:
@@ -58,9 +58,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 
     generic_record_dynamic_components(
         d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
@@ -72,7 +70,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -80,7 +78,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(d, subproblem_stage_directory)
 
     generic_add_model_components(
         m=m,
@@ -97,7 +95,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -112,9 +113,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
         RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
@@ -128,7 +127,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export project-level results for downward load-following
     :param scenario_directory:
@@ -142,9 +141,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     generic_export_module_specific_results(
         m=m,
         d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         module_name=MODULE_NAME,
         reserve_project_operational_timepoints_set=
         RESERVE_PRJ_OPR_TMPS_SET_NAME,

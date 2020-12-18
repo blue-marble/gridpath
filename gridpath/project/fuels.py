@@ -25,7 +25,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_dtypes, get_expected_dtypes, validate_columns, validate_idxs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -41,7 +41,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -56,7 +59,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # There will be no data in this file if the database is used and there
     # are no projects with fuels in the scenario
     fuels_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "fuels.tab"
+        subproblem_stage_directory, "inputs", "fuels.tab"
     )
     fuels_df = pd.read_csv(fuels_file)
     if fuels_df.empty:
@@ -72,7 +75,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # There will be no data in this file if the database is used and there
     # are no projects with fuels in the scenario
     fuels_prices_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "fuel_prices.tab"
+        subproblem_stage_directory, "inputs", "fuel_prices.tab"
     )
     fuel_prices_df = pd.read_csv(fuels_prices_file)
     if fuels_df.empty:

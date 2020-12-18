@@ -64,7 +64,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -1383,8 +1383,7 @@ def fix_commitment(mod, g, tmp):
 
 # Input-Output
 ###############################################################################
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              subproblem, stage):
+def load_module_specific_data(mod, data_portal, subproblem_stage_directory):
     """
 
     :param mod:
@@ -1398,15 +1397,15 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_cap"
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_commit_cap"
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_cap_linked_timepoint_params.tab"
-        )
+        subproblem_stage_directory, "inputs",
+        "gen_commit_cap_linked_timepoint_params.tab"
+    )
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
@@ -1425,7 +1424,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
 
 def export_module_specific_results(
-        mod, d, scenario_directory, subproblem, stage
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
 ):
     """
 
@@ -1436,7 +1435,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "dispatch_capacity_commit.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)

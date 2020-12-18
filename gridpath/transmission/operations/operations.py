@@ -28,7 +28,7 @@ from gridpath.transmission.operations.common_functions import \
     load_tx_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -118,7 +118,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export operations results.
     :param scenario_directory:
@@ -176,7 +176,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                    "export_module_specific_results"):
             imported_tx_operational_modules[op_m].\
                 export_module_specific_results(
-                m, d, scenario_directory, subproblem, stage,
+                m, d, subproblem_stage_directory,
             )
         else:
             pass

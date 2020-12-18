@@ -31,7 +31,7 @@ from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -152,7 +152,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Commitment Functions
 ###############################################################################
 
-def fix_variables(m, d, scenario_directory, subproblem, stage):
+def fix_variables(m, d, subproblem_stage_directory):
     """
     This function fixes the commitment of all fixed commitment projects by
     running the :code:`fix_commitment` function in the appropriate operational
@@ -186,7 +186,10 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -261,7 +264,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
+def export_pass_through_inputs(subproblem_stage_directory, m):
     """
     This function exports the commitment for all final commitment projects,
     i.e. projects for which the current stage or any of the previous stages

@@ -41,7 +41,7 @@ from gridpath.project.common_functions import \
     check_boundary_type
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -2237,7 +2237,7 @@ def operational_violation_cost_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+                              subproblem_stage_directory):
     """
     :param mod:
     :param data_portal:
@@ -2304,7 +2304,7 @@ def load_module_specific_data(mod, data_portal,
 
 
 def export_module_specific_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+                                   subproblem_stage_directory):
     """
     :param scenario_directory:
     :param subproblem:
@@ -2359,12 +2359,12 @@ def export_module_specific_results(mod, d,
 
     # Export any results that will be become inputs to a linked subproblem
     export_linked_subproblem_inputs(
-        mod, d, scenario_directory, subproblem, stage
+        mod, d, subproblem_stage_directory
     )
 
 
 def export_linked_subproblem_inputs(
-        mod, d, scenario_directory, subproblem, stage
+        mod, d, subproblem_stage_directory
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the

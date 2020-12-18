@@ -27,7 +27,7 @@ import gridpath.project.operations.operational_types as op_type
 
 
 def generic_add_model_components(
-    m, d, scenario_directory, subproblem, stage,
+    m, d, subproblem_stage_directory,
     reserve_projects_set,
     reserve_project_operational_timepoints_set,
     reserve_provision_variable_name,
@@ -62,10 +62,11 @@ def generic_add_model_components(
             )
 
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
@@ -103,7 +104,7 @@ def generic_add_model_components(
 
 
 def generic_load_model_data(
-        m, d, data_portal, scenario_directory, subproblem, stage,
+        m, d, data_portal, subproblem_stage_directory,
         ramp_rate_limit_column_name,
         reserve_provision_ramp_rate_limit_param
 ):
@@ -123,7 +124,7 @@ def generic_load_model_data(
     columns_to_import = ("project",)
     params_to_import = ()
     projects_file_header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
@@ -140,7 +141,7 @@ def generic_load_model_data(
 
     # Load the needed data
     data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
+                        subproblem_stage_directory, "inputs",
                         "projects.tab"),
                      select=columns_to_import,
                      param=params_to_import

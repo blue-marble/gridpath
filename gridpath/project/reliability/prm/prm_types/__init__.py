@@ -26,7 +26,7 @@ from gridpath.project.reliability.prm.common_functions import \
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -35,7 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     # Import needed PRM modules
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "prm_type"]
@@ -51,7 +51,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for prm_m in required_prm_modules:
         imp_prm_m = imported_prm_modules[prm_m]
         if hasattr(imp_prm_m, "add_model_components"):
-            imp_prm_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_prm_m.add_model_components(m, d, subproblem_stage_directory)
 
     # For each PRM project, get the ELCC-eligible capacity
     def elcc_eligible_capacity_rule(mod, g, p):
@@ -67,7 +67,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # TODO: refactor importing prm modules as it's used several places in this
 #  module
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -79,7 +82,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "prm_type"]
@@ -95,12 +98,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         if hasattr(imported_prm_modules[prm_m],
                    "load_module_specific_data"):
             imported_prm_modules[prm_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory)
         else:
             pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export operations results.
     :param scenario_directory:
@@ -117,7 +120,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Export module-specific results
     # Operational type modules
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "prm_type"]
@@ -134,7 +137,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                    "export_module_specific_results"):
             imported_prm_modules[prm_m]. \
                 export_module_specific_results(
-                m, d, scenario_directory, subproblem, stage,
+                m, d, subproblem_stage_directory,
             )
         else:
             pass

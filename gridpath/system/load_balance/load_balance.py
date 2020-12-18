@@ -49,7 +49,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -148,7 +148,7 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -158,7 +158,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "load_balance.csv"), "w", newline="") as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["zone", "period", "timepoint",

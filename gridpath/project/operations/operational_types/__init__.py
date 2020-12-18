@@ -32,7 +32,7 @@ from gridpath.project.operations.common_functions import \
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -40,10 +40,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
@@ -53,10 +54,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_operational_modules:
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(m, d, subproblem_stage_directory)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -68,10 +72,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed operational modules
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
@@ -81,13 +86,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
+            print(op_m)
             imported_operational_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory
+            )
         else:
             pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export operations results.
     :param scenario_directory:
@@ -104,8 +111,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Export module-specific results
     # Operational type modules
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        subproblem_stage_directory=subproblem_stage_directory,
+        which_type="operational_type"
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -114,11 +121,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Add any components specific to the operational modules
     for op_m in required_operational_modules:
+        print(op_m)
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
                 export_module_specific_results(
-                m, d, scenario_directory, subproblem, stage,
+                scenario_directory, subproblem, stage, m, d,
+                subproblem_stage_directory,
             )
         else:
             pass

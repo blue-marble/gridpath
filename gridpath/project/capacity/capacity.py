@@ -35,7 +35,7 @@ from gridpath.auxiliary.dynamic_components import \
     storage_only_capacity_type_operational_period_sets
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types in the list of projects specified
@@ -115,10 +115,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
-    )
+    required_capacity_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="capacity_type"
+        )
 
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
@@ -130,7 +131,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, subproblem, stage
+                m, d, subproblem_stage_directory
             )
 
     # Sets
@@ -236,13 +237,17 @@ def operational_periods_by_project(prj, project_operational_periods):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     """
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
-    )
+    required_capacity_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="capacity_type"
+        )
 
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
@@ -252,13 +257,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory)
         else:
             pass
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export capacity results.
     :param scenario_directory:
@@ -270,7 +275,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Total capacity for all projects
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "capacity_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period",
@@ -289,10 +294,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     # Module-specific capacity results
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
-    )
+    required_capacity_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="capacity_type"
+        )
 
     # Import needed capacity type modules
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
@@ -303,13 +309,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                    "export_module_specific_results"):
             imported_capacity_modules[
                 op_m].export_module_specific_results(
-                scenario_directory, subproblem, stage, m, d
+                subproblem_stage_directory, m, d
             )
         else:
             pass
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem_stage_directory):
     """
     :param scenario_directory:
     :param subproblem:
@@ -320,7 +326,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        subproblem_stage_directory, "results", "summary_results.txt"
     )
     # Check if the 'technology' exists in  projects.tab; if it doesn't, we
     # don't have a category to aggregate by, so we'll skip summarizing results
@@ -334,13 +340,14 @@ def summarize_results(scenario_directory, subproblem, stage):
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+        os.path.join(subproblem_stage_directory, "results",
                      "capacity_all.csv")
     )
 
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+    required_capacity_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="capacity_type"
     )
 
     # Import needed capacity type modules
@@ -352,7 +359,7 @@ def summarize_results(scenario_directory, subproblem, stage):
                    "summarize_module_specific_results"):
             imported_capacity_modules[
                 op_m].summarize_module_specific_results(
-                scenario_directory, subproblem, stage, summary_results_file
+                subproblem_stage_directory, summary_results_file
             )
         else:
             pass

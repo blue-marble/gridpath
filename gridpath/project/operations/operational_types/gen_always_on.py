@@ -50,7 +50,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_opchars
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -528,7 +528,7 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+                              subproblem_stage_directory):
     """
 
     :param mod:
@@ -565,7 +565,7 @@ def load_module_specific_data(mod, data_portal,
 
 
 def export_module_specific_results(
-        mod, d, scenario_directory, subproblem, stage
+        mod, d, subproblem_stage_directory
 ):
     """
     :param scenario_directory:

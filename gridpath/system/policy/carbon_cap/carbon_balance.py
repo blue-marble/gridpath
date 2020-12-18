@@ -29,7 +29,7 @@ from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -76,7 +76,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:

@@ -33,7 +33,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -231,7 +231,10 @@ def determine_rps_generators_by_rps_zone(mod, rps_z):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -243,7 +246,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+        filename=os.path.join(subproblem_stage_directory,
                               "inputs", "projects.tab"),
         select=("project", "rps_zone"),
         param=(m.rps_zone,)
@@ -254,7 +257,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -264,7 +267,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "rps_by_project.csv"),
               "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
@@ -293,7 +296,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     # Export list of RPS projects and their zones for later use
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "rps_project_zones.csv"),
               "w", newline="") as rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)

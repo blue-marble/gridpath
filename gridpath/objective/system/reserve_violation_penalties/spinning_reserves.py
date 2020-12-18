@@ -19,7 +19,7 @@ from .aggregate_reserve_violation_penalties import \
     generic_record_dynamic_components, generic_add_model_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -30,7 +30,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     generic_add_model_components(
         m,
         d,
-        scenario_directory, subproblem, stage,
+        subproblem_stage_directory,
         "SPINNING_RESERVES_ZONES",
         "Spinning_Reserves_Violation_MW_Expression",
         "spinning_reserves_violation_penalty_per_mw",

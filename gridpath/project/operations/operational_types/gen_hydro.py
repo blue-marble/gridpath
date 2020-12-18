@@ -45,7 +45,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_hydro_opchars
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -638,7 +638,7 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_module_specific_data(m, data_portal,
-                              scenario_directory, subproblem, stage):
+                              subproblem_stage_directory):
     """
 
     :param m:
@@ -685,7 +685,7 @@ def load_module_specific_data(m, data_portal,
 
 
 def export_module_specific_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+                                   subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -801,7 +801,7 @@ def write_module_specific_model_inputs(
     fname = "hydro_conventional_horizon_params.tab"
 
     write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, fname, data
+        subproblem_stage_directory, fname, data
     )
 
 

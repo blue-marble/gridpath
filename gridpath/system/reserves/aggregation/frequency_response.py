@@ -19,7 +19,7 @@ from pyomo.environ import Set, Expression
 from .reserve_aggregation import generic_add_model_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:

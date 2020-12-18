@@ -30,7 +30,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     FDDL: Fully Deliverable Duration Limited
     :param m: 
@@ -114,7 +114,7 @@ def elcc_eligible_capacity_rule(mod, g, p):
 
 
 def load_module_specific_data(
-            m, data_portal, scenario_directory, subproblem, stage
+            m, data_portal, subproblem_stage_directory
 ):
     """
 

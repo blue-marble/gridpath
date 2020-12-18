@@ -176,15 +176,14 @@ def get_solve_parser():
     return parser
 
 
-def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
+# TODO: this should be consolidated with other create dir if not exists methods
+def create_logs_directory_if_not_exists(log_directory_location):
     """
     Create a logs directory if it doesn't exist already
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
+    :param log_directory_location:
     :return:
     """
-    logs_directory = os.path.join(scenario_directory, str(subproblem), str(stage), "logs")
+    logs_directory = os.path.join(log_directory_location, "logs")
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
     return logs_directory

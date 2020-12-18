@@ -47,7 +47,7 @@ from gridpath.auxiliary.db_interface import \
     determine_table_subset_by_start_and_column
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -176,7 +176,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m: Pyomo AbstractModel
@@ -188,8 +191,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "timepoints.tab"),
+        filename=
+        os.path.join(subproblem_stage_directory, "inputs", "timepoints.tab"),
         index=m.TMPS,
         param=(m.tmp_weight,
                m.hrs_in_tmp,

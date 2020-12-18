@@ -273,8 +273,7 @@ def update_dispatch_results_table(
 
 
 def get_optype_inputs_as_df(
-        scenario_directory, subproblem, stage, op_type,
-        required_columns, optional_columns
+    subproblem_stage_directory, op_type, required_columns, optional_columns
 ):
     """
     :param scenario_directory:
@@ -293,9 +292,7 @@ def get_optype_inputs_as_df(
 
     # Figure out which headers we have
     header = pd.read_csv(
-        os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"
-        ),
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
 
@@ -305,8 +302,7 @@ def get_optype_inputs_as_df(
     # Read in the appropriate columns for the operational type from
     # projects.tab
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "operational_type"]
             + required_columns + used_columns
@@ -394,7 +390,8 @@ def get_types_dict():
 
 
 def load_optype_module_specific_data(
-        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+    mod, data_portal, subproblem_stage_directory, op_type
+):
     """
 
     :param mod:
@@ -414,8 +411,8 @@ def load_optype_module_specific_data(
 
     # Load in the inputs dataframe for the op type module
     op_type_df = get_optype_inputs_as_df(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type=op_type,
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type=op_type,
         required_columns=[r for r in required_columns_types.keys()],
         optional_columns=[o for o in optional_columns_types.keys()]
     )
@@ -492,7 +489,7 @@ def write_tab_file_model_inputs(
 
 
 def load_var_profile_inputs(
-        data_portal, scenario_directory, subproblem, stage, op_type):
+        data_portal, subproblem_stage_directory, op_type):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
     directory.
@@ -512,8 +509,7 @@ def load_var_profile_inputs(
     # Determine projects of this op_type and other var op_types
     # TODO: re-factor getting projects of certain op-type?
     prj_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "projects.tab"),
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         sep="\t",
         usecols=["project", "operational_type"]
     )
@@ -525,7 +521,7 @@ def load_var_profile_inputs(
     # Read in the cap factors, filter for projects with the correct op_type
     # and convert to dictionary
     cf_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "variable_generator_profiles.tab"),
         sep="\t",
         usecols=["project", "timepoint", "cap_factor"],

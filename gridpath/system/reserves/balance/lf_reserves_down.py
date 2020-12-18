@@ -20,7 +20,7 @@ from .reserve_balance import generic_add_model_components, \
     generic_import_results_to_database
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -53,7 +53,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    generic_export_results(scenario_directory, subproblem, stage, m, d,
+    generic_export_results(subproblem_stage_directory, m, d,
                            "lf_reserves_down_violation.csv",
                            "lf_reserves_down_violation_mw",
                            "LF_RESERVES_DOWN_ZONES",

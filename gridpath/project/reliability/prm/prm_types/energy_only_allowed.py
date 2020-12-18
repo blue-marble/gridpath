@@ -35,7 +35,7 @@ from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     EOA: Energy-Only Allowed
     :param m: 
@@ -257,7 +257,7 @@ def group_cost_rule(mod, group, period):
 
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
     Optionally load data for costs incurred only when a capacity threshold 
@@ -273,7 +273,7 @@ def load_module_specific_data(
     """
 
     group_threshold_costs_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "deliverability_group_params.tab"
     )
     if os.path.exists(group_threshold_costs_file):
@@ -288,7 +288,7 @@ def load_module_specific_data(
         pass
 
     group_projects_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "deliverability_group_projects.tab"
     )
 
@@ -301,7 +301,7 @@ def load_module_specific_data(
         pass
 
 
-def export_module_specific_results(m, d, scenario_directory, subproblem, stage,):
+def export_module_specific_results(m, d, subproblem_stage_directory,):
     """
 
     :param m:
@@ -314,7 +314,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
     # Energy-only vs deliverable capacity by project
     with open(os.path.join(
-            scenario_directory, subproblem, stage, "results",
+            subproblem_stage_directory, "results",
             "project_prm_energy_only_and_deliverable_capacity.csv"
     ), "w", newline="") as f:
         writer = csv.writer(f)
@@ -455,7 +455,7 @@ def write_module_specific_model_inputs(
 
     if group_threshold_costs:
         with open(os.path.join(
-                scenario_directory, subproblem, stage, "inputs",
+                subproblem_stage_directory, "inputs",
                 "deliverability_group_params.tab"), "w", newline="") as \
                 elcc_eligibility_thresholds_file:
             writer = csv.writer(elcc_eligibility_thresholds_file,
@@ -474,7 +474,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
         with open(os.path.join(
-                scenario_directory, subproblem, stage, "inputs",
+                subproblem_stage_directory, "inputs",
                 "deliverability_group_projects.tab"), "w"
         ) as group_projects_file:
             writer = csv.writer(group_projects_file, delimiter="\t", lineterminator="\n")

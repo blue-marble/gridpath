@@ -32,7 +32,7 @@ from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -237,7 +237,10 @@ def carbon_emissions_imports_rule(mod, tx, tmp):
 # Inputs-Outputs
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -250,7 +253,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+        filename=os.path.join(subproblem_stage_directory,
                               "inputs", "transmission_lines.tab"),
         select=("TRANSMISSION_LINES", "carbon_cap_zone",
                 "carbon_cap_zone_import_direction",
@@ -265,7 +268,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -275,7 +278,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "carbon_emission_imports_by_tx_line.csv"),
               "w", newline="") as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)

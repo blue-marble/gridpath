@@ -51,7 +51,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "FREQUENCY_RESPONSE_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, subproblem_stage_directory):
     """
 
     :param d:
@@ -77,7 +77,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -85,7 +85,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(d, subproblem_stage_directory)
 
     generic_add_model_components(
         m=m,
@@ -114,7 +114,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     #         within=m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -129,9 +132,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
         RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
@@ -149,7 +150,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     project_fr_partial_list = list()
     projects = \
         pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+            os.path.join(subproblem_stage_directory, "inputs",
                          "projects.tab"),
             sep="\t"
         )
@@ -169,7 +170,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     }
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export project-level results for downward load-following
     :param scenario_directory:
@@ -187,7 +188,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "reserves_provision_frequency_response.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)

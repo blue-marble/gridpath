@@ -22,7 +22,7 @@ from gridpath.auxiliary.dynamic_components import \
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     """
@@ -91,7 +91,7 @@ def record_dynamic_components(dynamic_components):
 
 
 def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
+    m, d, data_portal, subproblem_stage_directory
 ):
     data_portal.load(
         filename=os.path.join(
@@ -177,7 +177,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             writer.writerow(row)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:

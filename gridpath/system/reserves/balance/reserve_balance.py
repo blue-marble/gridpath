@@ -78,7 +78,7 @@ def generic_add_model_components(
                        rule=meet_reserve_rule))
 
 
-def generic_export_results(scenario_directory, subproblem, stage, m, d,
+def generic_export_results(subproblem_stage_directory, m, d,
                            filename,
                            column_name,
                            reserve_zone_set,
@@ -97,7 +97,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :param reserve_violation_expression:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            filename), "w", newline="") \
             as results_file:
         writer = csv.writer(results_file)

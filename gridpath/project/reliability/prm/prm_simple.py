@@ -31,7 +31,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -58,7 +58,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -70,14 +73,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
+                        subproblem_stage_directory, "inputs",
                         "projects.tab"),
                      select=("project", "elcc_simple_fraction"),
                      param=(m.elcc_simple_fraction,)
                      )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:

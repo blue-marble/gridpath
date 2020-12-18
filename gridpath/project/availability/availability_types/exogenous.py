@@ -33,7 +33,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.project.common_functions import determine_project_subset
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -104,7 +104,7 @@ def availability_derate_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
     :param m:
@@ -116,8 +116,8 @@ def load_module_specific_data(
     """
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
-        scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="availability_type",
+        subproblem_stage_directory=subproblem_stage_directory,
+        column="availability_type",
         type="exogenous"
     )
 
@@ -131,7 +131,7 @@ def load_module_specific_data(
     # The test examples do not currently have a
     # project_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "project_availability_exogenous.tab"
     )
 

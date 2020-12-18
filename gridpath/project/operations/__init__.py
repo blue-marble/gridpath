@@ -51,7 +51,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.project.common_functions import append_to_input_file
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
      The following Pyomo model components are defined in this module:
 
@@ -431,10 +431,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Start list of headroom and footroom variables by project
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(d, subproblem_stage_directory)
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, subproblem_stage_directory):
     """
     :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
@@ -455,8 +455,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "projects.tab"),
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         sep="\t"
     )
 
@@ -477,7 +476,10 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -489,7 +491,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+        filename=os.path.join(subproblem_stage_directory,
                               "inputs", "projects.tab"),
         select=("project", "variable_om_cost_per_mwh", "fuel",
                 "startup_fuel_mmbtu_per_mw", "startup_cost_per_mw",
@@ -614,16 +616,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         
     # HR curves
     hr_curves_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
-        "inputs", "heat_rate_curves.tab"
+        subproblem_stage_directory, "inputs", "heat_rate_curves.tab"
     )
     periods_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
-        "inputs", "periods.tab"
+        subproblem_stage_directory, "inputs", "periods.tab"
     )
     projects_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage),
-        "inputs", "projects.tab"
+        subproblem_stage_directory, "inputs", "projects.tab"
     )
 
     # Get column names as a few columns will be optional;

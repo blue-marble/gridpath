@@ -40,7 +40,7 @@ from gridpath.project.common_functions import determine_project_subset,\
     check_if_boundary_type_and_first_timepoint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -327,7 +327,7 @@ def availability_derate_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+    m, data_portal, subproblem_stage_directory
 ):
     """
     :param m:
@@ -350,7 +350,7 @@ def load_module_specific_data(
     avl_bin_min_unavl_hrs_per_event_dict = {}
     avl_bin_min_avl_hrs_between_events_dict = {}
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+    with open(os.path.join(subproblem_stage_directory,
                            "inputs", "project_availability_endogenous.tab"),
               "r") as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
@@ -371,7 +371,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        scenario_directory, subproblem, stage, m, d):
+    subproblem_stage_directory, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -382,7 +382,7 @@ def export_module_specific_results(
     :return: Nothing
     """
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "project_availability_endogenous_binary.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
@@ -475,7 +475,7 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "project_availability_endogenous.tab"
     )
 

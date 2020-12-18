@@ -17,7 +17,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -34,7 +34,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -46,7 +49,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "load_following_up_balancing_areas.tab"),
         select=("balancing_area", "allow_violation",
                 "violation_penalty_per_mw"),

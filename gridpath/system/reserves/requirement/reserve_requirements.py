@@ -92,10 +92,10 @@ def generic_add_model_components(
 
 
 def generic_load_model_data(
-        m, d, data_portal, scenario_directory, subproblem, stage,
-        reserve_requirement_param, reserve_zone_load_zone_set,
-        reserve_requirement_percent_param,
-        reserve_type
+    m, d, data_portal, subproblem_stage_directory,
+    reserve_requirement_param, reserve_zone_load_zone_set,
+    reserve_requirement_percent_param,
+    reserve_type
 ):
     """
 
@@ -111,8 +111,7 @@ def generic_load_model_data(
     :param reserve_type:
     :return:
     """
-    input_dir = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs")
+    input_dir = os.path.join(subproblem_stage_directory, "inputs")
 
     # Load by-tmp requriement if input file was written
     by_tmp_req_filename = os.path.join(

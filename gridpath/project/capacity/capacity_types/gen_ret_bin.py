@@ -39,7 +39,7 @@ from gridpath.project.capacity.capacity_types.common_methods import \
     update_capacity_results_table
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -237,7 +237,7 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
     :param m:
@@ -310,7 +310,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        scenario_directory, subproblem, stage, m, d
+        subproblem_stage_directory, m, d
 ):
     """
     Export gen_ret_bin retirement results.
@@ -340,7 +340,7 @@ def export_module_specific_results(
 
 
 def summarize_module_specific_results(
-        scenario_directory, subproblem, stage, summary_results_file
+    scenario_directory, subproblem_stage_directory, summary_results_file
 ):
     """
     Summarize gen_ret_bin capacity results.
@@ -353,7 +353,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+        os.path.join(subproblem_stage_directory, "results",
                      "capacity_gen_ret_bin.csv")
     )
 

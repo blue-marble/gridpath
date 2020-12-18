@@ -29,7 +29,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     get_param_dict
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -113,7 +113,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -127,13 +130,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Projects that contribute to the ELCC surface
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+            subproblem_stage_directory, "inputs", "projects.tab"),
         select=("project", "contributes_to_elcc_surface"),
         param=(m.contributes_to_elcc_surface,)
     )
 
     elcc_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "projects.tab"),
         sep="\t",
         usecols=["project", "contributes_to_elcc_surface",
@@ -151,7 +154,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Project-period-facet
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
+            subproblem_stage_directory, "inputs",
             "project_elcc_surface_coefficients.tab"),
         index=m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
         param=m.elcc_surface_coefficient,
@@ -161,7 +164,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Loads for the normalization
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
+            subproblem_stage_directory, "inputs",
             "elcc_surface_normalization_loads.tab"
         ),
         index=m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE,
@@ -169,7 +172,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:

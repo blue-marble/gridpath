@@ -31,7 +31,7 @@ from gridpath.project.operations.common_functions import \
 import gridpath.project.operations.operational_types as op_type
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -122,10 +122,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
@@ -270,7 +271,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export fuel burn results.
     :param scenario_directory:
@@ -283,7 +284,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
               "fuel_burn.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(

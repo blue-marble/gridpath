@@ -19,7 +19,7 @@ Fully deliverable projects (no energy-only allowed)
 from pyomo.environ import Set
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     
     :param m: 

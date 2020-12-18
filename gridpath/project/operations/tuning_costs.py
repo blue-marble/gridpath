@@ -32,7 +32,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -211,7 +211,10 @@ def ramp_down_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     Get tuning param value from file if file exists
     :param m:
@@ -223,7 +226,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     tuning_param_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "tuning_params.tab"
+        subproblem_stage_directory, "inputs", "tuning_params.tab"
     )
 
     if os.path.exists(tuning_param_file):

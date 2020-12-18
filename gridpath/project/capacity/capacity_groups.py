@@ -29,7 +29,7 @@ from gridpath.project.capacity.common_functions import \
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -163,10 +163,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
-    )
+    required_capacity_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="capacity_type"
+        )
 
     imported_capacity_modules = load_gen_storage_capacity_type_modules(
         required_capacity_modules
@@ -262,14 +263,17 @@ def total_capacity_min_rule(mod, grp, prd):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     """
     # Only load data if the input files were written; otehrwise, we won't
     # initialize the components in this module
 
     req_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "capacity_group_requirements.tab"
     )
     if os.path.exists(req_file):
@@ -285,7 +289,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "capacity_group_projects.tab"
     )
     if os.path.exists(prj_file):
@@ -299,15 +303,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     """
     req_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "capacity_group_requirements.tab"
     )
     prj_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "capacity_group_projects.tab"
     )
 

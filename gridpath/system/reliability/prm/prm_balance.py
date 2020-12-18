@@ -29,7 +29,7 @@ from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -84,7 +84,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "prm.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["prm_zone", "period",

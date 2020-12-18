@@ -28,7 +28,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -67,7 +67,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -77,7 +77,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+    with open(os.path.join(subproblem_stage_directory,
                            "results", "carbon_emissions_by_project.csv"),
               "w", newline="") as carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)

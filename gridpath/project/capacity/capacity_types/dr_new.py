@@ -50,7 +50,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs, validate_idxs, get_projects
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -346,7 +346,7 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
 
@@ -384,7 +384,7 @@ def load_module_specific_data(
 
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
+            subproblem_stage_directory, "inputs",
             "new_shiftable_load_supply_curve.tab"
         ),
         index=m.DR_NEW_PTS,
@@ -395,7 +395,7 @@ def load_module_specific_data(
 
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
+            subproblem_stage_directory, "inputs",
             "new_shiftable_load_supply_curve_potential.tab"
         ),
         param=(m.dr_new_min_cumulative_new_build_mwh,
@@ -404,7 +404,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-        scenario_directory, subproblem, stage, m, d
+        subproblem_stage_directory, m, d
 ):
     """
     Export new DR results.
@@ -432,7 +432,7 @@ def export_module_specific_results(
 
 
 def summarize_module_specific_results(
-    scenario_directory, subproblem, stage, summary_results_file
+    scenario_directory, subproblem_stage_directory, summary_results_file
 ):
     """
     Summarize new DR capacity results.
@@ -445,7 +445,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "results", "capacity_dr_new.csv")
     )
 

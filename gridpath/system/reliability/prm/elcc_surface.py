@@ -29,7 +29,7 @@ from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components, cost_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -85,7 +85,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -98,7 +101,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     # PRM zone-period-facet
     data_portal.load(filename=os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
+        subproblem_stage_directory, "inputs",
         "prm_zone_surface_facets_and_intercept.tab"
     ),
                      index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
@@ -108,7 +111,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -118,7 +121,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "prm_elcc_surface.csv"), "w", newline="") as \
             results_file:
         writer = csv.writer(results_file)
@@ -192,7 +195,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
+            subproblem_stage_directory, "inputs",
             "prm_zone_surface_facets_and_intercept.tab"
     ), "w", newline="") as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")

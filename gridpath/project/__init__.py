@@ -29,7 +29,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
@@ -135,12 +135,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "projects.tab"),
+        filename=
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         index=m.PROJECTS,
         select=("project", "load_zone", "capacity_type",
                 "availability_type", "operational_type",
@@ -151,15 +154,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
+        os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
         sep="\t", header=None, nrows=1
     ).values[0]
 
     if "technology" in header:
         data_portal.load(
-            filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                  "inputs", "projects.tab"),
+            filename=
+            os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
             select=("project", "technology"),
             param=m.technology
         )

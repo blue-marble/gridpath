@@ -23,7 +23,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals, value
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -38,7 +38,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:

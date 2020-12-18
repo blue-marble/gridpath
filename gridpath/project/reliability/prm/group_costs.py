@@ -24,7 +24,7 @@ from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:

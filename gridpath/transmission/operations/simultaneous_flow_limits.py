@@ -30,7 +30,7 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Integers, Expression, value
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -204,7 +204,10 @@ def sim_flow_constraint_rule(mod, g, tmp):
 # Input-Outputs
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -216,7 +219,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "transmission_simultaneous_flow_limits.tab"),
         select=("simultaneous_flow_limit", "period",
                 "simultaneous_flow_limit_mw"),
@@ -225,7 +228,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "transmission_simultaneous_flow_limit_lines.tab"),
         select=("simultaneous_flow_limit", "transmission_line",
                 "simultaneous_flow_direction"),
@@ -234,7 +237,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export transmission operations
     :param scenario_directory:
@@ -244,7 +247,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "transmission_simultaneous_flow_limits.csv"),
               "w", newline="") as tx_op_results_file:
         writer = csv.writer(tx_op_results_file)

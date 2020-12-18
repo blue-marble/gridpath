@@ -37,7 +37,7 @@ from gridpath.auxiliary.dynamic_components import \
     tx_capacity_type_operational_period_sets
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     Before adding any components, this module will go through each relevant
     capacity type and add the module components for that capacity type.
@@ -136,7 +136,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, subproblem, stage
+                m, d, subproblem_stage_directory
             )
 
     # Sets
@@ -217,7 +217,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -250,12 +253,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory)
         else:
             pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -289,7 +292,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
-                m, d, scenario_directory, subproblem, stage
+                m, d, subproblem_stage_directory
             )
         else:
             pass

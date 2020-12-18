@@ -28,7 +28,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_columns, validate_values, validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -102,7 +102,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -114,7 +117,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
+                        subproblem_stage_directory, "inputs",
                         "transmission_lines.tab"),
                      select=("TRANSMISSION_LINES", "tx_capacity_type",
                              "tx_operational_type",

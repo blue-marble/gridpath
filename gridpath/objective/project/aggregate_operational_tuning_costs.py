@@ -25,7 +25,7 @@ from pyomo.environ import Param, Expression
 from gridpath.auxiliary.dynamic_components import cost_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:

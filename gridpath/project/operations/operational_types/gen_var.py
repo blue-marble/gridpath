@@ -47,7 +47,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_opchars, validate_var_profiles, load_optype_module_specific_data
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -427,7 +427,7 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+                              subproblem_stage_directory):
     """
     :param mod:
     :param data_portal:
@@ -440,17 +440,18 @@ def load_module_specific_data(mod, data_portal,
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
         mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_var"
+        subproblem_stage_directory=subproblem_stage_directory,
+        op_type="gen_var"
     )
 
     load_var_profile_inputs(
-        data_portal, scenario_directory, subproblem, stage, "gen_var"
+        data_portal, subproblem_stage_directory, "gen_var"
     )
 
 
-def export_module_specific_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+def export_module_specific_results(
+    scenario_directory, subproblem, stage, mod, d, subproblem_stage_directory
+):
     """
 
     :param scenario_directory:
@@ -460,7 +461,7 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
                            "dispatch_variable.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",

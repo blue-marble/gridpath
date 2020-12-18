@@ -41,7 +41,7 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     validate_idxs, validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -140,7 +140,7 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
 
@@ -161,8 +161,7 @@ def load_module_specific_data(
         gen_spec_projects = list()
 
         df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "projects.tab"),
+            os.path.join(subproblem_stage_directory, "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type"]
         )
@@ -182,7 +181,7 @@ def load_module_specific_data(
         gen_spec_capacity_mw_dict = dict()
         gen_spec_fixed_cost_per_mw_yr_dict = dict()
         df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+            os.path.join(subproblem_stage_directory, "inputs",
                          "specified_generation_period_params.tab"),
             sep="\t"
         )

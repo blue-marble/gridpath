@@ -47,7 +47,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 # TODO: can we have different capacities depending on the direction
 # TODO: add fixed O&M costs similar to gen_new_lin
 def add_model_components(
-        m, d, scenario_directory, subproblem, stage
+        m, d, subproblem_stage_directory
 ):
     """
     The following Pyomo model components are defined in this module:
@@ -299,7 +299,7 @@ def tx_capacity_cost_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-    m, data_portal, scenario_directory, subproblem, stage
+    m, data_portal, subproblem_stage_directory
 ):
 
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
@@ -318,7 +318,7 @@ def load_module_specific_data(
 
 # TODO: untested
 def export_module_specific_results(
-        m, d, scenario_directory, subproblem, stage
+        m, d, subproblem_stage_directory
 ):
     """
 

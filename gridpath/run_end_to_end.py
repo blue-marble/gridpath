@@ -229,8 +229,8 @@ def main(args=None):
 
     if parsed_args.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory=scenario_directory,
-            subproblem="", stage="")
+            log_directory_location=scenario_directory
+        )
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout

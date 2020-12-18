@@ -24,7 +24,7 @@ from .reserve_balance import generic_add_model_components, \
     generic_import_results_to_database
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -61,7 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    rule=meet_partial_frequency_response_rule)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -71,14 +71,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    generic_export_results(scenario_directory, subproblem, stage, m, d,
+    generic_export_results(subproblem_stage_directory, m, d,
                            "frequency_response_violation.csv",
                            "frequency_response_violation_mw",
                            "FREQUENCY_RESPONSE_BAS",
                            "Frequency_Response_Violation_MW_Expression"
                            )
 
-    generic_export_results(scenario_directory, subproblem, stage, m, d,
+    generic_export_results(subproblem_stage_directory, m, d,
                            "frequency_response_partial_violation.csv",
                            "frequency_response_partial_violation_mw",
                            "FREQUENCY_RESPONSE_BAS",

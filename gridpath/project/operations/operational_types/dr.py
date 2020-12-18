@@ -33,7 +33,7 @@ from gridpath.project.operations.operational_types.common_functions import \
     validate_opchars
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 

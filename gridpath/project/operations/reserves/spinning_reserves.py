@@ -46,7 +46,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "SPINNING_RESERVES_PRJ_OPR_TMPS"
 
 
-def record_dynamic_components(d, scenario_directory, subproblem, stage):
+def record_dynamic_components(d, subproblem_stage_directory):
     """
 
     :param d:
@@ -72,7 +72,7 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -80,7 +80,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    record_dynamic_components(d, scenario_directory, subproblem, stage)
+    record_dynamic_components(d, subproblem_stage_directory)
 
     generic_add_model_components(
         m=m,
@@ -97,7 +97,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -128,7 +131,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export project-level results for upward load-following
     :param scenario_directory:

@@ -27,7 +27,7 @@ from pyomo.environ import Param, Expression
 from gridpath.auxiliary.dynamic_components import cost_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -74,7 +74,10 @@ def record_dynamic_components(dynamic_components):
         "Total_Dynamic_ELCC_Tuning_Cost")
 
     
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     Get tuning param value from file if file exists
     :param m:
@@ -86,7 +89,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     tuning_param_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "tuning_params.tab"
+        subproblem_stage_directory, "inputs", "tuning_params.tab"
     )
 
     if os.path.exists(tuning_param_file):

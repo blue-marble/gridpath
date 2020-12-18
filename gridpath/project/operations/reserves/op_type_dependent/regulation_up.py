@@ -44,7 +44,7 @@ RESERVE_PRJ_OPR_TMPS_SET_NAME = \
     "REGULATION_UP_PRJ_OPR_TMPS"
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -55,9 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     generic_add_model_components(
         m=m,
         d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_project_operational_timepoints_set=
         RESERVE_PRJ_OPR_TMPS_SET_NAME,
@@ -69,7 +67,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -84,9 +85,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         m=m,
         d=d,
         data_portal=data_portal,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         ramp_rate_limit_column_name
         =RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_ramp_rate_limit_param

@@ -46,7 +46,7 @@ from gridpath.project.capacity.capacity_types.common_methods import \
     project_vintages_operational_in_period, update_capacity_results_table
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -335,7 +335,7 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+        m, data_portal, subproblem_stage_directory
 ):
     """
 
@@ -366,7 +366,7 @@ def load_module_specific_data(
     )
 
 
-def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
+def export_module_specific_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -395,7 +395,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
 
 
 def summarize_module_specific_results(
-    scenario_directory, subproblem, stage, summary_results_file
+    scenario_directory, subproblem_stage_directory, summary_results_file
 ):
     """
     Summarize new binary build generation capacity results.
@@ -408,7 +408,7 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
+        os.path.join(subproblem_stage_directory,
                      "results", "capacity_gen_new_bin.csv")
     )
 

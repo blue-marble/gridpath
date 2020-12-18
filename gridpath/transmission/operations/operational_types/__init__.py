@@ -27,14 +27,14 @@ from gridpath.transmission.operations.common_functions import \
 
 # TODO: missing test for this module
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     Go through each relevant operational type and add the module components
     for that operational type.
     """
     # Import needed transmission operational type modules
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -52,14 +52,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         imp_op_m = imported_tx_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(
-                m, d, scenario_directory, subproblem, stage
+                m, d, subproblem_stage_directory
             )
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     Go through each relevant operational type and add load the model data
     for that operational type.
@@ -74,7 +77,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     # Import needed operational modules
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        os.path.join(subproblem_stage_directory, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
         usecols=["TRANSMISSION_LINES", "tx_capacity_type",
@@ -91,7 +94,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         if hasattr(imported_tx_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_operational_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory)
         else:
             pass
 

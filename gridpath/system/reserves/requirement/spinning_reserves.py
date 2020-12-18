@@ -17,7 +17,7 @@ from gridpath.system.reserves.requirement.reserve_requirements import \
     generic_load_model_data, generic_write_model_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -36,7 +36,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     generic_load_model_data(
         m=m, d=d, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,

@@ -32,7 +32,7 @@ from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     Add net transmitted power to load balance
     :param m:
@@ -95,7 +95,7 @@ def record_dynamic_components(dynamic_components):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export zone-level imports and exports
     :param scenario_directory:

@@ -35,7 +35,7 @@ def record_dynamic_components(dynamic_components):
         "static_load_mw")
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
@@ -54,7 +54,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     record_dynamic_components(dynamic_components=d)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -67,7 +70,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "load_mw.tab"
+            subproblem_stage_directory, "inputs", "load_mw.tab"
         ),
         param=m.static_load_mw
     )

@@ -30,7 +30,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -65,7 +65,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                                          rule=rps_target_rule)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
 
     :param scenario_directory:
@@ -116,7 +116,7 @@ def save_duals(m):
         ["rps_zone", "period", "dual"]
 
 
-def summarize_results(scenario_directory, subproblem, stage):
+def summarize_results(scenario_directory, subproblem_stage_directory):
     """
     :param scenario_directory:
     :param subproblem:
@@ -127,7 +127,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     """
 
     summary_results_file = os.path.join(
-        scenario_directory, subproblem, stage, "results", "summary_results.txt"
+        subproblem_stage_directory, "results", "summary_results.txt"
     )
 
     # Open in 'append' mode, so that results already written by other

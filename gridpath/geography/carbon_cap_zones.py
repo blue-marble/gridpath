@@ -22,7 +22,7 @@ import os.path
 from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -40,9 +40,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
 
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
+    data_portal.load(filename=os.path.join(subproblem_stage_directory,
                                            "inputs", "carbon_cap_zones.tab"),
                      index=m.CARBON_CAP_ZONES,
                      param=(m.carbon_cap_allow_violation,

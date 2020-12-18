@@ -19,7 +19,7 @@ from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_proje
     load_subtype_modules
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
 
     :param m:
@@ -27,10 +27,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="availability_type"
-    )
+    required_availability_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="availability_type"
+        )
     imported_availability_modules = \
         load_availability_type_modules(required_availability_modules)
 
@@ -38,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+            imp_op_m.add_model_components(m, d, subproblem_stage_directory)
 
     def availability_derate_rule(mod, g, tmp):
         """
@@ -93,7 +94,10 @@ def write_model_inputs(
             pass
 
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -104,10 +108,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="availability_type"
-    )
+    required_availability_modules = \
+        get_required_subtype_modules_from_projects_file(
+            subproblem_stage_directory=subproblem_stage_directory,
+            which_type="availability_type"
+        )
     imported_availability_modules = \
         load_availability_type_modules(
             required_availability_modules
@@ -116,12 +121,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         if hasattr(imported_availability_modules[op_m],
                    "load_module_specific_data"):
             imported_availability_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                m, data_portal, subproblem_stage_directory)
         else:
             pass
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     :param scenario_directory:
     :param subproblem:
@@ -134,9 +139,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
-    required_availability_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="availability_type"
+    required_availability_modules = \
+        get_required_subtype_modules_from_projects_file(
+        subproblem_stage_directory=subproblem_stage_directory,
+            which_type="availability_type"
     )
     imported_availability_modules = \
         load_availability_type_modules(
@@ -147,7 +153,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                    "export_module_specific_results"):
             imported_availability_modules[
                 op_m].export_module_specific_results(
-                scenario_directory, subproblem, stage, m, d
+                subproblem_stage_directory, m, d
             )
         else:
             pass

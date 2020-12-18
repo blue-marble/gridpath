@@ -36,7 +36,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_missing_inputs
 
 
-def add_model_components(m, d, scenario_directory, subproblem, stage):
+def add_model_components(m, d, subproblem_stage_directory):
     """
     The following Pyomo model components are defined in this module:
 
@@ -188,7 +188,10 @@ def hurdle_cost_neg_dir_rule(mod, tx, tmp):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param m:
@@ -200,7 +203,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        filename=os.path.join(subproblem_stage_directory, "inputs",
                               "transmission_hurdle_rates.tab"),
         select=("transmission_line", "period",
                 "hurdle_rate_positive_direction_per_mwh",
@@ -210,7 +213,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage_directory):
     """
     Export transmission operational cost results.
     :param scenario_directory:
@@ -220,7 +223,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d: Dynamic components
     :return: Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
+    with open(os.path.join(subproblem_stage_directory, "results",
               "costs_transmission_hurdle.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
