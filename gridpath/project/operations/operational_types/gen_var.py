@@ -426,7 +426,10 @@ def power_delta_rule(mod, g, tmp):
 # Inputs-Outputs
 ###############################################################################
 
-def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_portal, subproblem_stage_directory):
+def load_module_specific_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
     :param mod:
     :param data_portal:
@@ -438,7 +441,7 @@ def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_p
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
+        mod=m, data_portal=data_portal,
         subproblem_stage_directory=subproblem_stage_directory,
         op_type="gen_var"
     )

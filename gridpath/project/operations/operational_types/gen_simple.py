@@ -460,7 +460,10 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_portal, subproblem_stage_directory):
+def load_module_specific_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param mod:
@@ -472,7 +475,7 @@ def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_p
     """
 
     projects = load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
+        mod=m, data_portal=data_portal,
         subproblem_stage_directory=subproblem_stage_directory,
         op_type="gen_simple"
     )
@@ -485,11 +488,11 @@ def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_p
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
-            index=mod.GEN_SIMPLE_LINKED_TMPS,
+            index=m.GEN_SIMPLE_LINKED_TMPS,
             param=(
-                mod.gen_simple_linked_power,
-                mod.gen_simple_linked_upwards_reserves,
-                mod.gen_simple_linked_downwards_reserves
+                m.gen_simple_linked_power,
+                m.gen_simple_linked_upwards_reserves,
+                m.gen_simple_linked_downwards_reserves
             )
         )
     else:

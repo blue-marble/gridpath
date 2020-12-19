@@ -47,22 +47,21 @@ class TestLoadFollowingDownBAs(unittest.TestCase):
         """
         create_abstract_model(prereq_modules=[],
                               module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
+                              
+                              subproblem_stage_directory=TEST_DATA_DIRECTORY,
                               )
-
     def test_load_model_data(self):
-        """
-        Test that data are loaded with no errors
-        :return:
-        """
-        add_components_and_load_data(prereq_modules=[],
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+            """
+            Test that data are loaded with no errors
+            :return:
+            """
+            add_components_and_load_data(prereq_modules=[],
+                                         module_to_test=MODULE_BEING_TESTED,
+                                         subproblem_stage_directory=TEST_DATA_DIRECTORY,
+                                         test_data_dir=TEST_DATA_DIRECTORY,
+                                         subproblem="",
+                                         stage=""
+                                         )
 
     def test_regulation_up_zones_data_loads_correctly(self):
         """
@@ -72,6 +71,7 @@ class TestLoadFollowingDownBAs(unittest.TestCase):
         m, data = \
             add_components_and_load_data(prereq_modules=[],
                                          module_to_test=MODULE_BEING_TESTED,
+                                         subproblem_stage_directory=TEST_DATA_DIRECTORY,
                                          test_data_dir=TEST_DATA_DIRECTORY,
                                          subproblem="",
                                          stage="")

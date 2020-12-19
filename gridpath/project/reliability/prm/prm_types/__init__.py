@@ -98,7 +98,7 @@ def load_model_data(
         if hasattr(imported_prm_modules[prm_m],
                    "load_module_specific_data"):
             imported_prm_modules[prm_m].load_module_specific_data(
-                scenario_directory, subproblem, stage, m, data_portal,
+                m, d, data_portal, scenario_directory, subproblem, stage,
                 subproblem_stage_directory)
         else:
             pass

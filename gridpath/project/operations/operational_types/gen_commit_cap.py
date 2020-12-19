@@ -1384,7 +1384,7 @@ def fix_commitment(mod, g, tmp):
 # Input-Output
 ###############################################################################
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, mod, data_portal,
+    m, d, data_portal, scenario_directory, subproblem, stage,
     subproblem_stage_directory
 ):
     """
@@ -1399,7 +1399,7 @@ def load_module_specific_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
+        mod=m, data_portal=data_portal,
         subproblem_stage_directory=subproblem_stage_directory,
         op_type="gen_commit_cap"
     )
@@ -1412,14 +1412,14 @@ def load_module_specific_data(
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
-            index=mod.GEN_COMMIT_CAP_LINKED_TMPS,
+            index=m.GEN_COMMIT_CAP_LINKED_TMPS,
             param=(
-                mod.gen_commit_cap_linked_commit_capacity,
-                mod.gen_commit_cap_linked_power,
-                mod.gen_commit_cap_linked_upwards_reserves,
-                mod.gen_commit_cap_linked_downwards_reserves,
-                mod.gen_commit_cap_linked_startup,
-                mod.gen_commit_cap_linked_shutdown
+                m.gen_commit_cap_linked_commit_capacity,
+                m.gen_commit_cap_linked_power,
+                m.gen_commit_cap_linked_upwards_reserves,
+                m.gen_commit_cap_linked_downwards_reserves,
+                m.gen_commit_cap_linked_startup,
+                m.gen_commit_cap_linked_shutdown
             )
         )
     else:

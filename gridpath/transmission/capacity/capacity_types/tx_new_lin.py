@@ -299,8 +299,8 @@ def tx_capacity_cost_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, m, data_portal,
-        subproblem_stage_directory
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
 ):
 
     # TODO: throw an error when a line of the 'tx_new_lin' capacity

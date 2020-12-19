@@ -106,9 +106,10 @@ def add_model_components(m, d, subproblem_stage_directory):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+        subproblem_stage_directory=subproblem_stage_directory,
+        which_type="operational_type"
     )
 
     imported_operational_modules = load_operational_type_modules(

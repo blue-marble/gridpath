@@ -346,8 +346,8 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, m, data_portal,
-        subproblem_stage_directory
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
 ):
     """
 
@@ -404,7 +404,7 @@ def load_module_specific_data(
 
 
 def export_module_specific_results(
-    subproblem_stage_directory, m, d, subproblem_stage_directory
+    m, d, subproblem_stage_directory
 ):
     """
     Export new DR results.

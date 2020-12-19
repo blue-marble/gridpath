@@ -88,7 +88,7 @@ def load_model_data(
                    "load_module_specific_data"):
             print(op_m)
             imported_operational_modules[op_m].load_module_specific_data(
-                scenario_directory, subproblem, stage, m, data_portal,
+                m, d, data_portal, scenario_directory, subproblem, stage,
                 subproblem_stage_directory
             )
         else:

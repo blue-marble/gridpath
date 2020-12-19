@@ -56,9 +56,8 @@ class TestMaxNPV(unittest.TestCase):
         """
         create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
                               module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
+                              
+                              subproblem_stage_directory=TEST_DATA_DIRECTORY
                               )
 
 

@@ -182,8 +182,8 @@ def new_capacity_rule(mod, g, p):
 ###############################################################################
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, m, data_portal,
-        subproblem_stage_directory
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
 ):
     data_portal.load(
         filename=os.path.join(subproblem_stage_directory, "inputs",

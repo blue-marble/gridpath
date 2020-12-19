@@ -2257,7 +2257,7 @@ def operational_violation_cost_rule(mod, g, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, mod, data_portal,
+    m, d, data_portal, scenario_directory, subproblem, stage,
     subproblem_stage_directory
 ):
     """
@@ -2271,7 +2271,7 @@ def load_module_specific_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
+        mod=m, data_portal=data_portal,
         subproblem_stage_directory=subproblem_stage_directory,
         op_type="gen_commit_bin"
     )
@@ -2292,18 +2292,18 @@ def load_module_specific_data(
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
-            index=mod.GEN_COMMIT_BIN_LINKED_TMPS,
+            index=m.GEN_COMMIT_BIN_LINKED_TMPS,
             param=(
-                mod.gen_commit_bin_linked_commit,
-                mod.gen_commit_bin_linked_startup,
-                mod.gen_commit_bin_linked_shutdown,
-                mod.gen_commit_bin_linked_power_above_pmin,
-                mod.gen_commit_bin_linked_upwards_reserves,
-                mod.gen_commit_bin_linked_downwards_reserves,
-                mod.gen_commit_bin_linked_ramp_up_rate_mw_per_tmp,
-                mod.gen_commit_bin_linked_ramp_down_rate_mw_per_tmp,
-                mod.gen_commit_bin_linked_provide_power_shutdown_mw,
-                mod.gen_commit_bin_linked_shutdown_ramp_rate_mw_per_tmp
+                m.gen_commit_bin_linked_commit,
+                m.gen_commit_bin_linked_startup,
+                m.gen_commit_bin_linked_shutdown,
+                m.gen_commit_bin_linked_power_above_pmin,
+                m.gen_commit_bin_linked_upwards_reserves,
+                m.gen_commit_bin_linked_downwards_reserves,
+                m.gen_commit_bin_linked_ramp_up_rate_mw_per_tmp,
+                m.gen_commit_bin_linked_ramp_down_rate_mw_per_tmp,
+                m.gen_commit_bin_linked_provide_power_shutdown_mw,
+                m.gen_commit_bin_linked_shutdown_ramp_rate_mw_per_tmp
             )
         )
     else:

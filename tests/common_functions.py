@@ -16,8 +16,7 @@ from pyomo.environ import AbstractModel, DataPortal
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
-def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
-                                 subproblem, stage):
+def determine_dynamic_components():
     """
 
     :param prereq_modules:
@@ -29,20 +28,20 @@ def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
     """
     d = DynamicComponents()
 
-    for mod in prereq_modules:
-        if hasattr(mod, 'determine_dynamic_components'):
-            mod.determine_dynamic_components(
-                d, test_data_dir, subproblem, stage)
-    if hasattr(module_to_test, "determine_dynamic_components"):
-        module_to_test.determine_dynamic_components(
-            d, test_data_dir, subproblem, stage
-        )
+    # for mod in prereq_modules:
+    #     if hasattr(mod, 'determine_dynamic_components'):
+    #         mod.determine_dynamic_components(
+    #             d, test_data_dir, subproblem, stage)
+    # if hasattr(module_to_test, "determine_dynamic_components"):
+    #     module_to_test.determine_dynamic_components(
+    #         d, test_data_dir, subproblem, stage
+    #     )
 
     return d
 
 
 def add_model_components(prereq_modules, module_to_test,
-                         model, d, test_data_dir, subproblem, stage):
+                         model, d, subproblem_stage_directory):
     """
     Create abstract model, add components from prerequisite modules, add
     components from the module being tested
@@ -55,22 +54,22 @@ def add_model_components(prereq_modules, module_to_test,
     for m in prereq_modules:
         if hasattr(m, 'add_model_components'):
             m.add_model_components(
-                model, d, test_data_dir, subproblem, stage
+                model, d, subproblem_stage_directory
             )
     if hasattr(module_to_test, "add_model_components"):
         module_to_test.add_model_components(
-            model, d, test_data_dir, subproblem, stage
+            model, d, subproblem_stage_directory
         )
     if hasattr(module_to_test, "add_module_specific_components"):
         module_to_test.add_module_specific_components(
-            model, d, test_data_dir, subproblem, stage
+            model, d, subproblem_stage_directory
         )
 
     return model
 
 
-def create_abstract_model(prereq_modules, module_to_test, test_data_dir,
-                          subproblem, stage):
+def create_abstract_model(prereq_modules, module_to_test,
+                          subproblem_stage_directory):
     """
     Determine dynamic components and build abstract model
     :param prereq_modules:
@@ -80,34 +79,42 @@ def create_abstract_model(prereq_modules, module_to_test, test_data_dir,
     :param stage:
     :return:
     """
-    d = determine_dynamic_components(prereq_modules, module_to_test,
-                                     test_data_dir, subproblem, stage)
+    d = determine_dynamic_components()
+
     m = AbstractModel()
     add_model_components(
-        prereq_modules, module_to_test, m, d, test_data_dir, subproblem, stage
+        prereq_modules, module_to_test, m, d, subproblem_stage_directory
     )
 
     return m, d
 
 
-def add_components_and_load_data(prereq_modules, module_to_test, test_data_dir,
+def add_components_and_load_data(prereq_modules, module_to_test,
+                                 subproblem_stage_directory, test_data_dir,
                                  subproblem, stage):
     """
     Test that data are loaded with no errors
     :return:
     """
 
-    m, d = create_abstract_model(prereq_modules, module_to_test, test_data_dir,
-                                 subproblem, stage)
+    m, d = create_abstract_model(prereq_modules, module_to_test,
+                                 subproblem_stage_directory)
     data = DataPortal()
     for mod in prereq_modules:
         if hasattr(mod, 'load_model_data'):
-            mod.load_model_data(m, d, data, test_data_dir, subproblem, stage)
+            mod.load_model_data(
+                m, d, data, test_data_dir, subproblem, stage,
+                subproblem_stage_directory
+            )
     if hasattr(module_to_test, "load_model_data"):
-        module_to_test.load_model_data(m, d, data, test_data_dir,
-                                       subproblem, stage)
+        module_to_test.load_model_data(
+            m, d, data, test_data_dir, subproblem, stage,
+            subproblem_stage_directory
+        )
     if hasattr(module_to_test, "load_module_specific_data"):
-        module_to_test.load_module_specific_data(m, data, test_data_dir,
-                                                  subproblem, stage)
+        module_to_test.load_module_specific_data(
+            m, d, data, test_data_dir, subproblem, stage,
+            subproblem_stage_directory
+        )
 
     return m, data

@@ -62,6 +62,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
+            subproblem_stage_directory=TEST_DATA_DIRECTORY,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
             stage=""
@@ -130,6 +131,8 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
+            subproblem_stage_directory=os.path.join(TEST_DATA_DIRECTORY,
+                                                    "subproblems/202002"),
             test_data_dir=os.path.join(TEST_DATA_DIRECTORY, "subproblems"),
             subproblem="202002",
             stage=""

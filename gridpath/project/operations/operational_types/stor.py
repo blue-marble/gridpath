@@ -638,7 +638,10 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_portal, subproblem_stage_directory):
+def load_module_specific_data(
+    m, d, data_portal, scenario_directory, subproblem, stage,
+    subproblem_stage_directory
+):
     """
 
     :param mod:
@@ -649,7 +652,7 @@ def load_module_specific_data(scenario_directory, subproblem, stage, mod, data_p
     :return:
     """
     load_optype_module_specific_data(
-        mod=mod, data_portal=data_portal,
+        mod=m, data_portal=data_portal,
         subproblem_stage_directory=subproblem_stage_directory,
         op_type="stor"
     )

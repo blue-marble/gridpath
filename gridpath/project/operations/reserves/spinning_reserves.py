@@ -58,9 +58,7 @@ def record_dynamic_components(d, subproblem_stage_directory):
 
     generic_record_dynamic_components(
         d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
+        subproblem_stage_directory=subproblem_stage_directory,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,

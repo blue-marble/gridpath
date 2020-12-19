@@ -638,7 +638,7 @@ def power_delta_rule(mod, g, tmp):
 
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, m, data_portal,
+    m, d, data_portal, scenario_directory, subproblem, stage,
     subproblem_stage_directory
 ):
     """

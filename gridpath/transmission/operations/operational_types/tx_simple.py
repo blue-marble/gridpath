@@ -359,7 +359,7 @@ def transmit_power_losses_lz_to_rule(mod, line, tmp):
 ###############################################################################
 
 def load_module_specific_data(
-    scenario_directory, subproblem, stage, m, data_portal,
+    m, d, data_portal, scenario_directory, subproblem, stage,
     subproblem_stage_directory
 ):
     """
