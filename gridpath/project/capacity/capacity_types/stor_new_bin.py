@@ -564,7 +564,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -582,7 +582,7 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_binary_build_storage_vintage_costs.tab"),
               "w", newline="") as new_storage_costs_tab_file:
         writer = csv.writer(new_storage_costs_tab_file, delimiter="\t", lineterminator="\n")
@@ -598,7 +598,7 @@ def write_module_specific_model_inputs(
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_binary_build_storage_size.tab"),
               "w", newline="") as new_build_size_tab_file:
         writer = csv.writer(new_build_size_tab_file, delimiter="\t", lineterminator="\n")

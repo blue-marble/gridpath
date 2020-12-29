@@ -325,7 +325,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn,
+    subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -348,7 +349,7 @@ def write_model_inputs(
             (".", ".", ".") if zone is None \
             else (str(zone), str(direction), intensity)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "transmission_lines.tab"),
               "r") as tx_file_in:
         reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
 
@@ -376,7 +377,7 @@ def write_model_inputs(
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "transmission_lines.tab"),
               "w", newline="") as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

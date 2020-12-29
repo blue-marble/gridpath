@@ -778,7 +778,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return proj_opchar, heat_rates, vom_curves, startup_chars
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model inputs
     :param scenario_directory: string, the scenario directory

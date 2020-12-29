@@ -62,7 +62,7 @@ def add_model_components(m, d, subproblem_stage_directory):
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     :param scenario_directory: string, the scenario directory
@@ -89,7 +89,8 @@ def write_model_inputs(
                    "write_module_specific_model_inputs"):
             imported_availability_type_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios,
+                subproblem, stage, conn, subproblem_stage_directory)
         else:
             pass
 

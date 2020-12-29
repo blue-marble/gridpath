@@ -150,7 +150,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return load_zone_markets
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info

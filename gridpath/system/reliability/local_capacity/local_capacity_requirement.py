@@ -109,7 +109,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     local_capacity_requirement.tab file.
@@ -124,7 +124,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     local_capacity_requirement = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "local_capacity_requirement.tab"), "w", newline="") as \
             local_capacity_requirement_tab_file:
         writer = csv.writer(local_capacity_requirement_tab_file,

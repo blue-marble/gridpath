@@ -252,7 +252,8 @@ def generic_get_inputs_from_database(
 
 def generic_write_model_inputs(
     scenario_directory, subproblem, stage,
-    timepoint_req, percent_req, percent_map, reserve_type
+    timepoint_req, percent_req, percent_map, reserve_type,
+    subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -267,7 +268,7 @@ def generic_write_model_inputs(
     :return:
     """
     inputs_dir = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs"
+        subproblem_stage_directory, "inputs"
     )
 
     # Write the by-timepoint requirement file if by-tmp requirement specified

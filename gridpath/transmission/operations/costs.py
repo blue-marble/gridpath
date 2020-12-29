@@ -304,7 +304,7 @@ def write_model_inputs(
     hurdle_rates = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_hurdle_rates.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "transmission_hurdle_rates.tab"),
               "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
 

@@ -97,7 +97,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     regulation_down_balancing_areas.tab file.
@@ -112,7 +112,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     reg_down_bas = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "regulation_down_balancing_areas.tab"), "w", newline="") as \
             reg_down_bas_tab_file:
         writer = csv.writer(reg_down_bas_tab_file, delimiter="\t", lineterminator="\n")

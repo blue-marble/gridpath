@@ -289,7 +289,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     fuels.tab and fuel_prices.tab files.
@@ -304,7 +304,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     fuels, fuel_prices = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "fuels.tab"), "w", newline="") as \
             fuels_tab_file:
         writer = csv.writer(fuels_tab_file, delimiter="\t", lineterminator="\n")
@@ -317,7 +317,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         for row in fuels:
             writer.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "fuel_prices.tab"), "w", newline="") as \
             fuel_prices_tab_file:
         writer = csv.writer(fuel_prices_tab_file, delimiter="\t", lineterminator="\n")

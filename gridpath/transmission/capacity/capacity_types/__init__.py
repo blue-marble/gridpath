@@ -98,7 +98,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input .tab file.
     :param scenario_directory: string, the scenario directory
@@ -120,7 +120,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                    "write_module_specific_model_inputs"):
             imported_capacity_type_modules[op_m]. \
                 write_module_specific_model_inputs(
-                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+                    scenario_directory, scenario_id, subscenarios,
+                subproblem, stage, conn, subproblem_stage_directory
             )
         else:
             pass

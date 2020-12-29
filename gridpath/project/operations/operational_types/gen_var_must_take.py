@@ -269,7 +269,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input

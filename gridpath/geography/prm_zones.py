@@ -100,7 +100,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     prm_zones.tab file.
@@ -115,7 +115,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     prm_zones = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "prm_zones.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "prm_zones.tab"),
               "w", newline="") as \
             prm_zones_tab_file:
         writer = csv.writer(prm_zones_tab_file, delimiter="\t", lineterminator="\n")

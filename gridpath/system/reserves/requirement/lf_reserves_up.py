@@ -86,8 +86,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios,
-                       subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn,
+    subproblem_stage_directory
+):
     """
     Get inputs from database and write out the model input
     lf_reserves_up_requirement.tab file.
@@ -107,5 +109,6 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios,
         subproblem=subproblem, stage=stage,
         timepoint_req=tmp_req,
         percent_req=percent_req, percent_map=percent_map,
-        reserve_type="lf_reserves_up"
+        reserve_type="lf_reserves_up",
+        subproblem_stage_directory=subproblem_stage_directory
     )

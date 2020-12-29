@@ -180,7 +180,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     prm_zone_surface_facets_and_intercept.tab file.

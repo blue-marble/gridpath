@@ -345,7 +345,7 @@ def write_model_inputs(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     # transmission_simultaneous_flow_limits.tab
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "transmission_simultaneous_flow_limits.tab"),
               "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
@@ -359,7 +359,7 @@ def write_model_inputs(
             writer.writerow(row)
 
     # transmission_simultaneous_flow_limit_lines.tab
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "transmission_simultaneous_flow_limit_lines.tab"),
               "w", newline="") as sim_flow_limit_lines_file:
         writer = csv.writer(sim_flow_limit_lines_file,

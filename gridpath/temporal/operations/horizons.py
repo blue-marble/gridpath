@@ -415,7 +415,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return horizons, horizon_timepoints
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     horizons.tab file.
@@ -430,7 +430,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     horizons, horizon_timepoints = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "horizons.tab"),
               "w", newline="") as horizons_tab_file:
         hwriter = csv.writer(horizons_tab_file, delimiter="\t",
                              lineterminator="\n")
@@ -441,7 +441,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         for row in horizons:
             hwriter.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizon_timepoints.tab"), "w",
+    with open(os.path.join(subproblem_stage_directory, "inputs", "horizon_timepoints.tab"), "w",
               newline="") as horizon_timepoints_tab_file:
         htwriter = csv.writer(horizon_timepoints_tab_file, delimiter="\t",
                               lineterminator="\n")

@@ -272,7 +272,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return periods
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     periods.tab file.
@@ -287,7 +287,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     periods = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"),
+    with open(os.path.join(subproblem_stage_directory, "inputs", "periods.tab"),
               "w", newline="") as periods_tab_file:
         writer = csv.writer(periods_tab_file, delimiter="\t",
                             lineterminator="\n")

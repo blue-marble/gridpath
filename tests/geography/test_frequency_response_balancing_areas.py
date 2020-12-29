@@ -49,7 +49,7 @@ class TestLoadFollowingUpBAs(unittest.TestCase):
                               module_to_test=MODULE_BEING_TESTED,
                               subproblem_stage_directory=TEST_DATA_DIRECTORY,
                               )
-        
+
     def test_load_model_data(self):
             """
             Test that data are loaded with no errors

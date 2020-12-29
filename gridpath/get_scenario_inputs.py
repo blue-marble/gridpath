@@ -36,8 +36,10 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems, SolverOptions
 
 
-def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       scenario_id, subscenarios, conn):
+def write_model_inputs(
+    scenario_directory, subproblems, loaded_modules, scenario_id,
+    subscenarios, conn
+):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
@@ -69,8 +71,11 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
             else:
                 subproblem = ""
                 stage = ""
+            subproblem_stage_directory = os.path.join(
+                scenario_directory, str(subproblem), str(stage)
+            )
             inputs_directory = os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs"
+                subproblem_stage_directory, "inputs"
             )
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
@@ -95,6 +100,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                         subproblem=subproblem,
                         stage=stage,
                         conn=conn,
+                        subproblem_stage_directory=subproblem_stage_directory
                     )
                 else:
                     pass

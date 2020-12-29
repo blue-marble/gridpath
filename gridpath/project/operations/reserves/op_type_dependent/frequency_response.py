@@ -145,7 +145,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -166,7 +166,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             "." if ramp_rate is None else str(ramp_rate)
 
     # Add params to projects file
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
+    with open(os.path.join(subproblem_stage_directory, "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
@@ -189,7 +189,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             # Add resulting row to new_rows list
             new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
+    with open(os.path.join(subproblem_stage_directory, "inputs", "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

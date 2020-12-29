@@ -568,7 +568,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -590,7 +590,7 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_shiftable_load_supply_curve_potential.tab"),
               "w", newline="") as potentials_tab_file:
         writer = csv.writer(potentials_tab_file, delimiter="\t", lineterminator="\n")
@@ -607,7 +607,7 @@ def write_module_specific_model_inputs(
     # Supply curve
     # No supply curve periods for now, so check that we have only specified
     # a single supply curve for all periods in inputs_project_new_cost
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_shiftable_load_supply_curve.tab"),
               "w", newline="") as supply_curve_tab_file:
         writer = csv.writer(supply_curve_tab_file, delimiter="\t", lineterminator="\n")

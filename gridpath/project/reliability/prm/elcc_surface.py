@@ -320,7 +320,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and
@@ -340,7 +340,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     for (prj, contr, cf) in project_contr_cf:
         prj_contr_cf_dict[str(prj)] = (contr, cf)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
+    with open(os.path.join(subproblem_stage_directory, "inputs", "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
@@ -368,12 +368,12 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
+    with open(os.path.join(subproblem_stage_directory, "inputs", "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "project_elcc_surface_coefficients.tab"), "w", newline="") as \
             coefficients_file:
         writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")
@@ -386,7 +386,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         for row in coefficients:
             writer.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "elcc_surface_normalization_loads.tab"), "w",
               newline="") as \
             coefficients_file:

@@ -179,7 +179,9 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn,
+    subproblem_stage_directory
+):
     """
     Get inputs from database and write out the model input
     specified_transmission_line_capacities.tab file.
@@ -194,7 +196,7 @@ def write_module_specific_model_inputs(
     tx_capacities = get_module_specific_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "specified_transmission_line_capacities.tab"),
               "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,

@@ -266,7 +266,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -284,10 +284,10 @@ def write_module_specific_model_inputs(
 
     # If specified_generation_period_params.tab file already exists, append
     # rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    if os.path.isfile(os.path.join(subproblem_stage_directory, "inputs",
                                    "specified_generation_period_params.tab")
                       ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        with open(os.path.join(subproblem_stage_directory, "inputs",
                                "specified_generation_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
@@ -297,7 +297,7 @@ def write_module_specific_model_inputs(
     # If specified_generation_period_params.tab file does not exist,
     # write header first, then add input data
     else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+        with open(os.path.join(subproblem_stage_directory, "inputs",
                                "specified_generation_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,

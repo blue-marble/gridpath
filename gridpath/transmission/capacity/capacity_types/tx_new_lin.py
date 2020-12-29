@@ -389,7 +389,8 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
+):
     """
     Get inputs from database and write out the model input .tab file.
     :param scenario_directory: string, the scenario directory
@@ -403,7 +404,7 @@ def write_module_specific_model_inputs(
     tx_cost = get_module_specific_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_build_transmission_vintage_costs.tab"),
               "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,

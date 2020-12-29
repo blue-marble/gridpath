@@ -658,7 +658,7 @@ def get_module_specific_inputs_from_database(
 
 
 def write_module_specific_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn, subproblem_stage_directory
 ):
     """
     Get inputs from database and write out the model input
@@ -674,7 +674,7 @@ def write_module_specific_model_inputs(
     new_gen_costs = get_module_specific_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+    with open(os.path.join(subproblem_stage_directory, "inputs",
                            "new_build_generator_vintage_costs.tab"), "w", newline="") as \
             new_gen_costs_tab_file:
         writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")

@@ -86,7 +86,6 @@ def load_model_data(
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
-            print(op_m)
             imported_operational_modules[op_m].load_module_specific_data(
                 m, d, data_portal, scenario_directory, subproblem, stage,
                 subproblem_stage_directory
@@ -122,7 +121,6 @@ def export_results(scenario_directory, subproblem, stage, m, d, subproblem_stage
 
     # Add any components specific to the operational modules
     for op_m in required_operational_modules:
-        print(op_m)
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
@@ -214,7 +212,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn,
+    subproblem_stage_directory
+):
     """
     Get inputs from database and write out the model input .tab files
     :param scenario_directory: string, the scenario directory
@@ -238,7 +239,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                    "write_module_specific_model_inputs"):
             imported_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
+                    scenario_directory, scenario_id, subscenarios,
+                subproblem, stage, conn, subproblem_stage_directory)
         else:
             pass
 
