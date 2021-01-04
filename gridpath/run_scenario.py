@@ -31,9 +31,12 @@ from pyutilib.services import TempfileManager
 import sys
 import warnings
 
+from db.common_functions import connect_to_database
+from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
 from gridpath.common_functions import determine_scenario_directory, \
-    get_scenario_name_parser, get_required_e2e_arguments_parser, \
+    get_db_parser, get_scenario_name_parser,\
+    get_required_e2e_arguments_parser, \
     get_solve_parser, create_logs_directory_if_not_exists, Logging
 from gridpath.auxiliary.scenario_chars import \
     ScenarioSubproblemStructureDisk, ScenarioSubproblemStructureDB, \
@@ -300,7 +303,7 @@ def run_optimization(
 
 def run_scenario(
     scenario_name, scenario_directory, directory_structure, modules_to_use,
-    loaded_modules, parsed_arguments
+    loaded_modules, parsed_arguments, subproblems_to_process
 ):
     """
     :param structure: the scenario structure object (i.e. horizon and stage
@@ -341,18 +344,20 @@ def run_scenario(
 
 
     objective_values = {}
-    for subproblem in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM\
-            .keys():
+    subproblems_to_solve = \
+        directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM.keys() \
+        if subproblems_to_process is None \
+        else subproblems_to_process
+
+    print("Solving subproblems ", subproblems_to_solve)
+    for subproblem in subproblems_to_solve:
         objective_values[subproblem] = {}
         for stage in directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM[
             subproblem].keys():
             if not parsed_arguments.quiet:
                 print("""
                     Running scenario {}, subproblem {}, stage {}...
-                    """.format(parsed_arguments.scenario), subproblem, stage)
-            print(subproblem, stage, directory_structure
-                  .STAGE_DIRECTORIES_BY_SUBPROBLEM[
-                      subproblem][stage])
+                    """.format(parsed_arguments.scenario, subproblem, stage))
             subproblem_stage_directory = \
                 directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM[
                       subproblem][stage]
@@ -863,8 +868,9 @@ def parse_arguments(args):
     """
     parser = argparse.ArgumentParser(
         add_help=True,
-        parents=[get_scenario_name_parser(), get_required_e2e_arguments_parser(),
-                 get_solve_parser()]
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(), get_solve_parser()]
     )
 
     # Flip order of argument groups so "required arguments" show first
@@ -882,7 +888,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def main(args=None):
+def main(subproblems_to_process=None, args=None):
     """
     This is the 'main' method that runs a scenario. It takes in and parses the
     script arguments, determines the scenario structure (i.e. whether it is a
@@ -894,25 +900,45 @@ def main(args=None):
         args = sys.argv[1:]
     # Parse arguments
     parsed_args = parse_arguments(args)
+    db_path = parsed_args.database
+    scenario_id_arg = parsed_args.scenario_id
+    scenario_name_arg = parsed_args.scenario
+    scenario_location = parsed_args.scenario_location
+
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    scenario_id, scenario_name = get_scenario_id_and_name(
+        scenario_id_arg=scenario_id_arg,
+        scenario_name_arg=scenario_name_arg,
+        c=c,
+        script="get_scenario_inputs"
+    )
 
     scenario_directory = determine_scenario_directory(
         scenario_location=parsed_args.scenario_location,
         scenario_name=parsed_args.scenario
         )
 
-    # Figure out the scenario structure (i.e. horizons and stages)
-    subproblem_structure = ScenarioSubproblemStructureDisk(
-        scenario_directory=scenario_directory
-    )
+    # Figure out the scenario structure (i.e. subproblems and stages)
+    if subproblems_to_process is None:
+        subproblem_structure = ScenarioSubproblemStructureDisk(
+            scenario_directory=scenario_directory
+        )
+    else:
+        subproblem_structure = ScenarioSubproblemStructureDB(
+            conn=conn, scenario_id=scenario_id
+        )
 
     directory_structure = ScenarioDirectoryStructure(
         scenario_directory=scenario_directory,
         subproblem_structure=subproblem_structure
     )
 
-    # Figure out the scenario structure (i.e. horizons and stages)
-    scenario_structure = ScenarioStructure(parsed_args.scenario,
-                                           parsed_args.scenario_location)
+    # TODO: delete this class
+    # # Figure out the scenario structure (i.e. horizons and stages)
+    # scenario_structure = ScenarioStructure(parsed_args.scenario,
+    #                                        parsed_args.scenario_location)
 
     # Determine/load modules and dynamic components
     modules_to_use, loaded_modules = set_up_gridpath_modules(
@@ -926,7 +952,8 @@ def main(args=None):
         directory_structure=directory_structure,
         modules_to_use=modules_to_use,
         loaded_modules=loaded_modules,
-        parsed_arguments=parsed_args
+        parsed_arguments=parsed_args,
+        subproblems_to_process=subproblems_to_process
     )
 
     # Return the objective function values (used in testing)

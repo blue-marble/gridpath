@@ -33,12 +33,12 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems, SolverOptions
+    ScenarioSubproblemStructureDB, SolverOptions
 
 
 def write_model_inputs(
-    scenario_directory, subproblems, loaded_modules, scenario_id,
-    subscenarios, conn
+    scenario_directory, subproblem_structure, loaded_modules, scenario_id,
+    subscenarios, conn, subproblems_to_process
 ):
     """
     For each module, load the inputs from the database and write out the inputs
@@ -55,16 +55,16 @@ def write_model_inputs(
 
     :return:
     """
-    subproblems_list = subproblems.SUBPROBLEMS
+    all_subproblems = subproblem_structure.ALL_SUBPROBLEMS
 
-    for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+    for subproblem in subproblems_to_process:
+        stages = subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
-            if len(subproblems_list) > 1 and len(stages) > 1:
+            if len(all_subproblems) > 1 and len(stages) > 1:
                 pass
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(all_subproblems) > 1:
                 stage = ""
             elif len(stages) > 1:
                 subproblem = ""
@@ -80,9 +80,6 @@ def write_model_inputs(
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
 
-            # Delete auxiliary and input files that may have existed before to
-            # avoid phantom files/inputs
-            delete_prior_aux_files(scenario_directory=scenario_directory)
             delete_prior_inputs(inputs_directory=inputs_directory)
 
             # Write model input .tab files for each of the loaded_modules if
@@ -275,11 +272,12 @@ def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
         )
 
 
-def main(args=None):
+def main(subproblems_to_process=None, args=None):
     """
 
     :return:
     """
+    print("Running get inputs main for subproblems ", subproblems_to_process)
     # Retrieve DB location and scenario_id and/or name from args
     if args is None:
         args = sys.argv[1:]
@@ -316,7 +314,9 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblem_structure = ScenarioSubproblemStructureDB(
+        conn=conn, scenario_id=scenario_id
+    )
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -327,8 +327,8 @@ def main(args=None):
     # This tells the determine_modules function to include the
     # stages-related modules
     stages_flag = any([
-        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
-        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+        len(subproblem_structure.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
+        subproblem_structure.STAGES_BY_SUBPROBLEM.keys()
     ])
 
     # Figure out which modules to use and load the modules
@@ -336,14 +336,23 @@ def main(args=None):
                                        multi_stage=stages_flag)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
+
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblems=subproblems,
+        subproblem_structure=subproblem_structure,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subscenarios=subscenarios,
-        conn=conn)
+        conn=conn,
+        subproblems_to_process=subproblems_to_process
+    )
+
+    # TODO: figure out where to do scenario-level operations, no need to
+    #  do it within each subproblem process
+    # Delete auxiliary and input files that may have existed before to
+    # avoid phantom files/inputs
+    delete_prior_aux_files(scenario_directory=scenario_directory)
 
     # Save the list of optional features to a file (will be used to determine
     # modules without database connection)

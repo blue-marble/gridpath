@@ -26,6 +26,7 @@ The main() function of this script can also be called with the
 from argparse import ArgumentParser
 import datetime
 import logging
+from multiprocessing import Manager, Pool
 import os
 import signal
 import sys
@@ -35,6 +36,7 @@ from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import get_db_parser, get_solve_parser, \
     get_required_e2e_arguments_parser, create_logs_directory_if_not_exists,\
     Logging, determine_scenario_directory
+from gridpath.auxiliary.scenario_chars import ScenarioSubproblemStructureDB
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
@@ -259,7 +261,6 @@ def main(args=None):
         c=conn.cursor(),
         script="run_end_to_end"
     )
-    conn.close()
 
     if not parsed_args.quiet:
         print("Running scenario {} end to end".format(scenario))
@@ -278,52 +279,25 @@ def main(args=None):
         db_path, parsed_args.scenario, process_id, start_time
     )
 
-    try:
-        get_scenario_inputs.main(args=args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when getting inputs from the database for "
-              "scenario {}. End time: {}.".format(scenario, end_time))
-        sys.exit(1)
-    try:
-        # make sure run_scenario.py gets the required --scenario argument
-        run_scenario_args = args + ['--scenario', scenario]
-        expected_objective_values = run_scenario.main(args=run_scenario_args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when running scenario {}. End time: {}."
-              .format(scenario, end_time))
-        sys.exit(1)
+    # Multiprocessing
+    # Create dictionary with which we'll keep track
+    # of subproblem objective function values
+    subproblems = ScenarioSubproblemStructureDB(conn=conn, scenario_id=scenario_id)
+    conn.close()
 
-    try:
-        import_scenario_results.main(args=args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when importing results for "
-              "scenario {}. End time: {}.".format(scenario, end_time))
-        sys.exit(1)
+    manager = Manager()
+    expected_objective_values = manager.dict()
+    pool = Pool(4)
+    pool_data = tuple([
+        [[subproblem], args, db_path, scenario, queue_order_id,
+         process_id, expected_objective_values]
+        for subproblem in subproblems.ALL_SUBPROBLEMS
+    ])
 
+    pool.map(run_subproblem_e2e, pool_data)
+    pool.close()
+
+    # Finished with parallelization, processed imported results
     try:
         process_results.main(args=args)
     except Exception as e:
@@ -358,7 +332,63 @@ def main(args=None):
         sys.stderr = stderr_original
 
     # Return expected objective values (for testing)
+    print(expected_objective_values)
     return expected_objective_values
+
+
+def run_subproblem_e2e(pool_datum):
+    subproblems, args, db_path, scenario, queue_order_id, \
+    process_id, expected_objective_values = pool_datum
+    try:
+        get_scenario_inputs.main(subproblems_to_process=subproblems, args=args)
+    except Exception as e:
+        logging.exception(e)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
+        print("Error encountered when getting inputs from the database for "
+              "scenario {}. End time: {}.".format(scenario, end_time))
+        sys.exit(1)
+    try:
+        # make sure run_scenario.py gets the required --scenario argument
+        run_scenario_args = args + ['--scenario', scenario]
+        run_scenario.main(
+            subproblems_to_process=subproblems,
+            args=run_scenario_args
+        )
+    except Exception as e:
+        logging.exception(e)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
+        print("Error encountered when running scenario {}. End time: {}."
+              .format(scenario, end_time))
+        sys.exit(1)
+
+    try:
+        import_scenario_results.main(
+            subproblems_to_process=subproblems, args=args
+        )
+    except Exception as e:
+        logging.exception(e)
+        end_time = update_db_for_run_end(
+            db_path=db_path,
+            scenario=scenario,
+            queue_order_id=queue_order_id,
+            process_id=process_id,
+            run_status_id=3
+        )
+        print("Error encountered when importing results for "
+              "scenario {}. End time: {}.".format(scenario, end_time))
+        sys.exit(1)
 
 
 def update_db_for_run_end(

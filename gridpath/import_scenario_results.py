@@ -32,18 +32,18 @@ from gridpath.common_functions import determine_scenario_directory, \
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import SubProblems
+from gridpath.auxiliary.scenario_chars import ScenarioSubproblemStructureDB
 
 
 def import_results_into_database(
-    loaded_modules, scenario_id, subproblems, cursor, db,
-    scenario_directory, quiet
+    loaded_modules, scenario_id, subproblem_structure, cursor, db,
+    scenario_directory, quiet, subproblems_to_process
 ):
     """
 
     :param loaded_modules:
     :param scenario_id:
-    :param subproblems:
+    :param subproblem_structure:
     :param cursor:
     :param db:
     :param scenario_directory:
@@ -51,9 +51,9 @@ def import_results_into_database(
     :return:
     """
 
-    subproblems_list = subproblems.SUBPROBLEMS
-    for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+    subproblems_list = subproblem_structure.ALL_SUBPROBLEMS
+    for subproblem in subproblems_to_process:
+        stages = subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
@@ -64,7 +64,7 @@ def import_results_into_database(
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(subproblem_structure.ALL_SUBPROBLEMS) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  "results")
@@ -174,7 +174,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def main(args=None):
+def main(subproblems_to_process=None, args=None):
     """
 
     :return:
@@ -200,7 +200,7 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
         c=c, script="import_scenario_results")
 
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblems = ScenarioSubproblemStructureDB(conn=conn, scenario_id=scenario_id)
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(
@@ -231,11 +231,12 @@ def main(args=None):
     import_results_into_database(
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
-        subproblems=subproblems,
+        subproblem_structure=subproblems,
         cursor=c,
         db=conn,
         scenario_directory=scenario_directory,
-        quiet=quiet
+        quiet=quiet,
+        subproblems_to_process=subproblems_to_process
     )
 
     # Close the database connection
