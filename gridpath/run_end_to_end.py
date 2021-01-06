@@ -358,6 +358,7 @@ def run_subproblem_e2e(pool_datum):
         run_scenario_args = args + ['--scenario', scenario]
         run_scenario.main(
             subproblems_to_process=subproblems,
+            objective_values=expected_objective_values,
             args=run_scenario_args
         )
     except Exception as e:
@@ -389,6 +390,7 @@ def run_subproblem_e2e(pool_datum):
         print("Error encountered when importing results for "
               "scenario {}. End time: {}.".format(scenario, end_time))
         sys.exit(1)
+
 
 
 def update_db_for_run_end(

@@ -303,7 +303,7 @@ def run_optimization(
 
 def run_scenario(
     scenario_name, scenario_directory, directory_structure, modules_to_use,
-    loaded_modules, parsed_arguments, subproblems_to_process
+    loaded_modules, parsed_arguments, subproblems_to_process, objective_values
 ):
     """
     :param structure: the scenario structure object (i.e. horizon and stage
@@ -342,8 +342,6 @@ def run_scenario(
     #                         subproblem, stage,
     #                         parsed_arguments)
 
-
-    objective_values = {}
     subproblems_to_solve = \
         directory_structure.STAGE_DIRECTORIES_BY_SUBPROBLEM.keys() \
         if subproblems_to_process is None \
@@ -371,8 +369,6 @@ def run_scenario(
                     subproblem_stage_directory=subproblem_stage_directory,
                     parsed_arguments=parsed_arguments
                 )
-
-    return objective_values
 
 
 def save_results(
@@ -888,7 +884,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def main(subproblems_to_process=None, args=None):
+def main(subproblems_to_process=None, objective_values=None, args=None):
     """
     This is the 'main' method that runs a scenario. It takes in and parses the
     script arguments, determines the scenario structure (i.e. whether it is a
@@ -945,19 +941,24 @@ def main(subproblems_to_process=None, args=None):
         scenario_directory=scenario_directory
     )
 
+    print("Objective values passed ", objective_values, type(objective_values))
+    if objective_values is None:
+        objective_values = {}
+
     # Run the scenario (can be multiple optimization subproblems)
-    expected_objective_values = run_scenario(
+    run_scenario(
         scenario_name=parsed_args.scenario,
         scenario_directory=scenario_directory,
         directory_structure=directory_structure,
         modules_to_use=modules_to_use,
         loaded_modules=loaded_modules,
         parsed_arguments=parsed_args,
-        subproblems_to_process=subproblems_to_process
+        subproblems_to_process=subproblems_to_process,
+        objective_values=objective_values
     )
 
     # Return the objective function values (used in testing)
-    return expected_objective_values
+    return objective_values
 
 
 if __name__ == "__main__":
