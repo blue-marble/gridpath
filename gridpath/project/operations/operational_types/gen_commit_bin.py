@@ -63,6 +63,8 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, \
     check_if_first_timepoint, check_if_last_timepoint, \
     check_boundary_type
+import gridpath.project.operations.operational_types.gen_commit_unit_common \
+    as gen_commit_unit_common
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -645,1413 +647,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    # Sets
-    ###########################################################################
-
-    m.GEN_COMMIT_BIN = Set(
-        within=m.PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(
-            mod, "PROJECTS", "operational_type", "gen_commit_bin"
-        )
+    gen_commit_unit_common.add_model_components(
+        m=m, d=d,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage,
+        bin_or_lin_optype="gen_commit_bin"
     )
-
-    m.GEN_COMMIT_BIN_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-            if g in mod.GEN_COMMIT_BIN)
-    )
-
-    m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS = Set(
-        within=m.GEN_COMMIT_BIN,
-        initialize=lambda mod: list(
-            prj for prj in mod.STARTUP_BY_ST_PRJS
-            if mod.operational_type[prj] == "gen_commit_bin"
-        )
-    )
-
-    m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES = Set(
-        dimen=2,
-        ordered=True,
-        initialize=lambda mod: sorted(list(
-            (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
-            if mod.operational_type[prj] == "gen_commit_bin"
-        ))
-    )
-
-    m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES = Set(
-        dimen=3,
-        initialize=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-            for _g, s in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
-    )
-
-    m.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ = Set(
-        m.GEN_COMMIT_BIN,
-        initialize=get_startup_types_by_project,
-        ordered=True
-    )
-
-    m.GEN_COMMIT_BIN_LINKED_TMPS = Set(dimen=2)
-
-    m.GEN_COMMIT_BIN_LINKED_TMPS_STR_TYPES = Set(
-        dimen=3,
-        initialize=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.GEN_COMMIT_BIN_LINKED_TMPS
-            for _g, s in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
-            if g == _g)
-    )
-
-    # Required Params
-    ###########################################################################
-    m.gen_commit_bin_min_stable_level_fraction = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction
-    )
-
-    # Optional Params
-    ###########################################################################
-
-    m.gen_commit_bin_ramp_up_when_on_rate = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction, default=1
-    )
-    m.gen_commit_bin_ramp_down_when_on_rate = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction, default=1
-    )
-    m.gen_commit_bin_startup_plus_ramp_up_rate_by_st = Param(
-        m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES,
-        within=PercentFraction, default=1
-    )
-    m.gen_commit_bin_shutdown_plus_ramp_down_rate = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction, default=1
-    )
-
-    m.gen_commit_bin_min_up_time_hours = Param(
-        m.GEN_COMMIT_BIN,
-        within=NonNegativeReals, default=0
-    )
-
-    m.gen_commit_bin_min_down_time_hours = Param(
-        m.GEN_COMMIT_BIN,
-        within=NonNegativeReals, default=0
-    )
-
-    m.gen_commit_bin_aux_consumption_frac_capacity = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction,
-        default=0
-    )
-
-    m.gen_commit_bin_aux_consumption_frac_power = Param(
-        m.GEN_COMMIT_BIN,
-        within=PercentFraction,
-        default=0
-    )
-
-    m.gen_commit_bin_down_time_cutoff_hours = Param(
-        m.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES,
-        within=NonNegativeReals
-    )
-
-    # Derived Params
-    ###########################################################################
-
-    m.gen_commit_bin_allow_ramp_up_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
-    )
-
-    m.gen_commit_bin_allow_ramp_down_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
-    )
-
-    m.gen_commit_bin_allow_min_up_time_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
-    )
-
-    m.gen_commit_bin_allow_min_down_time_violation = Param(
-        m.GEN_COMMIT_BIN,
-        within=Boolean,
-        initialize=lambda mod, prj:
-            1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
-    )
-
-    # Linked Params
-    ###########################################################################
-
-    m.gen_commit_bin_linked_commit = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=PercentFraction
-    )
-
-    m.gen_commit_bin_linked_startup = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=PercentFraction
-    )
-
-    m.gen_commit_bin_linked_shutdown = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=PercentFraction
-    )
-
-    m.gen_commit_bin_linked_power_above_pmin = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_upwards_reserves = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_downwards_reserves = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_ramp_up_rate_mw_per_tmp = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_ramp_down_rate_mw_per_tmp = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_provide_power_startup_by_st_mw = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS_STR_TYPES,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_startup_ramp_rate_by_st_mw_per_tmp = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS_STR_TYPES,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_provide_power_shutdown_mw = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.gen_commit_bin_linked_shutdown_ramp_rate_mw_per_tmp = Param(
-        m.GEN_COMMIT_BIN_LINKED_TMPS,
-        within=NonNegativeReals
-    )
-
-    # Variables
-    ###########################################################################
-
-    m.GenCommitBin_Commit = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=Binary
-    )
-
-    m.GenCommitBin_Startup = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=Binary
-    )
-
-    m.GenCommitBin_Startup_Type = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        within=Binary
-    )
-
-    m.GenCommitBin_Shutdown = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=Binary
-    )
-
-    m.GenCommitBin_Synced = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=Binary
-    )
-
-    m.GenCommitBin_Provide_Power_Above_Pmin_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.GenCommitBin_Provide_Power_Startup_By_ST_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        within=NonNegativeReals
-    )
-
-    m.GenCommitBin_Provide_Power_Shutdown_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals
-    )
-
-    m.GenCommitBin_Ramp_Up_Violation_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals,
-        initialize=0
-    )
-
-    m.GenCommitBin_Ramp_Down_Violation_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals,
-        initialize=0
-    )
-
-    m.GenCommitBin_Min_Up_Time_Violation = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals,
-        initialize=0
-    )
-
-    m.GenCommitBin_Min_Down_Time_Violation = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        within=NonNegativeReals,
-        initialize=0
-    )
-
-    # Expressions
-    ###########################################################################
-
-    m.GenCommitBin_Pmax_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=pmax_rule
-    )
-
-    m.GenCommitBin_Pmin_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=pmin_rule
-    )
-
-    m.GenCommitBin_Provide_Power_Startup_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=provide_power_startup_rule
-    )
-
-    m.GenCommitBin_Provide_Power_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=provide_power_rule
-    )
-
-    m.GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=ramp_up_rate_rule
-    )
-
-    m.GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=ramp_down_rate_rule
-    )
-
-    m.GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        rule=startup_ramp_rate_rule
-    )
-
-    m.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=shutdown_ramp_rate_rule
-    )
-
-    m.GenCommitBin_Active_Startup_Type = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=active_startup_rule
-    )
-
-    def upwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, headroom_variables)[g])
-    m.GenCommitBin_Upwards_Reserves_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=upwards_reserve_rule
-    )
-
-    def downwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, footroom_variables)[g])
-    m.GenCommitBin_Downwards_Reserves_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=downwards_reserve_rule
-    )
-
-    m.GenCommitBin_Auxiliary_Consumption_MW = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=auxiliary_consumption_rule
-    )
-
-    # Constraints
-    ###########################################################################
-
-    # Commitment
-    m.GenCommitBin_Binary_Logic_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=binary_logic_constraint_rule
-    )
-
-    m.GenCommitBin_Synced_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=synced_constraint_rule
-    )
-
-    # Power
-    m.GenCommitBin_Max_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=max_power_constraint_rule
-    )
-
-    m.GenCommitBin_Min_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=min_power_constraint_rule
-    )
-
-    # Minimum Up and Down Time
-    m.GenCommitBin_Min_Up_Time_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=min_up_time_constraint_rule
-    )
-
-    m.GenCommitBin_Min_Down_Time_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=min_down_time_constraint_rule
-    )
-
-    # Ramps
-    m.GenCommitBin_Ramp_Up_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=ramp_up_constraint_rule
-    )
-
-    m.GenCommitBin_Ramp_Down_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=ramp_down_constraint_rule
-    )
-
-    # Startup Power
-    m.GenCommitBin_Unique_Startup_Type_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=unique_startup_type_constraint_rule
-    )
-
-    m.GenCommitBin_Active_Startup_Type_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        rule=active_startup_type_constraint_rule
-    )
-
-    m.GenCommitBin_Max_Startup_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=max_startup_power_constraint_rule
-    )
-
-    m.GenCommitBin_Ramp_During_Startup_By_ST_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        rule=ramp_during_startup_by_st_constraint_rule
-    )
-
-    m.GenCommitBin_Increasing_Startup_Power_By_ST_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        rule=increasing_startup_power_by_st_constraint_rule
-    )
-
-    m.GenCommitBin_Power_During_Startup_By_ST_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
-        rule=power_during_startup_by_st_constraint_rule
-    )
-
-    # Shutdown Power
-    m.GenCommitBin_Max_Shutdown_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=max_shutdown_power_constraint_rule
-    )
-
-    m.GenCommitBin_Ramp_During_Shutdown_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=ramp_during_shutdown_constraint_rule
-    )
-
-    m.GenCommitBin_Decreasing_Shutdown_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=decreasing_shutdown_power_constraint_rule
-    )
-
-    m.GenCommitBin_Power_During_Shutdown_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
-        rule=power_during_shutdown_constraint_rule
-    )
-
-
-# Set Rules
-###############################################################################
-
-def get_startup_types_by_project(mod, g):
-    """
-    Get indexed set of startup types by project, ordered from hottest to
-    coldest.
-    """
-    types = sorted([s for (_g, s) in
-                    mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS_TYPES
-             if g == _g])
-    return types
-
-
-# Expression Rules
-###############################################################################
-
-def pmax_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Pmax_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
-
-
-def pmin_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Pmin_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_commit_bin_min_stable_level_fraction[g]
-
-
-def provide_power_startup_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Provide_Power_Startup_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return sum(mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[g, tmp, s]
-               for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g])
-
-
-def provide_power_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Provide_Power_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
-        + mod.GenCommitBin_Pmin_MW[g, tmp] \
-        * mod.GenCommitBin_Commit[g, tmp] \
-        + mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] \
-        + mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp]
-
-
-def auxiliary_consumption_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.GenCommitBin_Commit[g, tmp] \
-        * mod.gen_commit_bin_aux_consumption_frac_capacity[g] \
-        + mod.GenCommitBin_Provide_Power_MW[g, tmp] * \
-        mod.gen_commit_bin_aux_consumption_frac_power[g]
-
-
-def ramp_up_rate_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Ramp up rate limit in MW per timepoint, derived from input ramp rate
-    which is given in fraction of installed capacity per minute. Longer
-    timepoints will lead to a larger ramp up rate limit, since ramping
-    can take place over a longer duration.
-    Unit check:
-        capacity [MW]
-        * availability [unit-less]
-        * ramp up rate [1/min]
-        * hours in timepoint [hours/timepoint]
-        * minutes per hour [min/hour]
-        = ramp up rate [MW/timepoint]
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_commit_bin_ramp_up_when_on_rate[g] \
-        * mod.hrs_in_tmp[tmp] \
-        * 60  # convert min to hours
-
-
-def ramp_down_rate_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Ramp down rate limit in MW per timepoint, derived from input ramp rate
-    which is given in fraction of installed capacity per minute. Longer
-    timepoints will lead to a larger ramp down rate limit, since ramping
-    can take place over a longer duration.
-    Unit check:
-        capacity [MW]
-        * availability [unit-less]
-        * ramp down rate [1/min]
-        * hours in timepoint [hours/timepoint]
-        * minutes per hour [min/hour]
-        = ramp down rate [MW/timepoint]
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * mod.gen_commit_bin_ramp_down_when_on_rate[g] \
-        * mod.hrs_in_tmp[tmp] \
-        * 60  # convert min to hours
-
-
-def startup_ramp_rate_rule(mod, g, tmp, s):
-    """
-    **Expression Name**: GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * min(mod.gen_commit_bin_startup_plus_ramp_up_rate_by_st[g, s]
-              * mod.hrs_in_tmp[tmp]
-              * 60, 1)
-
-
-def shutdown_ramp_rate_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
-        * min(mod.gen_commit_bin_shutdown_plus_ramp_down_rate[g]
-              * mod.hrs_in_tmp[tmp]
-              * 60, 1)
-
-
-def active_startup_rule(mod, g, tmp):
-    """
-    **Expression Name**: GenCommitBin_Active_Startup_Type
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
-    """
-    return sum(mod.GenCommitBin_Startup_Type[g, tmp, s] * s
-               for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g])
-
-# Constraint Formulation Rules
-###############################################################################
-
-
-# Commitment
-def binary_logic_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Binary_Logic_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    If commit status changes, unit is turning on or shutting down.
-    The *GenCommitBin_Startup* variable is 1 for the first timepoint the unit
-    is committed after being offline; it will be able to provide power in that
-    timepoint. The *GenCommitBin_Shutdown* variable is 1 for the first
-    timepoint the unit is not committed after being online; it will not be
-    able to provide power in that timepoint.
-
-    Constraint (8) in Morales-Espana et al. (2013)
-    """
-    # If this is the first timepoint of a linear horizon, skip the constraint
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        # If this is the first timepoint of a linked horizon, set the previous
-        # timepoint's commitment to that in the closest linked timepoint (the
-        # linked timepoint with index 0)
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_timepoint_commit = mod.gen_commit_bin_linked_commit[g, 0]
-        # Otherwise, use the previous timepoint's commitment
-        else:
-            prev_timepoint_commit = \
-                mod.GenCommitBin_Commit[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-
-        return mod.GenCommitBin_Commit[g, tmp] \
-            - prev_timepoint_commit \
-            == mod.GenCommitBin_Startup[g, tmp] \
-            - mod.GenCommitBin_Shutdown[g, tmp]
-
-
-def synced_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Synced_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Synced is 1 if the unit is committed, starting, or stopping and zero
-    otherwise.
-
-    Note: This contains a division by the Pmin expression, so cases where Pmin
-    would be zero need to be treated differently to avoid zero-division errors.
-    """
-
-    # If specified capacity is zero, synced units is zero
-    if mod.capacity_type[g] in ['gen_spec', 'gen_ret_bin', 'gen_ret_lin']:
-        spec_capacity = getattr(mod, mod.capacity_type[g] + '_capacity_mw')
-        if spec_capacity[g, mod.period[tmp]] == 0:
-            return mod.GenCommitBin_Synced[g, tmp] == 0
-
-    # If exogenous availability is zero, synced units is zero
-    if mod.availability_type[g] == 'exogenous':
-        if mod.avl_exog_derate[g, tmp] == 0:
-            return mod.GenCommitBin_Synced[g, tmp] == 0
-
-    # If min stable level is zero, there will be no trajectories so we drop the
-    # second RHS term which checks for startup/shutdown power
-    if mod.gen_commit_bin_min_stable_level_fraction[g] == 0:
-        startup_shutdown_fraction = 0
-    else:
-        startup_shutdown_fraction = (
-            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp]
-            + mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp]
-        ) / mod.GenCommitBin_Pmin_MW[g, tmp]
-
-    return mod.GenCommitBin_Synced[g, tmp] \
-        >= mod.GenCommitBin_Commit[g, tmp] \
-        + startup_shutdown_fraction
-
-
-# Power
-def max_power_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Max_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Power provision plus upward reserves shall not exceed maximum power.
-    """
-    return \
-        (mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
-         + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp]) \
-        <= \
-        (mod.GenCommitBin_Pmax_MW[g, tmp]
-         - mod.GenCommitBin_Pmin_MW[g, tmp]) \
-        * mod.GenCommitBin_Commit[g, tmp]
-
-
-def min_power_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Min_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Power minus downward services cannot be below minimum stable level.
-    This constraint is not in Morales-Espana et al. (2013) because they
-    don't look at downward reserves. In that case, enforcing
-    provide_power_above_pmin to be within NonNegativeReals is sufficient.
-    """
-    return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
-        - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp] \
-        >= 0
-
-
-# Minimum Up and Down Time
-def min_up_time_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Min_Up_Time_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    When units are started, they have to stay on for a minimum number
-    of hours described by the gen_commit_bin_min_up_time_hours parameter.
-    The constraint is enforced by ensuring that the binary commitment
-    is at least as large as the number of unit starts within min up time
-    hours.
-
-    We ensure a unit turned on less than the minimum up time ago is
-    still on in the current timepoint *tmp* by checking how much units
-    were turned on in each 'relevant' timepoint (i.e. a timepoint that
-    begins more than or equal to gen_commit_bin_min_up_time_hours ago
-    relative to the start of timepoint *tmp*) and then summing those
-    starts.
-
-    If using linear horizon boundaries, the constraint is skipped for all
-    timepoints less than min up time hours from the start of the timepoint's
-    horizon because the constraint for the first included timepoint
-    will sufficiently constrain the binary start variables of all the
-    timepoints before it.
-
-    Constraint (6) in Morales-Espana et al. (2013)
-
-    Example 1:
-      min_up_time = 4; tmps = [0,1,2,3];
-      hours_in_tmps = [1,3,1,1];
-      tmp = 2; relevant_tmps = [1,2]
-      --> if there is a start in tmp 1, you have to be committed in tmp 2
-      --> starts in all other tmps (incl. tmp 0) don't affect tmp 2
-    Example 2:
-      min_up_time = 4; tmps = [0,1,2,3];
-      hours_in_tmps = [1,4,1,1];
-      tmp = 2; relevant_tmps = [2]
-      --> start in t1 does not affect state of t2; tmp 1 is 4 hrs long
-      --> so even if you start in tmp 1 you can stop again in tmp 2
-      --> The constraint simply ensures that the unit is committed if
-      --> it is turned on.
-    Example 3:
-      min_up_time = 4; tmps = [0,1,2,3];
-      hours_in_tmps = [1,1,1,1];
-      tmp = 2; relevant_tmps = [0,1,2,3]
-      --> if there is a start in tmp 0, 1, 2, or 3, you have to be committed
-      --> in tmp 2. The unit either has to be on for all timepoints, or off
-      --> for all timepoints
-    """
-
-    relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_bin_min_up_time_hours[g]
-    )
-
-    number_of_starts_min_up_time_or_less_hours_ago = \
-        sum(mod.GenCommitBin_Startup[g, tp] for tp in relevant_tmps) \
-        + sum(mod.gen_commit_bin_linked_startup[g, ltp] for ltp in
-              relevant_linked_timepoints)
-
-    # If we've reached the first timepoint in linear boundary mode and
-    # the total duration of the relevant timepoints (which includes *tmp*)
-    # is less than the minimum up time, skip the constraint since the next
-    # timepoint's constraint will already cover these same timepoints.
-    # Don't skip if this timepoint is the last timepoint of the horizon
-    # (since there will be no next timepoint).
-    if (mod.boundary[
-        mod.balancing_type_project[g],
-        mod.horizon[tmp, mod.balancing_type_project[g]]
-    ] == "linear"
-            and
-            relevant_tmps[-1]
-            == mod.first_hrz_tmp[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ]
-            and
-            sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-            < mod.gen_commit_bin_min_up_time_hours[g]
-            and
-            tmp != mod.last_hrz_tmp[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ]):
-        return Constraint.Skip
-    # Otherwise, if there was a start min_up_time or less ago, the unit has
-    # to remain committed.
-    else:
-        return mod.GenCommitBin_Commit[g, tmp] + \
-            mod.gen_commit_bin_allow_min_up_time_violation[g] * \
-            mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] \
-            >= number_of_starts_min_up_time_or_less_hours_ago
-
-
-def min_down_time_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Min_Down_Time_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    When units are shut down, they have to stay off for a minimum number
-    of hours described by the gen_commit_bin_min_down_time_hours parameter.
-    The constraint is enforced by ensuring that (1-binary commitment)
-    is at least as large as the number of unit shutdowns within min down
-    time hours.
-
-    We ensure a unit shut down less than the minimum up time ago is
-    still off in the current timepoint *tmp* by checking how much units
-    were shut down in each 'relevant' timepoint (i.e. a timepoint that
-    begins more than or equal to gen_commit_bin_min_down_time_hours ago
-    relative to the start of timepoint *tmp*) and then summing those
-    shutdowns.
-
-    If using linear horizon boundaries, the constraint is skipped for all
-    timepoints less than min down time hours from the start of the
-    timepoint's horizon because the constraint for the first included
-    timepoint will sufficiently constrain the binary stop variables of all
-    the timepoints before it.
-
-    Constraint (7) in Morales-Espana et al. (2013)
-    """
-
-    relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_bin_min_down_time_hours[g]
-    )
-
-    number_of_stops_min_down_time_or_less_hours_ago = \
-        sum(mod.GenCommitBin_Shutdown[g, tp] for tp in relevant_tmps) \
-        + sum(mod.gen_commit_bin_linked_shutdown[g, ltp] for ltp in
-              relevant_linked_timepoints)
-
-    # If we've reached the first timepoint in linear boundary mode and
-    # the total duration of the relevant timepoints (which includes *tmp*)
-    # is less than the minimum down time, skip the constraint since the
-    # next timepoint's constraint will already cover these same timepoints.
-    # Don't skip if this timepoint is the last timepoint of the horizon
-    # (since there will be no next timepoint).
-    if (mod.boundary[
-        mod.balancing_type_project[g],
-        mod.horizon[tmp, mod.balancing_type_project[g]]
-    ] == "linear"
-            and
-            relevant_tmps[-1]
-            == mod.first_hrz_tmp[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ]
-            and
-            sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-            < mod.gen_commit_bin_min_down_time_hours[g]
-            and
-            tmp != mod.last_hrz_tmp[
-                mod.balancing_type_project[g],
-                mod.horizon[tmp, mod.balancing_type_project[g]]
-            ]):
-        return Constraint.Skip
-    # Otherwise, if there was a shutdown min_down_time or less ago, the unit
-    # has to remain shut down.
-    else:
-        return 1 - \
-            (mod.GenCommitBin_Commit[g, tmp] -
-                mod.gen_commit_bin_allow_min_down_time_violation[g] *
-                mod.GenCommitBin_Min_Down_Time_Violation[g, tmp]) \
-            >= number_of_stops_min_down_time_or_less_hours_ago
-
-
-# Ramps
-def ramp_up_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Ramp_Up_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Difference between power generation of consecutive timepoints has to
-    obey ramp up rates.
-
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate is adjusted for the duration of the first timepoint.
-    Constraint (12) in Morales-Espana et al. (2013)
-    """
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power_above_pmin = \
-                mod.gen_commit_bin_linked_power_above_pmin[g, 0]
-            prev_tmp_downwards_reserves = \
-                mod.gen_commit_bin_linked_downwards_reserves[g, 0]
-            prev_tmp_ramp_up_rate_mw_per_tmp = \
-                mod.gen_commit_bin_linked_ramp_up_rate_mw_per_tmp[g, 0]
-        else:
-            prev_tmp_hrs_in_tmp = \
-                mod.hrs_in_tmp[
-                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_power_above_pmin = \
-                mod.GenCommitBin_Provide_Power_Above_Pmin_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_downwards_reserves = \
-                mod.GenCommitBin_Downwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_ramp_up_rate_mw_per_tmp = \
-                mod.GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-
-        # Apply constraints
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp up the full operable range between timepoints, constraint
-        # won't bind, so skip
-        if (mod.gen_commit_bin_ramp_up_when_on_rate[g] * 60
-            * prev_tmp_hrs_in_tmp
-                >= (1 - mod.gen_commit_bin_min_stable_level_fraction[g])):
-            return Constraint.Skip
-        else:
-            return \
-                (mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
-                 + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp]) \
-                - (prev_tmp_power_above_pmin - prev_tmp_downwards_reserves) \
-                <= prev_tmp_ramp_up_rate_mw_per_tmp + \
-                mod.gen_commit_bin_allow_ramp_up_violation[g] * \
-                mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
-
-
-def ramp_down_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Ramp_Down_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Difference between power generation of consecutive timepoints has to
-    obey ramp down rates.
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate is adjusted for the duration of the first timepoint.
-    Constraint (13) in Morales-Espana et al. (2013)
-    """
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power_above_pmin = \
-                mod.gen_commit_bin_linked_power_above_pmin[g, 0]
-            prev_tmp_upwards_reserves = \
-                mod.gen_commit_bin_linked_upwards_reserves[g, 0]
-            prev_tmp_ramp_down_rate_mw_per_tmp = \
-                mod.gen_commit_bin_linked_ramp_down_rate_mw_per_tmp[g, 0]
-        else:
-            prev_tmp_hrs_in_tmp = \
-                mod.hrs_in_tmp[
-                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_power_above_pmin = \
-                mod.GenCommitBin_Provide_Power_Above_Pmin_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_upwards_reserves = \
-                mod.GenCommitBin_Upwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_ramp_down_rate_mw_per_tmp = \
-                mod.GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp down the full operable range between timepoints, constraint
-        # won't bind, so skip
-        if (mod.gen_commit_bin_ramp_down_when_on_rate[g] * 60
-            * prev_tmp_hrs_in_tmp
-                >= (1 - mod.gen_commit_bin_min_stable_level_fraction[g])):
-            return Constraint.Skip
-        else:
-            return \
-                (prev_tmp_power_above_pmin + prev_tmp_upwards_reserves) \
-                - \
-                (mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
-                 - mod.GenCommitBin_Downwards_Reserves_MW[g, tmp]) \
-                <= prev_tmp_ramp_down_rate_mw_per_tmp + \
-                mod.gen_commit_bin_allow_ramp_down_violation[g] * \
-                mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp]
-
-
-# Startup Power
-def unique_startup_type_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Unique_Startup_Type_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Only one startup type can be active (>= 1) at the same time.
-    """
-
-    if g not in mod.GEN_COMMIT_BIN_STARTUP_BY_ST_PRJS:
-        return Constraint.Skip
-
-    sum_startup_types = sum(
-        mod.GenCommitBin_Startup_Type[g, tmp, s]
-        for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
-    )
-
-    return sum_startup_types == mod.GenCommitBin_Startup[g, tmp]
-
-
-def active_startup_type_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: GenCommitBin_Active_Startup_Type_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
-
-    Startup_type s can only be activated (startup_type >= 1) if the unit has
-    previously been down within the appropriate interval. The interval for
-    startup type s is defined by the user specified boundary parameters
-    mod.gen_commit_bin_down_time_cutoff_hours[s] and
-    mod.gen_commit_bin_down_time_cutoff_hours[s+1]. Note that the down time
-    interval includes any timepoints during which the unit is starting up.
-
-    For the coldest (last) startup type, there is no s+1 and the
-    constraint is skipped. This is okay because the model will select a
-    hotter, cheaper startup type if it can and there can only be one
-    startup_type active at once (see unique_startup_type_constraint_rule).
-    This also means the constraint will be skipped if there is only one
-    startup type.
-
-    The constraint works by first determining the relevant timepoints, i.e.
-    the timepoints within [TSU,s ; TSU,s+1) hours from *tmp*. If the unit
-    has been down in any of these timepoints, we can activate the startup
-    variable of the associated startup type for timepoint *tmp* (but only if
-    the unit is actually starting in timepoint *tmp*).
-
-    Example: we are in timepoint 7 (hourly resolution) and the down time
-    interval is 2-4 hours for a hot start and >=4 hours for a cold start.
-    This means timepoints 4 and 5 will be the relevant timepoints (resp. 2
-    and 3 hours from *tmp*). A shutdown in any of those timepoints means
-    that a start in timepoint 7 would be a hot start.
-
-    See constraint (7) in Morales-Espana et al. (2017).
-    """
-
-    # Coldest startup type is un-constrained
-    if s == mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g][-1]:
-        return Constraint.Skip
-
-    # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
-    relevant_tmps1, relevant_linked_tmps1 = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_bin_down_time_cutoff_hours[g, s])
-    relevant_tmps2, relevant_linked_tmps2 = determine_relevant_timepoints(
-        mod, g, tmp, mod.gen_commit_bin_down_time_cutoff_hours[g, s+1])
-    relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
-    relevant_linked_tmps = \
-        set(relevant_linked_tmps2) - set(relevant_linked_tmps1)
-
-    # Skip constraint if we are within TSU,s hours from the start of the
-    # horizon (linear horizon boundary), from the start of the furthest
-    # linked timepoint (linked horizon boundary) or from the current tmp
-    # (circular horizon boundary). We have no way to know whether unit was down
-    # [TSU,s; TSU,s+1) hours ago so we can't know if this start type could
-    # be active.
-    if len(relevant_tmps) == 0 and len(relevant_linked_tmps) == 0:
-        return Constraint.Skip
-
-    # Equal to 1 if unit has been down within interval [TSU,s; TSU,s+1)
-    # before hour t. This "activates" this particular startup type
-    shutdown_within_interval = \
-        sum(mod.GenCommitBin_Shutdown[g, tp] for tp in relevant_tmps) \
-        + sum(mod.gen_commit_bin_linked_shutdown[g, ltp]
-              for ltp in relevant_linked_tmps)
-
-    return mod.GenCommitBin_Startup_Type[g, tmp, s] <= shutdown_within_interval
-
-
-def max_startup_power_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Max_Startup_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Startup power is 0 when the unit is committed and must be less than or
-    equal to the minimum stable level when not committed.
-    """
-
-    return mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] \
-        <= (1 - mod.GenCommitBin_Commit[g, tmp]) \
-        * mod.GenCommitBin_Pmin_MW[g, tmp]
-
-
-def ramp_during_startup_by_st_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: GenCommitBin_Ramp_During_Startup_By_ST_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
-
-    The difference between startup power of consecutive timepoints has to
-    obey startup ramp up rates.
-
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate is adjusted for the duration of the first timepoint.
-    """
-
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_provide_power_startup = \
-                mod.gen_commit_bin_linked_provide_power_startup_by_st_mw[g, 0, s]
-            prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.gen_commit_bin_linked_startup_ramp_rate_by_st_mw_per_tmp[g, 0, s]
-        else:
-            prev_tmp_provide_power_startup = \
-                mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                ]
-            prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                ]
-
-        return \
-            mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[g, tmp, s] \
-            - prev_tmp_provide_power_startup \
-            <= prev_tmp_startup_ramp_rate_mw_per_tmp \
-            + mod.gen_commit_bin_allow_ramp_up_violation[g] * \
-            mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp]
-
-
-def increasing_startup_power_by_st_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: GenCommitBin_Increasing_Startup_Power_By_ST_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
-
-    GenCommitBin_Provide_Power_Startup_By_ST_MW[t] can only be less than
-    GenCommitBin_Provide_Power_Startup_By_ST_MW[t-1] in the starting timepoint
-    (when it is is back at 0). In other words,
-    GenCommitBin_Provide_Power_Startup_By_ST_MW can only decrease in the
-    starting timepoint; in all other timepoints it should increase or stay
-    constant. This prevents situations in which the model can abuse this by
-    providing starting power in some timepoints and then reducing power back
-    to 0 without ever committing the unit.
-    """
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_provide_power_startup = \
-                mod.gen_commit_bin_linked_provide_power_startup_by_st_mw[g, 0, s]
-        else:
-            prev_tmp_provide_power_startup = \
-                mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                ]
-
-        return \
-            mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[g, tmp, s] \
-            - prev_tmp_provide_power_startup \
-            >= - mod.GenCommitBin_Startup_Type[g, tmp, s] \
-            * mod.GenCommitBin_Pmin_MW[g, tmp]
-
-
-def power_during_startup_by_st_constraint_rule(mod, g, tmp, s):
-    """
-    **Constraint Name**: GenCommitBin_Power_During_Startup_By_ST_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
-
-    Power provision in the start timepoint (i.e. the timepoint when the unit
-    is first committed) is constrained by the startup ramp rate (adjusted
-    for timepoint duration).
-
-    In other words, to provide 'committed' power in the start timepoint, we
-    need to have provided startup power in the previous timepoint, which
-    will in turn set the whole startup trajectory based on the previous
-    constraints.
-
-    When we are not in the start timepoint, simply constrain power provision
-    by the capacity, which may not bind. To elaborate, when we are not in a
-    start timepoint, t-1 could have had:
-    1) the unit committed, meaning Pstarting[t-1]=0, resulting in
-    power provision <= capacity, or
-    2) the unit not committed, meaning that we are also not committed in t,
-    i.e. power provision[t]=0, resulting in -Pstarting[t-1] <= capacity
-
-    (Commit[t] x Pmin + P_above_Pmin[t]) - Pstarting[t-1]
-    <=
-    (1 - Start[t]) x Pmax + Start[t] x Startup_Ramp_Rate x Pmax
-    """
-
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_provide_power_startup = \
-                mod.gen_commit_bin_linked_provide_power_startup_by_st_mw[g, 0, s]
-            prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.gen_commit_bin_linked_startup_ramp_rate_by_st_mw_per_tmp[g, 0, s]
-        else:
-            prev_tmp_provide_power_startup = \
-                mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                ]
-            prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                mod.GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                ]
-
-        return (mod.GenCommitBin_Commit[g, tmp]
-                * mod.GenCommitBin_Pmin_MW[g, tmp]
-                + mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]
-                ) \
-            + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp] \
-            - prev_tmp_provide_power_startup \
-            <= \
-            (1 - mod.GenCommitBin_Startup_Type[g, tmp, s]) \
-            * mod.GenCommitBin_Pmax_MW[g, tmp] \
-            + mod.GenCommitBin_Startup[g, tmp] \
-            * prev_tmp_startup_ramp_rate_mw_per_tmp
-
-
-# Shutdown Power
-def max_shutdown_power_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Max_Shutdown_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Shutdown power is 0 when the unit is committed and must be less than or
-    equal to the minimum stable level when not committed
-    """
-
-    return mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] \
-        <= (1 - mod.GenCommitBin_Commit[g, tmp]) \
-        * mod.GenCommitBin_Pmin_MW[g, tmp]
-
-
-def ramp_during_shutdown_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Ramp_During_Shutdown_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    The difference between shutdown power of consecutive timepoints has to
-    obey shutdown ramp up rates.
-
-    We assume that a unit has to reach its setpoint at the start of the
-    timepoint; as such, the ramping between 2 timepoints is assumed to
-    take place during the duration of the first timepoint, and the
-    ramp rate is adjusted for the duration of the first timepoint.
-    """
-
-    if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
-    ):
-        return Constraint.Skip
-    else:
-        if check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        ):
-            prev_tmp_provide_power_shutdown = \
-                mod.gen_commit_bin_linked_provide_power_shutdown_mw[g, 0]
-            prev_tmp_shutdown_ramp_rate_mw_per_tmp = \
-                mod.gen_commit_bin_linked_shutdown_ramp_rate_mw_per_tmp[g, 0]
-        else:
-            prev_tmp_provide_power_shutdown = \
-                mod.GenCommitBin_Provide_Power_Shutdown_MW[g, mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_shutdown_ramp_rate_mw_per_tmp = \
-                mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-
-        return prev_tmp_provide_power_shutdown \
-            - mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] \
-            <= prev_tmp_shutdown_ramp_rate_mw_per_tmp + \
-            mod.gen_commit_bin_allow_ramp_down_violation[g] * \
-            mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp]
-
-
-def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Decreasing_Shutdown_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    GenCommitBin_Provide_Power_Shutdown_MW[t] can only be less than
-    GenCommitBin_Provide_Power_Shutdown_MW[t+1] if the unit stops in t+1 (when
-    it is back above 0). In other words, GenCommitBin_Provide_Power_Shutdown_MW
-    can only increase in the stopping timepoint; in all other timepoints it
-    should decrease or stay constant. This prevents situations in which the
-    model can abuse this by providing stopping power in some timepoints without
-    previously having committed the unit.
-    """
-    if check_if_last_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and (
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        )
-    ):
-        return Constraint.Skip
-    else:
-        return \
-            mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp] \
-            - mod.GenCommitBin_Provide_Power_Shutdown_MW[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-            >= \
-            - mod.GenCommitBin_Shutdown[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.GenCommitBin_Pmin_MW[g, tmp]
-
-
-def power_during_shutdown_constraint_rule(mod, g, tmp):
-    """
-    **Constraint Name**: GenCommitBin_Power_During_Shutdown_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-    Power provision in the stop timepoint (i.e. the first timepoint the unit
-    is not committed after having been committed) is constrained by the
-    shutdown ramp rate (adjusted for timepoint duration).
-
-    In other words, to provide 'committed' power in the stop timepoint, we
-    need to provide shutdown power in the next timepoint, which will in turn
-    set the whole shutdown trajectory based on the previous constraints.
-
-    When we are not in the stop timepoint, simply constrain power provision
-    by the capacity, which may not bind. To elaborate, when we are not in a
-    stop timepoint, t+1 could have:
-    1) the unit committed, meaning Pstopping[t+1]=0, resulting in
-    power provision <= capacity, or
-    2) the unit not committed, meaning that we are also not committed in t
-    i.e. power provision[t]=0, resulting in -Pstopping[t+1] <= capacity
-
-    (Commit[t] x Pmin + P_above_Pmin[t]) - Pstopping[t+1]
-    <=
-    (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
-    """
-
-    if check_if_last_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and (
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        )
-    ):
-        return Constraint.Skip
-    else:
-        return (mod.GenCommitBin_Commit[g, tmp]
-                * mod.GenCommitBin_Pmin_MW[g, tmp]
-                + mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp]) \
-            + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp] \
-            - mod.GenCommitBin_Provide_Power_Shutdown_MW[g, mod.next_tmp[
-                tmp, mod.balancing_type_project[g]]] \
-            <= \
-            (1 - mod.GenCommitBin_Shutdown[g, mod.next_tmp[
-                tmp, mod.balancing_type_project[g]]]) \
-            * mod.GenCommitBin_Pmax_MW[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-            + mod.GenCommitBin_Shutdown[
-                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-            * mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[g, tmp]
-
 
 # Operational Type Methods
 ###############################################################################
@@ -2062,25 +663,27 @@ def power_provision_rule(mod, g, tmp):
     constrained to be between the generator's minimum stable level and its
     capacity if the generator is committed and 0 otherwise.
     """
-    return mod.GenCommitBin_Provide_Power_MW[g, tmp] - \
-        mod.GenCommitBin_Auxiliary_Consumption_MW[g, tmp]
+    return gen_commit_unit_common.power_provision_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def commitment_rule(mod, g, tmp):
     """
     Commitment decision in each timepoint
     """
-    # TODO: shouldn't we return MW here to make this consistent w
-    #  gen_commit_cap?
-    return mod.GenCommitBin_Commit[g, tmp]
+    return gen_commit_unit_common.commitment_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def online_capacity_rule(mod, g, tmp):
     """
     Capacity online in each timepoint.
     """
-    return mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.GenCommitBin_Commit[g, tmp]
+    return gen_commit_unit_common.online_capacity_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -2104,8 +707,9 @@ def variable_om_cost_rule(mod, g, tmp):
     minus the auxiliary consumption. The variable cost should be applied to
     the gross power.
     """
-    return mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+    return gen_commit_unit_common.variable_om_cost_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def variable_om_cost_by_ll_rule(mod, g, tmp, s):
@@ -2123,11 +727,9 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
     """
-    return mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.GenCommitBin_Synced[g, tmp]
+    return gen_commit_unit_common.variable_om_cost_by_ll_rule(
+        mod, g, tmp, s, "Bin"
+    )
 
 
 def startup_cost_simple_rule(mod, g, tmp):
@@ -2136,9 +738,9 @@ def startup_cost_simple_rule(mod, g, tmp):
     capacity (in MW) that is started up in that timepoint and the startup cost
     parameter.
     """
-    return mod.GenCommitBin_Startup[g, tmp] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.startup_cost_per_mw[g]
+    return gen_commit_unit_common.startup_cost_simple_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def startup_cost_by_st_rule(mod, g, tmp):
@@ -2148,11 +750,9 @@ def startup_cost_by_st_rule(mod, g, tmp):
     the startup cost parameter for that startup type. We take the sum across
     all startup types since only one startup type is active at the same time.
     """
-    return sum(
-        mod.startup_cost_by_st_per_mw[g, s]
-        * mod.GenCommitBin_Startup_Type[g, tmp, s]
-        for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
-    ) * mod.GenCommitBin_Pmax_MW[g, tmp]
+    return gen_commit_unit_common.startup_cost_by_st_rule(
+        mod, g, tmp, "BIN", "Bin"
+    )
 
 
 def shutdown_cost_rule(mod, g, tmp):
@@ -2161,20 +761,17 @@ def shutdown_cost_rule(mod, g, tmp):
     capacity (in Mw) that is shut down in that timepoint and the shutdown
     cost parameter.
     """
-    return mod.GenCommitBin_Shutdown[g, tmp] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.shutdown_cost_per_mw[g]
+    return gen_commit_unit_common.shutdown_cost_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def fuel_burn_by_ll_rule(mod, g, tmp, s):
     """
     """
-    return \
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenCommitBin_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.GenCommitBin_Synced[g, tmp]
+    return gen_commit_unit_common.fuel_burn_by_ll_rule(
+        mod, g, tmp, s, "Bin"
+    )
 
 
 def startup_fuel_burn_rule(mod, g, tmp):
@@ -2183,9 +780,9 @@ def startup_fuel_burn_rule(mod, g, tmp):
     capacity (in MW) that is started up in that timepoint and the startup
     fuel parameter. This does not vary by startup type.
     """
-    return mod.GenCommitBin_Startup[g, tmp] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.startup_fuel_mmbtu_per_mw[g]
+    return gen_commit_unit_common.startup_fuel_burn_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def power_delta_rule(mod, g, tmp):
@@ -2195,31 +792,17 @@ def power_delta_rule(mod, g, tmp):
     This is only used in tuning costs, so fine to skip for linked horizon's
     first timepoint.
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ) and (
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
-        )
-    ):
-        pass
-    else:
-        return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
-            - mod.GenCommitBin_Provide_Power_Above_Pmin_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+    return gen_commit_unit_common.power_delta_rule(
+        mod, g, tmp, "Bin"
+    )
 
 
 def fix_commitment(mod, g, tmp):
     """
     """
-    mod.GenCommitBin_Commit[g, tmp] = \
-        mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
-    mod.GenCommitBin_Commit[g, tmp].fixed = True
+    return gen_commit_unit_common.fix_commitment(
+        mod, g, tmp, "Bin"
+    )
 
 
 def operational_violation_cost_rule(mod, g, tmp):
@@ -2230,34 +813,17 @@ def operational_violation_cost_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    ramp_up_violation = \
-        (mod.GenCommitBin_Ramp_Up_Violation_MW[g, tmp] *
-         mod.ramp_up_violation_penalty[g])\
-        if mod.gen_commit_bin_allow_ramp_up_violation[g] else 0
-    ramp_down_violation = \
-        (mod.GenCommitBin_Ramp_Down_Violation_MW[g, tmp] *
-         mod.ramp_down_violation_penalty[g]) \
-        if mod.gen_commit_bin_allow_ramp_down_violation[g] else 0
-    min_up_time_violation = \
-        (mod.GenCommitBin_Min_Up_Time_Violation[g, tmp] *
-         mod.min_up_time_violation_penalty[g]) \
-        if mod.gen_commit_bin_allow_min_up_time_violation[g] else 0
-    min_down_time_violation = \
-        (mod.GenCommitBin_Min_Down_Time_Violation[g, tmp] *
-         mod.min_down_time_violation_penalty[g]) \
-        if mod.gen_commit_bin_allow_min_down_time_violation[g] else 0
-
-    return ramp_up_violation \
-        + ramp_down_violation \
-        + min_up_time_violation \
-        + min_down_time_violation
+    return gen_commit_unit_common.operational_violation_cost_rule(
+        mod, g, tmp, "bin", "Bin"
+    )
 
 
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_module_specific_data(
+    mod, data_portal, scenario_directory, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:
@@ -2266,65 +832,17 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-
-    # Load data from projects.tab and get the list of projects of this type
-    projects = load_optype_module_specific_data(
+    gen_commit_unit_common.load_module_specific_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin"
+        stage=stage, bin_or_lin_optype="gen_commit_bin", bin_or_lin="bin",
+        BIN_OR_LIN="BIN"
     )
 
-    # Load data from startup_chars.tab (if it exists)
-    load_startup_chars(
-        data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_bin", projects=projects
-    )
 
-    # Linked timepoint params
-    linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_bin_linked_timepoint_params.tab"
-        )
-    if os.path.exists(linked_inputs_filename):
-        data_portal.load(
-            filename=linked_inputs_filename,
-            index=mod.GEN_COMMIT_BIN_LINKED_TMPS,
-            param=(
-                mod.gen_commit_bin_linked_commit,
-                mod.gen_commit_bin_linked_startup,
-                mod.gen_commit_bin_linked_shutdown,
-                mod.gen_commit_bin_linked_power_above_pmin,
-                mod.gen_commit_bin_linked_upwards_reserves,
-                mod.gen_commit_bin_linked_downwards_reserves,
-                mod.gen_commit_bin_linked_ramp_up_rate_mw_per_tmp,
-                mod.gen_commit_bin_linked_ramp_down_rate_mw_per_tmp,
-                mod.gen_commit_bin_linked_provide_power_shutdown_mw,
-                mod.gen_commit_bin_linked_shutdown_ramp_rate_mw_per_tmp
-            )
-        )
-    else:
-        pass
-
-    # Linked timepoint params (by startup type)
-    linked_startup_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_bin_linked_timepoint_str_type_params.tab"
-        )
-    if os.path.exists(linked_startup_inputs_filename):
-        data_portal.load(
-            filename=linked_startup_inputs_filename,
-            param=(
-                mod.gen_commit_bin_linked_provide_power_startup_by_st_mw,
-                mod.gen_commit_bin_linked_startup_ramp_rate_by_st_mw_per_tmp
-            )
-        )
-    else:
-        pass
-
-
-def export_module_specific_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+def export_module_specific_results(
+    mod, d, scenario_directory, subproblem, stage
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -2333,190 +851,19 @@ def export_module_specific_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "dispatch_binary_commit.csv"),
-              "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project",
-                         "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "power_mw", "gross_power_mw",
-                         "auxiliary_consumption_mw", "net_power_mw",
-                         "committed_mw", "committed_units",
-                         "started_units", "stopped_units",
-                         "synced_units", "active_startup_type",
-                         "ramp_up_violation", "ramp_down_violation",
-                         "min_up_time_violation", "min_down_time_violation"
-                         ])
-
-        for (p, tmp) in mod.GEN_COMMIT_BIN_OPR_TMPS:
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.balancing_type_project[p],
-                mod.horizon[tmp, mod.balancing_type_project[p]],
-                tmp,
-                mod.tmp_weight[tmp],
-                mod.hrs_in_tmp[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Power_Provision_MW[p, tmp]),
-                value(mod.GenCommitBin_Provide_Power_MW[p, tmp]),
-                value(mod.GenCommitBin_Auxiliary_Consumption_MW[p, tmp]),
-                value(mod.GenCommitBin_Provide_Power_MW[p, tmp]) -
-                value(mod.GenCommitBin_Auxiliary_Consumption_MW[p, tmp]),
-                value(mod.GenCommitBin_Pmax_MW[p, tmp])
-                * value(mod.GenCommitBin_Commit[p, tmp]),
-                value(mod.GenCommitBin_Commit[p, tmp]),
-                value(mod.GenCommitBin_Startup[p, tmp]),
-                value(mod.GenCommitBin_Shutdown[p, tmp]),
-                value(mod.GenCommitBin_Synced[p, tmp]),
-                value(mod.GenCommitBin_Active_Startup_Type[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Up_Violation_MW[p, tmp]),
-                value(mod.GenCommitBin_Ramp_Down_Violation_MW[p, tmp]),
-                value(mod.GenCommitBin_Min_Up_Time_Violation[p, tmp]),
-                value(mod.GenCommitBin_Min_Down_Time_Violation[p, tmp])
-            ])
-
-    # Export any results that will be become inputs to a linked subproblem
-    export_linked_subproblem_inputs(
-        mod, d, scenario_directory, subproblem, stage
+    gen_commit_unit_common.export_module_specific_results(
+        mod=mod, d=d, scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage, BIN_OR_LIN="BIN",
+        Bin_or_Lin="Bin", bin_or_lin="bin",
+        results_filename="dispatch_binary_commit.csv"
     )
-
-
-def export_linked_subproblem_inputs(
-        mod, d, scenario_directory, subproblem, stage
-):
-    # If there's a linked_subproblems_map CSV file, check which of the
-    # current subproblem TMPS we should export results for to link to the
-    # next subproblem
-    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage
-    )
-
-    # If the list of timepoints to link is not empty, write the linked
-    # timepoint results for this module in the next subproblem's input
-    # directory
-    if tmps_to_link:
-        next_subproblem = str(int(subproblem) + 1)
-
-        # Export params by project and timepoint
-        with open(os.path.join(
-                scenario_directory, next_subproblem, stage, "inputs",
-                "gen_commit_bin_linked_timepoint_params.tab"
-        ), "w", newline=""
-        ) as f:
-            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-            writer.writerow(
-                ["project", "linked_timepoint", "linked_commit",
-                 "linked_startup", "linked_shutdown",
-                 "linked_provide_power_above_pmin",
-                 "linked_upward_reserves",
-                 "linked_downward_reserves",
-                 "linked_ramp_up_rate_mw_per_tmp",
-                 "linked_ramp_down_rate_mw_per_tmp",
-                 "linked_provide_power_shutdown",
-                 "linked_shutdown_ramp_rate_mw_per_tmp"]
-            )
-
-            for (p, tmp) in sorted(mod.GEN_COMMIT_BIN_OPR_TMPS):
-                if tmp in tmps_to_link:
-                    writer.writerow([
-                        p,
-                        tmp_linked_tmp_dict[tmp],
-                        max(
-                            min(value(mod.GenCommitBin_Commit[p, tmp]), 1),
-                            0
-                        ),
-                        max(
-                            min(value(mod.GenCommitBin_Startup[p, tmp]), 1),
-                            0
-                        ),
-                        max(
-                            min(value(mod.GenCommitBin_Shutdown[p, tmp]), 1),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Provide_Power_Above_Pmin_MW[
-                                p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Upwards_Reserves_MW[p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Downwards_Reserves_MW[p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp[
-                                p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp[
-                                p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Provide_Power_Shutdown_MW[
-                                p, tmp]),
-                            0
-                            ),
-                        max(value(
-                            mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                                p, tmp]),
-                            0
-                            )
-                    ])
-            # Export params by project, timepoint, and startup type
-            # Only write this file if there are data for these results to
-            # avoid throwing an index error when trying to load these inputs
-            # into the next subproblem
-            if mod.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES:
-                with open(os.path.join(
-                        scenario_directory, next_subproblem, stage, "inputs",
-                        "gen_commit_bin_linked_timepoint_str_type_params.tab"
-                ), "w", newline=""
-                ) as f:
-                    writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-                    writer.writerow(
-                        ["project", "linked_timepoint", "startup_type",
-                         "linked_provide_power_startup",
-                         "linked_startup_ramp_rate_mw_per_tmp"]
-                    )
-                    for (p, tmp, s) in sorted(
-                            mod.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES):
-                        if tmp in tmps_to_link:
-                            writer.writerow([
-                                p,
-                                tmp_linked_tmp_dict[tmp],
-                                s,
-                                max(value(
-                                    mod.GenCommitBin_Provide_Power_Startup_By_ST_MW[
-                                        p, tmp, s]),
-                                    0
-                                    ),
-                                max(value(
-                                    mod.
-                                    GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp[
-                                        p, tmp, s]),
-                                    0
-                                    )
-                            ])
-            else:
-                pass
-    else:
-        pass
 
 
 # Database
 ###############################################################################
 
 def import_module_specific_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     :param scenario_id:
@@ -2541,7 +888,9 @@ def import_module_specific_results_to_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(
+    scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and validate the inputs
 
@@ -2553,5 +902,6 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
-                                 "gen_commit_bin")
+    opchar_df = validate_opchars(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_bin"
+    )
