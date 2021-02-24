@@ -96,6 +96,16 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
     subproblem = 1 if subproblem == "default" else subproblem
     stage = 1 if stage == "default" else subproblem
 
+    # Assume None for "default" other params
+    load_zone = None if load_zone == "default" else load_zone
+    carbon_cap_zone = None if carbon_cap_zone == "default" else carbon_cap_zone
+    rps_zone = None if rps_zone == "default" else rps_zone
+    period = None if period == "default" else period
+    horizon = None if horizon == "default" else horizon
+    start_timepoint = None if start_timepoint == "default" else start_timepoint
+    end_timepoint = None if end_timepoint == "default" else end_timepoint
+    project = None if project == "default" else project
+
     # Connect to the database
     conn = connect_to_database(db_path=db_path)
 
