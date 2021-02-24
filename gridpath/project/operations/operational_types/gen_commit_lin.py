@@ -81,7 +81,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
     |                                                                         |
     | Indexed set that describes the startup types for each project of the    |
-    | :code:`gen_commit_lin`operational type.                                 |
+    | :code:`gen_commit_lin` operational type.                                |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_LIN_LINKED_TMPS`                                    |
     |                                                                         |
@@ -454,7 +454,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's upward ramp-able capacity (in MW) during startup in each  |
     | operational timepoint. Depends on the                                   |
-    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st                   |
+    | :code:`gen_commit_lin_startup_plus_ramp_up_rate_by_st`                  |
     | availability and capacity in the timepoint, and the timepoint's         |
     | duration.                                                               |
     +-------------------------------------------------------------------------+
@@ -466,7 +466,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | :code:`gen_commit_lin_shutdown_plus_ramp_down_rate`, the availability   |
     | and capacity in the timepoint, and the timepoint's duration.            |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitLin_Active_Startup_Type          `                    |
+    | | :code:`GenCommitLin_Active_Startup_Type`                              |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's active startup type in each operational timepoint,        |
@@ -2320,7 +2320,7 @@ def export_module_specific_results(mod, d,
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "gross_power_mw",
+                         "load_zone", "power_mw", "gross_power_mw",
                          "auxiliary_consumption_mw", "net_power_mw",
                          "committed_mw", "committed_units",
                          "started_units", "stopped_units",
@@ -2340,6 +2340,7 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
+                value(mod.Power_Provision_MW[p, tmp]),
                 value(mod.GenCommitLin_Provide_Power_MW[p, tmp]),
                 value(mod.GenCommitLin_Auxiliary_Consumption_MW[p, tmp]),
                 value(mod.GenCommitLin_Provide_Power_MW[p, tmp]) -

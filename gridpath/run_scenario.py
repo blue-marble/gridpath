@@ -357,11 +357,11 @@ def save_results(
     with open(
             os.path.join(results_directory, "solver_status.txt"),
             "w", newline="") as f:
-        f.write(results.solver.status)
+        f.write(str(results.solver.status))
     with open(
             os.path.join(results_directory, "termination_condition.txt"),
             "w", newline="") as f:
-        f.write(results.solver.termination_condition)
+        f.write(str(results.solver.termination_condition))
 
     if results.solver.status == SolverStatus.ok:
         if not parsed_arguments.quiet:
@@ -808,7 +808,7 @@ def parse_arguments(args):
     """
     :param args: the script arguments specified by the user
     :return: the parsed known argument values (<class 'argparse.Namespace'>
-    Python object)
+        Python object)
 
     Parse the known arguments.
     """

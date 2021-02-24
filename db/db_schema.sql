@@ -1039,7 +1039,7 @@ subscenarios_project_variable_generator_profiles
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
 CREATE TABLE subscenarios_project_hydro_operational_chars (
 project VARCHAR(64),
-hydro_operational_chars_scenario_id,
+hydro_operational_chars_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (project, hydro_operational_chars_scenario_id)
@@ -2530,7 +2530,7 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-power_mw FLOAT,  -- net power in case there's auxiliary consumption
+power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
 scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,

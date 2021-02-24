@@ -33,10 +33,10 @@ Git to download the source code.
 
 Installing Git
 --------------
-Git installation instructions are `here <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
+Git installation instructions are `here <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`__
 
 On Windows, use the Git installer available `here <https://git-scm
-.com/download/win>`_.
+.com/download/win>`__.
 
 On MacOS, type :code:`git --version` on the command line; if you don't have
 Git installed already, you will be prompted to install it.
@@ -58,7 +58,7 @@ Once you have Git installed, clone the repository with::
 the current directory.)
 
 For more info on cloning repositories, see `the instructions on GitHub
-<https://help.github.com/en/articles/cloning-a-repository>`_.
+<https://help.github.com/en/articles/cloning-a-repository>`__.
 
 We will eventually distribute GridPath through pypi and conda, so cloning the
 repository will not be required except for users who want to edit the source
@@ -73,8 +73,8 @@ Python
 
 Running GridPath requires a Python 3 installation and several Python
 packages. You can get the official CPython distribution `here
-<https://www.python.org/downloads/>`_, the Anaconda Python distribution
-`here <https://www.anaconda.com/distribution/>`_, or `another Python
+<https://www.python.org/downloads/>`__, the Anaconda Python distribution
+`here <https://www.anaconda.com/distribution/>`__, or `another Python
 distribution <https://wiki.python.org/moin/PythonDistributions>`_. GridPath
 is written and tested in Python 3.8 and we do not recommend using other Python
 versions.
@@ -213,13 +213,13 @@ is `supported by Pyomo <https://pyomo.readthedocs
 e.g. GLPK, CPLEX, Gurobi, etc.
 
 You can find the latest instructions for installing Cbc `here
-<https://github.com/coin-or/Cbc#download>`_. On Windows, you can also
+<https://github.com/coin-or/Cbc#download>`__. On Windows, you can also
 download the Cbc executable from the `AMPL website <https://ampl
 .com/products/solvers/open-source/#cbc>`_. GridPath allows you to specify
 the location of the solver executable; to get it to be recognized,
 automatically, you can also add it to your PATH system variables (see
 instructions for Windows `here <https://www.java.com/en/download/help/path
-.xml>`_).
+.xml>`__).
 
 
 Testing Your Installation

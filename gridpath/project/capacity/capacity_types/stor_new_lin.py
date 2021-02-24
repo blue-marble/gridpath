@@ -139,7 +139,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         the user to ensure that the
         :code:`stor_new_lin_lifetime_yrs`,
         :code:`stor_new_lin_annualized_real_cost_per_mw_yr`, and
-        :code:`stor_new_lin_annualized_real_cost_per_mwh_yr' parameters are
+        :code:`stor_new_lin_annualized_real_cost_per_mwh_yr` parameters are
         consistent.
 
     +-------------------------------------------------------------------------+
