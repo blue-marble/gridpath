@@ -14,9 +14,9 @@ extras_ui = [
     "eventlet",  # Async mode for SocketIO
     "Flask",  # Local API server for UI
     "Flask-RESTful",  # Flask extension for building REST APIs
-    "Flask-SocketIO",  # Flask client-server communication
+    "Flask-SocketIO==4.3.2",  # Flask client-server communication
     "psutil",  # Process management
-    "python-socketio[client]",  # SocketIO Python client
+    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
 ]
 extras_all = extras_ui + extras_doc
 
