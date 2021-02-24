@@ -32,8 +32,6 @@ Costs for this operational type include fuel costs and variable O&M costs.
 
 """
 
-from __future__ import division
-
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, NonNegativeReals,PercentFraction, \
@@ -115,6 +113,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_always_on_aux_consumption_frac_capacity`                   |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON`                                 |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of capacity. This would be          |
+    | incurred in all timepoints when capacity is available.                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_always_on_aux_consumption_frac_power`                      |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON`                                 |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -145,12 +158,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenAlwaysOn_Provide_Power_MW`                                  |
+    | | :code:`GenAlwaysOn_Gross_Power_MW`                                    |
     | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+    
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenAlwaysOn_Auxiliary_Consumption_MW`                          |
+    | | *Defined over*: :code:`GEN_ALWAYS_ON_OPR_TMPS`                        |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -231,6 +256,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_ALWAYS_ON, within=PercentFraction,
         default=1
     )
+    
+    m.gen_always_on_aux_consumption_frac_capacity = Param(
+        m.GEN_ALWAYS_ON,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_always_on_aux_consumption_frac_power = Param(
+        m.GEN_ALWAYS_ON,
+        within=PercentFraction,
+        default=0
+    )
 
     # Linked Params
     ###########################################################################
@@ -253,7 +290,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variables
     ###########################################################################
 
-    m.GenAlwaysOn_Provide_Power_MW = Var(
+    m.GenAlwaysOn_Gross_Power_MW = Var(
         m.GEN_ALWAYS_ON_OPR_TMPS, within=NonNegativeReals
     )
 
@@ -274,6 +311,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GenAlwaysOn_Downwards_Reserves_MW = Expression(
         m.GEN_ALWAYS_ON_OPR_TMPS,
         rule=downwards_reserve_rule)
+    
+    def auxiliary_consumption_rule(mod, g, tmp):
+        """
+        **Expression Name**: GenAlwaysOn_Auxiliary_Consumption_MW
+        **Defined Over**: GEN_ALWAYS_ON_OPR_TMPS
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
+            * mod.gen_always_on_aux_consumption_frac_capacity[g] \
+            + mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
+            * mod.gen_always_on_aux_consumption_frac_power[g]
+
+    m.GenAlwaysOn_Auxiliary_Consumption_MW = Expression(
+        m.GEN_ALWAYS_ON_OPR_TMPS,
+        rule=auxiliary_consumption_rule
+    )
 
     # Constraints
     ###########################################################################
@@ -310,7 +363,7 @@ def min_power_rule(mod, g, tmp):
 
     Power minus downward services cannot be below a minimum stable level.
     """
-    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+    return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
         - mod.GenAlwaysOn_Downwards_Reserves_MW[g, tmp] \
         >= mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
@@ -324,7 +377,7 @@ def max_power_rule(mod, g, tmp):
 
     Power plus upward services cannot exceed capacity.
     """
-    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+    return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
         + mod.GenAlwaysOn_Upwards_Reserves_MW[g, tmp] \
         <= mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -365,7 +418,7 @@ def ramp_up_rule(mod, g, tmp):
                     mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenAlwaysOn_Provide_Power_MW[
+                mod.GenAlwaysOn_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
             prev_tmp_downwards_reserves = \
@@ -381,7 +434,7 @@ def ramp_up_rule(mod, g, tmp):
                 >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
-            return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+            return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
                 + mod.GenAlwaysOn_Upwards_Reserves_MW[g, tmp] \
                 - (prev_tmp_power - prev_tmp_downwards_reserves) \
                 <= \
@@ -425,7 +478,7 @@ def ramp_down_rule(mod, g, tmp):
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = \
-                mod.GenAlwaysOn_Provide_Power_MW[
+                mod.GenAlwaysOn_Gross_Power_MW[
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                 ]
             prev_tmp_upwards_reserves = \
@@ -441,7 +494,7 @@ def ramp_down_rule(mod, g, tmp):
                 >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
-            return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+            return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
                 - mod.GenAlwaysOn_Downwards_Reserves_MW[g, tmp] \
                 - (prev_tmp_power + prev_tmp_upwards_reserves) \
                 >= \
@@ -459,7 +512,8 @@ def power_provision_rule(mod, g, tmp):
     Power provision for always-on generators is a variable constrained to be
     between the generator's minimum stable level and its capacity.
     """
-    return mod.GenAlwaysOn_Provide_Power_MW[g, tmp]
+    return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
+        - mod.GenAlwaysOn_Auxiliary_Consumption_MW[g, tmp]
 
 
 def fuel_burn_by_ll_rule(mod, g, tmp, s):
@@ -467,7 +521,7 @@ def fuel_burn_by_ll_rule(mod, g, tmp, s):
     """
     return \
         mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+        * mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
         + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
         * mod.Availability_Derate[g, tmp] \
         * mod.Capacity_MW[g, mod.period[tmp]]
@@ -490,7 +544,7 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     """
     return \
         mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
+        * mod.GenAlwaysOn_Gross_Power_MW[g, tmp] \
         + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp],
                                                         s] \
         * mod.Availability_Derate[g, tmp] \
@@ -518,8 +572,8 @@ def power_delta_rule(mod, g, tmp):
     ):
         pass
     else:
-        return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] - \
-               mod.GenAlwaysOn_Provide_Power_MW[
+        return mod.GenAlwaysOn_Gross_Power_MW[g, tmp] - \
+               mod.GenAlwaysOn_Gross_Power_MW[
                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                ]
 
@@ -575,6 +629,33 @@ def export_module_specific_results(
     :param d:
     :return:
     """
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "dispatch_gen_always_on.csv"),
+              "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
+                         "technology", "load_zone", "power_mw",
+                         "gross_power_mw", "auxiliary_consumption_mw"
+                         ])
+
+        for (p, tmp) in mod.GEN_ALWAYS_ON_OPR_TMPS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
+                tmp,
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
+                value(mod.Power_Provision_MW[p, tmp]),
+                value(mod.GenAlwaysOn_Gross_Power_MW[p, tmp]),
+                value(mod.GenAlwaysOn_Auxiliary_Consumption_MW[p, tmp])
+            ])
+            
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
     # next subproblem
@@ -607,7 +688,7 @@ def export_module_specific_results(
                     writer.writerow([
                         p,
                         tmp_linked_tmp_dict[tmp],
-                        max(value(mod.GenAlwaysOn_Provide_Power_MW[p, tmp]),
+                        max(value(mod.GenAlwaysOn_Gross_Power_MW[p, tmp]),
                             0),
                         max(value(mod.GenAlwaysOn_Upwards_Reserves_MW[p, tmp]),
                             0),

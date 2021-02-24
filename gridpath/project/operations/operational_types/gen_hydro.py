@@ -24,8 +24,6 @@ Costs for this operational type include variable O&M costs.
 
 """
 
-from __future__ import print_function
-
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, \
@@ -121,6 +119,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_aux_consumption_frac_capacity`                       |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of capacity. This would be          |
+    | incurred in all timepoints when capacity is available.                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_aux_consumption_frac_power`                          |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | Auxiliary consumption as a fraction of gross power output.              |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -157,7 +170,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenHydro_Gross_Power_MW`                                       |
+    | | :code:`GenHydro_Gross_Power_MW`                                     |
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -172,6 +185,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Curtailment in MW from this project in each timepoint in which the      |
     | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenHydro_Auxiliary_Consumption_MW`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | The project's auxiliary consumption (power consumed on-site and not     |
+    | sent to the grid) in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
     |
@@ -276,6 +301,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=PercentFraction, default=1
     )
 
+    m.gen_hydro_aux_consumption_frac_capacity = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction,
+        default=0
+    )
+
+    m.gen_hydro_aux_consumption_frac_power = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction,
+        default=0
+    )
+
     # Linked Params
     ###########################################################################
 
@@ -328,6 +365,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GenHydro_Downwards_Reserves_MW = Expression(
         m.GEN_HYDRO_OPR_TMPS,
         rule=downwards_reserve_rule)
+
+    def auxiliary_consumption_rule(mod, g, tmp):
+        """
+        **Expression Name**: GenHydro_Auxiliary_Consumption_MW
+        **Defined Over**: GEN_HYDRO_OPR_TMPS
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
+            * mod.gen_hydro_aux_consumption_frac_capacity[g] \
+            + mod.GenHydro_Gross_Power_MW[g, tmp] \
+            * mod.gen_hydro_aux_consumption_frac_power[g]
+
+    m.GenHydro_Auxiliary_Consumption_MW = Expression(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=auxiliary_consumption_rule
+    )
 
     # Constraints
     ###########################################################################
@@ -593,7 +646,8 @@ def power_provision_rule(mod, g, tmp):
     curtailment.
     """
     return mod.GenHydro_Gross_Power_MW[g, tmp] \
-        - mod.GenHydro_Curtail_MW[g, tmp]
+        - mod.GenHydro_Curtail_MW[g, tmp] \
+        - mod.GenHydro_Auxiliary_Consumption_MW[g, tmp]
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -714,7 +768,8 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone", "power_mw",
-                         "gross_power_mw", "scheduled_curtailment_mw"
+                         "gross_power_mw", "scheduled_curtailment_mw",
+                         "auxiliary_consumption_mw"
                          ])
 
         for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
@@ -728,10 +783,10 @@ def export_module_specific_results(mod, d,
                 mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.GenHydro_Gross_Power_MW[p, tmp])
-                - value(mod.GenHydro_Curtail_MW[p, tmp]),
+                value(mod.Power_Provision_MW[p, tmp]),
                 value(mod.GenHydro_Gross_Power_MW[p, tmp]),
-                value(mod.GenHydro_Curtail_MW[p, tmp])
+                value(mod.GenHydro_Curtail_MW[p, tmp]),
+                value(mod.GenHydro_Auxiliary_Consumption_MW[p, tmp])
             ])
 
     # If there's a linked_subproblems_map CSV file, check which of the
