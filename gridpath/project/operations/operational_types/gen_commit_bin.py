@@ -315,3 +315,7 @@ def validate_module_specific_inputs(
     opchar_df = validate_opchars(
         scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_bin"
     )
+
+    # TODO: add warning that if availabilities are partial, we treat them as
+    #  full (because of the synced <= availability constraint with a binary
+    #  formulation)
