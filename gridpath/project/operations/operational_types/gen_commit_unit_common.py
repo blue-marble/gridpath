@@ -914,6 +914,15 @@ def add_model_components(
     | timepoint and the shutdown power in the next timepoint based on the     |
     | :code:`gen_commit_bin_shutdown_plus_ramp_down_rate`.                    |
     +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_No_Sync_When_Unavailable_Constraint`              |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | | :code:`GenCommitLin_No_Sync_When_Unavailable_Constraint`              |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
+    |                                                                         |
+    | A project cannot be synced (committed or providing startup/shutdown     |
+    | power) when unavailable.
+    +-------------------------------------------------------------------------+
 
     """
     if bin_or_lin_optype == "gen_commit_bin":
@@ -1530,6 +1539,86 @@ def add_model_components(
     # Constraints
     ###########################################################################
 
+    # Sync (committed, starting, or shutting down)
+    # We use the Synced variable to determine when to incur variable costs
+    # and burn fuel
+
+    def no_sync_when_unavailable_constraint_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenCommitBin_No_Sync_When_Unavailable_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+        A unit cannot be synced when unavailable. When the availability
+        derate is <0, this will force commitment, power, and startup/shutdown
+        power to 0 for gen_commit_bin. For gen_commit_lin, partial
+        availability is allowed and the unit can still sync but power
+        provision will be limited based on the availability derate.
+
+        This constraint is needed to prevent the model from committing a
+        unit while still unavailable, thus avoiding startup costs, which are
+        based on available capacity started up.
+        """
+        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
+                   g, tmp] \
+            <= mod.Availability_Derate[g, tmp]
+
+    setattr(
+        m, "GenCommit{}_No_Sync_When_Unavailable_Constraint".format(
+            Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=no_sync_when_unavailable_constraint_rule
+        )
+    )
+
+    def synced_constraint_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenCommitBin_Synced_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+        Synced is 1 if the unit is committed, starting, or stopping and zero
+        otherwise.
+
+        Note: This contains a division by the Pmin expression, so cases
+        where Pmin would be zero need to be treated differently to avoid
+        zero-division errors.
+        """
+        # If min stable level Pmin expression is exogenously specified as
+        # zero, whether due to the min stable level fraction, availability,
+        # or capacity being zero, there will be no startup/shutdown power
+        # (it is limited by the Pmin expression), so we can drop the second
+        # RHS term which checks for startup/shutdown power
+        if (mod.capacity_type[g] in [
+            'gen_spec', 'gen_ret_bin',  'gen_ret_lin']
+                and getattr(mod, mod.capacity_type[g] + '_capacity_mw') == 0) \
+            or (mod.availability_type[g] == 'exogenous'
+                and mod.avl_exog_derate[g, tmp] == 0)\
+            or getattr(mod, "gen_commit_{}_min_stable_level_fraction".format(
+                bin_or_lin))[g] == 0:
+            startup_shutdown_fraction = 0
+        else:
+            startup_shutdown_fraction = \
+                (getattr(mod, "GenCommit{}_Provide_Power_Startup_MW"
+                         .format(Bin_or_Lin)
+                         )[g, tmp]
+                 + getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW"
+                           .format(Bin_or_Lin)
+                           )[g, tmp]) \
+                / getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin)
+                          )[g, tmp]
+
+        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp] \
+            >= getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] \
+            + startup_shutdown_fraction
+
+    setattr(
+        m, "GenCommit{}_Synced_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=synced_constraint_rule
+        )
+    )
+
     # Commitment
     def binary_logic_constraint_rule(mod, g, tmp):
         """
@@ -1586,61 +1675,6 @@ def add_model_components(
             )
     )
 
-    def synced_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: GenCommitBin_Synced_Constraint
-        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-
-        Synced is 1 if the unit is committed, starting, or stopping and zero
-        otherwise.
-
-        Note: This contains a division by the Pmin expression, so cases
-        where Pmin would be zero need to be treated differently to avoid
-        zero-division errors.
-        """
-
-        # If specified capacity is zero, synced units is zero
-        if mod.capacity_type[g] in ['gen_spec', 'gen_ret_bin', 'gen_ret_lin']:
-            spec_capacity = getattr(mod, mod.capacity_type[g] + '_capacity_mw')
-            if spec_capacity[g, mod.period[tmp]] == 0:
-                return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
-                           g, tmp] == 0
-
-        # If exogenous availability is zero, synced units is zero
-        if mod.availability_type[g] == 'exogenous':
-            if mod.avl_exog_derate[g, tmp] == 0:
-                return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
-                           g, tmp] == 0
-
-        # If min stable level is zero, there will be no trajectories so we
-        # drop the second RHS term which checks for startup/shutdown power
-        if getattr(mod, "gen_commit_{}_min_stable_level_fraction".format(
-                bin_or_lin))[g] == 0:
-            startup_shutdown_fraction = 0
-        else:
-            startup_shutdown_fraction = (
-                getattr(mod,
-                        "GenCommit{}_Provide_Power_Startup_MW".format(
-                            Bin_or_Lin))[g, tmp]
-                + getattr(mod,
-                          "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                              Bin_or_Lin))[g, tmp]
-                                        ) \
-                / getattr(mod,
-                          "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-
-        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp] \
-            >= getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] \
-            + startup_shutdown_fraction
-
-    setattr(
-        m, "GenCommit{}_Synced_Constraint".format(Bin_or_Lin),
-        Constraint(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=synced_constraint_rule
-            )
-        )
-
     # Power
     def max_power_constraint_rule(mod, g, tmp):
         """
@@ -1648,6 +1682,13 @@ def add_model_components(
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
         Power provision plus upward reserves shall not exceed maximum power.
+
+        Note: this constraint allows a unit to be "partially" available
+        (availability > 0, <1) and still provide power. "Partial"
+        availability is only possible for the gen_commit_lin. For
+        gen_commit_bin, when availability is < 1, synced units are set to 0,
+        so commitment and therefore power provision is 0 (see
+        no_sync_when_unavailable_constraint_rule()).
         """
         return \
             (getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
@@ -2208,7 +2249,7 @@ def add_model_components(
         return getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(
             Bin_or_Lin))[g, tmp] \
             <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-            g, tmp]) \
+                g, tmp]) \
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
 
     setattr(
