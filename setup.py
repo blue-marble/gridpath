@@ -37,7 +37,7 @@ setup(name="GridPath",
       install_requires=[
           "Pyomo",  # Optimization modeling language
           "pandas",  # Data-processing
-          "bokeh",  # Visualization library
+          "bokeh==2.2.3",  # Visualization library
           "pscript",  # Python to JavaScript compiler (for visualization)
           "networkx"  # network package for DC OPF
       ],
