@@ -1,7 +1,6 @@
 alabaster==0.7.12
-aniso8601==9.0.0
+aniso8601==9.0.1
 Babel==2.9.0
-bidict==0.21.2
 bokeh==2.2.3
 certifi==2020.12.5
 chardet==4.0.0
@@ -9,12 +8,12 @@ click==7.1.2
 decorator==4.4.2
 dnspython==1.16.0
 docutils==0.16
-eventlet==0.30.1
+eventlet==0.30.2
 Flask==1.1.2
 Flask-RESTful==0.3.8
 Flask-SocketIO==4.3.2
 greenlet==1.0.0
-GridPath==0.8.1
+GridPath==0.9.0
 idna==2.10
 imagesize==1.2.0
 itsdangerous==1.1.0
@@ -24,12 +23,12 @@ networkx==2.5
 nose==1.3.7
 numpy==1.20.1
 packaging==20.9
-pandas==1.2.2
-Pillow==8.1.0
+pandas==1.2.3
+Pillow==8.1.2
 ply==3.11
 pscript==0.7.5
 psutil==5.8.0
-Pygments==2.8.0
+Pygments==2.8.1
 Pyomo==5.7.3
 pyparsing==2.4.7
 python-dateutil==2.8.1
@@ -41,7 +40,7 @@ PyYAML==5.4.1
 requests==2.25.1
 six==1.15.0
 snowballstemmer==2.1.0
-Sphinx==3.5.1
+Sphinx==3.5.2
 sphinx-argparse==0.2.5
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2
@@ -51,6 +50,6 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.4
 tornado==6.1
 typing-extensions==3.7.4.3
-urllib3==1.26.3
-websocket-client==0.57.0
+urllib3==1.26.4
+websocket-client==0.58.0
 Werkzeug==1.0.1
