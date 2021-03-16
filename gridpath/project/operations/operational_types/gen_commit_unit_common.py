@@ -453,7 +453,6 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_COMMIT_LIN_LINKED_TMPS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-
     | The project's shutdown ramp rate in MW in the linked timepoints         |
     | (depends on timepoint duration.)                                        |
     +-------------------------------------------------------------------------+
@@ -575,7 +574,6 @@ def add_model_components(
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
-    |                                                                         |
     | | :code:`GenCommitLin_Ramp_Up_Violation_MW`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
@@ -597,7 +595,7 @@ def add_model_components(
     | | :code:`GenCommitBin_Min_Up_Time_Violation`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
-
+    |                                                                         |
     | | :code:`GenCommitLin_Min_Up_Time_Violation`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
@@ -921,7 +919,7 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | A project cannot be synced (committed or providing startup/shutdown     |
-    | power) when unavailable.
+    | power) when unavailable.                                                |
     +-------------------------------------------------------------------------+
 
     """

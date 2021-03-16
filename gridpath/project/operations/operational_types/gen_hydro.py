@@ -170,7 +170,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenHydro_Gross_Power_MW`                                     |
+    | | :code:`GenHydro_Gross_Power_MW`                                       |
     | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
