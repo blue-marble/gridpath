@@ -59,7 +59,7 @@ Projects
 gridpath.project.__init__
 -------------------------
 .. automodule:: gridpath.project.__init__
-    :members: determine_dynamic_components, add_model_components
+    :members: add_model_components
 
 Project Capacity
 ----------------
@@ -181,13 +181,17 @@ gridpath.project.capacity.operational_types.gen_always_on
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_always_on.add_model_components
 
+gridpath.project.capacity.operational_types.gen_commit_bin
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin.add_model_components
+
 gridpath.project.capacity.operational_types.gen_commit_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_lin.add_model_components
 
-gridpath.project.capacity.operational_types.gen_commit_bin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin.add_model_components
+gridpath.project.capacity.operational_types.gen_commit_unit_common
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_unit_common.add_model_components
 
 gridpath.project.capacity.operational_types.gen_commit_cap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -362,7 +366,7 @@ gridpath.project.operations.reserves.reserve_provision
 ------------------------------------------------------
 
 .. automodule:: gridpath.project.operations.reserves.reserve_provision
-    :members: generic_determine_dynamic_components
+    :members: generic_record_dynamic_components
 
 
 

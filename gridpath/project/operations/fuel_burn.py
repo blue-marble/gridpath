@@ -63,7 +63,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | specified and their operational timepoints.                             |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -76,7 +76,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | curve.                                                                  |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
@@ -88,7 +88,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | heat rate curve.                                                        |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Expressions                                                             |

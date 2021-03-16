@@ -1,6 +1,6 @@
 {
   "name": "gridpath-ui",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "main": "src/electron-main.js",
   "scripts": {
     "ng": "ng",
@@ -25,8 +25,8 @@
     "@angular/platform-browser": "~7.2.0",
     "@angular/platform-browser-dynamic": "~7.2.0",
     "@angular/router": "~7.2.0",
+    "@bokeh/bokehjs": "~2.2.3",
     "@ng-bootstrap/ng-bootstrap": "^4.2.1",
-    "@bokeh/bokehjs": "latest",
     "bootstrap": "^4.3.1",
     "core-js": "^2.5.4",
     "electron-json-storage": "^4.1.6",

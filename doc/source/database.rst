@@ -11,10 +11,10 @@ This chapter describes the following:
 * :ref:`database-testing-section-ref` : instructions on how to validate the
   database inputs
 
+.. _database-section-ref:
+
 Database Structure
 ##################
-
-.. _database-section-ref:
 
 .. automodule:: db
 
@@ -246,77 +246,86 @@ Requirement
 Regulation Down
 ***************
 
+===============
 Balancing Areas
 ===============
 
 .. automodule:: db.csvs_test_examples.reserves.regulation_down.geography_regulation_down_bas.doc
 
+=====================
 Contributing Projects
 =====================
 
 .. automodule:: db.csvs_test_examples.reserves.regulation_down.project_regulation_down_bas.doc
 
+===========
 Requirement
 ===========
 
 .. automodule:: db.csvs_test_examples.reserves.regulation_down.req.doc
 
 
-=================
 Spinning Reserves
-=================
+*****************
 
+===============
 Balancing Areas
 ===============
 
 .. automodule:: db.csvs_test_examples.reserves.spinning_reserves.geography_spinning_reserves_bas.doc
 
 
+=====================
 Contributing Projects
 =====================
 
 .. automodule:: db.csvs_test_examples.reserves.spinning_reserves.project_spinning_reserves_bas.doc
 
 
+===========
 Requirement
 ===========
 
 .. automodule:: db.csvs_test_examples.reserves.spinning_reserves.req.doc
 
-==========================
 Load-Following Reserves Up
-==========================
+**************************
 
+===============
 Balancing Areas
 ===============
 
 .. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.geography_lf_reserves_up_bas.doc
 
+=====================
 Contributing Projects
 =====================
 
 .. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.project_lf_reserves_up_bas.doc
 
+===========
 Requirement
 ===========
 
 .. automodule:: db.csvs_test_examples.reserves.lf_reserves_up.req.doc
 
 
-============================
 Load-Following Reserves Down
-============================
+****************************
 
+===============
 Balancing Areas
 ===============
 
 .. automodule:: db.csvs_test_examples.reserves.lf_reserves_down.geography_lf_reserves_down_bas.doc
 
+=====================
 Contributing Projects
 =====================
 
 .. automodule:: db.csvs_test_examples.reserves.lf_reserves_down.project_lf_reserves_down_bas.doc
 
+===========
 Requirement
 ===========
 
@@ -324,20 +333,22 @@ Requirement
 
 
 
-===========================
 Frequency Response Reserves
-===========================
+***************************
 
+===============
 Balancing Areas
 ===============
 
 .. automodule:: db.csvs_test_examples.reserves.frequency_response.geography_frequency_response_bas.doc
 
+=====================
 Contributing Projects
 =====================
 
 .. automodule:: db.csvs_test_examples.reserves.frequency_response.project_frequency_response_bas.doc
 
+===========
 Requirement
 ===========
 
@@ -396,6 +407,7 @@ Once you have built the database with a set of scenarios and associated inputs,
 you can test the inputs for a given scenario by running the inputs validation
 suite. This suite will extract the inputs for the scenario of interest and
 check whether the inputs are valid. A few examples of invalid inputs are:
+
  - required inputs are missing
  - inputs are the wrong datatype or not in the expected range
  - inputs are inconsistent with a related set of inputs

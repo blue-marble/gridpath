@@ -107,7 +107,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The binary decision variable has to be less than or equal to the binary |
     | decision variable in the previous period. This will prevent capacity    |
-    |from co ming back online after it has been retired.                      |
+    | from coming back online after it has been retired.                      |
     +-------------------------------------------------------------------------+
 
     """

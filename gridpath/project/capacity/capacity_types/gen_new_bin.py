@@ -135,7 +135,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`GenNewBin_Build`                                               |
     | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
-    | | *Within*: :code:`Binary          `                                    |
+    | | *Within*: :code:`Binary`                                              |
     |                                                                         |
     | Binary build decision for each project-vintage combination (1=build).   |
     +-------------------------------------------------------------------------+

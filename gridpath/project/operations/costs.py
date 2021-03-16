@@ -39,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
-     +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
     | | :code:`VAR_OM_COST_SIMPLE_PRJ_OPR_TMPS`                               |
@@ -92,7 +92,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | incurred along with their operational timepoints.                       |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Variables                                                               |
@@ -105,7 +105,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | curve.                                                                  |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
@@ -117,7 +117,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | its VOM curve.                                                          |
     +-------------------------------------------------------------------------+
 
-    |                                                                         |
+    |
 
     +-------------------------------------------------------------------------+
     | Expressions                                                             |

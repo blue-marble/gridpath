@@ -37,7 +37,7 @@ gridpath.run_scenario
 .. automodule:: gridpath.run_scenario
     :members: main, parse_arguments, ScenarioStructure, run_scenario,
         run_optimization, create_and_solve_problem,
-        populate_dynamic_components, create_abstract_model,
+        create_abstract_model,
         load_scenario_data, create_problem_instance, fix_variables, solve
 
 
