@@ -393,7 +393,7 @@ def get_types_dict():
     }
 
 
-def load_optype_module_specific_data(
+def load_optype_model_data(
         mod, data_portal, scenario_directory, subproblem, stage, op_type):
     """
 

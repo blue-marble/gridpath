@@ -248,9 +248,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Add model components for each of the transmission capacity modules
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
-                   "load_module_specific_data"):
-            imported_tx_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                   "load_model_data"):
+            imported_tx_capacity_modules[op_m].load_model_data(
+                m, d, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -287,8 +287,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Add model components for each of the transmission capacity modules
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
-                   "export_module_specific_results"):
-            imported_tx_capacity_modules[op_m].export_module_specific_results(
+                   "export_model_results"):
+            imported_tx_capacity_modules[op_m].export_model_results(
                 m, d, scenario_directory, subproblem, stage
             )
         else:

@@ -37,7 +37,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_first_timepoint, \
     check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    update_dispatch_results_table, load_optype_module_specific_data, \
+    update_dispatch_results_table, load_optype_model_data, \
     load_hydro_opchars, get_hydro_inputs_from_database, \
     write_tab_file_model_inputs, check_for_tmps_to_link, validate_opchars, \
     validate_hydro_opchars
@@ -703,8 +703,9 @@ def power_delta_rule(mod, g, tmp):
 ###############################################################################
 
 
-def load_module_specific_data(m, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param m:
@@ -717,7 +718,7 @@ def load_module_specific_data(m, data_portal,
 
     # Determine list of projects load params from projects.tab (optional
     # ramp rates)
-    projects = load_optype_module_specific_data(
+    projects = load_optype_model_data(
         mod=m, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_hydro"
@@ -749,7 +750,7 @@ def load_module_specific_data(m, data_portal,
         pass
 
 
-def export_module_specific_results(mod, d,
+def export_model_results(mod, d,
                                    scenario_directory, subproblem, stage):
     """
 
@@ -832,7 +833,7 @@ def export_module_specific_results(mod, d,
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -848,7 +849,7 @@ def get_module_specific_inputs_from_database(
     )
 
 
-def write_module_specific_model_inputs(
+def write_model_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -862,7 +863,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    data = get_module_specific_inputs_from_database(
+    data = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
     fname = "hydro_conventional_horizon_params.tab"
 
@@ -871,7 +872,7 @@ def write_module_specific_model_inputs(
     )
 
 
-def import_module_specific_results_to_database(
+def import_model_results_to_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -895,7 +896,7 @@ def import_module_specific_results_to_database(
     )
 
 
-def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
+def process_model_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate scheduled curtailment.
     :param db:
@@ -957,7 +958,7 @@ def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

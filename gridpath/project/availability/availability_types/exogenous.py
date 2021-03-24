@@ -103,8 +103,8 @@ def availability_derate_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
     :param m:
@@ -216,7 +216,7 @@ def get_inputs_from_database(
     return availabilities
 
 
-def write_module_specific_model_inputs(
+def write_model_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -247,7 +247,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:

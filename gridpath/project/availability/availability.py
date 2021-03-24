@@ -85,9 +85,9 @@ def write_model_inputs(
     # Get module-specific inputs
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_type_modules[op_m],
-                   "write_module_specific_model_inputs"):
+                   "write_model_model_inputs"):
             imported_availability_type_modules[op_m].\
-                write_module_specific_model_inputs(
+                write_model_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -114,9 +114,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
-                   "load_module_specific_data"):
-            imported_availability_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                   "load_model_data"):
+            imported_availability_modules[op_m].load_model_data(
+                m, d, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -144,9 +144,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         )
     for op_m in required_availability_modules:
         if hasattr(imported_availability_modules[op_m],
-                   "export_module_specific_results"):
+                   "export_model_results"):
             imported_availability_modules[
-                op_m].export_module_specific_results(
+                op_m].export_model_results(
                 scenario_directory, subproblem, stage, m, d
             )
         else:
@@ -187,9 +187,9 @@ def import_results_into_database(
     # Import module-specific results
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_modules[op_m],
-                   "import_module_specific_results_into_database"):
+                   "import_model_results_into_database"):
             imported_availability_modules[op_m]. \
-                import_module_specific_results_into_database(
+                import_model_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
@@ -217,9 +217,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m],
-                   "validate_module_specific_inputs"):
+                   "validate_model_inputs"):
             imported_operational_modules[op_m]. \
-                validate_module_specific_inputs(
+                validate_model_inputs(
                 scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass

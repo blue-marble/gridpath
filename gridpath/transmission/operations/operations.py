@@ -173,9 +173,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
     for op_m in required_tx_operational_modules:
         if hasattr(imported_tx_operational_modules[op_m],
-                   "export_module_specific_results"):
+                   "export_model_results"):
             imported_tx_operational_modules[op_m].\
-                export_module_specific_results(
+                export_model_results(
                 m, d, scenario_directory, subproblem, stage,
             )
         else:

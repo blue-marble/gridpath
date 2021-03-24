@@ -209,8 +209,8 @@ def operational_violation_cost_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-    mod, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
     :param mod:
@@ -221,15 +221,15 @@ def load_module_specific_data(
     :return:
     """
 
-    gen_commit_unit_common.load_module_specific_data(
-        mod=mod, data_portal=data_portal,
+    gen_commit_unit_common.load_model_data(
+        mod=mod, d=d, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, bin_or_lin_optype="gen_commit_lin", bin_or_lin="lin",
         BIN_OR_LIN="LIN"
     )
 
 
-def export_module_specific_results(
+def export_model_results(
     mod, d, scenario_directory, subproblem, stage
 ):
     """
@@ -240,7 +240,7 @@ def export_module_specific_results(
     :param d:
     :return:
     """
-    gen_commit_unit_common.export_module_specific_results(
+    gen_commit_unit_common.export_model_results(
         mod=mod, d=d, scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, BIN_OR_LIN="LIN",
         Bin_or_Lin="Lin", bin_or_lin="lin",
@@ -251,7 +251,7 @@ def export_module_specific_results(
 # Database
 ###############################################################################
 
-def import_module_specific_results_to_database(
+def import_model_results_to_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -277,7 +277,7 @@ def import_module_specific_results_to_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(
+def validate_model_inputs(
     scenario_id, subscenarios, subproblem, stage, conn
 ):
     """

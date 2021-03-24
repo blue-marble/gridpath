@@ -41,7 +41,7 @@ from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, check_if_first_timepoint, \
     check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, \
+    load_optype_model_data, \
     check_for_tmps_to_link, validate_opchars
 
 
@@ -460,8 +460,9 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param mod:
@@ -472,7 +473,7 @@ def load_module_specific_data(mod, data_portal,
     :return:
     """
 
-    projects = load_optype_module_specific_data(
+    projects = load_optype_model_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_simple"
@@ -497,7 +498,7 @@ def load_module_specific_data(mod, data_portal,
         pass
 
 
-def export_module_specific_results(
+def export_model_results(
         mod, d, scenario_directory, subproblem, stage
 ):
     """
@@ -553,7 +554,7 @@ def export_module_specific_results(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

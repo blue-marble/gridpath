@@ -61,10 +61,6 @@ def add_model_components(prereq_modules, module_to_test,
         module_to_test.add_model_components(
             model, d, test_data_dir, subproblem, stage
         )
-    if hasattr(module_to_test, "add_module_specific_components"):
-        module_to_test.add_module_specific_components(
-            model, d, test_data_dir, subproblem, stage
-        )
 
     return model
 
@@ -106,8 +102,5 @@ def add_components_and_load_data(prereq_modules, module_to_test, test_data_dir,
     if hasattr(module_to_test, "load_model_data"):
         module_to_test.load_model_data(m, d, data, test_data_dir,
                                        subproblem, stage)
-    if hasattr(module_to_test, "load_module_specific_data"):
-        module_to_test.load_module_specific_data(m, data, test_data_dir,
-                                                  subproblem, stage)
 
     return m, data

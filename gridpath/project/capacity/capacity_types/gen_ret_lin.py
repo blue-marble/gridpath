@@ -275,8 +275,8 @@ def new_capacity_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
@@ -349,7 +349,7 @@ def load_module_specific_data(
         determine_period_params()[2]
 
 
-def export_module_specific_results(
+def export_model_results(
         scenario_directory, subproblem, stage, m, d
 ):
     """
@@ -377,7 +377,7 @@ def export_module_specific_results(
             ])
 
 
-def summarize_module_specific_results(
+def summarize_model_results(
     scenario_directory, subproblem, stage, summary_results_file
 ):
     """
@@ -427,7 +427,7 @@ def summarize_module_specific_results(
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -469,7 +469,7 @@ def get_module_specific_inputs_from_database(
     return ep_capacities
 
 
-def write_module_specific_model_inputs(
+def write_model_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -483,7 +483,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    ep_capacities = get_module_specific_inputs_from_database(
+    ep_capacities = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     # If specified_generation_period_params.tab file already exists, append
@@ -518,7 +518,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
 
-def import_module_specific_results_into_database(
+def import_model_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -546,7 +546,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -556,7 +556,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     :return:
     """
 
-    gen_ret_lin_params = get_module_specific_inputs_from_database(
+    gen_ret_lin_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_ret_lin")

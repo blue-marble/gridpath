@@ -56,7 +56,7 @@ from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, load_optype_module_specific_data, \
+    determine_relevant_timepoints, load_optype_model_data, \
     load_startup_chars, check_for_tmps_to_link
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint, \
@@ -2937,8 +2937,8 @@ def operational_violation_cost_rule(mod, g, tmp, bin_or_lin, Bin_or_Lin):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-    mod, data_portal, scenario_directory, subproblem, stage,
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage,
     bin_or_lin_optype, bin_or_lin, BIN_OR_LIN
 ):
     """
@@ -2951,7 +2951,7 @@ def load_module_specific_data(
     """
 
     # Load data from projects.tab and get the list of projects of this type
-    projects = load_optype_module_specific_data(
+    projects = load_optype_model_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type=bin_or_lin_optype
@@ -3025,7 +3025,7 @@ def load_module_specific_data(
         pass
 
 
-def export_module_specific_results(
+def export_model_results(
     mod, d, scenario_directory, subproblem, stage, BIN_OR_LIN, Bin_or_Lin,
     bin_or_lin, results_filename
 ):

@@ -380,8 +380,9 @@ def new_capacity_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(m, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param m:
@@ -416,7 +417,7 @@ def load_module_specific_data(m, data_portal,
     )
 
 
-def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
+def export_model_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new binary build storage results.
     :param scenario_directory:
@@ -445,7 +446,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def summarize_module_specific_results(
+def summarize_model_results(
     scenario_directory, subproblem, stage, summary_results_file
 ):
     """
@@ -500,7 +501,7 @@ def summarize_module_specific_results(
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -561,7 +562,7 @@ def get_module_specific_inputs_from_database(
     return new_stor_costs, new_stor_build_size
 
 
-def write_module_specific_model_inputs(
+def write_model_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -577,7 +578,7 @@ def write_module_specific_model_inputs(
     """
 
     new_stor_costs, new_stor_build_size = \
-        get_module_specific_inputs_from_database(
+        get_model_inputs_from_database(
             scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -611,7 +612,7 @@ def write_module_specific_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_module_specific_results_into_database(
+def import_model_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -639,7 +640,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -657,7 +658,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
 
     # Get the binary build generator inputs
     new_stor_costs, new_stor_build_size = \
-        get_module_specific_inputs_from_database(
+        get_model_inputs_from_database(
             scenario_id, subscenarios, subproblem, stage, conn)
 
     projects = get_projects(conn, scenario_id, subscenarios, "capacity_type",

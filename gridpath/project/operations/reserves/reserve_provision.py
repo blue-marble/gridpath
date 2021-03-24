@@ -321,7 +321,7 @@ def generic_load_model_data(
         )
 
 
-def generic_export_module_specific_results(
+def generic_export_model_results(
         m, d, scenario_directory, subproblem, stage,
         module_name,
         reserve_project_operational_timepoints_set,
