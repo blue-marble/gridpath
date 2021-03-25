@@ -32,7 +32,7 @@ from gridpath.common_functions import determine_scenario_directory, \
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import SubProblems
+from gridpath.auxiliary.scenario_chars import ScenarioSubproblemStructureDB
 
 
 def import_results_into_database(
@@ -51,9 +51,9 @@ def import_results_into_database(
     :return:
     """
 
-    subproblems_list = subproblems.SUBPROBLEMS
+    subproblems_list = subproblems.ALL_SUBPROBLEMS
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        stages = subproblems.STAGES_BY_SUBPROBLEM[subproblem]
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
@@ -64,7 +64,7 @@ def import_results_into_database(
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(subproblems.ALL_SUBPROBLEMS) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  "results")
@@ -200,7 +200,7 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
         c=c, script="import_scenario_results")
 
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblems = ScenarioSubproblemStructureDB(conn=conn, scenario_id=scenario_id)
 
     # Determine scenario directory
     scenario_directory = determine_scenario_directory(

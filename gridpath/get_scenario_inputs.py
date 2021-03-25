@@ -33,7 +33,7 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems, SolverOptions
+    ScenarioSubproblemStructureDB, SolverOptions
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
@@ -53,16 +53,16 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
 
     :return:
     """
-    subproblems_list = subproblems.SUBPROBLEMS
+    subproblems_list = subproblems.ALL_SUBPROBLEMS
 
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        stages = subproblems.STAGES_BY_SUBPROBLEM[subproblem]
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
                 pass
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(subproblems.ALL_SUBPROBLEMS) > 1:
                 stage = ""
             elif len(stages) > 1:
                 subproblem = ""
@@ -310,7 +310,7 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblems = ScenarioSubproblemStructureDB(conn=conn, scenario_id=scenario_id)
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -321,8 +321,8 @@ def main(args=None):
     # This tells the determine_modules function to include the
     # stages-related modules
     stages_flag = any([
-        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
-        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+        len(subproblems.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
+        subproblems.STAGES_BY_SUBPROBLEM.keys()
     ])
 
     # Figure out which modules to use and load the modules
