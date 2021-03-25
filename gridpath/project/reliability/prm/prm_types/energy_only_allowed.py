@@ -256,8 +256,8 @@ def group_cost_rule(mod, group, period):
     return mod.Deliverability_Group_Deliverable_Capacity_Cost[group, period]
 
 
-def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+        m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
     Optionally load data for costs incurred only when a capacity threshold 
@@ -301,7 +301,7 @@ def load_module_specific_data(
         pass
 
 
-def export_module_specific_results(m, d, scenario_directory, subproblem, stage,):
+def export_results(m, d, scenario_directory, subproblem, stage,):
     """
 
     :param m:
@@ -365,7 +365,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
                 ])
 
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -418,7 +418,7 @@ def get_module_specific_inputs_from_database(
     return group_threshold_costs, project_deliverability_groups
 
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -430,11 +430,11 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     pass
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
-    #   get_module_specific_inputs_from_database(
+    #   get_model_inputs_from_database(
     #       scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -450,7 +450,7 @@ def write_module_specific_model_inputs(
     """
 
     group_threshold_costs, project_deliverability_groups = \
-        get_module_specific_inputs_from_database(
+        get_model_inputs_from_database(
             scenario_id, subscenarios, subproblem, stage, conn)
 
     if group_threshold_costs:
@@ -489,7 +489,7 @@ def write_module_specific_model_inputs(
         pass
 
 
-def import_module_specific_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -642,7 +642,7 @@ def import_module_specific_results_into_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, scenario_id, subscenarios, quiet):
+def process_model_results(db, c, scenario_id, subscenarios, quiet):
     """
 
     :param db:

@@ -47,9 +47,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
-                   "validate_module_specific_inputs"):
+                   "validate_inputs"):
             imported_capacity_type_modules[op_m]. \
-                validate_module_specific_inputs(
+                validate_inputs(
                     scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -76,9 +76,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Get module-specific inputs
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
-                   "write_module_specific_model_inputs"):
+                   "write_model_inputs"):
             imported_capacity_type_modules[op_m].\
-                write_module_specific_model_inputs(
+                write_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -164,9 +164,9 @@ def import_results_into_database(
     # Import module-specific results
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
-                   "import_module_specific_results_into_database"):
+                   "import_results_into_database"):
             imported_capacity_type_modules[op_m]. \
-                import_module_specific_results_into_database(
+                import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:

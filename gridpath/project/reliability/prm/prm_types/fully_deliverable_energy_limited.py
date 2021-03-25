@@ -113,8 +113,8 @@ def elcc_eligible_capacity_rule(mod, g, p):
     return mod.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW[g, p]
 
 
-def load_module_specific_data(
-            m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
@@ -134,7 +134,7 @@ def load_module_specific_data(
                      )
 
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -165,7 +165,7 @@ def get_module_specific_inputs_from_database(
     return project_zone_dur
 
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -175,7 +175,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     :return:
     """
 
-    project_zone_dur = get_module_specific_inputs_from_database(
+    project_zone_dur = get_model_inputs_from_database(
        scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -207,7 +207,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     )
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -221,7 +221,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    project_zone_dur = get_module_specific_inputs_from_database(
+    project_zone_dur = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access

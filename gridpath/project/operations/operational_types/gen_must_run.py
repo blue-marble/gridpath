@@ -42,7 +42,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, validate_opchars
+    load_optype_model_data, validate_opchars
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -228,8 +228,9 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage
+):
     """
     :param mod:
     :param data_portal:
@@ -240,14 +241,14 @@ def load_module_specific_data(mod, data_portal,
     """
 
     # Load data from projects.tab and get the list of projects of this type
-    projects = load_optype_module_specific_data(
+    projects = load_optype_model_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_must_run"
     )
 
 
-def export_module_specific_results(mod, d,
+def export_results(mod, d,
                                    scenario_directory, subproblem, stage):
     """
 
@@ -293,7 +294,7 @@ def export_module_specific_results(mod, d,
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
