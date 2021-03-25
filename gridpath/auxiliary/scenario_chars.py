@@ -92,6 +92,14 @@ class SubScenarios(object):
         return all_subscenarios
 
 
+class ScenarioSubproblemStructure(object):
+    def __init__(self, all_subproblems, stages_by_subproblem):
+        # List of subproblems
+        self.ALL_SUBPROBLEMS = all_subproblems
+        # List of stages by subproblem in dict {subproblem: [stages]}
+        self.STAGES_BY_SUBPROBLEM = stages_by_subproblem
+
+
 class ScenarioSubproblemStructureDB(object):
     def __init__(self, conn, scenario_id):
         """
@@ -99,38 +107,53 @@ class ScenarioSubproblemStructureDB(object):
         :param conn:
         :param scenario_id:
         """
-        cursor = conn.cursor()
+        all_subproblems, stages_by_subproblem = \
+            get_subproblem_structure_from_db(conn, scenario_id)
+        structure = ScenarioSubproblemStructure(
+            all_subproblems=all_subproblems, stages_by_subproblem=stages_by_subproblem
+        )
 
-        # TODO: make sure there is data integrity between subproblems_stages
-        #   and inputs_temporal_horizons and inputs_temporal
-        all_subproblems = cursor.execute(
+        self.ALL_SUBPROBLEMS = structure.ALL_SUBPROBLEMS
+
+        self.STAGES_BY_SUBPROBLEM = structure.STAGES_BY_SUBPROBLEM
+
+
+def get_subproblem_structure_from_db(conn, scenario_id):
+    """
+
+    :param conn:
+    :param scenario_id:
+    """
+    cursor = conn.cursor()
+
+    # TODO: make sure there is data integrity between subproblems_stages
+    #   and inputs_temporal_horizons and inputs_temporal
+    all_subproblems = [
+        subproblem[0] for subproblem in
+        cursor.execute(
             """SELECT subproblem_id
                FROM inputs_temporal_subproblems
                INNER JOIN scenarios
                USING (temporal_scenario_id)
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchall()
+    ]
 
-        # SQL returns a list of tuples [(1,), (2,)] so convert to simple list
-        # This determines whether we will have a nested directory for the
-        # subproblem to process
-        self.ALL_SUBPROBLEMS = [
-            subproblem[0] for subproblem in all_subproblems
-        ]
+    # Store subproblems and stages in dict {subproblem: [stages]}
+    stages_by_subproblem = {}
+    for s in all_subproblems:
+        stages = cursor.execute(
+            """SELECT stage_id
+               FROM inputs_temporal_subproblems_stages
+               INNER JOIN scenarios
+               USING (temporal_scenario_id)
+               WHERE scenario_id = {}
+               AND subproblem_id = {};""".format(scenario_id, s)
+        ).fetchall()
+        stages = [stage[0] for stage in stages]  # convert to simple list
+        stages_by_subproblem[s] = stages
 
-        # Store subproblems and stages in dict {subproblem: [stages]}
-        self.STAGES_BY_SUBPROBLEM = {}
-        for s in self.ALL_SUBPROBLEMS:
-            stages = cursor.execute(
-                """SELECT stage_id
-                   FROM inputs_temporal_subproblems_stages
-                   INNER JOIN scenarios
-                   USING (temporal_scenario_id)
-                   WHERE scenario_id = {}
-                   AND subproblem_id = {};""".format(scenario_id, s)
-            ).fetchall()
-            stages = [stage[0] for stage in stages]  # convert to simple list
-            self.STAGES_BY_SUBPROBLEM[s] = stages
+    return all_subproblems, stages_by_subproblem
 
 
 class SolverOptions(object):
