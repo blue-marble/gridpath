@@ -33,7 +33,7 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    ScenarioSubproblemStructureDB, SolverOptions
+    get_subproblem_structure_from_db, SolverOptions
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
@@ -310,7 +310,9 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = ScenarioSubproblemStructureDB(conn=conn, scenario_id=scenario_id)
+    subproblem_structure = get_subproblem_structure_from_db(
+        conn=conn, scenario_id=scenario_id
+    )
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -321,8 +323,8 @@ def main(args=None):
     # This tells the determine_modules function to include the
     # stages-related modules
     stages_flag = any([
-        len(subproblems.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
-        subproblems.STAGES_BY_SUBPROBLEM.keys()
+        len(subproblem_structure.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
+        subproblem_structure.STAGES_BY_SUBPROBLEM.keys()
     ])
 
     # Figure out which modules to use and load the modules
@@ -333,7 +335,7 @@ def main(args=None):
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblems=subproblems,
+        subproblems=subproblem_structure,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subscenarios=subscenarios,

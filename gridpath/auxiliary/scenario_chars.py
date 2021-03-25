@@ -100,24 +100,6 @@ class ScenarioSubproblemStructure(object):
         self.STAGES_BY_SUBPROBLEM = stages_by_subproblem
 
 
-class ScenarioSubproblemStructureDB(object):
-    def __init__(self, conn, scenario_id):
-        """
-
-        :param conn:
-        :param scenario_id:
-        """
-        all_subproblems, stages_by_subproblem = \
-            get_subproblem_structure_from_db(conn, scenario_id)
-        structure = ScenarioSubproblemStructure(
-            all_subproblems=all_subproblems, stages_by_subproblem=stages_by_subproblem
-        )
-
-        self.ALL_SUBPROBLEMS = structure.ALL_SUBPROBLEMS
-
-        self.STAGES_BY_SUBPROBLEM = structure.STAGES_BY_SUBPROBLEM
-
-
 def get_subproblem_structure_from_db(conn, scenario_id):
     """
 
@@ -153,7 +135,10 @@ def get_subproblem_structure_from_db(conn, scenario_id):
         stages = [stage[0] for stage in stages]  # convert to simple list
         stages_by_subproblem[s] = stages
 
-    return all_subproblems, stages_by_subproblem
+    return ScenarioSubproblemStructure(
+        all_subproblems=all_subproblems,
+        stages_by_subproblem=stages_by_subproblem
+    )
 
 
 class SolverOptions(object):
