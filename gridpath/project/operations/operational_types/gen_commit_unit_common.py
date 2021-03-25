@@ -3025,7 +3025,7 @@ def load_model_data(
         pass
 
 
-def export_model_results(
+def export_results(
     mod, d, scenario_directory, subproblem, stage, BIN_OR_LIN, Bin_or_Lin,
     bin_or_lin, results_filename
 ):

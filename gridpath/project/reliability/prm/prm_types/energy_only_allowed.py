@@ -301,7 +301,7 @@ def load_model_data(
         pass
 
 
-def export_model_results(m, d, scenario_directory, subproblem, stage,):
+def export_results(m, d, scenario_directory, subproblem, stage,):
     """
 
     :param m:
@@ -418,7 +418,7 @@ def get_model_inputs_from_database(
     return group_threshold_costs, project_deliverability_groups
 
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -434,7 +434,7 @@ def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #       scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -489,7 +489,7 @@ def write_model_model_inputs(
         pass
 
 
-def import_model_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """

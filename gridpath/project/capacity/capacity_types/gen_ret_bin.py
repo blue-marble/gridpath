@@ -309,7 +309,7 @@ def load_model_data(
         determine_period_params()[2]
 
 
-def export_model_results(
+def export_results(
         scenario_directory, subproblem, stage, m, d
 ):
     """
@@ -339,7 +339,7 @@ def export_model_results(
             ])
 
 
-def summarize_model_results(
+def summarize_results(
         scenario_directory, subproblem, stage, summary_results_file
 ):
     """
@@ -432,7 +432,7 @@ def get_model_inputs_from_database(
     return ep_capacities
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -481,7 +481,7 @@ def write_model_model_inputs(
                 writer.writerow(row)
 
 
-def import_model_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -509,7 +509,7 @@ def import_model_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

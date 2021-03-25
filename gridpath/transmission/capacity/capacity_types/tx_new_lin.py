@@ -317,7 +317,7 @@ def load_model_data(
 
 
 # TODO: untested
-def export_model_results(
+def export_results(
         m, d, scenario_directory, subproblem, stage
 ):
     """
@@ -387,7 +387,7 @@ def get_model_inputs_from_database(
     return tx_cost
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab file.
@@ -418,7 +418,7 @@ def write_model_model_inputs(
             writer.writerow(row)
 
 
-def import_model_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -492,7 +492,7 @@ def import_model_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

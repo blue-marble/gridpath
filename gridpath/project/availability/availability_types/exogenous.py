@@ -216,7 +216,7 @@ def get_inputs_from_database(
     return availabilities
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -247,7 +247,7 @@ def write_model_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:

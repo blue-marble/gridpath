@@ -498,7 +498,7 @@ def load_model_data(
         pass
 
 
-def export_model_results(
+def export_results(
         mod, d, scenario_directory, subproblem, stage
 ):
     """
@@ -554,7 +554,7 @@ def export_model_results(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

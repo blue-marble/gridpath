@@ -131,9 +131,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "export_model_results"):
+                   "export_results"):
             imported_prm_modules[prm_m]. \
-                export_model_results(
+                export_results(
                 m, d, scenario_directory, subproblem, stage,
             )
         else:
@@ -209,9 +209,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "validate_model_inputs"):
+                   "validate_inputs"):
             imported_prm_modules[prm_m]. \
-                validate_model_inputs(
+                validate_inputs(
                     scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -243,9 +243,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Write module-specific inputs
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "write_model_model_inputs"):
+                   "write_model_inputs"):
             imported_prm_modules[prm_m]. \
-                write_model_model_inputs(
+                write_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -290,9 +290,9 @@ def import_results_into_database(
 
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "import_model_results_into_database"):
+                   "import_results_into_database"):
             imported_prm_modules[prm_m]. \
-                import_model_results_into_database(
+                import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:

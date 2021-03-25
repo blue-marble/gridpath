@@ -115,9 +115,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Add any components specific to the operational modules
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
-                   "export_model_results"):
+                   "export_results"):
             imported_operational_modules[op_m].\
-                export_model_results(
+                export_results(
                 m, d, scenario_directory, subproblem, stage,
             )
         else:
@@ -196,9 +196,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m],
-                   "validate_model_inputs"):
+                   "validate_inputs"):
             imported_operational_modules[op_m]. \
-                validate_model_inputs(
+                validate_inputs(
                     scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -225,9 +225,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Write module-specific inputs
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m],
-                   "write_model_model_inputs"):
+                   "write_model_inputs"):
             imported_operational_modules[op_m].\
-                write_model_model_inputs(
+                write_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass

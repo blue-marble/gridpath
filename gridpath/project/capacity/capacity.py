@@ -300,9 +300,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
-                   "export_model_results"):
+                   "export_results"):
             imported_capacity_modules[
-                op_m].export_model_results(
+                op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
             )
         else:
@@ -349,9 +349,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     )
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
-                   "summarize_model_results"):
+                   "summarize_results"):
             imported_capacity_modules[
-                op_m].summarize_model_results(
+                op_m].summarize_results(
                 scenario_directory, subproblem, stage, summary_results_file
             )
         else:

@@ -175,9 +175,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Write module-specific inputs
     for op_m in required_tx_opchar_modules:
         if hasattr(imported_tx_operational_modules[op_m],
-                   "write_model_model_inputs"):
+                   "write_model_inputs"):
             imported_tx_operational_modules[op_m].\
-                write_model_model_inputs(
+                write_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -270,9 +270,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for op_m in required_tx_opchar_modules:
         if hasattr(imported_tx_operational_modules[op_m],
-                   "validate_model_inputs"):
+                   "validate_inputs"):
             imported_tx_operational_modules[op_m]. \
-                validate_model_inputs(
+                validate_inputs(
                     scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass

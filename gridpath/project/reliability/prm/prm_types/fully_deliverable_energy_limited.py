@@ -165,7 +165,7 @@ def get_model_inputs_from_database(
     return project_zone_dur
 
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -207,7 +207,7 @@ def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """

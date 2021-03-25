@@ -287,8 +287,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Add model components for each of the transmission capacity modules
     for op_m in required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
-                   "export_model_results"):
-            imported_tx_capacity_modules[op_m].export_model_results(
+                   "export_results"):
+            imported_tx_capacity_modules[op_m].export_results(
                 m, d, scenario_directory, subproblem, stage
             )
         else:

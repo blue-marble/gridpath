@@ -250,7 +250,7 @@ def load_model_data(
     )
 
 
-def export_model_results(
+def export_results(
     mod, d, scenario_directory, subproblem, stage
 ):
     """
@@ -261,7 +261,7 @@ def export_model_results(
     :param d:
     :return:
     """
-    gen_commit_unit_common.export_model_results(
+    gen_commit_unit_common.export_results(
         mod=mod, d=d, scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, BIN_OR_LIN="BIN",
         Bin_or_Lin="Bin", bin_or_lin="bin",
@@ -298,7 +298,7 @@ def import_model_results_to_database(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(
+def validate_inputs(
     scenario_id, subscenarios, subproblem, stage, conn
 ):
     """

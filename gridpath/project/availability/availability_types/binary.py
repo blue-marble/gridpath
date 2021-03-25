@@ -370,7 +370,7 @@ def load_model_data(
         avl_bin_min_avl_hrs_between_events_dict
 
 
-def export_model_results(
+def export_results(
         scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
@@ -454,7 +454,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return availability_params
 
 
-def write_model_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -498,7 +498,7 @@ def write_model_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_model_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -525,7 +525,7 @@ def import_model_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_model_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
