@@ -55,6 +55,27 @@ def parse_arguments(args):
                  get_solve_parser()]
     )
 
+    # Arguments to skip an E2E step
+    parser.add_argument("--skip_get_inputs", default=False,
+                        action="store_true",
+                        help="Skip the 'get_scenario_inputs' E2E step.")
+    parser.add_argument("--skip_run_scenario", default=False,
+                        action="store_true",
+                        help="Skip the 'run_scenario' E2E step.")
+    parser.add_argument("--skip_import_results", default=False,
+                        action="store_true",
+                        help="Skip the 'import_scenario_results' E2E step.")
+    parser.add_argument("--skip_process_results", default=False,
+                        action="store_true",
+                        help="Skip the 'process_results' E2E step.")
+
+    # Run only a single E2E step
+    parser.add_argument("--single_e2e_step_only",
+                        choices=["get_inputs", "run_scenario",
+                                 "import_results", "process_results"],
+                        help="Run only the specified E2E step. All others "
+                             "will be skipped.")
+
     parsed_arguments = parser.parse_args(args=args)
 
     return parsed_arguments
@@ -278,66 +299,96 @@ def main(args=None):
         db_path, parsed_args.scenario, process_id, start_time
     )
 
-    try:
-        get_scenario_inputs.main(args=args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when getting inputs from the database for "
-              "scenario {}. End time: {}.".format(scenario, end_time))
-        sys.exit(1)
-    try:
-        # make sure run_scenario.py gets the required --scenario argument
-        run_scenario_args = args + ['--scenario', scenario]
-        expected_objective_values = run_scenario.main(args=run_scenario_args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when running scenario {}. End time: {}."
-              .format(scenario, end_time))
-        sys.exit(1)
+    # Figure out which steps we are skipping if user has requested a single
+    # E2E step; start by assuming we'll skip and reverse skipping if the
+    # step is specified
+    skip_get_inputs = True
+    skip_run_scenario = True
+    skip_import_results = True
+    skip_process_results = True
 
-    try:
-        import_scenario_results.main(args=args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print("Error encountered when importing results for "
-              "scenario {}. End time: {}.".format(scenario, end_time))
-        sys.exit(1)
+    if parsed_args.single_e2e_step_only == 'get_inputs':
+        skip_get_inputs = False
+    elif parsed_args.single_e2e_step_only == 'run_scenario':
+        skip_run_scenario = False
+    elif parsed_args.single_e2e_step_only == 'import_results':
+        skip_import_results = False
+    elif parsed_args.single_e2e_step_only == 'process_results':
+        skip_process_results = False
+    else:
+        skip_get_inputs = False
+        skip_run_scenario = False
+        skip_import_results = False
+        skip_process_results = False
 
-    try:
-        process_results.main(args=args)
-    except Exception as e:
-        logging.exception(e)
-        end_time = update_db_for_run_end(
-            db_path=db_path,
-            scenario=scenario,
-            queue_order_id=queue_order_id,
-            process_id=process_id,
-            run_status_id=3
-        )
-        print('Error encountered when importing results for '
-              'scenario {}. End time: {}.'.format(scenario, end_time))
-        sys.exit(1)
+    # Go through the steps if user has not requested to skip them
+    if not skip_get_inputs and not parsed_args.skip_get_inputs:
+        try:
+            get_scenario_inputs.main(args=args)
+        except Exception as e:
+            logging.exception(e)
+            end_time = update_db_for_run_end(
+                db_path=db_path,
+                scenario=scenario,
+                queue_order_id=queue_order_id,
+                process_id=process_id,
+                run_status_id=3
+            )
+            print("Error encountered when getting inputs from the database for "
+                  "scenario {}. End time: {}.".format(scenario, end_time))
+            sys.exit(1)
+
+    if not skip_run_scenario and not parsed_args.skip_run_scenario:
+        try:
+            # make sure run_scenario.py gets the required --scenario argument
+            run_scenario_args = args + ['--scenario', scenario]
+            expected_objective_values = run_scenario.main(args=run_scenario_args)
+        except Exception as e:
+            logging.exception(e)
+            end_time = update_db_for_run_end(
+                db_path=db_path,
+                scenario=scenario,
+                queue_order_id=queue_order_id,
+                process_id=process_id,
+                run_status_id=3
+            )
+            print("Error encountered when running scenario {}. End time: {}."
+                  .format(scenario, end_time))
+            sys.exit(1)
+    else:
+        expected_objective_values = None
+
+    if not skip_import_results and not parsed_args.skip_import_results:
+        try:
+            import_scenario_results.main(args=args)
+        except Exception as e:
+            logging.exception(e)
+            end_time = update_db_for_run_end(
+                db_path=db_path,
+                scenario=scenario,
+                queue_order_id=queue_order_id,
+                process_id=process_id,
+                run_status_id=3
+            )
+            print("Error encountered when importing results for "
+                  "scenario {}. End time: {}.".format(scenario, end_time))
+            sys.exit(1)
+
+    if not skip_process_results and not parsed_args.skip_process_results:
+        try:
+            process_results.main(args=args)
+        except Exception as e:
+            logging.exception(e)
+            end_time = update_db_for_run_end(
+                db_path=db_path,
+                scenario=scenario,
+                queue_order_id=queue_order_id,
+                process_id=process_id,
+                run_status_id=3
+            )
+            print('Error encountered when importing results for '
+                  'scenario {}. End time: {}.'.format(scenario, end_time))
+            sys.exit(1)
 
     # If we make it here, mark run as complete and update run end time
     end_time = update_db_for_run_end(
