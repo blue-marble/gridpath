@@ -184,6 +184,10 @@ def run_optimization(
         if stage != "":
             print("--- stage {}".format(stage))
 
+    # We're expecting subproblem and stage to be strings downstream from here
+    subproblem = str(subproblem)
+    stage = str(stage)
+
     # Create problem instance and solve it
     solved_instance, results, dynamic_components = \
         create_and_solve_problem(scenario_directory, subproblem, stage,

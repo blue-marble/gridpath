@@ -36,33 +36,36 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     get_subproblem_structure_from_db, SolverOptions
 
 
-def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       scenario_id, subscenarios, conn):
+def write_model_inputs(
+    scenario_directory, subproblem_structure, loaded_modules, scenario_id,
+    subscenarios, conn
+):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
 
     :param scenario_directory: local scenario directory
-    :param subproblems: SubProblems object with info on the subproblem/stage
+    :param subproblem_structure: SubProblems object with info on the subproblem/stage
         structure
     :param loaded_modules: list of imported modules (Python <class 'module'>
         objects)
+    :param scenario_id: integer
     :param subscenarios: SubScenarios object with all subscenario info
     :param conn: database connection
 
 
     :return:
     """
-    subproblems_list = subproblems.ALL_SUBPROBLEMS
+    subproblems_list = subproblem_structure.ALL_SUBPROBLEMS
 
     for subproblem in subproblems_list:
-        stages = subproblems.STAGES_BY_SUBPROBLEM[subproblem]
+        stages = subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
                 pass
-            elif len(subproblems.ALL_SUBPROBLEMS) > 1:
+            elif len(subproblems_list) > 1:
                 stage = ""
             elif len(stages) > 1:
                 subproblem = ""
@@ -98,6 +101,38 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                     )
                 else:
                     pass
+
+        # If there are stages in the subproblem, we also need a pass-through
+        # directory and to write headers of the pass-through input file
+        # TODO: this should probably be moved to the module responsible for
+        #  writing to this file
+        # TODO: how to deal with pass-through inputs
+        # TODO: we probably don't need a directory for the
+        #  pass-through inputs, as it's only one file
+        if len(stages) > 1:
+            # Create the commitment pass-through file (also deletes any
+            # prior results)
+            # First create the pass-through directory if it doesn't
+            # exist
+            # TODO: need better handling of deleting prior results?
+            pass_through_directory = \
+                os.path.join(scenario_directory, str(subproblem),
+                             "pass_through_inputs")
+            if not os.path.exists(pass_through_directory):
+                os.makedirs(pass_through_directory)
+            with open(
+                    os.path.join(
+                        pass_through_directory,
+                        "fixed_commitment.tab"
+                    ), "w", newline=""
+            ) as fixed_commitment_file:
+                fixed_commitment_writer = csv.writer(
+                    fixed_commitment_file,
+                    delimiter="\t", lineterminator="\n"
+                )
+                fixed_commitment_writer.writerow(
+                    ["project", "timepoint", "stage",
+                     "final_commitment_stage", "commitment"])
 
 
 def delete_prior_aux_files(scenario_directory):
@@ -335,7 +370,7 @@ def main(args=None):
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblems=subproblem_structure,
+        subproblem_structure=subproblem_structure,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subscenarios=subscenarios,

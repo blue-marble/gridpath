@@ -104,6 +104,11 @@ class ScenarioSubproblemStructure(object):
         # List of stages by subproblem in dict {subproblem: [stages]}
         self.STAGES_BY_SUBPROBLEM = stages_by_subproblem
 
+        # TODO: note that this currently will be initiated as [1] when
+        #  single subproblem if initiating from the DB and as [] when
+        #  initiating from disk; similar for the stages; needs to be
+        #  standardized
+
 
 def get_subproblem_structure_from_db(conn, scenario_id):
     """
@@ -148,8 +153,9 @@ def get_subproblem_structure_from_db(conn, scenario_id):
 
 def get_subproblem_structure_from_disk(scenario_directory):
     # Check if there are subproblem directories
+    # Convert to integers
     all_subproblems = \
-        check_for_integer_subdirectories(scenario_directory)
+        [int(i) for i in check_for_integer_subdirectories(scenario_directory)]
 
     # Make dictionary for the stages by subproblem, starting with empty
     # list for each subproblem
@@ -161,39 +167,13 @@ def get_subproblem_structure_from_disk(scenario_directory):
     # subproblem directory
     if all_subproblems:
         for subproblem in all_subproblems:
-            subproblem_dir = os.path.join(
-                scenario_directory, subproblem
-            )
-            stages = check_for_integer_subdirectories(subproblem_dir)
-            # TODO: how to deal with pass-through inputs
-            # If the list isn't empty, update the stage dictionary and
-            # create the stage pass-through directory and input file
-            # TODO: we probably don't need a directory for the
-            #  pass-through inputs, as it's only one file
+            subproblem_dir = os.path.join(scenario_directory, str(subproblem))
+            # Convert to integers
+            stages = \
+                [int(i) for i in
+                 check_for_integer_subdirectories(subproblem_dir)]
             if stages:
                 stages_by_subproblem[subproblem] = stages
-                # Create the commitment pass-through file (also deletes any
-                # prior results)
-                # First create the pass-through directory if it doesn't
-                # exist
-                # TODO: need better handling of deleting prior results?
-                pass_through_directory = \
-                    os.path.join(subproblem_dir, "pass_through_inputs")
-                if not os.path.exists(pass_through_directory):
-                    os.makedirs(pass_through_directory)
-                with open(
-                        os.path.join(
-                            pass_through_directory,
-                            "fixed_commitment.tab"
-                        ), "w", newline=""
-                ) as fixed_commitment_file:
-                    fixed_commitment_writer = csv.writer(
-                        fixed_commitment_file,
-                        delimiter="\t", lineterminator="\n"
-                    )
-                    fixed_commitment_writer.writerow(
-                        ["project", "timepoint", "stage",
-                         "final_commitment_stage", "commitment"])
 
     return ScenarioSubproblemStructure(
         all_subproblems=all_subproblems,
