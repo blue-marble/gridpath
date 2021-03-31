@@ -232,8 +232,8 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
     The objective function is returned, but it's only really used if we
     are in 'testing' mode.
     """
-    # If no subproblem directories (empty list), run main problem
-    if not subproblem_structure.ALL_SUBPROBLEMS:
+    # If only a single subproblem, run main problem
+    if subproblem_structure.ALL_SUBPROBLEMS == [1]:
         objective_values = run_optimization(
             scenario_directory, "", "", parsed_arguments)
     else:
@@ -242,7 +242,7 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
         objective_values = {}
         for subproblem in subproblem_structure.ALL_SUBPROBLEMS:
             # If no stages in this subproblem (empty list), run the subproblem
-            if not subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]:
+            if subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem] == [1]:
                 objective_values[subproblem] = run_optimization(
                     scenario_directory, subproblem, "",
                     parsed_arguments)

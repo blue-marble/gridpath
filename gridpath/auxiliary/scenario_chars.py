@@ -100,14 +100,11 @@ class SubScenarios(object):
 class ScenarioSubproblemStructure(object):
     def __init__(self, all_subproblems, stages_by_subproblem):
         # List of subproblems
+        # This should be [1] when there's a single subproblem
         self.ALL_SUBPROBLEMS = all_subproblems
         # List of stages by subproblem in dict {subproblem: [stages]}
+        # This should be subproblem: [1] when a single stage
         self.STAGES_BY_SUBPROBLEM = stages_by_subproblem
-
-        # TODO: note that this currently will be initiated as [1] when
-        #  single subproblem if initiating from the DB and as [] when
-        #  initiating from disk; similar for the stages; needs to be
-        #  standardized
 
 
 def get_subproblem_structure_from_db(conn, scenario_id):
@@ -154,19 +151,20 @@ def get_subproblem_structure_from_db(conn, scenario_id):
 def get_subproblem_structure_from_disk(scenario_directory):
     # Check if there are subproblem directories
     # Convert to integers
-    all_subproblems = \
+    subproblem_directories = \
         [int(i) for i in check_for_integer_subdirectories(scenario_directory)]
 
     # Make dictionary for the stages by subproblem, starting with empty
     # list for each subproblem
     stages_by_subproblem = {
-        subp: [] for subp in all_subproblems
+        subp: [] for subp in subproblem_directories
     }
 
     # If we have subproblems, check for stage subdirectories for each
     # subproblem directory
-    if all_subproblems:
-        for subproblem in all_subproblems:
+    if subproblem_directories:
+        all_subproblems = subproblem_directories
+        for subproblem in subproblem_directories:
             subproblem_dir = os.path.join(scenario_directory, str(subproblem))
             # Convert to integers
             stages = \
@@ -174,6 +172,17 @@ def get_subproblem_structure_from_disk(scenario_directory):
                  check_for_integer_subdirectories(subproblem_dir)]
             if stages:
                 stages_by_subproblem[subproblem] = stages
+            else:
+                # If we didn't find stage directories, we have a single
+                # stage
+                # Downstream, we need a list with just 1 as member
+                stages_by_subproblem[subproblem] = [1]
+    else:
+        # If we didn't find integer directories, we have a single subproblem
+        # with a single stage
+        # Downstream, we need a list with just 1 as member
+        all_subproblems = [1]
+        stages_by_subproblem[1] = [1]
 
     return ScenarioSubproblemStructure(
         all_subproblems=all_subproblems,
