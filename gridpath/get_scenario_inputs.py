@@ -56,10 +56,10 @@ def write_model_inputs(
 
     :return:
     """
-    subproblems_list = subproblem_structure.ALL_SUBPROBLEMS
+    subproblems_list = list(subproblem_structure.SUBPROBLEM_STAGES.keys())
 
     for subproblem in subproblems_list:
-        stages = subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]
+        stages = subproblem_structure.SUBPROBLEM_STAGES[subproblem]
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
@@ -358,8 +358,8 @@ def main(args=None):
     # This tells the determine_modules function to include the
     # stages-related modules
     stages_flag = any([
-        len(subproblem_structure.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
-        subproblem_structure.STAGES_BY_SUBPROBLEM.keys()
+        len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
+        list(subproblem_structure.SUBPROBLEM_STAGES.keys())
     ])
 
     # Figure out which modules to use and load the modules

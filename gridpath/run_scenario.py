@@ -233,23 +233,23 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
     are in 'testing' mode.
     """
     # If only a single subproblem, run main problem
-    if subproblem_structure.ALL_SUBPROBLEMS == [1]:
+    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
         objective_values = run_optimization(
             scenario_directory, "", "", parsed_arguments)
     else:
         # Create dictionary with which we'll keep track
         # of subproblem objective function values
         objective_values = {}
-        for subproblem in subproblem_structure.ALL_SUBPROBLEMS:
+        for subproblem in list(subproblem_structure.SUBPROBLEM_STAGES.keys()):
             # If no stages in this subproblem (empty list), run the subproblem
-            if subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem] == [1]:
+            if subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
                 objective_values[subproblem] = run_optimization(
                     scenario_directory, subproblem, "",
                     parsed_arguments)
             # Otherwise, run the stage problem
             else:
                 objective_values[subproblem] = {}
-                for stage in subproblem_structure.STAGES_BY_SUBPROBLEM[subproblem]:
+                for stage in subproblem_structure.SUBPROBLEM_STAGES[subproblem]:
                     objective_values[subproblem][stage] = \
                         run_optimization(
                             scenario_directory, subproblem, stage,

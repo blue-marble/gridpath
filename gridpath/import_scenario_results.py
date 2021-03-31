@@ -51,9 +51,9 @@ def import_results_into_database(
     :return:
     """
 
-    subproblems_list = subproblems.ALL_SUBPROBLEMS
+    subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.STAGES_BY_SUBPROBLEM[subproblem]
+        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
@@ -64,7 +64,7 @@ def import_results_into_database(
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.ALL_SUBPROBLEMS) > 1:
+            elif len(subproblems.SUBPROBLEM_STAGES.keys()) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  "results")

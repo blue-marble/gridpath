@@ -55,9 +55,9 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
     #  each table in the database? Problem is that you don't necessarily want
     #  to check the full table but only the appropriate subscenario
 
-    subproblems_list = subproblems.ALL_SUBPROBLEMS
+    subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.STAGES_BY_SUBPROBLEM[subproblem]
+        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
         for stage in stages:
             # 1. input validation within each module
             for m in loaded_modules:
@@ -462,8 +462,8 @@ def main(args=None):
         # This tells the determine_modules function to include the
         # stages-related modules
         stages_flag = any([
-            len(subproblem_structure.STAGES_BY_SUBPROBLEM[subp]) > 1 for subp in
-            subproblem_structure.STAGES_BY_SUBPROBLEM.keys()
+            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
+            list(subproblem_structure.SUBPROBLEM_STAGES.keys())
         ])
         modules_to_use = determine_modules(
             features=feature_list, multi_stage=stages_flag

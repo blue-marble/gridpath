@@ -98,13 +98,11 @@ class SubScenarios(object):
 
 
 class ScenarioSubproblemStructure(object):
-    def __init__(self, all_subproblems, stages_by_subproblem):
-        # List of subproblems
-        # This should be [1] when there's a single subproblem
-        self.ALL_SUBPROBLEMS = all_subproblems
+    def __init__(self, stages_by_subproblem):
         # List of stages by subproblem in dict {subproblem: [stages]}
-        # This should be subproblem: [1] when a single stage
-        self.STAGES_BY_SUBPROBLEM = stages_by_subproblem
+        # This should have a single key, 1, if a single subproblem
+        # This should be subproblem: [1] when a single stage in the subproblem
+        self.SUBPROBLEM_STAGES = stages_by_subproblem
 
 
 def get_subproblem_structure_from_db(conn, scenario_id):
@@ -143,7 +141,6 @@ def get_subproblem_structure_from_db(conn, scenario_id):
         stages_by_subproblem[s] = stages
 
     return ScenarioSubproblemStructure(
-        all_subproblems=all_subproblems,
         stages_by_subproblem=stages_by_subproblem
     )
 
@@ -180,12 +177,10 @@ def get_subproblem_structure_from_disk(scenario_directory):
     else:
         # If we didn't find integer directories, we have a single subproblem
         # with a single stage
-        # Downstream, we need a list with just 1 as member
-        all_subproblems = [1]
+        # Downstream, we need {1: [1]}
         stages_by_subproblem[1] = [1]
 
     return ScenarioSubproblemStructure(
-        all_subproblems=all_subproblems,
         stages_by_subproblem=stages_by_subproblem
     )
 
