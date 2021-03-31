@@ -33,36 +33,39 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems, SolverOptions
+    get_subproblem_structure_from_db, SolverOptions
 
 
-def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       scenario_id, subscenarios, conn):
+def write_model_inputs(
+    scenario_directory, subproblem_structure, loaded_modules, scenario_id,
+    subscenarios, conn
+):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
 
     :param scenario_directory: local scenario directory
-    :param subproblems: SubProblems object with info on the subproblem/stage
+    :param subproblem_structure: SubProblems object with info on the subproblem/stage
         structure
     :param loaded_modules: list of imported modules (Python <class 'module'>
         objects)
+    :param scenario_id: integer
     :param subscenarios: SubScenarios object with all subscenario info
     :param conn: database connection
 
 
     :return:
     """
-    subproblems_list = subproblems.SUBPROBLEMS
+    subproblems_list = list(subproblem_structure.SUBPROBLEM_STAGES.keys())
 
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        stages = subproblem_structure.SUBPROBLEM_STAGES[subproblem]
 
         for stage in stages:
             # if there are subproblems/stages, input directory will be nested
             if len(subproblems_list) > 1 and len(stages) > 1:
                 pass
-            elif len(subproblems.SUBPROBLEMS) > 1:
+            elif len(subproblems_list) > 1:
                 stage = ""
             elif len(stages) > 1:
                 subproblem = ""
@@ -98,6 +101,38 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                     )
                 else:
                     pass
+
+        # If there are stages in the subproblem, we also need a pass-through
+        # directory and to write headers of the pass-through input file
+        # TODO: this should probably be moved to the module responsible for
+        #  writing to this file
+        # TODO: how to deal with pass-through inputs
+        # TODO: we probably don't need a directory for the
+        #  pass-through inputs, as it's only one file
+        if len(stages) > 1:
+            # Create the commitment pass-through file (also deletes any
+            # prior results)
+            # First create the pass-through directory if it doesn't
+            # exist
+            # TODO: need better handling of deleting prior results?
+            pass_through_directory = \
+                os.path.join(scenario_directory, str(subproblem),
+                             "pass_through_inputs")
+            if not os.path.exists(pass_through_directory):
+                os.makedirs(pass_through_directory)
+            with open(
+                    os.path.join(
+                        pass_through_directory,
+                        "fixed_commitment.tab"
+                    ), "w", newline=""
+            ) as fixed_commitment_file:
+                fixed_commitment_writer = csv.writer(
+                    fixed_commitment_file,
+                    delimiter="\t", lineterminator="\n"
+                )
+                fixed_commitment_writer.writerow(
+                    ["project", "timepoint", "stage",
+                     "final_commitment_stage", "commitment"])
 
 
 def delete_prior_aux_files(scenario_directory):
@@ -310,7 +345,9 @@ def main(args=None):
     #  some validation
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblem_structure = get_subproblem_structure_from_db(
+        conn=conn, scenario_id=scenario_id
+    )
     solver_options = SolverOptions(conn=conn, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
@@ -321,8 +358,8 @@ def main(args=None):
     # This tells the determine_modules function to include the
     # stages-related modules
     stages_flag = any([
-        len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
-        subproblems.SUBPROBLEM_STAGE_DICT.keys()
+        len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
+        list(subproblem_structure.SUBPROBLEM_STAGES.keys())
     ])
 
     # Figure out which modules to use and load the modules
@@ -333,7 +370,7 @@ def main(args=None):
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
-        subproblems=subproblems,
+        subproblem_structure=subproblem_structure,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subscenarios=subscenarios,

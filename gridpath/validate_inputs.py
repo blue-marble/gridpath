@@ -31,7 +31,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems
+    get_subproblem_structure_from_db
 
 
 def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn):
@@ -55,9 +55,9 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
     #  each table in the database? Problem is that you don't necessarily want
     #  to check the full table but only the appropriate subscenario
 
-    subproblems_list = subproblems.SUBPROBLEMS
+    subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
         for stage in stages:
             # 1. input validation within each module
             for m in loaded_modules:
@@ -447,7 +447,7 @@ def main(args=None):
     # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblem_structure = get_subproblem_structure_from_db(conn=conn, scenario_id=scenario_id)
 
     # Check whether subscenario_ids are valid
     is_valid = validate_subscenario_ids(scenario_id, subscenarios, optional_features, conn)
@@ -462,8 +462,8 @@ def main(args=None):
         # This tells the determine_modules function to include the
         # stages-related modules
         stages_flag = any([
-            len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
-            subproblems.SUBPROBLEM_STAGE_DICT.keys()
+            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
+            list(subproblem_structure.SUBPROBLEM_STAGES.keys())
         ])
         modules_to_use = determine_modules(
             features=feature_list, multi_stage=stages_flag
@@ -471,7 +471,7 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn)
+        validate_inputs(subproblem_structure, loaded_modules, scenario_id, subscenarios, conn)
     else:
         if not parsed_arguments.quiet:
             print("Invalid subscenario ID(s). Skipped detailed input validation.")
