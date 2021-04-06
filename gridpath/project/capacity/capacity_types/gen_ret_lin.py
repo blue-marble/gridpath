@@ -44,7 +44,7 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_missing_inputs
 from gridpath.project.capacity.capacity_types.common_methods import \
     spec_get_inputs_from_database, spec_write_tab_file, \
-    update_capacity_results_table
+    spec_determine_inputs, update_capacity_results_table
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -288,65 +288,19 @@ def load_model_data(
     :return:
     """
 
-    def determine_gen_ret_lin_projects():
-        gen_ret_lin_projects = list()
-
-        df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "projects.tab"),
-            sep="\t",
-            usecols=["project", "capacity_type"]
-        )
-        for row in zip(df["project"],
-                       df["capacity_type"]):
-            if row[1] == "gen_ret_lin":
-                gen_ret_lin_projects.append(row[0])
-            else:
-                pass
-
-        return gen_ret_lin_projects
-
-    def determine_period_params():
-        generators_list = determine_gen_ret_lin_projects()
-        generator_period_list = list()
-        gen_ret_lin_capacity_mw_dict = dict()
-        gen_ret_lin_fixed_cost_per_mw_yr_dict = dict()
-        df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "spec_capacity_period_params.tab"),
-            sep="\t"
+    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
+        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+        spec_determine_inputs(
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, capacity_type="gen_ret_lin"
         )
 
-        for row in zip(df["project"],
-                       df["period"],
-                       df["specified_capacity_mw"],
-                       df["fixed_cost_per_mw_yr"]):
-            if row[0] in generators_list:
-                generator_period_list.append((row[0], row[1]))
-                gen_ret_lin_capacity_mw_dict[(row[0], row[1])] = float(row[2])
-                gen_ret_lin_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
-                    float(row[3])
-            else:
-                pass
+    data_portal.data()["GEN_RET_LIN_OPR_PRDS"] = {None: project_period_list}
 
-        gen_w_params = [gp[0] for gp in generator_period_list]
-        diff = list(set(generators_list) - set(gen_w_params))
-        if diff:
-            raise ValueError("Missing capacity/fixed cost inputs for the "
-                             "following gen_ret_lin projects: {}".format(diff))
-
-        return generator_period_list, \
-            gen_ret_lin_capacity_mw_dict, \
-            gen_ret_lin_fixed_cost_per_mw_yr_dict
-
-    data_portal.data()["GEN_RET_LIN_OPR_PRDS"] = \
-        {None: determine_period_params()[0]}
-
-    data_portal.data()["gen_ret_lin_capacity_mw"] = \
-        determine_period_params()[1]
+    data_portal.data()["gen_ret_lin_capacity_mw"] = spec_capacity_mw_dict
 
     data_portal.data()["gen_ret_lin_fixed_cost_per_mw_yr"] = \
-        determine_period_params()[2]
+        spec_fixed_cost_per_mw_yr_dict
 
 
 def export_results(
