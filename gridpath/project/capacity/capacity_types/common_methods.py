@@ -173,47 +173,57 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 def spec_write_tab_file(
     scenario_directory, subproblem, stage, spec_project_params
 ):
-    # If specified_generation_period_params.tab file already exists, append
+    # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "specified_generation_period_params.tab")
+                                   "spec_capacity_period_params.tab")
                       ):
         with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
+                               "spec_capacity_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
             for row in spec_project_params:
                 [project, period, specified_capacity_mw,
                  specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                 fixed_cost_per_mw_year, fixed_cost_per_mwh_year] \
                     = row
                 writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
+                    [project, period,
+                     specified_capacity_mw,
+                     specified_capacity_mwh,
+                     fixed_cost_per_mw_year,
+                     fixed_cost_per_mwh_year]
                 )
-    # If specified_generation_period_params.tab file does not exist,
+    # If spec_capacity_period_params.tab file does not exist,
     # write header first, then add input data
     else:
         with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
+                               "spec_capacity_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
-                ["project", "period", "specified_capacity_mw",
-                 "fixed_cost_per_mw_yr"]
+                ["project", "period",
+                 "specified_capacity_mw",
+                 "specified_capacity_mwh",
+                 "fixed_cost_per_mw_yr",
+                 "fixed_cost_per_mwh_yr"]
             )
 
             # Write input data
             for row in spec_project_params:
                 [project, period, specified_capacity_mw,
                  specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                 fixed_cost_per_mw_year,
+                 fixed_cost_per_mwh_year] \
                     = row
                 writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
+                    [project, period,
+                     specified_capacity_mw,
+                     specified_capacity_mwh,
+                     fixed_cost_per_mw_year,
+                     fixed_cost_per_mwh_year]
                 )

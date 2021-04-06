@@ -274,7 +274,7 @@ def load_model_data(
         gen_ret_bin_fixed_cost_per_mw_yr_dict = dict()
         df = pd.read_csv(
             os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "specified_generation_period_params.tab"),
+                         "spec_capacity_period_params.tab"),
             sep="\t"
         )
 
@@ -411,7 +411,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    specified_generation_period_params.tab file.
+    spec_capacity_period_params.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -423,7 +423,7 @@ def write_model_inputs(
     spec_project_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    # If specified_generation_period_params.tab file already exists, append
+    # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
         scenario_directory=scenario_directory, subproblem=subproblem,
