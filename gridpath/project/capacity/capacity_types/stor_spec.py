@@ -40,6 +40,8 @@ from gridpath.auxiliary.dynamic_components import \
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
+from gridpath.project.capacity.capacity_types.common_methods import \
+    spec_get_inputs_from_database
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -204,7 +206,7 @@ def load_model_data(
 ###############################################################################
 
 def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+    scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -213,43 +215,14 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    stor_capacities = c.execute(
-        """SELECT project, period, specified_capacity_mw,
-        specified_capacity_mwh,
-        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        INNER JOIN
-        (SELECT project, period, specified_capacity_mw,
-        specified_capacity_mwh
-        FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}) as capacity
-        USING (project, period)
-        INNER JOIN
-        (SELECT project, period,
-        annual_fixed_cost_per_mw_year,
-        annual_fixed_cost_per_mwh_year
-        FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 
-        'stor_spec';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+    spec_params = spec_get_inputs_from_database(
+        conn=conn, subscenarios=subscenarios, capacity_type="stor_spec"
     )
-    return stor_capacities
+    return spec_params
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -262,7 +235,7 @@ def write_model_inputs(
     :return:
     """
 
-    stor_capacities = get_model_inputs_from_database(
+    spec_project_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -279,8 +252,15 @@ def write_model_inputs(
              "storage_specified_fixed_cost_per_mwh_yr"]
         )
 
-        for row in stor_capacities:
-            writer.writerow(row)
+        for row in spec_project_params:
+            [project, period, specified_capacity_mw, specified_capacity_mwh,
+             annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                = row
+            writer.writerow(
+                [project, period,
+                 specified_capacity_mw, specified_capacity_mwh,
+                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year]
+            )
 
 
 # Validation
