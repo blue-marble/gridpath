@@ -29,8 +29,8 @@ decisions.
 
 """
 
-import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -40,6 +40,8 @@ from gridpath.auxiliary.dynamic_components import \
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
+from gridpath.project.capacity.capacity_types.common_methods import \
+    spec_get_inputs_from_database, spec_write_tab_file, spec_determine_inputs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -184,27 +186,33 @@ def new_capacity_rule(mod, g, p):
 def load_model_data(
     m, d, data_portal, scenario_directory, subproblem, stage
 ):
-    data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "storage_specified_capacities.tab"),
-        index=m.STOR_SPEC_OPR_PRDS,
-        select=("project", "period",
-                "storage_specified_power_capacity_mw",
-                "storage_specified_energy_capacity_mwh",
-                "storage_specified_fixed_cost_per_mw_yr",
-                "storage_specified_fixed_cost_per_mwh_yr"),
-        param=(m.stor_spec_power_capacity_mw,
-               m.stor_spec_energy_capacity_mwh,
-               m.stor_spec_fixed_cost_per_mw_yr,
-               m.stor_spec_fixed_cost_per_mwh_yr)
-    )
+    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
+        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+        spec_determine_inputs(
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, capacity_type="stor_spec"
+        )
+
+    data_portal.data()["STOR_SPEC_OPR_PRDS"] = \
+        {None: project_period_list}
+
+    data_portal.data()["stor_spec_power_capacity_mw"] = spec_capacity_mw_dict
+
+    data_portal.data()["stor_spec_energy_capacity_mwh"] = \
+        spec_capacity_mwh_dict
+
+    data_portal.data()["stor_spec_fixed_cost_per_mw_yr"] = \
+        spec_fixed_cost_per_mw_yr_dict
+
+    data_portal.data()["stor_spec_fixed_cost_per_mwh_yr"] = \
+        spec_fixed_cost_per_mwh_yr_dict
 
 
 # Database
 ###############################################################################
 
 def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+    scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -213,47 +221,17 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    stor_capacities = c.execute(
-        """SELECT project, period, specified_capacity_mw,
-        specified_capacity_mwh,
-        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        INNER JOIN
-        (SELECT project, period, specified_capacity_mw,
-        specified_capacity_mwh
-        FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}) as capacity
-        USING (project, period)
-        INNER JOIN
-        (SELECT project, period,
-        annual_fixed_cost_per_mw_year,
-        annual_fixed_cost_per_mwh_year
-        FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 
-        'stor_spec';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+    spec_params = spec_get_inputs_from_database(
+        conn=conn, subscenarios=subscenarios, capacity_type="stor_spec"
     )
-    return stor_capacities
+    return spec_params
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
-    Get inputs from database and write out the model input
-    storage_specified_capacities.tab file
+    Get inputs from database and write out the model input .tab file
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -262,25 +240,15 @@ def write_model_inputs(
     :return:
     """
 
-    stor_capacities = get_model_inputs_from_database(
+    spec_project_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "storage_specified_capacities.tab"),
-              "w", newline="") as f:
-        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["project", "period",
-             "storage_specified_power_capacity_mw",
-             "storage_specified_energy_capacity_mwh",
-             "storage_specified_fixed_cost_per_mw_yr",
-             "storage_specified_fixed_cost_per_mwh_yr"]
-        )
-
-        for row in stor_capacities:
-            writer.writerow(row)
+    # If spec_capacity_period_params.tab file already exists, append
+    # rows to it
+    spec_write_tab_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, spec_project_params=spec_project_params
+    )
 
 
 # Validation
