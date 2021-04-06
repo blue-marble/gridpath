@@ -36,7 +36,8 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
 from gridpath.project.capacity.capacity_types.common_methods import \
-    spec_get_inputs_from_database, update_capacity_results_table
+    spec_get_inputs_from_database, spec_write_tab_file, \
+    update_capacity_results_table
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -406,7 +407,7 @@ def get_model_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -424,48 +425,10 @@ def write_model_inputs(
 
     # If specified_generation_period_params.tab file already exists, append
     # rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "specified_generation_period_params.tab")
-                      ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
-                  "a") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-            for row in spec_project_params:
-                [project, period, specified_capacity_mw,
-                 specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
-                    = row
-                writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
-                )
-    # If specified_generation_period_params.tab file does not exist,
-    # write header first, then add input data
-    else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
-                  "w", newline="") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                ["project", "period", "specified_capacity_mw",
-                 "fixed_cost_per_mw_yr"]
-            )
-
-            # Write input data
-            for row in spec_project_params:
-                [project, period, specified_capacity_mw,
-                 specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
-                    = row
-                writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
-                )
+    spec_write_tab_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, spec_project_params=spec_project_params
+    )
 
 
 def import_results_into_database(
