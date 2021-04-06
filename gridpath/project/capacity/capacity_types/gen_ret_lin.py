@@ -44,7 +44,9 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_missing_inputs
 
 from gridpath.project.capacity.capacity_types.common_methods import \
-    update_capacity_results_table
+    spec_get_inputs_from_database, update_capacity_results_table
+
+
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -427,8 +429,9 @@ def summarize_results(
 # Database
 ###############################################################################
 
+
 def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+    scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -437,36 +440,10 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    # Select generators of 'gen_ret_lin' capacity type only
-    ep_capacities = c.execute(
-        """SELECT project, period, specified_capacity_mw,
-        annual_fixed_cost_per_mw_year
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        INNER JOIN
-        (SELECT project, period, specified_capacity_mw
-        FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}) as capacity
-        USING (project, period)
-        INNER JOIN
-        (SELECT project, period, 
-        annual_fixed_cost_per_mw_year
-        FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'gen_ret_lin';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+    spec_params = spec_get_inputs_from_database(
+        conn=conn, subscenarios=subscenarios, capacity_type="gen_ret_lin"
     )
-    return ep_capacities
+    return spec_params
 
 
 def write_model_inputs(
@@ -483,7 +460,7 @@ def write_model_inputs(
     :return:
     """
 
-    ep_capacities = get_model_inputs_from_database(
+    spec_project_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     # If specified_generation_period_params.tab file already exists, append
@@ -496,8 +473,15 @@ def write_model_inputs(
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
-            for row in ep_capacities:
-                writer.writerow(row)
+            for row in spec_project_params:
+                [project, period, specified_capacity_mw,
+                 specified_capacity_mwh,
+                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                    = row
+                writer.writerow(
+                    [project, period, specified_capacity_mw,
+                     annual_fixed_cost_per_mw_year]
+                )
     # If specified_generation_period_params.tab file does not exist,
     # write header first, then add input data
     else:
@@ -514,8 +498,15 @@ def write_model_inputs(
             )
 
             # Write input data
-            for row in ep_capacities:
-                writer.writerow(row)
+            for row in spec_project_params:
+                [project, period, specified_capacity_mw,
+                 specified_capacity_mwh,
+                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                    = row
+                writer.writerow(
+                    [project, period, specified_capacity_mw,
+                     annual_fixed_cost_per_mw_year]
+                )
 
 
 def import_results_into_database(

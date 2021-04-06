@@ -129,3 +129,42 @@ def update_capacity_results_table(
         """
 
     spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+
+
+# Specified projects common functions
+def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
+    c = conn.cursor()
+    spec_project_params = \
+        c.execute(
+        """SELECT project, period, specified_capacity_mw,
+        specified_capacity_mwh,
+        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period, specified_capacity_mw,
+        specified_capacity_mwh
+        FROM inputs_project_specified_capacity
+        WHERE project_specified_capacity_scenario_id = {}) as capacity
+        USING (project, period)
+        INNER JOIN
+        (SELECT project, period,
+        annual_fixed_cost_per_mw_year,
+        annual_fixed_cost_per_mwh_year
+        FROM inputs_project_specified_fixed_cost
+        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = '{}'
+        ;""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            capacity_type
+        )
+    )
+    return spec_project_params
