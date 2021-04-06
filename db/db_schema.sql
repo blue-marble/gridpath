@@ -695,9 +695,9 @@ project VARCHAR(64),
 period INTEGER,
 specified_capacity_mw FLOAT,
 specified_capacity_mwh FLOAT,
-gen_hyb_specified_capacity_mw FLOAT, --e.g. CAES turbine
-stor_hyb_specified_capacity_mw FLOAT, --e.g. battery tightly-coupled with PV
-stor_hyb_specified_capacity_mwh FLOAT, --e.g. battery tightly-coupled with PV
+hyb_gen_specified_capacity_mw FLOAT, --e.g. CAES turbine
+hyb_stor_specified_capacity_mw FLOAT, --e.g. battery tightly-coupled with PV
+hyb_stor_specified_capacity_mwh FLOAT, --e.g. battery tightly-coupled with PV
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)

@@ -1,4 +1,4 @@
-project,period,specified_capacity_mw,specified_capacity_mwh,gen_hyb_specified_capacity_mw,stor_hyb_specified_capacity_mw,stor_hyb_specified_capacity_mwh
+project,period,specified_capacity_mw,specified_capacity_mwh,hyb_gen_specified_capacity_mw,hyb_stor_specified_capacity_mw,hyb_stor_specified_capacity_mwh
 Nuclear,2020,6,,,
 Coal,2020,6,,,
 Gas_CCGT,2020,6,,,
