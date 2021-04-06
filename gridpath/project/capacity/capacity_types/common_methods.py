@@ -14,6 +14,7 @@
 
 import csv
 import os.path
+import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
@@ -173,47 +174,125 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 def spec_write_tab_file(
     scenario_directory, subproblem, stage, spec_project_params
 ):
-    # If specified_generation_period_params.tab file already exists, append
+    # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "specified_generation_period_params.tab")
+                                   "spec_capacity_period_params.tab")
                       ):
         with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
+                               "spec_capacity_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
             for row in spec_project_params:
                 [project, period, specified_capacity_mw,
                  specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                 fixed_cost_per_mw_year, fixed_cost_per_mwh_year] \
                     = row
                 writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
+                    [project, period,
+                     specified_capacity_mw,
+                     specified_capacity_mwh,
+                     fixed_cost_per_mw_year,
+                     fixed_cost_per_mwh_year]
                 )
-    # If specified_generation_period_params.tab file does not exist,
+    # If spec_capacity_period_params.tab file does not exist,
     # write header first, then add input data
     else:
         with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
+                               "spec_capacity_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
-                ["project", "period", "specified_capacity_mw",
-                 "fixed_cost_per_mw_yr"]
+                ["project", "period",
+                 "specified_capacity_mw",
+                 "specified_capacity_mwh",
+                 "fixed_cost_per_mw_yr",
+                 "fixed_cost_per_mwh_yr"]
             )
 
             # Write input data
             for row in spec_project_params:
                 [project, period, specified_capacity_mw,
                  specified_capacity_mwh,
-                 annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year] \
+                 fixed_cost_per_mw_year,
+                 fixed_cost_per_mwh_year] \
                     = row
                 writer.writerow(
-                    [project, period, specified_capacity_mw,
-                     annual_fixed_cost_per_mw_year]
+                    [project, period,
+                     specified_capacity_mw,
+                     specified_capacity_mwh,
+                     fixed_cost_per_mw_year,
+                     fixed_cost_per_mwh_year]
                 )
+
+
+def spec_determine_inputs(
+    scenario_directory, subproblem, stage, capacity_type
+):
+
+    # Determine the relevant projects
+    project_list = list()
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "projects.tab"),
+        sep="\t",
+        usecols=["project", "capacity_type"]
+    )
+
+    for row in zip(df["project"],
+                   df["capacity_type"]):
+        if row[1] == capacity_type:
+            project_list.append(row[0])
+        else:
+            pass
+
+    # Determine the operational periods & params for each project/period
+    project_period_list = list()
+    spec_capacity_mw_dict = dict()
+    spec_capacity_mwh_dict = dict()
+    spec_fixed_cost_per_mw_yr_dict = dict()
+    spec_fixed_cost_per_mwh_yr_dict = dict()
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "spec_capacity_period_params.tab"),
+        sep="\t"
+    )
+
+    for row in zip(df["project"],
+                   df["period"],
+                   df["specified_capacity_mw"],
+                   df["specified_capacity_mwh"],
+                   df["fixed_cost_per_mw_yr"],
+                   df["fixed_cost_per_mwh_yr"]):
+        if row[0] in project_list:
+            project_period_list.append((row[0], row[1]))
+            spec_capacity_mw_dict[(row[0], row[1])] = \
+                float(row[2])
+            spec_capacity_mwh_dict[(row[0], row[1])] = \
+                float(row[3])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[4])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+                float(row[5])
+        else:
+            pass
+
+    # Quick check that all relevant projects from projects.tab have capacity
+    # params specified
+    projects_w_params = [gp[0] for gp in project_period_list]
+    diff = list(set(project_list) - set(projects_w_params))
+    if diff:
+        raise ValueError("Missing capacity/fixed cost inputs for the "
+                         "following gen_spec projects: {}".format(diff))
+
+    return project_period_list, \
+        spec_capacity_mw_dict, \
+        spec_capacity_mwh_dict, \
+        spec_fixed_cost_per_mw_yr_dict, \
+        spec_fixed_cost_per_mwh_yr_dict
