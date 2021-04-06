@@ -715,8 +715,11 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-annual_fixed_cost_per_mw_year FLOAT,
-annual_fixed_cost_per_mwh_year FLOAT,
+fixed_cost_per_mw_year FLOAT,
+fixed_cost_per_mwh_year FLOAT,
+hyb_gen_fixed_cost_per_mw_yr FLOAT,
+hyb_stor_fixed_cost_per_mw_yr FLOAT,
+hyb_stor_fixed_cost_per_mwh_yr FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost

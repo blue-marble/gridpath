@@ -139,7 +139,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         c.execute(
         """SELECT project, period, specified_capacity_mw,
         specified_capacity_mwh,
-        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
+        fixed_cost_per_mw_year, fixed_cost_per_mwh_year
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
@@ -147,14 +147,15 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, specified_capacity_mw,
-        specified_capacity_mwh
+        specified_capacity_mwh, hyb_gen_specified_capacity_mw, 
+        hyb_stor_specified_capacity_mw, hyb_stor_specified_capacity_mwh
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
-        annual_fixed_cost_per_mw_year,
-        annual_fixed_cost_per_mwh_year
+        fixed_cost_per_mw_year,
+        fixed_cost_per_mwh_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)

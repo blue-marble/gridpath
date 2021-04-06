@@ -19,11 +19,6 @@ investment cost. See the "gen_stor_hyb_spec" capacity type for more informatin o
 "specified" projects in GridPath.
 """
 
-
-from builtins import zip
-import csv
-import os.path
-import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -32,6 +27,8 @@ from gridpath.auxiliary.dynamic_components import \
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
+from gridpath.project.capacity.capacity_types.common_methods import \
+    spec_get_inputs_from_database, spec_write_tab_file, spec_determine_inputs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -170,9 +167,9 @@ def new_capacity_rule(mod, g, p):
     """
     return 0
 
-
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(
     m, d, data_portal, scenario_directory, subproblem, stage
@@ -186,74 +183,19 @@ def load_model_data(
     :param stage:
     :return:
     """
-
-    def determine_gen_stor_hyb_spec_projects():
-        """
-        Find the gen_stor_hyb_spec capacity type projects
-        :return:
-        """
-
-        gen_stor_hyb_spec_projects = list()
-
-        df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "projects.tab"),
-            sep="\t",
-            usecols=["project", "capacity_type"]
+    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
+        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+        spec_determine_inputs(
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, capacity_type="gen_stor_hyb_spec"
         )
 
-        for row in zip(df["project"],
-                       df["capacity_type"]):
-            if row[1] == "gen_stor_hyb_spec":
-                gen_stor_hyb_spec_projects.append(row[0])
-            else:
-                pass
+    data_portal.data()["GEN_SPEC_OPR_PRDS"] = project_period_list
 
-        return gen_stor_hyb_spec_projects
+    data_portal.data()["gen_spec_capacity_mw"] = spec_capacity_mw_dict
 
-    def determine_period_params():
-        generators_list = determine_gen_stor_hyb_spec_projects()
-        generator_period_list = list()
-        gen_stor_hyb_spec_capacity_mw_dict = dict()
-        gen_stor_hyb_spec_fixed_cost_per_mw_yr_dict = dict()
-        df = pd.read_csv(
-            os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                         "specified_generation_period_params.tab"),
-            sep="\t"
-        )
-
-        for row in zip(df["project"],
-                       df["period"],
-                       df["specified_capacity_mw"],
-                       df["fixed_cost_per_mw_yr"],
-                       df[""]):
-            if row[0] in generators_list:
-                generator_period_list.append((row[0], row[1]))
-                gen_stor_hyb_spec_capacity_mw_dict[(row[0], row[1])] = \
-                    float(row[2])
-                gen_stor_hyb_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
-                    float(row[3])
-            else:
-                pass
-
-        gen_w_params = [gp[0] for gp in generator_period_list]
-        diff = list(set(generators_list) - set(gen_w_params))
-        if diff:
-            raise ValueError("Missing capacity/fixed cost inputs for the "
-                             "following gen_stor_hyb_spec projects: {}".format(diff))
-
-        return generator_period_list, \
-            gen_stor_hyb_spec_capacity_mw_dict, \
-            gen_stor_hyb_spec_fixed_cost_per_mw_yr_dict
-
-    data_portal.data()["GEN_STOR_HYB_SPEC_OPR_PRDS"] = \
-        {None: determine_period_params()[0]}
-
-    data_portal.data()["gen_stor_hyb_spec_capacity_mw"] = \
-        determine_period_params()[1]
-
-    data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mw_yr"] = \
-        determine_period_params()[2]
+    data_portal.data()["gen_spec_fixed_cost_per_mw_yr"] = \
+        spec_fixed_cost_per_mw_yr_dict
 
 
 # Database
@@ -269,36 +211,10 @@ def get_model_inputs_from_database(
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    # Select generators of 'gen_stor_hyb_spec' capacity type only
-    ep_capacities = c.execute(
-        """SELECT project, period, specified_capacity_mw,
-        annual_fixed_cost_per_mw_year
-        FROM inputs_project_portfolios
-        CROSS JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        INNER JOIN
-        (SELECT project, period, specified_capacity_mw
-        FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}) as capacity
-        USING (project, period)
-        INNER JOIN
-        (SELECT project, period, 
-        annual_fixed_cost_per_mw_year
-        FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'gen_stor_hyb_spec';""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
+    spec_params = spec_get_inputs_from_database(
+        conn=conn, subscenarios=subscenarios, capacity_type="gen_stor_hyb_spec"
     )
-    return ep_capacities
+    return spec_params
 
 
 def write_model_inputs(
@@ -306,7 +222,7 @@ def write_model_inputs(
 ):
     """
     Get inputs from database and write out the model input
-    specified_generation_period_params.tab file
+    spec_capacity_period_params.tab file
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -315,39 +231,15 @@ def write_model_inputs(
     :return:
     """
 
-    ep_capacities = get_model_inputs_from_database(
+    spec_project_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    # If specified_generation_period_params.tab file already exists, append
+    # If spec_capacity_period_params.tab file already exists, append
     # rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "specified_generation_period_params.tab")
-                      ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
-                  "a") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-            for row in ep_capacities:
-                writer.writerow(row)
-    # If specified_generation_period_params.tab file does not exist,
-    # write header first, then add input data
-    else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "specified_generation_period_params.tab"),
-                  "w", newline="") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-
-            # Write header
-            writer.writerow(
-                ["project", "period", "specified_capacity_mw",
-                 "fixed_cost_per_mw_yr"]
-            )
-
-            # Write input data
-            for row in ep_capacities:
-                writer.writerow(row)
+    spec_write_tab_file(
+        scenario_directory=scenario_directory, subproblem=subproblem,
+        stage=stage, spec_project_params=spec_project_params
+    )
 
 
 # Validation
@@ -427,7 +319,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

@@ -27,10 +27,6 @@ of the optimization decisions.
 """
 
 
-from builtins import zip
-import csv
-import os.path
-import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -289,7 +285,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
