@@ -288,8 +288,7 @@ def load_model_data(
     :return:
     """
 
-    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
-        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+    project_period_list, spec_params_dict = \
         spec_determine_inputs(
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, capacity_type="gen_ret_lin"
@@ -297,10 +296,11 @@ def load_model_data(
 
     data_portal.data()["GEN_RET_LIN_OPR_PRDS"] = {None: project_period_list}
 
-    data_portal.data()["gen_ret_lin_capacity_mw"] = spec_capacity_mw_dict
+    data_portal.data()["gen_ret_lin_capacity_mw"] = \
+        spec_params_dict["specified_capacity_mw"]
 
     data_portal.data()["gen_ret_lin_fixed_cost_per_mw_yr"] = \
-        spec_fixed_cost_per_mw_yr_dict
+        spec_params_dict["fixed_cost_per_mw_yr"]
 
 
 def export_results(

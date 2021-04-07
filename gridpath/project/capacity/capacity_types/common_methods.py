@@ -323,8 +323,10 @@ def spec_determine_inputs(
         raise ValueError("Missing capacity/fixed cost inputs for the "
                          "following projects: {}".format(diff))
 
-    return project_period_list, \
-        spec_capacity_mw_dict, \
-        spec_capacity_mwh_dict, \
-        spec_fixed_cost_per_mw_yr_dict, \
-        spec_fixed_cost_per_mwh_yr_dict
+    main_dict = dict()
+    main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
+    main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
+    main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
+    main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
+
+    return project_period_list, main_dict

@@ -183,19 +183,11 @@ def load_model_data(
     :param stage:
     :return:
     """
-    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
-        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+    project_period_list, spec_params_dict = \
         spec_determine_inputs(
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, capacity_type="gen_stor_hyb_spec"
         )
-
-    data_portal.data()["GEN_SPEC_OPR_PRDS"] = project_period_list
-
-    data_portal.data()["gen_spec_capacity_mw"] = spec_capacity_mw_dict
-
-    data_portal.data()["gen_spec_fixed_cost_per_mw_yr"] = \
-        spec_fixed_cost_per_mw_yr_dict
 
 
 # Database
