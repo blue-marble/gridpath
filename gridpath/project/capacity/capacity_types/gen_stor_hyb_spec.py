@@ -188,6 +188,26 @@ def load_model_data(
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, capacity_type="gen_stor_hyb_spec"
         )
+    
+    data_portal.data()["GEN_STOR_HYB_SPEC_OPR_PRDS"] = project_period_list
+
+    data_portal.data()["gen_stor_hyb_spec_capacity_mw"] = \
+        spec_params_dict["specified_capacity_mw"]
+
+    data_portal.data()["gen_stor_hyb_spec_hyb_stor_capacity_mw"] = \
+        spec_params_dict["hyb_stor_specified_capacity_mw"]
+
+    data_portal.data()["gen_stor_hyb_spec_hyb_stor_capacity_mwh"] = \
+        spec_params_dict["hyb_stor_specified_capacity_mwh"]
+
+    data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mw_yr"] = \
+        spec_params_dict["fixed_cost_per_mw_yr"]
+
+    data_portal.data()["gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr"] = \
+        spec_params_dict["hyb_stor_fixed_cost_per_mw_yr"]
+
+    data_portal.data()["gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mwh_yr"] = \
+        spec_params_dict["hyb_stor_fixed_cost_per_mwh_yr"]
 
 
 # Database
