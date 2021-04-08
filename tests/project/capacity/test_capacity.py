@@ -170,17 +170,6 @@ class TestCapacity(unittest.TestCase):
         ])
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
-        # Set: STOR_OPR_PRDS
-        # Manually add specified storage
-        ss = [("Battery_Specified", 2020)]
-        expected_storage_proj_period_set = sorted(ss + ns + nsb + dr)
-        actual_storage_proj_period_set = sorted([
-            (prj, period) for (prj, period)
-            in instance.STOR_OPR_PRDS
-        ])
-        self.assertListEqual(expected_storage_proj_period_set,
-                             actual_storage_proj_period_set)
-
         # Set: OPR_PRDS_BY_PRJ
         op_per_by_proj_dict = dict()
         for proj_per in expected_proj_period_set:

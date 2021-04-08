@@ -23,7 +23,7 @@ import os.path
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.capacity.common_functions import \
-    load_gen_storage_capacity_type_modules
+    load_project_capacity_type_modules
 from gridpath.auxiliary.db_interface import \
     get_required_capacity_types_from_database, setup_results_import
 
@@ -41,7 +41,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Load in the required capacity type modules
     required_capacity_type_modules = \
         get_required_capacity_types_from_database(conn, scenario_id,)
-    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_type_modules = load_project_capacity_type_modules(
         required_capacity_type_modules)
 
     # Validate module-specific inputs
@@ -70,7 +70,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
     required_capacity_type_modules = \
         get_required_capacity_types_from_database(conn, scenario_id)
-    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_type_modules = load_project_capacity_type_modules(
         required_capacity_type_modules)
 
     # Get module-specific inputs
@@ -158,7 +158,7 @@ def import_results_into_database(
     # Load in the required capacity type modules
     required_capacity_type_modules = \
         get_required_capacity_types_from_database(db, scenario_id)
-    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_type_modules = load_project_capacity_type_modules(
         required_capacity_type_modules)
 
     # Import module-specific results
@@ -171,3 +171,29 @@ def import_results_into_database(
             )
         else:
             pass
+
+# Capacity Type Module Method Defaults
+###############################################################################
+def capacity_rule(mod, g, p):
+    """
+    """
+    return 0
+
+
+def energy_capacity_rule(mod, g, p):
+    """
+    """
+    return 0
+
+
+def capacity_cost_rule(mod, g, p):
+    """
+    """
+    return 0
+
+
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    """
+    return 0

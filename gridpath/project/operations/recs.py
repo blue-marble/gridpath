@@ -30,7 +30,7 @@ from gridpath.project.operations.common_functions import \
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_idxs
-import gridpath.project.operations.operational_types as op_type
+import gridpath.project.operations.operational_types as op_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -151,13 +151,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         This how many RECs are scheduled to be delivered at the timepoint
         (hourly) schedule.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "rec_provision_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 rec_provision_rule(mod, prj, tmp)
         else:
-            return op_type.rec_provision_rule(mod, prj, tmp)
+            return op_type_init.rec_provision_rule(mod, prj, tmp)
 
     m.Scheduled_RPS_Energy_MW = Expression(
         m.RPS_PRJ_OPR_TMPS, 
@@ -170,13 +170,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         curtailed RPS energy for example -- this is the scheduled
         curtailment component.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "scheduled_curtailment_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 scheduled_curtailment_rule(mod, prj, tmp)
         else:
-            return op_type.scheduled_curtailment_rule(mod, prj, tmp)
+            return op_type_init.scheduled_curtailment_rule(mod, prj, tmp)
 
     m.Scheduled_Curtailment_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,
@@ -188,13 +188,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         This how many RECs are scheduled to be delivered through sub-hourly
         dispatch (upward reserve dispatch).
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "subhourly_energy_delivered_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 subhourly_energy_delivered_rule(mod, prj, tmp)
         else:
-            return op_type.subhourly_energy_delivered_rule(mod, prj, tmp)
+            return op_type_init.subhourly_energy_delivered_rule(mod, prj, tmp)
 
     m.Subhourly_RPS_Energy_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,
@@ -207,13 +207,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         curtailed RPS energy for example -- this is the subhourly
         curtailment component (downward reserve dispatch).
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "subhourly_curtailment_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 subhourly_curtailment_rule(mod, prj, tmp)
         else:
-            return op_type.subhourly_curtailment_rule(mod, prj, tmp)
+            return op_type_init.subhourly_curtailment_rule(mod, prj, tmp)
 
     m.Subhourly_Curtailment_MW = Expression(
         m.RPS_PRJ_OPR_TMPS,

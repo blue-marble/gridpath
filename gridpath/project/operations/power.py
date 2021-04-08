@@ -32,7 +32,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import \
     load_operational_type_modules
-import gridpath.project.operations.operational_types as op_type
+import gridpath.project.operations.operational_types as op_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -87,7 +87,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return imported_operational_modules[gen_op_type].\
                 power_provision_rule(mod, prj, tmp)
         else:
-            return op_type.power_provision_rule(mod, prj, tmp)
+            return op_type_init.power_provision_rule(mod, prj, tmp)
 
     m.Power_Provision_MW = Expression(
         m.PRJ_OPR_TMPS,

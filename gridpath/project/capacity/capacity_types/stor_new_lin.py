@@ -39,8 +39,7 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, \
-    storage_only_capacity_type_operational_period_sets
+    capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_column_monotonicity
@@ -453,11 +452,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Add to list of sets we'll join to get the final
     # PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "STOR_NEW_LIN_OPR_PRDS",
-    )
-    # Add to list of sets we'll join to get the final
-    # STOR_OPR_PRDS set
-    getattr(d, storage_only_capacity_type_operational_period_sets).append(
         "STOR_NEW_LIN_OPR_PRDS",
     )
 
