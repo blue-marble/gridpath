@@ -3,7 +3,7 @@
 from gridpath.auxiliary.auxiliary import load_subtype_modules
 
 
-def load_gen_storage_capacity_type_modules(required_capacity_modules):
+def load_project_capacity_type_modules(required_capacity_modules):
     """
     Load a specified set of capacity type modules
     :param required_capacity_modules:
@@ -13,5 +13,5 @@ def load_gen_storage_capacity_type_modules(required_capacity_modules):
     return load_subtype_modules(
         required_subtype_modules=required_capacity_modules,
         package="gridpath.project.capacity.capacity_types",
-        required_attributes=["capacity_rule", "capacity_cost_rule"]
+        required_attributes=[]
     )
