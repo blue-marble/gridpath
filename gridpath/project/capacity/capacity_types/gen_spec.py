@@ -27,10 +27,6 @@ of the optimization decisions.
 """
 
 
-from builtins import zip
-import csv
-import os.path
-import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -153,8 +149,7 @@ def load_model_data(
     :param stage:
     :return:
     """
-    project_period_list, spec_capacity_mw_dict, spec_capacity_mwh_dict, \
-        spec_fixed_cost_per_mw_yr_dict, spec_fixed_cost_per_mwh_yr_dict = \
+    project_period_list, spec_params_dict = \
         spec_determine_inputs(
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, capacity_type="gen_spec"
@@ -162,10 +157,11 @@ def load_model_data(
 
     data_portal.data()["GEN_SPEC_OPR_PRDS"] = project_period_list
 
-    data_portal.data()["gen_spec_capacity_mw"] = spec_capacity_mw_dict
+    data_portal.data()["gen_spec_capacity_mw"] = \
+        spec_params_dict["specified_capacity_mw"]
 
     data_portal.data()["gen_spec_fixed_cost_per_mw_yr"] = \
-        spec_fixed_cost_per_mw_yr_dict
+        spec_params_dict["fixed_cost_per_mw_yr"]
 
 
 # Database
@@ -289,7 +285,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "annual_fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

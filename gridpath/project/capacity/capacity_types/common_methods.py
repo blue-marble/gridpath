@@ -139,7 +139,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         c.execute(
         """SELECT project, period, specified_capacity_mw,
         specified_capacity_mwh,
-        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
+        fixed_cost_per_mw_year, fixed_cost_per_mwh_year
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
@@ -153,8 +153,8 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
-        annual_fixed_cost_per_mw_year,
-        annual_fixed_cost_per_mwh_year
+        fixed_cost_per_mw_year,
+        fixed_cost_per_mwh_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
@@ -291,8 +291,10 @@ def spec_determine_inputs(
         raise ValueError("Missing capacity/fixed cost inputs for the "
                          "following gen_spec projects: {}".format(diff))
 
-    return project_period_list, \
-        spec_capacity_mw_dict, \
-        spec_capacity_mwh_dict, \
-        spec_fixed_cost_per_mw_yr_dict, \
-        spec_fixed_cost_per_mwh_yr_dict
+    main_dict = dict()
+    main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
+    main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
+    main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
+    main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
+
+    return project_period_list, main_dict
