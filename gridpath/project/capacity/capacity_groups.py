@@ -194,7 +194,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return 0
         else:
             if hasattr(imported_capacity_modules[cap_type],
-                       "apacity_rule"):
+                       "capacity_rule"):
                 return imported_capacity_modules[cap_type]. \
                     capacity_rule(mod, prj, prd)
             else:
