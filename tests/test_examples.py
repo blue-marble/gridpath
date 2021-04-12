@@ -184,7 +184,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage")
         self.run_and_check_objective("test_new_build_storage",
-                                     -448459119.992)
+                                     -4484591199.92)
 
     def test_example_test_new_binary_build_storage(self):
         """
@@ -195,7 +195,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_binary_build_storage")
         self.run_and_check_objective("test_new_binary_build_storage",
-                                     -448459187.848)
+                                     -4484591878.4800005)
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
@@ -206,7 +206,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage_cumulative_min_max")
         self.run_and_check_objective("test_new_build_storage_cumulative_min_max",
-                                     -456169238.38699996)
+                                     -4561692383.87)
 
     def test_example_test_no_reserves(self):
         """
