@@ -43,6 +43,7 @@ from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, validate_dtypes, validate_values, validate_columns
 
+
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
@@ -170,6 +171,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=[8760, 8766, 8784]
     )
 
+    m.first_year_represented = Param(
+        m.PERIODS,
+        within=NonNegativeReals
+    )
+
+    m.last_year_represented = Param(
+        m.PERIODS,
+        within=NonNegativeReals
+    )
+
     # TODO: think numbers_years_represent through and figure out appropriate
     #  documentation wording; can we have periods that are smaller than an
     #  year, considering how costs are defined ($/MW-yr)?
@@ -228,10 +239,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "periods.tab"),
         select=("period", "discount_factor", "number_years_represented",
-                "hours_in_full_period"),
+                "hours_in_full_period", "first_year_represented",
+                "last_year_represented"),
         index=m.PERIODS,
         param=(m.discount_factor, m.number_years_represented,
-               m.hours_in_full_period)
+               m.hours_in_full_period, m.first_year_represented,
+               m.last_year_represented)
     )
 
     data_portal.load(
@@ -259,7 +272,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     periods = c.execute(
         """SELECT period, discount_factor, number_years_represented, 
-           hours_in_full_period
+           hours_in_full_period, first_year_represented, last_year_represented
            FROM inputs_temporal_periods
            WHERE temporal_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID
@@ -292,7 +305,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         # Write header
         writer.writerow(
             ["period", "discount_factor", "number_years_represented",
-             "hours_in_full_period"])
+             "hours_in_full_period", "first_year_represented",
+             "last_year_represented"])
 
         for row in periods:
             writer.writerow(row)

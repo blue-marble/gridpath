@@ -1,2 +1,2 @@
-period,discount_factor,number_years_represented,hours_in_full_period
-2020,1,1,8760
+period,discount_factor,number_years_represented,hours_in_full_period,first_year_represented,last_year_represented
+2020,1,1,8760,2020,2020

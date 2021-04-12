@@ -24,11 +24,18 @@ from gridpath.project.common_functions import get_column_row_value
 #  2050 or not -- maybe have options for how this should be treated?
 
 
-def operational_periods_by_project_vintage(periods, vintage, lifetime):
+def operational_periods_by_project_vintage(
+    periods, first_year_represented, last_year_represented,
+    vintage, lifetime_yrs
+):
     """
-    :param periods: the study periods
+    :param periods: the study periods in a list
+    :param first_year_represented: dictionary of the first year of a period
+        by period
+    :param last_year_represented: dictionary of the last year of a period
+        by period
     :param vintage: the project vintage
-    :param lifetime: the project-vintage lifetime
+    :param lifetime_yrs: the project-vintage lifetime
     :return: the operational periods given the study periods and
         the project vintage and lifetime
 
@@ -38,10 +45,13 @@ def operational_periods_by_project_vintage(periods, vintage, lifetime):
     """
     operational_periods = list()
     for p in periods:
-        if vintage <= p < vintage + lifetime:
+        if vintage <= first_year_represented[p] and \
+            vintage + lifetime_yrs \
+                >= last_year_represented[p]:
             operational_periods.append(p)
         else:
             pass
+
     return operational_periods
 
 

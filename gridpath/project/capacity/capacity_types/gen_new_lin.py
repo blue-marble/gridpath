@@ -304,8 +304,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 def operational_periods_by_generator_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v]
+        periods=getattr(mod, "PERIODS"), first_year_represented=getattr(mod, "first_year_represented"), last_year_represented=getattr(mod, "last_year_represented"), vintage=v,
+        lifetime_yrs=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v]
     )
 
 
