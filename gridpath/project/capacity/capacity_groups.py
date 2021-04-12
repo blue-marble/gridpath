@@ -190,7 +190,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         cap_type = mod.capacity_type[prj]
         # Return the capacity type's capacity rule if the project is
         # operational in this timepoint; otherwise, return 0
-        if prd in mod.OPR_PRDS_BY_PRJ[prj]:
+        if prd not in mod.OPR_PRDS_BY_PRJ[prj]:
             return 0
         else:
             if hasattr(imported_capacity_modules[cap_type],
