@@ -256,7 +256,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 def operational_periods_by_storage_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), first_year_represented=getattr(mod, "first_year_represented"), last_year_represented=getattr(mod, "last_year_represented"),
+        periods=getattr(mod, "PERIODS"), period_start_year=getattr(mod, "period_start_year"), period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
         lifetime_yrs=mod.stor_new_bin_lifetime_yrs[prj, v])
 

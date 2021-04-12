@@ -62,7 +62,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
                 2060, 10),
             # fractional years and lifetimes
             5: ([1, 2, 3, 4],
-                {1: 2020, 2: 2020.5, 3: 2021, 4: 2021.5},
+                {1: 2020.0, 2: 2020.5, 3: 2021, 4: 2021.5},
                 {1: 2020.49, 2: 2020.99, 3: 2021.49, 4: 2021.99},
                 2020.2, 0.75)
         }
@@ -77,8 +77,8 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             actual_operational_periods = \
                 MODULE_BEING_TESTED.operational_periods_by_project_vintage(
                     periods=test_case_params[test_case][0],
-                    first_year_represented=test_case_params[test_case][1],
-                    last_year_represented=test_case_params[test_case][2],
+                    period_start_year=test_case_params[test_case][1],
+                    period_end_year=test_case_params[test_case][2],
                     vintage=test_case_params[test_case][3],
                     lifetime_yrs=test_case_params[test_case][4]
                 )
