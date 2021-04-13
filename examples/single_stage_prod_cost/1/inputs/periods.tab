@@ -1,2 +1,2 @@
-period	discount_factor	number_years_represented	hours_in_full_period	period_start_year	period_end_year
-2020	1.0	1.0	8760.0	2020.0	2029.0
+period	discount_factor	hours_in_period_timepoints	period_start_year	period_end_year
+2020	1.0	8760.0	2020.0	2021.0
