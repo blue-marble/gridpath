@@ -257,12 +257,29 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
+
+    # Note that we calculate the hours_in_full_period here by summing up the
+    # number of hours in a period (within a stage and excluding
+    # spinup/lookahead) across all subproblems in the temporal_scenario_id:
     periods = c.execute(
         """SELECT period, discount_factor, number_years_represented, 
            hours_in_full_period
+           FROM
+           (SELECT period, discount_factor, number_years_represented
            FROM inputs_temporal_periods
-           WHERE temporal_scenario_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID
+           WHERE temporal_scenario_id = {}) as main_period_tbl
+           JOIN
+           (SELECT period, sum(number_of_hours_in_timepoint*timepoint_weight) 
+           as hours_in_full_period
+           FROM inputs_temporal
+           WHERE temporal_scenario_id = {}
+           AND spinup_or_lookahead = 0
+           AND stage_id = {}
+           GROUP BY period) as hours_in_full_period_tbl
+           USING (period);""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            stage
         )
     )
 
@@ -326,6 +343,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         conn=conn,
         tables=["inputs_temporal_periods"]
     )
+    # Hard-code data type for hours_in_full_period
+    expected_dtypes["hours_in_full_period"] = "numeric"
 
     # Check dtypes
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
@@ -354,22 +373,3 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         severity="Mid",
         errors=validate_values(df, valid_numeric_columns, "period", min=0)
     )
-
-    # Check values of hours_in_full_period
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_temporal_periods",
-        severity="Mid",
-        errors=validate_columns(
-            df=df,
-            columns="hours_in_full_period",
-            valids=[8760, 8766, 8784]
-        )
-    )
-
-
-
