@@ -20,10 +20,6 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
 
 
-# TODO: if vintage is 2020 and lifetime is 30, is the project available in
-#  2050 or not -- maybe have options for how this should be treated?
-
-
 def operational_periods_by_project_vintage(
     periods, period_start_year, period_end_year,
     vintage, lifetime_yrs
@@ -53,7 +49,7 @@ def operational_periods_by_project_vintage(
     with end year 2030 is actually 2020-12-29). With the current
     formulation, a project with a 10 year lifetime of the 2020 vintage is
     assumed to be operational on 2020-01-01 and remain operational through
-    2029-12-31 (vintage 2020, last operational year 2030). It will be
+    2029-12-31 (vintage 2020, last operational year 2030 exclusive). It will be
     operational in a period with a start year of 2020 and end year of 2030.
 
     If either the vintage or the last operational year is within the period,
