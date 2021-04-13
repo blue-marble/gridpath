@@ -236,7 +236,6 @@ temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-hours_in_full_period FLOAT,
 period_start_year FLOAT,
 period_end_year FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
 PRIMARY KEY (temporal_scenario_id, period),
