@@ -30,21 +30,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.RPS_ZONE_PERIODS_WITH_RPS = Set(
-        dimen=2,
-        within=m.RPS_ZONES * m.PERIODS
+    m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS = Set(
+        dimen=3,
+        within=m.RPS_ZONES * m.BLN_TYPE_HRZS
     )
 
     # RPS target specified in energy terms
     m.rps_target_mwh = Param(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
         within=NonNegativeReals,
         default=0
     )
 
     # RPS target specified in 'percent of load' terms
     m.rps_target_percentage = Param(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
         within=PercentFraction,
         default=0
     )
@@ -55,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.RPS_ZONES * m.LOAD_ZONES
     )
 
-    def rps_target_rule(mod, rps_zone, period):
+    def rps_target_rule(mod, rps_zone, bt, h):
         """
         The RPS target consists of two additive components: an energy term
         and a 'percent of load x load' term, where a mapping between the RPS
@@ -72,18 +72,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
                 for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
                 if _rps_zone == rps_zone
-                for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
+                for tmp in mod.TMPS if tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
             )
             percentage_target = \
-                mod.rps_target_percentage[rps_zone, period] \
+                mod.rps_target_percentage[rps_zone, bt, h] \
                 * total_period_static_load
         else:
             percentage_target = 0
 
-        return mod.rps_target_mwh[rps_zone, period] + percentage_target
+        return mod.rps_target_mwh[rps_zone, bt, h] + percentage_target
 
     m.RPS_Target = Expression(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
         rule=rps_target_rule
     )
 
@@ -103,7 +103,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
-        index=m.RPS_ZONE_PERIODS_WITH_RPS,
+        index=m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
         param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 
@@ -136,13 +136,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get the energy and percent targets
     c = conn.cursor()
     rps_targets = c.execute(
-        """SELECT rps_zone, period, rps_target_mwh, rps_target_percentage
+        """SELECT rps_zone, balancing_type_horizon, horizon, rps_target_mwh, 
+        rps_target_percentage
         FROM inputs_system_rps_targets
         JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
         WHERE temporal_scenario_id = {}) as relevant_periods
-        USING (period)
+        USING (balancing_type_horizon, horizon)
         JOIN
         (SELECT rps_zone
         FROM inputs_geography_rps_zones
@@ -220,7 +221,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
         # Write header
         writer.writerow(
-            ["rps_zone", "period", "rps_target_mwh", "rps_target_percentage"]
+            ["rps_zone", "balancing_type", "horizon", "rps_target_mwh",
+             "rps_target_percentage"]
         )
 
         for row in rps_targets:
