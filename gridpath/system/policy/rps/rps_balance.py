@@ -39,35 +39,30 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.RPS_Shortage_MWh = Var(
-        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
-        within=NonNegativeReals
+        m.RPS_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
     )
 
-    def violation_expression_rule(mod, z, bt, h):
-        return mod.RPS_Shortage_MWh[z, bt, h] * mod.rps_allow_violation[z]
+    def violation_expression_rule(mod, z, p):
+        return mod.RPS_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
 
     m.RPS_Shortage_MWh_Expression = Expression(
-        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
-        rule=violation_expression_rule
+        m.RPS_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
     )
 
-    def rps_target_rule(mod, z, bt, h):
+    def rps_target_rule(mod, z, p):
         """
         Total delivered RPS-eligible energy must exceed target
         :param mod:
         :param z:
-        :param bt:
-        :param h:
+        :param p:
         :return:
         """
-        return mod.Total_Delivered_RPS_Energy_MWh[z, bt, h] \
-            + mod.RPS_Shortage_MWh_Expression[z, bt, h] \
-            >= mod.RPS_Target[z, bt, h]
+        return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
+            + mod.RPS_Shortage_MWh_Expression[z, p] \
+            >= mod.RPS_Target[z, p]
 
-    m.RPS_Target_Constraint = Constraint(
-        m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS,
-        rule=rps_target_rule
-    )
+    m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
+                                         rule=rps_target_rule)
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -83,7 +78,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "rps.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["rps_zone", "balancing_type", "horizon",
+        writer.writerow(["rps_zone", "period",
                          "discount_factor", "number_years_represented",
                          "rps_target_mwh",
                          "delivered_rps_energy_mwh",
@@ -92,34 +87,33 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "fraction_of_rps_target_met",
                          "fraction_of_rps_energy_curtailed",
                          "rps_shortage_mwh"])
-        for (z, bt, h) in m.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS:
+        for (z, p) in m.RPS_ZONE_PERIODS_WITH_RPS:
             writer.writerow([
                 z,
-                bt,
-                h,
-                m.discount_factor[m.period[m.first_hrz_tmp[bt, h]]],
-                m.number_years_represented[m.period[m.first_hrz_tmp[bt, h]]],
-                value(m.RPS_Target[z, bt, h]),
-                value(m.Total_Delivered_RPS_Energy_MWh[z, bt, h]),
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, bt, h]),
-                value(m.Total_Delivered_RPS_Energy_MWh[z, bt, h]) +
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, bt, h]),
-                1 if float(m.rps_target_mwh[z, bt, h]) == 0
+                p,
+                m.discount_factor[p],
+                m.number_years_represented[p],
+                value(m.RPS_Target[z, p]),
+                value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
+                value(m.Total_Delivered_RPS_Energy_MWh[z, p]) +
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
+                1 if float(m.rps_target_mwh[z, p]) == 0
                 else value(
-                    m.Total_Delivered_RPS_Energy_MWh[z, bt, h]) /
-                float(m.rps_target_mwh[z, bt, h]),
-                0 if (value(m.Total_Delivered_RPS_Energy_MWh[z, bt, h])
-                      + value(m.Total_Curtailed_RPS_Energy_MWh[z, bt, h])) == 0
-                else value(m.Total_Curtailed_RPS_Energy_MWh[z, bt, h]) /
-                (value(m.Total_Delivered_RPS_Energy_MWh[z, bt, h])
-                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, bt, h])),
-                value(m.RPS_Shortage_MWh_Expression[z, bt, h])
+                    m.Total_Delivered_RPS_Energy_MWh[z, p]) /
+                float(m.rps_target_mwh[z, p]),
+                0 if (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
+                      + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])) == 0
+                else value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
+                (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
+                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])),
+                value(m.RPS_Shortage_MWh_Expression[z, p])
             ])
 
 
 def save_duals(m):
     m.constraint_indices["RPS_Target_Constraint"] = \
-        ["rps_zone", "balancing_type", "horizon", "dual"]
+        ["rps_zone", "period", "dual"]
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -168,13 +162,12 @@ def summarize_results(scenario_directory, subproblem, stage):
             left=rps_df,
             right=rps_duals_df,
             how="left",
-            left_on=["rps_zone", "balancing_type", "horizon"],
-            right_on=["rps_zone", "balancing_type", "horizon"]
+            left_on=["rps_zone", "period"],
+            right_on=["rps_zone", "period"]
         )
     )
 
-    results_df.set_index(["rps_zone", "balancing_type", "horizon"],
-                         inplace=True,
+    results_df.set_index(["rps_zone", "period"], inplace=True,
                          verify_integrity=True)
 
     # Calculate:
@@ -224,7 +217,7 @@ def summarize_results(scenario_directory, subproblem, stage):
 
 
 def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -252,21 +245,19 @@ def import_results_into_database(
         next(reader)  # skip header
         for row in reader:
             rps_zone = row[0]
-            balancing_type = row[1]
-            horizon = row[2]
-            discount_factor = row[3]
-            number_years = row[4]
-            rps_target = row[5]
-            rps_provision = row[6]
-            curtailment = row[7]
-            total = row[8]
-            fraction_met = row[9]
-            fraction_curtailed = row[10]
-            shortage = row[11]
+            period = row[1]
+            discount_factor = row[2]
+            number_years = row[3]
+            rps_target = row[4]
+            rps_provision = row[5]
+            curtailment = row[6]
+            total = row[7]
+            fraction_met = row[8]
+            fraction_curtailed = row[9]
+            shortage = row[10]
 
             results.append(
-                (scenario_id, rps_zone, balancing_type, horizon, subproblem,
-                 stage,
+                (scenario_id, rps_zone, period, subproblem, stage,
                  discount_factor, number_years, rps_target,
                  rps_provision, curtailment, total,
                  fraction_met, fraction_curtailed, shortage)
@@ -274,37 +265,33 @@ def import_results_into_database(
             
     insert_temp_sql = """
         INSERT INTO temp_results_system_rps{}
-         (scenario_id, rps_zone, balancing_type, horizon, subproblem_id, 
-         stage_id,
+         (scenario_id, rps_zone, period, subproblem_id, stage_id,
          discount_factor, number_years_represented, rps_target_mwh, 
          delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
          total_rps_energy_mwh,
          fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
          rps_shortage_mwh)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
     insert_sql = """
         INSERT INTO results_system_rps
-        (scenario_id, rps_zone, balancing_type, horizon, subproblem_id, 
-        stage_id,
+        (scenario_id, rps_zone, period, subproblem_id, stage_id,
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed, 
         rps_shortage_mwh)
-        SELECT scenario_id, rps_zone, balancing_type, horizon, subproblem_id, 
-        stage_id,
+        SELECT scenario_id, rps_zone, period, subproblem_id, stage_id,
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
         rps_shortage_mwh
         FROM temp_results_system_rps{}
-        ORDER BY scenario_id, rps_zone, balancing_type, horizon, 
-        subproblem_id, stage_id;
+        ORDER BY scenario_id, rps_zone, period, subproblem_id, stage_id;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
@@ -319,16 +306,14 @@ def import_results_into_database(
 
         for row in reader:
             duals_results.append(
-                (row[3], row[0], row[1], row[2], scenario_id, subproblem,
-                 stage)
+                (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
 
     duals_sql = """
         UPDATE results_system_rps
         SET dual = ?
         WHERE rps_zone = ?
-        AND balancing_type = ?
-        AND horizon = ?
+        AND period = ?
         AND scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;

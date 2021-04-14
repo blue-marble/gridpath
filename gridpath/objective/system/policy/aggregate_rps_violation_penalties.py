@@ -30,17 +30,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     Here, we aggregate total penalty costs for not meeting the RPS constraint.
     """
 
-    # TODO: apply the discount factor based on the period of the first
-    #  horizon timepoint; worth thinking through whether to apply
-    #  discounting upstream rather than in the objective
-    #  function
     def total_penalty_costs_rule(mod):
-        return sum(mod.RPS_Shortage_MWh_Expression[z, bt, h]
+        return sum(mod.RPS_Shortage_MWh_Expression[z, p]
                    * mod.rps_violation_penalty_per_mwh[z]
-                   * mod.number_years_represented[mod.period[mod.first_hrz_tmp[
-            bt, h]]]
-                   * mod.discount_factor[mod.period[mod.first_hrz_tmp[bt, h]]]
-                   for (z, bt, h) in mod.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS)
+                   * mod.number_years_represented[p]
+                   * mod.discount_factor[p]
+                   for (z, p) in mod.RPS_ZONE_PERIODS_WITH_RPS)
     m.Total_RPS_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 

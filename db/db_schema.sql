@@ -322,7 +322,7 @@ horizon VARCHAR(32),
 tmp_start INTEGER,
 tmp_end INTEGER,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-             balancing_type_horizon, horizon, tmp_start),
+             balancing_type_horizon, horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure the start and end timepoints exist in the main timepoints table
@@ -2053,14 +2053,13 @@ DROP TABLE IF EXISTS inputs_system_rps_targets;
 CREATE TABLE inputs_system_rps_targets (
 rps_target_scenario_id INTEGER,
 rps_zone VARCHAR(32),
-balancing_type_horizon VARCHAR(64),
-horizon INTEGER,
+period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 rps_target_mwh FLOAT,
 rps_target_percentage FLOAT,
-PRIMARY KEY (rps_target_scenario_id, rps_zone, balancing_type_horizon, horizon,
-             subproblem_id, stage_id)
+PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
+stage_id)
 );
 
 -- If the RPS target is specified as percentage of load, we need to also
@@ -3383,8 +3382,7 @@ DROP TABLE IF EXISTS results_system_rps;
 CREATE TABLE  results_system_rps (
 scenario_id INTEGER,
 rps_zone VARCHAR(64),
-balancing_type VARCHAR(64),
-horizon INTEGER,
+period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
@@ -3398,8 +3396,7 @@ fraction_of_rps_energy_curtailed FLOAT,
 rps_shortage_mwh FLOAT,
 dual FLOAT,
 rps_marginal_cost_per_mwh FLOAT,
-PRIMARY KEY (scenario_id, rps_zone, balancing_type, horizon, subproblem_id,
-             stage_id)
+PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
 );
 
 -- PRM balance

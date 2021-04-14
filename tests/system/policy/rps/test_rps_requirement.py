@@ -96,47 +96,39 @@ class TestRPSRequirement(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS
+        # Set: RPS_ZONE_PERIODS_WITH_RPS
         expected_rps_zone_periods = sorted([
-            ("RPS_Zone_1", "year", 2020), ("RPS_Zone_1", "year", 2030),
-            ("RPS_Zone_2", "year", 2020), ("RPS_Zone_2", "year", 2030)
+            ("RPS_Zone_1", 2020), ("RPS_Zone_1", 2030),
+            ("RPS_Zone_2", 2020), ("RPS_Zone_2", 2030)
         ])
         actual_rps_zone_periods = sorted([
-            (z, bt, h) for (z, bt, h) in
-            instance.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS
+            (z, p) for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS
         ])
         self.assertListEqual(expected_rps_zone_periods,
                              actual_rps_zone_periods)
 
         # Param: rps_target_mwh
         expected_rps_target = OrderedDict(sorted({
-            ("RPS_Zone_1", "year", 2020): 50,("RPS_Zone_1", "year", 2030): 50,
-            ("RPS_Zone_2", "year", 2020): 10, ("RPS_Zone_2", "year", 2030): 10
-                                                 }.items()
+            ("RPS_Zone_1", 2020): 50, ("RPS_Zone_1", 2030): 50,
+            ("RPS_Zone_2", 2020): 10, ("RPS_Zone_2", 2030): 10}.items()
                                                  )
                                           )
         actual_rps_target = OrderedDict(sorted({
-            (z, bt, h): instance.rps_target_mwh[z, bt, h]
-            for (z, bt, h) in
-            instance.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS
-                                               }.items()
+            (z, p): instance.rps_target_mwh[z, p]
+            for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS}.items()
                                                )
                                         )
         self.assertDictEqual(expected_rps_target, actual_rps_target)
 
         # Param: rps_target_percentage
         expected_rps_percentage = OrderedDict(sorted({
-            ("RPS_Zone_1", "year", 2020): 0.2,
-            ("RPS_Zone_1", "year", 2030): 0.33,
-            ("RPS_Zone_2", "year", 2020): 0,
-            ("RPS_Zone_2", "year", 2030): 0
-                                                     }.items()
+            ("RPS_Zone_1", 2020): 0.2, ("RPS_Zone_1", 2030): 0.33,
+            ("RPS_Zone_2", 2020): 0, ("RPS_Zone_2", 2030): 0}.items()
                                                  )
                                           )
         actual_rps_percentage = OrderedDict(sorted({
-            (z, bt, h): instance.rps_target_percentage[z, bt, h]
-            for (z, bt, h) in
-            instance.RPS_ZONE_BALANCING_TYPE_HORIZONS_WITH_RPS}.items()
+            (z, p): instance.rps_target_percentage[z, p]
+            for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS}.items()
                                                )
                                         )
         self.assertDictEqual(expected_rps_percentage, actual_rps_percentage)
@@ -147,7 +139,7 @@ class TestRPSRequirement(unittest.TestCase):
             ("RPS_Zone_2", "Zone3")
         ])
         actual_rps_zone_load_zones = sorted([
-            (rz, z) for (rz, z) in instance.RPS_ZONE_LOAD_ZONES
+            (z, p) for (z, p) in instance.RPS_ZONE_LOAD_ZONES
         ])
         self.assertListEqual(expected_rps_zone_load_zones,
                              actual_rps_zone_load_zones)
