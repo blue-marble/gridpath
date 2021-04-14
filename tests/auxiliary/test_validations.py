@@ -673,9 +673,9 @@ class TestValidations(unittest.TestCase):
         :return:
         """
 
-        cols = ["stage_id", "period", "n_hours", "hours_in_full_period"]
+        cols = ["stage_id", "period", "n_hours", "hours_in_period_timepoints"]
         col1 = "n_hours"
-        col2 = "hours_in_full_period"
+        col2 = "hours_in_period_timepoints"
         idx_col = ["stage_id", "period"]
 
         test_cases = {
@@ -694,7 +694,7 @@ class TestValidations(unittest.TestCase):
                       [1, 2030, 8760, 8760]]),
                 "result": [
                     "['stage_id', 'period'](s) [[   1 2020]]: values in "
-                    "column n_hours and hours_in_full_period should be equal. "
+                    "column n_hours and hours_in_period_timepoints should be equal. "
                     ]
                 }
         }

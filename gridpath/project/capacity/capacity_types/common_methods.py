@@ -20,28 +20,50 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
 
 
-# TODO: if vintage is 2020 and lifetime is 30, is the project available in
-#  2050 or not -- maybe have options for how this should be treated?
-
-
-def operational_periods_by_project_vintage(periods, vintage, lifetime):
+def operational_periods_by_project_vintage(
+    periods, period_start_year, period_end_year,
+    vintage, lifetime_yrs
+):
     """
-    :param periods: the study periods
+    :param periods: the study periods in a list
+    :param period_start_year: dictionary of the start year of a period
+        by period
+    :param period_end_year: dictionary of the end year of a period
+        by period
     :param vintage: the project vintage
-    :param lifetime: the project-vintage lifetime
+    :param lifetime_yrs: the project-vintage lifetime
     :return: the operational periods given the study periods and
         the project vintage and lifetime
 
     Given the list of study periods and the project's vintage and lifetime,
-    this function returns the list of periods that a project with
+    this function returns the list of periods in which a project with
     this vintage and lifetime will be operational.
+
+    Two conditions must be met for a period to be operational for a project
+    of a certain vintage:
+    1) project vintage (i.e. first operational year) must be before or equal
+    to the start year of the period
+    2) project last operational year must be after the period end year.
+
+    The end year of the period is exclusive (i.e. the last day of a period
+    with end year 2030 is actually 2020-12-29). With the current
+    formulation, a project with a 10 year lifetime of the 2020 vintage is
+    assumed to be operational on 2020-01-01 and remain operational through
+    2029-12-31 (vintage 2020, last operational year 2030 exclusive). It will be
+    operational in a period with a start year of 2020 and end year of 2030.
+
+    If either the vintage or the last operational year is within the period,
+    the period is assumed to not be operational for the project.
     """
+    last_operational_year = vintage + lifetime_yrs
     operational_periods = list()
     for p in periods:
-        if vintage <= p < vintage + lifetime:
+        if vintage <= period_start_year[p] and \
+                last_operational_year >= period_end_year[p]:
             operational_periods.append(p)
         else:
             pass
+
     return operational_periods
 
 

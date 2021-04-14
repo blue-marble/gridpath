@@ -75,8 +75,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Get capacity cost for each generator's respective capacity module.
 
         Note that capacity cost inputs and calculations in the modules are on
-        an annual basis. Therefore, if the subproblem's period is less than a
-        year we adjust the costs down.
+        a period basis. Therefore, if the period spans subproblems (the main
+        example of this would be specified capacity in, say, a production-cost
+        scenario with multiple subproblems), we adjust the capacity costs down
+        accordingly.
         """
         cap_type = mod.capacity_type[prj]
         if hasattr(imported_capacity_modules[cap_type],
@@ -88,7 +90,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
         return capacity_cost \
             * mod.hours_in_subproblem_period[prd] \
-            / mod.hours_in_full_period[prd]
+            / mod.hours_in_period_timepoints[prd]
 
     m.Capacity_Cost_in_Period = Expression(
         m.PRJ_OPR_PRDS,
@@ -115,7 +117,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "hours_in_full_period",
+            ["project", "period", "hours_in_period_timepoints",
              "hours_in_subproblem_period", "technology", "load_zone",
              "capacity_cost"]
         )
@@ -123,7 +125,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 prj,
                 p,
-                m.hours_in_full_period[p],
+                m.hours_in_period_timepoints[p],
                 m.hours_in_subproblem_period[p],
                 m.technology[prj],
                 m.load_zone[prj],
@@ -165,7 +167,7 @@ def import_results_into_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            hours_in_full_period = row[2]
+            hours_in_period_timepoints = row[2]
             hours_in_subproblem_period = row[3]
             technology = row[4]
             load_zone = row[5]
@@ -173,14 +175,14 @@ def import_results_into_database(
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                 hours_in_full_period, hours_in_subproblem_period,
+                 hours_in_period_timepoints, hours_in_subproblem_period,
                  technology, load_zone, capacity_cost)
             )
 
     insert_temp_sql = """
         INSERT INTO temp_results_project_costs_capacity{}
         (scenario_id, project, period, subproblem_id, stage_id,
-        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
         capacity_cost)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
@@ -190,11 +192,11 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_project_costs_capacity
         (scenario_id, project, period, subproblem_id, stage_id,
-        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
         capacity_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        hours_in_full_period, hours_in_subproblem_period, technology, load_zone, 
+        hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
         capacity_cost
         FROM temp_results_project_costs_capacity{}
         ORDER BY scenario_id, project, period, subproblem_id, 

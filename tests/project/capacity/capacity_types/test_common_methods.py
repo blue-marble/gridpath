@@ -40,14 +40,35 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         """
         test_case_numbers = [1, 2, 3, 4]
         test_case_params = {
-            1: ([2020, 2030, 2040, 2050], 2030, 20),  # within study period
-            2: ([2020, 2030, 2040, 2050], 2040, 10),  # within study period
-            3: ([2020, 2030, 2040, 2050], 2020, 40),  # all periods
-            4: ([2020, 2030, 2040, 2050], 2060, 10)  # outside study period
+            # within study period
+            1: ([2020, 2030, 2040, 2050],
+                {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
+                {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
+                2030, 20),
+            # within study period
+            2: ([2020, 2030, 2040, 2050],
+                {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
+                {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
+                2040, 10),
+            # all periods
+            3: ([2020, 2030, 2040, 2050],
+                {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
+                {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
+                2020, 40),
+            # outside study period
+            4: ([2020, 2030, 2040, 2050],
+                {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
+                {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
+                2060, 10),
+            # fractional years and lifetimes
+            5: ([1, 2, 3, 4],
+                {1: 2020.0, 2: 2020.5, 3: 2021, 4: 2021.5},
+                {1: 2020.49, 2: 2020.99, 3: 2021.49, 4: 2021.99},
+                2020.2, 0.75)
         }
         expected_operational_periods_dict = {
             1: [2030, 2040], 2: [2040], 3: [2020, 2030, 2040, 2050],
-            4: []
+            4: [], 5: [1, 2, 3]
         }
 
         for test_case in test_case_numbers:
@@ -56,8 +77,10 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             actual_operational_periods = \
                 MODULE_BEING_TESTED.operational_periods_by_project_vintage(
                     periods=test_case_params[test_case][0],
-                    vintage=test_case_params[test_case][1],
-                    lifetime=test_case_params[test_case][2]
+                    period_start_year=test_case_params[test_case][1],
+                    period_end_year=test_case_params[test_case][2],
+                    vintage=test_case_params[test_case][3],
+                    lifetime_yrs=test_case_params[test_case][4]
                 )
             self.assertListEqual(expected_operational_periods,
                                  actual_operational_periods)

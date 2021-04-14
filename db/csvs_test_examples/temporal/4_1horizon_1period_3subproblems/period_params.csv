@@ -1,2 +1,2 @@
-period,discount_factor,number_years_represented
-2020,1,1
+period,discount_factor,period_start_year,period_end_year
+2020,1,2020,2021
