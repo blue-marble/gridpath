@@ -194,8 +194,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Derived Params
     ###########################################################################
 
-    # TODO: need some checks to make sure timepoints are ordered
-    #  correctly within a horizon
     m.first_hrz_tmp = Param(
         m.BLN_TYPE_HRZS,
         within=PositiveIntegers,

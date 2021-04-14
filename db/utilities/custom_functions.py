@@ -67,7 +67,6 @@ def temporal(conn, subscenario_id):
 
     hor_tmps_tuples_list = list()
     for (sid, stage, bt, hr) in sid_stg_bt_hr:
-        # print(sid, stage, bt, hr)
         tmp_start_tmp_end = c.execute(
             """SELECT tmp_start, tmp_end
             FROM inputs_temporal_horizon_timepoints_start_end
@@ -81,7 +80,6 @@ def temporal(conn, subscenario_id):
 
         tmps = []
         for tmp_start, tmp_end in tmp_start_tmp_end:
-            # print(tmp_start, tmp_end)
             tmps += [
                 tmp for tmp in c.execute("""
                 SELECT timepoint
@@ -95,15 +93,10 @@ def temporal(conn, subscenario_id):
                 ).fetchall()
             ]
 
-        # print(tmps)
-
         for tmp_tuple in tmps:
             tmp = tmp_tuple[0]
 
             hor_tmps_tuples_list.append((subscenario_id, sid, stage, tmp, bt, hr))
-
-    # for x in hor_tmps_tuples_list:
-    #     print(x)
 
     horizon_timepoints_sql = """
         INSERT INTO inputs_temporal_horizon_timepoints
