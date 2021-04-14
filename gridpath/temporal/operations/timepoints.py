@@ -27,12 +27,15 @@ to represent the whole month using the number of days in that month for the
 weight of each of the 24 timepoints). Note that all costs incurred at the
 timepoint level are multiplied by the period-level number_years_represented
 and discount_factor parameters in the objective function. At the period 
-level we use annualized capacity costs, so we must also annualize 
-operational costs incurred at the timepoint level. In other words, we must 
-use the timepoint weights (along with the hours in timepoint parameter) to 
-calculate the timepoint-level cost incurred over a year. The sum of 
-timepoint_weight*hours_in_timepoint over all timepoints in a period must 
-therefore equal the number of hours in a year (8760, 8766, or 8784).
+level we use annualized capacity costs (and multiply those by the number of
+years in a period), so we must also annualize operational costs incurred at
+the timepoint level. In other words, we must use the timepoint weights
+(along with the hours-in-timepoint parameter) to calculate the
+timepoint-level cost incurred over a year. The sum of
+timepoint_weight*hours_in_timepoint over all timepoints in a period must
+therefore equal the number of hours in a year (8760, 8766, or 8784). This
+will then get multiplied by the number of years in a period and period
+discount rate to get the total operational costs.
 
 For example, if you are representing a 10-year period with a single day at a 
 24-hour timepoint resolution, the timepoint weight for each of the 24 
@@ -42,12 +45,13 @@ representing a 1-year period with a single day at a 24-hour resolution,
 the timepoint weight would still be 365, and timepoint-level costs will get
 multiplied by 1 automatically to account for the length of the period.
 If you are representing a 0.25-year period with a single day at a 24-hour
-resolution, the timepoint weight would still 365.
+resolution, the timepoint weight would still be 365.
 
 To support multi-stage production simulation timepoints can also be assigned a
 mapping to the previous stage (e.g. timepoints 1-12 in the 5-minute real-time
 stage map to timepoint 1 in the hour-ahead stage) and a flag whether the
 timepoint is part of a spinup or lookahead segment.
+
 Timepoints that are part of a spinup or lookahead segment are included in the
 optimization but are generally discarded when calculating result metrics such
 as annual emissions, energy, or cost.
@@ -63,8 +67,7 @@ from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import \
     determine_table_subset_by_start_and_column
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_columns
+from gridpath.auxiliary.validations import write_validation_to_database
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

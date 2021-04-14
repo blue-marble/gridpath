@@ -26,15 +26,14 @@ the optimization is allowed to operate it in subsequent periods (usually for
 the duration of the generators's lifetime).
 You must specify *period* duration via the *period_start_year* and
 *period_end_year* parameters (the duration is calculated within GridPath
-based on those values). Note that the start yera is inclusive and the end year
+based on those values). Note that the start year is inclusive and the end year
 is exclusive. Capacity can either exist or not for the entire duration of a
 period. A discount factor can also be applied to weight costs differently
 depending on when (in which period) they are incurred.
 
-.. warning::
-Support for investment periods that are shorter than 1 year, e.g. monthly
-investment decisions, is largely untested, so be extra careful if attempting
-to use this functionality.
+.. warning:: Support for investment periods that are shorter than 1 year,
+    e.g. monthly investment decisions, is largely untested, so be extra careful
+    if attempting to use this functionality.
 
 """
 
@@ -172,9 +171,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | into account the timepoints in each period-subproblem, the number of    |
     | hours in each timepoint, and their associated timepoint weights.        |
     | In capacity expansion mode with one subproblem, this should simply be   |
-    | equal to :code:`hours_in_period_timepoints`. In production simulation mode    |
-    | with multiple subproblems within 1 period, this number is compared to   |
-    | :code: hours_in_period_timepoints` and used to adjust the reported            |
+    | equal to :code:`hours_in_period_timepoints`. In production simulation   |
+    | mode with multiple subproblems within 1 period, this number is compared |
+    | to :code:`hours_in_period_timepoints` and used to adjust the reported   |
     | "per-period" costs. For instance, when running daily subproblems the    |
     | fixed cost in each day should be only 1/365 of the annualized fixed     |
     | cost.                                                                   |

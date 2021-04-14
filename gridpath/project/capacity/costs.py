@@ -75,12 +75,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Get capacity cost for each generator's respective capacity module.
 
         Note that capacity cost inputs and calculations in the modules are on
-        an annual basis. Therefore, if the subproblem's period is less than a
-        year we adjust the costs down.
-
-        # TODO: the adjustment here is somewhat dangerous; I wonder if it
-        can be calculated automatically from the temporal inputs instead of
-        input by the user
+        a period basis. Therefore, if the period spans subproblems (the main
+        example of this would be specified capacity in, say, a production-cost
+        scenario with multiple subproblems), we adjust the capacity costs down
+        accordingly.
         """
         cap_type = mod.capacity_type[prj]
         if hasattr(imported_capacity_modules[cap_type],
