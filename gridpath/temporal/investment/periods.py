@@ -309,7 +309,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # spinup/lookahead) across all subproblems in the temporal_scenario_id:
     periods = c.execute(
         """SELECT period, discount_factor, 
-           hours_in_period_timepoints, period_start_year, period_end_year
+           period_start_year, period_end_year, hours_in_period_timepoints
            FROM
            (SELECT period, discount_factor,
            period_start_year, period_end_year
@@ -356,8 +356,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
         # Write header
         writer.writerow(
-            ["period", "discount_factor", "hours_in_period_timepoints",
-             "period_start_year", "period_end_year"])
+            ["period", "discount_factor",
+             "period_start_year", "period_end_year",
+             "hours_in_period_timepoints"])
 
         for row in periods:
             writer.writerow(row)
