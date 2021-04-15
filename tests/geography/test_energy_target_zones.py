@@ -91,9 +91,9 @@ class TestRPSZones(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RPS_ZONES
+        # Set: ENERGY_TARGET_ZONES
         expected_energy_target_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
-        actual_energy_target_zones = sorted([z for z in instance.RPS_ZONES])
+        actual_energy_target_zones = sorted([z for z in instance.ENERGY_TARGET_ZONES])
         self.assertListEqual(expected_energy_target_zones, actual_energy_target_zones)
 
         # Param: allow_violation
@@ -103,7 +103,7 @@ class TestRPSZones(unittest.TestCase):
         actual_allow_violation = OrderedDict(
             sorted(
                 {z: instance.rps_allow_violation[z]
-                 for z in instance.RPS_ZONES}.items()
+                 for z in instance.ENERGY_TARGET_ZONES}.items()
             )
         )
         self.assertDictEqual(expected_allow_violation,
@@ -116,7 +116,7 @@ class TestRPSZones(unittest.TestCase):
         actual_penalty = OrderedDict(
             sorted(
                 {z: instance.rps_violation_penalty_per_mwh[z]
-                 for z in instance.RPS_ZONES}.items()
+                 for z in instance.ENERGY_TARGET_ZONES}.items()
             )
         )
         self.assertDictEqual(expected_penalty,

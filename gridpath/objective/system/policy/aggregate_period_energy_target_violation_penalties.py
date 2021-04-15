@@ -35,7 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    * mod.rps_violation_penalty_per_mwh[z]
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]
-                   for (z, p) in mod.RPS_ZONE_PERIODS_WITH_RPS)
+                   for (z, p) in mod.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS)
     m.Total_Period_Energy_Target_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 

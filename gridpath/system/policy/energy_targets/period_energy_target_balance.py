@@ -39,14 +39,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.RPS_Shortage_MWh = Var(
-        m.RPS_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, p):
         return mod.RPS_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
 
     m.RPS_Shortage_MWh_Expression = Expression(
-        m.RPS_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
     )
 
     def rps_target_rule(mod, z, p):
@@ -61,7 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             + mod.RPS_Shortage_MWh_Expression[z, p] \
             >= mod.RPS_Target[z, p]
 
-    m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
+    m.RPS_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
 
 
@@ -87,7 +87,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "fraction_of_rps_target_met",
                          "fraction_of_rps_energy_curtailed",
                          "rps_shortage_mwh"])
-        for (z, p) in m.RPS_ZONE_PERIODS_WITH_RPS:
+        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS:
             writer.writerow([
                 z,
                 p,

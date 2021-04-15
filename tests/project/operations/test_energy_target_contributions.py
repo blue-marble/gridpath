@@ -117,15 +117,15 @@ class TestRECs(unittest.TestCase):
                                              )
         self.assertDictEqual(expected_energy_target_zone_by_prj, actual_energy_target_zone_by_prj)
 
-        # Set: RPS_PRJS_BY_RPS_ZONE
+        # Set: RPS_PRJS_BY_ENERGY_TARGET_ZONE
         expected_prj_by_zone = OrderedDict(sorted({
             "RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]
                                                   }.items()
                                                   )
                                            )
         actual_prj_by_zone = OrderedDict(sorted({
-            z: [p for p in instance.RPS_PRJS_BY_RPS_ZONE[z]]
-            for z in instance.RPS_ZONES
+            z: [p for p in instance.RPS_PRJS_BY_ENERGY_TARGET_ZONE[z]]
+            for z in instance.ENERGY_TARGET_ZONES
                                                 }.items()
                                                 )
                                          )

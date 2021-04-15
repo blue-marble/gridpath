@@ -30,13 +30,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.RPS_ZONES = Set()
+    m.ENERGY_TARGET_ZONES = Set()
 
     m.rps_allow_violation = Param(
-        m.RPS_ZONES, within=Boolean, default=0
+        m.ENERGY_TARGET_ZONES, within=Boolean, default=0
     )
     m.rps_violation_penalty_per_mwh = Param(
-        m.RPS_ZONES, within=NonNegativeReals, default=0
+        m.ENERGY_TARGET_ZONES, within=NonNegativeReals, default=0
     )
 
 
@@ -44,7 +44,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "energy_target_zones.tab"),
-                     index=m.RPS_ZONES,
+                     index=m.ENERGY_TARGET_ZONES,
                      param=(m.rps_allow_violation,
                             m.rps_violation_penalty_per_mwh)
                      )

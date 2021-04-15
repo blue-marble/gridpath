@@ -30,29 +30,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.RPS_ZONE_PERIODS_WITH_RPS = Set(
+    m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS = Set(
         dimen=2,
-        within=m.RPS_ZONES * m.PERIODS
+        within=m.ENERGY_TARGET_ZONES * m.PERIODS
     )
 
     # RPS target specified in energy terms
     m.rps_target_mwh = Param(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
         within=NonNegativeReals,
         default=0
     )
 
     # RPS target specified in 'percent of load' terms
     m.rps_target_percentage = Param(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
         within=PercentFraction,
         default=0
     )
 
     # Load zones included in RPS percentage target
-    m.RPS_ZONE_LOAD_ZONES = Set(
+    m.ENERGY_TARGET_ZONE_LOAD_ZONES = Set(
         dimen=2,
-        within=m.RPS_ZONES * m.LOAD_ZONES
+        within=m.ENERGY_TARGET_ZONES * m.LOAD_ZONES
     )
 
     def rps_target_rule(mod, energy_target_zone, period):
@@ -66,11 +66,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         # If we have a map of RPS zones to load zones, apply the percentage
         # target; if no map provided, the percentage_target is 0
-        if mod.RPS_ZONE_LOAD_ZONES:
+        if mod.ENERGY_TARGET_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
                 mod.static_load_mw[lz, tmp]
                 * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-                for (_energy_target_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
+                for (_energy_target_zone, lz) in mod.ENERGY_TARGET_ZONE_LOAD_ZONES
                 if _energy_target_zone == energy_target_zone
                 for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
             )
@@ -83,7 +83,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return mod.rps_target_mwh[energy_target_zone, period] + percentage_target
 
     m.RPS_Target = Expression(
-        m.RPS_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
         rule=rps_target_rule
     )
 
@@ -103,12 +103,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
-        index=m.RPS_ZONE_PERIODS_WITH_RPS,
+        index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
         param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 
     # If we have a RPS zone to load zone map input file, load it; otherwise,
-    # initialize RPS_ZONE_LOAD_ZONES as an empty list
+    # initialize ENERGY_TARGET_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs",
         "rps_target_load_zone_map.tab"
@@ -116,10 +116,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     if os.path.exists(map_filename):
         data_portal.load(
             filename=map_filename,
-            set=m.RPS_ZONE_LOAD_ZONES
+            set=m.ENERGY_TARGET_ZONE_LOAD_ZONES
         )
     else:
-        data_portal.data()["RPS_ZONE_LOAD_ZONES"] = {None: []}
+        data_portal.data()["ENERGY_TARGET_ZONE_LOAD_ZONES"] = {None: []}
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):

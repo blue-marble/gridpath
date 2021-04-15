@@ -50,8 +50,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Two-dimensional set that defines all project-timepoint combinations     |
     | when an RPS-elgible project can be operational.                         |
     +-------------------------------------------------------------------------+
-    | | :code:`RPS_PRJS_BY_RPS_ZONE`                                          |
-    | | *Defined over*: :code:`RPS_ZONES`                                     |
+    | | :code:`RPS_PRJS_BY_ENERGY_TARGET_ZONE`                                          |
+    | | *Defined over*: :code:`ENERGY_TARGET_ZONES`                                     |
     | | *Within*: :code:`RPS_PRJS`                                            |
     |                                                                         |
     | Indexed set that describes the RPS projects for each RPS zone.          |
@@ -64,7 +64,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`energy_target_zone`                                                      |
     | | *Defined over*: :code:`RPS_PRJS`                                      |
-    | | *Within*: :code:`RPS_ZONES`                                           |
+    | | *Within*: :code:`ENERGY_TARGET_ZONES`                                           |
     |                                                                         |
     | This param describes the RPS zone for each RPS project.                 |
     +-------------------------------------------------------------------------+
@@ -131,14 +131,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.energy_target_zone = Param(
         m.RPS_PRJS,
-        within=m.RPS_ZONES
+        within=m.ENERGY_TARGET_ZONES
     )
 
     # Derived Sets (requires input params)
     ###########################################################################
 
-    m.RPS_PRJS_BY_RPS_ZONE = Set(
-        m.RPS_ZONES,
+    m.RPS_PRJS_BY_ENERGY_TARGET_ZONE = Set(
+        m.ENERGY_TARGET_ZONES,
         within=m.RPS_PRJS,
         initialize=determine_rps_generators_by_energy_target_zone
     )
