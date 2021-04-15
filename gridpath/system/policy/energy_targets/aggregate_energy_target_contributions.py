@@ -45,8 +45,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                  + mod.Subhourly_RPS_Energy_MW[g,tmp])
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
-                for (g, tmp) in mod.RPS_PRJ_OPR_TMPS
-                if g in mod.RPS_PRJS_BY_ENERGY_TARGET_ZONE[z]
+                for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
+                if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
                 and tmp in mod.TMPS_IN_PRD[p]
                 )
 
@@ -68,8 +68,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     mod.Subhourly_RPS_Energy_MW[g, tmp])
                    * mod.hrs_in_tmp[tmp]
                    * mod.tmp_weight[tmp]
-                   for (g, tmp) in mod.RPS_PRJ_OPR_TMPS
-                   if g in mod.RPS_PRJS_BY_ENERGY_TARGET_ZONE[z]
+                   for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
+                   if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
                    and tmp in mod.TMPS_IN_PRD[p]
                    )
     # TODO: is this only needed for export and, if so, should it be created on

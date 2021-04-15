@@ -100,9 +100,9 @@ class TestRECs(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RPS_PRJS
+        # Set: ENERGY_TARGET_PRJS
         expected_rps_projects = sorted(["Wind", "Wind_z2"])
-        actual_rps_projects = sorted([p for p in instance.RPS_PRJS])
+        actual_rps_projects = sorted([p for p in instance.ENERGY_TARGET_PRJS])
         self.assertListEqual(expected_rps_projects, actual_rps_projects)
 
         # Param: energy_target_zone
@@ -112,33 +112,33 @@ class TestRECs(unittest.TestCase):
                                                       )
                                                )
         actual_energy_target_zone_by_prj = OrderedDict(sorted({
-            p: instance.energy_target_zone[p] for p in instance.RPS_PRJS}.items()
+            p: instance.energy_target_zone[p] for p in instance.ENERGY_TARGET_PRJS}.items()
                                                     )
                                              )
         self.assertDictEqual(expected_energy_target_zone_by_prj, actual_energy_target_zone_by_prj)
 
-        # Set: RPS_PRJS_BY_ENERGY_TARGET_ZONE
+        # Set: ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE
         expected_prj_by_zone = OrderedDict(sorted({
             "RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]
                                                   }.items()
                                                   )
                                            )
         actual_prj_by_zone = OrderedDict(sorted({
-            z: [p for p in instance.RPS_PRJS_BY_ENERGY_TARGET_ZONE[z]]
+            z: [p for p in instance.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]]
             for z in instance.ENERGY_TARGET_ZONES
                                                 }.items()
                                                 )
                                          )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
-        # Set: RPS_PRJ_OPR_TMPS
+        # Set: ENERGY_TARGET_PRJ_OPR_TMPS
         expected_rps_prj_op_tmp = sorted(
             get_project_operational_timepoints(expected_rps_projects)
         )
 
         actual_rps_prj_op_tmp = sorted([
             (prj, tmp) for (prj, tmp)
-            in instance.RPS_PRJ_OPR_TMPS
+            in instance.ENERGY_TARGET_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_rps_prj_op_tmp, actual_rps_prj_op_tmp)
 

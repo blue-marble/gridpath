@@ -40,19 +40,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`RPS_PRJS`                                                      |
+    | | :code:`ENERGY_TARGET_PRJS`                                                      |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
     | The set of all RPS-eligible projects.                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`RPS_PRJ_OPR_TMPS`                                              |
+    | | :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                                              |
     |                                                                         |
     | Two-dimensional set that defines all project-timepoint combinations     |
     | when an RPS-elgible project can be operational.                         |
     +-------------------------------------------------------------------------+
-    | | :code:`RPS_PRJS_BY_ENERGY_TARGET_ZONE`                                          |
+    | | :code:`ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE`                                          |
     | | *Defined over*: :code:`ENERGY_TARGET_ZONES`                                     |
-    | | *Within*: :code:`RPS_PRJS`                                            |
+    | | *Within*: :code:`ENERGY_TARGET_PRJS`                                            |
     |                                                                         |
     | Indexed set that describes the RPS projects for each RPS zone.          |
     +-------------------------------------------------------------------------+
@@ -63,7 +63,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Input Params                                                            |
     +=========================================================================+
     | | :code:`energy_target_zone`                                                      |
-    | | *Defined over*: :code:`RPS_PRJS`                                      |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJS`                                      |
     | | *Within*: :code:`ENERGY_TARGET_ZONES`                                           |
     |                                                                         |
     | This param describes the RPS zone for each RPS project.                 |
@@ -75,26 +75,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Scheduled_RPS_Energy_MW`                                       |
-    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes how many RECs (in MW) are scheduled for each RPS-eligible     |
     | project in each timepoint.                                              |
     +-------------------------------------------------------------------------+
     | | :code:`Scheduled_Curtailment_MW`                                      |
-    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes the amount of scheduled curtailment (in MW) for each          |
     | RPS-eligible project in each timepoint.                                 |
     +-------------------------------------------------------------------------+
     | | :code:`Subhourly_RPS_Energy_MW`                                       |
-    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes how many RECs (in MW) are delivered subhourly for each        |
     | RPS-eligible project in each timepoint. Subhourly RPS energy delivery   |
     | can occur due to sub-hourly upward reserve dispatch (e.g. reg-up).      |
     +-------------------------------------------------------------------------+
     | | :code:`Subhourly_Curtailment_MW`                                      |
-    | | *Defined over*: :code:`RPS_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes the amount of subhourly curtailment (in MW) for each          |
     | RPS-eligible project in each timepoint. Subhourly curtailment can       |
@@ -118,28 +118,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.RPS_PRJS = Set(within=m.PROJECTS)
+    m.ENERGY_TARGET_PRJS = Set(within=m.PROJECTS)
 
-    m.RPS_PRJ_OPR_TMPS = Set(
+    m.ENERGY_TARGET_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-                          if p in mod.RPS_PRJS]
+                          if p in mod.ENERGY_TARGET_PRJS]
     )
 
     # Input Params
     ###########################################################################
 
     m.energy_target_zone = Param(
-        m.RPS_PRJS,
+        m.ENERGY_TARGET_PRJS,
         within=m.ENERGY_TARGET_ZONES
     )
 
     # Derived Sets (requires input params)
     ###########################################################################
 
-    m.RPS_PRJS_BY_ENERGY_TARGET_ZONE = Set(
+    m.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE = Set(
         m.ENERGY_TARGET_ZONES,
-        within=m.RPS_PRJS,
+        within=m.ENERGY_TARGET_PRJS,
         initialize=determine_rps_generators_by_energy_target_zone
     )
 
@@ -160,7 +160,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return op_type_init.rec_provision_rule(mod, prj, tmp)
 
     m.Scheduled_RPS_Energy_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS, 
+        m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=scheduled_recs_rule
     )
 
@@ -179,7 +179,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return op_type_init.scheduled_curtailment_rule(mod, prj, tmp)
 
     m.Scheduled_Curtailment_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS,
+        m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=scheduled_curtailment_rule
     )
 
@@ -197,7 +197,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return op_type_init.subhourly_energy_delivered_rule(mod, prj, tmp)
 
     m.Subhourly_RPS_Energy_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS,
+        m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=subhourly_recs_delivered_rule
     )
 
@@ -216,7 +216,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return op_type_init.subhourly_curtailment_rule(mod, prj, tmp)
 
     m.Subhourly_Curtailment_MW = Expression(
-        m.RPS_PRJ_OPR_TMPS,
+        m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=subhourly_curtailment_rule
     )
 
@@ -225,7 +225,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 def determine_rps_generators_by_energy_target_zone(mod, rps_z):
-    return [p for p in mod.RPS_PRJS if mod.energy_target_zone[p] == rps_z]
+    return [p for p in mod.ENERGY_TARGET_PRJS if mod.energy_target_zone[p] == rps_z]
 
 
 # Input-Output
@@ -249,7 +249,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         param=(m.energy_target_zone,)
     )
 
-    data_portal.data()['RPS_PRJS'] = {
+    data_portal.data()['ENERGY_TARGET_PRJS'] = {
         None: list(data_portal.data()['energy_target_zone'].keys())
     }
 
@@ -275,7 +275,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "scheduled_curtailment_mw",
                          "subhourly_rps_energy_delivered_mw",
                          "subhourly_curtailment_mw"])
-        for (p, tmp) in m.RPS_PRJ_OPR_TMPS:
+        for (p, tmp) in m.ENERGY_TARGET_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.load_zone[p],
@@ -298,7 +298,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
               "w", newline="") as rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)
         writer.writerow(["project", "energy_target_zone"])
-        for p in m.RPS_PRJS:
+        for p in m.ENERGY_TARGET_PRJS:
             writer.writerow([p, m.energy_target_zone[p]])
 
 
