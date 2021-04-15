@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module adds RPS shortage penalty costs to the objective function.
+This module adds energy-target shortage penalty costs to the objective function.
 """
 
 import os.path
@@ -27,7 +27,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
-    Here, we aggregate total penalty costs for not meeting the RPS constraint.
+    Here, we aggregate total penalty costs for not meeting the energy-target constraint.
     """
 
     def total_penalty_costs_rule(mod):
@@ -35,7 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    * mod.rps_violation_penalty_per_mwh[z]
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]
-                   for (z, p) in mod.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS)
+                   for (z, p) in mod.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET)
     m.Total_Period_Energy_Target_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 

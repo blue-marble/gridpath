@@ -359,24 +359,24 @@ Requirement
 Policy (OPTIONAL)
 *****************
 
-===================================
-Renewables Portfolio Standard (RPS)
-===================================
+========================================================
+Energy Targets, e.g. Renewables Portfolio Standard (RPS)
+========================================================
 
 Policy Zones
 ============
 
-.. automodule:: db.csvs_test_examples.policy.rps.geography_energy_target_zones.doc
+.. automodule:: db.csvs_test_examples.policy.energy_targets.zones.doc
 
 Contributing Projects
 =====================
 
-.. automodule:: db.csvs_test_examples.policy.rps.project_energy_target_zones.doc
+.. automodule:: db.csvs_test_examples.policy.energy_targets.project_zones.doc
 
 Target
 ======
 
-.. automodule:: db.csvs_test_examples.policy.rps.system_rps_targets.doc
+.. automodule:: db.csvs_test_examples.policy.energy_targets.period_targets.doc
 
 ==========
 Carbon Cap

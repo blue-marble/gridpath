@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Zones where RPS will be enforced; these can be different from the load zones
+Zones where energy target will be enforced; these can be different from the load zones
 and reserve balancing areas.
 """
 

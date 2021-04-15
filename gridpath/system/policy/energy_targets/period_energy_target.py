@@ -30,21 +30,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS = Set(
+    m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET = Set(
         dimen=2,
         within=m.ENERGY_TARGET_ZONES * m.PERIODS
     )
 
     # RPS target specified in energy terms
     m.rps_target_mwh = Param(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=NonNegativeReals,
         default=0
     )
 
     # RPS target specified in 'percent of load' terms
     m.rps_target_percentage = Param(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=PercentFraction,
         default=0
     )
@@ -83,7 +83,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return mod.rps_target_mwh[energy_target_zone, period] + percentage_target
 
     m.Energy_Target_Target = Expression(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         rule=rps_target_rule
     )
 
@@ -103,7 +103,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "rps_targets.tab"),
-        index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+        index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         param=(m.rps_target_mwh, m.rps_target_percentage, )
     )
 

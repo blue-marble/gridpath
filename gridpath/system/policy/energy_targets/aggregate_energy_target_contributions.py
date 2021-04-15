@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """
-Aggregate delivered RPS-eligible power from the project-timepoint level to
-the RPS zone - period level.
+Aggregate delivered energy-target-eligible power from the project-timepoint level to
+the energy-target zone - period level.
 """
 
 from pyomo.environ import Expression
@@ -27,9 +27,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    def rps_energy_provision_rule(mod, z, p):
+    def energy_target_contribution_rule(mod, z, p):
         """
-        Calculate the delivered RPS energy for each zone and period
+        Calculate the delivered energy for each zone and period
         Scheduled power provision (available energy minus reserves minus
         scheduled curtailment) + subhourly delivered energy (from
         providing upward reserves) - subhourly curtailment (from providing
@@ -51,8 +51,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 )
 
     m.Total_Delivered_Energy_Target_Energy_MWh = \
-        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
-                   rule=rps_energy_provision_rule)
+        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
+                   rule=energy_target_contribution_rule)
 
     def total_curtailed_rps_energy_rule(mod, z, p):
         """
@@ -75,6 +75,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # TODO: is this only needed for export and, if so, should it be created on
     # export?
     m.Total_Curtailed_Energy_Target_Energy_MWh = \
-        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
                    rule=total_curtailed_rps_energy_rule)
 

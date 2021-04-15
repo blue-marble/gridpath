@@ -39,19 +39,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.Energy_Target_Shortage_MWh = Var(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, p):
         return mod.Energy_Target_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
 
     m.Energy_Target_Shortage_MWh_Expression = Expression(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, rule=violation_expression_rule
     )
 
     def rps_target_rule(mod, z, p):
         """
-        Total delivered RPS-eligible energy must exceed target
+        Total delivered energy-target-eligible energy must exceed target
         :param mod:
         :param z:
         :param p:
@@ -61,7 +61,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             + mod.Energy_Target_Shortage_MWh_Expression[z, p] \
             >= mod.Energy_Target_Target[z, p]
 
-    m.Energy_Target_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+    m.Energy_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
                                          rule=rps_target_rule)
 
 
@@ -87,7 +87,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "fraction_of_rps_target_met",
                          "fraction_of_rps_energy_curtailed",
                          "rps_shortage_mwh"])
-        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS:
+        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
             writer.writerow([
                 z,
                 p,
@@ -112,7 +112,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def save_duals(m):
-    m.constraint_indices["Energy_Target_Target_Constraint"] = \
+    m.constraint_indices["Energy_Target_Constraint"] = \
         ["energy_target_zone", "period", "dual"]
 
 
@@ -123,7 +123,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     :param stage:
     :return:
 
-    Summarize RPS policy results
+    Summarize energy-target policy results
     """
 
     summary_results_file = os.path.join(
@@ -134,21 +134,21 @@ def summarize_results(scenario_directory, subproblem, stage):
     # modules are not overridden
     with open(summary_results_file, "a") as outfile:
         outfile.write(
-            "\n### RPS RESULTS ###\n"
+            "\n### ENERGY TARGET RESULTS ###\n"
         )
 
     # All these files are small, so won't be setting indices
 
-    # Get the main RPS results file
+    # Get the main energy-target results file
     rps_df = \
         pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                                  "rps.csv")
                     )
 
-    # Get the RPS dual results
+    # Get the energy-target dual results
     rps_duals_df = \
         pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                                 "Energy_Target_Target_Constraint.csv")
+                                 "Energy_Target_Constraint.csv")
                     )
 
     # # Get the input metadata for periods
@@ -171,8 +171,8 @@ def summarize_results(scenario_directory, subproblem, stage):
                          verify_integrity=True)
 
     # Calculate:
-    # 1) the percent of RPS energy that was curtailed
-    # 2) the marginal RPS cost per MWh based on the RPS constraint duals --
+    # 1) the percent of energy-target energy that was curtailed
+    # 2) the marginal energy-target cost per MWh based on the energy-target constraint duals --
     # to convert back to 'real' dollars, we need to divide by the discount
     # factor and the number of years a period represents
     results_df["percent_curtailed"] = pd.Series(
@@ -320,7 +320,7 @@ def import_results_into_database(
         """
     spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
-    # Calculate marginal RPS cost per MWh
+    # Calculate marginal energy-target cost per MWh
     mc_sql = """
         UPDATE results_system_period_energy_target
         SET energy_target_marginal_cost_per_mwh = 

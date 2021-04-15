@@ -9,5 +9,5 @@ curtailment_variable_heatmap_plot,1,VER Curtailment,1,0,0,1,0,0,0,1,0,0
 curtailment_hydro_heatmap_plot,1,Hydro Curtailment,1,0,0,1,0,0,0,1,0,0
 dispatch_plot,1,System Dispatch,1,0,0,0,0,1,1,1,0,0
 energy_plot,1,Energy Mix,1,0,0,0,0,0,0,1,0,0
-energy_target_plot,1,RPS,0,1,0,0,0,0,0,1,0,0
+energy_target_plot,1,Energy Target,0,1,0,0,0,0,0,1,0,0
 project_operations_plot,1,Project Operations,0,0,0,1,0,0,0,1,0,1
