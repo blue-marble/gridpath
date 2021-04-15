@@ -92,9 +92,9 @@ class TestRPSZones(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: RPS_ZONES
-        expected_rps_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
-        actual_rps_zones = sorted([z for z in instance.RPS_ZONES])
-        self.assertListEqual(expected_rps_zones, actual_rps_zones)
+        expected_energy_target_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
+        actual_energy_target_zones = sorted([z for z in instance.RPS_ZONES])
+        self.assertListEqual(expected_energy_target_zones, actual_energy_target_zones)
 
         # Param: allow_violation
         expected_allow_violation = OrderedDict(

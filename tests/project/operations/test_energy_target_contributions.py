@@ -105,17 +105,17 @@ class TestRECs(unittest.TestCase):
         actual_rps_projects = sorted([p for p in instance.RPS_PRJS])
         self.assertListEqual(expected_rps_projects, actual_rps_projects)
 
-        # Param: rps_zone
-        expected_rps_zone_by_prj = OrderedDict(sorted({
+        # Param: energy_target_zone
+        expected_energy_target_zone_by_prj = OrderedDict(sorted({
            "Wind": "RPS_Zone_1", "Wind_z2": "RPS_Zone_2"
                                                       }.items()
                                                       )
                                                )
-        actual_rps_zone_by_prj = OrderedDict(sorted({
-            p: instance.rps_zone[p] for p in instance.RPS_PRJS}.items()
+        actual_energy_target_zone_by_prj = OrderedDict(sorted({
+            p: instance.energy_target_zone[p] for p in instance.RPS_PRJS}.items()
                                                     )
                                              )
-        self.assertDictEqual(expected_rps_zone_by_prj, actual_rps_zone_by_prj)
+        self.assertDictEqual(expected_energy_target_zone_by_prj, actual_energy_target_zone_by_prj)
 
         # Set: RPS_PRJS_BY_RPS_ZONE
         expected_prj_by_zone = OrderedDict(sorted({

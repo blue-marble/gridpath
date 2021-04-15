@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs", "rps_zones.tab"),
+                                           "inputs", "energy_target_zones.tab"),
                      index=m.RPS_ZONES,
                      param=(m.rps_allow_violation,
                             m.rps_violation_penalty_per_mwh)
@@ -61,7 +61,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
-    rps_zones = c.execute(
+    energy_target_zones = c.execute(
         """SELECT energy_target_zone, allow_violation, 
         violation_penalty_per_mwh
            FROM inputs_geography_energy_target_zones
@@ -70,7 +70,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return rps_zones
+    return energy_target_zones
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -84,14 +84,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     pass
     # Validation to be added
-    # rps_zones = get_inputs_from_database(
+    # energy_target_zones = get_inputs_from_database(
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
-    rps_zones.tab file.
+    energy_target_zones.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -100,17 +100,17 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
 
-    rps_zones = get_inputs_from_database(
+    energy_target_zones = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "rps_zones.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "energy_target_zones.tab"),
               "w", newline="") as \
-            rps_zones_tab_file:
-        writer = csv.writer(rps_zones_tab_file, delimiter="\t", lineterminator="\n")
+            energy_target_zones_tab_file:
+        writer = csv.writer(energy_target_zones_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["rps_zone", "allow_violation",
+        writer.writerow(["energy_target_zone", "allow_violation",
                          "violation_penalty_per_mwh"])
 
-        for row in rps_zones:
+        for row in energy_target_zones:
             writer.writerow(row)

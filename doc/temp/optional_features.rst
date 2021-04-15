@@ -187,7 +187,7 @@ Renewable Portfolio Standard (RPS)
 Whether or not to enforce a Renewable Portfolio Standard policy.
 
 Feature modules include:
-.. automodule:: gridpath.geography.rps_zones
+.. automodule:: gridpath.geography.energy_target_zones
     :members:
 .. automodule:: gridpath.system.policy.rps.rps_requirement
     :members:

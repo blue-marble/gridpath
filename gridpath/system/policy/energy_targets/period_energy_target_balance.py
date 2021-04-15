@@ -78,7 +78,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "rps.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["rps_zone", "period",
+        writer.writerow(["energy_target_zone", "period",
                          "discount_factor", "number_years_represented",
                          "rps_target_mwh",
                          "delivered_rps_energy_mwh",
@@ -113,7 +113,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 def save_duals(m):
     m.constraint_indices["RPS_Target_Constraint"] = \
-        ["rps_zone", "period", "dual"]
+        ["energy_target_zone", "period", "dual"]
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -162,12 +162,12 @@ def summarize_results(scenario_directory, subproblem, stage):
             left=rps_df,
             right=rps_duals_df,
             how="left",
-            left_on=["rps_zone", "period"],
-            right_on=["rps_zone", "period"]
+            left_on=["energy_target_zone", "period"],
+            right_on=["energy_target_zone", "period"]
         )
     )
 
-    results_df.set_index(["rps_zone", "period"], inplace=True,
+    results_df.set_index(["energy_target_zone", "period"], inplace=True,
                          verify_integrity=True)
 
     # Calculate:
@@ -244,7 +244,7 @@ def import_results_into_database(
 
         next(reader)  # skip header
         for row in reader:
-            rps_zone = row[0]
+            energy_target_zone = row[0]
             period = row[1]
             discount_factor = row[2]
             number_years = row[3]
@@ -257,7 +257,7 @@ def import_results_into_database(
             shortage = row[10]
 
             results.append(
-                (scenario_id, rps_zone, period, subproblem, stage,
+                (scenario_id, energy_target_zone, period, subproblem, stage,
                  discount_factor, number_years, rps_target,
                  rps_provision, curtailment, total,
                  fraction_met, fraction_curtailed, shortage)

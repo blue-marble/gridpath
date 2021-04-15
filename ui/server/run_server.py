@@ -337,7 +337,7 @@ def socket_save_plot_data(client_message):
       plot_type=client_message["plotType"],
       load_zone=client_message["loadZone"],
       carbon_cap_zone=client_message["carbonCapZone"],
-      rps_zone=client_message["rpsZone"],
+      energy_target_zone=client_message["rpsZone"],
       period=client_message["period"],
       horizon=client_message["horizon"],
       start_timepoint=client_message["startTimepoint"],

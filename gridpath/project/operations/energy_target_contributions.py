@@ -62,7 +62,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Input Params                                                            |
     +=========================================================================+
-    | | :code:`rps_zone`                                                      |
+    | | :code:`energy_target_zone`                                                      |
     | | *Defined over*: :code:`RPS_PRJS`                                      |
     | | *Within*: :code:`RPS_ZONES`                                           |
     |                                                                         |
@@ -129,7 +129,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Input Params
     ###########################################################################
 
-    m.rps_zone = Param(
+    m.energy_target_zone = Param(
         m.RPS_PRJS,
         within=m.RPS_ZONES
     )
@@ -140,7 +140,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.RPS_PRJS_BY_RPS_ZONE = Set(
         m.RPS_ZONES,
         within=m.RPS_PRJS,
-        initialize=determine_rps_generators_by_rps_zone
+        initialize=determine_rps_generators_by_energy_target_zone
     )
 
     # Expressions
@@ -224,8 +224,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
-def determine_rps_generators_by_rps_zone(mod, rps_z):
-    return [p for p in mod.RPS_PRJS if mod.rps_zone[p] == rps_z]
+def determine_rps_generators_by_energy_target_zone(mod, rps_z):
+    return [p for p in mod.RPS_PRJS if mod.energy_target_zone[p] == rps_z]
 
 
 # Input-Output
@@ -245,12 +245,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "projects.tab"),
-        select=("project", "rps_zone"),
-        param=(m.rps_zone,)
+        select=("project", "energy_target_zone"),
+        param=(m.energy_target_zone,)
     )
 
     data_portal.data()['RPS_PRJS'] = {
-        None: list(data_portal.data()['rps_zone'].keys())
+        None: list(data_portal.data()['energy_target_zone'].keys())
     }
 
 
@@ -268,7 +268,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "rps_by_project.csv"),
               "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["project", "load_zone", "rps_zone",
+        writer.writerow(["project", "load_zone", "energy_target_zone",
                          "timepoint", "period", "horizon", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
                          "scheduled_rps_energy_mw",
@@ -279,7 +279,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.load_zone[p],
-                m.rps_zone[p],
+                m.energy_target_zone[p],
                 tmp,
                 m.period[tmp],
                 m.horizon[tmp, m.balancing_type_project[p]],
@@ -297,9 +297,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "rps_project_zones.csv"),
               "w", newline="") as rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)
-        writer.writerow(["project", "rps_zone"])
+        writer.writerow(["project", "energy_target_zone"])
         for p in m.RPS_PRJS:
-            writer.writerow([p, m.rps_zone[p]])
+            writer.writerow([p, m.energy_target_zone[p]])
 
 
 # Database
@@ -332,10 +332,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         (SELECT project, energy_target_zone
             FROM inputs_project_energy_target_zones
             WHERE project_energy_target_zone_scenario_id = {}
-        ) as prj_rps_zone_tbl
+        ) as prj_energy_target_zone_tbl
         USING (project)
         -- Filter out projects whose RPS zone is not one included in our 
-        -- rps_zone_scenario_id
+        -- energy_target_zone_scenario_id
         WHERE energy_target_zone in (
                 SELECT energy_target_zone
                     FROM inputs_geography_energy_target_zones
@@ -380,7 +380,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
         # Append column header
         header = next(reader)
-        header.append("rps_zone")
+        header.append("energy_target_zone")
         new_rows.append(header)
 
         # Append correct values
@@ -434,7 +434,7 @@ def import_results_into_database(
         for row in reader:
             project = row[0]
             load_zone = row[1]
-            rps_zone = row[2]
+            energy_target_zone = row[2]
             timepoint = row[3]
             period = row[4]
             horizon = row[5]
@@ -449,7 +449,7 @@ def import_results_into_database(
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight, hours_in_tmp,
-                 load_zone, rps_zone, technology,
+                 load_zone, energy_target_zone, technology,
                  scheduled_energy, scheduled_curtailment,
                  subhourly_energy, subhourly_curtailment)
             )
@@ -501,15 +501,15 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         print("update rps zones")
 
     tables_to_update = determine_table_subset_by_start_and_column(
-        conn=db, tbl_start="results_project_", cols=["rps_zone"]
+        conn=db, tbl_start="results_project_", cols=["energy_target_zone"]
     )
 
     for tbl in tables_to_update:
         update_prj_zone_column(
             conn=db, scenario_id=scenario_id, subscenarios=subscenarios,
-            subscenario="project_rps_zone_scenario_id",
-            subsc_tbl="inputs_project_rps_zones",
-            prj_tbl=tbl, col="rps_zone"
+            subscenario="project_energy_target_zone_scenario_id",
+            subsc_tbl="inputs_project_energy_target_zones",
+            prj_tbl=tbl, col="energy_target_zone"
         )
 
 

@@ -55,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.RPS_ZONES * m.LOAD_ZONES
     )
 
-    def rps_target_rule(mod, rps_zone, period):
+    def rps_target_rule(mod, energy_target_zone, period):
         """
         The RPS target consists of two additive components: an energy term
         and a 'percent of load x load' term, where a mapping between the RPS
@@ -70,17 +70,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             total_period_static_load = sum(
                 mod.static_load_mw[lz, tmp]
                 * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-                for (_rps_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
-                if _rps_zone == rps_zone
+                for (_energy_target_zone, lz) in mod.RPS_ZONE_LOAD_ZONES
+                if _energy_target_zone == energy_target_zone
                 for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
             )
             percentage_target = \
-                mod.rps_target_percentage[rps_zone, period] \
+                mod.rps_target_percentage[energy_target_zone, period] \
                 * total_period_static_load
         else:
             percentage_target = 0
 
-        return mod.rps_target_mwh[rps_zone, period] + percentage_target
+        return mod.rps_target_mwh[energy_target_zone, period] + percentage_target
 
     m.RPS_Target = Expression(
         m.RPS_ZONE_PERIODS_WITH_RPS,
@@ -221,7 +221,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
         # Write header
         writer.writerow(
-            ["rps_zone", "period", "rps_target_mwh", "rps_target_percentage"]
+            ["energy_target_zone", "period", "rps_target_mwh", "rps_target_percentage"]
         )
 
         for row in rps_targets:
@@ -243,7 +243,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
             # Write header
             writer.writerow(
-                ["rps_zone", "load_zone"]
+                ["energy_target_zone", "load_zone"]
             )
             for row in rps_lz_map_list:
                 writer.writerow(row)

@@ -58,7 +58,7 @@ Modules in this package define the geographic span and resolution of the model.
     :members:
 .. automodule:: gridpath.geography.spinning_reserves_balancing_areas
     :members:
-.. automodule:: gridpath.geography.rps_zones
+.. automodule:: gridpath.geography.energy_target_zones
     :members:
 .. automodule:: gridpath.geography.carbon_cap_zones
     :members:

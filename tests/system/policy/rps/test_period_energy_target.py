@@ -97,15 +97,15 @@ class TestRPSRequirement(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: RPS_ZONE_PERIODS_WITH_RPS
-        expected_rps_zone_periods = sorted([
+        expected_energy_target_zone_periods = sorted([
             ("RPS_Zone_1", 2020), ("RPS_Zone_1", 2030),
             ("RPS_Zone_2", 2020), ("RPS_Zone_2", 2030)
         ])
-        actual_rps_zone_periods = sorted([
+        actual_energy_target_zone_periods = sorted([
             (z, p) for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS
         ])
-        self.assertListEqual(expected_rps_zone_periods,
-                             actual_rps_zone_periods)
+        self.assertListEqual(expected_energy_target_zone_periods,
+                             actual_energy_target_zone_periods)
 
         # Param: rps_target_mwh
         expected_rps_target = OrderedDict(sorted({
@@ -134,15 +134,15 @@ class TestRPSRequirement(unittest.TestCase):
         self.assertDictEqual(expected_rps_percentage, actual_rps_percentage)
 
         # Set: RPS_ZONE_LOAD_ZONES
-        expected_rps_zone_load_zones = sorted([
+        expected_energy_target_zone_load_zones = sorted([
             ("RPS_Zone_1", "Zone1"), ("RPS_Zone_1", "Zone2"),
             ("RPS_Zone_2", "Zone3")
         ])
-        actual_rps_zone_load_zones = sorted([
+        actual_energy_target_zone_load_zones = sorted([
             (z, p) for (z, p) in instance.RPS_ZONE_LOAD_ZONES
         ])
-        self.assertListEqual(expected_rps_zone_load_zones,
-                             actual_rps_zone_load_zones)
+        self.assertListEqual(expected_energy_target_zone_load_zones,
+                             actual_energy_target_zone_load_zones)
 
 
 if __name__ == "__main__":

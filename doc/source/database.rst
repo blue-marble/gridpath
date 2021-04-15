@@ -366,12 +366,12 @@ Renewables Portfolio Standard (RPS)
 Policy Zones
 ============
 
-.. automodule:: db.csvs_test_examples.policy.rps.geography_rps_zones.doc
+.. automodule:: db.csvs_test_examples.policy.rps.geography_energy_target_zones.doc
 
 Contributing Projects
 =====================
 
-.. automodule:: db.csvs_test_examples.policy.rps.project_rps_zones.doc
+.. automodule:: db.csvs_test_examples.policy.rps.project_energy_target_zones.doc
 
 Target
 ======

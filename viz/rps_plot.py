@@ -48,7 +48,7 @@ def create_parser():
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--rps_zone", required=True, type=str,
+    parser.add_argument("--energy_target_zone", required=True, type=str,
                         help="The name of the RPS zone. Required")
     parser.add_argument("--subproblem", default=1, type=int,
                         help="The subproblem ID. Defaults to 1.")
@@ -69,10 +69,10 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
+def get_plotting_data(conn, scenario_id, energy_target_zone, subproblem, stage,
                       **kwargs):
     """
-    Get the RPS results by period for a given scenario/rps_zone/subproblem/stage
+    Get the RPS results by period for a given scenario/energy_target_zone/subproblem/stage
 
     Note: RPS energy in spinup and lookahead timepoints is included since the
     RPS energy in those timepoints will still count towards the target.
@@ -82,7 +82,7 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
 
     :param conn:
     :param scenario_id:
-    :param rps_zone:
+    :param energy_target_zone:
     :param subproblem:
     :param stage:
     :return:
@@ -99,7 +99,7 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
             rps_marginal_cost_per_mwh
         FROM results_system_rps
         WHERE scenario_id = ?
-        AND rps_zone = ?
+        AND energy_target_zone = ?
         AND subproblem_id = ?
         AND stage_id = ?
         ;"""
@@ -107,7 +107,7 @@ def get_plotting_data(conn, scenario_id, rps_zone, subproblem, stage,
     df = pd.read_sql(
         sql,
         con=conn,
-        params=(scenario_id, rps_zone, subproblem, stage)
+        params=(scenario_id, energy_target_zone, subproblem, stage)
     )
 
     # Change period type from int to string (required for categorical bar chart)
@@ -269,14 +269,14 @@ def main(args=None):
         "{}RPS Result by Period - {} - Subproblem {} - Stage {}".format(
             "{} - ".format(scenario)
             if parsed_args.scenario_name_in_title else "",
-            parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
+            parsed_args.energy_target_zone, parsed_args.subproblem, parsed_args.stage)
     plot_name = "RPSPlot-{}-{}-{}".format(
-        parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
+        parsed_args.energy_target_zone, parsed_args.subproblem, parsed_args.stage)
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
-        rps_zone=parsed_args.rps_zone,
+        energy_target_zone=parsed_args.energy_target_zone,
         subproblem=parsed_args.subproblem,
         stage=parsed_args.stage
     )
