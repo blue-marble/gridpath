@@ -38,14 +38,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.RPS_Shortage_MWh = Var(
+    m.Energy_Target_Shortage_MWh = Var(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.RPS_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
+        return mod.Energy_Target_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
 
-    m.RPS_Shortage_MWh_Expression = Expression(
+    m.Energy_Target_Shortage_MWh_Expression = Expression(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
     )
 
@@ -57,11 +57,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
-            + mod.RPS_Shortage_MWh_Expression[z, p] \
-            >= mod.RPS_Target[z, p]
+        return mod.Total_Delivered_Energy_Target_Energy_MWh[z, p] \
+            + mod.Energy_Target_Shortage_MWh_Expression[z, p] \
+            >= mod.Energy_Target_Target[z, p]
 
-    m.RPS_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
+    m.Energy_Target_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
 
 
@@ -93,26 +93,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 p,
                 m.discount_factor[p],
                 m.number_years_represented[p],
-                value(m.RPS_Target[z, p]),
-                value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
-                value(m.Total_Delivered_RPS_Energy_MWh[z, p]) +
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
+                value(m.Energy_Target_Target[z, p]),
+                value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p]),
+                value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]),
+                value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p]) +
+                value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]),
                 1 if float(m.rps_target_mwh[z, p]) == 0
                 else value(
-                    m.Total_Delivered_RPS_Energy_MWh[z, p]) /
+                    m.Total_Delivered_Energy_Target_Energy_MWh[z, p]) /
                 float(m.rps_target_mwh[z, p]),
-                0 if (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
-                      + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])) == 0
-                else value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
-                (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
-                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])),
-                value(m.RPS_Shortage_MWh_Expression[z, p])
+                0 if (value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p])
+                      + value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p])) == 0
+                else value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]) /
+                (value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p])
+                 + value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p])),
+                value(m.Energy_Target_Shortage_MWh_Expression[z, p])
             ])
 
 
 def save_duals(m):
-    m.constraint_indices["RPS_Target_Constraint"] = \
+    m.constraint_indices["Energy_Target_Target_Constraint"] = \
         ["energy_target_zone", "period", "dual"]
 
 
@@ -148,7 +148,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Get the RPS dual results
     rps_duals_df = \
         pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                                 "RPS_Target_Constraint.csv")
+                                 "Energy_Target_Target_Constraint.csv")
                     )
 
     # # Get the input metadata for periods
@@ -298,7 +298,7 @@ def import_results_into_database(
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "RPS_Target_Constraint.csv"),
+    with open(os.path.join(results_directory, "Energy_Target_Target_Constraint.csv"),
               "r") as rps_duals_file:
         reader = csv.reader(rps_duals_file)
 

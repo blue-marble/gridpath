@@ -40,9 +40,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return \
-            sum((mod.Scheduled_RPS_Energy_MW[g, tmp]
+            sum((mod.Scheduled_Energy_Target_Energy_MW[g, tmp]
                  - mod.Subhourly_Curtailment_MW[g, tmp]
-                 + mod.Subhourly_RPS_Energy_MW[g,tmp])
+                 + mod.Subhourly_Energy_Target_Energy_MW[g,tmp])
                 * mod.hrs_in_tmp[tmp]
                 * mod.tmp_weight[tmp]
                 for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
@@ -50,7 +50,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 and tmp in mod.TMPS_IN_PRD[p]
                 )
 
-    m.Total_Delivered_RPS_Energy_MWh = \
+    m.Total_Delivered_Energy_Target_Energy_MWh = \
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
                    rule=rps_energy_provision_rule)
 
@@ -65,7 +65,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
                     mod.Subhourly_Curtailment_MW[g, tmp] -
-                    mod.Subhourly_RPS_Energy_MW[g, tmp])
+                    mod.Subhourly_Energy_Target_Energy_MW[g, tmp])
                    * mod.hrs_in_tmp[tmp]
                    * mod.tmp_weight[tmp]
                    for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    )
     # TODO: is this only needed for export and, if so, should it be created on
     # export?
-    m.Total_Curtailed_RPS_Energy_MWh = \
+    m.Total_Curtailed_Energy_Target_Energy_MWh = \
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
                    rule=total_curtailed_rps_energy_rule)
 

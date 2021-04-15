@@ -82,7 +82,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
         return mod.rps_target_mwh[energy_target_zone, period] + percentage_target
 
-    m.RPS_Target = Expression(
+    m.Energy_Target_Target = Expression(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_RPS,
         rule=rps_target_rule
     )

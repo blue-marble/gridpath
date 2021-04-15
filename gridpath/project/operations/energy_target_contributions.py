@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`Scheduled_RPS_Energy_MW`                                       |
+    | | :code:`Scheduled_Energy_Target_Energy_MW`                                       |
     | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes how many RECs (in MW) are scheduled for each RPS-eligible     |
@@ -86,7 +86,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Describes the amount of scheduled curtailment (in MW) for each          |
     | RPS-eligible project in each timepoint.                                 |
     +-------------------------------------------------------------------------+
-    | | :code:`Subhourly_RPS_Energy_MW`                                       |
+    | | :code:`Subhourly_Energy_Target_Energy_MW`                                       |
     | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
     |                                                                         |
     | Describes how many RECs (in MW) are delivered subhourly for each        |
@@ -159,7 +159,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return op_type_init.rec_provision_rule(mod, prj, tmp)
 
-    m.Scheduled_RPS_Energy_MW = Expression(
+    m.Scheduled_Energy_Target_Energy_MW = Expression(
         m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=scheduled_recs_rule
     )
@@ -196,7 +196,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return op_type_init.subhourly_energy_delivered_rule(mod, prj, tmp)
 
-    m.Subhourly_RPS_Energy_MW = Expression(
+    m.Subhourly_Energy_Target_Energy_MW = Expression(
         m.ENERGY_TARGET_PRJ_OPR_TMPS,
         rule=subhourly_recs_delivered_rule
     )
@@ -286,9 +286,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.tmp_weight[tmp],
                 m.hrs_in_tmp[tmp],
                 m.technology[p],
-                value(m.Scheduled_RPS_Energy_MW[p, tmp]),
+                value(m.Scheduled_Energy_Target_Energy_MW[p, tmp]),
                 value(m.Scheduled_Curtailment_MW[p, tmp]),
-                value(m.Subhourly_RPS_Energy_MW[p, tmp]),
+                value(m.Subhourly_Energy_Target_Energy_MW[p, tmp]),
                 value(m.Subhourly_Curtailment_MW[p, tmp])
             ])
 
