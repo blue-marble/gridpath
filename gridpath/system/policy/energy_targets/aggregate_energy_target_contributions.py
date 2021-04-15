@@ -50,7 +50,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 and tmp in mod.TMPS_IN_PRD[p]
                 )
 
-    m.Total_Delivered_Energy_Target_Energy_MWh = \
+    m.Total_Delivered_Period_Energy_Target_Energy_MWh = \
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
                    rule=energy_target_contribution_rule)
 
@@ -74,7 +74,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    )
     # TODO: is this only needed for export and, if so, should it be created on
     # export?
-    m.Total_Curtailed_Energy_Target_Energy_MWh = \
+    m.Total_Curtailed_Period_Energy_Target_Energy_MWh = \
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
                    rule=total_curtailed_energy_target_energy_rule)
 

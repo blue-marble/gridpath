@@ -120,6 +120,7 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
 
     errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
+        print(feature, subscenario_ids)
         if feature not in ["core", "optional", "data_dependent"]:
             for sc_id in subscenario_ids:
                 # If the feature is requested, and the associated subscenarios
@@ -133,12 +134,15 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
 
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
-                elif feature not in feature_list and \
-                        getattr(subscenarios, sc_id) != "NULL":
-                    errors["Low"].append(
-                        "Detected inputs for '{}' while related feature '{}' "
-                         "is not requested".format(sc_id, feature)
-                    )
+                # TODO: need to add handling of subscenarios shared among
+                #  features; commenting out for now
+                # elif feature not in feature_list and \
+                #         getattr(subscenarios, sc_id) != "NULL":
+                #     errors["Low"].append(
+                #         "Detected inputs for '{}' while related feature '{}' "
+                #          "is not requested".format(sc_id, feature)
+                #     )
+
     for severity, error_list in errors.items():
         write_validation_to_database(
             conn=conn,

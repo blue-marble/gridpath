@@ -31,7 +31,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum(mod.Energy_Target_Shortage_MWh_Expression[z, p]
+        return sum(mod.Period_Energy_Target_Shortage_MWh_Expression[z, p]
                    * mod.energy_target_violation_penalty_per_mwh[z]
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]
