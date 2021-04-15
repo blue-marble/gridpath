@@ -16,15 +16,15 @@
 
 **Relevant tables:**
 
-+-------------------------------+---------------------------------------+
-|:code:`scenarios` table column |:code:`project_rps_zone_scenario_id`   |
-+-------------------------------+---------------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                         |
-+-------------------------------+---------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_project_rps_zones` |
-+-------------------------------+---------------------------------------+
-|:code:`input_` tables          |:code:`inputs_project_rps_zones`       |
-+-------------------------------+---------------------------------------+
++-------------------------------+--------------------------------+
+|:code:`scenarios` table column |:code:`energy_target_scenario_id`         |
++-------------------------------+--------------------------------+
+|:code:`scenario` table feature |:code:`of_energy_target`                  |
++-------------------------------+--------------------------------+
+|:code:`subscenario_` table     |:code:`subscenarios_system_energy_target` |
++-------------------------------+--------------------------------+
+|:code:`input_` tables          |:code:`inputs_system_energy_target`       |
++-------------------------------+--------------------------------+
 
 """
 

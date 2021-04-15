@@ -17,13 +17,13 @@
 **Relevant tables:**
 
 +-------------------------------+-----------------------------------------+
-|:code:`scenarios` table column |:code:`rps_zone_scenario_id`             |
+|:code:`scenarios` table column |:code:`energy_target_zone_scenario_id`             |
 +-------------------------------+-----------------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                           |
+|:code:`scenario` table feature |:code:`of_energy_target`                           |
 +-------------------------------+-----------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_geography_rps_zones` |
+|:code:`subscenario_` table     |:code:`subscenarios_geography_energy_target_zones` |
 +-------------------------------+-----------------------------------------+
-|:code:`input_` tables          |:code:`inputs_geography_rps_zones`       |
+|:code:`input_` tables          |:code:`inputs_geography_energy_target_zones`       |
 +-------------------------------+-----------------------------------------+
 
 """

@@ -17,13 +17,13 @@
 **Relevant tables:**
 
 +-------------------------------+--------------------------------+
-|:code:`scenarios` table column |:code:`rps_scenario_id`         |
+|:code:`scenarios` table column |:code:`energy_target_scenario_id`         |
 +-------------------------------+--------------------------------+
-|:code:`scenario` table feature |:code:`of_rps`                  |
+|:code:`scenario` table feature |:code:`of_energy_target`                  |
 +-------------------------------+--------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_rps` |
+|:code:`subscenario_` table     |:code:`subscenarios_system_energy_target` |
 +-------------------------------+--------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_rps`       |
+|:code:`input_` tables          |:code:`inputs_system_energy_target`       |
 +-------------------------------+--------------------------------+
 
 """

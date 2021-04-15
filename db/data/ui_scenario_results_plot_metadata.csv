@@ -1,4 +1,4 @@
-﻿results_plot,include,caption,load_zone_form_control,rps_zone_form_control,carbon_cap_zone_form_control,period_form_control,horizon_form_control,start_timepoint_form_control,end_timepoint_form_control,stage_form_control,project_form_control,commit_project_form_control
+﻿results_plot,include,caption,load_zone_form_control,energy_target_zone_form_control,carbon_cap_zone_form_control,period_form_control,horizon_form_control,start_timepoint_form_control,end_timepoint_form_control,stage_form_control,project_form_control,commit_project_form_control
 capacity_factor_plot,1,Capacity Factors,1,0,0,0,0,0,0,1,0,0
 capacity_new_plot,1,New Capacity,1,0,0,0,0,0,0,0,0,0
 capacity_retired_plot,1,Retired Capacity,1,0,0,0,0,0,0,0,0,0
@@ -9,5 +9,5 @@ curtailment_variable_heatmap_plot,1,VER Curtailment,1,0,0,1,0,0,0,1,0,0
 curtailment_hydro_heatmap_plot,1,Hydro Curtailment,1,0,0,1,0,0,0,1,0,0
 dispatch_plot,1,System Dispatch,1,0,0,0,0,1,1,1,0,0
 energy_plot,1,Energy Mix,1,0,0,0,0,0,0,1,0,0
-rps_plot,1,RPS,0,1,0,0,0,0,0,1,0,0
+energy_target_plot,1,RPS,0,1,0,0,0,0,0,1,0,0
 project_operations_plot,1,Project Operations,0,0,0,1,0,0,0,1,0,1

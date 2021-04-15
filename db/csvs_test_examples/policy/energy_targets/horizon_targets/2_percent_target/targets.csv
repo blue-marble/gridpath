@@ -1,0 +1,3 @@
+energy_target_zone,subproblem_id,stage_id,balancing_type_horizon,horizon,energy_target_mwh,energy_target_percentage
+RPSZone1,1,1,year,2020,,0.625
+RPSZone1,1,1,year,2030,,0.625
