@@ -53,7 +53,7 @@ class ScenarioResultsOptions(Resource):
             FROM scenarios
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
-        options_api["rpsZoneOptions"] = ['Select RPS Area'] + energy_target_zone_options
+        options_api["energyTargetZoneOptions"] = ['Select RPS Area'] + energy_target_zone_options
 
         carbon_cap_zone_options = [z[0] for z in c.execute(
             """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
@@ -277,7 +277,7 @@ class ScenarioResultsIncludedPlots(Resource):
                 "plotType": results_plot,
                 "caption": caption,
                 "loadZone": [] if load_zone_form_control else "default",
-                "rpsZone": [] if energy_target_zone_form_control else "default",
+                "energyTargetZone": [] if energy_target_zone_form_control else "default",
                 "carbonCapZone": [] if carbon_cap_zone_form_control
                 else "default",
                 "period": [] if period_form_control else "default",

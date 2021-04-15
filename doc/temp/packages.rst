@@ -292,13 +292,13 @@ Modules in this package define system-level parameters and constraints.
     :members:
 .. automodule:: gridpath.system.policy.__init__
     :members:
-.. automodule:: gridpath.system.policy.rps.__init__
+.. automodule:: gridpath.system.policy.energy_target.__init__
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_requirement
+.. automodule:: gridpath.system.policy.energy_target.energy_target
     :members:
-.. automodule:: gridpath.system.policy.rps.aggregate_recs
+.. automodule:: gridpath.system.policy.energy_target.aggregate_recs
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_balance
+.. automodule:: gridpath.system.policy.energy_target.energy_target_balance
     :members:
 .. automodule:: gridpath.system.policy.carbon_cap.__init__
     :members:

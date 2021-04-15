@@ -36,14 +36,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # RPS target specified in energy terms
-    m.rps_target_mwh = Param(
+    m.energy_target_mwh = Param(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=NonNegativeReals,
         default=0
     )
 
     # RPS target specified in 'percent of load' terms
-    m.rps_target_percentage = Param(
+    m.energy_target_percentage = Param(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=PercentFraction,
         default=0
@@ -55,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.ENERGY_TARGET_ZONES * m.LOAD_ZONES
     )
 
-    def rps_target_rule(mod, energy_target_zone, period):
+    def energy_target_rule(mod, energy_target_zone, period):
         """
         The RPS target consists of two additive components: an energy term
         and a 'percent of load x load' term, where a mapping between the RPS
@@ -75,16 +75,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
             )
             percentage_target = \
-                mod.rps_target_percentage[energy_target_zone, period] \
+                mod.energy_target_percentage[energy_target_zone, period] \
                 * total_period_static_load
         else:
             percentage_target = 0
 
-        return mod.rps_target_mwh[energy_target_zone, period] + percentage_target
+        return mod.energy_target_mwh[energy_target_zone, period] + percentage_target
 
-    m.Energy_Target_Target = Expression(
+    m.Energy_Target = Expression(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-        rule=rps_target_rule
+        rule=energy_target_rule
     )
 
 
@@ -102,16 +102,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Load the targets
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "rps_targets.tab"),
+                              "inputs", "energy_targets.tab"),
         index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-        param=(m.rps_target_mwh, m.rps_target_percentage, )
+        param=(m.energy_target_mwh, m.energy_target_percentage, )
     )
 
     # If we have a RPS zone to load zone map input file, load it; otherwise,
     # initialize ENERGY_TARGET_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs",
-        "rps_target_load_zone_map.tab"
+        "energy_target_load_zone_map.tab"
     )
     if os.path.exists(map_filename):
         data_portal.load(
@@ -135,7 +135,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Get the energy and percent targets
     c = conn.cursor()
-    rps_targets = c.execute(
+    energy_targets = c.execute(
         """SELECT energy_target_zone, period, energy_target_mwh, 
         energy_target_percentage
         FROM inputs_system_period_energy_targets
@@ -178,7 +178,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return rps_targets, lz_mapping
+    return energy_targets, lz_mapping
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -194,14 +194,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #  zones or vice versa
     pass
     # Validation to be added
-    # rps_targets = get_inputs_from_database(
+    # energy_targets = get_inputs_from_database(
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
-    rps_targets.tab file.
+    energy_targets.tab file.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -210,42 +210,42 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
 
-    rps_targets, lz_mapping = get_inputs_from_database(
+    energy_targets, lz_mapping = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "rps_targets.tab"), "w", newline="") as \
-            rps_targets_tab_file:
-        writer = csv.writer(rps_targets_tab_file,
+                           "energy_targets.tab"), "w", newline="") as \
+            energy_targets_tab_file:
+        writer = csv.writer(energy_targets_tab_file,
                             delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["energy_target_zone", "period", "rps_target_mwh", "rps_target_percentage"]
+            ["energy_target_zone", "period", "energy_target_mwh", "energy_target_percentage"]
         )
 
-        for row in rps_targets:
+        for row in energy_targets:
             # It's OK if targets are not specified; they default to 0
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
     # Write the RPS zone to load zone map file for the RPS percent target if
     # there are any mappings only
-    rps_lz_map_list = [row for row in lz_mapping]
-    if rps_lz_map_list:
+    energy_target_lz_map_list = [row for row in lz_mapping]
+    if energy_target_lz_map_list:
         with open(os.path.join(scenario_directory, str(subproblem), str(stage),
                                "inputs",
-                               "rps_target_load_zone_map.tab"), "w",
+                               "energy_target_load_zone_map.tab"), "w",
                   newline="") as \
-                rps_lz_map_tab_file:
-            writer = csv.writer(rps_lz_map_tab_file,
+                energy_target_lz_map_tab_file:
+            writer = csv.writer(energy_target_lz_map_tab_file,
                                 delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
                 ["energy_target_zone", "load_zone"]
             )
-            for row in rps_lz_map_list:
+            for row in energy_target_lz_map_list:
                 writer.writerow(row)
     else:
         pass

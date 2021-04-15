@@ -54,7 +54,7 @@ except ImportError:
           " to test.")
 
 
-class TestRPSRequirement(unittest.TestCase):
+class TestPeriodEnergyTarget(unittest.TestCase):
     """
 
     """
@@ -107,31 +107,31 @@ class TestRPSRequirement(unittest.TestCase):
         self.assertListEqual(expected_energy_target_zone_periods,
                              actual_energy_target_zone_periods)
 
-        # Param: rps_target_mwh
-        expected_rps_target = OrderedDict(sorted({
+        # Param: energy_target_mwh
+        expected_energy_target = OrderedDict(sorted({
             ("RPS_Zone_1", 2020): 50, ("RPS_Zone_1", 2030): 50,
             ("RPS_Zone_2", 2020): 10, ("RPS_Zone_2", 2030): 10}.items()
                                                  )
                                           )
-        actual_rps_target = OrderedDict(sorted({
-            (z, p): instance.rps_target_mwh[z, p]
+        actual_energy_target = OrderedDict(sorted({
+            (z, p): instance.energy_target_mwh[z, p]
             for (z, p) in instance.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET}.items()
                                                )
                                         )
-        self.assertDictEqual(expected_rps_target, actual_rps_target)
+        self.assertDictEqual(expected_energy_target, actual_energy_target)
 
-        # Param: rps_target_percentage
-        expected_rps_percentage = OrderedDict(sorted({
+        # Param: energy_target_percentage
+        expected_energy_target_percentage = OrderedDict(sorted({
             ("RPS_Zone_1", 2020): 0.2, ("RPS_Zone_1", 2030): 0.33,
             ("RPS_Zone_2", 2020): 0, ("RPS_Zone_2", 2030): 0}.items()
                                                  )
                                           )
-        actual_rps_percentage = OrderedDict(sorted({
-            (z, p): instance.rps_target_percentage[z, p]
+        actual_energy_target_percentage = OrderedDict(sorted({
+            (z, p): instance.energy_target_percentage[z, p]
             for (z, p) in instance.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET}.items()
                                                )
                                         )
-        self.assertDictEqual(expected_rps_percentage, actual_rps_percentage)
+        self.assertDictEqual(expected_energy_target_percentage, actual_energy_target_percentage)
 
         # Set: ENERGY_TARGET_ZONE_LOAD_ZONES
         expected_energy_target_zone_load_zones = sorted([

@@ -89,8 +89,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "local_capacity.csv"), "w", newline="") as rps_results_file:
-        writer = csv.writer(rps_results_file)
+                           "local_capacity.csv"), "w", newline="") as f:
+        writer = csv.writer(f)
         writer.writerow(["local_capacity_zone", "period",
                          "discount_factor", "number_years_represented",
                          "local_capacity_requirement_mw",

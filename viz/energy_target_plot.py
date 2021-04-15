@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Create plot of rps by period for a given zone/subproblem/stage.
+Create plot of energy_target by period for a given zone/subproblem/stage.
 """
 
 # TODO: maybe create a generic rescale function that checks dataframe and
@@ -91,13 +91,13 @@ def get_plotting_data(conn, scenario_id, energy_target_zone, subproblem, stage,
     sql = """
         SELECT 
             period, 
-            rps_target_mwh, 
-            delivered_rps_energy_mwh, 
-            curtailed_rps_energy_mwh, 
-            fraction_of_rps_target_met, 
-            fraction_of_rps_energy_curtailed,
-            rps_marginal_cost_per_mwh
-        FROM results_system_rps
+            energy_target_mwh, 
+            delivered_energy_target_energy_mwh, 
+            curtailed_energy_target_energy_mwh, 
+            fraction_of_energy_target_met, 
+            fraction_of_energy_target_energy_curtailed,
+            energy_target_marginal_cost_per_mwh
+        FROM results_system_energy_target
         WHERE scenario_id = ?
         AND energy_target_zone = ?
         AND subproblem_id = ?
@@ -113,9 +113,9 @@ def get_plotting_data(conn, scenario_id, energy_target_zone, subproblem, stage,
     # Change period type from int to string (required for categorical bar chart)
     df["period"] = df["period"].map(str)
 
-    # Add rps delivered fraction
-    df["fraction_of_rps_energy_delivered"] = \
-        1 - df["fraction_of_rps_energy_curtailed"]
+    # Add energy_target delivered fraction
+    df["fraction_of_energy_target_energy_delivered"] = \
+        1 - df["fraction_of_energy_target_energy_curtailed"]
 
     return df
 
@@ -142,8 +142,8 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
     x_col = "period"
-    line_col = "rps_target_mwh"
-    stacked_cols = ["delivered_rps_energy_mwh", "curtailed_rps_energy_mwh"]
+    line_col = "energy_target_mwh"
+    stacked_cols = ["delivered_energy_target_energy_mwh", "curtailed_energy_target_energy_mwh"]
 
     # Stacked Area Colors
     colors = ["#75968f", "#933b41"]
@@ -206,7 +206,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Delivered RPS Energy",
-             "@%s{0,0} %s (@fraction_of_rps_energy_delivered{0%%})"
+             "@%s{0,0} %s (@fraction_of_energy_target_energy_delivered{0%%})"
              % (stacked_cols[0], energy_unit)),
         ],
         renderers=[r_delivered],
@@ -219,7 +219,7 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Curtailed RPS Energy",
-             "@%s{0,0} %s (@fraction_of_rps_energy_curtailed{0%%})"
+             "@%s{0,0} %s (@fraction_of_energy_target_energy_curtailed{0%%})"
              % (stacked_cols[1], energy_unit)),
         ],
         renderers=[r_curtailed],
@@ -231,8 +231,8 @@ def create_plot(df, title, energy_unit, cost_unit, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("RPS Target", "@%s{0,0} %s" % (line_col, energy_unit)),
-            ("Fraction of RPS Met", "@fraction_of_rps_target_met{0%}"),
-            ("Marginal Cost", "@rps_marginal_cost_per_mwh{0,0} %s/%s"
+            ("Fraction of RPS Met", "@fraction_of_energy_target_met{0%}"),
+            ("Marginal Cost", "@energy_target_marginal_cost_per_mwh{0,0} %s/%s"
              % (cost_unit, energy_unit))
         ],
         renderers=[target_renderer],
@@ -259,7 +259,7 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="rps_plot"
+        script="energy_target_plot"
     )
 
     energy_unit = get_unit(c, "energy")

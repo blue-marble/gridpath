@@ -54,7 +54,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
                    rule=energy_target_contribution_rule)
 
-    def total_curtailed_rps_energy_rule(mod, z, p):
+    def total_curtailed_energy_target_energy_rule(mod, z, p):
         """
         Calculate how much RPS-eligible energy was curtailed in each RPS zone
         in each period
@@ -76,5 +76,5 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # export?
     m.Total_Curtailed_Energy_Target_Energy_MWh = \
         Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-                   rule=total_curtailed_rps_energy_rule)
+                   rule=total_curtailed_energy_target_energy_rule)
 

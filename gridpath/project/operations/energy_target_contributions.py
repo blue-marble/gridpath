@@ -140,7 +140,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE = Set(
         m.ENERGY_TARGET_ZONES,
         within=m.ENERGY_TARGET_PRJS,
-        initialize=determine_rps_generators_by_energy_target_zone
+        initialize=determine_energy_target_generators_by_energy_target_zone
     )
 
     # Expressions
@@ -224,8 +224,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
-def determine_rps_generators_by_energy_target_zone(mod, rps_z):
-    return [p for p in mod.ENERGY_TARGET_PRJS if mod.energy_target_zone[p] == rps_z]
+def determine_energy_target_generators_by_energy_target_zone(mod, energy_target_z):
+    return [p for p in mod.ENERGY_TARGET_PRJS if mod.energy_target_zone[p] == energy_target_z]
 
 
 # Input-Output
@@ -265,15 +265,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "rps_by_project.csv"),
-              "w", newline="") as rps_results_file:
-        writer = csv.writer(rps_results_file)
+                           "energy_target_by_project.csv"),
+              "w", newline="") as energy_target_results_file:
+        writer = csv.writer(energy_target_results_file)
         writer.writerow(["project", "load_zone", "energy_target_zone",
                          "timepoint", "period", "horizon", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
-                         "scheduled_rps_energy_mw",
+                         "scheduled_energy_target_energy_mw",
                          "scheduled_curtailment_mw",
-                         "subhourly_rps_energy_delivered_mw",
+                         "subhourly_energy_target_energy_delivered_mw",
                          "subhourly_curtailment_mw"])
         for (p, tmp) in m.ENERGY_TARGET_PRJ_OPR_TMPS:
             writer.writerow([
@@ -294,9 +294,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export list of energy-target projects and their zones for later use
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "rps_project_zones.csv"),
-              "w", newline="") as rps_project_zones_file:
-        writer = csv.writer(rps_project_zones_file)
+                           "energy_target_project_zones.csv"),
+              "w", newline="") as energy_target_project_zones_file:
+        writer = csv.writer(energy_target_project_zones_file)
         writer.writerow(["project", "energy_target_zone"])
         for p in m.ENERGY_TARGET_PRJS:
             writer.writerow([p, m.energy_target_zone[p]])
@@ -328,7 +328,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             WHERE project_portfolio_scenario_id = {}
         ) as prj_tbl
         LEFT OUTER JOIN 
-        -- Get rps zones for those projects
+        -- Get energy_target zones for those projects
         (SELECT project, energy_target_zone
             FROM inputs_project_energy_target_zones
             WHERE project_energy_target_zone_scenario_id = {}
@@ -426,9 +426,9 @@ def import_results_into_database(
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory, "rps_by_project.csv"),
-              "r") as rps_file:
-        reader = csv.reader(rps_file)
+    with open(os.path.join(results_directory, "energy_target_by_project.csv"),
+              "r") as energy_target_file:
+        reader = csv.reader(energy_target_file)
 
         next(reader)  # skip header
         for row in reader:
@@ -498,7 +498,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     :return:
     """
     if not quiet:
-        print("update rps zones")
+        print("update energy_target zones")
 
     tables_to_update = determine_table_subset_by_start_and_column(
         conn=db, tbl_start="results_project_", cols=["energy_target_zone"]

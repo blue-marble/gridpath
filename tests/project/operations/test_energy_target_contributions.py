@@ -101,9 +101,9 @@ class TestRECs(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: ENERGY_TARGET_PRJS
-        expected_rps_projects = sorted(["Wind", "Wind_z2"])
-        actual_rps_projects = sorted([p for p in instance.ENERGY_TARGET_PRJS])
-        self.assertListEqual(expected_rps_projects, actual_rps_projects)
+        expected_energy_target_projects = sorted(["Wind", "Wind_z2"])
+        actual_energy_target_projects = sorted([p for p in instance.ENERGY_TARGET_PRJS])
+        self.assertListEqual(expected_energy_target_projects, actual_energy_target_projects)
 
         # Param: energy_target_zone
         expected_energy_target_zone_by_prj = OrderedDict(sorted({
@@ -132,15 +132,15 @@ class TestRECs(unittest.TestCase):
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
         # Set: ENERGY_TARGET_PRJ_OPR_TMPS
-        expected_rps_prj_op_tmp = sorted(
-            get_project_operational_timepoints(expected_rps_projects)
+        expected_energy_target_prj_op_tmp = sorted(
+            get_project_operational_timepoints(expected_energy_target_projects)
         )
 
-        actual_rps_prj_op_tmp = sorted([
+        actual_energy_target_prj_op_tmp = sorted([
             (prj, tmp) for (prj, tmp)
             in instance.ENERGY_TARGET_PRJ_OPR_TMPS
         ])
-        self.assertListEqual(expected_rps_prj_op_tmp, actual_rps_prj_op_tmp)
+        self.assertListEqual(expected_energy_target_prj_op_tmp, actual_energy_target_prj_op_tmp)
 
 
 if __name__ == "__main__":

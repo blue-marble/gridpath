@@ -101,15 +101,15 @@ gridpath.viz.carbon_plot
    :func: create_parser
    :prog: carbon_plot.py
 
-gridpath.viz.rps_plot
+gridpath.viz.energy_target_plot
 ---------------------
 
-.. automodule:: viz.rps_plot
+.. automodule:: viz.energy_target_plot
 
 .. argparse::
-   :module: viz.rps_plot
+   :module: viz.energy_target_plot
    :func: create_parser
-   :prog: rps_plot.py
+   :prog: energy_target_plot.py
 
 gridpath.viz.cost_plot
 ----------------------

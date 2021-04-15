@@ -102,7 +102,7 @@ class TestRPSZones(unittest.TestCase):
         )
         actual_allow_violation = OrderedDict(
             sorted(
-                {z: instance.rps_allow_violation[z]
+                {z: instance.energy_target_allow_violation[z]
                  for z in instance.ENERGY_TARGET_ZONES}.items()
             )
         )
@@ -115,7 +115,7 @@ class TestRPSZones(unittest.TestCase):
         )
         actual_penalty = OrderedDict(
             sorted(
-                {z: instance.rps_violation_penalty_per_mwh[z]
+                {z: instance.energy_target_violation_penalty_per_mwh[z]
                  for z in instance.ENERGY_TARGET_ZONES}.items()
             )
         )

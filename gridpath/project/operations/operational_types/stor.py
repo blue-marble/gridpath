@@ -92,11 +92,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_losses_factor_in_rps`                                     |
+    | | :code:`stor_losses_factor_in_energy_target`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The fraction of storage losses that count against the RPS target.       |
+    | The fraction of storage losses that count against the energy target.    |
     +-------------------------------------------------------------------------+
     | | :code:`stor_charging_capacity_multiplier`                             |
     | | *Defined over*: :code:`STOR`                                          |
@@ -271,7 +271,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Optional Params
     ###########################################################################
 
-    m.stor_losses_factor_in_rps = Param(default=1)
+    m.stor_losses_factor_in_energy_target = Param(default=1)
 
     # Linked Params
     ###########################################################################
@@ -586,7 +586,7 @@ def rec_provision_rule(mod, g, tmp):
     over all timepoints of total discharging minus total charging) will count
     against the RPS (i.e. increase RPS requirement). By default all losses
     count against the RPS, but this can be derated with the
-    stor_losses_factor_in_rps parameter (can be between 0 and 1 with default
+    stor_losses_factor_in_energy_target parameter (can be between 0 and 1 with default
     of 1). Storage MUST be modeled as eligible for RPS for this rule to apply.
     Modeling storage this way can be necessary to avoid having storage behave
     as load (e.g. by charging and discharging at the same time) in order to
@@ -595,7 +595,7 @@ def rec_provision_rule(mod, g, tmp):
     """
     return (mod.Stor_Discharge_MW[g, tmp] -
             mod.Stor_Charge_MW[g, tmp]) \
-        * mod.stor_losses_factor_in_rps
+        * mod.stor_losses_factor_in_energy_target
 
 
 def variable_om_cost_rule(mod, g, tmp):

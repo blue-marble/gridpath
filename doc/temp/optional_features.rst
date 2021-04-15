@@ -189,13 +189,13 @@ Whether or not to enforce a Renewable Portfolio Standard policy.
 Feature modules include:
 .. automodule:: gridpath.geography.energy_target_zones
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_requirement
+.. automodule:: gridpath.system.policy.energy_target.energy_target
     :members:
 .. automodule:: gridpath.project.operations.recs
     :members:
-.. automodule:: gridpath.system.policy.rps.aggregate_recs
+.. automodule:: gridpath.system.policy.energy_target.aggregate_recs
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_balance
+.. automodule:: gridpath.system.policy.energy_target.energy_target_balance
     :members:
 
 

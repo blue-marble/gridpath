@@ -32,10 +32,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.ENERGY_TARGET_ZONES = Set()
 
-    m.rps_allow_violation = Param(
+    m.energy_target_allow_violation = Param(
         m.ENERGY_TARGET_ZONES, within=Boolean, default=0
     )
-    m.rps_violation_penalty_per_mwh = Param(
+    m.energy_target_violation_penalty_per_mwh = Param(
         m.ENERGY_TARGET_ZONES, within=NonNegativeReals, default=0
     )
 
@@ -45,8 +45,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                                            "inputs", "energy_target_zones.tab"),
                      index=m.ENERGY_TARGET_ZONES,
-                     param=(m.rps_allow_violation,
-                            m.rps_violation_penalty_per_mwh)
+                     param=(m.energy_target_allow_violation,
+                            m.energy_target_violation_penalty_per_mwh)
                      )
 
 

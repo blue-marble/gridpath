@@ -32,7 +32,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_penalty_costs_rule(mod):
         return sum(mod.Energy_Target_Shortage_MWh_Expression[z, p]
-                   * mod.rps_violation_penalty_per_mwh[z]
+                   * mod.energy_target_violation_penalty_per_mwh[z]
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]
                    for (z, p) in mod.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET)
@@ -46,7 +46,7 @@ def record_dynamic_components(dynamic_components):
     """
     :param dynamic_components:
 
-    Add total rps balance penalty costs to cost components
+    Add total energy_target balance penalty costs to cost components
     """
 
     getattr(dynamic_components, cost_components).append(

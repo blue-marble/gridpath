@@ -43,13 +43,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.Energy_Target_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
+        return mod.Energy_Target_Shortage_MWh[z, p] * mod.energy_target_allow_violation[z]
 
     m.Energy_Target_Shortage_MWh_Expression = Expression(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, rule=violation_expression_rule
     )
 
-    def rps_target_rule(mod, z, p):
+    def energy_target_rule(mod, z, p):
         """
         Total delivered energy-target-eligible energy must exceed target
         :param mod:
@@ -59,10 +59,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return mod.Total_Delivered_Energy_Target_Energy_MWh[z, p] \
             + mod.Energy_Target_Shortage_MWh_Expression[z, p] \
-            >= mod.Energy_Target_Target[z, p]
+            >= mod.Energy_Target[z, p]
 
     m.Energy_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-                                         rule=rps_target_rule)
+                                         rule=energy_target_rule)
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -76,32 +76,32 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "rps.csv"), "w", newline="") as rps_results_file:
-        writer = csv.writer(rps_results_file)
+                           "energy_target.csv"), "w", newline="") as energy_target_results_file:
+        writer = csv.writer(energy_target_results_file)
         writer.writerow(["energy_target_zone", "period",
                          "discount_factor", "number_years_represented",
-                         "rps_target_mwh",
-                         "delivered_rps_energy_mwh",
-                         "curtailed_rps_energy_mwh",
-                         "total_rps_energy_mwh",
-                         "fraction_of_rps_target_met",
-                         "fraction_of_rps_energy_curtailed",
-                         "rps_shortage_mwh"])
+                         "energy_target_mwh",
+                         "delivered_energy_target_energy_mwh",
+                         "curtailed_energy_target_energy_mwh",
+                         "total_energy_target_energy_mwh",
+                         "fraction_of_energy_target_met",
+                         "fraction_of_energy_target_energy_curtailed",
+                         "energy_target_shortage_mwh"])
         for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
             writer.writerow([
                 z,
                 p,
                 m.discount_factor[p],
                 m.number_years_represented[p],
-                value(m.Energy_Target_Target[z, p]),
+                value(m.Energy_Target[z, p]),
                 value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p]),
                 value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]),
                 value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p]) +
                 value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]),
-                1 if float(m.rps_target_mwh[z, p]) == 0
+                1 if float(m.energy_target_mwh[z, p]) == 0
                 else value(
                     m.Total_Delivered_Energy_Target_Energy_MWh[z, p]) /
-                float(m.rps_target_mwh[z, p]),
+                float(m.energy_target_mwh[z, p]),
                 0 if (value(m.Total_Delivered_Energy_Target_Energy_MWh[z, p])
                       + value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p])) == 0
                 else value(m.Total_Curtailed_Energy_Target_Energy_MWh[z, p]) /
@@ -140,13 +140,13 @@ def summarize_results(scenario_directory, subproblem, stage):
     # All these files are small, so won't be setting indices
 
     # Get the main energy-target results file
-    rps_df = \
+    energy_target_df = \
         pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                                 "rps.csv")
+                                 "energy_target.csv")
                     )
 
     # Get the energy-target dual results
-    rps_duals_df = \
+    energy_target_duals_df = \
         pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                                  "Energy_Target_Constraint.csv")
                     )
@@ -159,8 +159,8 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Join the above
     results_df = pd.DataFrame(
         pd.merge(
-            left=rps_df,
-            right=rps_duals_df,
+            left=energy_target_df,
+            right=energy_target_duals_df,
             how="left",
             left_on=["energy_target_zone", "period"],
             right_on=["energy_target_zone", "period"]
@@ -178,22 +178,22 @@ def summarize_results(scenario_directory, subproblem, stage):
     results_df["percent_curtailed"] = pd.Series(
         index=results_df.index, dtype="float64"
     )
-    results_df["rps_marginal_cost_per_mwh"] = pd.Series(
+    results_df["energy_target_marginal_cost_per_mwh"] = pd.Series(
         index=results_df.index, dtype="float64"
     )
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
-        if (results_df.delivered_rps_energy_mwh[indx] +
-                results_df.curtailed_rps_energy_mwh[indx]) == 0:
+        if (results_df.delivered_energy_target_energy_mwh[indx] +
+                results_df.curtailed_energy_target_energy_mwh[indx]) == 0:
             pct = 0
         else:
-            pct = results_df.curtailed_rps_energy_mwh[indx] \
-                / (results_df.delivered_rps_energy_mwh[indx] +
-                   results_df.curtailed_rps_energy_mwh[indx]) * 100
+            pct = results_df.curtailed_energy_target_energy_mwh[indx] \
+                / (results_df.delivered_energy_target_energy_mwh[indx] +
+                   results_df.curtailed_energy_target_energy_mwh[indx]) * 100
         results_df.percent_curtailed[indx] = pct
 
-        results_df.rps_marginal_cost_per_mwh[indx] = \
+        results_df.energy_target_marginal_cost_per_mwh[indx] = \
             results_df.dual[indx] \
             / (results_df.discount_factor[indx] *
                results_df.number_years_represented[indx])
@@ -201,10 +201,10 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Drop unnecessary columns before exporting
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
-    results_df.drop("total_rps_energy_mwh", axis=1, inplace=True)
-    results_df.drop("fraction_of_rps_target_met", axis=1, inplace=True)
-    results_df.drop("fraction_of_rps_energy_curtailed", axis=1, inplace=True)
-    results_df.drop("rps_shortage_mwh", axis=1, inplace=True)
+    results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)
+    results_df.drop("fraction_of_energy_target_met", axis=1, inplace=True)
+    results_df.drop("fraction_of_energy_target_energy_curtailed", axis=1, inplace=True)
+    results_df.drop("energy_target_shortage_mwh", axis=1, inplace=True)
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
@@ -238,9 +238,9 @@ def import_results_into_database(
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "rps.csv"), "r") as \
-            rps_file:
-        reader = csv.reader(rps_file)
+                           "energy_target.csv"), "r") as \
+            energy_target_file:
+        reader = csv.reader(energy_target_file)
 
         next(reader)  # skip header
         for row in reader:
@@ -248,8 +248,8 @@ def import_results_into_database(
             period = row[1]
             discount_factor = row[2]
             number_years = row[3]
-            rps_target = row[4]
-            rps_provision = row[5]
+            energy_target = row[4]
+            energy_target_provision = row[5]
             curtailment = row[6]
             total = row[7]
             fraction_met = row[8]
@@ -258,8 +258,8 @@ def import_results_into_database(
 
             results.append(
                 (scenario_id, energy_target_zone, period, subproblem, stage,
-                 discount_factor, number_years, rps_target,
-                 rps_provision, curtailment, total,
+                 discount_factor, number_years, energy_target,
+                 energy_target_provision, curtailment, total,
                  fraction_met, fraction_curtailed, shortage)
             )
             
@@ -298,9 +298,9 @@ def import_results_into_database(
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "Energy_Target_Target_Constraint.csv"),
-              "r") as rps_duals_file:
-        reader = csv.reader(rps_duals_file)
+    with open(os.path.join(results_directory, "Energy_Target_Constraint.csv"),
+              "r") as energy_target_duals_file:
+        reader = csv.reader(energy_target_duals_file)
 
         next(reader)  # skip header
 
