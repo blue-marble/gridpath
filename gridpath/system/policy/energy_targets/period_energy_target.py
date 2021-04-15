@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -136,25 +136,26 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get the energy and percent targets
     c = conn.cursor()
     rps_targets = c.execute(
-        """SELECT rps_zone, period, rps_target_mwh, rps_target_percentage
-        FROM inputs_system_rps_targets
+        """SELECT energy_target_zone, period, energy_target_mwh, 
+        energy_target_percentage
+        FROM inputs_system_period_energy_targets
         JOIN
         (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         USING (period)
         JOIN
-        (SELECT rps_zone
-        FROM inputs_geography_rps_zones
-        WHERE rps_zone_scenario_id = {}) as relevant_zones
-        using (rps_zone)
-        WHERE rps_target_scenario_id = {}
+        (SELECT energy_target_zone
+        FROM inputs_geography_energy_target_zones
+        WHERE energy_target_zone_scenario_id = {}) as relevant_zones
+        USING (energy_target_zone)
+        WHERE period_energy_target_scenario_id = {}
         AND subproblem_id = {}
         AND stage_ID = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.RPS_ZONE_SCENARIO_ID,
-            subscenarios.RPS_TARGET_SCENARIO_ID,
+            subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID,
+            subscenarios.PERIOD_ENERGY_TARGET_SCENARIO_ID,
             subproblem,
             stage
         )
@@ -163,17 +164,17 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get any RPS zone to load zone mapping for the percent target
     c2 = conn.cursor()
     lz_mapping = c2.execute(
-        """SELECT rps_zone, load_zone
-        FROM inputs_system_rps_target_load_zone_map
+        """SELECT energy_target_zone, load_zone
+        FROM inputs_system_period_energy_target_load_zone_map
         JOIN
-        (SELECT rps_zone
-        FROM inputs_geography_rps_zones
-        WHERE rps_zone_scenario_id = {}) as relevant_zones
-        using (rps_zone)
-        WHERE rps_target_scenario_id = {}
+        (SELECT energy_target_zone
+        FROM inputs_geography_energy_target_zones
+        WHERE energy_target_zone_scenario_id = {}) as relevant_zones
+        using (energy_target_zone)
+        WHERE period_energy_target_scenario_id = {}
         """.format(
-            subscenarios.RPS_ZONE_SCENARIO_ID,
-            subscenarios.RPS_TARGET_SCENARIO_ID
+            subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID,
+            subscenarios.PERIOD_ENERGY_TARGET_SCENARIO_ID
         )
     )
 

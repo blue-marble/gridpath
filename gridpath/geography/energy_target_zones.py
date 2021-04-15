@@ -62,10 +62,11 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     rps_zones = c.execute(
-        """SELECT rps_zone, allow_violation, violation_penalty_per_mwh
-           FROM inputs_geography_rps_zones
-           WHERE rps_zone_scenario_id = {};""".format(
-            subscenarios.RPS_ZONE_SCENARIO_ID
+        """SELECT energy_target_zone, allow_violation, 
+        violation_penalty_per_mwh
+           FROM inputs_geography_energy_target_zones
+           WHERE energy_target_zone_scenario_id = {};""".format(
+            subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID
         )
     )
 

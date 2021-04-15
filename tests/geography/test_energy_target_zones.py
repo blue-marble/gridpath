@@ -25,28 +25,13 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods",
-    "geography.load_zones",
-    "system.load_balance.static_load_requirement",
-    "geography.rps_zones",
-    "project",
-    "project.capacity.capacity",
-    "project.availability.availability", "project.fuels",
-    "project.operations",
-    "project.operations.operational_types",
-    "project.operations.power",
-    "project.operations.fuel_burn",
-    "project.operations.recs",
-    "system.policy.rps.rps_requirement", "system.policy.rps.aggregate_recs",
-    "system.policy.rps.rps_balance"
-]
-NAME_OF_MODULE_BEING_TESTED = \
-    "objective.system.policy.aggregate_rps_violation_penalties"
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
+                             "temporal.operations.horizons",
+                             "temporal.investment.periods"]
+NAME_OF_MODULE_BEING_TESTED = "geography.energy_target_zones"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -64,7 +49,7 @@ except ImportError:
           " to test.")
 
 
-class TestObjectiveRPSPenalties(unittest.TestCase):
+class TestRPSZones(unittest.TestCase):
     """
 
     """
@@ -94,7 +79,7 @@ class TestObjectiveRPSPenalties(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with expected data
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -106,6 +91,33 @@ class TestObjectiveRPSPenalties(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Set: RPS_ZONES
+        expected_rps_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
+        actual_rps_zones = sorted([z for z in instance.RPS_ZONES])
+        self.assertListEqual(expected_rps_zones, actual_rps_zones)
 
-if __name__ == "__main__":
-    unittest.main()
+        # Param: allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted({"RPS_Zone_1": 0, "RPS_Zone_2": 0}.items())
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {z: instance.rps_allow_violation[z]
+                 for z in instance.RPS_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation,
+                             actual_allow_violation)
+
+        # Param: violation penalty
+        expected_penalty = OrderedDict(
+            sorted({"RPS_Zone_1": 0, "RPS_Zone_2": 0}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {z: instance.rps_violation_penalty_per_mwh[z]
+                 for z in instance.RPS_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty,
+                             actual_penalty)

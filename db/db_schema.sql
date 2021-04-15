@@ -3042,8 +3042,8 @@ PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
 technology, spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_project_energy_target;
-CREATE TABLE results_project_energy_target (
+DROP TABLE IF EXISTS results_project_period_energy_target;
+CREATE TABLE results_project_period_energy_target (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3424,8 +3424,8 @@ PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
 -- Energy target balance
-DROP TABLE IF EXISTS results_system_energy_target;
-CREATE TABLE  results_system_energy_target (
+DROP TABLE IF EXISTS results_system_period_energy_target;
+CREATE TABLE  results_system_period_energy_target (
 scenario_id INTEGER,
 energy_target_zone VARCHAR(64),
 subproblem_id INTEGER,
@@ -3445,8 +3445,8 @@ energy_target_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, energy_target_zone, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_system_energy_target;
-CREATE TABLE  results_system_energy_target (
+DROP TABLE IF EXISTS results_system_horizon_energy_target;
+CREATE TABLE  results_system_horizon_energy_target (
 scenario_id INTEGER,
 energy_target_zone VARCHAR(64),
 subproblem_id INTEGER,
@@ -3535,7 +3535,7 @@ Spinning_Reserves_Penalty_Costs Float,
 Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
-Total_Energy_Target_Balance_Penalty_Costs Float,
+Total_Period_Energy_Target_Balance_Penalty_Costs Float,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,

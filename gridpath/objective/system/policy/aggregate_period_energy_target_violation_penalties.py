@@ -36,7 +36,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]
                    for (z, p) in mod.RPS_ZONE_PERIODS_WITH_RPS)
-    m.Total_RPS_Balance_Penalty_Costs = Expression(
+    m.Total_Period_Energy_Target_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 
     record_dynamic_components(dynamic_components=d)
@@ -50,5 +50,5 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_RPS_Balance_Penalty_Costs"
+        "Total_Period_Energy_Target_Balance_Penalty_Costs"
     )

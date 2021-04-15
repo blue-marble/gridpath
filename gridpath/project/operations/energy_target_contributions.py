@@ -320,7 +320,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get the RPS zones for project in our portfolio and with zones in our
     # RPS zone
     project_zones = c.execute(
-        """SELECT project, rps_zone
+        """SELECT project, energy_target_zone
         FROM
         -- Get projects from portfolio only
         (SELECT project
@@ -329,22 +329,22 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ) as prj_tbl
         LEFT OUTER JOIN 
         -- Get rps zones for those projects
-        (SELECT project, rps_zone
-            FROM inputs_project_rps_zones
-            WHERE project_rps_zone_scenario_id = {}
+        (SELECT project, energy_target_zone
+            FROM inputs_project_energy_target_zones
+            WHERE project_energy_target_zone_scenario_id = {}
         ) as prj_rps_zone_tbl
         USING (project)
         -- Filter out projects whose RPS zone is not one included in our 
         -- rps_zone_scenario_id
-        WHERE rps_zone in (
-                SELECT rps_zone
-                    FROM inputs_geography_rps_zones
-                    WHERE rps_zone_scenario_id = {}
+        WHERE energy_target_zone in (
+                SELECT energy_target_zone
+                    FROM inputs_geography_energy_target_zones
+                    WHERE energy_target_zone_scenario_id = {}
         );
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID,
-            subscenarios.RPS_ZONE_SCENARIO_ID
+            subscenarios.PROJECT_ENERGY_TARGET_ZONE_SCENARIO_ID,
+            subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID
         )
     )
 
@@ -420,7 +420,7 @@ def import_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_project_rps",
+        table="results_project_period_energy_target",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
@@ -456,32 +456,32 @@ def import_results_into_database(
 
     insert_temp_sql = """
         INSERT INTO 
-        temp_results_project_rps{}
+        temp_results_project_period_energy_target{}
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight, 
          number_of_hours_in_timepoint, 
-         load_zone, rps_zone, technology, 
-         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
-         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
+         load_zone, energy_target_zone, technology, 
+         scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
+         subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_rps
+        INSERT INTO results_project_period_energy_target
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, rps_zone, technology, 
-        scheduled_rps_energy_mw, scheduled_curtailment_mw, 
-        subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
+        load_zone, energy_target_zone, technology, 
+        scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
+        subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, rps_zone, technology, 
-        scheduled_rps_energy_mw, scheduled_curtailment_mw, 
-        subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw
-        FROM temp_results_project_rps{}
+        load_zone, energy_target_zone, technology, 
+        scheduled_energy_target_energy_mw, scheduled_curtailment_mw, 
+        subhourly_energy_target_energy_delivered_mw, subhourly_curtailment_mw
+        FROM temp_results_project_period_energy_target{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
@@ -532,16 +532,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_zones)
-    zones_w_project = df["rps_zone"].unique()
+    zones_w_project = df["energy_target_zone"].unique()
 
     # Get the required RPS zones
     # TODO: make this into a function similar to get_projects()?
     #  could eventually centralize all these db query functions in one place
     c = conn.cursor()
     zones = c.execute(
-        """SELECT rps_zone FROM inputs_geography_rps_zones
-        WHERE rps_zone_scenario_id = {}
-        """.format(subscenarios.RPS_ZONE_SCENARIO_ID)
+        """SELECT energy_target_zone FROM inputs_geography_energy_target_zones
+        WHERE energy_target_zone_scenario_id = {}
+        """.format(subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID)
     )
     zones = [z[0] for z in zones]  # convert to list
 
@@ -552,11 +552,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_rps_zones",
+        db_table="inputs_project_energy_target_zones",
         severity="High",
         errors=validate_idxs(actual_idxs=zones_w_project,
                              req_idxs=zones,
-                             idx_label="rps_zone",
-                             msg="Each RPS zone needs at least 1 project "
-                                 "assigned to it.")
+                             idx_label="energy_target_zone",
+                             msg="Each energy target zone needs at least 1 "
+                                 "project assigned to it.")
     )

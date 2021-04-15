@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ Aggregate delivered RPS-eligible power from the project-timepoint level to
 the RPS zone - period level.
 """
 
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Expression
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

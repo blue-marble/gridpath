@@ -33,10 +33,10 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.load_zones",
-    "geography.rps_zones",
+    "geography.energy_target_zones",
     "system.load_balance.static_load_requirement"
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_requirement"
+NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.period_energy_target"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Simplest implementation with a MWh target
+Simplest implementation with a MWh target by period.
 """
 
 from __future__ import division
@@ -231,7 +231,7 @@ def import_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_system_rps",
+        table="results_system_period_energy_target",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
     
@@ -264,34 +264,34 @@ def import_results_into_database(
             )
             
     insert_temp_sql = """
-        INSERT INTO temp_results_system_rps{}
-         (scenario_id, rps_zone, period, subproblem_id, stage_id,
-         discount_factor, number_years_represented, rps_target_mwh, 
-         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
-         total_rps_energy_mwh,
-         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
-         rps_shortage_mwh)
+        INSERT INTO temp_results_system_period_energy_target{}
+         (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
+         discount_factor, number_years_represented, energy_target_mwh, 
+         delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
+         total_energy_target_energy_mwh,
+         fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
+         energy_target_shortage_mwh)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_system_rps
-        (scenario_id, rps_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, rps_target_mwh, 
-        delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
-        total_rps_energy_mwh,
-        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed, 
-        rps_shortage_mwh)
-        SELECT scenario_id, rps_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, rps_target_mwh, 
-        delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
-        total_rps_energy_mwh,
-        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
-        rps_shortage_mwh
-        FROM temp_results_system_rps{}
-        ORDER BY scenario_id, rps_zone, period, subproblem_id, stage_id;
+        INSERT INTO results_system_period_energy_target
+        (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
+        discount_factor, number_years_represented, energy_target_mwh, 
+        delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
+        total_energy_target_energy_mwh,
+        fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed, 
+        energy_target_shortage_mwh)
+        SELECT scenario_id, energy_target_zone, period, subproblem_id, stage_id,
+        discount_factor, number_years_represented, energy_target_mwh, 
+        delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
+        total_energy_target_energy_mwh,
+        fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
+        energy_target_shortage_mwh
+        FROM temp_results_system_period_energy_target{}
+        ORDER BY scenario_id, energy_target_zone, period, subproblem_id, stage_id;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
@@ -310,9 +310,9 @@ def import_results_into_database(
             )
 
     duals_sql = """
-        UPDATE results_system_rps
+        UPDATE results_system_period_energy_target
         SET dual = ?
-        WHERE rps_zone = ?
+        WHERE energy_target_zone = ?
         AND period = ?
         AND scenario_id = ?
         AND subproblem_id = ?
@@ -322,8 +322,8 @@ def import_results_into_database(
 
     # Calculate marginal RPS cost per MWh
     mc_sql = """
-        UPDATE results_system_rps
-        SET rps_marginal_cost_per_mwh = 
+        UPDATE results_system_period_energy_target
+        SET energy_target_marginal_cost_per_mwh = 
         dual / (discount_factor * number_years_represented)
         WHERE scenario_id = ?
         AND subproblem_id = ?

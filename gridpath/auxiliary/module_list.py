@@ -52,7 +52,7 @@ def all_modules_list():
         "geography.regulation_down_balancing_areas",
         "geography.frequency_response_balancing_areas",
         "geography.spinning_reserves_balancing_areas",
-        "geography.rps_zones",
+        "geography.energy_target_zones",
         "geography.carbon_cap_zones",
         "geography.prm_zones",
         "geography.local_capacity_zones",
@@ -64,7 +64,8 @@ def all_modules_list():
         "system.reserves.requirement.regulation_down",
         "system.reserves.requirement.frequency_response",
         "system.reserves.requirement.spinning_reserves",
-        "system.policy.rps.rps_requirement",
+        "system.policy.energy_targets.period_energy_target",
+        "system.policy.energy_targets.horizon_energy_target",
         "system.policy.carbon_cap.carbon_cap",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity.local_capacity_requirement",
@@ -95,7 +96,7 @@ def all_modules_list():
         "project.operations.fuel_burn",
         "project.operations.costs",
         "project.operations.tuning_costs",
-        "project.operations.recs",
+        "project.operations.energy_target_contributions",
         "project.operations.carbon_emissions",
         "project.operations.carbon_cap",
         "project.reliability.prm",
@@ -129,8 +130,9 @@ def all_modules_list():
         "system.reserves.balance.regulation_down",
         "system.reserves.balance.frequency_response",
         "system.reserves.balance.spinning_reserves",
-        "system.policy.rps.aggregate_recs",
-        "system.policy.rps.rps_balance",
+        "system.policy.energy_targets.aggregate_energy_target_contributions",
+        "system.policy.energy_targets.period_energy_target_balance",
+        "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
@@ -155,7 +157,10 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.regulation_down",
         "objective.system.reserve_violation_penalties.frequency_response",
         "objective.system.reserve_violation_penalties.spinning_reserves",
-        "objective.system.policy.aggregate_rps_violation_penalties",
+        "objective.system.policy"
+        ".aggregate_period_energy_target_violation_penalties",
+        "objective.system.policy"
+        ".aggregate_horizon_energy_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
@@ -172,9 +177,8 @@ def optional_modules_list():
     :return: dictionary with the optional feature names as keys and a list
         of the modules included in each feature as values
 
-    These are all of GridPath's optional modules grouped by features (
-    features as the dictionary keys). Each of these modules belongs to only
-    one feature.
+    These are all of GridPath's optional modules grouped by features (features
+    as the dictionary keys). Each of these modules belongs to only one feature.
     """
     optional_modules = {
         "transmission":
@@ -235,13 +239,16 @@ def optional_modules_list():
              "system.reserves.aggregation.spinning_reserves",
              "system.reserves.balance.spinning_reserves",
              "objective.system.reserve_violation_penalties.spinning_reserves"],
-        "rps":
-            ["geography.rps_zones",
-             "system.policy.rps.rps_requirement",
-             "project.operations.recs",
-             "system.policy.rps.aggregate_recs",
-             "system.policy.rps.rps_balance",
-             "objective.system.policy.aggregate_rps_violation_penalties"],
+        "period_energy_target":
+            ["system.policy.energy_targets.period_energy_target",
+             "system.policy.energy_targets.period_energy_target_balance",
+             "objective.system.policy"
+             ".aggregate_period_energy_target_violation_penalties"],
+        "horizon_energy_target":
+            ["system.policy.energy_targets.horizon_energy_target",
+             "system.policy.energy_targets.horizon_energy_target_balance",
+             "objective.system.policy"
+             ".aggregate_horizon_energy_target_violation_penalties"],
         "carbon_cap":
             ["geography.carbon_cap_zones",
              "system.policy.carbon_cap.carbon_cap",
@@ -321,8 +328,25 @@ def cross_feature_modules_list():
     return cross_modules
 
 
+def feature_shared_modules_list():
+    """
+    :return: dictionary with a tuple of features as keys and a list of
+        modules to be included if either of those features is selected as
+        values
+    """
+    shared_modules = {
+        ("period_energy_target", "horizon_energy_target"):
+            ["geography.energy_target_zones",
+             "project.operations.energy_target_contributions",
+             "system.policy.energy_targets"
+             ".aggregate_energy_target_contributions"],
+    }
+
+    return shared_modules
+
+
 def determine_modules(
-        features=None, scenario_directory=None, multi_stage=None,
+    features=None, scenario_directory=None, multi_stage=None,
 ):
     """
     :param features: List of requested features. Optional input; if
@@ -414,6 +438,16 @@ def determine_modules(
             for m in optional_modules[feature]:
                 modules_to_use.remove(m)
 
+    # Remove shared modules if none of the features sharing those modules is
+    # requested
+    shared_modules = feature_shared_modules_list()
+    for feature_group in shared_modules.keys():
+        if any(feature in requested_features for feature in feature_group):
+            pass
+        else:
+            for m in shared_modules[feature_group]:
+                modules_to_use.remove(m)
+            
     # Some modules depend on more than one feature
     # We have to check if all features that the module depends on are
     # specified before removing it
