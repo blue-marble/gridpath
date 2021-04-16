@@ -1,0 +1,5 @@
+energy_target_zone	balancing_type_horizon	horizon	energy_target_mwh	energy_target_percentage
+RPS_Zone_1	year	2020	50	0.2
+RPS_Zone_1	year	2030	50	0.33
+RPS_Zone_2	year	2020	10	0
+RPS_Zone_2	year	2030	10	0
