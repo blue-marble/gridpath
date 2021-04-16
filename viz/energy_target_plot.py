@@ -97,7 +97,7 @@ def get_plotting_data(conn, scenario_id, energy_target_zone, subproblem, stage,
             fraction_of_energy_target_met, 
             fraction_of_energy_target_energy_curtailed,
             energy_target_marginal_cost_per_mwh
-        FROM results_system_energy_target
+        FROM results_system_period_energy_target
         WHERE scenario_id = ?
         AND energy_target_zone = ?
         AND subproblem_id = ?
