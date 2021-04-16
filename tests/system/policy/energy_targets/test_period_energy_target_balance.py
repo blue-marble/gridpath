@@ -42,7 +42,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.energy_target_contributions",
-    "system.policy.energy_targets.aggregate_energy_target_contributions"
+    "system.policy.energy_targets.aggregate_period_energy_target_contributions"
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.period_energy_target_balance"
 IMPORTED_PREREQ_MODULES = list()

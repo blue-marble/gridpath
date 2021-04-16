@@ -42,7 +42,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.power",
     "project.operations.fuel_burn",
     "project.operations.energy_target_contributions",
-    "system.policy.energy_targets.period_energy_target", "system.policy.energy_targets.aggregate_energy_target_contributions",
+    "system.policy.energy_targets.period_energy_target", "system.policy.energy_targets.aggregate_period_energy_target_contributions",
     "system.policy.energy_targets.period_energy_target_balance"
 ]
 NAME_OF_MODULE_BEING_TESTED = \

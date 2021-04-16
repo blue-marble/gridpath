@@ -37,7 +37,8 @@ PREREQUISITE_MODULE_NAMES = [
     "project.fuels", "project.operations",
     "project.operations.operational_types",
     "project.operations.power", "project.operations.energy_target_contributions"]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.aggregate_energy_target_contributions"
+NAME_OF_MODULE_BEING_TESTED = \
+    "system.policy.energy_targets.aggregate_period_energy_target_contributions"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -55,7 +56,7 @@ except ImportError:
           " to test.")
 
 
-class TestAggregateRECs(unittest.TestCase):
+class TestAggregatePeriodEnergyTargetContributions(unittest.TestCase):
     """
 
     """
