@@ -7,7 +7,7 @@
 load_zone technology vintage                   
 Zone1     Gas        2020                  7.33
           Wind       2020                 41.70
-                     2030                 13.63
+                     2030                 25.63
 
 ### OPERATIONAL RESULTS ###
 
@@ -15,16 +15,16 @@ Zone1     Gas        2020                  7.33
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
 Zone1     2020   Coal                       0.00           0.00
-                 Gas                   61,320.00          17.50
-                 Nuclear               52,560.00          15.00
-                 Wind                 236,520.00          67.50
+                 Gas                   61,320.00          16.85
+                 Nuclear               52,560.00          14.44
+                 Wind                 250,000.00          68.70
           2030   Coal                       0.00           0.00
-                 Gas                   87,600.00          25.00
-                 Nuclear               52,560.00          15.00
-                 Wind                 210,240.00          60.00
+                 Gas                   61,320.00          16.85
+                 Nuclear               52,560.00          14.44
+                 Wind                 250,000.00          68.70
 
 ### HORIZON ENERGY TARGET RESULTS ###
-                                           energy_target_mwh  delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh  dual  energy_target_marginal_cost_per_mwh  percent_curtailed
-energy_target_zone balancing_type horizon                                                                                                                                                         
-RPSZone1           year           2020                 50.00                          236,520.00                           31,471.11 -0.00                                  NaN              11.74
-                                  2030                 50.00                          210,240.00                          141,328.00 -0.00                                  NaN              40.20
+                                           energy_target_mwh  delivered_energy_target_energy_mwh  curtailed_energy_target_energy_mwh           dual  energy_target_marginal_cost_per_mwh  percent_curtailed
+energy_target_zone balancing_type horizon                                                                                                                                                                  
+RPSZone1           year           2020            250,000.00                          250,000.00                           17,991.12 999,999,990.00                                  NaN               6.71
+                                  2030            250,000.00                          250,000.00                          175,152.00 999,999,990.00                                  NaN              41.20
