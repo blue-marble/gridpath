@@ -322,7 +322,7 @@ horizon VARCHAR(32),
 tmp_start INTEGER,
 tmp_end INTEGER,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-             balancing_type_horizon, horizon),
+             balancing_type_horizon, horizon, tmp_start, tmp_end),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure the start and end timepoints exist in the main timepoints table
