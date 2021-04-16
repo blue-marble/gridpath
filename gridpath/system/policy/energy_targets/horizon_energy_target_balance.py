@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Simplest implementation with a MWh target by period.
+Simplest implementation with a MWh target by horizon.
 """
 
 from __future__ import division
@@ -38,31 +38,37 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.Period_Energy_Target_Shortage_MWh = Var(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, within=NonNegativeReals
+    m.Horizon_Energy_Target_Shortage_MWh = Var(
+        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
+        within=NonNegativeReals
     )
 
-    def violation_expression_rule(mod, z, p):
-        return mod.Period_Energy_Target_Shortage_MWh[z, p] * mod.energy_target_allow_violation[z]
+    def violation_expression_rule(mod, z, bt, h):
+        return mod.Horizon_Energy_Target_Shortage_MWh[z, bt, h] \
+            * mod.energy_target_allow_violation[z]
 
-    m.Period_Energy_Target_Shortage_MWh_Expression = Expression(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, rule=violation_expression_rule
+    m.Horizon_Energy_Target_Shortage_MWh_Expression = Expression(
+        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
+        rule=violation_expression_rule
     )
 
-    def energy_target_rule(mod, z, p):
+    def energy_target_rule(mod, z, bt, h):
         """
         Total delivered energy-target-eligible energy must exceed target
         :param mod:
         :param z:
-        :param p:
+        :param bt:
+        :param h:
         :return:
         """
-        return mod.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p] \
-            + mod.Period_Energy_Target_Shortage_MWh_Expression[z, p] \
-            >= mod.Period_Energy_Target[z, p]
+        return mod.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h] \
+            + mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h] \
+            >= mod.Horizon_Energy_Target[z, bt, h]
 
-    m.Period_Energy_Target_Constraint = Constraint(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-                                         rule=energy_target_rule)
+    m.Horizon_Energy_Target_Constraint = Constraint(
+        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
+        rule=energy_target_rule
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -75,12 +81,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "period_energy_target.csv"), "w", newline="") as \
-            energy_target_results_file:
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), 
+                           "results", "horizon_energy_target.csv"),
+              "w", newline="") as energy_target_results_file:
         writer = csv.writer(energy_target_results_file)
-        writer.writerow(["energy_target_zone", "period",
-                         "discount_factor", "number_years_represented",
+        writer.writerow(["energy_target_zone", "balancing_type", "horizon",
                          "energy_target_mwh",
                          "delivered_energy_target_energy_mwh",
                          "curtailed_energy_target_energy_mwh",
@@ -88,33 +93,45 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "fraction_of_energy_target_met",
                          "fraction_of_energy_target_energy_curtailed",
                          "energy_target_shortage_mwh"])
-        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
+        for (z, bt, h) in m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET:
             writer.writerow([
                 z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
-                value(m.Period_Energy_Target[z, p]),
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p]),
-                value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-                value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p]) +
-                value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]),
-                1 if float(m.period_energy_target_mwh[z, p]) == 0
+                bt,
+                h,
+                value(m.Horizon_Energy_Target[z, bt, h]),
+                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
+                          z, bt, h]),
+                value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
+                          z, bt, h]),
+                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
+                          z, bt, h]) +
+                value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
+                          z, bt, h]),
+                1 if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
                 else value(
-                    m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p]) /
-                float(m.period_energy_target_mwh[z, p]),
-                0 if (value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                      + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])) == 0
-                else value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p]) /
-                (value(m.Total_Delivered_Period_Energy_Target_Energy_MWh[z, p])
-                 + value(m.Total_Curtailed_Period_Energy_Target_Energy_MWh[z, p])),
-                value(m.Period_Energy_Target_Shortage_MWh_Expression[z, p])
+                    m.Total_Delivered_Horizon_Energy_Target_Energy_MWh
+                    [z, bt, h]) /
+                float(m.horizon_energy_target_mwh[z, bt, h]),
+                0 if (value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
+                                z, bt, h])
+                      + value(
+                            m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
+                                z, bt, h])) == 0
+                else value(
+                    m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
+                        z, bt, h]) /
+                (value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
+                           z, bt, h])
+                 + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
+                             z, bt, h])),
+                value(m.Horizon_Energy_Target_Shortage_MWh_Expression[
+                          z, bt, h])
             ])
 
 
 def save_duals(m):
-    m.constraint_indices["Period_Energy_Target_Constraint"] = \
-        ["energy_target_zone", "period", "dual"]
+    m.constraint_indices["Horizon_Energy_Target_Constraint"] = \
+        ["energy_target_zone", "balancing_type", "horizon", "dual"]
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -135,22 +152,24 @@ def summarize_results(scenario_directory, subproblem, stage):
     # modules are not overridden
     with open(summary_results_file, "a") as outfile:
         outfile.write(
-            "\n### PERIOD ENERGY TARGET RESULTS ###\n"
+            "\n### HORIZON ENERGY TARGET RESULTS ###\n"
         )
 
     # All these files are small, so won't be setting indices
 
     # Get the main energy-target results file
     energy_target_df = \
-        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                                 "period_energy_target.csv")
+        pd.read_csv(os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results",
+            "horizon_energy_target.csv")
                     )
 
     # Get the energy-target dual results
     energy_target_duals_df = \
-        pd.read_csv(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                                 "Period_Energy_Target_Constraint.csv")
-                    )
+        pd.read_csv(os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results",
+            "Horizon_Energy_Target_Constraint.csv")
+        )
 
     # # Get the input metadata for periods
     # periods_df = \
@@ -163,12 +182,13 @@ def summarize_results(scenario_directory, subproblem, stage):
             left=energy_target_df,
             right=energy_target_duals_df,
             how="left",
-            left_on=["energy_target_zone", "period"],
-            right_on=["energy_target_zone", "period"]
+            left_on=["energy_target_zone", "balancing_type", "horizon"],
+            right_on=["energy_target_zone", "balancing_type", "horizon"]
         )
     )
 
-    results_df.set_index(["energy_target_zone", "period"], inplace=True,
+    results_df.set_index(["energy_target_zone", "balancing_type", "horizon"],
+                         inplace=True,
                          verify_integrity=True)
 
     # Calculate:
@@ -194,14 +214,12 @@ def summarize_results(scenario_directory, subproblem, stage):
                    results_df.curtailed_energy_target_energy_mwh[indx]) * 100
         results_df.percent_curtailed[indx] = pct
 
-        results_df.energy_target_marginal_cost_per_mwh[indx] = \
-            results_df.dual[indx] \
-            / (results_df.discount_factor[indx] *
-               results_df.number_years_represented[indx])
+        # results_df.energy_target_marginal_cost_per_mwh[indx] = \
+        #     results_df.dual[indx] \
+        #     / (results_df.discount_factor[indx] *
+        #        results_df.number_years_represented[indx])
 
     # Drop unnecessary columns before exporting
-    results_df.drop("discount_factor", axis=1, inplace=True)
-    results_df.drop("number_years_represented", axis=1, inplace=True)
     results_df.drop("total_energy_target_energy_mwh", axis=1, inplace=True)
     results_df.drop("fraction_of_energy_target_met", axis=1, inplace=True)
     results_df.drop("fraction_of_energy_target_energy_curtailed", axis=1, inplace=True)
@@ -209,7 +227,7 @@ def summarize_results(scenario_directory, subproblem, stage):
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
-    cols = cols[0:3] + [cols[4]] + [cols[3]] + [cols[5]]
+    cols = cols[0:4] + [cols[5]] + [cols[4]]
     results_df = results_df[cols]
     results_df.sort_index(inplace=True)
     with open(summary_results_file, "a") as outfile:
@@ -218,7 +236,7 @@ def summarize_results(scenario_directory, subproblem, stage):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -232,74 +250,75 @@ def import_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_system_period_energy_target",
+        table="results_system_horizon_energy_target",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
     
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "period_energy_target.csv"), "r") as \
+                           "horizon_energy_target.csv"), "r") as \
             energy_target_file:
         reader = csv.reader(energy_target_file)
 
         next(reader)  # skip header
         for row in reader:
             energy_target_zone = row[0]
-            period = row[1]
-            discount_factor = row[2]
-            number_years = row[3]
-            energy_target = row[4]
-            energy_target_provision = row[5]
-            curtailment = row[6]
-            total = row[7]
-            fraction_met = row[8]
-            fraction_curtailed = row[9]
-            shortage = row[10]
+            balancing_type = row[1]
+            horizon = row[2]
+            energy_target = row[3]
+            energy_target_provision = row[4]
+            curtailment = row[5]
+            total = row[6]
+            fraction_met = row[7]
+            fraction_curtailed = row[8]
+            shortage = row[9]
 
             results.append(
-                (scenario_id, energy_target_zone, period, subproblem, stage,
-                 discount_factor, number_years, energy_target,
+                (scenario_id, energy_target_zone, balancing_type,
+                 horizon, subproblem, stage, energy_target,
                  energy_target_provision, curtailment, total,
                  fraction_met, fraction_curtailed, shortage)
             )
             
     insert_temp_sql = """
-        INSERT INTO temp_results_system_period_energy_target{}
-         (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-         discount_factor, number_years_represented, energy_target_mwh, 
-         delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-         total_energy_target_energy_mwh,
+        INSERT INTO temp_results_system_horizon_energy_target{}
+         (scenario_id, energy_target_zone, balancing_type_horizon, horizon, 
+         subproblem_id, stage_id, energy_target_mwh, 
+         delivered_energy_target_energy_mwh, 
+         curtailed_energy_target_energy_mwh, total_energy_target_energy_mwh,
          fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
          energy_target_shortage_mwh)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_system_period_energy_target
-        (scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, energy_target_mwh, 
-        delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-        total_energy_target_energy_mwh,
-        fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed, 
+        INSERT INTO results_system_horizon_energy_target
+        (scenario_id, energy_target_zone, balancing_type_horizon, horizon,
+        subproblem_id, stage_id, energy_target_mwh, 
+        delivered_energy_target_energy_mwh, 
+        curtailed_energy_target_energy_mwh, total_energy_target_energy_mwh,
+        fraction_of_energy_target_met, 
+        fraction_of_energy_target_energy_curtailed, 
         energy_target_shortage_mwh)
-        SELECT scenario_id, energy_target_zone, period, subproblem_id, stage_id,
-        discount_factor, number_years_represented, energy_target_mwh, 
+        SELECT scenario_id, energy_target_zone, balancing_type_horizon, 
+        horizon, subproblem_id, stage_id, energy_target_mwh, 
         delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
         total_energy_target_energy_mwh,
         fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
         energy_target_shortage_mwh
-        FROM temp_results_system_period_energy_target{}
-        ORDER BY scenario_id, energy_target_zone, period, subproblem_id, stage_id;
+        FROM temp_results_system_horizon_energy_target{}
+        ORDER BY scenario_id, energy_target_zone, balancing_type_horizon, 
+        horizon, subproblem_id, stage_id;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "Period_Energy_Target_Constraint.csv"),
+    with open(os.path.join(results_directory, "Horizon_Energy_Target_Constraint.csv"),
               "r") as energy_target_duals_file:
         reader = csv.reader(energy_target_duals_file)
 
@@ -307,32 +326,34 @@ def import_results_into_database(
 
         for row in reader:
             duals_results.append(
-                (row[2], row[0], row[1], scenario_id, subproblem, stage)
+                (row[3], row[0], row[1], row[2], scenario_id, subproblem,
+                 stage)
             )
 
     duals_sql = """
-        UPDATE results_system_period_energy_target
+        UPDATE results_system_horizon_energy_target
         SET dual = ?
         WHERE energy_target_zone = ?
-        AND period = ?
+        AND balancing_type_horizon = ?
+        AND horizon = ?
         AND scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
         """
     spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
-    # Calculate marginal energy-target cost per MWh
-    mc_sql = """
-        UPDATE results_system_period_energy_target
-        SET energy_target_marginal_cost_per_mwh = 
-        dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = ?
-        AND subproblem_id = ?
-        and stage_id = ?;
-        """
-    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    # # Calculate marginal energy-target cost per MWh
+    # mc_sql = """
+    #     UPDATE results_system_horizon_energy_target
+    #     SET energy_target_marginal_cost_per_mwh =
+    #     dual / (discount_factor * number_years_represented)
+    #     WHERE scenario_id = ?
+    #     AND subproblem_id = ?
+    #     and stage_id = ?;
+    #     """
+    # spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
+    #                       data=(scenario_id, subproblem, stage),
+    #                       many=False)
 
 
 

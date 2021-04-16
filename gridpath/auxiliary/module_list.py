@@ -130,7 +130,10 @@ def all_modules_list():
         "system.reserves.balance.regulation_down",
         "system.reserves.balance.frequency_response",
         "system.reserves.balance.spinning_reserves",
-        "system.policy.energy_targets.aggregate_energy_target_contributions",
+        "system.policy.energy_targets"
+        ".aggregate_period_energy_target_contributions",
+        "system.policy.energy_targets"
+        ".aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
@@ -241,11 +244,15 @@ def optional_modules_list():
              "objective.system.reserve_violation_penalties.spinning_reserves"],
         "period_energy_target":
             ["system.policy.energy_targets.period_energy_target",
+             "system.policy.energy_targets"
+             ".aggregate_period_energy_target_contributions",
              "system.policy.energy_targets.period_energy_target_balance",
              "objective.system.policy"
              ".aggregate_period_energy_target_violation_penalties"],
         "horizon_energy_target":
             ["system.policy.energy_targets.horizon_energy_target",
+             "system.policy.energy_targets"
+             ".aggregate_horizon_energy_target_contributions",
              "system.policy.energy_targets.horizon_energy_target_balance",
              "objective.system.policy"
              ".aggregate_horizon_energy_target_violation_penalties"],
@@ -337,9 +344,7 @@ def feature_shared_modules_list():
     shared_modules = {
         ("period_energy_target", "horizon_energy_target"):
             ["geography.energy_target_zones",
-             "project.operations.energy_target_contributions",
-             "system.policy.energy_targets"
-             ".aggregate_energy_target_contributions"],
+             "project.operations.energy_target_contributions"],
     }
 
     return shared_modules

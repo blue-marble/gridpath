@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module adds period energy-target shortage penalty costs to the objective
+This module adds horizon energy-target shortage penalty costs to the objective 
 function.
 """
 
@@ -31,12 +31,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum(mod.Period_Energy_Target_Shortage_MWh_Expression[z, p]
+        return sum(mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]
                    * mod.energy_target_violation_penalty_per_mwh[z]
-                   * mod.number_years_represented[p]
-                   * mod.discount_factor[p]
-                   for (z, p) in mod.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET)
-    m.Total_Period_Energy_Target_Balance_Penalty_Costs = Expression(
+                   * mod.number_years_represented[mod.period[
+                                                      mod.last_hrz_tmp[bt, h]]]
+                   * mod.discount_factor[mod.period[
+                                                      mod.last_hrz_tmp[bt, h]]]
+                   for (z, bt, h) in
+                   mod.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET)
+    m.Total_Horizon_Energy_Target_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
 
     record_dynamic_components(dynamic_components=d)
@@ -50,5 +53,5 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Period_Energy_Target_Balance_Penalty_Costs"
+        "Total_Horizon_Energy_Target_Balance_Penalty_Costs"
     )
