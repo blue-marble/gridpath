@@ -120,7 +120,6 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
 
     errors = {"High": [], "Low": []}  # errors by severity
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
-        print(feature, subscenario_ids)
         if feature not in ["core", "optional", "data_dependent"]:
             for sc_id in subscenario_ids:
                 # If the feature is requested, and the associated subscenarios
