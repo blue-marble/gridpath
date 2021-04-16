@@ -815,6 +815,18 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective("2periods_new_build_horizon_energy_target",
                                      -26966855745114.633)
 
+    def test_example_2periods_new_build_horizon_energy_target_halfyear(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_horizon_energy_target_halfyear" example
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_horizon_energy_target_halfyear")
+        self.run_and_check_objective("2periods_new_build_horizon_energy_target_halfyear",
+                                     -101086984772727.86)
+
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
