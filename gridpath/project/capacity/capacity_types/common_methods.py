@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 import csv
 import os.path
 import pandas as pd
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
@@ -55,14 +56,29 @@ def operational_periods_by_project_vintage(
     If either the vintage or the last operational year is within the period,
     the period is assumed to not be operational for the project.
     """
-    last_operational_year = vintage + lifetime_yrs
-    operational_periods = list()
-    for p in periods:
-        if vintage <= period_start_year[p] and \
-                last_operational_year >= period_end_year[p]:
-            operational_periods.append(p)
-        else:
-            pass
+    # No operational periods if vintage does not belong to the project set;
+    # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
+    if vintage not in periods:
+        return []
+    else:
+        first_operational_year = period_start_year[vintage]
+        last_operational_year = period_start_year[vintage] + lifetime_yrs
+        operational_periods = list()
+        for p in periods:
+            if first_operational_year <= period_start_year[p] and \
+                    last_operational_year >= period_end_year[p]:
+                operational_periods.append(p)
+            else:
+                pass
+
+    # last_operational_year = vintage + lifetime_yrs
+    # operational_periods = list()
+    # for p in periods:
+    #     if vintage <= period_start_year[p] and \
+    #             last_operational_year >= period_end_year[p]:
+    #         operational_periods.append(p)
+    #     else:
+    #         pass
 
     return operational_periods
 
