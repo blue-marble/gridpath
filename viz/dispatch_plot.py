@@ -134,8 +134,14 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
     df = pd.read_sql(query, conn, params=timepoints)
     if not df.empty:
         df = df.pivot(index="timepoint", columns="technology")["power_mw"]
-
-    return df
+        return df
+    # If the dataframe was empty, we still need to send the timepoint index
+    # downstream
+    else:
+        index_only_df = pd.DataFrame(
+            index=timepoints
+        )
+        return index_only_df
 
 
 def get_variable_curtailment_results(
