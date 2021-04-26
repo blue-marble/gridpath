@@ -264,6 +264,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
+    # TODO: only export for timepoints in the energy target
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
                            "energy_target_by_project.csv"),
               "w", newline="") as energy_target_results_file:
@@ -291,16 +292,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Subhourly_Energy_Target_Energy_MW[p, tmp]),
                 value(m.Subhourly_Curtailment_MW[p, tmp])
             ])
-
-    # Export list of energy-target projects and their zones for later use
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "energy_target_project_zones.csv"),
-              "w", newline="") as energy_target_project_zones_file:
-        writer = csv.writer(energy_target_project_zones_file)
-        writer.writerow(["project", "energy_target_zone"])
-        for p in m.ENERGY_TARGET_PRJS:
-            writer.writerow([p, m.energy_target_zone[p]])
-
 
 # Database
 ###############################################################################
@@ -403,7 +394,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
