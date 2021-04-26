@@ -15,7 +15,6 @@
 import csv
 import os.path
 import pandas as pd
-import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
@@ -70,15 +69,6 @@ def operational_periods_by_project_vintage(
                 operational_periods.append(p)
             else:
                 pass
-
-    # last_operational_year = vintage + lifetime_yrs
-    # operational_periods = list()
-    # for p in periods:
-    #     if vintage <= period_start_year[p] and \
-    #             last_operational_year >= period_end_year[p]:
-    #         operational_periods.append(p)
-    #     else:
-    #         pass
 
     return operational_periods
 
