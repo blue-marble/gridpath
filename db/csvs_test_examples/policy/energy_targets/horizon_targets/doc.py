@@ -16,15 +16,15 @@
 
 **Relevant tables:**
 
-+-------------------------------+------------------------------------------+
-|:code:`scenarios` table column |:code:`energy_target_scenario_id`         |
-+-------------------------------+------------------------------------------+
-|:code:`scenario` table feature |:code:`of_energy_target`                  |
-+-------------------------------+------------------------------------------+
-|:code:`subscenario_` table     |:code:`subscenarios_system_energy_target` |
-+-------------------------------+------------------------------------------+
-|:code:`input_` tables          |:code:`inputs_system_energy_target`       |
-+-------------------------------+------------------------------------------+
++-------------------------------+---------------------------------------------------+
+|:code:`scenarios` table column |:code:`horizon_energy_target_scenario_id`          |
++-------------------------------+---------------------------------------------------+
+|:code:`scenario` table feature |:code:`of_horizon_energy_target`                   |
++-------------------------------+---------------------------------------------------+
+|:code:`subscenario_` table     |:code:`subscenarios_system_horizon_energy_targets` |
++-------------------------------+---------------------------------------------------+
+|:code:`input_` tables          |:code:`inputs_system_horizon_energy_targets`       |
++-------------------------------+---------------------------------------------------+
 
 """
 
