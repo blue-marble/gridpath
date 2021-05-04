@@ -102,7 +102,7 @@ gridpath.viz.carbon_plot
    :prog: carbon_plot.py
 
 gridpath.viz.energy_target_plot
----------------------
+-------------------------------
 
 .. automodule:: viz.energy_target_plot
 
