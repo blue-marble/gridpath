@@ -2057,7 +2057,7 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 period INTEGER,
 energy_target_mwh FLOAT,
-energy_target_percentage FLOAT,
+energy_target_fraction FLOAT,
 PRIMARY KEY (period_energy_target_scenario_id, energy_target_zone,
              subproblem_id, stage_id, period)
 );
@@ -2094,7 +2094,7 @@ stage_id INTEGER,
 balancing_type_horizon VARCHAR(64),
 horizon INTEGER,
 energy_target_mwh FLOAT,
-energy_target_percentage FLOAT,
+energy_target_fraction FLOAT,
 PRIMARY KEY (horizon_energy_target_scenario_id, energy_target_zone,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );

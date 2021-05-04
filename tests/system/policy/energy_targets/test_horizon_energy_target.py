@@ -124,20 +124,20 @@ class TestHorizonEnergyTarget(unittest.TestCase):
                                         )
         self.assertDictEqual(expected_energy_target, actual_energy_target)
 
-        # Param: horizon_energy_target_percentage
-        expected_energy_target_percentage = OrderedDict(sorted({
+        # Param: horizon_energy_target_fraction
+        expected_energy_target_fraction = OrderedDict(sorted({
             ("RPS_Zone_1", "year", 2020): 0.2, ("RPS_Zone_1", "year", 2030): 0.33,
             ("RPS_Zone_2", "year", 2020): 0, ("RPS_Zone_2", "year", 2030): 0}.items()
                                                  )
                                           )
-        actual_energy_target_percentage = OrderedDict(sorted({
-            (z, bt, h): instance.horizon_energy_target_percentage[z, bt, h]
+        actual_energy_target_fraction = OrderedDict(sorted({
+            (z, bt, h): instance.horizon_energy_target_fraction[z, bt, h]
             for (z, bt, h) in
             instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET}
                                                              .items()
                                                )
                                         )
-        self.assertDictEqual(expected_energy_target_percentage, actual_energy_target_percentage)
+        self.assertDictEqual(expected_energy_target_fraction, actual_energy_target_fraction)
 
         # Set: HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES
         expected_energy_target_zone_load_zones = sorted([

@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # RPS target specified in 'percent of load' terms
-    m.horizon_energy_target_percentage = Param(
+    m.horizon_energy_target_fraction = Param(
         m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
         within=PercentFraction,
         default=0
@@ -65,7 +65,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         'percent of load x load' is 0.
         """
         # If we have a map of RPS zones to load zones, apply the percentage
-        # target; if no map provided, the percentage_target is 0
+        # target; if no map provided, the fraction_target is 0
         if mod.HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES:
             total_bt_horizon_static_load = sum(
                 mod.static_load_mw[lz, tmp]
@@ -75,15 +75,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 if _energy_target_zone == energy_target_zone
                 for tmp in mod.TMPS if tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
             )
-            percentage_target = \
-                mod.horizon_energy_target_percentage[
+            fraction_target = \
+                mod.horizon_energy_target_fraction[
                     energy_target_zone, bt, h
                 ] * total_bt_horizon_static_load
         else:
-            percentage_target = 0
+            fraction_target = 0
 
         return mod.horizon_energy_target_mwh[energy_target_zone, bt, h] \
-            + percentage_target
+            + fraction_target
 
     m.Horizon_Energy_Target = Expression(
         m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
@@ -108,7 +108,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                               "inputs", "horizon_energy_targets.tab"),
         index=m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
         param=(m.horizon_energy_target_mwh,
-               m.horizon_energy_target_percentage,)
+               m.horizon_energy_target_fraction,)
     )
 
     # If we have a RPS zone to load zone map input file, load it; otherwise,
@@ -141,7 +141,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     energy_targets = c.execute(
         """SELECT energy_target_zone, balancing_type_horizon, horizon, 
-        energy_target_mwh, energy_target_percentage
+        energy_target_mwh, energy_target_fraction
         FROM inputs_system_horizon_energy_targets
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -227,7 +227,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         # Write header
         writer.writerow(
             ["energy_target_zone", "balancing_type", "horizon",
-             "energy_target_mwh",  "energy_target_percentage"]
+             "energy_target_mwh",  "energy_target_fraction"]
         )
 
         for row in energy_targets:

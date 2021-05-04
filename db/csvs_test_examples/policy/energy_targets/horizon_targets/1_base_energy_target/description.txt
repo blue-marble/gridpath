@@ -1,1 +1,1 @@
-Target given as percent of load
+Target given as fraction of load

@@ -1,4 +1,4 @@
-energy_target_zone	balancing_type	horizon	energy_target_mwh	energy_target_percentage
+energy_target_zone	balancing_type	horizon	energy_target_mwh	energy_target_fraction
 RPSZone1	halfyear	20201	125000.0	.
 RPSZone1	halfyear	20202	125000.0	.
 RPSZone1	halfyear	20301	125000.0	.

@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # RPS target specified in 'percent of load' terms
-    m.period_energy_target_percentage = Param(
+    m.period_energy_target_fraction = Param(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=PercentFraction,
         default=0
@@ -75,7 +75,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
             )
             percentage_target = \
-                mod.period_energy_target_percentage[energy_target_zone, period] \
+                mod.period_energy_target_fraction[energy_target_zone, period] \
                 * total_period_static_load
         else:
             percentage_target = 0
@@ -104,7 +104,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "period_energy_targets.tab"),
         index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-        param=(m.period_energy_target_mwh, m.period_energy_target_percentage, )
+        param=(m.period_energy_target_mwh, m.period_energy_target_fraction, )
     )
 
     # If we have a RPS zone to load zone map input file, load it; otherwise,
@@ -137,7 +137,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     energy_targets = c.execute(
         """SELECT energy_target_zone, period, energy_target_mwh, 
-        energy_target_percentage
+        energy_target_fraction
         FROM inputs_system_period_energy_targets
         JOIN
         (SELECT period
@@ -221,7 +221,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
         # Write header
         writer.writerow(
-            ["energy_target_zone", "period", "energy_target_mwh", "energy_target_percentage"]
+            ["energy_target_zone", "period", "energy_target_mwh", "energy_target_fraction"]
         )
 
         for row in energy_targets:
