@@ -15,8 +15,7 @@
 """
 This capacity type describes generator-storage hybrid projects that are 
 "specified," i.e. available to the optimization without having to incur an 
-investment cost. See the "gen_stor_hyb_spec" capacity type for more informatin on 
-"specified" projects in GridPath.
+investment cost.9
 """
 
 from pyomo.environ import Set, Param, NonNegativeReals
@@ -56,6 +55,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's specified capacity (in MW) in each operational period.    |
+    | This is the grid-facing capacity, which can be different from the       |
+    | sizing of the internal generation and storage components of the hybrid  |
+    | project.                                                                |
     +-------------------------------------------------------------------------+
     | | :code:`gen_stor_hyb_spec_fixed_cost_per_mw_yr`                        |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
