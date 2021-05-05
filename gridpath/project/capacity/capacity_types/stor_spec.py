@@ -35,8 +35,7 @@ from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, \
-    storage_only_capacity_type_operational_period_sets
+    capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     write_validation_to_database, validate_dtypes, validate_values, \
     validate_idxs, validate_missing_inputs
@@ -134,12 +133,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "STOR_SPEC_OPR_PRDS",
     )
 
-    # Add to list of sets we'll join to get the final
-    # STOR_OPR_PRDS set
-    getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "STOR_SPEC_OPR_PRDS",
-    )
-
 
 # Capacity Type Methods
 ###############################################################################
@@ -171,13 +164,6 @@ def capacity_cost_rule(mod, g, p):
         * mod.stor_spec_fixed_cost_per_mw_yr[g, p] \
         + mod.stor_spec_energy_capacity_mwh[g, p] \
         * mod.stor_spec_fixed_cost_per_mwh_yr[g, p]
-
-
-def new_capacity_rule(mod, g, p):
-    """
-    New capacity built at project g in period p.
-    """
-    return 0
 
 
 # Input-Output

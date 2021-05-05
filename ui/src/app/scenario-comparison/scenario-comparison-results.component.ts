@@ -29,7 +29,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     plotType: string,
     caption: string,
     loadZone: string,
-    rpsZone: string,
+    energyTargetZone: string,
     carbonCapZone: string,
     period: number,
     horizon: number,
@@ -100,7 +100,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
   embedBasePlot(): void {
     this.scenarioResultsService.getResultsPlot(
         this.baseScenarioID, this.formValues.plotType, this.formValues.loadZone,
-          this.formValues.rpsZone, this.formValues.carbonCapZone,
+          this.formValues.energyTargetZone, this.formValues.carbonCapZone,
           this.formValues.period, this.formValues.horizon,
           this.formValues.startTimepoint, this.formValues.endTimepoint,
           this.formValues.subproblem, this.formValues.stage,
@@ -114,7 +114,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     for (const scenarioIDTOCompare of this.scenariosIDsToCompare) {
       this.scenarioResultsService.getResultsPlot(
         scenarioIDTOCompare, this.formValues.plotType, this.formValues.loadZone,
-          this.formValues.rpsZone, this.formValues.carbonCapZone,
+          this.formValues.energyTargetZone, this.formValues.carbonCapZone,
           this.formValues.period, this.formValues.horizon,
           this.formValues.startTimepoint, this.formValues.endTimepoint,
           this.formValues.subproblem, this.formValues.stage,

@@ -49,8 +49,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # PRM project operational periods
     m.FDDL_PRM_PRJ_OPR_PRDS = Set(
         dimen=2,
-        within=m.PRM_PRJ_OPR_PRDS &
-        m.STOR_OPR_PRDS,
+        within=m.PRM_PRJ_OPR_PRDS & m.PRJ_OPR_PRDS,
         initialize=lambda mod: [
             (project, period)
             for (project, period) in mod.PRM_PRJ_OPR_PRDS

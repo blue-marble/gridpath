@@ -196,7 +196,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return imported_tx_capacity_modules[tx_cap_type].\
             tx_capacity_cost_rule(mod, tx, p) \
             * mod.hours_in_subproblem_period[p] \
-            / mod.hours_in_full_period[p]
+            / mod.hours_in_period_timepoints[p]
 
     m.Tx_Min_Capacity_MW = Expression(
         m.TX_OPR_PRDS,
@@ -316,7 +316,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
               "costs_transmission_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["tx_line", "period", "hours_in_full_period",
+            ["tx_line", "period", "hours_in_period_timepoints",
              "hours_in_subproblem_period", "load_zone_from",
              "load_zone_to", "capacity_cost"]
         )
@@ -324,7 +324,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 l,
                 p,
-                m.hours_in_full_period[p],
+                m.hours_in_period_timepoints[p],
                 m.hours_in_subproblem_period[p],
                 m.load_zone_from[l],
                 m.load_zone_to[l],
@@ -424,7 +424,7 @@ def import_results_into_database(
         for row in reader:
             tx_line = row[0]
             period = row[1]
-            hours_in_full_period = row[2]
+            hours_in_period_timepoints = row[2]
             hours_in_subproblem_period = row[3]
             load_zone_from = row[4]
             load_zone_to = row[5]
@@ -432,14 +432,14 @@ def import_results_into_database(
             
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
-                 hours_in_full_period, hours_in_subproblem_period,
+                 hours_in_period_timepoints, hours_in_subproblem_period,
                  load_zone_from, load_zone_to, capacity_cost)
             )
 
     insert_temp_sql = """
         INSERT INTO  temp_results_transmission_costs_capacity{}
         (scenario_id, tx_line, period, subproblem_id, stage_id,
-        hours_in_full_period, hours_in_subproblem_period,
+        hours_in_period_timepoints, hours_in_subproblem_period,
         load_zone_from, load_zone_to, capacity_cost)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
@@ -449,11 +449,11 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_transmission_costs_capacity
         (scenario_id, tx_line, period, subproblem_id, stage_id, 
-        hours_in_full_period, hours_in_subproblem_period,
+        hours_in_period_timepoints, hours_in_subproblem_period,
         load_zone_from, load_zone_to, capacity_cost)
         SELECT
         scenario_id, tx_line, period, subproblem_id, stage_id,
-        hours_in_full_period, hours_in_subproblem_period, 
+        hours_in_period_timepoints, hours_in_subproblem_period, 
         load_zone_from, load_zone_to, capacity_cost
         FROM temp_results_transmission_costs_capacity{}
          ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;

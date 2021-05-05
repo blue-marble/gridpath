@@ -523,15 +523,14 @@ Renewable Portfolio Standard (RPS)
 ----------------------------------
 GridPath can optionally impose renewable portfolio standard requirements.
 The user must first define the zones with an RPS requirement. The RPS
-requirement is a period-level constraint (not all periods must have a
-requirement). Each RPS-eligible project must be assigned an RPS zone to
-whose requirement it can contribute. The amount of RPS-eligible energy a
-project contributes in each timepoint is determined by its operational type
-(e.g. a must-run biomass plant will contribute its full capacity times the
-timepoint duration in every timepoint while a wind project will contribute
-its capacity factor times its capacity). The model aggregates all projects'
-contributions for each period and ensures that the RPS requirement is met in
-each RPS zone and period.
+requirement is a period- or horizon-level constraint. Each RPS-eligible
+project must be assigned an RPS zone to whose requirement it can contribute.
+The amount of RPS-eligible energy a project contributes in each timepoint is
+determined by its operational type (e.g. a must-run biomass plant will
+contribute its full capacity times the timepoint duration in every timepoint
+while a wind project will contribute its capacity factor times its capacity).
+The model aggregates all projects' contributions for each period and ensures
+that the RPS requirement is met in each RPS zone and period.
 
 Carbon Cap
 ----------

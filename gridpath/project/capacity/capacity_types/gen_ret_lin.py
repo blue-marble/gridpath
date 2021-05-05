@@ -265,13 +265,6 @@ def capacity_cost_rule(mod, g, p):
         * mod.gen_ret_lin_fixed_cost_per_mw_yr[g, p]
 
 
-def new_capacity_rule(mod, g, p):
-    """
-    New capacity built at project g in period p.
-    """
-    return 0
-
-
 # Input-Output
 ###############################################################################
 

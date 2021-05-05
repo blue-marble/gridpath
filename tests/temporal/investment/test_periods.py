@@ -118,29 +118,42 @@ class TestPeriods(unittest.TestCase):
                              msg="Data for param 'discount_factor' param "
                                  "not loaded correctly"
                              )
-        # Param: number_years_represented
-        expected_num_years_param = \
+        # Param: period_start_year
+        expected_period_start_year_param = \
             periods_df.set_index('period').to_dict()[
-                'number_years_represented'
+                'period_start_year'
             ]
-        actual_num_years_param = \
-            {p: instance.number_years_represented[p] for p in instance.PERIODS}
-        self.assertDictEqual(expected_num_years_param,
-                             actual_num_years_param,
-                             msg="Data for param 'number_years_represented' "
+        actual_period_start_year_param = \
+            {p: instance.period_start_year[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_period_start_year_param,
+                             actual_period_start_year_param,
+                             msg="Data for param 'period_start_year' "
                                  "param not loaded correctly"
                              )
 
-        # Param: hours_in_full_period
-        expected_hours_in_full_period = \
+        # Param: period_end_year
+        expected_period_end_year_param = \
             periods_df.set_index('period').to_dict()[
-                'hours_in_full_period'
+                'period_end_year'
             ]
-        actual_hours_in_full_period = \
-            {p: instance.hours_in_full_period[p] for p in instance.PERIODS}
-        self.assertDictEqual(expected_hours_in_full_period,
-                             actual_hours_in_full_period,
-                             msg="Data for param 'hours_in_full_period' "
+        actual_period_end_year_param = \
+            {p: instance.period_end_year[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_period_end_year_param,
+                             actual_period_end_year_param,
+                             msg="Data for param 'period_end_year' "
+                                 "param not loaded correctly"
+                             )
+
+        # Param: hours_in_period_timepoints
+        expected_hours_in_period_timepoints = \
+            periods_df.set_index('period').to_dict()[
+                'hours_in_period_timepoints'
+            ]
+        actual_hours_in_period_timepoints = \
+            {p: instance.hours_in_period_timepoints[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_hours_in_period_timepoints,
+                             actual_hours_in_period_timepoints,
+                             msg="Data for param 'hours_in_period_timepoints' "
                                  "param not loaded correctly"
                              )
 
@@ -171,6 +184,20 @@ class TestPeriods(unittest.TestCase):
         self.assertDictEqual(expected_tmp_in_p, actual_tmps_in_p,
                              msg="TMPS_IN_PRD data do not match "
                                  "expected."
+                             )
+
+        # Param: number_years_represented
+        expected_num_years_param = {}
+        for p in expected_periods:
+            expected_num_years_param[p] = \
+                expected_period_end_year_param[p] - \
+                expected_period_start_year_param[p]
+        actual_num_years_param = \
+            {p: instance.number_years_represented[p] for p in instance.PERIODS}
+        self.assertDictEqual(expected_num_years_param,
+                             actual_num_years_param,
+                             msg="Data for param 'number_years_represented' "
+                                 "param not loaded correctly"
                              )
 
         # Param: first_period

@@ -77,62 +77,6 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
             #    ... (see Evernote validation list)
             #    create separate function for each validation that you call here
 
-    # Validation across subproblems and stages:
-    validate_hours_in_subproblem_period(scenario_id, subscenarios, conn)
-
-
-def validate_hours_in_subproblem_period(scenario_id, subscenarios, conn):
-    """
-
-    :param subscenarios:
-    :param conn:
-    :return:
-    """
-
-    sql = """
-        SELECT stage_id, period, n_hours, hours_in_full_period
-        FROM
-            (SELECT temporal_scenario_id, stage_id, period,
-            sum(number_of_hours_in_timepoint * timepoint_weight) as n_hours
-            FROM inputs_temporal
-            WHERE spinup_or_lookahead = 0
-            AND temporal_scenario_id = {}
-            GROUP BY temporal_scenario_id, stage_id, period
-            ) AS tmp_table
-    
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, period, hours_in_full_period
-        FROM inputs_temporal_periods) AS period_tbl
-    
-        USING (temporal_scenario_id, period)
-    
-    """.format(subscenarios.TEMPORAL_SCENARIO_ID)
-
-    df = pd.read_sql(sql, con=conn)
-
-    msg = """Total number of hours in timepoints adjusted for timepoint weight
-          and duration and excluding spinup and lookahead timepoints should 
-          match hours_in_full_period."""
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        subproblem_id="N/A",
-        stage_id="N/A",
-        gridpath_module="N/A",
-        db_table="inputs_temporal",
-        severity="Mid",
-        errors=validate_cols_equal(
-            df=df,
-            col1="n_hours",
-            col2="hours_in_full_period",
-            idx_col=["stage_id", "period"],
-            msg=msg
-        )
-    )
-
-    # TODO: check that subproblems don't straddle periods
-
 
 def validate_subscenario_ids(scenario_id, subscenarios, optional_features, conn):
     """
@@ -189,12 +133,15 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
 
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
-                elif feature not in feature_list and \
-                        getattr(subscenarios, sc_id) != "NULL":
-                    errors["Low"].append(
-                        "Detected inputs for '{}' while related feature '{}' "
-                         "is not requested".format(sc_id, feature)
-                    )
+                # TODO: need to add handling of subscenarios shared among
+                #  features; commenting out for now
+                # elif feature not in feature_list and \
+                #         getattr(subscenarios, sc_id) != "NULL":
+                #     errors["Low"].append(
+                #         "Detected inputs for '{}' while related feature '{}' "
+                #          "is not requested".format(sc_id, feature)
+                #     )
+
     for severity, error_list in errors.items():
         write_validation_to_database(
             conn=conn,
