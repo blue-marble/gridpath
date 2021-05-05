@@ -395,7 +395,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps")
         self.run_and_check_objective("2periods_new_build_rps",
-                                     -6852354310.25219)
+                                     -26966855745114.633)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -409,7 +409,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_percent_target")
         self.run_and_check_objective("2periods_new_build_rps_percent_target",
-                                     -6853489111.712191)
+                                     -26966855745114.633)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -612,7 +612,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_ineligible_storage",
-            -6807756610.25219
+            -16980455713578.633
         )
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
@@ -625,7 +625,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_eligible_storage",
-            -6807756610.25219
+            -26966830249904.633
         )
 
     def test_example_test_new_solar(self):
@@ -803,6 +803,29 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_markets")
         self.run_and_check_objective("test_markets", -3504300478278.3403)
+
+    def test_example_2periods_new_build_horizon_energy_target(self):
+        """
+        Check validation and objective function value of
+        "test_example_2periods_new_build_horizon_energy_target" example
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_horizon_energy_target")
+        self.run_and_check_objective("2periods_new_build_horizon_energy_target",
+                                     -26966855745114.633)
+
+    def test_example_2periods_new_build_horizon_energy_target_halfyear(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_horizon_energy_target_halfyear" example
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_horizon_energy_target_halfyear")
+        self.run_and_check_objective("2periods_new_build_horizon_energy_target_halfyear",
+                                     -101086984772727.86)
+
 
     @classmethod
     def tearDownClass(cls):

@@ -18,7 +18,7 @@ results_project_prm_deliverability,1,Project PRM Deliverability
 results_project_prm_deliverability_group_capacity_and_costs,1,Project PRM Deliverability Group Capacity and Costs
 results_project_regulation_down,1,Project Regulation Down
 results_project_regulation_up,1,Project Regulation Up
-results_project_rps,1,Project RPS Contributions
+results_project_energy_target,1,Project RPS Contributions
 results_project_spinning_reserves,1,Project Spinning Reserves
 results_system_carbon_emissions,1,System Carbon Emissions
 results_system_frequency_response_balance,1,System Frequency Response Balance
@@ -30,7 +30,7 @@ results_system_local_capacity,1,System Local Capacity Balance
 results_system_prm,1,System PRM Balance
 results_system_regulation_down_balance,1,System Regulation Down Balance
 results_system_regulation_up_balance,1,System Regulation Up Balance
-results_system_rps,1,System RPS
+results_system_energy_target,1,System RPS
 results_system_spinning_reserves_balance,1,System Spining Reserves Balance
 results_transmission_capacity,1,Transmission Capacity
 results_transmission_capacity_new_build,1,Transmission New Build Capacity

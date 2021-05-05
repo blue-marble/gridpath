@@ -14,7 +14,7 @@ export class ScenarioResultsPlot {
 
 export class ResultsOptions {
   loadZoneOptions: [];
-  rpsZoneOptions: [];
+  energyTargetZoneOptions: [];
   carbonCapZoneOptions: [];
   periodOptions: [];
   subproblemOptions: [];
@@ -28,7 +28,7 @@ export class IncludedPlotFormBuilderAPI {
   'caption': string;
   'loadZone': [] | string;
   'carbonCapZone': [] | string;
-  'rpsZone': [] | string;
+  'energyTargetZone': [] | string;
   'period': [] | string;
   'horizon': [] | string;
   'startTimepoint': [] | string;

@@ -46,14 +46,14 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
 
-        rps_zone_options = [z[0] for z in c.execute(
-            """SELECT rps_zone FROM inputs_geography_rps_zones
-            WHERE rps_zone_scenario_id = (
-            SELECT rps_zone_scenario_id
+        energy_target_zone_options = [z[0] for z in c.execute(
+            """SELECT energy_target_zone FROM inputs_geography_energy_target_zones
+            WHERE energy_target_zone_scenario_id = (
+            SELECT energy_target_zone_scenario_id
             FROM scenarios
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
-        options_api["rpsZoneOptions"] = ['Select RPS Area'] + rps_zone_options
+        options_api["energyTargetZoneOptions"] = ['Select RPS Area'] + energy_target_zone_options
 
         carbon_cap_zone_options = [z[0] for z in c.execute(
             """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
@@ -139,7 +139,7 @@ class ScenarioResultsPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, plot, scenario_id, load_zone, rps_zone, carbon_cap_zone,
+    def get(self, plot, scenario_id, load_zone, energy_target_zone, carbon_cap_zone,
             period, horizon, start_timepoint, end_timepoint, subproblem, stage,
             project, commit_project, ymax):
         """
@@ -164,11 +164,11 @@ class ScenarioResultsPlot(Resource):
             filter_arguments.append("--load_zone")
             filter_arguments.append(load_zone)
 
-        if rps_zone == 'default':
+        if energy_target_zone == 'default':
             pass
         else:
-            filter_arguments.append("--rps_zone")
-            filter_arguments.append(rps_zone)
+            filter_arguments.append("--energy_target_zone")
+            filter_arguments.append(energy_target_zone)
 
         if carbon_cap_zone == 'default':
             pass
@@ -254,7 +254,7 @@ class ScenarioResultsIncludedPlots(Resource):
 
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control,
-          rps_zone_form_control, carbon_cap_zone_form_control,
+          energy_target_zone_form_control, carbon_cap_zone_form_control,
           period_form_control, horizon_form_control,
           start_timepoint_form_control, end_timepoint_form_control,
           subproblem_form_control, stage_form_control,
@@ -267,7 +267,7 @@ class ScenarioResultsIncludedPlots(Resource):
         included_plots_api = []
         for plot in plots_query:
             (results_plot, caption, load_zone_form_control,
-                rps_zone_form_control, carbon_cap_zone_form_control,
+                energy_target_zone_form_control, carbon_cap_zone_form_control,
                 period_form_control, horizon_form_control,
                 start_timepoint_form_control, end_timepoint_form_control,
                 subproblem_form_control, stage_form_control,
@@ -277,7 +277,7 @@ class ScenarioResultsIncludedPlots(Resource):
                 "plotType": results_plot,
                 "caption": caption,
                 "loadZone": [] if load_zone_form_control else "default",
-                "rpsZone": [] if rps_zone_form_control else "default",
+                "energyTargetZone": [] if energy_target_zone_form_control else "default",
                 "carbonCapZone": [] if carbon_cap_zone_form_control
                 else "default",
                 "period": [] if period_form_control else "default",
