@@ -40,21 +40,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`ENERGY_TARGET_PRJS`                                                      |
+    | | :code:`ENERGY_TARGET_PRJS`                                            |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
-    | The set of all energy-target-eligible projects.                                   |
+    | The set of all energy-target-eligible projects.                         |
     +-------------------------------------------------------------------------+
-    | | :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                                              |
+    | | :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                                    |
     |                                                                         |
     | Two-dimensional set that defines all project-timepoint combinations     |
-    | when an energy-target-elgible project can be operational.                         |
+    | when an energy-target-elgible project can be operational.               |
     +-------------------------------------------------------------------------+
-    | | :code:`ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE`                                          |
-    | | *Defined over*: :code:`ENERGY_TARGET_ZONES`                                     |
-    | | *Within*: :code:`ENERGY_TARGET_PRJS`                                            |
+    | | :code:`ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE`                      |
+    | | *Defined over*: :code:`ENERGY_TARGET_ZONES`                           |
+    | | *Within*: :code:`ENERGY_TARGET_PRJS`                                  |
     |                                                                         |
-    | Indexed set that describes the energy-target projects for each energy-target zone.          |
+    | Indexed set that describes the energy-target projects for each          |
+    |energy-target zone.                                                      |
     +-------------------------------------------------------------------------+
 
     |
@@ -62,11 +63,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Input Params                                                            |
     +=========================================================================+
-    | | :code:`energy_target_zone`                                                      |
-    | | *Defined over*: :code:`ENERGY_TARGET_PRJS`                                      |
-    | | *Within*: :code:`ENERGY_TARGET_ZONES`                                           |
+    | | :code:`energy_target_zone`                                            |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJS`                            |
+    | | *Within*: :code:`ENERGY_TARGET_ZONES`                                 |
     |                                                                         |
-    | This param describes the energy-target zone for each energy-target project.                 |
+    | This param describes the energy-target zone for each energy-target      |
+    | project.                                                                |
     +-------------------------------------------------------------------------+
 
     |
@@ -74,31 +76,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`Scheduled_Energy_Target_Energy_MW`                                       |
-    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
+    | | :code:`Scheduled_Energy_Target_Energy_MW`                             |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                    |
     |                                                                         |
-    | Describes how many RECs (in MW) are scheduled for each energy-target-eligible     |
-    | project in each timepoint.                                              |
+    | Describes how many RECs (in MW) are scheduled for each                  |
+    | energy-target-eligible project in each timepoint.                       |
     +-------------------------------------------------------------------------+
     | | :code:`Scheduled_Curtailment_MW`                                      |
-    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                    |
     |                                                                         |
     | Describes the amount of scheduled curtailment (in MW) for each          |
-    | energy-target-eligible project in each timepoint.                                 |
+    | energy-target-eligible project in each timepoint.                       |
     +-------------------------------------------------------------------------+
-    | | :code:`Subhourly_Energy_Target_Energy_MW`                                       |
-    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
+    | | :code:`Subhourly_Energy_Target_Energy_MW`                             |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                    |
     |                                                                         |
     | Describes how many RECs (in MW) are delivered subhourly for each        |
-    | energy-target-eligible project in each timepoint. Subhourly energy-target energy delivery   |
-    | can occur due to sub-hourly upward reserve dispatch (e.g. reg-up).      |
+    | energy-target-eligible project in each timepoint. Subhourly             |
+    | energy-target energy delivery can occur due to sub-hourly upward        |
+    | reserve dispatch (e.g. reg-up).                                         |
     +-------------------------------------------------------------------------+
     | | :code:`Subhourly_Curtailment_MW`                                      |
-    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                              |
+    | | *Defined over*: :code:`ENERGY_TARGET_PRJ_OPR_TMPS`                    |
     |                                                                         |
     | Describes the amount of subhourly curtailment (in MW) for each          |
-    | energy-target-eligible project in each timepoint. Subhourly curtailment can       |
-    | occur due to sub-hourly downward reserve dispatch (e.g. reg-down).      |
+    | energy-target-eligible project in each timepoint. Subhourly curtailment |
+    | can occur due to sub-hourly downward reserve dispatch (e.g. reg-down).  |
     +-------------------------------------------------------------------------+
 
     """
@@ -106,10 +109,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Inputs
     ###########################################################################
 
-    required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
-    )
+    required_operational_modules = \
+        get_required_subtype_modules_from_projects_file(
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, which_type="operational_type"
+        )
 
     imported_operational_modules = load_operational_type_modules(
         required_operational_modules
