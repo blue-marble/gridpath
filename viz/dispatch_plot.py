@@ -241,29 +241,6 @@ def get_load(c, scenario_id, load_zone, timepoints):
     return load, unserved_energy
 
 
-def get_market_purchases(c, scenario_id, load_zone, timepoints):
-    """
-
-    """
-    query = """
-        SELECT sum(sell_power), sum(buy_power)
-        FROM results_system_market_participation
-        WHERE scenario_id = {}
-        AND load_zone = '{}'
-        AND timepoint IN ({})
-        GROUP BY timepoint;
-        """.format(
-            scenario_id, load_zone, ",".join(["?"] * len(timepoints))
-        )
-
-    market_participation = c.execute(query, timepoints).fetchall()
-
-    sell_power = [i[0] for i in market_participation]
-    buy_power = [i[1] for i in market_participation]
-
-    return sell_power, buy_power
-
-
 def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
                       stage, **kwargs):
     """
@@ -351,17 +328,6 @@ def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
 
-    # Add market participation
-    market_participation = get_market_purchases(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
-    )
-
-    df["Market_Sales"] = market_participation[0]
-    df["Market_Purchases"] = market_participation[1]
-
     # Dataframe for testing without database
     # df = pd.DataFrame(
     #     data={
@@ -425,9 +391,7 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
     all_cols = list(df.columns)
     x_col = "x"
     # TODO: remove hard-coding?
-    # TODO: temporarily replace exports with market sales while I figure out
-    #  how this all works
-    line_cols = ["Load", "Market_Sales", "Storage_Charging"]
+    line_cols = ["Load", "Exports", "Storage_Charging"]
     stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
 
     # Set up color scheme. Use cividis palette for unspecified colors
@@ -487,7 +451,7 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
         line_cols = [line_cols[0], line_cols[2]]
     else:
         # Add export line to plot
-        label = "Load + Market Sales"
+        label = "Load + Exports"
         exports_renderer = plot.line(
             x=df[x_col],
             y=df[line_cols[0:2]].sum(axis=1),
