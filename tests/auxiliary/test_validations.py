@@ -310,9 +310,9 @@ class TestValidations(unittest.TestCase):
             # Make sure matching valids don't throw errors
             1: {"df": pd.DataFrame(
                     columns=cols1,
-                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+                    data=[["gas_ct", "new_lin", "gen_commit_cap"]]),
                 "columns": "capacity_type",
-                "valids": ["gen_new_lin"],
+                "valids": ["new_lin"],
                 "invalids": [],
                 "result": []
                 },
@@ -320,7 +320,7 @@ class TestValidations(unittest.TestCase):
             # and test out multiple columns
             2: {"df": pd.DataFrame(
                     columns=cols1,
-                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+                    data=[["gas_ct", "new_lin", "gen_commit_cap"]]),
                 "columns": ["capacity_type", "operational_type"],
                 "valids": [],
                 "invalids": [("invalid1", "invalid2")],
@@ -329,15 +329,15 @@ class TestValidations(unittest.TestCase):
             # Make sure non-matching valids are detected
             3: {"df": pd.DataFrame(
                     columns=cols1,
-                    data=[["gas_ct1", "gen_new_lin", "gen_commit_cap"],
+                    data=[["gas_ct1", "new_lin", "gen_commit_cap"],
                           ["gas_ct2", "invalid_cap_type", "gen_commit_cap"],
                           ["storage_plant", "stor_new_lin", "stor"]
                           ]),
                 "columns": "capacity_type",
-                "valids": ["gen_new_lin", "stor_new_lin"],
+                "valids": ["new_lin", "stor_new_lin"],
                 "invalids": [],
                 "result": ["project(s) 'gas_ct2': Invalid entry for "
-                           "capacity_type. Valid options are ['gen_new_lin', "
+                           "capacity_type. Valid options are ['new_lin', "
                            "'stor_new_lin']."]
                 },
             # Make sure matching invalids are detected

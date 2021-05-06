@@ -4,6 +4,6 @@ Gas_CCGT,,,spec
 Gas_CT,,,spec
 Nuclear,,,spec
 Wind,,,spec
-Solar,,,gen_new_lin
+Solar,,,new_lin
 Gas_CCGT_z2,,,spec
 Gas_CCGT_z3,,,spec

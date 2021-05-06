@@ -103,7 +103,7 @@ class TestExamples(unittest.TestCase):
              # "--write_solver_files_to_logs_dir",
              # "--keepfiles",
              # "--symbolic",
-             "--quiet",
+             # "--quiet",
              "--mute_solver_output",
              "--testing"]
         )

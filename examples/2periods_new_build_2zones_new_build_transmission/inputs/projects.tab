@@ -2,10 +2,10 @@ project	capacity_type	availability_type	operational_type	balancing_type_project	
 Coal	spec	exogenous	gen_commit_cap	day	Coal	Zone1	Coal	1.0	0.4	6.0	1.0	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	2	.	.	.	.	.	Zone1	.	Zone1	.	.	.	.	.
 Coal_z2	spec	exogenous	gen_commit_cap	day	Coal	Zone2	Coal	1.0	0.4	6.0	1.0	0.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Zone2	.	Zone2	.	.	.	.	.
 Gas_CCGT	spec	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	1.0	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.
-Gas_CCGT_new	gen_new_lin	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	1.0	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.
+Gas_CCGT_new	new_lin	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	1.0	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	Zone1	.	Zone1	.	Zone1	.	Zone1	.	.	.	.	.
 Gas_CCGT_z2	spec	exogenous	gen_commit_cap	day	Gas	Zone2	Gas	2.0	0.4	6.0	1.0	2.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	1	.	Zone2	.	Zone2	.	Zone2	.	Zone2	.	.	.	.	.
 Gas_CT	spec	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.
-Gas_CT_new	gen_new_lin	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.
+Gas_CT_new	new_lin	exogenous	gen_commit_cap	day	Gas	Zone1	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.
 Gas_CT_z2	spec	exogenous	gen_commit_cap	day	Gas	Zone2	Gas	2.0	0.4	6.0	0.0	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	3	.	.	.	.	.	.	.	.	.	.	.	.	.
 Nuclear	spec	exogenous	gen_must_run	day	Nuclear	Zone1	Uranium	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Nuclear_z2	spec	exogenous	gen_must_run	day	Nuclear	Zone2	Uranium	1.0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

@@ -19,7 +19,7 @@ import unittest
 
 
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.gen_new_lin"
+    "project.capacity.capacity_types.new_lin"
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,

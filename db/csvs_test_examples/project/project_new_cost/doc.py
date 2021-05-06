@@ -15,8 +15,8 @@
 +--------------------------------+----------------------------------------------+
 
 If the project portfolio includes projects of a 'new' capacity type
-(:code:`gen_new_bin`, :code:`gen_new_lin`, :code:`stor_new_bin`, or
-:code:`stor_new_lin`), the user must specify the cost for building a project
+(:code:`gen_new_bin`, :code:`new_lin`, :code:`stor_new_bin`, or
+:code:`new_lin`), the user must specify the cost for building a project
 in each period and, optionally, any minimum and maximum requirements on the
 total capacity to be build (see :ref:`new-project-potential-section-ref`).
 Similarly to the specified-project tables, the primary key is the

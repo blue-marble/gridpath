@@ -4,4 +4,4 @@ Gas_CCGT,,,spec
 Gas_CT,,,spec
 Nuclear,,,spec
 Wind,,,spec
-Battery,,,stor_new_lin
+Battery,,,new_lin

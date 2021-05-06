@@ -98,8 +98,7 @@ class TestCapacity(unittest.TestCase):
         # joined for the final PRJ_OPR_PRDS
         # The capacity_type modules use the
         # spec_capacity_period_params.tab,
-        # new_build_generator_vintage_costs.tab,
-        # new_build_storage_vintage_costs.tab,
+        # new_build_vintage_costs.tab,
         # and new_shiftable_load_supply_curve.tab files to determine
         # operational periods, so we'll load from those files directly here
         # and compare to the set the capacity_type modules have created
@@ -120,7 +119,7 @@ class TestCapacity(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "new_build_generator_vintage_costs.tab"
+                    "new_build_vintage_costs.tab"
                 ),
                 usecols=['project', 'vintage'],
                 sep="\t"
@@ -138,17 +137,6 @@ class TestCapacity(unittest.TestCase):
             )
         ngb = [tuple(x) for x in ngb_df.values]
 
-        ns_df = \
-            pd.read_csv(
-                os.path.join(
-                    TEST_DATA_DIRECTORY, "inputs",
-                    "new_build_storage_vintage_costs.tab"
-                ),
-                usecols=['project', 'vintage'],
-                sep="\t"
-            )
-        ns = [tuple(x) for x in ns_df.values]
-
         nsb_df = \
             pd.read_csv(
                 os.path.join(
@@ -163,7 +151,7 @@ class TestCapacity(unittest.TestCase):
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + dr)
+        expected_proj_period_set = sorted(eg + ng + ngb + nsb + dr)
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
             in instance.PRJ_OPR_PRDS

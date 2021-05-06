@@ -28,11 +28,6 @@ of years the period represents) for the duration of the project's lifetime.
 Annual fixed O&M costs are also incurred by linear new-build generation.
 """
 
-from __future__ import print_function
-
-from builtins import next
-from builtins import zip
-
 import csv
 import os.path
 import pandas as pd
