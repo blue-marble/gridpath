@@ -15,14 +15,14 @@
 +--------------------------------+------------------------------------------------+
 
 If the project portfolio includes project of the capacity types
-:code:`gen_spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
-:code:`stor_spec`, the user must select that amount of project capacity that
+:code:`spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
+:code:`spec`, the user must select that amount of project capacity that
 the optimization should see as given (i.e. specified) in every period as
 well as the associated fixed O&M costs (see
 :ref:`specified-project-fixed-cost-section-ref`). Project
 capacities are in the :code:`inputs_project_specified_capacity` table. For
 :code:`gen_` capacity types, this table contains the project's power rating
-and for :code:`stor_spec` it also contains the storage project's energy rating.
+and for :code:`spec` it also contains the storage project's energy rating.
 
 The primary key of this table includes the
 :code:`project_specified_capacity_scenario_id`, the project name, and the

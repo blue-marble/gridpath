@@ -15,8 +15,8 @@
 +--------------------------------+--------------------------------------------------+
 
 If the project portfolio includes project of the capacity types
-:code:`gen_spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
-:code:`stor_spec`, the user must select the fixed O&M costs associated with
+:code:`spec`, :code:`gen_ret_bin`, :code:`gen_ret_lin`, or
+:code:`spec`, the user must select the fixed O&M costs associated with
 the specified project capacity in every period. These can be varied by
 scenario via the :code:`project_specified_fixed_cost_scenario_id` subscenario.
 

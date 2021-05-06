@@ -1587,7 +1587,7 @@ def add_model_components(
         # (it is limited by the Pmin expression), so we can drop the second
         # RHS term which checks for startup/shutdown power
         if (mod.capacity_type[g] in [
-            'gen_spec', 'gen_ret_bin',  'gen_ret_lin']
+            'spec', 'gen_ret_bin',  'gen_ret_lin']
                 and getattr(mod, mod.capacity_type[g] + '_capacity_mw') == 0) \
             or (mod.availability_type[g] == 'exogenous'
                 and mod.avl_exog_derate[g, tmp] == 0)\

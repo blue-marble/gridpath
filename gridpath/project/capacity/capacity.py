@@ -88,7 +88,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | exist) in the model. The exact formulation of the expression depends on |
     | the project's capacity_type. For each project, we call its              |
     | capacity_type module's capacity_rule method in order to formulate the   |
-    | expression. E.g. a project of the gen_spec capacity_type will have a    |
+    | expression. E.g. a project of the spec capacity_type will have a        |
     | have a pre-specified capacity whereas a project of the gen_new_lin      |
     | capacity_type will have a model variable (or sum of variables) as its   |
     | Capacity_MW.                                                            |

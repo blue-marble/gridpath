@@ -38,7 +38,7 @@ from gridpath.auxiliary.validations import get_tx_lines, get_expected_dtypes, \
     validate_idxs, validate_missing_inputs, validate_column_monotonicity
 
 
-# TODO: add fixed O&M costs similar to gen_spec
+# TODO: add fixed O&M costs similar to project 'spec' type
 def add_model_components(
         m, d, scenario_directory, subproblem, stage
 ):

@@ -16,7 +16,7 @@
 This operational type describes must-run generators that produce constant
 power equal to their capacity in all timepoints when they are available.
 
-The available capacity can either be a set input (e.g. for the gen_spec
+The available capacity can either be a set input (e.g. for the 'spec'
 capacity_type) or a decision variable by period (e.g. for the gen_new_lin
 capacity_type). This makes this operational type suitable for both production
 simulation type problems and capacity expansion problems.

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import csv
+import math
 import os.path
 import pandas as pd
 
@@ -302,12 +303,18 @@ def spec_determine_inputs(
             project_period_list.append((row[0], row[1]))
             spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[2])
-            spec_capacity_mwh_dict[(row[0], row[1])] = \
-                float(row[3])
+            if math.isnan(row[3]):
+                pass
+            else:
+                spec_capacity_mwh_dict[(row[0], row[1])] = \
+                    float(row[3])
             spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
                 float(row[4])
-            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
-                float(row[5])
+            if math.isnan(row[3]):
+                pass
+            else:
+                spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+                    float(row[5])
         else:
             pass
 
@@ -317,7 +324,7 @@ def spec_determine_inputs(
     diff = list(set(project_list) - set(projects_w_params))
     if diff:
         raise ValueError("Missing capacity/fixed cost inputs for the "
-                         "following gen_spec projects: {}".format(diff))
+                         "following 'spec' projects: {}".format(diff))
 
     main_dict = dict()
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict

@@ -54,8 +54,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`capacity_type`                                                 |
     | | *Defined over*: :code:`PROJECTS`                                      |
     | | *Within*: :code:`["dr_new", "gen_new_bin", "gen_new_lin",`            |
-    | | :code:`"gen_ret_bin", "gen_ret_lin", "gen_spec", "stor_new_bin",`     |
-    | | :code:`"stor_new_lin", "stor_spec"]`                                  |
+    | | :code:`"gen_ret_bin", "gen_ret_lin", "spec", "stor_new_bin",`         |
+    | | :code:`"stor_new_lin"]`                                               |
     |                                                                         |
     | This param describes each project's capacity type, which determines how |
     | the available capacity of the project is defined (depending on the      |
@@ -114,8 +114,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.capacity_type = Param(
         m.PROJECTS,
         within=["dr_new", "gen_new_bin", "gen_new_lin", "gen_ret_bin",
-                "gen_ret_lin", "gen_spec", "stor_new_bin", "stor_new_lin",
-                "stor_spec"]
+                "gen_ret_lin", "spec", "stor_new_bin", "stor_new_lin"]
     )
     m.operational_type = Param(
         m.PROJECTS,

@@ -18,7 +18,7 @@ produce power in all timepoints they are available; unlike the must-run
 generators, however, they can vary power output between a pre-specified
 minimum stable level (greater than 0) and their available capacity.
 
-The available capacity can either be a set input (e.g. for the gen_spec
+The available capacity can either be a set input (e.g. for the spec
 capacity_type) or a decision variable by period (e.g. for the gen_new_lin
 capacity_type). This makes this operational type suitable for both production
 simulation type problems and capacity expansion problems.

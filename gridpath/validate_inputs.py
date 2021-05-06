@@ -213,10 +213,9 @@ def validate_data_dependent_subscenario_ids(scenario_id, subscenarios, conn):
         "dr_new"
     }
     existing_build_types = {
-        "gen_spec",
+        "spec",
         "gen_ret_bin",
-        "gen_ret_lin",
-        "stor_spec",
+        "gen_ret_lin"
     }
     dr_types = {
         "dr_new"

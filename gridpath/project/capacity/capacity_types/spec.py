@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +13,21 @@
 # limitations under the License.
 
 """
-This capacity type describes generator projects that are available to the
-optimization without having to incur an investment cost, e.g. existing
-projects or projects that will be built in the future and whose capital
-costs we want to ignore (in the objective function). A specified generator can
-be available at a specified capacity in all periods, or in some periods only,
-with no restriction on the order and combination of periods or the variation
-in capacity by period.
+This capacity type describes the power (i.e. charging and discharging
+capacity) and energy capacity (i.e. duration) of storage projects that are
+available to the optimization without having to incur an investment cost.
+For example, it can be applied to existing storage projects or to
+storage projects that will be built in the future and whose capital costs we
+want to ignore (in the objective function).
 
-The user may specify a fixed O&M cost for these generators, but this cost will
-be a fixed number in the objective function and will therefore not affect any
-of the optimization decisions.
+It is not required to specify a capacity for all periods, i.e. a project can
+be operational in some periods but not in others with no restriction on the
+order and combination of periods. The user may specify a fixed O&M cost for
+specified-storage projects, but this cost will be a fixed number in the
+objective function and will therefore not affect any of the optimization
+decisions.
+
 """
-
 
 from pyomo.environ import Set, Param, NonNegativeReals
 
@@ -46,12 +48,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_SPEC_OPR_PRDS`                                             |
+    | | :code:`SPEC_OPR_PRDS`                                                 |
     |                                                                         |
-    | Two-dimensional set of project-period combinations that describes the   |
-    | project capacity available in a given period. This set is added to the  |
-    | list of sets to join to get the final :code:`PRJ_OPR_PRDS` set defined  |
-    | in **gridpath.project.capacity.capacity**.                              |
+    | Two-dimensional set of project-period combinations that helps describe  |
+    | the project capacity available in a given period. This set is added to  |
+    | the list of sets to join to get the final :code:`PRJ_OPR_PRDS` set      |
+    | defined in **gridpath.project.capacity.capacity**.                      |
     +-------------------------------------------------------------------------+
 
     |
@@ -59,19 +61,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_spec_capacity_mw`                                          |
-    | | *Defined over*: :code:`GEN_SPEC_OPR_PRDS`                             |
+    | | :code:`spec_capacity_mw`                                        |
+    | | *Defined over*: :code:`SPEC_OPR_PRDS`                                 |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's specified capacity (in MW) in each operational period.    |
+    | The storage project's specified power capacity (in MW) in each          |
+    | operational period.                                                     |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_spec_fixed_cost_per_mw_yr`                                 |
-    | | *Defined over*: :code:`GEN_SPEC_OPR_PRDS`                             |
+    | | :code:`spec_energy_capacity_mwh`                                      |
+    | | *Defined over*: :code:`SPEC_OPR_PRDS`                                 |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's fixed cost (in $ per MW-yr.) in each operational period.  |
-    | This cost will be added to the objective function but will not affect   |
-    | optimization decisions.                                                 |
+    | The storage project's specified energy capacity (in MWh) in each        |
+    | operational period.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`spec_fixed_cost_per_mw_yr`                                     |
+    | | *Defined over*: :code:`SPEC_OPR_PRDS`                                 |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's fixed cost for the power components (in $ per     |
+    | MW-yr.) in each operational period. This cost will be added to the      |
+    | objective function but will not affect optimization decisions.          |
+    +-------------------------------------------------------------------------+
+    | | :code:`spec_fixed_cost_per_mwh_yr`                                    |
+    | | *Defined over*: :code:`SPEC_OPR_PRDS`                                 |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's fixed cost for the energy components (in $ per    |
+    | MWh-yr.) in each operational period. This cost will be added to the     |
+    | objective function but will not affect optimization decisions.          |
     +-------------------------------------------------------------------------+
 
     """
@@ -79,21 +97,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.GEN_SPEC_OPR_PRDS = Set(
-        dimen=2, within=m.PROJECTS*m.PERIODS
-    )
+    m.SPEC_OPR_PRDS = Set(dimen=2)
 
     # Required Params
     ###########################################################################
 
-    m.gen_spec_capacity_mw = Param(
-        m.GEN_SPEC_OPR_PRDS,
+    m.spec_capacity_mw = Param(
+        m.SPEC_OPR_PRDS,
         within=NonNegativeReals
     )
 
-    m.gen_spec_fixed_cost_per_mw_yr = Param(
-        m.GEN_SPEC_OPR_PRDS,
+    m.spec_energy_capacity_mwh = Param(
+        m.SPEC_OPR_PRDS,
+        within=NonNegativeReals,
+        default=0
+    )
+
+    m.spec_fixed_cost_per_mw_yr = Param(
+        m.SPEC_OPR_PRDS,
         within=NonNegativeReals
+    )
+
+    m.spec_fixed_cost_per_mwh_yr = Param(
+        m.SPEC_OPR_PRDS,
+        within=NonNegativeReals,
+        default=0
     )
 
     # Dynamic Components
@@ -102,7 +130,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Add to list of sets we'll join to get the final
     # PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "GEN_SPEC_OPR_PRDS",
+        "SPEC_OPR_PRDS",
     )
 
 
@@ -111,20 +139,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 def capacity_rule(mod, g, p):
     """
-    The capacity of projects of the *gen_spec* capacity type is a
+    The power capacity of projects of the *spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.gen_spec_capacity_mw[g, p]
+    return mod.spec_capacity_mw[g, p]
+
+
+def energy_capacity_rule(mod, g, p):
+    """
+    The energy capacity of projects of the *spec* capacity type is a
+    pre-specified number for each of the project's operational periods.
+    """
+    return mod.spec_energy_capacity_mwh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_spec* capacity type is a
-    pre-specified number equal to the capacity times the per-mw fixed cost
-    for each of the project's operational periods.
+    The capacity cost of projects of the *spec* capacity type is a
+    pre-specified number equal to the power capacity times the per-mw fixed
+    cost plus the energy capacity times the per-mwh fixed cost for each of
+    the project's operational periods.
     """
-    return mod.gen_spec_capacity_mw[g, p] \
-        * mod.gen_spec_fixed_cost_per_mw_yr[g, p]
+    return mod.spec_capacity_mw[g, p] \
+        * mod.spec_fixed_cost_per_mw_yr[g, p] \
+        + mod.spec_energy_capacity_mwh[g, p] \
+        * mod.spec_fixed_cost_per_mwh_yr[g, p]
 
 
 # Input-Output
@@ -133,28 +172,26 @@ def capacity_cost_rule(mod, g, p):
 def load_model_data(
     m, d, data_portal, scenario_directory, subproblem, stage
 ):
-    """
-
-    :param m:
-    :param data_portal:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
     project_period_list, spec_params_dict = \
         spec_determine_inputs(
             scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, capacity_type="gen_spec"
+            stage=stage, capacity_type="spec"
         )
 
-    data_portal.data()["GEN_SPEC_OPR_PRDS"] = project_period_list
+    data_portal.data()["SPEC_OPR_PRDS"] = \
+        {None: project_period_list}
 
-    data_portal.data()["gen_spec_capacity_mw"] = \
+    data_portal.data()["spec_capacity_mw"] = \
         spec_params_dict["specified_capacity_mw"]
 
-    data_portal.data()["gen_spec_fixed_cost_per_mw_yr"] = \
+    data_portal.data()["spec_energy_capacity_mwh"] = \
+        spec_params_dict["specified_capacity_mwh"]
+
+    data_portal.data()["spec_fixed_cost_per_mw_yr"] = \
         spec_params_dict["fixed_cost_per_mw_yr"]
+
+    data_portal.data()["spec_fixed_cost_per_mwh_yr"] = \
+        spec_params_dict["fixed_cost_per_mwh_yr"]
 
 
 # Database
@@ -171,7 +208,7 @@ def get_model_inputs_from_database(
     :return:
     """
     spec_params = spec_get_inputs_from_database(
-        conn=conn, subscenarios=subscenarios, capacity_type="gen_spec"
+        conn=conn, subscenarios=subscenarios, capacity_type="spec"
     )
     return spec_params
 
@@ -180,8 +217,7 @@ def write_model_inputs(
     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
-    Get inputs from database and write out the model input
-    spec_capacity_period_params.tab file
+    Get inputs from database and write out the model input .tab file
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -214,13 +250,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    gen_spec_params = get_model_inputs_from_database(
+    spec_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_spec")
+    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "spec")
 
     # Convert input data into pandas DataFrame and extract data
-    df = cursor_to_df(gen_spec_params)
+    df = cursor_to_df(spec_params)
     spec_projects = df["project"].unique()
 
     # Get expected dtypes
@@ -278,7 +314,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
+    # We're only requiring capacity and fixed cost per MW-yr
+    cols = ["specified_capacity_mw",
+            "fixed_cost_per_mw_year"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

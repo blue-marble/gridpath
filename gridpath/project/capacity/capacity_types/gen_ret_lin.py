@@ -14,7 +14,7 @@
 
 """
 This capacity type describes generator projects with the same
-characteristics as *gen_spec*, but whose fixed O&M cost can be avoided by
+characteristics as *spec*, but whose fixed O&M cost can be avoided by
 'retiring' them.
 
 The optimization can make the decision to retire generation in each study
@@ -44,7 +44,9 @@ from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_missing_inputs
 from gridpath.project.capacity.capacity_types.common_methods import \
     spec_get_inputs_from_database, spec_write_tab_file, \
-    spec_determine_inputs, update_capacity_results_table
+    update_capacity_results_table
+from gridpath.project.capacity.capacity_types.spec import \
+    spec_determine_inputs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
