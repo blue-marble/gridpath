@@ -85,7 +85,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals
     )
 
-    m.gen_stor_hyb_spec_hyb_gen_capacity_mw = Param(
+    m.gen_stor_hyb_spec_capacity_mwh = Param(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS,
         within=NonNegativeReals
     )
@@ -95,27 +95,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals
     )
 
-    m.gen_stor_hyb_spec_hyb_stor_capacity_mwh = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS,
-        within=NonNegativeReals
-    )
-
     m.gen_stor_hyb_spec_fixed_cost_per_mw_yr = Param(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS,
         within=NonNegativeReals
     )
 
-    m.gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr = Param(
+    m.gen_stor_hyb_spec_fixed_cost_per_mwh_yr = Param(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS,
         within=NonNegativeReals
     )
 
     m.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr = Param(
-        m.GEN_STOR_HYB_SPEC_OPR_PRDS,
-        within=NonNegativeReals
-    )
-
-    m.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mwh_yr = Param(
         m.GEN_STOR_HYB_SPEC_OPR_PRDS,
         within=NonNegativeReals
     )
@@ -133,41 +123,40 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Capacity Type Methods
 ###############################################################################
 
-def capacity_rule(mod, g, p):
+def capacity_rule(mod, prj, prd):
     """
     The capacity of projects of the *gen_stor_hyb_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.gen_stor_hyb_spec_capacity_mw[g, p]
+    return mod.gen_stor_hyb_spec_capacity_mw[prj, prd]
 
 
-def capacity_cost_rule(mod, g, p):
+def capacity_cost_rule(mod, prj, prd):
     """
     The capacity cost of projects of the *gen_stor_hyb_spec* capacity type is a
     pre-specified number equal to the capacity times the per-mw fixed cost
     for each of the project's operational periods.
     """
-    return mod.gen_stor_hyb_spec_capacity_mw[g, p] \
-        * mod.gen_stor_hyb_spec_fixed_cost_per_mw_yr[g, p] \
-        + mod.gen_stor_hyb_spec_hyb_gen_capacity_mwh[g, p] \
-        * mod.gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr[g, p] \
-        + mod.gen_stor_hyb_spec_hyb_stor_capacity_mw[g, p] \
-        * mod.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr[g, p] \
-        + mod.gen_stor_hyb_spec_hyb_stor_capacity_mwh[g, p] \
-        * mod.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mwh_yr[g, p]
+    return mod.gen_stor_hyb_spec_capacity_mw[prj, prd] \
+        * mod.gen_stor_hyb_spec_fixed_cost_per_mw_yr[prj, prd] \
+        + mod.gen_stor_hyb_spec_capacity_mwh[prj, prd] \
+        * mod.gen_stor_hyb_spec_fixed_cost_per_mwh_yr[prj, prd] \
+        + mod.gen_stor_hyb_spec_hyb_stor_capacity_mw[prj, prd] \
+        * mod.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr[prj, prd]
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_capacity_rule(mod, prj, prd):
     """
     """
-    return 0
+    return mod.gen_stor_hyb_spec_capacity_mwh[prj, prd]
 
 
-def new_capacity_rule(mod, g, p):
+def hyb_stor_capacity_rule(mod, prj, prd):
     """
-    New capacity built at project g in period p.
+    The power capacity of the storage component of the hybrid project.
     """
-    return 0
+    return mod.gen_stor_hyb_spec_hyb_stor_capacity_mw[prj, prd]
+
 
 # Input-Output
 ###############################################################################
@@ -190,26 +179,26 @@ def load_model_data(
             scenario_directory=scenario_directory, subproblem=subproblem,
             stage=stage, capacity_type="gen_stor_hyb_spec"
         )
-    
+
     data_portal.data()["GEN_STOR_HYB_SPEC_OPR_PRDS"] = project_period_list
 
     data_portal.data()["gen_stor_hyb_spec_capacity_mw"] = \
         spec_params_dict["specified_capacity_mw"]
 
+    data_portal.data()["gen_stor_hyb_spec_capacity_mwh"] = \
+        spec_params_dict["specified_capacity_mwh"]
+
     data_portal.data()["gen_stor_hyb_spec_hyb_stor_capacity_mw"] = \
         spec_params_dict["hyb_stor_specified_capacity_mw"]
-
-    data_portal.data()["gen_stor_hyb_spec_hyb_stor_capacity_mwh"] = \
-        spec_params_dict["hyb_stor_specified_capacity_mwh"]
 
     data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mw_yr"] = \
         spec_params_dict["fixed_cost_per_mw_yr"]
 
+    data_portal.data()["gen_stor_hyb_spec_fixed_cost_per_mwh_yr"] = \
+        spec_params_dict["fixed_cost_per_mwh_yr"]
+
     data_portal.data()["gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr"] = \
         spec_params_dict["hyb_stor_fixed_cost_per_mw_yr"]
-
-    data_portal.data()["gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mwh_yr"] = \
-        spec_params_dict["hyb_stor_fixed_cost_per_mwh_yr"]
 
 
 # Database
@@ -272,7 +261,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     gen_stor_hyb_spec_params = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_stor_hyb_spec")
+    projects = get_projects(
+        conn, scenario_id, subscenarios, "capacity_type", "gen_stor_hyb_spec"
+    )
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(gen_stor_hyb_spec_params)

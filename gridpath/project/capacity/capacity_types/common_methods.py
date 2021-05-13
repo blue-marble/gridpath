@@ -172,14 +172,10 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         SELECT project, period,
         specified_capacity_mw,
         specified_capacity_mwh,
-        hyb_gen_specified_capacity_mw, 
         hyb_stor_specified_capacity_mw,
-        hyb_stor_specified_capacity_mwh,
         fixed_cost_per_mw_year,
         fixed_cost_per_mwh_year,
-        hyb_gen_fixed_cost_per_mw_yr,
-        hyb_stor_fixed_cost_per_mw_yr,
-        hyb_stor_fixed_cost_per_mwh_yr
+        hyb_stor_fixed_cost_per_mw_yr
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
@@ -189,9 +185,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         (SELECT project, period,
         specified_capacity_mw,
         specified_capacity_mwh,
-        hyb_gen_specified_capacity_mw, 
-        hyb_stor_specified_capacity_mw,
-        hyb_stor_specified_capacity_mwh
+        hyb_stor_specified_capacity_mw
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
         USING (project, period)
@@ -199,9 +193,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         (SELECT project, period,
         fixed_cost_per_mw_year,
         fixed_cost_per_mwh_year,
-        hyb_gen_fixed_cost_per_mw_yr,
-        hyb_stor_fixed_cost_per_mw_yr,
-        hyb_stor_fixed_cost_per_mwh_yr
+        hyb_stor_fixed_cost_per_mw_yr
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
@@ -243,9 +235,7 @@ def spec_write_tab_file(
                 ["project", "period",
                  "specified_capacity_mw",
                  "specified_capacity_mwh",
-                 "hyb_gen_specified_capacity_mw",
                  "hyb_stor_specified_capacity_mw",
-                 "hyb_stor_specified_capacity_mwh",
                  "fixed_cost_per_mw_yr",
                  "fixed_cost_per_mwh_yr",
                  "hyb_gen_fixed_cost_per_mw_yr",
@@ -266,9 +256,7 @@ def write_from_query(spec_project_params, writer):
         [project, period,
          specified_capacity_mw,
          specified_capacity_mwh,
-         hyb_gen_specified_capacity_mw,
          hyb_stor_specified_capacity_mw,
-         hyb_stor_specified_capacity_mwh,
          fixed_cost_per_mw_year,
          fixed_cost_per_mwh_year,
          hyb_gen_fixed_cost_per_mw_yr,
@@ -279,9 +267,7 @@ def write_from_query(spec_project_params, writer):
             [project, period,
              specified_capacity_mw,
              specified_capacity_mwh,
-             hyb_gen_specified_capacity_mw,
              hyb_stor_specified_capacity_mw,
-             hyb_stor_specified_capacity_mwh,
              fixed_cost_per_mw_year,
              fixed_cost_per_mwh_year,
              hyb_gen_fixed_cost_per_mw_yr,

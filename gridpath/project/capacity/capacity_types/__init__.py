@@ -172,28 +172,36 @@ def import_results_into_database(
         else:
             pass
 
+
 # Capacity Type Module Method Defaults
 ###############################################################################
-def capacity_rule(mod, g, p):
+def capacity_rule(mod, prj, prd):
     """
     """
     return 0
 
 
-def energy_capacity_rule(mod, g, p):
+def energy_capacity_rule(mod, prj, prd):
     """
     """
     return 0
 
 
-def capacity_cost_rule(mod, g, p):
+def capacity_cost_rule(mod, prj, prd):
     """
     """
     return 0
 
 
-def new_capacity_rule(mod, g, p):
+def new_capacity_rule(mod, prj, prd):
     """
     New capacity built at project g in period p.
+    """
+    return 0
+
+
+def hyb_stor_capacity_rule(mod, prj, prd):
+    """
+    Power capacity of a hybrid project's storage component.
     """
     return 0
