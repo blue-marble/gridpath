@@ -549,7 +549,7 @@ subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 
 -- Carbon tax
 -- This is the unit at which the carbon tax is applied in the model; it can be
--- different from the load zone
+-- different from the load zones
 DROP TABLE IF EXISTS subscenarios_geography_carbon_tax_zones;
 CREATE TABLE subscenarios_geography_carbon_tax_zones (
 carbon_tax_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
