@@ -231,16 +231,17 @@ def spec_write_tab_file(
         with open(spec_params_filepath, "w", newline="") as f:
             writer_w = csv.writer(f, delimiter="\t", lineterminator="\n")
             # Write header
-            writer_w.writerow(
-                ["project", "period",
+            writer_w.writerow([
+                 "project", "period",
                  "specified_capacity_mw",
                  "specified_capacity_mwh",
                  "hyb_stor_specified_capacity_mw",
                  "fixed_cost_per_mw_yr",
                  "fixed_cost_per_mwh_yr",
-                 "hyb_gen_fixed_cost_per_mw_yr",
+                 # "hyb_gen_fixed_cost_per_mw_yr",
                  "hyb_stor_fixed_cost_per_mw_yr",
-                 "hyb_stor_fixed_cost_per_mwh_yr"]
+                 # "hyb_stor_fixed_cost_per_mwh_yr"
+                 ]
             )
 
             # Write input data
@@ -259,20 +260,22 @@ def write_from_query(spec_project_params, writer):
          hyb_stor_specified_capacity_mw,
          fixed_cost_per_mw_year,
          fixed_cost_per_mwh_year,
-         hyb_gen_fixed_cost_per_mw_yr,
+         # hyb_gen_fixed_cost_per_mw_yr,
          hyb_stor_fixed_cost_per_mw_yr,
-         hyb_stor_fixed_cost_per_mwh_yr] \
+         # hyb_stor_fixed_cost_per_mwh_yr
+         ] \
             = row
-        writer.writerow(
-            [project, period,
+        writer.writerow([
+             project, period,
              specified_capacity_mw,
              specified_capacity_mwh,
              hyb_stor_specified_capacity_mw,
              fixed_cost_per_mw_year,
              fixed_cost_per_mwh_year,
-             hyb_gen_fixed_cost_per_mw_yr,
+             # hyb_gen_fixed_cost_per_mw_yr,
              hyb_stor_fixed_cost_per_mw_yr,
-             hyb_stor_fixed_cost_per_mwh_yr]
+             # hyb_stor_fixed_cost_per_mwh_yr
+             ]
         )
 
 
