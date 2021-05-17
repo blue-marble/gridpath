@@ -694,9 +694,9 @@ project_specified_capacity_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 specified_capacity_mw FLOAT, -- grid-facing nameplate capacity
-specified_capacity_mwh FLOAT, -- storage energy capacity
---hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
+hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
 hyb_stor_specified_capacity_mw FLOAT, -- e.g. battery tightly-coupled with PV
+specified_capacity_mwh FLOAT, -- storage energy capacity
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
@@ -715,9 +715,9 @@ project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 fixed_cost_per_mw_year FLOAT,
-fixed_cost_per_mwh_year FLOAT,
---hyb_gen_fixed_cost_per_mw_yr FLOAT,
+hyb_gen_fixed_cost_per_mw_yr FLOAT,
 hyb_stor_fixed_cost_per_mw_yr FLOAT,
+fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
