@@ -176,18 +176,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=capacity_rule
     )
 
-    def energy_capacity_rule(mod, prj, prd):
+    def hyb_gen_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
         if hasattr(imported_capacity_modules[cap_type],
-                   "energy_capacity_rule"):
+                   "hyb_gen_capacity_rule"):
             return imported_capacity_modules[cap_type]. \
-                energy_capacity_rule(mod, prj, prd)
+                hyb_gen_capacity_rule(mod, prj, prd)
         else:
-            return cap_type_init.energy_capacity_rule(mod, prj, prd)
+            return cap_type_init.hyb_gen_capacity_rule(mod, prj, prd)
 
-    m.Energy_Capacity_MWh = Expression(
+    m.Hyb_Gen_Capacity_MW = Expression(
         m.PRJ_OPR_PRDS,
-        rule=energy_capacity_rule
+        rule=hyb_gen_capacity_rule
     )
 
     def hyb_stor_capacity_rule(mod, prj, prd):
@@ -204,6 +204,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=hyb_stor_capacity_rule
     )
 
+    def energy_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type],
+                   "energy_capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                energy_capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.energy_capacity_rule(mod, prj, prd)
+
+    m.Energy_Capacity_MWh = Expression(
+        m.PRJ_OPR_PRDS,
+        rule=energy_capacity_rule
+    )
 
 # Set Rules
 ###############################################################################

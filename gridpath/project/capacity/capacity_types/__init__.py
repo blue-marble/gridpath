@@ -181,6 +181,20 @@ def capacity_rule(mod, prj, prd):
     return 0
 
 
+def hyb_gen_capacity_rule(mod, prj, prd):
+    """
+    Power capacity of a hybrid project's generation component.
+    """
+    return 0
+
+
+def hyb_stor_capacity_rule(mod, prj, prd):
+    """
+    Power capacity of a hybrid project's storage component.
+    """
+    return 0
+
+
 def energy_capacity_rule(mod, prj, prd):
     """
     """
@@ -199,9 +213,3 @@ def new_capacity_rule(mod, prj, prd):
     """
     return 0
 
-
-def hyb_stor_capacity_rule(mod, prj, prd):
-    """
-    Power capacity of a hybrid project's storage component.
-    """
-    return 0
