@@ -307,8 +307,12 @@ def spec_determine_inputs(
     # Determine the operational periods & params for each project/period
     project_period_list = list()
     spec_capacity_mw_dict = dict()
+    hyb_gen_spec_capacity_mw_dict = dict()
+    hyb_stor_spec_capacity_mw_dict = dict()
     spec_capacity_mwh_dict = dict()
     spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
     spec_fixed_cost_per_mwh_yr_dict = dict()
 
     df = pd.read_csv(
@@ -320,19 +324,31 @@ def spec_determine_inputs(
     for row in zip(df["project"],
                    df["period"],
                    df["specified_capacity_mw"],
+                   df["hyb_gen_specified_capacity_mw"],
+                   df["hyb_stor_specified_capacity_mw"],
                    df["specified_capacity_mwh"],
                    df["fixed_cost_per_mw_yr"],
+                   df["hyb_gen_fixed_cost_per_mw_yr"],
+                   df["hyb_stor_fixed_cost_per_mw_yr"],
                    df["fixed_cost_per_mwh_yr"]):
         if row[0] in project_list:
             project_period_list.append((row[0], row[1]))
             spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[2])
-            spec_capacity_mwh_dict[(row[0], row[1])] = \
+            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[3])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[4])
-            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+            spec_capacity_mwh_dict[(row[0], row[1])] = \
                 float(row[5])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[6])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[7])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[8])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+                float(row[9])
         else:
             pass
 
@@ -346,8 +362,15 @@ def spec_determine_inputs(
 
     main_dict = dict()
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
+    main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
+    main_dict["hyb_stor_specified_capacity_mw"] = \
+        hyb_stor_spec_capacity_mw_dict
     main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
     main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_gen_fixed_cost_per_mw_yr"] = \
+        hyb_gen_spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_stor_fixed_cost_per_mw_yr"] = \
+        hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
 
     return project_period_list, main_dict

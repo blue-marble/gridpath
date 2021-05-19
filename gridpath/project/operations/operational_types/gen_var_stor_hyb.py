@@ -18,7 +18,7 @@
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    Expression, value
+    PercentFraction, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -44,11 +44,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`GEN_VAR_STOR_HYB`                                              |
     |                                                                         |
-    | The set of generators of the :code:`gen_var_stor_hyb` operational type.          |
+    | The set of generators of the :code:`gen_var_stor_hyb` operational type. |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                                              |
+    | | :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                                     |
     |                                                                         |
-    | Two-dimensional set with generators of the :code:`gen_var_stor_hyb`              |
+    | Two-dimensional set with generators of the :code:`gen_var_stor_hyb`     |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
 
@@ -57,8 +57,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_var_stor_hyb_cap_factor`                                            |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB`                                       |
+    | | :code:`gen_var_stor_hyb_cap_factor`                                   |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB`                              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
@@ -70,29 +70,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Variables                                                               |
     +=========================================================================+
-    | | :code:`GenVarStorHyb_Provide_Power_MW`                                       |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                              |
+    | | :code:`GenVarStorHyb_Provide_Power_MW`                                |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Charge_MW`                                                |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                                 |
+    | | :code:`GenVarStorHyb_Charge_MW`                                       |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Charging power in MW from this project in each timepoint in which the   |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Discharge_MW`                                             |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                                 |
+    | | :code:`GenVarStorHyb_Discharge_MW`                                    |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Discharging power in MW from this project in each timepoint in which the|
     |  project is operational (capacity exists and the project is available). |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Starting_Energy_in_Storage_MWh`                           |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                                 |
+    | | :code:`GenVarStorHyb_Starting_Energy_in_Storage_MWh`                  |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The state of charge of the storage project at the start of each         |
@@ -104,13 +104,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`GenVarStorHyb_Scheduled_Curtailment_MW`                               |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                              |
+    | | :code:`GenVarStorHyb_Scheduled_Curtailment_MW`                        |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | The available power minus what was actually provided (in MW).           |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Total_Curtailment_MW`                                   |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                              |
+    | | :code:`GenVarStorHyb_Total_Curtailment_MW`                            |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | Scheduled curtailment (in MW) plus an upward adjustment for additional  |
     | curtailment when providing downward reserves, and a downward adjustment |
@@ -125,14 +125,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | Power                                                                   |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Max_Power_Constraint`                                   |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                              |
+    | | :code:`GenVarStorHyb_Max_Available_Power_Constraint`                            |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | Limits the power plus upward reserves in each timepoint based on the    |
-    | :code:`gen_var_stor_hyb_cap_factor` and the available capacity.                  |
+    | :code:`gen_var_stor_hyb_cap_factor` and the available capacity.         |
     +-------------------------------------------------------------------------+
-    | | :code:`GenVarStorHyb_Min_Power_Constraint`                                   |
-    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                              |
+    | | :code:`GenVarStorHyb_Min_Power_Constraint`                            |
+    | | *Defined over*: :code:`GEN_VAR_STOR_HYB_OPR_TMPS`                     |
     |                                                                         |
     | Power provision minus downward reserves should exceed zero.             |
     +-------------------------------------------------------------------------+
@@ -159,10 +159,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    # TODO: allow cap factors greater than 1, but throw a warning?
     m.gen_var_stor_hyb_cap_factor = Param(
         m.GEN_VAR_STOR_HYB_OPR_TMPS,
         within=NonNegativeReals
+    )
+
+    m.gen_var_stor_hyb_charging_efficiency = Param(
+        m.GEN_VAR_STOR_HYB, within=PercentFraction
+    )
+
+    m.gen_var_stor_hyb_discharging_efficiency = Param(
+        m.GEN_VAR_STOR_HYB, within=PercentFraction
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_var_stor_hyb_charging_capacity_multiplier = Param(
+        m.GEN_VAR_STOR_HYB, within=NonNegativeReals, default=1.0
+    )
+
+    m.gen_var_stor_hyb_discharging_capacity_multiplier = Param(
+        m.GEN_VAR_STOR_HYB, within=NonNegativeReals, default=1.0
     )
 
     # Variables
@@ -191,6 +209,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
+    def available_power_rule(mod, prj, tmp):
+        """
+        The amount of power from the variable resource generation component 
+        (e.g. solar field) available in every timepoint.
+        """
+        return mod.Hyb_Gen_Capacity_MW[prj, mod.period[tmp]] \
+            * mod.Availability_Derate[prj, tmp] \
+            * mod.gen_var_stor_hyb_cap_factor[prj, tmp]
+    
+    m.GenVarStorHyb_Available_Power_MW = Expression(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        rule=available_power_rule
+    )
+        
     def upwards_reserve_rule(mod, prj, tmp):
         """
         Gather all headroom variables, and de-rate the total reserves offered
@@ -259,9 +291,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Constraints
     ###########################################################################
 
-    m.GenVarStorHyb_Max_Power_Constraint = Constraint(
+    m.GenVarStorHyb_Max_Available_Power_Constraint = Constraint(
         m.GEN_VAR_STOR_HYB_OPR_TMPS,
-        rule=max_power_rule
+        rule=max_available_power_rule
+    )
+
+    m.GenVarStorHyb_Max_Available_Capacity_Constraint = Constraint(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        rule=max_capacity_rule
     )
 
     m.GenVarStorHyb_Min_Power_Constraint = Constraint(
@@ -323,9 +360,7 @@ def scheduled_curtailment_expression_rule(mod, prj, tmp):
     Scheduled curtailment is the available power (variable resource + net
     power from storage) minus what was actually provided to the grid.
     """
-    return mod.Capacity_MW[prj, mod.period[tmp]] \
-        * mod.Availability_Derate[prj, tmp] \
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp] \
+    return mod.GenVarStorHyb_Available_Power_MW[prj, tmp] \
         + mod.GenVarStorHyb_Discharge_MW[prj, tmp] \
         - mod.GenVarStorHyb_Charge_MW[prj, tmp] \
         - mod.GenVarStorHyb_Provide_Power_MW[prj, tmp]
@@ -351,7 +386,7 @@ def total_curtailment_expression_rule(mod, prj, tmp):
     as curtailment).
     """
 
-    return mod.Capacity_MW[prj, mod.period[tmp]] \
+    return mod.Hyb_Gen_Capacity_MW[prj, mod.period[tmp]] \
         * mod.gen_var_stor_hyb_cap_factor[prj, tmp] \
         - mod.GenVarStorHyb_Provide_Power_MW[prj, tmp] \
         + mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp] \
@@ -361,9 +396,9 @@ def total_curtailment_expression_rule(mod, prj, tmp):
 # Constraint Formulation Rules
 ###############################################################################
 
-def max_power_rule(mod, prj, tmp):
+def max_available_power_rule(mod, prj, tmp):
     """
-    **Constraint Name**: GenVarStorHyb_Max_Power_Constraint
+    **Constraint Name**: GenVarStorHyb_Max_Available_Power_Constraint
     **Enforced Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
     Power provision plus upward services cannot exceed available power, which
@@ -372,11 +407,22 @@ def max_power_rule(mod, prj, tmp):
     """
     return mod.GenVarStorHyb_Provide_Power_MW[prj, tmp] \
         + mod.GenVarStorHyb_Upwards_Reserves_MW[prj, tmp] \
-        <= mod.Capacity_MW[prj, mod.period[tmp]] \
-        * mod.Availability_Derate[prj, tmp] \
-        * mod.gen_var_stor_hyb_cap_factor[prj, tmp] \
+        <= mod.GenVarStorHyb_Available_Power_MW[prj, tmp] \
         + mod.GenVarStorHyb_Discharge_MW[prj, tmp] \
         - mod.GenVarStorHyb_Charge_MW[prj, tmp]
+
+
+def max_capacity_rule(mod, prj, tmp):
+    """
+    **Constraint Name**: GenVarStorHyb_Max_Available_Capacity_Constraint
+    **Enforced Over**: GEN_VAR_STOR_HYB_OPR_TMPS
+    
+    Can't provide more power than project total power capacity.
+    """
+    return mod.GenVarStorHyb_Provide_Power_MW[prj, tmp] \
+        + mod.GenVarStorHyb_Upwards_Reserves_MW[prj, tmp] \
+        <= mod.Capacity_MW[prj, mod.period[tmp]] \
+        * mod.Availability_Derate[prj, tmp]
 
 
 def min_power_rule(mod, prj, tmp):
@@ -459,7 +505,7 @@ def energy_tracking_rule(mod, s, tmp):
                 mod.prev_tmp[tmp, mod.balancing_type_project[s]]
             ]
             prev_tmp_starting_energy_in_storage = \
-                mod.GenVarStorHyb_Starting_Energy_in_Stor_MWh[
+                mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
             prev_tmp_discharge = \
@@ -472,7 +518,7 @@ def energy_tracking_rule(mod, s, tmp):
                 ]
 
         return \
-            mod.GenVarStorHyb_Starting_Energy_in_Stor_MWh[s, tmp] \
+            mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp] \
             == prev_tmp_starting_energy_in_storage \
             + prev_tmp_charge * prev_tmp_hrs_in_tmp \
             * mod.gen_var_stor_hyb_charging_efficiency[s] \
@@ -488,7 +534,7 @@ def max_energy_in_storage_rule(mod, s, tmp):
     The amount of energy stored in each operational timepoint cannot exceed
     the available energy capacity.
     """
-    return mod.GenVarStorHyb_Starting_Energy_in_Stor_MWh[s, tmp] \
+    return mod.GenVarStorHyb_Starting_Energy_in_Storage_MWh[s, tmp] \
         <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
         * mod.Availability_Derate[s, tmp]
 

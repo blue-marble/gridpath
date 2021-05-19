@@ -1,0 +1,17 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_build_gen_var_stor_hyb* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                                      Annual Energy (MWh)  % Total Power
+load_zone period technology                                             
+Zone1     2020   Coal                           12,322.40           9.38
+                 Gas                            55,515.04          42.25
+                 Nuclear                        52,560.00          40.00
+                 Wind_Battery_Hybrid            11,002.56           8.37
+          2030   Coal                           12,322.40           9.38
+                 Gas                            55,515.04          42.25
+                 Nuclear                        52,560.00          40.00
+                 Wind_Battery_Hybrid            11,002.56           8.37

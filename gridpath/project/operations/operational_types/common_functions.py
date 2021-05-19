@@ -403,7 +403,8 @@ def get_types_dict():
 
 
 def load_optype_model_data(
-        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+    mod, data_portal, scenario_directory, subproblem, stage, op_type
+):
     """
 
     :param mod:
@@ -514,7 +515,7 @@ def load_var_profile_inputs(
     :return:
     """
 
-    var_op_types = ["gen_var_must_take", "gen_var"]
+    var_op_types = ["gen_var_must_take", "gen_var", "gen_var_stor_hyb"]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
 
