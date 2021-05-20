@@ -580,11 +580,8 @@ def curtailment_cost_rule(mod, prj, tmp):
     """
     Apply curtailment cost to scheduled and subtimepoint curtailment
     """
-    # return (mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp] +
-    #         mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp]) \
-    #     * mod.curtailment_cost_per_pwh[prj]
-
-    return mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp] \
+    return (mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp] +
+            mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp]) \
         * mod.curtailment_cost_per_pwh[prj]
 
 

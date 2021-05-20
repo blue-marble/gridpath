@@ -36,4 +36,6 @@ Clunky_Old_Gen2	2030	10				1000
 Customer_PV	2020	1				0			
 Customer_PV	2030	1				0			
 Nuclear_Flexible	2030	1000				1			
-Battery_Specified	"2020	"	6			6	10000			5000
+Battery_Specified	2020	6			6	10000			5000
+Wind_Battery_Hybrid	2020	5	5	1	4	1	0.5	0.3	0.2
+Wind_Battery_Hybrid	2030	6	5	1	4	1	0.5	0.3	0.2
