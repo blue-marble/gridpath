@@ -3453,6 +3453,23 @@ carbon_cap_marginal_cost_per_emission FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
+-- Carbon tax emissions
+DROP TABLE IF EXISTS results_system_carbon_tax_emissions;
+CREATE TABLE results_system_carbon_tax_emissions (
+scenario_id INTEGER,
+carbon_tax_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+carbon_tax FLOAT,
+total_emissions FLOAT,
+carbon_tax_cost FLOAT,
+dual FLOAT,
+PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
+);
+
 -- RPS balance
 DROP TABLE IF EXISTS results_system_rps;
 CREATE TABLE  results_system_rps (
@@ -3542,6 +3559,7 @@ Spinning_Reserves_Penalty_Costs Float,
 Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
+Total_Carbon_Tax_Cost Float,
 Total_RPS_Balance_Penalty_Costs Float,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
