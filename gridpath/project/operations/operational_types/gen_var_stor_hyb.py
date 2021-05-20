@@ -24,9 +24,9 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import \
     footroom_variables, headroom_variables, reserve_variable_derate_params
-# from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
-#     footroom_subhourly_energy_adjustment_rule, \
-#     headroom_subhourly_energy_adjustment_rule
+from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
+    footroom_subhourly_energy_adjustment_rule, \
+    headroom_subhourly_energy_adjustment_rule
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
@@ -244,38 +244,37 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=downwards_reserve_rule
     )
 
-    # TODO: ignore subtimepoint reserve dynamics for now
-    # def subhourly_curtailment_expression_rule(mod, prj, tmp):
-    #     """
-    #     Sub-hourly curtailment from providing downward reserves.
-    #     """
-    #     return footroom_subhourly_energy_adjustment_rule(d, mod, prj, tmp)
-    #
-    # m.GenVarStorHyb_Subhourly_Curtailment_MW = Expression(
-    #     m.GEN_VAR_STOR_HYB_OPR_TMPS,
-    #     rule=subhourly_curtailment_expression_rule
-    # )
-    #
-    # def subhourly_delivered_energy_expression_rule(mod, prj, tmp):
-    #     """
-    #     Sub-hourly energy delivered from providing upward reserves.
-    #     """
-    #     return headroom_subhourly_energy_adjustment_rule(d, mod, prj, tmp)
-    #
-    # m.GenVarStorHyb_Subhourly_Energy_Delivered_MW = Expression(
-    #     m.GEN_VAR_STOR_HYB_OPR_TMPS,
-    #     rule=subhourly_delivered_energy_expression_rule
-    # )
+    def subtimepoint_curtailment_expression_rule(mod, prj, tmp):
+        """
+        Sub-hourly curtailment from providing downward reserves.
+        """
+        return footroom_subhourly_energy_adjustment_rule(d, mod, prj, tmp)
+
+    m.GenVarStorHyb_Subhourly_Curtailment_MW = Expression(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        rule=subtimepoint_curtailment_expression_rule
+    )
+
+    def subtimepoint_delivered_energy_expression_rule(mod, prj, tmp):
+        """
+        Sub-hourly energy delivered from providing upward reserves.
+        """
+        return headroom_subhourly_energy_adjustment_rule(d, mod, prj, tmp)
+
+    m.GenVarStorHyb_Subhourly_Energy_Delivered_MW = Expression(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        rule=subtimepoint_delivered_energy_expression_rule
+    )
 
     m.GenVarStorHyb_Scheduled_Curtailment_MW = Expression(
         m.GEN_VAR_STOR_HYB_OPR_TMPS,
         rule=scheduled_curtailment_expression_rule
     )
 
-    # m.GenVarStorHyb_Total_Curtailment_MW = Expression(
-    #     m.GEN_VAR_STOR_HYB_OPR_TMPS,
-    #     rule=total_curtailment_expression_rule
-    # )
+    m.GenVarStorHyb_Total_Curtailment_MW = Expression(
+        m.GEN_VAR_STOR_HYB_OPR_TMPS,
+        rule=total_curtailment_expression_rule
+    )
 
     # Constraints
     ###########################################################################
@@ -345,14 +344,14 @@ def total_curtailment_expression_rule(mod, prj, tmp):
     **Defined Over**: GEN_VAR_STOR_HYB_OPR_TMPS
 
     Available energy that was not delivered
-    There's an adjustment for subhourly reserve provision:
+    There's an adjustment for subtimepoint reserve provision:
     1) if downward reserves are provided, they will be called upon
     occasionally, so power provision will have to decrease and additional
     curtailment will be incurred;
     2) if upward reserves are provided (energy is being curtailed),
     they will be called upon occasionally, so power provision will have to
     increase and less curtailment will be incurred
-    The subhourly adjustment here is a simple linear function of reserve
+    The subtimepoint adjustment here is a simple linear function of reserve
 
     Assume cap factors don't incorporate availability derates,
     so don't multiply capacity by Availability_Derate here (will count
@@ -559,27 +558,27 @@ def scheduled_curtailment_rule(mod, prj, tmp):
     return mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp]
 
 
-# def subhourly_curtailment_rule(mod, prj, tmp):
-#     """
-#     If providing downward reserves, variable generators will occasionally
-#     have to be dispatched down relative to their schedule, resulting in
-#     additional curtailment within the hour
-#     """
-#     return mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp]
+def subtimepoint_curtailment_rule(mod, prj, tmp):
+    """
+    If providing downward reserves, variable generators will occasionally
+    have to be dispatched down relative to their schedule, resulting in
+    additional curtailment within the hour
+    """
+    return mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp]
 
 
-# def subhourly_energy_delivered_rule(mod, prj, tmp):
-#     """
-#     If providing upward reserves, variable generators will occasionally be
-#     dispatched up, so additional energy will be delivered within the hour
-#     relative to their schedule (less curtailment)
-#     """
-#     return mod.GenVarStorHyb_Subhourly_Energy_Delivered_MW[prj, tmp]
+def subtimepoint_energy_delivered_rule(mod, prj, tmp):
+    """
+    If providing upward reserves, variable generators will occasionally be
+    dispatched up, so additional energy will be delivered within the hour
+    relative to their schedule (less curtailment)
+    """
+    return mod.GenVarStorHyb_Subhourly_Energy_Delivered_MW[prj, tmp]
 
 
 def curtailment_cost_rule(mod, prj, tmp):
     """
-    Apply curtailment cost to scheduled and subhourly curtailment
+    Apply curtailment cost to scheduled and subtimepoint curtailment
     """
     # return (mod.GenVarStorHyb_Scheduled_Curtailment_MW[prj, tmp] +
     #         mod.GenVarStorHyb_Subhourly_Curtailment_MW[prj, tmp]) \
@@ -674,7 +673,10 @@ def export_results(
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw",
-                         "hyb_storage_charge_mw", "hyb_storage_discharge_mw"
+                         "hyb_storage_charge_mw", "hyb_storage_discharge_mw",
+                         "subhourly_curtailment_mw",
+                         "subhourly_energy_delivered_mw",
+                         "total_curtailment_mw"
                          ])
 
         for (p, tmp) in mod.GEN_VAR_STOR_HYB_OPR_TMPS:
@@ -691,7 +693,10 @@ def export_results(
                 value(mod.GenVarStorHyb_Provide_Power_MW[p, tmp]),
                 value(mod.GenVarStorHyb_Scheduled_Curtailment_MW[p, tmp]),
                 value(mod.GenVarStorHyb_Charge_MW[p, tmp]),
-                value(mod.GenVarStorHyb_Discharge_MW[p, tmp])
+                value(mod.GenVarStorHyb_Discharge_MW[p, tmp]),
+                value(mod.GenVarStorHyb_Subhourly_Curtailment_MW[p, tmp]),
+                value(mod.GenVarStorHyb_Subhourly_Energy_Delivered_MW[p, tmp]),
+                value(mod.GenVarStorHyb_Total_Curtailment_MW[p, tmp])
             ])
 
 
