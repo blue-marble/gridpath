@@ -685,7 +685,7 @@ def export_results(
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw",
-                         "hyb_storage_discharge_mw", "hyb_storage_charge_mw",
+                         "hyb_storage_charge_mw", "hyb_storage_discharge_mw"
                          ])
 
         for (p, tmp) in mod.GEN_VAR_STOR_HYB_OPR_TMPS:
@@ -701,8 +701,8 @@ def export_results(
                 mod.load_zone[p],
                 value(mod.GenVarStorHyb_Provide_Power_MW[p, tmp]),
                 value(mod.GenVarStorHyb_Scheduled_Curtailment_MW[p, tmp]),
-                value(mod.GenVarStorHyb_Discharge_MW[p, tmp]),
-                value(mod.GenVarStorHyb_Charge_MW[p, tmp])
+                value(mod.GenVarStorHyb_Charge_MW[p, tmp]),
+                value(mod.GenVarStorHyb_Discharge_MW[p, tmp])
             ])
 
 

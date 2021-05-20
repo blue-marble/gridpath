@@ -232,11 +232,11 @@ def update_dispatch_results_table(
             min_down_time_violation = get_column_row_value(
                 header, "min_down_time_violation", row
             )
-            hyb_storage_discharge = get_column_row_value(
-                header, "hyb_storage_discharge_mw", row
-            )
             hyb_storage_charge = get_column_row_value(
                 header, "hyb_storage_charge_mw", row
+            )
+            hyb_storage_discharge = get_column_row_value(
+                header, "hyb_storage_discharge_mw", row
             )
 
             results.append(
@@ -246,7 +246,7 @@ def update_dispatch_results_table(
                  stopped_units, synced_units, auxiliary_consumption,
                  gross_power, ramp_up_violation, ramp_down_violation,
                  min_up_time_violation, min_down_time_violation,
-                 hyb_storage_discharge, hyb_storage_charge,
+                 hyb_storage_charge, hyb_storage_discharge,
                  scenario_id, project, period, subproblem, stage, timepoint)
             )
 
@@ -267,9 +267,9 @@ def update_dispatch_results_table(
         ramp_up_violation = ?,
         ramp_down_violation = ?,
         min_up_time_violation = ?,
-        hyb_storage_discharge_mw = ?,
+        min_down_time_violation = ?,
         hyb_storage_charge_mw = ?,
-        min_down_time_violation = ?
+        hyb_storage_discharge_mw = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?

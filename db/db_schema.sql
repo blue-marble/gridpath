@@ -2513,6 +2513,8 @@ load_zone VARCHAR(32),
 energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
+hyb_gen_capacity_mw FLOAT,
+hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
@@ -2597,8 +2599,8 @@ ramp_up_violation FLOAT,
 ramp_down_violation FLOAT,
 min_up_time_violation FLOAT,
 min_down_time_violation FLOAT,
+hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
-hyb_storage_charge_MW FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
