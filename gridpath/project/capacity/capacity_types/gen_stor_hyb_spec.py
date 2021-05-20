@@ -59,11 +59,60 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | sizing of the internal generation and storage components of the hybrid  |
     | project.                                                                |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_hyb_gen_capacity_mw`                         |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The specified capacity (in MW) of the project's generator component in  |
+    | each operational period.                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_hyb_stor_capacity_mw`                        |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The specified capacity (in MW) of the project's storage component in    |
+    | each operational period.                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_capacity_mwh`                                |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The specified energy capacity (in MWh) of the project's storage         |
+    | component in each operational period.                                   |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_stor_hyb_spec_fixed_cost_per_mw_yr`                        |
     | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's fixed cost (in $ per MW-yr.) in each operational period.  |
+    | This cost will be added to the objective function but will not affect   |
+    | optimization decisions. Costs for the generator, storage, and energy    |
+    | capacity components can be added separately.                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr`                |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost for its generator component (in $ per MW-yr.)  |
+    | in each operational period.                                             |
+    | This cost will be added to the objective function but will not affect   |
+    | optimization decisions.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr`               |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost for its storage power component (in $ per      |
+    | MW-yr.) in each operational period.                                     |
+    | This cost will be added to the objective function but will not affect   |
+    | optimization decisions.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_stor_hyb_spec_fixed_cost_per_mwh_yr`                       |
+    | | *Defined over*: :code:`GEN_STOR_HYB_SPEC_OPR_PRDS`                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost for its storage energy component (in $ per     |
+    | MWh-yr.) in each operational period.                                    |
     | This cost will be added to the objective function but will not affect   |
     | optimization decisions.                                                 |
     +-------------------------------------------------------------------------+

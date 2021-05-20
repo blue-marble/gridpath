@@ -114,6 +114,10 @@ gridpath.project.capacity.capacity_types.stor_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin.add_model_components
 
+gridpath.project.capacity.capacity_types.gen_stor_hyb_spec
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.capacity_types.gen_stor_hyb_spec.add_model_components
+
 gridpath.project.capacity.capacity_types.dr_new
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_model_components
