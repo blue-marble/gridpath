@@ -258,10 +258,10 @@ def optional_modules_list():
              ],
         "carbon_tax":
             ["geography.carbon_tax_zones",
-             "system.policy.carbon_tax.carbon_tax"
+             "system.policy.carbon_tax.carbon_tax",
              "project.operations.carbon_tax",
-             "system.policy.carbon_tax.aggregate_project_carbon_emissions"
-             "system.policy.carbon_tax.carbon_tax_costs"
+             "system.policy.carbon_tax.aggregate_project_carbon_emissions",
+             "system.policy.carbon_tax.carbon_tax_costs",
              "objective.system.policy.aggregate_carbon_tax_costs"
             ],
         "prm":
