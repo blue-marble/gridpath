@@ -684,6 +684,17 @@ class TestExamples(unittest.TestCase):
             -56530649982951.8
         )
 
+    def test_example_test_new_solar_carbon_tax(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_tax" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_tax")
+        self.run_and_check_objective("test_new_solar_carbon_tax",
+                                     -3796369926691.1)
+
     def test_example_2periods_new_build_simple_prm(self):
         """
         Check validation and objective function value of
