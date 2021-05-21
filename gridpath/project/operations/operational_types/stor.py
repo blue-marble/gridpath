@@ -260,6 +260,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=PercentFraction
     )
 
+    # Optional Params
+    ###########################################################################
+
+    m.stor_losses_factor_in_energy_target = Param(default=1)
+
     m.stor_charging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
     )
@@ -268,10 +273,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=NonNegativeReals, default=1.0
     )
 
-    # Optional Params
-    ###########################################################################
-
-    m.stor_losses_factor_in_energy_target = Param(default=1)
 
     # Linked Params
     ###########################################################################

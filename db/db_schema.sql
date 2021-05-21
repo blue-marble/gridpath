@@ -693,8 +693,10 @@ CREATE TABLE inputs_project_specified_capacity (
 project_specified_capacity_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-specified_capacity_mw FLOAT,
-specified_capacity_mwh FLOAT,
+specified_capacity_mw FLOAT, -- grid-facing nameplate capacity
+hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
+hyb_stor_specified_capacity_mw FLOAT, -- e.g. battery tightly-coupled with PV
+specified_capacity_mwh FLOAT, -- storage energy capacity
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
@@ -713,6 +715,8 @@ project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 fixed_cost_per_mw_year FLOAT,
+hyb_gen_fixed_cost_per_mw_yr FLOAT,
+hyb_stor_fixed_cost_per_mw_yr FLOAT,
 fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
@@ -2509,6 +2513,8 @@ load_zone VARCHAR(32),
 energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
+hyb_gen_capacity_mw FLOAT,
+hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
@@ -2593,6 +2599,8 @@ ramp_up_violation FLOAT,
 ramp_down_violation FLOAT,
 min_up_time_violation FLOAT,
 min_down_time_violation FLOAT,
+hyb_storage_charge_mw FLOAT,
+hyb_storage_discharge_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

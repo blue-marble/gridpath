@@ -25,3 +25,4 @@ Clunky_Old_Gen2	Zone1	gen_ret_bin	exogenous	1	gen_commit_lin	day	.	.	.	.	0.4	.	1
 Customer_PV	Zone1	gen_spec	exogenous	0	gen_var_must_take	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Nuclear_Flexible	Zone1	gen_spec	exogenous	1	gen_always_on	day	.	.	.	.	0.72	.	.	Uranium	584	.	.	.	.	.	.	.	.	.	.	.	.	.	0.18	0.18	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	PRM_Zone1	fully_deliverable	0.8	0	.	.	.	.	.	Local_Capacity_Zone1	1	.
 Shift_DR	Zone1	dr_new	exogenous	0	dr	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	6	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Local_Capacity_Zone2	0.2	.
+Wind_Battery_Hybrid	Zone1	gen_stor_hyb_spec	exogenous	0	gen_var_stor_hyb	day	.	.	.	.	.	.	.	.	.	0.8	0.8	.	10	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

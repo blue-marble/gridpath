@@ -162,19 +162,32 @@ def update_capacity_results_table(
 
 # Specified projects common functions
 def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
+    """
+    Get the various capacity and fixed cost parameters for projects with
+    "specified" capacity types.
+    """
     c = conn.cursor()
     spec_project_params = \
-        c.execute(
-        """SELECT project, period, specified_capacity_mw,
+        c.execute("""
+        SELECT project, period,
+        specified_capacity_mw,
+        hyb_gen_specified_capacity_mw,
+        hyb_stor_specified_capacity_mw,
         specified_capacity_mwh,
-        fixed_cost_per_mw_year, fixed_cost_per_mwh_year
+        fixed_cost_per_mw_year,
+        hyb_gen_fixed_cost_per_mw_yr,
+        hyb_stor_fixed_cost_per_mw_yr,
+        fixed_cost_per_mwh_year
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
-        (SELECT project, period, specified_capacity_mw,
+        (SELECT project, period,
+        specified_capacity_mw,
+        hyb_gen_specified_capacity_mw,
+        hyb_stor_specified_capacity_mw,
         specified_capacity_mwh
         FROM inputs_project_specified_capacity
         WHERE project_specified_capacity_scenario_id = {}) as capacity
@@ -182,6 +195,8 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         INNER JOIN
         (SELECT project, period,
         fixed_cost_per_mw_year,
+        hyb_gen_fixed_cost_per_mw_yr,
+        hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_mwh_year
         FROM inputs_project_specified_fixed_cost
         WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
@@ -202,60 +217,70 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 def spec_write_tab_file(
     scenario_directory, subproblem, stage, spec_project_params
 ):
+
+    spec_params_filepath = \
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "spec_capacity_period_params.tab"
+        )
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                                   "spec_capacity_period_params.tab")
-                      ):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "spec_capacity_period_params.tab"),
-                  "a") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-            for row in spec_project_params:
-                [project, period, specified_capacity_mw,
-                 specified_capacity_mwh,
-                 fixed_cost_per_mw_year, fixed_cost_per_mwh_year] \
-                    = row
-                writer.writerow(
-                    [project, period,
-                     specified_capacity_mw,
-                     specified_capacity_mwh,
-                     fixed_cost_per_mw_year,
-                     fixed_cost_per_mwh_year]
-                )
+    if os.path.isfile(spec_params_filepath):
+        with open(spec_params_filepath, "a") as f:
+            writer_a = csv.writer(f, delimiter="\t", lineterminator="\n")
+            write_from_query(spec_project_params=spec_project_params, writer=writer_a)
     # If spec_capacity_period_params.tab file does not exist,
     # write header first, then add input data
     else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                               "spec_capacity_period_params.tab"),
-                  "w", newline="") as existing_project_capacity_tab_file:
-            writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t", lineterminator="\n")
-
+        with open(spec_params_filepath, "w", newline="") as f:
+            writer_w = csv.writer(f, delimiter="\t", lineterminator="\n")
             # Write header
-            writer.writerow(
-                ["project", "period",
+            writer_w.writerow([
+                 "project", "period",
                  "specified_capacity_mw",
+                 "hyb_gen_specified_capacity_mw",
+                 "hyb_stor_specified_capacity_mw",
                  "specified_capacity_mwh",
                  "fixed_cost_per_mw_yr",
-                 "fixed_cost_per_mwh_yr"]
+                 "hyb_gen_fixed_cost_per_mw_yr",
+                 "hyb_stor_fixed_cost_per_mw_yr",
+                 "fixed_cost_per_mwh_yr"
+                 ]
             )
 
             # Write input data
-            for row in spec_project_params:
-                [project, period, specified_capacity_mw,
-                 specified_capacity_mwh,
-                 fixed_cost_per_mw_year,
-                 fixed_cost_per_mwh_year] \
-                    = row
-                writer.writerow(
-                    [project, period,
-                     specified_capacity_mw,
-                     specified_capacity_mwh,
-                     fixed_cost_per_mw_year,
-                     fixed_cost_per_mwh_year]
-                )
+            write_from_query(spec_project_params=spec_project_params, writer=writer_w)
+
+
+def write_from_query(spec_project_params, writer):
+    """
+    Helper function for writing the spec project param inputs to avoid
+    redundant code in spec_write_tab_file().
+    """
+    for row in spec_project_params:
+        [project, period,
+         specified_capacity_mw,
+         hyb_gen_specified_capacity_mw,
+         hyb_stor_specified_capacity_mw,
+         specified_capacity_mwh,
+         fixed_cost_per_mw_year,
+         hyb_gen_fixed_cost_per_mw_yr,
+         hyb_stor_fixed_cost_per_mw_yr,
+         fixed_cost_per_mwh_year
+         ] \
+            = row
+        writer.writerow([
+            project, period,
+            specified_capacity_mw,
+            hyb_gen_specified_capacity_mw,
+            hyb_stor_specified_capacity_mw,
+            specified_capacity_mwh,
+            fixed_cost_per_mw_year,
+            hyb_gen_fixed_cost_per_mw_yr,
+            hyb_stor_fixed_cost_per_mw_yr,
+            fixed_cost_per_mwh_year
+            ]
+        )
 
 
 def spec_determine_inputs(
@@ -282,8 +307,12 @@ def spec_determine_inputs(
     # Determine the operational periods & params for each project/period
     project_period_list = list()
     spec_capacity_mw_dict = dict()
+    hyb_gen_spec_capacity_mw_dict = dict()
+    hyb_stor_spec_capacity_mw_dict = dict()
     spec_capacity_mwh_dict = dict()
     spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
     spec_fixed_cost_per_mwh_yr_dict = dict()
 
     df = pd.read_csv(
@@ -295,19 +324,31 @@ def spec_determine_inputs(
     for row in zip(df["project"],
                    df["period"],
                    df["specified_capacity_mw"],
+                   df["hyb_gen_specified_capacity_mw"],
+                   df["hyb_stor_specified_capacity_mw"],
                    df["specified_capacity_mwh"],
                    df["fixed_cost_per_mw_yr"],
+                   df["hyb_gen_fixed_cost_per_mw_yr"],
+                   df["hyb_stor_fixed_cost_per_mw_yr"],
                    df["fixed_cost_per_mwh_yr"]):
         if row[0] in project_list:
             project_period_list.append((row[0], row[1]))
             spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[2])
-            spec_capacity_mwh_dict[(row[0], row[1])] = \
+            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[3])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = \
                 float(row[4])
-            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+            spec_capacity_mwh_dict[(row[0], row[1])] = \
                 float(row[5])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[6])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[7])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[8])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+                float(row[9])
         else:
             pass
 
@@ -317,12 +358,19 @@ def spec_determine_inputs(
     diff = list(set(project_list) - set(projects_w_params))
     if diff:
         raise ValueError("Missing capacity/fixed cost inputs for the "
-                         "following gen_spec projects: {}".format(diff))
+                         "following projects: {}".format(diff))
 
     main_dict = dict()
     main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
+    main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
+    main_dict["hyb_stor_specified_capacity_mw"] = \
+        hyb_stor_spec_capacity_mw_dict
     main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
     main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_gen_fixed_cost_per_mw_yr"] = \
+        hyb_gen_spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_stor_fixed_cost_per_mw_yr"] = \
+        hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
 
     return project_period_list, main_dict
