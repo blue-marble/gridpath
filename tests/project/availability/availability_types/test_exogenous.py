@@ -104,7 +104,8 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             "Hydro", "Hydro_NonCurtailable",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
             "Clunky_Old_Gen", "Clunky_Old_Gen2",
-            "Customer_PV", "Nuclear_Flexible", "Shift_DR"
+            "Customer_PV", "Nuclear_Flexible", "Shift_DR",
+            "Wind_Battery_Hybrid"
         ])
         actual_project_subset = sorted([
             prj for prj in instance.AVL_EXOG
