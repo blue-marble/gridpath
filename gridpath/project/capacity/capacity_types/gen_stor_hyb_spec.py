@@ -15,7 +15,9 @@
 """
 This capacity type describes generator-storage hybrid projects that are 
 "specified," i.e. available to the optimization without having to incur an 
-investment cost.9
+investment cost. We specify grid-facing capacity as well as the capacity of
+the generator component and the power and energy capacity of the storage
+component. Each of those is associated with a fixed cost.
 """
 
 from pyomo.environ import Set, Param, NonNegativeReals

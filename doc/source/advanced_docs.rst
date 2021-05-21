@@ -221,6 +221,10 @@ gridpath.project.capacity.operational_types.stor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.stor.add_model_components
 
+gridpath.project.capacity.operational_types.gen_var_stor_hyb
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_var_stor_hyb.add_model_components
+
 gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dr.add_model_components
