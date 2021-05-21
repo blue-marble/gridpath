@@ -16,8 +16,15 @@ TEST_DATA_DIRECTORY = \
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.carbon_tax_zones",
+     "temporal.investment.periods", "geography.load_zones",
+     "geography.carbon_tax_zones",
      "system.policy.carbon_tax.carbon_tax",
+     "project", "project.capacity.capacity", "project.availability.availability",
+     "project.fuels", "project.operations",
+     "project.operations.operational_types",
+     "project.operations.power", "project.operations.fuel_burn",
+     "project.operations.carbon_tax", "project.operations.carbon_emissions",
+     "system.policy.carbon_tax.aggregate_project_carbon_emissions",
      "system.policy.carbon_tax.carbon_tax_costs"]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.system.policy.aggregate_carbon_tax_costs"
