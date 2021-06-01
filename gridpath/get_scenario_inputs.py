@@ -32,7 +32,8 @@ import warnings
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
-    create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
+    create_directory_if_not_exists, get_db_parser, \
+    get_required_e2e_arguments_parser, get_parallel_get_inputs_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     get_subproblem_structure_from_db, SolverOptions
@@ -40,15 +41,15 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
 
 def write_model_inputs(
     scenario_directory, subproblem_structure, modules_to_use, scenario_id,
-    subscenarios, db_path, n_parallel_subproblems=1
+    subscenarios, db_path, n_parallel_subproblems
 ):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
 
     :param scenario_directory: local scenario directory
-    :param subproblem_structure: SubProblems object with info on the subproblem/stage
-        structure
+    :param subproblem_structure: SubProblems object with info on the
+        subproblem/stage structure
     :param modules_to_use: list of imported modules (Python <class 'module'>
         objects)
     :param scenario_id: integer
@@ -81,7 +82,7 @@ def write_model_inputs(
     if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 \
             and n_parallel_subproblems > 1:
         warnings.warn("Only one subproblem in scenario. Parallelization "
-                          "not possible.")
+                      "not possible.")
         n_parallel_subproblems = 1
 
     # If no parallelization requested, loop through the subproblems
@@ -263,9 +264,9 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_required_e2e_arguments_parser()]
+        parents=[get_db_parser(), get_required_e2e_arguments_parser(),
+                 get_parallel_get_inputs_parser()]
     )
-    # parser.add_argument("--n_parallel_subproblems", default=1)
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -461,7 +462,8 @@ def main(args=None):
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,
         subscenarios=subscenarios,
-        db_path=db_path
+        db_path=db_path,
+        n_parallel_subproblems=int(parsed_arguments.n_parallel_get_inputs)
     )
 
     # Save the list of optional features to a file (will be used to determine
