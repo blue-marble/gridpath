@@ -50,6 +50,6 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.4
 tornado==6.1
 typing-extensions==3.7.4.3
-urllib3==1.26.4
+urllib3==1.26.5
 websocket-client==0.58.0
 Werkzeug==1.0.1
