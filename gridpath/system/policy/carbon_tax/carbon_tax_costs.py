@@ -69,11 +69,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-#def save_duals(m):
-#    m.constraint_indices["Carbon_Cap_Constraint"] = \
-#        ["carbon_cap_zone", "period", "dual"]
-
-
 def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
@@ -138,37 +133,3 @@ def import_results_into_database(
 
     spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)
 
-    # Update duals
-    #duals_results = []
-    #with open(os.path.join(results_directory, "Carbon_Cap_Constraint.csv"),
-    #          "r") as carbon_cap_duals_file:
-    #    reader = csv.reader(carbon_cap_duals_file)
-
-     #   next(reader)  # skip header
-
-      #  for row in reader:
-      #      duals_results.append(
-      #          (row[2], row[0], row[1], scenario_id, subproblem, stage)
-      #      )
-    #duals_sql = """
-    #    UPDATE results_system_carbon_emissions
-    #    SET dual = ?
-    #    WHERE carbon_cap_zone = ?
-    #    AND period = ?
-    #    AND scenario_id = ?
-    #    AND subproblem_id = ?
-    #    AND stage_id = ?;"""
-    #spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-
-    # Calculate marginal carbon cost per emission
-    #mc_sql = """
-    #    UPDATE results_system_carbon_emissions
-    #    SET carbon_cap_marginal_cost_per_emission =
-    #    dual / (discount_factor * number_years_represented)
-    #    WHERE scenario_id = ?
-    #    AND subproblem_id = ?
-    #    AND stage_id = ?;
-    #    """
-    #spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-    #                      data=(scenario_id, subproblem, stage),
-    #                      many=False)
