@@ -318,7 +318,7 @@ def load_model_data(
 
 # TODO: untested
 def export_results(
-        m, d, scenario_directory, subproblem, stage
+    m, d, scenario_directory, subproblem, stage
 ):
     """
 
@@ -331,20 +331,24 @@ def export_results(
     """
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "transmission_new_capacity.csv"),
-              "w", newline="") as f:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "transmission_new_capacity.csv"
+            ),
+            "w", newline=""
+    ) as f:
         writer = csv.writer(f)
         writer.writerow(["transmission_line", "period",
                          "load_zone_from", "load_zone_to",
                          "new_build_transmission_capacity_mw"])
-        for (transmission_line, p) in m.TX_OPR_PRDS:
+        for (transmission_line, v) in m.TX_NEW_LIN_VNTS:
             writer.writerow([
                 transmission_line,
-                p,
+                v,
                 m.load_zone_from[transmission_line],
                 m.load_zone_to[transmission_line],
-                value(m.TxNewLin_Build_MW[transmission_line, p])
+                value(m.TxNewLin_Build_MW[transmission_line, v])
             ])
 
 
@@ -419,7 +423,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
