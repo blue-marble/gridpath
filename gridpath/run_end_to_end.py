@@ -33,7 +33,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import get_db_parser, get_solve_parser, \
-    get_required_e2e_arguments_parser, create_logs_directory_if_not_exists,\
+    get_required_e2e_arguments_parser, get_parallel_get_inputs_parser, \
+    get_parallel_solve_parser, create_logs_directory_if_not_exists,\
     Logging, determine_scenario_directory
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
@@ -52,7 +53,8 @@ def parse_arguments(args):
     parser = ArgumentParser(
         add_help=True,
         parents=[get_db_parser(), get_required_e2e_arguments_parser(),
-                 get_solve_parser()]
+                 get_solve_parser(), get_parallel_get_inputs_parser(),
+                 get_parallel_solve_parser()]
     )
 
     # Arguments to skip an E2E step

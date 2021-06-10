@@ -126,6 +126,28 @@ def get_db_parser():
     return parser
 
 
+def get_parallel_get_inputs_parser():
+    """
+    """
+
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("--n_parallel_get_inputs", default=1,
+                        help="Get inputs for n subproblems in parallel.")
+
+    return parser
+
+
+def get_parallel_solve_parser():
+    """
+    """
+
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("--n_parallel_solve", default=1,
+                        help="Solve n subproblems in parallel.")
+
+    return parser
+
+
 def get_solve_parser():
     """
     Create ArgumentParser object which has the common set of arguments for

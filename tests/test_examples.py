@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import multiprocessing
 import os
 import sqlite3
 import unittest
@@ -87,11 +88,13 @@ class TestExamples(unittest.TestCase):
 
         self.assertListEqual(expected_validations, actual_validations)
 
-    def run_and_check_objective(self, test, expected_objective):
+    def run_and_check_objective(self, test, expected_objective, parallel=1):
         """
 
         :param test: str, name of the test example
         :param expected_objective: float or dict, expected objective
+        :param parallel: int, set to a number > 1 to test
+            parallelization functionality
         :return:
         """
 
@@ -103,10 +106,35 @@ class TestExamples(unittest.TestCase):
              # "--write_solver_files_to_logs_dir",
              # "--keepfiles",
              # "--symbolic",
+             "--n_parallel_get_inputs", str(parallel),
+             "--n_parallel_solve", str(parallel),
              "--quiet",
              "--mute_solver_output",
              "--testing"]
         )
+
+        # Check if we have a multiprocessing manager
+        # If so, convert the manager proxy dictionary to to a simple dictionary
+        # to avoid errors
+        # Done via copies to avoid broken pipe error
+        if hasattr(multiprocessing, "managers"):
+            if isinstance(actual_objective,
+                          multiprocessing.managers.DictProxy):
+                # Make a dictionary from a copy of the objective
+                actual_objective_copy = dict(actual_objective.copy())
+                for subproblem in actual_objective.keys():
+                    # If we have stages, make a dictionary form a copy of the
+                    # stage dictionary for each subproblem
+                    if isinstance(actual_objective[subproblem],
+                                  multiprocessing.managers.DictProxy):
+                        stage_dict_copy = dict(
+                            actual_objective_copy[subproblem].copy()
+                        )
+                        # Reset the stage dictionary to the new simple
+                        # dictionary object
+                        actual_objective_copy[subproblem] = stage_dict_copy
+                # Reset the objective to the new dictionary object
+                actual_objective = actual_objective_copy
 
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
@@ -469,6 +497,25 @@ class TestExamples(unittest.TestCase):
                                       3: {1: -1265436373826.0408,
                                           2: -1265436373826.0408,
                                           3: -1265436373826.099}})
+
+    def test_example_multi_stage_prod_cost_parallel(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost" example
+        :return:
+        """
+
+        self.run_and_check_objective("multi_stage_prod_cost",
+                                     {1: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      2: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      3: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099}},
+                                     parallel=3)
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
