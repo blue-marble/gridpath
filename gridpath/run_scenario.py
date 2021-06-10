@@ -235,9 +235,6 @@ def run_optimization_for_subproblem(
     """
     # If we only have a single subproblem, set the subproblem_string to an
     # empty string (no directory created)
-    # TODO: changing types is poor form; should think more about how to pass
-    #  the empty string for the directory downstream; can we just create the
-    #  strings and pass those here
     if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
         subproblem_directory = ""
     else:
