@@ -3488,6 +3488,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 carbon_tax FLOAT,
 total_emissions FLOAT,
+total_allowance FLOAT,
 carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)

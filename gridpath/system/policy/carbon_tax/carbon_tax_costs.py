@@ -73,9 +73,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(carbon_tax_results_file)
         writer.writerow(["carbon_tax_zone", "period",
                          "discount_factor", "number_years_represented",
-                         "carbon_tax",
-                         "carbon_emissions",
-                         "carbon_tax_cost"])
+                         "carbon_tax_per_ton",
+                         "total_carbon_emissions_tons",
+                         "total_carbon_tax_allowance_tons",
+                         "total_carbon_tax_cost"])
         for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX:
             writer.writerow([
                 z,
@@ -84,6 +85,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.number_years_represented[p],
                 float(m.carbon_tax[z, p]),
                 value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
+                value(m.Total_Carbon_Tax_Project_Allowance[z, p]),
                 value(m.Carbon_Tax_Cost[z, p])
             ])
 
@@ -131,7 +133,7 @@ def import_results_into_database(
             period = row[1]
             discount_factor = row[2]
             number_years = row[3]
-            costs = row[6]
+            costs = row[7]
 
             results.append(
                 (costs, discount_factor, number_years,

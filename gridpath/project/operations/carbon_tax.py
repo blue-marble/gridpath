@@ -18,7 +18,7 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, NonNegativeReals, Expression
+from pyomo.environ import Param, Set, NonNegativeReals, Expression, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df, \
     subset_init_by_param_value
@@ -357,6 +357,37 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             prj_tbl=tbl, col="carbon_tax_zone"
         )
 
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
+                           "results", "carbon_tax_allowance_by_project.csv"),
+              "w", newline="") as carbon_tax_allowance_results_file:
+        writer = csv.writer(carbon_tax_allowance_results_file)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "timepoint_weight",
+                         "number_of_hours_in_timepoint", "carbon_tax_zone",
+                         "technology", "carbon_tax_allowance_tons"])
+        for (p, tmp) in m.CARBON_TAX_PRJ_OPR_TMPS:
+            writer.writerow([
+                p,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
+                tmp,
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.carbon_tax_zone[p],
+                m.technology[p],
+                value(m.Project_Carbon_Tax_Allowance[p, tmp])
+            ])
 
 # Validation
 ###############################################################################
