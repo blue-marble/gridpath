@@ -22,7 +22,7 @@ from builtins import next
 import csv
 import os.path
 
-from pyomo.environ import Expression, value
+from pyomo.environ import Expression, value, NonNegativeReals, Var, Constraint
 
 from db.common_functions import spin_on_database_lock
 
@@ -35,21 +35,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Expressions
+    # Variables
     ###########################################################################
 
-    def carbon_tax_cost_rule(mod, z, p):
-        """
-        Carbon tax cost.
-        """
-        return mod.Total_Carbon_Tax_Project_Emissions[z, p]\
-               * mod.carbon_tax[z, p]
-
-    m.Carbon_Tax_Cost = Expression(
+    m.Carbon_Tax_Cost = Var(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
-        rule=carbon_tax_cost_rule
+        within=NonNegativeReals
     )
 
+    # Constraints
+    ###########################################################################
+    def carbon_tax_cost_constraint_rule(mod, z, p):
+        return mod.Carbon_Tax_Cost[z, p] >= \
+               (mod.Total_Carbon_Tax_Project_Emissions[z, p] -
+                mod.Total_Carbon_Tax_Project_Allowance[z, p])\
+               * mod.carbon_tax[z, p]
+
+    m.Carbon_Tax_Cost_Constraint = Constraint(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        rule=carbon_tax_cost_constraint_rule
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

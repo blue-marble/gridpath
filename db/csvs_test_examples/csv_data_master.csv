@@ -78,6 +78,7 @@ policy/carbon_cap/track_carbon_imports/transmission_carbon_cap_zones,track_carbo
 policy/carbon_tax/geography_carbon_tax_zones,carbon_tax,carbon_tax_zone_scenario_id,geography_carbon_tax_zones,simple,,0,,,,
 policy/carbon_tax/project_carbon_tax_zones,carbon_tax,project_carbon_tax_zone_scenario_id,project_carbon_tax_zones,simple,,0,,,,
 policy/carbon_tax/system_carbon_tax,carbon_tax,carbon_tax_scenario_id,system_carbon_tax,simple,,0,,,,
+policy/carbon_tax/project_carbon_tax_allowance,carbon_tax,project_carbon_tax_allowance_scenario_id,project_carbon_tax_allowance,simple,,0,,,,
 reliability/prm/geography_prm_zones,prm,prm_zone_scenario_id,geography_prm_zones,simple,,0,,,,
 reliability/prm/project_prm_zones,prm,project_prm_zone_scenario_id,project_prm_zones,simple,,0,,,,
 reliability/prm/project_elcc_chars,prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,,0,,,,

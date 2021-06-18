@@ -1,0 +1,11 @@
+project,period,carbon_tax_allowance_tco2_per_mwh
+Coal,2020,500
+Gas_CCGT,2020,400
+Gas_CT,2020,400
+Gas_CCGT_new,2020,400
+Gas_CT_new,2020,400
+Coal,2030,5
+Gas_CCGT,2030,3
+Gas_CT,2030,3
+Gas_CCGT_new,2030,3
+Gas_CT_new,2030,3

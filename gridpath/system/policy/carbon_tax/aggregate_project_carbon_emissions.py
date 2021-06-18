@@ -39,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_carbon_emissions_rule(mod, z, p):
         """
-        Calculate total emissions from all carbonaceous projects in carbon
+        Calculate total emissions from all carbon tax projects in carbon
         tax zone
         :param mod:
         :param z:
@@ -57,6 +57,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Total_Carbon_Tax_Project_Emissions = Expression(
         m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
         rule=total_carbon_emissions_rule
+    )
+
+    def total_carbon_tax_allowance_rule(mod, z, p):
+        """
+        Calculate total emission allowance from all carbon tax projects in carbon
+        tax zone
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return sum(mod.Project_Carbon_Tax_Allowance[g, tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
+                   for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+                   if g in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[z]
+                   and tmp in mod.TMPS_IN_PRD[p]
+                   )
+
+    m.Total_Carbon_Tax_Project_Allowance = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        rule=total_carbon_tax_allowance_rule
     )
 
 

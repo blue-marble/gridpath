@@ -1332,7 +1332,7 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 -- Project carbon tax zones
 -- Which projects are subject to the carbon tax
 -- Depends on carbon tax zone geography
--- This table can include all projects with MULLS for projects not
+-- This table can include all projects with NULLS for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
 CREATE TABLE subscenarios_project_carbon_tax_zones (
@@ -1349,6 +1349,25 @@ carbon_tax_zone VARCHAR(32),
 PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
+
+-- Project carbon tax allowance
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_allowance;
+CREATE TABLE subscenarios_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_allowance;
+CREATE TABLE inputs_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+carbon_tax_allowance_tco2_per_mwh FLOAT,
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
 
 -- Project PRM zones
@@ -2297,6 +2316,7 @@ project_spinning_reserves_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
+project_carbon_tax_allowance_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2408,6 +2428,9 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_zones
         (project_carbon_tax_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_allowance
+        (project_carbon_tax_allowance_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES

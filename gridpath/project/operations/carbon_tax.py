@@ -18,7 +18,7 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set
+from pyomo.environ import Param, Set, NonNegativeReals, Expression
 
 from gridpath.auxiliary.auxiliary import cursor_to_df, \
     subset_init_by_param_value
@@ -35,7 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`CARBON_TAX_PRJS`                                                     |
+    | | :code:`CARBON_TAX_PRJS`                                               |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
     | Two set of carbonaceous projects we need to track for the carbon tax.   |
@@ -47,10 +47,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`carbon_tax_zone`                                               |
-    | | *Defined over*: :code:`CARBON_TAX_PRJS`                                     |
+    | | *Defined over*: :code:`CARBON_TAX_PRJS`                               |
     | | *Within*: :code:`CARBON_TAX_ZONES`                                    |
     |                                                                         |
-    | This param describes the carbon tax zone for each carbonaceous project. |
+    | This param describes the carbon tax zone for each carbon tax project.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`carbon_tax_allowance`                                          |
+    | | *Defined over*: :code:`CARBON_TAX_PRJS`, `CARBON_TAX_PRJ_OPR_PRDS`    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | This param describes the carbon tax allowance for each carbon tax       |
+    | project.                                                                |
     +-------------------------------------------------------------------------+
 
     |
@@ -58,18 +65,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
     +=========================================================================+
-    | | :code:`CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE`                                  |
+    | | :code:`CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE`                            |
     | | *Defined over*: :code:`CARBON_TAX_ZONES`                              |
-    | | *Within*: :code:`CARBON_TAX_PRJS`                                           |
+    | | *Within*: :code:`CARBON_TAX_PRJS`                                     |
     |                                                                         |
     | Indexed set that describes the list of carbonaceous projects for each   |
     | carbon tax zone.                                                        |
     +-------------------------------------------------------------------------+
-    | | :code:`CARBON_TAX_PRJ_OPR_TMPS`                                             |
+    | | :code:`CARBON_TAX_PRJ_OPR_TMPS`                                       |
     | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
     |                                                                         |
     | Two-dimensional set that defines all project-timepoint combinations     |
-    | when a carbonaceous project can be operational.                         |
+    | when a carbon tax project can be operational.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`CARBON_TAX_PRJ_OPR_PRDS`                                       |
+    | | *Within*: :code:`PRJ_OPR_PRDS`                                        |
+    |                                                                         |
+    | Two-dimensional set that defines all project-period combinations        |
+    | when a carbon tax project can be operational.                           |
     +-------------------------------------------------------------------------+
 
     """
@@ -81,12 +94,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS
     )
 
+    m.CARBON_TAX_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod:
+        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
+         if p in mod.CARBON_TAX_PRJS]
+    )
+
+    m.CARBON_TAX_PRJ_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
+        initialize=lambda mod:
+        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_PRDS
+         if p in mod.CARBON_TAX_PRJS]
+    )
+
     # Input Params
     ###########################################################################
 
     m.carbon_tax_zone = Param(
         m.CARBON_TAX_PRJS,
         within=m.CARBON_TAX_ZONES
+    )
+
+    m.carbon_tax_allowance = Param(
+        m.CARBON_TAX_PRJS, m.PERIODS,
+        within=NonNegativeReals,
+        default=0
     )
 
     # Derived Sets
@@ -100,11 +133,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
     )
 
-    m.CARBON_TAX_PRJ_OPR_TMPS = Set(
-        within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-         if p in mod.CARBON_TAX_PRJS]
+    # Expressions
+    ###########################################################################
+
+    def carbon_tax_allowance_rule(mod, prj, tmp):
+        """
+        Allowance from each project. Multiply by the timepoint duration,
+        timepoint weight and power to get the total emissions allowance.
+        """
+
+        return mod.Power_Provision_MW[prj, tmp] \
+            * mod.carbon_tax_allowance[prj, mod.period[tmp]] \
+
+    m.Project_Carbon_Tax_Allowance = Expression(
+        m.CARBON_TAX_PRJ_OPR_TMPS,
+        rule=carbon_tax_allowance_rule
     )
 
 
@@ -133,6 +176,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         None: list(data_portal.data()['carbon_tax_zone'].keys())
     }
 
+    data_portal.load(
+        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                              "project_carbon_tax_allowance.tab"),
+        select=("project", "period",
+                "carbon_tax_allowance_tco2_per_mwh"),
+        param=m.carbon_tax_allowance
+    )
+
 
 # Database
 ###############################################################################
@@ -147,8 +198,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     """
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
-    c = conn.cursor()
-    project_zones = c.execute(
+    c1 = conn.cursor()
+    project_zones = c1.execute(
         """SELECT project, carbon_tax_zone
         FROM
         -- Get projects from portfolio only
@@ -177,14 +228,48 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return project_zones
+    c2 = conn.cursor()
+    project_carbon_tax_allowance = c2.execute(
+        """SELECT project, period, 
+        carbon_tax_allowance_tco2_per_mwh
+        FROM
+        -- Get projects from portfolio only
+        (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+        ) as prj_tbl
+        CROSS JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {}) as relevant_periods 
+        LEFT OUTER JOIN
+        -- Get carbon tax allowance for those projects
+            (SELECT project, period, 
+            carbon_tax_allowance_tco2_per_mwh
+            FROM inputs_project_carbon_tax_allowance
+            WHERE project_carbon_tax_allowance_scenario_id = {}) as prj_ct_allowance_tbl
+        USING (project, period)
+        WHERE project in (
+                SELECT project
+                    FROM inputs_project_carbon_tax_zones
+                    WHERE project_carbon_tax_zone_scenario_id = {}
+        );
+        """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.PROJECT_CARBON_TAX_ALLOWANCE_SCENARIO_ID,
+            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
+        )
+    )
+
+    return project_zones, project_carbon_tax_allowance
 
 
 def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage,
                        conn):
     """
     Get inputs from database and write out the model input
-    projects.tab file (to be precise, amend it).
+    projects.tab and project_carbon_tax_allowance.tab files.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -192,9 +277,10 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :param conn: database connection
     :return:
     """
-    project_zones = get_inputs_from_database(
+    project_zones, project_carbon_tax_allowance = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
+    # projects.tab
     # Make a dict for easy access
     prj_zone_dict = dict()
     for (prj, zone) in project_zones:
@@ -229,6 +315,22 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         writer = csv.writer(projects_file_out, delimiter="\t",
                             lineterminator="\n")
         writer.writerows(new_rows)
+
+    # project_carbon_tax_allowance.tab
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                           "project_carbon_tax_allowance.tab"),
+              "w", newline="") as sim_flows_file:
+        writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            ["project", "period",
+             "carbon_tax_allowance_tco2_per_mwh"]
+        )
+
+        for row in project_carbon_tax_allowance:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -269,7 +371,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    project_zones = get_inputs_from_database(
+    project_zones, project_carbon_tax_allowance = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into pandas DataFrame
