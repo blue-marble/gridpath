@@ -693,7 +693,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_solar_carbon_tax")
         self.run_and_check_objective("test_new_solar_carbon_tax",
-                                     -3796369926691.1)
+                                     -3796369926691.2686)
 
     def test_example_2periods_new_build_simple_prm(self):
         """
@@ -814,6 +814,17 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_markets")
         self.run_and_check_objective("test_markets", -3504300478278.3403)
+
+    def test_carbon_tax_allowance(self):
+        """
+        Check validation and objective function value of
+        "test_carbon_tax_allowance" example
+        :return:
+        """
+
+        self.check_validation("test_carbon_tax_allowance")
+        self.run_and_check_objective("test_carbon_tax_allowance",
+                                     -3796356403371.2686)
 
     @classmethod
     def tearDownClass(cls):

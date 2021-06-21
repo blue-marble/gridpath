@@ -60,6 +60,8 @@ class TestCarbonTaxEmissions(unittest.TestCase):
     """
 
     """
+    maxDiff = None
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -167,6 +169,47 @@ class TestCarbonTaxEmissions(unittest.TestCase):
             in instance.CARBON_TAX_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_carb_tax_prj_op_tmp, actual_carb_tax_prj_op_tmp)
+
+        # Param: carbon_tax_allowance
+        expected_carbon_tax_allowance = OrderedDict(sorted(
+            {("Gas_CCGT", 2020): 10, ("Coal", 2020): 8,
+             ("Gas_CT", 2020): 10, ("Gas_CCGT_New", 2020): 10,
+             ("Gas_CCGT_New_Binary", 2020): 10, ("Gas_CT_New", 2020): 10,
+             ("Gas_CCGT_z2", 2020): 10, ("Coal_z2", 2020): 8,
+             ("Gas_CT_z2", 2020): 10, ("Disp_Binary_Commit", 2020): 10,
+             ("Disp_Cont_Commit", 2020): 10, ("Disp_No_Commit", 2020): 10,
+             ("Clunky_Old_Gen", 2020): 8, ("Clunky_Old_Gen2", 2020): 8,
+             ("Gas_CCGT", 2030): 5, ("Coal", 2030): 3,
+             ("Gas_CT", 2030): 5, ("Gas_CCGT_New", 2030): 5,
+             ("Gas_CCGT_New_Binary", 2030): 5, ("Gas_CT_New", 2030): 5,
+             ("Gas_CCGT_z2", 2030): 5, ("Coal_z2", 2030): 3,
+             ("Gas_CT_z2", 2030): 5, ("Disp_Binary_Commit", 2030): 5,
+             ("Disp_Cont_Commit", 2030): 5, ("Disp_No_Commit", 2030): 5,
+             ("Clunky_Old_Gen", 2030): 3, ("Clunky_Old_Gen2", 2030): 3}.items()
+        ))
+        actual_carbon_tax = OrderedDict(sorted(
+            {(prj, p): instance.carbon_tax_allowance[prj, p]
+             for prj in instance.CARBON_TAX_PRJS
+             for p in instance.PERIODS}.items()
+        ))
+        self.assertDictEqual(expected_carbon_tax_allowance, actual_carbon_tax)
+
+        # Set: CARBON_TAX_PRJ_OPR_PRDS
+        expected_carbon_tax_prj_op_p = sorted(
+            [("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030), ("Clunky_Old_Gen2", 2030),
+             ("Clunky_Old_Gen2", 2020),  ("Coal", 2020), ("Coal", 2030), ("Coal_z2", 2020),
+             ("Coal_z2", 2030), ("Disp_Binary_Commit", 2020), ("Disp_Binary_Commit", 2030),
+             ("Disp_Cont_Commit", 2020), ("Disp_Cont_Commit", 2030), ("Disp_No_Commit", 2020),
+             ("Disp_No_Commit", 2030), ("Gas_CCGT", 2020), ("Gas_CCGT", 2030), ("Gas_CCGT_New", 2020),
+             ("Gas_CCGT_New", 2030), ("Gas_CCGT_New_Binary", 2020), ("Gas_CCGT_New_Binary", 2030),
+             ("Gas_CCGT_z2", 2020), ("Gas_CCGT_z2", 2030), ("Gas_CT", 2020), ("Gas_CT", 2030),
+             ("Gas_CT_New", 2030),
+             ("Gas_CT_z2", 2020), ("Gas_CT_z2", 2030)]
+        )
+        actual_carbon_tax_prj_op_p = sorted(
+            [(prj, p) for (prj, p) in instance.CARBON_TAX_PRJ_OPR_PRDS]
+        )
+        self.assertListEqual(expected_carbon_tax_prj_op_p, actual_carbon_tax_prj_op_p)
 
 
 if __name__ == "__main__":

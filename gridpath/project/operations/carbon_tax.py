@@ -317,20 +317,12 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         writer.writerows(new_rows)
 
     # project_carbon_tax_allowance.tab
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "project_carbon_tax_allowance.tab"),
-              "w", newline="") as sim_flows_file:
-        writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["project", "period",
-             "carbon_tax_allowance_tco2_per_mwh"]
-        )
-
-        for row in project_carbon_tax_allowance:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+    ct_allowance_df = cursor_to_df(project_carbon_tax_allowance)
+    if not ct_allowance_df.empty:
+        ct_allowance_df = ct_allowance_df.fillna(".")
+        fpath = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                             "project_carbon_tax_allowance.tab")
+        ct_allowance_df.to_csv(fpath, index=False, sep="\t")
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
