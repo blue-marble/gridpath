@@ -232,6 +232,12 @@ def update_dispatch_results_table(
             min_down_time_violation = get_column_row_value(
                 header, "min_down_time_violation", row
             )
+            hyb_storage_charge = get_column_row_value(
+                header, "hyb_storage_charge_mw", row
+            )
+            hyb_storage_discharge = get_column_row_value(
+                header, "hyb_storage_discharge_mw", row
+            )
 
             results.append(
                 (scheduled_curtailment_mw, subhourly_curtailment_mw,
@@ -240,6 +246,7 @@ def update_dispatch_results_table(
                  stopped_units, synced_units, auxiliary_consumption,
                  gross_power, ramp_up_violation, ramp_down_violation,
                  min_up_time_violation, min_down_time_violation,
+                 hyb_storage_charge, hyb_storage_discharge,
                  scenario_id, project, period, subproblem, stage, timepoint)
             )
 
@@ -260,7 +267,9 @@ def update_dispatch_results_table(
         ramp_up_violation = ?,
         ramp_down_violation = ?,
         min_up_time_violation = ?,
-        min_down_time_violation = ?
+        min_down_time_violation = ?,
+        hyb_storage_charge_mw = ?,
+        hyb_storage_discharge_mw = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?
@@ -393,8 +402,9 @@ def get_types_dict():
     }
 
 
-def load_optype_module_specific_data(
-        mod, data_portal, scenario_directory, subproblem, stage, op_type):
+def load_optype_model_data(
+    mod, data_portal, scenario_directory, subproblem, stage, op_type
+):
     """
 
     :param mod:
@@ -505,7 +515,7 @@ def load_var_profile_inputs(
     :return:
     """
 
-    var_op_types = ["gen_var_must_take", "gen_var"]
+    var_op_types = ["gen_var_must_take", "gen_var", "gen_var_stor_hyb"]
     other_var_op_types = set(var_op_types) - set([op_type])
     assert op_type in var_op_types
 

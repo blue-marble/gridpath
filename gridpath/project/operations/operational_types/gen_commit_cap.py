@@ -58,7 +58,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_module_specific_data, check_for_tmps_to_link, \
+    load_optype_model_data, check_for_tmps_to_link, \
     validate_opchars
 from gridpath.project.common_functions import \
     check_if_boundary_type_and_first_timepoint
@@ -1383,8 +1383,9 @@ def fix_commitment(mod, g, tmp):
 
 # Input-Output
 ###############################################################################
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param mod:
@@ -1396,7 +1397,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     """
 
     # Load data from projects.tab and get the list of projects of this type
-    projects = load_optype_module_specific_data(
+    projects = load_optype_model_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="gen_commit_cap"
@@ -1424,7 +1425,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         pass
 
 
-def export_module_specific_results(
+def export_results(
         mod, d, scenario_directory, subproblem, stage
 ):
     """
@@ -1522,7 +1523,7 @@ def export_module_specific_results(
 # Database
 ###############################################################################
 
-def import_module_specific_results_to_database(
+def import_model_results_to_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -1549,7 +1550,7 @@ def import_module_specific_results_to_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

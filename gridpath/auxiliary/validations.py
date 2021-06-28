@@ -250,7 +250,6 @@ def validate_dtypes(df, expected_dtypes):
         Error message specifies the column and the expected data type.
         List of columns with erroneous data types.
     """
-
     result = []
     columns = []
     for column in df.columns:

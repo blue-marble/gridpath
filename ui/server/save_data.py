@@ -70,7 +70,7 @@ def save_table_data_to_csv(db_path, download_path, scenario_id,
 
 
 def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
-                          load_zone, carbon_cap_zone, rps_zone,
+                          load_zone, carbon_cap_zone, energy_target_zone,
                           period, horizon, start_timepoint, end_timepoint,
                           subproblem, stage, project):
     """
@@ -80,7 +80,7 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
     :param plot_type: string, which plot
     :param load_zone: string, load zone parameter for the plot
     :param carbon_cap_zone: string, carbon cap zone parameter for the plot
-    :param rps_zone: string, RPS zone parameter for the plot
+    :param energy_target_zone: string, RPS zone parameter for the plot
     :param period: integer, period parameter for the plot
     :param horizon: integer, horizon parameter for the plot
     :param start_timepoint: integer, start timepoint parameter for the plot
@@ -99,7 +99,7 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
     # Assume None for "default" other params
     load_zone = None if load_zone == "default" else load_zone
     carbon_cap_zone = None if carbon_cap_zone == "default" else carbon_cap_zone
-    rps_zone = None if rps_zone == "default" else rps_zone
+    energy_target_zone = None if energy_target_zone == "default" else energy_target_zone
     period = None if period == "default" else period
     horizon = None if horizon == "default" else horizon
     start_timepoint = None if start_timepoint == "default" else start_timepoint
@@ -124,7 +124,7 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
                 scenario_id=scenario_id,
                 load_zone=load_zone,
                 carbon_cap_zone=carbon_cap_zone,
-                rps_zone=rps_zone,
+                energy_target_zone=energy_target_zone,
                 period=period,
                 horizon=horizon,
                 starting_tmp=start_timepoint,

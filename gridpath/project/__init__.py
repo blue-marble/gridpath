@@ -115,14 +115,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PROJECTS,
         within=["dr_new", "gen_new_bin", "gen_new_lin", "gen_ret_bin",
                 "gen_ret_lin", "gen_spec", "stor_new_bin", "stor_new_lin",
-                "stor_spec"]
+                "stor_spec", "gen_stor_hyb_spec"]
     )
     m.operational_type = Param(
         m.PROJECTS,
         within=["dr", "gen_always_on", "gen_commit_bin", "gen_commit_cap",
                 "gen_commit_lin", "gen_hydro", "gen_hydro_must_take",
                 "gen_must_run", "gen_simple", "gen_var",
-                "gen_var_must_take", "stor"]
+                "gen_var_must_take", "stor", "gen_var_stor_hyb"]
     )
     m.availability_type = Param(
         m.PROJECTS,

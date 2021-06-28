@@ -140,7 +140,7 @@ def add_scenario_results_resources(api, db_path):
 
     api.add_resource(
         ScenarioResultsPlot,
-        '/scenarios/<scenario_id>/results/<plot>/<load_zone>/<rps_zone>'
+        '/scenarios/<scenario_id>/results/<plot>/<load_zone>/<energy_target_zone>'
         '/<carbon_cap_zone>/<period>/<horizon>'
         '/<start_timepoint>/<end_timepoint>'
         '/<subproblem>/<stage>/<project>/<commit_project>/<ymax>',

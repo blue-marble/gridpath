@@ -226,14 +226,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "GEN_NEW_BIN_OPR_PRDS",
     )
 
-
 # Set Rules
 ###############################################################################
 
 def operational_periods_by_generator_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.gen_new_bin_lifetime_yrs_by_vintage[prj, v]
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.gen_new_bin_lifetime_yrs_by_vintage[prj, v]
     )
 
 
@@ -334,8 +336,8 @@ def new_capacity_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-        m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
@@ -366,7 +368,7 @@ def load_module_specific_data(
     )
 
 
-def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -394,7 +396,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def summarize_module_specific_results(
+def summarize_results(
     scenario_directory, subproblem, stage, summary_results_file
 ):
     """
@@ -445,7 +447,7 @@ def summarize_module_specific_results(
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -503,7 +505,7 @@ def get_module_specific_inputs_from_database(
     return new_gen_costs, new_gen_build_size
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -518,7 +520,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    new_gen_costs, new_gen_build_size = get_module_specific_inputs_from_database(
+    new_gen_costs, new_gen_build_size = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -551,7 +553,7 @@ def write_module_specific_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_module_specific_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -579,7 +581,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -590,7 +592,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     """
 
     # Get the binary build generator inputs
-    new_gen_costs, new_build_size = get_module_specific_inputs_from_database(
+    new_gen_costs, new_build_size = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_new_bin")

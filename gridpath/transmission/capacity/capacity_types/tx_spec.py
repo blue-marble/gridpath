@@ -128,7 +128,7 @@ def tx_capacity_cost_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(m, data_portal, scenario_directory,
+def load_model_data(m, d, data_portal, scenario_directory,
                               subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -144,7 +144,7 @@ def load_module_specific_data(m, data_portal, scenario_directory,
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -176,7 +176,7 @@ def get_module_specific_inputs_from_database(
     return tx_capacities
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
@@ -189,7 +189,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    tx_capacities = get_module_specific_inputs_from_database(
+    tx_capacities = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -211,7 +211,7 @@ def write_module_specific_model_inputs(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -221,7 +221,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     :return:
     """
 
-    tx_capacities = get_module_specific_inputs_from_database(
+    tx_capacities = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     tx_lines = get_tx_lines(conn, scenario_id, subscenarios, "capacity_type", "tx_spec")

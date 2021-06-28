@@ -141,7 +141,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
                 WHERE market_scenario_id = ?
         );
         """,
-        (subscenarios.LOAD_SCENARIO_ID,
+        (subscenarios.LOAD_ZONE_SCENARIO_ID,
          subscenarios.LOAD_ZONE_MARKET_SCENARIO_ID,
          subscenarios.MARKET_SCENARIO_ID)
     )

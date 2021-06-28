@@ -138,7 +138,7 @@ export class ScenarioResultsComponent implements OnInit {
               plotType: plot.plotType,
               caption: plot.caption,
               loadZone: plot.loadZone,
-              rpsZone: plot.rpsZone,
+              energyTargetZone: plot.energyTargetZone,
               carbonCapZone: plot.carbonCapZone,
               period: plot.period,
               horizon: plot.horizon,
@@ -170,7 +170,7 @@ export class ScenarioResultsComponent implements OnInit {
 
       this.scenarioResultsService.getResultsPlot(
         this.scenarioID, formValues.plotType, formValues.loadZone,
-          formValues.rpsZone, formValues.carbonCapZone,
+          formValues.energyTargetZone, formValues.carbonCapZone,
           formValues.period, formValues.horizon,
           formValues.startTimepoint, formValues.endTimepoint,
           formValues.subproblem, formValues.stage,
@@ -204,7 +204,7 @@ export class ScenarioResultsComponent implements OnInit {
               plotType: formValues.plotType,
               loadZone: formValues.loadZone,
               carbonCapZone: formValues.carbonCapZone,
-              rpsZone: formValues.rpsZone,
+              energyTargetZone: formValues.energyTargetZone,
               period: formValues.period,
               horizon: formValues.horizon,
               startTimepoint: formValues.startTimepoint,
@@ -240,7 +240,7 @@ export function getFormGroupValues(formGroup) {
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
     const carbonCapZone = formGroup.value.carbonCapZone;
-    const rpsZone = formGroup.value.rpsZone;
+    const energyTargetZone = formGroup.value.energyTargetZone;
     const period = formGroup.value.period;
     const horizon = formGroup.value.horizon;
     const startTimepoint = formGroup.value.startTimepoint;
@@ -262,7 +262,7 @@ export function getFormGroupValues(formGroup) {
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
-    return {plotType, loadZone, carbonCapZone, rpsZone, period, horizon,
+    return {plotType, loadZone, carbonCapZone, energyTargetZone, period, horizon,
     startTimepoint, endTimepoint,
     subproblem, stage, project, commitProject, yMax};
 }

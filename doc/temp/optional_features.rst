@@ -182,20 +182,23 @@ Feature modules include:
     :members:
 
 
-Renewable Portfolio Standard (RPS)
-----------------------------------
-Whether or not to enforce a Renewable Portfolio Standard policy.
+Energy Targets, e.g. Renewable Portfolio Standard (RPS)
+-------------------------------------------------------
+Whether or not to enforce an energy target policy, e.g. a Renewables
+Portfolio Standard (RPS).
 
-Feature modules include:
-.. automodule:: gridpath.geography.rps_zones
+Feature modules for period-level targets include:
+.. automodule:: gridpath.geography.energy_target_zones
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_requirement
+.. automodule:: gridpath.system.policy.energy_target.period_energy_target
     :members:
-.. automodule:: gridpath.project.operations.recs
+.. automodule:: gridpath.project.operations.energy_target_contributions
     :members:
-.. automodule:: gridpath.system.policy.rps.aggregate_recs
+.. automodule:: gridpath.system.policy.energy_target.aggregate_period_energy_target_contributions
     :members:
-.. automodule:: gridpath.system.policy.rps.rps_balance
+.. automodule:: gridpath.system.policy.energy_target.period_energy_target_balance
+    :members:
+.. automodule:: objective.system.policy.energy_target.aggregate_period_energy_target_violation_penalties
     :members:
 
 

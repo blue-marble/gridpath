@@ -25,8 +25,9 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.capacity.common_functions import \
-    load_gen_storage_capacity_type_modules
+    load_project_capacity_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
+import gridpath.project.capacity.capacity_types as cap_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -168,27 +169,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         stage=stage, which_type="capacity_type"
     )
 
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
 
     # Get the new and total capacity in the group for the respective
     # expressions
     def new_capacity_rule(mod, prj, prd):
-        gen_cap_type = mod.capacity_type[prj]
+        cap_type = mod.capacity_type[prj]
         # The capacity type modules check if this period is a "vintage" for
         # this project and return 0 if not
-        return imported_capacity_modules[gen_cap_type].new_capacity_rule(
-            mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type],
+                   "new_capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                new_capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.new_capacity_rule(mod, prj, prd)
 
     def total_capacity_rule(mod, prj, prd):
-        gen_cap_type = mod.capacity_type[prj]
+        cap_type = mod.capacity_type[prj]
         # Return the capacity type's capacity rule if the project is
         # operational in this timepoint; otherwise, return 0
-        return imported_capacity_modules[gen_cap_type].capacity_rule(
-            mod, prj, prd) \
-            if prd in mod.OPR_PRDS_BY_PRJ[prj] \
-            else 0
+        if prd not in mod.OPR_PRDS_BY_PRJ[prj]:
+            return 0
+        else:
+            if hasattr(imported_capacity_modules[cap_type],
+                       "capacity_rule"):
+                return imported_capacity_modules[cap_type]. \
+                    capacity_rule(mod, prj, prd)
+            else:
+                return cap_type_init.capacity_rule(mod, prj, prd)
 
     # Expressions
     def group_new_capacity_rule(mod, grp, prd):

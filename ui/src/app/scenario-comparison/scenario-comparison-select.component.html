@@ -108,10 +108,10 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
-                <select class="custom-select" formControlName="rpsZone"
-                        *ngIf="formGroup.value['rpsZone'] !== 'default'">
+                <select class="custom-select" formControlName="energyTargetZone"
+                        *ngIf="formGroup.value['energyTargetZone'] !== 'default'">
                   <ng-container
-                    *ngFor="let opt of formOptions.rpsZoneOptions">
+                    *ngFor="let opt of formOptions.energyTargetZoneOptions">
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>

@@ -93,9 +93,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "load_module_specific_data"):
-            imported_prm_modules[prm_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                   "load_model_data"):
+            imported_prm_modules[prm_m].load_model_data(
+                m, d, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -131,9 +131,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     for prm_m in required_prm_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "export_module_specific_results"):
+                   "export_results"):
             imported_prm_modules[prm_m]. \
-                export_module_specific_results(
+                export_results(
                 m, d, scenario_directory, subproblem, stage,
             )
         else:
@@ -209,9 +209,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validate module-specific inputs
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "validate_module_specific_inputs"):
+                   "validate_inputs"):
             imported_prm_modules[prm_m]. \
-                validate_module_specific_inputs(
+                validate_inputs(
                     scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -243,9 +243,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Write module-specific inputs
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "write_module_specific_model_inputs"):
+                   "write_model_inputs"):
             imported_prm_modules[prm_m]. \
-                write_module_specific_model_inputs(
+                write_model_inputs(
                     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
         else:
             pass
@@ -290,9 +290,9 @@ def import_results_into_database(
 
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "import_module_specific_results_into_database"):
+                   "import_results_into_database"):
             imported_prm_modules[prm_m]. \
-                import_module_specific_results_into_database(
+                import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
@@ -327,9 +327,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "process_module_specific_results"):
+                   "process_model_results"):
             imported_prm_modules[prm_m]. \
-                process_module_specific_results(
+                process_model_results(
                 db=db, c=c, scenario_id=scenario_id,
                 subscenarios=subscenarios, quiet=quiet
             )
