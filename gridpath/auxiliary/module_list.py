@@ -54,6 +54,7 @@ def all_modules_list():
         "geography.spinning_reserves_balancing_areas",
         "geography.energy_target_zones",
         "geography.carbon_cap_zones",
+        "geography.carbon_tax_zones",
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
@@ -67,6 +68,7 @@ def all_modules_list():
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
         "system.policy.carbon_cap.carbon_cap",
+        "system.policy.carbon_tax.carbon_tax",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
@@ -99,6 +101,7 @@ def all_modules_list():
         "project.operations.energy_target_contributions",
         "project.operations.carbon_emissions",
         "project.operations.carbon_cap",
+        "project.operations.carbon_tax",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",
@@ -139,6 +142,8 @@ def all_modules_list():
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
+        "system.policy.carbon_tax.aggregate_project_carbon_emissions",
+        "system.policy.carbon_tax.carbon_tax_costs",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
@@ -165,6 +170,7 @@ def all_modules_list():
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
+        "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
@@ -264,6 +270,14 @@ def optional_modules_list():
              "system.policy.carbon_cap.carbon_balance",
              "objective.system.policy.aggregate_carbon_cap_violation_penalties"
              ],
+        "carbon_tax":
+            ["geography.carbon_tax_zones",
+             "system.policy.carbon_tax.carbon_tax",
+             "project.operations.carbon_tax",
+             "system.policy.carbon_tax.aggregate_project_carbon_emissions",
+             "system.policy.carbon_tax.carbon_tax_costs",
+             "objective.system.policy.aggregate_carbon_tax_costs"
+            ],
         "prm":
             ["geography.prm_zones",
              "system.reliability.prm.prm_requirement",

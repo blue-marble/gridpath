@@ -547,6 +547,25 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
+-- Carbon tax
+-- This is the unit at which the carbon tax is applied in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_carbon_tax_zones;
+CREATE TABLE subscenarios_geography_carbon_tax_zones (
+carbon_tax_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_carbon_tax_zones;
+CREATE TABLE inputs_geography_carbon_tax_zones (
+carbon_tax_zone_scenario_id INTEGER,
+carbon_tax_zone VARCHAR(32),
+PRIMARY KEY (carbon_tax_zone_scenario_id, carbon_tax_zone),
+FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
+subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -1314,6 +1333,27 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
 
+-- Project carbon tax zones
+-- Which projects are subject to the carbon tax
+-- Depends on carbon tax zone geography
+-- This table can include all projects with MULLS for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
+CREATE TABLE subscenarios_project_carbon_tax_zones (
+project_carbon_tax_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_zones;
+CREATE TABLE inputs_project_carbon_tax_zones (
+project_carbon_tax_zone_scenario_id INTEGER,
+project VARCHAR(64),
+carbon_tax_zone VARCHAR(32),
+PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
+FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
 
 -- Project PRM zones
 -- Which projects can contribute to PRM requirements
@@ -2141,6 +2181,31 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
 
+-- Carbon tax
+DROP TABLE IF EXISTS subscenarios_system_carbon_tax;
+CREATE TABLE subscenarios_system_carbon_tax (
+carbon_tax_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- carbon_tax_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_carbon_tax;
+CREATE TABLE inputs_system_carbon_tax (
+carbon_tax_scenario_id INTEGER,
+carbon_tax_zone VARCHAR(32),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+carbon_tax FLOAT,
+PRIMARY KEY (carbon_tax_scenario_id, carbon_tax_zone, period,
+subproblem_id, stage_id),
+FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
+subscenarios_system_carbon_tax (carbon_tax_scenario_id)
+);
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement (
@@ -2241,6 +2306,7 @@ of_period_energy_target INTEGER,
 of_horizon_energy_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
+of_carbon_tax INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2256,6 +2322,7 @@ frequency_response_ba_scenario_id INTEGER,
 spinning_reserves_ba_scenario_id INTEGER,
 energy_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
+carbon_tax_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
@@ -2272,6 +2339,7 @@ project_frequency_response_ba_scenario_id INTEGER,
 project_spinning_reserves_ba_scenario_id INTEGER,
 project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
+project_carbon_tax_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2305,6 +2373,7 @@ spinning_reserves_scenario_id INTEGER,
 period_energy_target_scenario_id INTEGER,
 horizon_energy_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
+carbon_tax_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -2336,6 +2405,8 @@ FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
     subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
+    subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
@@ -2378,6 +2449,9 @@ FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_cap_zones
         (project_carbon_cap_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_zones
+        (project_carbon_tax_zone_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2459,6 +2533,8 @@ FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
         (horizon_energy_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
+FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
+    subscenarios_system_carbon_tax (carbon_tax_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
@@ -3431,6 +3507,23 @@ carbon_cap_marginal_cost_per_emission FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
+-- Carbon tax emissions
+DROP TABLE IF EXISTS results_system_carbon_tax_emissions;
+CREATE TABLE results_system_carbon_tax_emissions (
+scenario_id INTEGER,
+carbon_tax_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+carbon_tax FLOAT,
+total_emissions FLOAT,
+carbon_tax_cost FLOAT,
+dual FLOAT,
+PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
+);
+
 -- Energy target balance
 DROP TABLE IF EXISTS results_system_period_energy_target;
 CREATE TABLE  results_system_period_energy_target (
@@ -3541,6 +3634,7 @@ Spinning_Reserves_Penalty_Costs Float,
 Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
+Total_Carbon_Tax_Cost FLOAT,
 Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
