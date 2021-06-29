@@ -7,15 +7,15 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx",
-    "sphinx-argparse"
+    "Sphinx==4.0.2",
+    "sphinx-argparse==0.2.5"
 ]
 extras_ui = [
-    "eventlet",  # Async mode for SocketIO
-    "Flask",  # Local API server for UI
-    "Flask-RESTful",  # Flask extension for building REST APIs
+    "eventlet==0.31.0",  # Async mode for SocketIO
+    "Flask==2.0.1",  # Local API server for UI
+    "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication
-    "psutil",  # Process management
+    "psutil==5.8.0",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
 ]
 extras_all = extras_ui + extras_doc
@@ -23,23 +23,26 @@ extras_all = extras_ui + extras_doc
 
 setup(name="GridPath",
       version=version["__version__"],
-      description="Software for power-system planning",
+      description="A versatile simulation and optimization platform for "
+                  "power-system planning and operations.",
       url="https://www.gridpath.io",
       maintainer="Blue Marble Analytics LLC",
       maintainer_email="info@gridpath.io",
-      license="TBD",
-      platforms=["any"],
+      license="Apache v2",
+      platforms=["MacOS", "Windows"],
       keywords=[
           "energy", "electricity", "power", "renewables",
           "planning", "operations"
       ],
       packages=find_packages(),
       install_requires=[
-          "Pyomo",  # Optimization modeling language
-          "pandas",  # Data-processing
-          "bokeh==2.2.3",  # Visualization library
-          "pscript",  # Python to JavaScript compiler (for visualization)
-          "networkx"  # network package for DC OPF
+          "Pyomo==5.7.3",  # Optimization modeling language (required due to
+          # Pyomo/Cbc issue with UI on Mac)
+          "pandas==1.2.5",  # Data-processing
+          "bokeh==2.2.3",  # Visualization library (required - see #779)
+          "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
+          "networkx==2.5.1",  # network package for DC OPF
+          "pyutilib==6.0.0",  # used for solver temp file management
       ],
       extras_require={
           "doc": extras_doc,
