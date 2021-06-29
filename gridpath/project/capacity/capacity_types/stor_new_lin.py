@@ -39,8 +39,7 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, \
-    storage_only_capacity_type_operational_period_sets
+    capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
     validate_idxs, validate_row_monotonicity, validate_column_monotonicity
@@ -455,11 +454,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     getattr(d, capacity_type_operational_period_sets).append(
         "STOR_NEW_LIN_OPR_PRDS",
     )
-    # Add to list of sets we'll join to get the final
-    # STOR_OPR_PRDS set
-    getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "STOR_NEW_LIN_OPR_PRDS",
-    )
 
 
 # Set Rules
@@ -467,9 +461,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 def operational_periods_by_storage_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
-        periods=mod.PERIODS,
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime=mod.stor_new_lin_lifetime_yrs[prj, v])
+        lifetime_yrs=mod.stor_new_lin_lifetime_yrs[prj, v])
 
 
 def stor_new_lin_operational_periods(mod):
@@ -662,8 +658,8 @@ def new_capacity_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-    m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
@@ -843,7 +839,7 @@ def load_module_specific_data(
         max_cumulative_mwh
 
 
-def export_module_specific_results(
+def export_results(
         scenario_directory, subproblem, stage, m, d
 ):
     """
@@ -871,7 +867,7 @@ def export_module_specific_results(
             ])
 
 
-def summarize_module_specific_results(
+def summarize_results(
     scenario_directory, subproblem, stage, summary_results_file
 ):
     """
@@ -926,7 +922,7 @@ def summarize_module_specific_results(
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -988,7 +984,7 @@ def get_module_specific_inputs_from_database(
     return new_stor_costs
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -1002,7 +998,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    new_stor_costs = get_module_specific_inputs_from_database(
+    new_stor_costs = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -1027,7 +1023,7 @@ def write_module_specific_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def import_module_specific_results_into_database(
+def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
@@ -1055,7 +1051,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -1064,7 +1060,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     :param conn: database connection
     :return:
     """
-    new_stor_costs = get_module_specific_inputs_from_database(
+    new_stor_costs = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "stor_new_lin")

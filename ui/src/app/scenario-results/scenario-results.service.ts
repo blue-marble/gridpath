@@ -30,7 +30,7 @@ export class ScenarioResultsService {
     scenarioID: number,
     plotType: string,
     loadZone: string,
-    rpsZone: string,
+    energyTargetZone: string,
     carbonCapZone: string,
     period: number,
     horizon: number,
@@ -42,7 +42,7 @@ export class ScenarioResultsService {
     commitProject: string,
     yMax: number
   ): Observable<ScenarioResultsPlot> {
-    return this.http.get<ScenarioResultsPlot>(`${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${rpsZone}/${carbonCapZone}/${period}/${horizon}/${startTimepoint}/${endTimepoint}/${subproblem}/${stage}/${project}/${commitProject}/${yMax}`
+    return this.http.get<ScenarioResultsPlot>(`${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${energyTargetZone}/${carbonCapZone}/${period}/${horizon}/${startTimepoint}/${endTimepoint}/${subproblem}/${stage}/${project}/${commitProject}/${yMax}`
     );
   }
 

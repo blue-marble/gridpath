@@ -16,6 +16,11 @@
 Scenario characteristics in database.
 """
 
+import csv
+import os.path
+
+from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
+
 
 class OptionalFeatures(object):
     def __init__(self, conn, scenario_id):
@@ -92,40 +97,92 @@ class SubScenarios(object):
         return all_subscenarios
 
 
-class SubProblems(object):
-    def __init__(self, conn, scenario_id):
-        """
+class ScenarioSubproblemStructure(object):
+    def __init__(self, stages_by_subproblem):
+        # List of stages by subproblem in dict {subproblem: [stages]}
+        # This should have a single key, 1, if a single subproblem
+        # This should be subproblem: [1] when a single stage in the subproblem
+        self.SUBPROBLEM_STAGES = stages_by_subproblem
 
-        :param conn:
-        :param scenario_id:
-        """
-        cursor = conn.cursor()
 
-        # TODO: make sure there is data integrity between subproblems_stages
-        #   and inputs_temporal_horizons and inputs_temporal
-        subproblems = cursor.execute(
+def get_subproblem_structure_from_db(conn, scenario_id):
+    """
+
+    :param conn:
+    :param scenario_id:
+    """
+    cursor = conn.cursor()
+
+    # TODO: make sure there is data integrity between subproblems_stages
+    #   and inputs_temporal_horizons and inputs_temporal
+    all_subproblems = [
+        subproblem[0] for subproblem in
+        cursor.execute(
             """SELECT subproblem_id
                FROM inputs_temporal_subproblems
                INNER JOIN scenarios
                USING (temporal_scenario_id)
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchall()
-        # SQL returns a list of tuples [(1,), (2,)] so convert to simple list
-        self.SUBPROBLEMS = [subproblem[0] for subproblem in subproblems]
+    ]
 
-        # store subproblems and stages in dict {subproblem: [stages]}
-        self.SUBPROBLEM_STAGE_DICT = {}
-        for s in self.SUBPROBLEMS:
-            stages = cursor.execute(
-                """SELECT stage_id
-                   FROM inputs_temporal_subproblems_stages
-                   INNER JOIN scenarios
-                   USING (temporal_scenario_id)
-                   WHERE scenario_id = {}
-                   AND subproblem_id = {};""".format(scenario_id, s)
-            ).fetchall()
-            stages = [stage[0] for stage in stages]  # convert to simple list
-            self.SUBPROBLEM_STAGE_DICT[s] = stages
+    # Store subproblems and stages in dict {subproblem: [stages]}
+    stages_by_subproblem = {}
+    for s in all_subproblems:
+        stages = cursor.execute(
+            """SELECT stage_id
+               FROM inputs_temporal_subproblems_stages
+               INNER JOIN scenarios
+               USING (temporal_scenario_id)
+               WHERE scenario_id = {}
+               AND subproblem_id = {};""".format(scenario_id, s)
+        ).fetchall()
+        stages = [stage[0] for stage in stages]  # convert to simple list
+        stages_by_subproblem[s] = stages
+
+    return ScenarioSubproblemStructure(
+        stages_by_subproblem=stages_by_subproblem
+    )
+
+
+def get_subproblem_structure_from_disk(scenario_directory):
+    # Check if there are subproblem directories
+    # Convert to integers
+    subproblem_directories = \
+        [int(i) for i in check_for_integer_subdirectories(scenario_directory)]
+
+    # Make dictionary for the stages by subproblem, starting with empty
+    # list for each subproblem
+    stages_by_subproblem = {
+        subp: [] for subp in subproblem_directories
+    }
+
+    # If we have subproblems, check for stage subdirectories for each
+    # subproblem directory
+    if subproblem_directories:
+        all_subproblems = subproblem_directories
+        for subproblem in subproblem_directories:
+            subproblem_dir = os.path.join(scenario_directory, str(subproblem))
+            # Convert to integers
+            stages = \
+                [int(i) for i in
+                 check_for_integer_subdirectories(subproblem_dir)]
+            if stages:
+                stages_by_subproblem[subproblem] = stages
+            else:
+                # If we didn't find stage directories, we have a single
+                # stage
+                # Downstream, we need a list with just 1 as member
+                stages_by_subproblem[subproblem] = [1]
+    else:
+        # If we didn't find integer directories, we have a single subproblem
+        # with a single stage
+        # Downstream, we need {1: [1]}
+        stages_by_subproblem[1] = [1]
+
+    return ScenarioSubproblemStructure(
+        stages_by_subproblem=stages_by_subproblem
+    )
 
 
 class SolverOptions(object):

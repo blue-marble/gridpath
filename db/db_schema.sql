@@ -1,6 +1,6 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
--- Copyright 2016-2020 Blue Marble Analytics LLC.
+-- Copyright 2016-2021 Blue Marble Analytics LLC.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -235,8 +235,8 @@ CREATE TABLE inputs_temporal_periods (
 temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
-number_years_represented FLOAT,
-hours_in_full_period FLOAT,
+period_start_year FLOAT,
+period_end_year FLOAT, -- exclusive, i.e. if 2030, last day is 2029-12-31
 PRIMARY KEY (temporal_scenario_id, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
@@ -322,7 +322,7 @@ horizon VARCHAR(32),
 tmp_start INTEGER,
 tmp_end INTEGER,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id,
-             balancing_type_horizon, horizon),
+             balancing_type_horizon, horizon, tmp_start, tmp_end),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure the start and end timepoints exist in the main timepoints table
@@ -505,25 +505,25 @@ FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
 subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
 );
 
--- RPS
--- This is the unit at which RPS requirements are met in the model; it can be
+-- Energy target
+-- This is the unit at which energy target requirements are met in the model; it can be
 -- different from the load zones
-DROP TABLE IF EXISTS subscenarios_geography_rps_zones;
-CREATE TABLE subscenarios_geography_rps_zones (
-rps_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_geography_energy_target_zones;
+CREATE TABLE subscenarios_geography_energy_target_zones (
+energy_target_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_geography_rps_zones;
-CREATE TABLE inputs_geography_rps_zones (
-rps_zone_scenario_id INTEGER,
-rps_zone VARCHAR(32),
+DROP TABLE IF EXISTS inputs_geography_energy_target_zones;
+CREATE TABLE inputs_geography_energy_target_zones (
+energy_target_zone_scenario_id INTEGER,
+energy_target_zone VARCHAR(32),
 allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
 violation_penalty_per_mwh FLOAT DEFAULT 0,
-PRIMARY KEY (rps_zone_scenario_id, rps_zone),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-subscenarios_geography_rps_zones (rps_zone_scenario_id)
+PRIMARY KEY (energy_target_zone_scenario_id, energy_target_zone),
+FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
+subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id)
 );
 
 -- Carbon cap
@@ -545,6 +545,25 @@ violation_penalty_per_emission FLOAT DEFAULT 0,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
+);
+
+-- Carbon tax
+-- This is the unit at which the carbon tax is applied in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_carbon_tax_zones;
+CREATE TABLE subscenarios_geography_carbon_tax_zones (
+carbon_tax_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_carbon_tax_zones;
+CREATE TABLE inputs_geography_carbon_tax_zones (
+carbon_tax_zone_scenario_id INTEGER,
+carbon_tax_zone VARCHAR(32),
+PRIMARY KEY (carbon_tax_zone_scenario_id, carbon_tax_zone),
+FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
+subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
 );
 
 -- PRM
@@ -693,8 +712,10 @@ CREATE TABLE inputs_project_specified_capacity (
 project_specified_capacity_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-specified_capacity_mw FLOAT,
-specified_capacity_mwh FLOAT,
+specified_capacity_mw FLOAT, -- grid-facing nameplate capacity
+hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
+hyb_stor_specified_capacity_mw FLOAT, -- e.g. battery tightly-coupled with PV
+specified_capacity_mwh FLOAT, -- storage energy capacity
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
@@ -712,8 +733,10 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-annual_fixed_cost_per_mw_year FLOAT,
-annual_fixed_cost_per_mwh_year FLOAT,
+fixed_cost_per_mw_year FLOAT,
+hyb_gen_fixed_cost_per_mw_yr FLOAT,
+hyb_stor_fixed_cost_per_mw_yr FLOAT,
+fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
@@ -1266,26 +1289,26 @@ REFERENCES subscenarios_project_spinning_reserves_bas
  (project_spinning_reserves_ba_scenario_id)
 );
 
--- Project RPS zones
--- Which projects can contribute to RPS requirements
--- Depends on how RPS zones are specified
+-- Project energy target zones
+-- Which projects can contribute to energy target requirements
+-- Depends on how energy target zones are specified
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
-DROP TABLE IF EXISTS subscenarios_project_rps_zones;
-CREATE TABLE subscenarios_project_rps_zones (
-project_rps_zone_scenario_id INTEGER PRIMARY KEY,
+DROP TABLE IF EXISTS subscenarios_project_energy_target_zones;
+CREATE TABLE subscenarios_project_energy_target_zones (
+project_energy_target_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_rps_zones;
-CREATE TABLE inputs_project_rps_zones (
-project_rps_zone_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_project_energy_target_zones;
+CREATE TABLE inputs_project_energy_target_zones (
+project_energy_target_zone_scenario_id INTEGER,
 project VARCHAR(64),
-rps_zone VARCHAR(32),
-PRIMARY KEY (project_rps_zone_scenario_id, project),
-FOREIGN KEY (project_rps_zone_scenario_id) REFERENCES
- subscenarios_project_rps_zones (project_rps_zone_scenario_id)
+energy_target_zone VARCHAR(32),
+PRIMARY KEY (project_energy_target_zone_scenario_id, project),
+FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
+ subscenarios_project_energy_target_zones (project_energy_target_zone_scenario_id)
 );
 
 -- Project carbon cap zones
@@ -1310,6 +1333,27 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
 
+-- Project carbon tax zones
+-- Which projects are subject to the carbon tax
+-- Depends on carbon tax zone geography
+-- This table can include all projects with MULLS for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
+CREATE TABLE subscenarios_project_carbon_tax_zones (
+project_carbon_tax_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_zones;
+CREATE TABLE inputs_project_carbon_tax_zones (
+project_carbon_tax_zone_scenario_id INTEGER,
+project VARCHAR(64),
+carbon_tax_zone VARCHAR(32),
+PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
+FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
 
 -- Project PRM zones
 -- Which projects can contribute to PRM requirements
@@ -2037,42 +2081,80 @@ PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, load_zone)
 
 -- -- Policy -- --
 
--- RPS requirements
-
-DROP TABLE IF EXISTS subscenarios_system_rps_targets;
-CREATE TABLE subscenarios_system_rps_targets (
-rps_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-- Energy target requirements
+-- By period
+DROP TABLE IF EXISTS subscenarios_system_period_energy_targets;
+CREATE TABLE subscenarios_system_period_energy_targets (
+period_energy_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 -- Can include periods and zones other than the ones in a scenario, as correct
 -- periods and zones will be pulled depending on temporal_scenario_id and
--- rps_zone_scenario_id
-DROP TABLE IF EXISTS inputs_system_rps_targets;
-CREATE TABLE inputs_system_rps_targets (
-rps_target_scenario_id INTEGER,
-rps_zone VARCHAR(32),
-period INTEGER,
+-- energy_target_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_period_energy_targets;
+CREATE TABLE inputs_system_period_energy_targets (
+period_energy_target_scenario_id INTEGER,
+energy_target_zone VARCHAR(32),
 subproblem_id INTEGER,
 stage_id INTEGER,
-rps_target_mwh FLOAT,
-rps_target_percentage FLOAT,
-PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
-stage_id)
+period INTEGER,
+energy_target_mwh FLOAT,
+energy_target_fraction FLOAT,
+PRIMARY KEY (period_energy_target_scenario_id, energy_target_zone,
+             subproblem_id, stage_id, period)
 );
 
--- If the RPS target is specified as percentage of load, we need to also
--- specify which load, i.e. specify a mapping between the RPS zone and the
--- load zones whose load should be part of the target calculation (mapping
--- should be one-to-many)
-DROP TABLE IF EXISTS inputs_system_rps_target_load_zone_map;
-CREATE TABLE inputs_system_rps_target_load_zone_map (
-rps_target_scenario_id INTEGER,
-rps_zone VARCHAR(32),
+-- If the energy target is specified as percentage of load, we need to also
+-- specify which load, i.e. specify a mapping between the energy target zone
+-- and the load zones whose load should be part of the target calculation
+-- (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_period_energy_target_load_zone_map;
+CREATE TABLE inputs_system_period_energy_target_load_zone_map (
+period_energy_target_scenario_id INTEGER,
+energy_target_zone VARCHAR(32),
 load_zone VARCHAR(64),
-PRIMARY KEY (rps_target_scenario_id, rps_zone, load_zone)
+PRIMARY KEY (period_energy_target_scenario_id, energy_target_zone, load_zone)
 );
+
+-- By horizon
+DROP TABLE IF EXISTS subscenarios_system_horizon_energy_targets;
+CREATE TABLE subscenarios_system_horizon_energy_targets (
+horizon_energy_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- energy_target_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_horizon_energy_targets;
+CREATE TABLE inputs_system_horizon_energy_targets (
+horizon_energy_target_scenario_id INTEGER,
+energy_target_zone VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+energy_target_mwh FLOAT,
+energy_target_fraction FLOAT,
+PRIMARY KEY (horizon_energy_target_scenario_id, energy_target_zone,
+             subproblem_id, stage_id, balancing_type_horizon, horizon)
+);
+
+-- If the energy target is specified as percentage of load, we need to also
+-- specify which load, i.e. specify a mapping between the energy target zone
+-- and the load zones whose load should be part of the target calculation
+-- (mapping should be one-to-many)
+DROP TABLE IF EXISTS inputs_system_horizon_energy_target_load_zone_map;
+CREATE TABLE inputs_system_horizon_energy_target_load_zone_map (
+horizon_energy_target_scenario_id INTEGER,
+energy_target_zone VARCHAR(32),
+load_zone VARCHAR(64),
+PRIMARY KEY (horizon_energy_target_scenario_id, energy_target_zone, load_zone)
+);
+
 
 -- Carbon cap
 DROP TABLE IF EXISTS subscenarios_system_carbon_cap_targets;
@@ -2097,6 +2179,31 @@ PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
 subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
+);
+
+-- Carbon tax
+DROP TABLE IF EXISTS subscenarios_system_carbon_tax;
+CREATE TABLE subscenarios_system_carbon_tax (
+carbon_tax_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- carbon_tax_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_carbon_tax;
+CREATE TABLE inputs_system_carbon_tax (
+carbon_tax_scenario_id INTEGER,
+carbon_tax_zone VARCHAR(32),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+carbon_tax FLOAT,
+PRIMARY KEY (carbon_tax_scenario_id, carbon_tax_zone, period,
+subproblem_id, stage_id),
+FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
+subscenarios_system_carbon_tax (carbon_tax_scenario_id)
 );
 
 -- PRM requirements
@@ -2195,9 +2302,11 @@ of_regulation_up INTEGER,
 of_regulation_down INTEGER,
 of_frequency_response INTEGER,
 of_spinning_reserves INTEGER,
-of_rps INTEGER,
+of_period_energy_target INTEGER,
+of_horizon_energy_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
+of_carbon_tax INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2211,8 +2320,9 @@ regulation_up_ba_scenario_id INTEGER,
 regulation_down_ba_scenario_id INTEGER,
 frequency_response_ba_scenario_id INTEGER,
 spinning_reserves_ba_scenario_id INTEGER,
-rps_zone_scenario_id INTEGER,
+energy_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
+carbon_tax_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
@@ -2227,8 +2337,9 @@ project_regulation_up_ba_scenario_id INTEGER,
 project_regulation_down_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
 project_spinning_reserves_ba_scenario_id INTEGER,
-project_rps_zone_scenario_id INTEGER,
+project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
+project_carbon_tax_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2259,8 +2370,10 @@ regulation_up_scenario_id INTEGER,
 regulation_down_scenario_id INTEGER,
 frequency_response_scenario_id INTEGER,
 spinning_reserves_scenario_id INTEGER,
-rps_target_scenario_id INTEGER,
+period_energy_target_scenario_id INTEGER,
+horizon_energy_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
+carbon_tax_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -2288,10 +2401,12 @@ FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
         (frequency_response_ba_scenario_id),
 FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
     subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-    subscenarios_geography_rps_zones (rps_zone_scenario_id),
+FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
+    subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
+    subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
@@ -2328,12 +2443,15 @@ FOREIGN KEY (project_frequency_response_ba_scenario_id) REFERENCES
 FOREIGN KEY (project_spinning_reserves_ba_scenario_id) REFERENCES
     subscenarios_project_spinning_reserves_bas
         (project_spinning_reserves_ba_scenario_id),
-FOREIGN KEY (project_rps_zone_scenario_id) REFERENCES
-    subscenarios_project_rps_zones
-        (project_rps_zone_scenario_id),
+FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
+    subscenarios_project_energy_target_zones
+        (project_energy_target_zone_scenario_id),
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_cap_zones
         (project_carbon_cap_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_zones
+        (project_carbon_tax_zone_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2407,10 +2525,16 @@ FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
     subscenarios_system_spinning_reserves (spinning_reserves_scenario_id),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
     subscenarios_system_frequency_response (frequency_response_scenario_id),
-FOREIGN KEY (rps_target_scenario_id) REFERENCES
-    subscenarios_system_rps_targets (rps_target_scenario_id),
+FOREIGN KEY (period_energy_target_scenario_id) REFERENCES
+    subscenarios_system_period_energy_targets
+        (period_energy_target_scenario_id),
+FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
+    subscenarios_system_horizon_energy_targets
+        (horizon_energy_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
+FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
+    subscenarios_system_carbon_tax (carbon_tax_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
@@ -2436,9 +2560,9 @@ FOREIGN KEY (solver_options_id)
 
 -- Project portfolio scenario, reserves scenario
 
--- Load scenario, RPS target scenario, PV BTM scenario
+-- Load scenario, energy target scenario, PV BTM scenario
 
--- Project op char scenario, load_zone scenario, reserves BA scenario, RPS
+-- Project op char scenario, load_zone scenario, reserves BA scenario, energy target
 -- zone scenario, carbon cap scenario
 
 -- Sim Tx flow limits, sim Tx flow limit groups, Tx lines
@@ -2450,6 +2574,8 @@ FOREIGN KEY (solver_options_id)
 -- -- RESULTS -- --
 -------------------
 
+-- TODO: project can belong to more than one energy target zone, so this
+--  doesn't make sense this way; need to rethink these columns
 DROP TABLE IF EXISTS results_project_capacity;
 CREATE TABLE results_project_capacity (
 scenario_id INTEGER,
@@ -2460,9 +2586,11 @@ stage_id INTEGER,
 capacity_type VARCHAR(64),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
+hyb_gen_capacity_mw FLOAT,
+hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
@@ -2502,7 +2630,7 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 unavailability_decision FLOAT,
@@ -2527,7 +2655,7 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
@@ -2547,6 +2675,8 @@ ramp_up_violation FLOAT,
 ramp_down_violation FLOAT,
 min_up_time_violation FLOAT,
 min_down_time_violation FLOAT,
+hyb_storage_charge_mw FLOAT,
+hyb_storage_discharge_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
@@ -2630,7 +2760,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 lf_reserves_up_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2652,7 +2782,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 lf_reserves_down_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2674,7 +2804,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 regulation_up_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2696,7 +2826,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 regulation_down_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2718,7 +2848,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 frequency_response_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2741,7 +2871,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
 spinning_reserves_ba VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
@@ -2758,7 +2888,7 @@ stage_id INTEGER,
 prm_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 deliverable_capacity_mw FLOAT,
@@ -2809,7 +2939,7 @@ stage_id INTEGER,
 prm_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 elcc_eligible_capacity_mw FLOAT,
@@ -2830,7 +2960,7 @@ prm_zone VARCHAR(32),
 facet INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 elcc_eligible_capacity_mw FLOAT,
@@ -2851,7 +2981,7 @@ stage_id INTEGER,
 local_capacity_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 local_capacity_fraction FLOAT,
@@ -2867,11 +2997,11 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-hours_in_full_period FLOAT,
+hours_in_period_timepoints FLOAT,
 hours_in_subproblem_period FLOAT,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_cost FLOAT,
 capacity_cost_wo_spinup_or_lookahead FLOAT,
@@ -2910,7 +3040,7 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 variable_om_cost FLOAT,
@@ -2951,7 +3081,7 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
@@ -2975,7 +3105,7 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 carbon_emission_tons FLOAT,
@@ -2996,8 +3126,8 @@ PRIMARY KEY (scenario_id, period, subproblem_id, stage_id, load_zone,
 technology, spinup_or_lookahead)
 );
 
-DROP TABLE IF EXISTS results_project_rps;
-CREATE TABLE results_project_rps (
+DROP TABLE IF EXISTS results_project_period_energy_target;
+CREATE TABLE results_project_period_energy_target (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3010,12 +3140,12 @@ timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
+energy_target_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-scheduled_rps_energy_mw FLOAT,
+scheduled_energy_target_energy_mw FLOAT,
 scheduled_curtailment_mw FLOAT,
-subhourly_rps_energy_delivered_mw FLOAT,
+subhourly_energy_target_energy_delivered_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
@@ -3055,7 +3185,7 @@ tx_line VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-hours_in_full_period FLOAT,
+hours_in_period_timepoints FLOAT,
 hours_in_subproblem_period FLOAT,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
@@ -3377,26 +3507,64 @@ carbon_cap_marginal_cost_per_emission FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
--- RPS balance
-DROP TABLE IF EXISTS results_system_rps;
-CREATE TABLE  results_system_rps (
+-- Carbon tax emissions
+DROP TABLE IF EXISTS results_system_carbon_tax_emissions;
+CREATE TABLE results_system_carbon_tax_emissions (
 scenario_id INTEGER,
-rps_zone VARCHAR(64),
+carbon_tax_zone VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-rps_target_mwh FLOAT,
-delivered_rps_energy_mwh FLOAT,
-curtailed_rps_energy_mwh FLOAT,
-total_rps_energy_mwh FLOAT,
-fraction_of_rps_target_met FLOAT,
-fraction_of_rps_energy_curtailed FLOAT,
-rps_shortage_mwh FLOAT,
+carbon_tax FLOAT,
+total_emissions FLOAT,
+carbon_tax_cost FLOAT,
 dual FLOAT,
-rps_marginal_cost_per_mwh FLOAT,
-PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
+);
+
+-- Energy target balance
+DROP TABLE IF EXISTS results_system_period_energy_target;
+CREATE TABLE  results_system_period_energy_target (
+scenario_id INTEGER,
+energy_target_zone VARCHAR(64),
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+energy_target_mwh FLOAT,
+delivered_energy_target_energy_mwh FLOAT,
+curtailed_energy_target_energy_mwh FLOAT,
+total_energy_target_energy_mwh FLOAT,
+fraction_of_energy_target_met FLOAT,
+fraction_of_energy_target_energy_curtailed FLOAT,
+energy_target_shortage_mwh FLOAT,
+dual FLOAT,
+energy_target_marginal_cost_per_mwh FLOAT,
+PRIMARY KEY (scenario_id, energy_target_zone, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_system_horizon_energy_target;
+CREATE TABLE  results_system_horizon_energy_target (
+scenario_id INTEGER,
+energy_target_zone VARCHAR(64),
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+energy_target_mwh FLOAT,
+delivered_energy_target_energy_mwh FLOAT,
+curtailed_energy_target_energy_mwh FLOAT,
+total_energy_target_energy_mwh FLOAT,
+fraction_of_energy_target_met FLOAT,
+fraction_of_energy_target_energy_curtailed FLOAT,
+energy_target_shortage_mwh FLOAT,
+dual FLOAT,
+energy_target_marginal_cost_per_mwh FLOAT,
+PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
+             balancing_type_horizon, horizon)
 );
 
 -- PRM balance
@@ -3466,7 +3634,9 @@ Spinning_Reserves_Penalty_Costs Float,
 Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
-Total_RPS_Balance_Penalty_Costs Float,
+Total_Carbon_Tax_Cost FLOAT,
+Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
+Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
@@ -3523,7 +3693,8 @@ CASE WHEN of_frequency_response THEN 'yes' ELSE 'no' END
     AS feature_frequency_response,
 CASE WHEN of_spinning_reserves THEN 'yes' ELSE 'no' END
     AS feature_spinning_reserves,
-CASE WHEN of_rps THEN 'yes' ELSE 'no' END AS feature_rps,
+CASE WHEN of_period_energy_target THEN 'yes' ELSE 'no' END AS
+    feature_period_energy_target,
 CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
     AS feature_carbon_cap,
 CASE WHEN of_track_carbon_imports THEN 'yes' ELSE 'no' END
@@ -3543,7 +3714,7 @@ subscenarios_geography_regulation_up_bas.name AS geography_reg_up_bas,
 subscenarios_geography_regulation_down_bas.name AS geography_reg_down_bas,
 subscenarios_geography_spinning_reserves_bas.name AS geography_spin_bas,
 subscenarios_geography_frequency_response_bas.name AS geography_freq_resp_bas,
-subscenarios_geography_rps_zones.name AS geography_rps_areas,
+subscenarios_geography_energy_target_zones.name AS geography_energy_target_areas,
 subscenarios_geography_carbon_cap_zones.name AS carbon_cap_areas,
 subscenarios_geography_prm_zones.name AS prm_areas,
 subscenarios_geography_local_capacity_zones.name AS local_capacity_areas,
@@ -3559,7 +3730,7 @@ subscenarios_project_regulation_up_bas.name AS project_reg_up_bas,
 subscenarios_project_regulation_down_bas.name AS project_reg_down_bas,
 subscenarios_project_spinning_reserves_bas.name AS project_spin_bas,
 subscenarios_project_frequency_response_bas.name AS project_freq_resp_bas,
-subscenarios_project_rps_zones.name AS project_rps_areas,
+subscenarios_project_energy_target_zones.name AS project_energy_target_areas,
 subscenarios_project_carbon_cap_zones.name AS project_carbon_cap_areas,
 subscenarios_project_prm_zones.name AS project_prm_areas,
 subscenarios_project_elcc_chars.name AS project_elcc_chars,
@@ -3594,7 +3765,7 @@ subscenarios_system_regulation_up.name AS regulation_up_profile,
 subscenarios_system_regulation_down.name AS regulation_down_profile,
 subscenarios_system_spinning_reserves.name AS spinning_reserves_profile,
 subscenarios_system_frequency_response.name AS frequency_response_profile,
-subscenarios_system_rps_targets.name AS rps_target,
+subscenarios_system_period_energy_targets.name AS period_energy_target,
 subscenarios_system_carbon_cap_targets.name AS carbon_cap,
 subscenarios_system_prm_requirement.name AS prm_requirement,
 subscenarios_system_prm_zone_elcc_surface.name AS elcc_surface,
@@ -3619,7 +3790,7 @@ LEFT JOIN subscenarios_geography_spinning_reserves_bas
     USING (spinning_reserves_ba_scenario_id)
 LEFT JOIN subscenarios_geography_frequency_response_bas
     USING (frequency_response_ba_scenario_id)
-LEFT JOIN subscenarios_geography_rps_zones USING (rps_zone_scenario_id)
+LEFT JOIN subscenarios_geography_energy_target_zones USING (energy_target_zone_scenario_id)
 LEFT JOIN subscenarios_geography_carbon_cap_zones
     USING (carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_geography_prm_zones USING (prm_zone_scenario_id)
@@ -3646,8 +3817,8 @@ LEFT JOIN subscenarios_project_spinning_reserves_bas
     USING (project_spinning_reserves_ba_scenario_id)
 LEFT JOIN subscenarios_project_frequency_response_bas
     USING (project_frequency_response_ba_scenario_id)
-LEFT JOIN subscenarios_project_rps_zones
-    USING (project_rps_zone_scenario_id)
+LEFT JOIN subscenarios_project_energy_target_zones
+    USING (project_energy_target_zone_scenario_id)
 LEFT JOIN subscenarios_project_carbon_cap_zones
     USING (project_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_project_prm_zones
@@ -3700,7 +3871,8 @@ LEFT JOIN subscenarios_system_spinning_reserves
     USING (spinning_reserves_scenario_id)
 LEFT JOIN subscenarios_system_frequency_response
     USING (frequency_response_scenario_id)
-LEFT JOIN subscenarios_system_rps_targets USING (rps_target_scenario_id)
+LEFT JOIN subscenarios_system_period_energy_targets USING
+    (period_energy_target_scenario_id)
 LEFT JOIN subscenarios_system_carbon_cap_targets
     USING (carbon_cap_target_scenario_id)
 LEFT JOIN subscenarios_system_prm_requirement
@@ -3998,7 +4170,7 @@ results_plot VARCHAR(64) PRIMARY KEY,
 include INTEGER,
 caption VARCHAR(64),
 load_zone_form_control INTEGER,  -- select
-rps_zone_form_control INTEGER,  -- select
+energy_target_zone_form_control INTEGER,  -- select
 carbon_cap_zone_form_control INTEGER,  -- select
 period_form_control INTEGER,  -- select
 horizon_form_control INTEGER,  -- input

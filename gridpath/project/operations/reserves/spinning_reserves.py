@@ -21,7 +21,7 @@ import os.path
 from gridpath.auxiliary.dynamic_components import headroom_variables
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_record_dynamic_components, generic_add_model_components, \
-    generic_load_model_data, generic_export_module_specific_results, \
+    generic_load_model_data, generic_export_results, \
     generic_import_results_into_database, generic_get_inputs_from_database, \
     generic_validate_project_bas
 
@@ -139,7 +139,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    generic_export_module_specific_results(
+    generic_export_results(
         m=m,
         d=d,
         scenario_directory=scenario_directory,

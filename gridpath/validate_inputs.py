@@ -31,7 +31,7 @@ from gridpath.auxiliary.validations import write_validation_to_database, \
 from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems
+    get_subproblem_structure_from_db
 
 
 def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn):
@@ -55,9 +55,9 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
     #  each table in the database? Problem is that you don't necessarily want
     #  to check the full table but only the appropriate subscenario
 
-    subproblems_list = subproblems.SUBPROBLEMS
+    subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
         for stage in stages:
             # 1. input validation within each module
             for m in loaded_modules:
@@ -76,62 +76,6 @@ def validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn
             #    make sure geography and projects are in line
             #    ... (see Evernote validation list)
             #    create separate function for each validation that you call here
-
-    # Validation across subproblems and stages:
-    validate_hours_in_subproblem_period(scenario_id, subscenarios, conn)
-
-
-def validate_hours_in_subproblem_period(scenario_id, subscenarios, conn):
-    """
-
-    :param subscenarios:
-    :param conn:
-    :return:
-    """
-
-    sql = """
-        SELECT stage_id, period, n_hours, hours_in_full_period
-        FROM
-            (SELECT temporal_scenario_id, stage_id, period,
-            sum(number_of_hours_in_timepoint * timepoint_weight) as n_hours
-            FROM inputs_temporal
-            WHERE spinup_or_lookahead = 0
-            AND temporal_scenario_id = {}
-            GROUP BY temporal_scenario_id, stage_id, period
-            ) AS tmp_table
-    
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, period, hours_in_full_period
-        FROM inputs_temporal_periods) AS period_tbl
-    
-        USING (temporal_scenario_id, period)
-    
-    """.format(subscenarios.TEMPORAL_SCENARIO_ID)
-
-    df = pd.read_sql(sql, con=conn)
-
-    msg = """Total number of hours in timepoints adjusted for timepoint weight
-          and duration and excluding spinup and lookahead timepoints should 
-          match hours_in_full_period."""
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        subproblem_id="N/A",
-        stage_id="N/A",
-        gridpath_module="N/A",
-        db_table="inputs_temporal",
-        severity="Mid",
-        errors=validate_cols_equal(
-            df=df,
-            col1="n_hours",
-            col2="hours_in_full_period",
-            idx_col=["stage_id", "period"],
-            msg=msg
-        )
-    )
-
-    # TODO: check that subproblems don't straddle periods
 
 
 def validate_subscenario_ids(scenario_id, subscenarios, optional_features, conn):
@@ -189,12 +133,15 @@ def validate_feature_subscenario_ids(scenario_id, subscenarios, optional_feature
 
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
-                elif feature not in feature_list and \
-                        getattr(subscenarios, sc_id) != "NULL":
-                    errors["Low"].append(
-                        "Detected inputs for '{}' while related feature '{}' "
-                         "is not requested".format(sc_id, feature)
-                    )
+                # TODO: need to add handling of subscenarios shared among
+                #  features; commenting out for now
+                # elif feature not in feature_list and \
+                #         getattr(subscenarios, sc_id) != "NULL":
+                #     errors["Low"].append(
+                #         "Detected inputs for '{}' while related feature '{}' "
+                #          "is not requested".format(sc_id, feature)
+                #     )
+
     for severity, error_list in errors.items():
         write_validation_to_database(
             conn=conn,
@@ -447,7 +394,7 @@ def main(args=None):
     # Get scenario characteristics (features, scenario_id, subscenarios, subproblems)
     optional_features = OptionalFeatures(conn=conn, scenario_id=scenario_id)
     subscenarios = SubScenarios(conn=conn, scenario_id=scenario_id)
-    subproblems = SubProblems(conn=conn, scenario_id=scenario_id)
+    subproblem_structure = get_subproblem_structure_from_db(conn=conn, scenario_id=scenario_id)
 
     # Check whether subscenario_ids are valid
     is_valid = validate_subscenario_ids(scenario_id, subscenarios, optional_features, conn)
@@ -462,8 +409,8 @@ def main(args=None):
         # This tells the determine_modules function to include the
         # stages-related modules
         stages_flag = any([
-            len(subproblems.SUBPROBLEM_STAGE_DICT[subp]) > 1 for subp in
-            subproblems.SUBPROBLEM_STAGE_DICT.keys()
+            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
+            list(subproblem_structure.SUBPROBLEM_STAGES.keys())
         ])
         modules_to_use = determine_modules(
             features=feature_list, multi_stage=stages_flag
@@ -471,7 +418,7 @@ def main(args=None):
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
-        validate_inputs(subproblems, loaded_modules, scenario_id, subscenarios, conn)
+        validate_inputs(subproblem_structure, loaded_modules, scenario_id, subscenarios, conn)
     else:
         if not parsed_arguments.quiet:
             print("Invalid subscenario ID(s). Skipped detailed input validation.")

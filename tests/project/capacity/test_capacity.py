@@ -97,9 +97,8 @@ class TestCapacity(unittest.TestCase):
         # We're expecting the capacity_type modules to have added sets to be
         # joined for the final PRJ_OPR_PRDS
         # The capacity_type modules use the
-        # specified_generation_period_params.tab,
+        # spec_capacity_period_params.tab,
         # new_build_generator_vintage_costs.tab,
-        # storage_specified_capacities.tab,
         # new_build_storage_vintage_costs.tab,
         # and new_shiftable_load_supply_curve.tab files to determine
         # operational periods, so we'll load from those files directly here
@@ -109,7 +108,7 @@ class TestCapacity(unittest.TestCase):
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
-                    "specified_generation_period_params.tab"
+                    "spec_capacity_period_params.tab"
                 ),
                 usecols=['project', 'period'],
                 sep="\t"
@@ -139,17 +138,6 @@ class TestCapacity(unittest.TestCase):
             )
         ngb = [tuple(x) for x in ngb_df.values]
 
-        es_df = \
-            pd.read_csv(
-                os.path.join(
-                    TEST_DATA_DIRECTORY, "inputs",
-                    "storage_specified_capacities.tab"
-                ),
-                usecols=['project', 'period'],
-                sep="\t"
-            )
-        es = [tuple(x) for x in es_df.values]
-
         ns_df = \
             pd.read_csv(
                 os.path.join(
@@ -175,21 +163,12 @@ class TestCapacity(unittest.TestCase):
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + ngb + es + ns + nsb + dr)
+        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + dr)
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
             in instance.PRJ_OPR_PRDS
         ])
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
-
-        # Set: STOR_OPR_PRDS
-        expected_storage_proj_period_set = sorted(es + ns + nsb + dr)
-        actual_storage_proj_period_set = sorted([
-            (prj, period) for (prj, period)
-            in instance.STOR_OPR_PRDS
-        ])
-        self.assertListEqual(expected_storage_proj_period_set,
-                             actual_storage_proj_period_set)
 
         # Set: OPR_PRDS_BY_PRJ
         op_per_by_proj_dict = dict()

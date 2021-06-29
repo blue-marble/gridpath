@@ -23,6 +23,7 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
+from multiprocessing import Pool, Manager
 import os.path
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory, \
     SolverStatus, TerminationCondition
@@ -31,88 +32,19 @@ from pyutilib.services import TempfileManager
 import sys
 import warnings
 
-from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
+from gridpath.auxiliary.scenario_chars import \
+    get_subproblem_structure_from_disk
 from gridpath.common_functions import determine_scenario_directory, \
-    get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
+    get_scenario_name_parser, get_required_e2e_arguments_parser, \
+    get_solve_parser, get_parallel_solve_parser, \
     create_logs_directory_if_not_exists, Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-class ScenarioStructure(object):
-    """
-    This class defines the scenario structure, i.e. is the scenario a single
-    problem or does it consist of multiple subproblems, and whether there are
-    stages for each subproblem.
-
-    Based on the subproblem structure, we will define the directory and file
-    structure for the scenario including where the inputs and outputs are
-    written, and where to write any pass-through inputs.
-
-    The scenario structure will then be passed to other methods that iterate
-    over and solve each subproblem.
-    """
-    def __init__(self, scenario, scenario_location):
-        self.main_scenario_directory = determine_scenario_directory(
-            scenario_location=scenario_location, scenario_name=scenario
-        )
-
-        # Check if the scenario actually exists
-        if not os.path.exists(self.main_scenario_directory):
-            raise IOError("Scenario '{}/{}' does not exist. Please verify"
-                          " scenario name and scenario location"
-                          .format(scenario_location, scenario))
-
-        # Check if there are subproblem directories
-        self.subproblems = \
-            check_for_integer_subdirectories(self.main_scenario_directory)
-
-        # Make dictionary for the stages by subproblem, starting with empty
-        # list for each subproblem
-        self.stages_by_subproblem = {
-            subp: [] for subp in self.subproblems
-        }
-
-        # If we have subproblems, check for stage subdirectories for each
-        # subproblem directory
-        if self.subproblems:
-            for subproblem in self.subproblems:
-                subproblem_dir = os.path.join(
-                    self.main_scenario_directory, subproblem
-                )
-                stages = check_for_integer_subdirectories(subproblem_dir)
-                # If the list isn't empty, update the stage dictionary and
-                # create the stage pass-through directory and input file
-                # TODO: we probably don't need a directory for the
-                #  pass-through inputs, as it's only one file
-                if stages:
-                    self.stages_by_subproblem[subproblem] = stages
-                    # Create the commitment pass-through file (also deletes any
-                    # prior results)
-                    # First create the pass-through directory if it doesn't
-                    # exist
-                    # TODO: need better handling of deleting prior results?
-                    pass_through_directory = \
-                        os.path.join(subproblem_dir, "pass_through_inputs")
-                    if not os.path.exists(pass_through_directory):
-                        os.makedirs(pass_through_directory)
-                    with open(
-                            os.path.join(
-                                pass_through_directory,
-                                "fixed_commitment.tab"
-                            ), "w", newline=""
-                    ) as fixed_commitment_file:
-                        fixed_commitment_writer = writer(
-                            fixed_commitment_file,
-                            delimiter="\t", lineterminator="\n"
-                        )
-                        fixed_commitment_writer.writerow(
-                            ["project", "timepoint", "stage",
-                             "final_commitment_stage", "commitment"])
-
-
-def create_and_solve_problem(scenario_directory, subproblem, stage,
-                             parsed_arguments):
+def create_and_solve_problem(
+    scenario_directory, subproblem, stage, parsed_arguments
+):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -194,11 +126,13 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     return instance, results, dynamic_components
 
 
-def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
+def run_optimization_for_subproblem_stage(
+    scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+):
     """
     :param scenario_directory: the main scenario directory
-    :param subproblem: if there are horizon subproblems, the horizon
-    :param stage: if there are stage subproblems, the stage
+    :param subproblem_directory: if there are horizon subproblems, the horizon
+    :param stage_directory: if there are stage subproblems, the stage
     :param parsed_arguments: the parsed script arguments
     :return: return the objective function value (Total_Cost); only used in
         testing
@@ -218,7 +152,8 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem, stage)
+            scenario_directory, subproblem_directory, stage_directory
+        )
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout
@@ -241,30 +176,37 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     # Use the --symbolic argument as well for best debugging results
     if parsed_arguments.write_solver_files_to_logs_dir:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, subproblem, stage)
+            scenario_directory, subproblem_directory, stage_directory
+        )
         TempfileManager.tempdir = logs_directory
 
     if not parsed_arguments.quiet:
         print("\nRunning optimization for scenario {}"
               .format(scenario_directory.split("/")[-1]))
-        if subproblem != "":
-            print("--- subproblem {}".format(subproblem))
-        if stage != "":
-            print("--- stage {}".format(stage))
+        if subproblem_directory != "":
+            print("--- subproblem {}".format(subproblem_directory))
+        if stage_directory != "":
+            print("--- stage {}".format(stage_directory))
+
+    # We're expecting subproblem and stage to be strings downstream from here
+    subproblem_directory = str(subproblem_directory)
+    stage_directory = str(stage_directory)
 
     # Create problem instance and solve it
     solved_instance, results, dynamic_components = \
-        create_and_solve_problem(scenario_directory, subproblem, stage,
-                                 parsed_arguments)
+        create_and_solve_problem(
+            scenario_directory, subproblem_directory, stage_directory,
+            parsed_arguments
+        )
 
     # Save the scenario results to disk
     save_results(
-        scenario_directory, subproblem, stage, solved_instance, results,
+        scenario_directory, subproblem_directory, stage_directory, solved_instance, results,
         dynamic_components, parsed_arguments
     )
 
     # Summarize results
-    summarize_results(scenario_directory, subproblem, stage, parsed_arguments)
+    summarize_results(scenario_directory, subproblem_directory, stage_directory, parsed_arguments)
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
     # to log file)
@@ -272,8 +214,9 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
         sys.stdout = stdout_original
         sys.stderr = stderr_original
 
-    # Return the objective function value (in 'testing' mode,
-    # the value gets checked against the expected value)
+    # Return the objective function value (in the testing suite, the value
+    # gets checked against the expected value, but this is the only place
+    # this is actually used)
     # TODO: this will need to have a variable for the name of the objective
     #  function component once there are multiple possible objective functions
     if results.solver.termination_condition != "infeasible":
@@ -282,10 +225,63 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
         warnings.warn("WARNING: the problem was infeasible!")
 
 
-def run_scenario(structure, parsed_arguments):
+def run_optimization_for_subproblem(
+    scenario_directory, subproblem_structure, subproblem, parsed_arguments,
+    objective_values
+):
     """
-    :param structure: the scenario structure object (i.e. horizon and stage
-        subproblems)
+    Check if there are stages in the subproblem; if not solve subproblem;
+    if, yes, solve each stage sequentially
+    """
+    # If we only have a single subproblem, set the subproblem_string to an
+    # empty string (no directory created)
+    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+        subproblem_directory = ""
+    else:
+        subproblem_directory = str(subproblem)
+
+    # If no stages in this subproblem (empty list), run the
+    # subproblem
+    if subproblem_structure.SUBPROBLEM_STAGES[subproblem] \
+            == [1]:
+        stage_directory = ""
+        objective_values[subproblem] = \
+            run_optimization_for_subproblem_stage(
+                scenario_directory, subproblem_directory, stage_directory,
+                parsed_arguments
+            )
+    # Otherwise, run the stage problem
+    else:
+        for stage in subproblem_structure.SUBPROBLEM_STAGES[subproblem]:
+            stage_directory = str(stage)
+            objective_values[subproblem][stage] = \
+                run_optimization_for_subproblem_stage(
+                    scenario_directory, subproblem_directory, stage_directory,
+                    parsed_arguments
+                )
+
+
+def run_optimization_for_subproblem_pool(pool_datum):
+    """
+    Helper function to easily pass to pool.map if solving subproblems in
+    parallel
+    """
+    [scenario_directory, subproblem_structure, subproblem, parsed_arguments,
+     objective_values] = pool_datum
+
+    run_optimization_for_subproblem(
+        scenario_directory=scenario_directory,
+        subproblem_structure=subproblem_structure,
+        subproblem=subproblem,
+        parsed_arguments=parsed_arguments,
+        objective_values=objective_values
+    )
+
+
+def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
+    """
+    :param scenario_directory: scenario directory path
+    :param subproblem_structure: the subproblem structure object
     :param parsed_arguments:
     :return: the objective function value (NPV); only used in
      'testing' mode.
@@ -296,30 +292,101 @@ def run_scenario(structure, parsed_arguments):
     The objective function is returned, but it's only really used if we
     are in 'testing' mode.
     """
-    # If no subproblem directories (empty list), run main problem
-    if not structure.subproblems:
-        objective_values = run_optimization(
-            structure.main_scenario_directory, "", "", parsed_arguments)
+    try:
+        n_parallel_subproblems = int(parsed_arguments.n_parallel_solve)
+    except ValueError:
+        warnings.warn("The argument '--n_parallel_subproblems' must be "
+                      "an integer. Solving subproblems sequentially.")
+        n_parallel_subproblems = 1
+
+    # If only a single subproblem, run main problem
+    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+        if n_parallel_subproblems > 1:
+            warnings.warn(
+                "GridPath WARNING: only a single subproblem in "
+                "scenario. No parallelization possible.")
+        n_parallel_subproblems = 1
     else:
-        # Create dictionary with which we'll keep track
-        # of subproblem objective function values
+        pass
+
+    # If parallelization is not requested, solve sequentially
+    if n_parallel_subproblems == 1:
+        # Create dictionary with which we'll keep track of subproblem/stage
+        # objective function values
         objective_values = {}
-        for subproblem in structure.subproblems:
-            # If no stages in this subproblem (empty list), run the subproblem
-            if not structure.stages_by_subproblem[subproblem]:
-                objective_values[subproblem] = run_optimization(
-                    structure.main_scenario_directory, subproblem, "",
-                    parsed_arguments)
-            # Otherwise, run the stage problem
-            else:
-                objective_values[subproblem] = {}
-                for stage in structure.stages_by_subproblem[subproblem]:
-                    objective_values[subproblem][stage] = \
-                        run_optimization(
-                            structure.main_scenario_directory,
-                            subproblem, stage,
-                            parsed_arguments)
-    return objective_values
+
+        for subproblem in list(
+            subproblem_structure.SUBPROBLEM_STAGES.keys()
+        ):
+            objective_values[subproblem] = {}
+            run_optimization_for_subproblem(
+                scenario_directory=scenario_directory,
+                subproblem_structure=subproblem_structure,
+                subproblem=subproblem,
+                parsed_arguments=parsed_arguments,
+                objective_values=objective_values
+            )
+
+        # Should probably just remove this logic here and have a dictionary
+        # for all objective functions
+        if len(objective_values.keys()) == 1:
+            objective_values = objective_values[1]
+
+        return objective_values
+
+    # If parallelization is requested, proceed with some checks
+    elif n_parallel_subproblems > 1:
+        # Check if the subproblems are linked, in which case
+        # we can't parallelize and throw a warning, then solve
+        # sequentially
+        if os.path.exists(
+            os.path.join(scenario_directory,
+                         "linked_subproblems_map.csv")
+        ):
+            warnings.warn("GridPath WARNING: subproblems are linked and "
+                          "cannot be solved in parallel. Solving "
+                          "sequentially.")
+            # Solve sequentially
+            objective_values = {}
+            for subproblem in list(
+                    subproblem_structure.SUBPROBLEM_STAGES.keys()
+            ):
+                run_optimization_for_subproblem(
+                    scenario_directory=scenario_directory,
+                    subproblem_structure=subproblem_structure,
+                    subproblem=subproblem,
+                    parsed_arguments=parsed_arguments,
+                    objective_values=objective_values
+                )
+
+            if len(objective_values.keys()) == 1:
+                objective_values = objective_values[1]
+
+            return objective_values
+
+        # If subproblems are independent, we create pool of subproblems
+        # and solve them in parallel
+        else:
+            # Create dictionary with which we'll keep track
+            # of subproblem objective function values
+            manager = Manager()
+            objective_values = manager.dict()
+
+            for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
+                objective_values[subproblem] = manager.dict()
+
+            pool = Pool(n_parallel_subproblems)
+            pool_data = tuple([
+                [scenario_directory, subproblem_structure, subproblem,
+                 parsed_arguments, objective_values]
+                for subproblem
+                in subproblem_structure.SUBPROBLEM_STAGES.keys()
+            ])
+
+            pool.map(run_optimization_for_subproblem_pool, pool_data)
+            pool.close()
+
+            return objective_values
 
 
 def save_results(
@@ -815,7 +882,7 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(
         add_help=True,
         parents=[get_scenario_name_parser(), get_required_e2e_arguments_parser(),
-                 get_solve_parser()]
+                 get_solve_parser(), get_parallel_solve_parser()]
     )
 
     # Flip order of argument groups so "required arguments" show first
@@ -846,13 +913,28 @@ def main(args=None):
     # Parse arguments
     parsed_args = parse_arguments(args)
 
-    # Figure out the scenario structure (i.e. horizons and stages)
-    scenario_structure = ScenarioStructure(parsed_args.scenario,
-                                           parsed_args.scenario_location)
+    scenario_directory = determine_scenario_directory(
+        scenario_location=parsed_args.scenario_location,
+        scenario_name=parsed_args.scenario
+    )
+
+    # Check if the scenario actually exists
+    if not os.path.exists(scenario_directory):
+        raise IOError("Scenario '{}/{}' does not exist. Please verify"
+                      " scenario name and scenario location"
+                      .format(parsed_args.scenario_location,
+                              parsed_args.scenario))
+
+    subproblem_structure = get_subproblem_structure_from_disk(
+        scenario_directory=scenario_directory
+    )
 
     # Run the scenario (can be multiple optimization subproblems)
     expected_objective_values = run_scenario(
-        scenario_structure, parsed_args)
+        scenario_directory=scenario_directory,
+        subproblem_structure=subproblem_structure,
+        parsed_arguments=parsed_args
+    )
 
     # Return the objective function values (used in testing)
     return expected_objective_values

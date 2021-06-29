@@ -306,6 +306,10 @@ Binary New-Build Storage (*stor_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
 
+Specified Generation-Storage Hybrid (*gen_stor_hyb_spec*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.capacity_types.gen_stor_hyb_spec
+
 Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new
@@ -362,10 +366,8 @@ Capacity-Commit Generation (*gen_commit_cap*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
 
-
 Curtailable Hydro Generation (*gen_hydro*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro
 
 Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
@@ -383,6 +385,10 @@ Non-curtailable Variable Generation (*gen_var_must_take*)
 Storage (*stor*)
 ^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.stor
+
+Curtailable Variable Generation-Storage Hybrid (*gen_var_stor_hyb*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_var_stor_hyb
 
 Shiftable Load (*dr*)
 ^^^^^^^^^^^^^^^^^^^^^
@@ -523,15 +529,14 @@ Renewable Portfolio Standard (RPS)
 ----------------------------------
 GridPath can optionally impose renewable portfolio standard requirements.
 The user must first define the zones with an RPS requirement. The RPS
-requirement is a period-level constraint (not all periods must have a
-requirement). Each RPS-eligible project must be assigned an RPS zone to
-whose requirement it can contribute. The amount of RPS-eligible energy a
-project contributes in each timepoint is determined by its operational type
-(e.g. a must-run biomass plant will contribute its full capacity times the
-timepoint duration in every timepoint while a wind project will contribute
-its capacity factor times its capacity). The model aggregates all projects'
-contributions for each period and ensures that the RPS requirement is met in
-each RPS zone and period.
+requirement is a period- or horizon-level constraint. Each RPS-eligible
+project must be assigned an RPS zone to whose requirement it can contribute.
+The amount of RPS-eligible energy a project contributes in each timepoint is
+determined by its operational type (e.g. a must-run biomass plant will
+contribute its full capacity times the timepoint duration in every timepoint
+while a wind project will contribute its capacity factor times its capacity).
+The model aggregates all projects' contributions for each period and ensures
+that the RPS requirement is met in each RPS zone and period.
 
 Carbon Cap
 ----------

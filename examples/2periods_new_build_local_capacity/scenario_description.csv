@@ -1,4 +1,4 @@
-scenario_id,43
+scenario_id,44
 scenario_name,2periods_new_build_local_capacity
 of_transmission,
 of_transmission_hurdle_rates,
@@ -9,9 +9,11 @@ of_regulation_up,1
 of_regulation_down,1
 of_frequency_response,
 of_spinning_reserves,
-of_rps,
+of_period_energy_target,
+of_horizon_energy_target,
 of_carbon_cap,
 of_track_carbon_imports,
+of_carbon_tax,
 of_prm,
 of_elcc_surface,
 of_local_capacity,1
@@ -25,8 +27,9 @@ regulation_up_ba_scenario_id,1
 regulation_down_ba_scenario_id,1
 frequency_response_ba_scenario_id,NULL
 spinning_reserves_ba_scenario_id,NULL
-rps_zone_scenario_id,NULL
+energy_target_zone_scenario_id,NULL
 carbon_cap_zone_scenario_id,NULL
+carbon_tax_zone_scenario_id,NULL
 prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,1
 market_scenario_id,NULL
@@ -41,8 +44,9 @@ project_regulation_up_ba_scenario_id,1
 project_regulation_down_ba_scenario_id,1
 project_frequency_response_ba_scenario_id,NULL
 project_spinning_reserves_ba_scenario_id,NULL
-project_rps_zone_scenario_id,NULL
+project_energy_target_zone_scenario_id,NULL
 project_carbon_cap_zone_scenario_id,NULL
+project_carbon_tax_zone_scenario_id,NULL
 project_prm_zone_scenario_id,NULL
 project_elcc_chars_scenario_id,NULL
 prm_energy_only_scenario_id,NULL
@@ -73,8 +77,10 @@ regulation_up_scenario_id,1
 regulation_down_scenario_id,1
 frequency_response_scenario_id,NULL
 spinning_reserves_scenario_id,NULL
-rps_target_scenario_id,NULL
+period_energy_target_scenario_id,NULL
+horizon_energy_target_scenario_id,NULL
 carbon_cap_target_scenario_id,NULL
+carbon_tax_scenario_id,NULL
 prm_requirement_scenario_id,NULL
 local_capacity_requirement_scenario_id,1
 elcc_surface_scenario_id,NULL

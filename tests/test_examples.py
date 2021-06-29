@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import multiprocessing
 import os
 import sqlite3
 import unittest
@@ -87,11 +88,13 @@ class TestExamples(unittest.TestCase):
 
         self.assertListEqual(expected_validations, actual_validations)
 
-    def run_and_check_objective(self, test, expected_objective):
+    def run_and_check_objective(self, test, expected_objective, parallel=1):
         """
 
         :param test: str, name of the test example
         :param expected_objective: float or dict, expected objective
+        :param parallel: int, set to a number > 1 to test
+            parallelization functionality
         :return:
         """
 
@@ -103,10 +106,35 @@ class TestExamples(unittest.TestCase):
              # "--write_solver_files_to_logs_dir",
              # "--keepfiles",
              # "--symbolic",
+             "--n_parallel_get_inputs", str(parallel),
+             "--n_parallel_solve", str(parallel),
              "--quiet",
              "--mute_solver_output",
              "--testing"]
         )
+
+        # Check if we have a multiprocessing manager
+        # If so, convert the manager proxy dictionary to to a simple dictionary
+        # to avoid errors
+        # Done via copies to avoid broken pipe error
+        if hasattr(multiprocessing, "managers"):
+            if isinstance(actual_objective,
+                          multiprocessing.managers.DictProxy):
+                # Make a dictionary from a copy of the objective
+                actual_objective_copy = dict(actual_objective.copy())
+                for subproblem in actual_objective.keys():
+                    # If we have stages, make a dictionary form a copy of the
+                    # stage dictionary for each subproblem
+                    if isinstance(actual_objective[subproblem],
+                                  multiprocessing.managers.DictProxy):
+                        stage_dict_copy = dict(
+                            actual_objective_copy[subproblem].copy()
+                        )
+                        # Reset the stage dictionary to the new simple
+                        # dictionary object
+                        actual_objective_copy[subproblem] = stage_dict_copy
+                # Reset the objective to the new dictionary object
+                actual_objective = actual_objective_copy
 
         # Multi-subproblem and/or multi-stage scenarios return dict
         if isinstance(expected_objective, dict):
@@ -184,7 +212,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage")
         self.run_and_check_objective("test_new_build_storage",
-                                     -448459119.992)
+                                     -4484591199.92)
 
     def test_example_test_new_binary_build_storage(self):
         """
@@ -195,7 +223,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_binary_build_storage")
         self.run_and_check_objective("test_new_binary_build_storage",
-                                     -448459187.848)
+                                     -4484591878.4800005)
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
@@ -206,7 +234,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_build_storage_cumulative_min_max")
         self.run_and_check_objective("test_new_build_storage_cumulative_min_max",
-                                     -456169238.38699996)
+                                     -4561692383.87)
 
     def test_example_test_no_reserves(self):
         """
@@ -395,7 +423,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps")
         self.run_and_check_objective("2periods_new_build_rps",
-                                     -6852354310.25219)
+                                     -26966855745114.633)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -409,7 +437,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_percent_target")
         self.run_and_check_objective("2periods_new_build_rps_percent_target",
-                                     -6853489111.712191)
+                                     -26966855745114.633)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -431,9 +459,9 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("single_stage_prod_cost")
         self.run_and_check_objective("single_stage_prod_cost",
-                                     {"1": -1265436373826.0408,
-                                      "2": -1265436373826.0408,
-                                      "3": -1265436373826.0408})
+                                     {1: -1265436373826.0408,
+                                      2: -1265436373826.0408,
+                                      3: -1265436373826.0408})
 
     def test_example_single_stage_prod_cost_linked_subproblems(self):
         """
@@ -445,9 +473,9 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective(
             "single_stage_prod_cost_linked_subproblems",
             {
-                "1": -1265436373826.0408,
-                "2": -1265436373826.0408,
-                "3": -1265436373826.0408
+                1: -1265436373826.0408,
+                2: -1265436373826.0408,
+                3: -1265436373826.0408
             }
         )
 
@@ -460,15 +488,34 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("multi_stage_prod_cost")
         self.run_and_check_objective("multi_stage_prod_cost",
-                                     {"1": {"1": -1265436373826.0408,
-                                            "2": -1265436373826.0408,
-                                            "3": -1265436373826.099},
-                                      "2": {"1": -1265436373826.0408,
-                                            "2": -1265436373826.0408,
-                                            "3": -1265436373826.099},
-                                      "3": {"1": -1265436373826.0408,
-                                            "2": -1265436373826.0408,
-                                            "3": -1265436373826.099}})
+                                     {1: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      2: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      3: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099}})
+
+    def test_example_multi_stage_prod_cost_parallel(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost" example
+        :return:
+        """
+
+        self.run_and_check_objective("multi_stage_prod_cost",
+                                     {1: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      2: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099},
+                                      3: {1: -1265436373826.0408,
+                                          2: -1265436373826.0408,
+                                          3: -1265436373826.099}},
+                                     parallel=3)
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
@@ -480,15 +527,15 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("multi_stage_prod_cost_w_hydro")
         self.run_and_check_objective("multi_stage_prod_cost_w_hydro",
-                                     {"1": {"1": -1411433910806.1167,
-                                            "2": -1411433910806.1167,
-                                            "3": -1411433910806.175},
-                                      "2": {"1": -1411433910806.1167,
-                                            "2": -1411433910806.1167,
-                                            "3": -1411433910806.175},
-                                      "3": {"1": -1411433910806.1167,
-                                            "2": -1411433910806.1167,
-                                            "3": -1411433910806.175}})
+                                     {1: {1: -1411433910806.1167,
+                                          2: -1411433910806.1167,
+                                          3: -1411433910806.175},
+                                      2: {1: -1411433910806.1167,
+                                          2: -1411433910806.1167,
+                                          3: -1411433910806.175},
+                                      3: {1: -1411433910806.1167,
+                                          2: -1411433910806.1167,
+                                          3: -1411433910806.175}})
 
     def test_example_multi_stage_prod_cost_linked_subproblems(self):
         """
@@ -500,20 +547,20 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective(
             "multi_stage_prod_cost_linked_subproblems",
             {
-                "1": {
-                    "1": -1265436373826.0408,
-                    "2": -1265436373826.0408,
-                    "3": -1265436372366.0408
+                1: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436372366.0408
                 },
-                "2": {
-                    "1": -1265436373826.0408,
-                    "2": -1265436373826.0408,
-                    "3": -1265436372366.0408
+                2: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436372366.0408
                 },
-                "3": {
-                    "1": -1265436373826.0408,
-                    "2": -1265436373826.0408,
-                    "3": -1265436372366.0408
+                3: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436372366.0408
                 }
             }
         )
@@ -612,7 +659,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_ineligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_ineligible_storage",
-            -6807756610.25219
+            -16980455713578.633
         )
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
@@ -625,7 +672,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_rps_w_rps_eligible_storage")
         self.run_and_check_objective(
             "2periods_new_build_rps_w_rps_eligible_storage",
-            -6807756610.25219
+            -26966830249904.633
         )
 
     def test_example_test_new_solar(self):
@@ -683,6 +730,17 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_carbon_cap_2zones_dont_count_tx",
             -56530649982951.8
         )
+
+    def test_example_test_new_solar_carbon_tax(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_tax" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_tax")
+        self.run_and_check_objective("test_new_solar_carbon_tax",
+                                     -3796369926691.1)
 
     def test_example_2periods_new_build_simple_prm(self):
         """
@@ -803,6 +861,39 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_markets")
         self.run_and_check_objective("test_markets", -3504300478278.3403)
+
+    def test_example_2periods_new_build_horizon_energy_target(self):
+        """
+        Check validation and objective function value of
+        "test_example_2periods_new_build_horizon_energy_target" example
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_horizon_energy_target")
+        self.run_and_check_objective("2periods_new_build_horizon_energy_target",
+                                     -26966855745114.633)
+
+    def test_example_2periods_new_build_horizon_energy_target_halfyear(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_horizon_energy_target_halfyear" example
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_horizon_energy_target_halfyear")
+        self.run_and_check_objective("2periods_new_build_horizon_energy_target_halfyear",
+                                     -101086984772727.86)
+
+    def test_example_test_new_build_gen_var_stor_hyb(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_horizon_energy_target_halfyear" example
+        :return:
+        """
+
+        self.check_validation("test_new_build_gen_var_stor_hyb")
+        self.run_and_check_objective("test_new_build_gen_var_stor_hyb",
+                                     -5797066114.34292)
 
     @classmethod
     def tearDownClass(cls):

@@ -24,13 +24,16 @@ available (or is retired). That information in turn feeds into the horizon-
 and timepoint-level operational constraints, i.e. once a generator is build,
 the optimization is allowed to operate it in subsequent periods (usually for
 the duration of the generators's lifetime).
-The *period* duration is assumed to be 1 year (which can be broken up into
-multiple subproblems in production-cost mode). However, a period can
-represent multiple years, e.g. when modeling investment decisions in 5-year
-increments. A discount factor can also be applied to weight costs
-differently depending on when (in which period) they are incurred.
-In the future, we might support investment periods that are shorter than 1
-year, e.g. monthly investment decisions.
+You must specify *period* duration via the *period_start_year* and
+*period_end_year* parameters (the duration is calculated within GridPath
+based on those values). Note that the start year is inclusive and the end year
+is exclusive. Capacity can either exist or not for the entire duration of a
+period. A discount factor can also be applied to weight costs differently
+depending on when (in which period) they are incurred.
+
+.. warning:: Support for investment periods that are shorter than 1 year,
+    e.g. monthly investment decisions, is largely untested, so be extra careful
+    if attempting to use this functionality.
 
 """
 
@@ -41,7 +44,8 @@ from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_values, validate_columns
+    get_expected_dtypes, validate_dtypes, validate_values
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -87,20 +91,43 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | operational decisions made in each period (i.e. future costs can be     |
     | weighted less).                                                         |
     +-------------------------------------------------------------------------+
-    | | :code:`number_years_represented`                                      |
-    | | *Defined over*: :code:`PERIODS`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
-    |                                                                         |
-    | Accounts for the number of years that the periods is meant to           |
-    | represent. Investment cost inputs in GridPath are annualized, so they   |
-    | are multiplied by this parameter in the objective function.             |
-    +-------------------------------------------------------------------------+
-    | | :code:`hours_in_full_period`                                          |
+    | | :code:`hours_in_period_timepoints`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
     | | *Within*: :code:`[8760, 8766, 8784]`                                  |
     |                                                                         |
-    | The number of hours in a period. This should be 1 year                  |
-    | (8760-8784 hours) even if the period represents more than 1 year!       |
+    | The number of hours in the timepoints representing a period (across     |
+    | all scenario subproblems, within a stage, excluding spinup/lookahead.   |
+    | Note that to ensure consistent weighting of period-level and            |
+    | timepoint-level costs, this derived parameter must have a value of the  |
+    | number of hours in a year. This is automatically calculated from the    |
+    | temporal_scenario_id  structure if using the database and an error will |
+    | be thrown if the timepoint param inputs do not summ up to one of the    |
+    | allowed values. Within GridPath, this parameter is used to adjust the   |
+    | capacity-related costs incurred within a subproblem if a subproblem is  |
+    | shorter than the period.                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`period_start_year`                                             |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The first 'year' in a period, e.g. if this is 2030, the period is       |
+    | assumed to begin at 2030-01-01 00:00. Note that non-integer values      |
+    | are allowed, so you could have 2030.25 for a period that starts  on     |
+    | 2030-04-01, for example. Having periods shorter (or longer) than a      |
+    | year is largely untested, so be extra careful if attempting to use      |
+    | this functionality, as it could be buggy.                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`period_end_year`                                               |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The last 'year' in a period. This is exclusive following typical        |
+    | Python convention, i.e. if it is 2040, the period is assumed to go      |
+    | through 2039-12-01 23:59. Note that non-integer values are allowed, so  |
+    | you could have 2030.50 for a period that goes through 2030-06-30, for   |
+    | example. Having periods shorter (or longer) than a year is largely      |
+    | untested, so be extra careful if attempting to use this functionality,  |
+    | as it could be buggy.                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`period`                                                        |
     | | *Defined over*: :code:`TMPS`                                          |
@@ -114,6 +141,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Derived Input Params                                                    |
     +=========================================================================+
+    | | :code:`number_years_represented`                                      |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Accounts for the number of years that the periods is meant to           |
+    | represent. Investment cost inputs in GridPath are annualized, so they   |
+    | are multiplied by this parameter in the objective function. The         |
+    | parameter is derived based on the period_start_year and period_end_year |
+    | parameters.                                                             |
+    +-------------------------------------------------------------------------+
     | | :code:`first_period`                                                  |
     | | *Within*: :code:`PERIODS`                                             |
     |                                                                         |
@@ -134,9 +171,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | into account the timepoints in each period-subproblem, the number of    |
     | hours in each timepoint, and their associated timepoint weights.        |
     | In capacity expansion mode with one subproblem, this should simply be   |
-    | equal to :code:`hours_in_full_period`. In production simulation mode    |
-    | with multiple subproblems within 1 period, this number is compared to   |
-    | :code: hours_in_full_period` and used to adjust the reported            |
+    | equal to :code:`hours_in_period_timepoints`. In production simulation   |
+    | mode with multiple subproblems within 1 period, this number is compared |
+    | to :code:`hours_in_period_timepoints` and used to adjust the reported   |
     | "per-period" costs. For instance, when running daily subproblems the    |
     | fixed cost in each day should be only 1/365 of the annualized fixed     |
     | cost.                                                                   |
@@ -160,19 +197,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals
     )
 
-    m.number_years_represented = Param(
+    m.hours_in_period_timepoints = Param(
         m.PERIODS,
         within=NonNegativeReals
     )
 
-    m.hours_in_full_period = Param(
+    m.period_start_year = Param(
         m.PERIODS,
-        within=[8760, 8766, 8784]
+        within=NonNegativeReals
     )
 
-    # TODO: think numbers_years_represent through and figure out appropriate
-    #  documentation wording; can we have periods that are smaller than an
-    #  year, considering how costs are defined ($/MW-yr)?
+    m.period_end_year = Param(
+        m.PERIODS,
+        within=NonNegativeReals
+    )
 
     m.period = Param(
         m.TMPS,
@@ -196,6 +234,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Derived Input Params
     ###########################################################################
+
+    m.number_years_represented = Param(
+        m.PERIODS,
+        within=NonNegativeReals,
+        initialize=lambda mod, p:
+        mod.period_end_year[p] - mod.period_start_year[p]
+    )
 
     m.first_period = Param(
         within=m.PERIODS,
@@ -227,11 +272,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "periods.tab"),
-        select=("period", "discount_factor", "number_years_represented",
-                "hours_in_full_period"),
+        select=("period", "discount_factor", "hours_in_period_timepoints",
+                "period_start_year", "period_end_year"),
         index=m.PERIODS,
-        param=(m.discount_factor, m.number_years_represented,
-               m.hours_in_full_period)
+        param=(m.discount_factor, m.hours_in_period_timepoints, m.period_start_year,
+               m.period_end_year)
     )
 
     data_portal.load(
@@ -257,12 +302,30 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
+
+    # Note that we calculate the hours_in_period_timepoints here by summing up the
+    # number of hours in a period (within a stage and excluding
+    # spinup/lookahead) across all subproblems in the temporal_scenario_id:
     periods = c.execute(
-        """SELECT period, discount_factor, number_years_represented, 
-           hours_in_full_period
+        """SELECT period, discount_factor, 
+           period_start_year, period_end_year, hours_in_period_timepoints
+           FROM
+           (SELECT period, discount_factor,
+           period_start_year, period_end_year
            FROM inputs_temporal_periods
-           WHERE temporal_scenario_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID
+           WHERE temporal_scenario_id = {}) as main_period_tbl
+           JOIN
+           (SELECT period, sum(number_of_hours_in_timepoint*timepoint_weight) 
+           as hours_in_period_timepoints
+           FROM inputs_temporal
+           WHERE temporal_scenario_id = {}
+           AND spinup_or_lookahead = 0
+           AND stage_id = {}
+           GROUP BY period) as hours_in_period_timepoints_tbl
+           USING (period);""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            stage
         )
     )
 
@@ -284,15 +347,17 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     periods = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"),
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), 
+                           "inputs", "periods.tab"),
               "w", newline="") as periods_tab_file:
         writer = csv.writer(periods_tab_file, delimiter="\t",
                             lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["period", "discount_factor", "number_years_represented",
-             "hours_in_full_period"])
+            ["period", "discount_factor",
+             "period_start_year", "period_end_year",
+             "hours_in_period_timepoints"])
 
         for row in periods:
             writer.writerow(row)
@@ -326,6 +391,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         conn=conn,
         tables=["inputs_temporal_periods"]
     )
+    # Hard-code data type for hours_in_period_timepoints
+    expected_dtypes["hours_in_period_timepoints"] = "numeric"
 
     # Check dtypes
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
@@ -354,22 +421,3 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         severity="Mid",
         errors=validate_values(df, valid_numeric_columns, "period", min=0)
     )
-
-    # Check values of hours_in_full_period
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_temporal_periods",
-        severity="Mid",
-        errors=validate_columns(
-            df=df,
-            columns="hours_in_full_period",
-            valids=[8760, 8766, 8784]
-        )
-    )
-
-
-
