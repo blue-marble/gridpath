@@ -3310,6 +3310,22 @@ carbon_emission_imports_tons_degen FLOAT,
 PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
 );
 
+-- Simultaneous flows
+DROP TABLE IF EXISTS results_transmission_simultaneous_flows;
+CREATE TABLE results_transmission_simultaneous_flows (
+    scenario_id INTEGER,
+    transmission_simultaneous_flow_limit VARCHAR(64),
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    timepoint INTEGER,
+    timepoint_weight FLOAT,
+    period FLOAT,
+    flow_mw FLOAT,
+    dual FLOAT,
+    PRIMARY KEY (scenario_id, transmission_simultaneous_flow_limit,
+                 subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_load_balance;
 CREATE TABLE results_system_load_balance (
 scenario_id INTEGER,
