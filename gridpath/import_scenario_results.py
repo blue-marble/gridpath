@@ -22,6 +22,7 @@ The main()_ function of this script can also be called with the
 """
 
 from argparse import ArgumentParser
+import csv
 import os.path
 import pandas as pd
 import sys
@@ -35,12 +36,27 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_db
 
 
-def import_results_into_database(
-    loaded_modules, scenario_id, subproblems, cursor, db,
+def _import_rule(
+    db, scenario_id, subproblem, stage, results_directory,
+    loaded_modules, quiet
+):
+    """
+    :return: boolean
+
+    Rule for whether to import results for a subproblem/stage. Write your
+    custom rule here to use this functionality. Must return True or False.
+    """
+    import_results = True
+
+    return import_results
+
+
+def import_scenario_results_into_database(
+    import_rule, loaded_modules, scenario_id, subproblems, cursor, db,
     scenario_directory, quiet
 ):
     """
-
+    :param import_rule:
     :param loaded_modules:
     :param scenario_id:
     :param subproblems:
@@ -48,6 +64,7 @@ def import_results_into_database(
     :param db:
     :param scenario_directory:
     :param quiet: boolean
+
     :return:
     """
 
@@ -80,7 +97,7 @@ def import_results_into_database(
                 results_directory = os.path.join(scenario_directory,
                                                  "results")
 
-            # Import results_scenario data
+            # Import termination condition data
             c = db.cursor()
             with open(os.path.join(results_directory,
                                    "termination_condition.txt"),
@@ -110,40 +127,23 @@ def import_results_into_database(
             # throwing an error at some point during results-export,
             # so we don't attempt to import missing results into the database
             if solver_status == "ok":
-                # Import the objective function value
-                with open(os.path.join(results_directory,
-                                       "objective_function_value.txt"),
-                          "r") as f:
-                    objective_function = f.read()
-
-                obj_sql = """
-                    UPDATE results_scenario
-                    SET objective_function_value = ?
-                    WHERE scenario_id = ?
-                    AND subproblem_id = ?
-                    AND stage_id = ?
-                ;"""
-
-                obj_data = \
-                    (objective_function, scenario_id, subproblem,  stage)
-                spin_on_database_lock(
-                    conn=db, cursor=c, sql=obj_sql,
-                    data=obj_data, many=False
+                import_objective_function_value(
+                    db=db,
+                    scenario_id=scenario_id,
+                    subproblem=subproblem,
+                    stage=stage,
+                    results_directory=results_directory
                 )
-
-                for m in loaded_modules:
-                    if hasattr(m, "import_results_into_database"):
-                        m.import_results_into_database(
-                            scenario_id=scenario_id,
-                            subproblem=subproblem,
-                            stage=stage,
-                            c=cursor,
-                            db=db,
-                            results_directory=results_directory,
-                            quiet=quiet
-                        )
-                    else:
-                        pass
+                import_subproblem_stage_results_into_database(
+                    import_rule=import_rule,
+                    db=db,
+                    scenario_id=scenario_id,
+                    subproblem=subproblem,
+                    stage=stage,
+                    results_directory=results_directory,
+                    loaded_modules=loaded_modules,
+                    quiet=quiet
+                )
             else:
                 if not quiet:
                     print("""
@@ -153,6 +153,82 @@ def import_results_into_database(
                     """.format(subproblem, stage, solver_status,
                                termination_condition)
                           )
+
+
+def import_objective_function_value(
+    db, scenario_id, subproblem,  stage, results_directory
+):
+    """
+    Import the objective function value for the subproblem/stage. Delete
+    prior results first.
+    """
+
+    c = db.cursor()
+    with open(os.path.join(results_directory,
+                           "objective_function_value.txt"),
+              "r") as f:
+        objective_function = f.read()
+
+    del_sql = """
+        DELETE FROM results_scenario
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+    """
+    del_data = (scenario_id, subproblem,  stage)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=del_data, many=False
+    )
+
+    obj_sql = """
+        INSERT INTO results_scenario
+        (scenario_id, subproblem_id, stage_id, objective_function_value)
+        VALUES(?, ?, ?, ?)
+    ;"""
+
+    obj_data = \
+        (scenario_id, subproblem,  stage, objective_function)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=obj_sql, data=obj_data, many=False
+    )
+
+
+def import_subproblem_stage_results_into_database(
+    import_rule, db, scenario_id, subproblem, stage, results_directory,
+    loaded_modules, quiet
+):
+    """
+    Import results for a subproblem/stage. We first check the import rule to
+    determine whether to import.
+    """
+    import_results = import_rule(
+        db=db,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_directory=results_directory,
+        loaded_modules=loaded_modules,
+        quiet=quiet
+    )
+
+    if import_results:
+        c = db.cursor()
+        for m in loaded_modules:
+            if hasattr(m, "import_results_into_database"):
+                m.import_results_into_database(
+                    scenario_id=scenario_id,
+                    subproblem=subproblem,
+                    stage=stage,
+                    c=c,
+                    db=db,
+                    results_directory=results_directory,
+                    quiet=quiet
+                )
+            else:
+                pass
+    else:
+        if not quiet:
+            print("Results-import skipped based on import rule.")
 
 
 def parse_arguments(args):
@@ -174,7 +250,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def main(args=None):
+def main(import_rule, args=None):
     """
 
     :return:
@@ -230,7 +306,8 @@ def main(args=None):
     loaded_modules = load_modules(modules_to_use)
 
     # Import appropriate results into database
-    import_results_into_database(
+    import_scenario_results_into_database(
+        import_rule=import_rule,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subproblems=subproblem_structure,
@@ -245,4 +322,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    main()
+    main(import_rule=_import_rule)
+
