@@ -73,6 +73,7 @@ def all_modules_list():
         "system.reliability.local_capacity.local_capacity_requirement",
         "system.markets.prices",
         "project",
+        "project.capacity",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
         "project.capacity.capacity_groups",
