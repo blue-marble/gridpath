@@ -14,9 +14,13 @@
 
 """
 This module adds load-balance penalty costs to the objective function.
+Penalties can be applied on unserved energy, overgeneration, and the maximum
+unserved load experienced in the study period (the latter is only indexed by
+load zone and is not weighted by any timepoint- or period-level parameters).
 
 .. note:: Unserved_Energy_MW, unserved_energy_penalty_per_mwh,
-    Overgeneration_MW, and overgeneration_penalty_per_mw are declared in
+    Overgeneration_MW, overgeneration_penalty_per_mw, and
+    max_unserved_load_penalty_per_mw are declared in
     system/load_balance/load_balance.py
 """
 
@@ -30,17 +34,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
-    Here, we aggregate total unserved-energy and overgeneration costs,
+    Here, we aggregate total unserved-energy and overgeneration costs as
+    well as any penalties on max unserved load by load zone,
     and add them as a dynamic component to the objective function.
-
-    :math:`Total\_Load\_Balance\_Penalty\_Costs =
-    \sum_{z, tmp} {(Unserved\_Energy\_MW\_Expression_{z, tmp} +
-    Overgeneration\_MW\_Expression_{z,
-    tmp})
-    \\times number\_of\_hours\_in\_timepoint_{tmp}
-    \\times horizon\_weight_{h^{tmp}}
-    \\times number\_years\_represented_{p^{tmp}}
-    \\times discount\_factor_{p^{tmp}}}`
     """
 
     m.Max_Unserved_Load_Penalty = Var(
@@ -61,7 +57,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=max_unserved_load_penalty_constraint_rule
     )
 
-    # TODO: have a separate penalty for the max to allow for relative weighting
     def total_penalty_costs_rule(mod):
         return sum((mod.Unserved_Energy_MW_Expression[z, tmp]
                     * mod.unserved_energy_penalty_per_mwh[z] +
