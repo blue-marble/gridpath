@@ -380,7 +380,8 @@ load_zone VARCHAR(32),
 allow_overgeneration INTEGER,
 overgeneration_penalty_per_mw FLOAT,
 allow_unserved_energy INTEGER,
-unserved_energy_penalty_per_mw FLOAT,
+unserved_energy_penalty_per_mwh FLOAT,
+max_unserved_load_penalty_per_mw FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id)

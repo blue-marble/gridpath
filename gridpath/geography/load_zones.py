@@ -36,12 +36,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     m.LOAD_ZONES = Set()
 
-    m.allow_overgeneration = Param(m.LOAD_ZONES, within=Boolean)
-    m.overgeneration_penalty_per_mw = \
-        Param(m.LOAD_ZONES, within=NonNegativeReals)
-    m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Boolean)
-    m.unserved_energy_penalty_per_mw = \
-        Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.allow_overgeneration = Param(
+        m.LOAD_ZONES,
+        within=Boolean
+    )
+    m.overgeneration_penalty_per_mw = Param(
+        m.LOAD_ZONES,
+        within=NonNegativeReals
+    )
+    
+    m.allow_unserved_energy = Param(
+        m.LOAD_ZONES,
+        within=Boolean
+    )
+    m.unserved_energy_penalty_per_mwh = Param(
+        m.LOAD_ZONES,
+        within=NonNegativeReals
+    )
+
+    m.max_unserved_load_penalty_per_mw = Param(
+        m.LOAD_ZONES,
+        within=NonNegativeReals
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -55,15 +71,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs", "load_zones.tab"),
-                     index=m.LOAD_ZONES,
-                     param=(
-                         m.allow_overgeneration,
-                         m.overgeneration_penalty_per_mw,
-                         m.allow_unserved_energy,
-                         m.unserved_energy_penalty_per_mw)
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", 
+            "load_zones.tab"
+        ),
+        index=m.LOAD_ZONES,
+        param=(m.allow_overgeneration,
+               m.overgeneration_penalty_per_mw,
+               m.allow_unserved_energy,
+               m.unserved_energy_penalty_per_mwh,
+               m.max_unserved_load_penalty_per_mw)
+    )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -79,7 +98,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     load_zones = c.execute("""
         SELECT load_zone, allow_overgeneration, overgeneration_penalty_per_mw, 
-        allow_unserved_energy, unserved_energy_penalty_per_mw
+        allow_unserved_energy, unserved_energy_penalty_per_mwh,
+        max_unserved_load_penalty_per_mw
         FROM inputs_geography_load_zones
         WHERE load_zone_scenario_id = {};
         """.format(subscenarios.LOAD_ZONE_SCENARIO_ID)
@@ -128,7 +148,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                          "allow_overgeneration",
                          "overgeneration_penalty_per_mw",
                          "allow_unserved_energy",
-                         "unserved_energy_penalty_per_mw"])
+                         "unserved_energy_penalty_per_mwh",
+                         "max_unserved_load_penalty_per_mw"])
 
         for row in load_zones:
             writer.writerow(row)
