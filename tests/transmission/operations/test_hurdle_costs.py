@@ -35,10 +35,10 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
     "transmission.operations.operational_types",
-    "transmission.operations.operations",
-    "transmission.operations.carbon_emissions"]
+    "transmission.operations.operations"
+]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.transmission.carbon_imports_tuning_costs"
+    "transmission.operations.hurdle_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -97,9 +97,48 @@ class TestTxAggregateCosts(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Param: import_carbon_tuning_cost
-        self.assertEqual(instance.import_carbon_tuning_cost_per_ton, 10e-10)
+        # Param: hurdle_rate_pos_dir_per_mwh
+        expected_hurdle_rate_pos = OrderedDict(
+            sorted([
+                (("Tx1", 2020), 1.0),
+                (("Tx1", 2030), 1.0),
+                (("Tx2", 2020), 0),
+                (("Tx2", 2030), 0),
+                (("Tx3", 2020), 0),
+                (("Tx3", 2030), 0),
+                (("Tx_New", 2020), 0.0),
+                (("Tx_New", 2030), 0.0)
+            ])
+        )
+        actual_hurdle_rate_pos = OrderedDict(
+            sorted([
+                ((tx, p), instance.hurdle_rate_pos_dir_per_mwh[
+                    tx, p])
+                for tx in instance.TX_LINES
+                for p in instance.PERIODS
+            ])
+        )
+        self.assertDictEqual(expected_hurdle_rate_pos, actual_hurdle_rate_pos)
 
-
-if __name__ == "__main__":
-    unittest.main()
+        # Param: hurdle_rate_neg_dir_per_mwh
+        expected_hurdle_rate_neg = OrderedDict(
+            sorted([
+                (("Tx1", 2020), 1.0),
+                (("Tx1", 2030), 1.0),
+                (("Tx2", 2020), 0),
+                (("Tx2", 2030), 0),
+                (("Tx3", 2020), 0),
+                (("Tx3", 2030), 0),
+                (("Tx_New", 2020), 0.0),
+                (("Tx_New", 2030), 0.0)
+            ])
+        )
+        actual_hurdle_rate_neg = OrderedDict(
+            sorted([
+                ((tx, p), instance.hurdle_rate_neg_dir_per_mwh[
+                    tx, p])
+                for tx in instance.TX_LINES
+                for p in instance.PERIODS
+            ])
+        )
+        self.assertDictEqual(expected_hurdle_rate_neg, actual_hurdle_rate_neg)

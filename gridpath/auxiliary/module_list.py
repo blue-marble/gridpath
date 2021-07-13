@@ -115,11 +115,12 @@ def all_modules_list():
         "transmission.capacity.capacity",
         "transmission.operations.operational_types",
         "transmission.operations.operations",
-        "transmission.operations.costs",
+        "transmission.operations.hurdle_costs",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
+        "transmission.operations.export_penalty_costs",
         "system.load_balance.market_participation",
         "system.load_balance.load_balance",
         "system.reserves.aggregation.lf_reserves_up",
@@ -157,7 +158,8 @@ def all_modules_list():
         "objective.project.aggregate_operational_costs",
         "objective.project.aggregate_operational_tuning_costs",
         "objective.transmission.aggregate_capacity_costs",
-        "objective.transmission.aggregate_operational_costs",
+        "objective.transmission.aggregate_hurdle_costs",
+        "objective.transmission.aggregate_export_penalty_costs",
         "objective.transmission.carbon_imports_tuning_costs",
         "objective.system.aggregate_load_balance_penalties",
         "objective.system.reserve_violation_penalties.lf_reserves_up",
@@ -198,7 +200,9 @@ def optional_modules_list():
              "transmission.operations.operational_types",
              "transmission.operations.operations",
              "system.load_balance.aggregate_transmission_power",
-             "objective.transmission.aggregate_capacity_costs"],
+             "transmission.operations.export_penalty_costs",
+             "objective.transmission.aggregate_capacity_costs",
+             "objective.transmission.aggregate_export_penalty_costs"],
         "lf_reserves_up":
             ["geography.load_following_up_balancing_areas",
              "system.reserves.requirement.lf_reserves_up",
@@ -331,8 +335,8 @@ def cross_feature_modules_list():
     """
     cross_modules = {
         ("transmission", "transmission_hurdle_rates"):
-            ["transmission.operations.costs",
-             "objective.transmission.aggregate_operational_costs"],
+            ["transmission.operations.hurdle_costs",
+             "objective.transmission.aggregate_hurdle_costs"],
         ("transmission", "carbon_cap", "track_carbon_imports"):
             ["system.policy.carbon_cap"
              ".aggregate_transmission_carbon_emissions",
