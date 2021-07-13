@@ -148,6 +148,20 @@ class TestLoadZones(unittest.TestCase):
         self.assertDictEqual(expected_max_unserved_load_penalty_per_mw,
                              actual_max_unserved_load_penalty_per_mw)
 
+        # Param: export_penalty_cost_per_mwh
+        expected_export_penalty_cost_per_mwh = OrderedDict(
+            sorted({"Zone1": 0, "Zone2": 0,
+                    "Zone3": 0}.items())
+        )
+        actual_export_penalty_cost_per_mwh = OrderedDict(
+            sorted(
+                {z: instance.export_penalty_cost_per_mwh[z]
+                 for z in instance.LOAD_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_export_penalty_cost_per_mwh,
+                             actual_export_penalty_cost_per_mwh)
+
 
 if __name__ == "__main__":
     unittest.main()
