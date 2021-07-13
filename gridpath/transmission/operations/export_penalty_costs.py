@@ -32,7 +32,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=NonNegativeReals
     )
 
-    # TODO: how to only apply this constraint when transmission is included
     def exports_tuning_cost_constraint_rule(mod, lz, tmp):
         return mod.LZ_Exports[lz, tmp] \
             >= \
