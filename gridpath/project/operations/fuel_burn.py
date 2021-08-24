@@ -28,7 +28,7 @@ from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import \
     load_operational_type_modules
-import gridpath.project.operations.operational_types as op_type
+import gridpath.project.operations.operational_types as op_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -196,7 +196,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 fuel_burn_by_ll_rule(mod, prj, tmp, s)
         else:
             fuel_burn_by_ll = \
-                op_type.fuel_burn_by_ll_rule(mod, prj, tmp, s)
+                op_type_init.fuel_burn_by_ll_rule(mod, prj, tmp, s)
 
         return mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] >= fuel_burn_by_ll
 
@@ -213,13 +213,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Emissions from each project based on operational type
         (and whether a project burns fuel)
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "fuel_burn_rule"):
-            fuel_burn_simple = imported_operational_modules[gen_op_type]. \
+            fuel_burn_simple = imported_operational_modules[op_type]. \
                 fuel_burn_rule(mod, prj, tmp)
         else:
-            fuel_burn_simple = op_type.fuel_burn_rule(mod, prj, tmp)
+            fuel_burn_simple = op_type_init.fuel_burn_rule(mod, prj, tmp)
 
         return fuel_burn_simple \
             + (mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] if prj in mod.HR_CURVE_PRJS
@@ -236,13 +236,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         they are zero for others. Get the appropriate expression for each
         generator based on its operational type.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "startup_fuel_burn_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 startup_fuel_burn_rule(mod, prj, tmp)
         else:
-            return op_type.startup_fuel_burn_rule(mod, prj, tmp)
+            return op_type_init.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
         m.STARTUP_FUEL_PRJ_OPR_TMPS,
@@ -266,6 +266,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJ_OPR_TMPS,
         rule=total_fuel_burn_rule
     )
+
 
 # Input-Output
 ###############################################################################

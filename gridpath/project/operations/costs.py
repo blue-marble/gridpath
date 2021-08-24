@@ -32,7 +32,7 @@ from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_proje
 from gridpath.project.operations.common_functions import \
     load_operational_type_modules
 from gridpath.auxiliary.db_interface import setup_results_import
-import gridpath.project.operations.operational_types as op_type
+import gridpath.project.operations.operational_types as op_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -277,14 +277,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         are out rather than it being forced to run below minimum stable level
         at very costly operating points.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "variable_om_cost_by_ll_rule"):
-            var_cost_by_ll = imported_operational_modules[gen_op_type]. \
+            var_cost_by_ll = imported_operational_modules[op_type]. \
                 variable_om_cost_by_ll_rule(mod, prj, tmp, s)
         else:
             var_cost_by_ll = \
-                op_type.variable_om_cost_by_ll_rule(mod, prj, tmp, s)
+                op_type_init.variable_om_cost_by_ll_rule(mod, prj, tmp, s)
 
         return mod.Variable_OM_Curve_Cost[prj, tmp] \
             >= var_cost_by_ll
@@ -308,14 +308,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
 
         # Simple VOM cost
-        gen_op_type = mod.operational_type[prj]
+        op_type = mod.operational_type[prj]
         if prj in mod.VAR_OM_COST_SIMPLE_PRJS:
-            if hasattr(imported_operational_modules[gen_op_type],
+            if hasattr(imported_operational_modules[op_type],
                        "variable_om_cost_rule"):
-                var_cost_simple = imported_operational_modules[gen_op_type]. \
+                var_cost_simple = imported_operational_modules[op_type]. \
                     variable_om_cost_rule(mod, prj, tmp)
             else:
-                var_cost_simple = op_type.variable_om_cost_rule(mod, prj, tmp)
+                var_cost_simple = op_type_init.variable_om_cost_rule(mod, prj, tmp)
         else:
             var_cost_simple = 0
 
@@ -356,29 +356,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[prj]
+        op_type = mod.operational_type[prj]
 
         if prj in mod.STARTUP_COST_SIMPLE_PRJS:
-            if hasattr(imported_operational_modules[gen_op_type],
+            if hasattr(imported_operational_modules[op_type],
                        "startup_cost_simple_rule"):
                 startup_cost_simple = \
-                    imported_operational_modules[gen_op_type]. \
+                    imported_operational_modules[op_type]. \
                     startup_cost_simple_rule(mod, prj, tmp)
             else:
                 startup_cost_simple = \
-                    op_type.startup_cost_simple_rule(mod, prj, tmp)
+                    op_type_init.startup_cost_simple_rule(mod, prj, tmp)
         else:
             startup_cost_simple = 0
 
         if prj in mod.STARTUP_BY_ST_PRJS:
-            if hasattr(imported_operational_modules[gen_op_type],
+            if hasattr(imported_operational_modules[op_type],
                        "startup_cost_by_st_rule"):
                 startup_cost_by_st = \
-                    imported_operational_modules[gen_op_type]. \
+                    imported_operational_modules[op_type]. \
                     startup_cost_by_st_rule(mod, prj, tmp)
             else:
                 startup_cost_by_st = \
-                    op_type.startup_cost_by_st_rule(mod, prj, tmp)
+                    op_type_init.startup_cost_by_st_rule(mod, prj, tmp)
         else:
             startup_cost_by_st = 0
 
@@ -395,13 +395,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "shutdown_cost_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 shutdown_cost_rule(mod, prj, tmp)
         else:
-            return op_type.shutdown_cost_rule(mod, prj, tmp)
+            return op_type_init.shutdown_cost_rule(mod, prj, tmp)
 
     m.Shutdown_Cost = Expression(
         m.SHUTDOWN_COST_PRJ_OPR_TMPS,
@@ -412,13 +412,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         Get any operational constraint violation costs.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "operational_violation_cost_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 operational_violation_cost_rule(mod, prj, tmp)
         else:
-            return op_type.operational_violation_cost_rule(mod, prj, tmp)
+            return op_type_init.operational_violation_cost_rule(mod, prj, tmp)
 
     m.Operational_Violation_Cost = Expression(
         m.VIOL_ALL_PRJ_OPR_TMPS,
@@ -431,13 +431,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         zero for others. Get the appropriate expression for each generator
         based on its operational type.
         """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type],
                    "curtailment_cost_rule"):
-            return imported_operational_modules[gen_op_type]. \
+            return imported_operational_modules[op_type]. \
                 curtailment_cost_rule(mod, prj, tmp)
         else:
-            return op_type.curtailment_cost_rule(mod, prj, tmp)
+            return op_type_init.curtailment_cost_rule(mod, prj, tmp)
 
     m.Curtailment_Cost = Expression(
         m.CURTAILMENT_COST_PRJ_OPR_TMPS,

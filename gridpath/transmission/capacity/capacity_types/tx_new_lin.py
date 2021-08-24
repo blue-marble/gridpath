@@ -298,8 +298,8 @@ def tx_capacity_cost_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(
-    m, data_portal, scenario_directory, subproblem, stage
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
 ):
 
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
@@ -317,8 +317,8 @@ def load_module_specific_data(
 
 
 # TODO: untested
-def export_module_specific_results(
-        m, d, scenario_directory, subproblem, stage
+def export_results(
+    m, d, scenario_directory, subproblem, stage
 ):
     """
 
@@ -331,27 +331,31 @@ def export_module_specific_results(
     """
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "transmission_new_capacity.csv"),
-              "w", newline="") as f:
+    with open(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "results",
+                "transmission_new_capacity.csv"
+            ),
+            "w", newline=""
+    ) as f:
         writer = csv.writer(f)
         writer.writerow(["transmission_line", "period",
                          "load_zone_from", "load_zone_to",
                          "new_build_transmission_capacity_mw"])
-        for (transmission_line, p) in m.TX_OPR_PRDS:
+        for (transmission_line, v) in m.TX_NEW_LIN_VNTS:
             writer.writerow([
                 transmission_line,
-                p,
+                v,
                 m.load_zone_from[transmission_line],
                 m.load_zone_to[transmission_line],
-                value(m.TxNewLin_Build_MW[transmission_line, p])
+                value(m.TxNewLin_Build_MW[transmission_line, v])
             ])
 
 
 # Database
 ###############################################################################
 
-def get_module_specific_inputs_from_database(
+def get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
@@ -387,7 +391,7 @@ def get_module_specific_inputs_from_database(
     return tx_cost
 
 
-def write_module_specific_model_inputs(
+def write_model_inputs(
         scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab file.
@@ -399,7 +403,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    tx_cost = get_module_specific_inputs_from_database(
+    tx_cost = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
@@ -418,8 +422,8 @@ def write_module_specific_model_inputs(
             writer.writerow(row)
 
 
-def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -492,7 +496,7 @@ def import_module_specific_results_into_database(
 # Validation
 ###############################################################################
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
@@ -502,7 +506,7 @@ def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage
     :return:
     """
 
-    tx_cost = get_module_specific_inputs_from_database(
+    tx_cost = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 

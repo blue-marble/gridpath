@@ -24,8 +24,6 @@ from builtins import object
 # Create global variables for the dynamic component names, so that we can
 # more easily import the correct names into other modules
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
-storage_only_capacity_type_operational_period_sets = \
-    "storage_only_capacity_type_operational_period_sets"
 
 headroom_variables = "headroom_variables"
 footroom_variables = "footroom_variables"
@@ -75,8 +73,6 @@ class DynamicComponents(object):
         # If called, the capacity-type modules will populate these lists with
         # the name of the respective set for the capacity type
         setattr(self, capacity_type_operational_period_sets, list())
-        setattr(self, storage_only_capacity_type_operational_period_sets,
-                list())
 
         # PRM cost groups
         setattr(self, prm_cost_group_sets, list())

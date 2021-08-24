@@ -39,7 +39,7 @@ export class StartingValues {
   features$regulation_down: boolean;
   features$spinning_reserves: boolean;
   features$frequency_response: boolean;
-  features$rps: boolean;
+  features$energy_target: boolean;
   features$carbon_cap: boolean;
   features$track_carbon_imports: boolean;
   features$prm: boolean;
@@ -83,9 +83,9 @@ export class StartingValues {
   frequency_response$bas: string;
   frequency_response$req: string;
   frequency_response$projects: string;
-  rps$bas: string;
-  rps$req: string;
-  rps$projects: string;
+  energy_target$bas: string;
+  energy_target$req: string;
+  energy_target$projects: string;
   carbon_cap$bas: string;
   carbon_cap$req: string;
   carbon_cap$projects: string;

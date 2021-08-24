@@ -44,7 +44,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 from gridpath.project.common_functions import \
     check_if_first_timepoint, check_boundary_type
 from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_module_specific_data, check_for_tmps_to_link, validate_opchars
+    load_optype_model_data, check_for_tmps_to_link, validate_opchars
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -92,11 +92,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_losses_factor_in_rps`                                     |
+    | | :code:`stor_losses_factor_in_energy_target`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The fraction of storage losses that count against the RPS target.       |
+    | The fraction of storage losses that count against the energy target.    |
     +-------------------------------------------------------------------------+
     | | :code:`stor_charging_capacity_multiplier`                             |
     | | *Defined over*: :code:`STOR`                                          |
@@ -260,6 +260,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=PercentFraction
     )
 
+    # Optional Params
+    ###########################################################################
+
+    m.stor_losses_factor_in_energy_target = Param(default=1)
+
     m.stor_charging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
     )
@@ -268,10 +273,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=NonNegativeReals, default=1.0
     )
 
-    # Optional Params
-    ###########################################################################
-
-    m.stor_losses_factor_in_rps = Param(default=1)
 
     # Linked Params
     ###########################################################################
@@ -586,7 +587,7 @@ def rec_provision_rule(mod, g, tmp):
     over all timepoints of total discharging minus total charging) will count
     against the RPS (i.e. increase RPS requirement). By default all losses
     count against the RPS, but this can be derated with the
-    stor_losses_factor_in_rps parameter (can be between 0 and 1 with default
+    stor_losses_factor_in_energy_target parameter (can be between 0 and 1 with default
     of 1). Storage MUST be modeled as eligible for RPS for this rule to apply.
     Modeling storage this way can be necessary to avoid having storage behave
     as load (e.g. by charging and discharging at the same time) in order to
@@ -595,7 +596,7 @@ def rec_provision_rule(mod, g, tmp):
     """
     return (mod.Stor_Discharge_MW[g, tmp] -
             mod.Stor_Charge_MW[g, tmp]) \
-        * mod.stor_losses_factor_in_rps
+        * mod.stor_losses_factor_in_energy_target
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -638,8 +639,9 @@ def power_delta_rule(mod, g, tmp):
 # Input-Output
 ###############################################################################
 
-def load_module_specific_data(mod, data_portal,
-                              scenario_directory, subproblem, stage):
+def load_model_data(
+    mod, d, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param mod:
@@ -649,7 +651,7 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-    load_optype_module_specific_data(
+    load_optype_model_data(
         mod=mod, data_portal=data_portal,
         scenario_directory=scenario_directory, subproblem=subproblem,
         stage=stage, op_type="stor"
@@ -674,7 +676,7 @@ def load_module_specific_data(mod, data_portal,
         pass
 
 
-def export_module_specific_results(mod, d,
+def export_results(mod, d,
                                    scenario_directory, subproblem, stage):
     """
 
@@ -751,7 +753,7 @@ def export_module_specific_results(mod, d,
                     ])
 
 
-def validate_module_specific_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info

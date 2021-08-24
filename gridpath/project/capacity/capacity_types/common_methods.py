@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,33 +14,62 @@
 
 import csv
 import os.path
+import pandas as pd
 
 from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
 
 
-# TODO: if vintage is 2020 and lifetime is 30, is the project available in
-#  2050 or not -- maybe have options for how this should be treated?
-
-
-def operational_periods_by_project_vintage(periods, vintage, lifetime):
+def operational_periods_by_project_vintage(
+    periods, period_start_year, period_end_year,
+    vintage, lifetime_yrs
+):
     """
-    :param periods: the study periods
+    :param periods: the study periods in a list
+    :param period_start_year: dictionary of the start year of a period
+        by period
+    :param period_end_year: dictionary of the end year of a period
+        by period
     :param vintage: the project vintage
-    :param lifetime: the project-vintage lifetime
+    :param lifetime_yrs: the project-vintage lifetime
     :return: the operational periods given the study periods and
         the project vintage and lifetime
 
     Given the list of study periods and the project's vintage and lifetime,
-    this function returns the list of periods that a project with
+    this function returns the list of periods in which a project with
     this vintage and lifetime will be operational.
+
+    Two conditions must be met for a period to be operational for a project
+    of a certain vintage:
+    1) project vintage (i.e. first operational year) must be before or equal
+    to the start year of the period
+    2) project last operational year must be after the period end year.
+
+    The end year of the period is exclusive (i.e. the last day of a period
+    with end year 2030 is actually 2020-12-29). With the current
+    formulation, a project with a 10 year lifetime of the 2020 vintage is
+    assumed to be operational on 2020-01-01 and remain operational through
+    2029-12-31 (vintage 2020, last operational year 2030 exclusive). It will be
+    operational in a period with a start year of 2020 and end year of 2030.
+
+    If either the vintage or the last operational year is within the period,
+    the period is assumed to not be operational for the project.
     """
-    operational_periods = list()
-    for p in periods:
-        if vintage <= p < vintage + lifetime:
-            operational_periods.append(p)
-        else:
-            pass
+    # No operational periods if vintage does not belong to the project set;
+    # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
+    if vintage not in periods:
+        return []
+    else:
+        first_operational_year = period_start_year[vintage]
+        last_operational_year = period_start_year[vintage] + lifetime_yrs
+        operational_periods = list()
+        for p in periods:
+            if first_operational_year <= period_start_year[p] and \
+                    last_operational_year >= period_end_year[p]:
+                operational_periods.append(p)
+            else:
+                pass
+
     return operational_periods
 
 
@@ -129,3 +158,219 @@ def update_capacity_results_table(
         """
 
     spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+
+
+# Specified projects common functions
+def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
+    """
+    Get the various capacity and fixed cost parameters for projects with
+    "specified" capacity types.
+    """
+    c = conn.cursor()
+    spec_project_params = \
+        c.execute("""
+        SELECT project, period,
+        specified_capacity_mw,
+        hyb_gen_specified_capacity_mw,
+        hyb_stor_specified_capacity_mw,
+        specified_capacity_mwh,
+        fixed_cost_per_mw_year,
+        hyb_gen_fixed_cost_per_mw_yr,
+        hyb_stor_fixed_cost_per_mw_yr,
+        fixed_cost_per_mwh_year
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period,
+        specified_capacity_mw,
+        hyb_gen_specified_capacity_mw,
+        hyb_stor_specified_capacity_mw,
+        specified_capacity_mwh
+        FROM inputs_project_specified_capacity
+        WHERE project_specified_capacity_scenario_id = {}) as capacity
+        USING (project, period)
+        INNER JOIN
+        (SELECT project, period,
+        fixed_cost_per_mw_year,
+        hyb_gen_fixed_cost_per_mw_yr,
+        hyb_stor_fixed_cost_per_mw_yr,
+        fixed_cost_per_mwh_year
+        FROM inputs_project_specified_fixed_cost
+        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = '{}'
+        ;""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            capacity_type
+        )
+    )
+    return spec_project_params
+
+
+def spec_write_tab_file(
+    scenario_directory, subproblem, stage, spec_project_params
+):
+
+    spec_params_filepath = \
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "spec_capacity_period_params.tab"
+        )
+    # If spec_capacity_period_params.tab file already exists, append
+    # rows to it
+    if os.path.isfile(spec_params_filepath):
+        with open(spec_params_filepath, "a") as f:
+            writer_a = csv.writer(f, delimiter="\t", lineterminator="\n")
+            write_from_query(spec_project_params=spec_project_params, writer=writer_a)
+    # If spec_capacity_period_params.tab file does not exist,
+    # write header first, then add input data
+    else:
+        with open(spec_params_filepath, "w", newline="") as f:
+            writer_w = csv.writer(f, delimiter="\t", lineterminator="\n")
+            # Write header
+            writer_w.writerow([
+                 "project", "period",
+                 "specified_capacity_mw",
+                 "hyb_gen_specified_capacity_mw",
+                 "hyb_stor_specified_capacity_mw",
+                 "specified_capacity_mwh",
+                 "fixed_cost_per_mw_yr",
+                 "hyb_gen_fixed_cost_per_mw_yr",
+                 "hyb_stor_fixed_cost_per_mw_yr",
+                 "fixed_cost_per_mwh_yr"
+                 ]
+            )
+
+            # Write input data
+            write_from_query(spec_project_params=spec_project_params, writer=writer_w)
+
+
+def write_from_query(spec_project_params, writer):
+    """
+    Helper function for writing the spec project param inputs to avoid
+    redundant code in spec_write_tab_file().
+    """
+    for row in spec_project_params:
+        [project, period,
+         specified_capacity_mw,
+         hyb_gen_specified_capacity_mw,
+         hyb_stor_specified_capacity_mw,
+         specified_capacity_mwh,
+         fixed_cost_per_mw_year,
+         hyb_gen_fixed_cost_per_mw_yr,
+         hyb_stor_fixed_cost_per_mw_yr,
+         fixed_cost_per_mwh_year
+         ] \
+            = row
+        writer.writerow([
+            project, period,
+            specified_capacity_mw,
+            hyb_gen_specified_capacity_mw,
+            hyb_stor_specified_capacity_mw,
+            specified_capacity_mwh,
+            fixed_cost_per_mw_year,
+            hyb_gen_fixed_cost_per_mw_yr,
+            hyb_stor_fixed_cost_per_mw_yr,
+            fixed_cost_per_mwh_year
+            ]
+        )
+
+
+def spec_determine_inputs(
+    scenario_directory, subproblem, stage, capacity_type
+):
+
+    # Determine the relevant projects
+    project_list = list()
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "projects.tab"),
+        sep="\t",
+        usecols=["project", "capacity_type"]
+    )
+
+    for row in zip(df["project"],
+                   df["capacity_type"]):
+        if row[1] == capacity_type:
+            project_list.append(row[0])
+        else:
+            pass
+
+    # Determine the operational periods & params for each project/period
+    project_period_list = list()
+    spec_capacity_mw_dict = dict()
+    hyb_gen_spec_capacity_mw_dict = dict()
+    hyb_stor_spec_capacity_mw_dict = dict()
+    spec_capacity_mwh_dict = dict()
+    spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
+    hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
+    spec_fixed_cost_per_mwh_yr_dict = dict()
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "spec_capacity_period_params.tab"),
+        sep="\t"
+    )
+
+    for row in zip(df["project"],
+                   df["period"],
+                   df["specified_capacity_mw"],
+                   df["hyb_gen_specified_capacity_mw"],
+                   df["hyb_stor_specified_capacity_mw"],
+                   df["specified_capacity_mwh"],
+                   df["fixed_cost_per_mw_yr"],
+                   df["hyb_gen_fixed_cost_per_mw_yr"],
+                   df["hyb_stor_fixed_cost_per_mw_yr"],
+                   df["fixed_cost_per_mwh_yr"]):
+        if row[0] in project_list:
+            project_period_list.append((row[0], row[1]))
+            spec_capacity_mw_dict[(row[0], row[1])] = \
+                float(row[2])
+            hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = \
+                float(row[3])
+            hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = \
+                float(row[4])
+            spec_capacity_mwh_dict[(row[0], row[1])] = \
+                float(row[5])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[6])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[7])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
+                float(row[8])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = \
+                float(row[9])
+        else:
+            pass
+
+    # Quick check that all relevant projects from projects.tab have capacity
+    # params specified
+    projects_w_params = [gp[0] for gp in project_period_list]
+    diff = list(set(project_list) - set(projects_w_params))
+    if diff:
+        raise ValueError("Missing capacity/fixed cost inputs for the "
+                         "following projects: {}".format(diff))
+
+    main_dict = dict()
+    main_dict["specified_capacity_mw"] = spec_capacity_mw_dict
+    main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
+    main_dict["hyb_stor_specified_capacity_mw"] = \
+        hyb_stor_spec_capacity_mw_dict
+    main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
+    main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_gen_fixed_cost_per_mw_yr"] = \
+        hyb_gen_spec_fixed_cost_per_mw_yr_dict
+    main_dict["hyb_stor_fixed_cost_per_mw_yr"] = \
+        hyb_stor_spec_fixed_cost_per_mw_yr_dict
+    main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
+
+    return project_period_list, main_dict

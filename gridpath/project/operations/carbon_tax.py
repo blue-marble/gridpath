@@ -269,7 +269,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                        conn):
     """
     Get inputs from database and write out the model input
-    projects.tab and project_carbon_tax_allowance.tab files.
+    projects.tab (to be precise, amend it) and project_carbon_tax_allowance.tab files.
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:

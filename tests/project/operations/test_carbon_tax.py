@@ -60,7 +60,6 @@ class TestCarbonTaxEmissions(unittest.TestCase):
     """
 
     """
-    maxDiff = None
 
     def test_add_model_components(self):
         """

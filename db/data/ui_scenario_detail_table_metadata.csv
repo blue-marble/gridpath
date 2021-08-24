@@ -16,7 +16,7 @@ regulation_up,1,Regulation Up
 regulation_down,1,Regulation Down
 spinning_reserves,1,Spinning Reserves
 frequency_response,1,Frequency Response
-rps,1,Renewables Portfolio Standard (RPS)
+energy_target,1,Energy Targets
 carbon_cap,1,Carbon Cap
 prm,1,Planning Reserve Margin (PRM)
 local_capacity,1,Local Capacity

@@ -26,13 +26,15 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value
 
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file, \
-    join_sets
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import \
+    get_required_subtype_modules_from_projects_file, join_sets
 from gridpath.project.capacity.common_functions import \
-    load_gen_storage_capacity_type_modules
+    load_project_capacity_type_modules
 from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, \
-    storage_only_capacity_type_operational_period_sets
+    capacity_type_operational_period_sets
+from gridpath.auxiliary.db_interface import setup_results_import
+import gridpath.project.capacity.capacity_types as cap_type_init
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -57,13 +59,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | can be build). This set is created by joining sets added by the         |
     | capacity_type modules (which is done before loading this module),       |
     | as how operational periods are determined differs by capacity type.     |
-    +-------------------------------------------------------------------------+
-    | | :code:`STOR_OPR_PRDS`                                                 |
-    | | *Within*: :code:`PRJ_OPR_PRDS`                                        |
-    |                                                                         |
-    | Two-dimensional set that defines all project-period combinations when a |
-    | when a storage projects can be operational, i.e. either has specified   |
-    | capacity or can be built).                                              |
     +-------------------------------------------------------------------------+
     | | :code:`OPR_PRDS_BY_PRJ`                                               |
     | | *Defined over*: :code:`PROJECTS`                                      |
@@ -101,11 +96,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Capacity_MW.                                                            |
     +-------------------------------------------------------------------------+
     | | :code:`Energy_Capacity_MWh`                                           |
-    | | *Defined over*: :code:`STOR_OPR_PRDS`                                 |
+    | | *Defined over*: :code:`PRJ_OPR_PRDS`                                  |
     |                                                                         |
-    | Defines the storage project's energy capacity in each period (in which  |
-    | the project can exist). The exact formulation of the expression depends |
-    | on the project's capacity_type. For each project, we call its           |
+    | Defines the project's energy capacity in each period (in which the      |
+    | project can exist). The exact formulation of the expression depends on  |
+    | the project's capacity_type. For each project, we call its              |
     | capacity_type module's energy_capacity_rule method in order to          |
     | formulate the expression.                                               |
     +-------------------------------------------------------------------------+
@@ -121,7 +116,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
 
@@ -142,14 +137,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod:
         join_sets(mod, getattr(d, capacity_type_operational_period_sets),),
     )  # assumes capacity types model components are already added!
-
-    m.STOR_OPR_PRDS = Set(
-        dimen=2,
-        within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod:
-        join_sets(mod, getattr(
-            d, storage_only_capacity_type_operational_period_sets)),
-    )  # assumes storage capacity type model components are already added!
 
     m.OPR_PRDS_BY_PRJ = Set(
         m.PROJECTS,
@@ -177,33 +164,61 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
-    def capacity_rule(mod, g, p):
-        gen_cap_type = mod.capacity_type[g]
-        return imported_capacity_modules[gen_cap_type].capacity_rule(mod, g, p)
+    def capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type],
+                   "capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.capacity_rule(mod, prj, prd)
 
     m.Capacity_MW = Expression(
         m.PRJ_OPR_PRDS,
         rule=capacity_rule
     )
 
-    def energy_capacity_rule(mod, g, p):
-        cap_type = mod.capacity_type[g]
-        if hasattr(imported_capacity_modules[cap_type], "energy_capacity_rule"):
+    def hyb_gen_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type],
+                   "hyb_gen_capacity_rule"):
             return imported_capacity_modules[cap_type]. \
-                energy_capacity_rule(mod, g, p)
+                hyb_gen_capacity_rule(mod, prj, prd)
         else:
-            raise Exception("Project " + str(g)
-                            + " is of capacity type " + str(cap_type)
-                            + ". This capacity type module does not have "
-                            + "a function 'energy_capacity_rule,' "
-                            + "but " + str(g)
-                            + " is defined as storage project.")
+            return cap_type_init.hyb_gen_capacity_rule(mod, prj, prd)
 
-    m.Energy_Capacity_MWh = Expression(
-        m.STOR_OPR_PRDS,
-        rule=energy_capacity_rule
+    m.Hyb_Gen_Capacity_MW = Expression(
+        m.PRJ_OPR_PRDS,
+        rule=hyb_gen_capacity_rule
     )
 
+    def hyb_stor_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type],
+                   "hyb_stor_capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                hyb_stor_capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.hyb_stor_capacity_rule(mod, prj, prd)
+
+    m.Hyb_Stor_Capacity_MW = Expression(
+        m.PRJ_OPR_PRDS,
+        rule=hyb_stor_capacity_rule
+    )
+
+    def energy_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type],
+                   "energy_capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                energy_capacity_rule(mod, prj, prd)
+        else:
+            return cap_type_init.energy_capacity_rule(mod, prj, prd)
+
+    m.Energy_Capacity_MWh = Expression(
+        m.PRJ_OPR_PRDS,
+        rule=energy_capacity_rule
+    )
 
 # Set Rules
 ###############################################################################
@@ -245,14 +260,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
-                   "load_module_specific_data"):
-            imported_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, subproblem, stage)
+                   "load_model_data"):
+            imported_capacity_modules[op_m].load_model_data(
+                m, d, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -275,7 +290,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period",
                          "capacity_type", "technology", "load_zone",
-                         "capacity_mw", "capacity_mwh"])
+                         "capacity_mw", "hyb_gen_capacity_mw",
+                         "hyb_stor_capacity_mw", "capacity_mwh"])
         for (prj, p) in m.PRJ_OPR_PRDS:
             writer.writerow([
                 prj,
@@ -284,8 +300,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[prj],
                 m.load_zone[prj],
                 value(m.Capacity_MW[prj, p]),
+                value(m.Hyb_Gen_Capacity_MW[prj, p]),
+                value(m.Hyb_Stor_Capacity_MW[prj, p]),
                 value(m.Energy_Capacity_MWh[prj, p])
-                if (prj, p) in m.STOR_OPR_PRDS else None
             ])
 
     # Module-specific capacity results
@@ -295,14 +312,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
-                   "export_module_specific_results"):
+                   "export_results"):
             imported_capacity_modules[
-                op_m].export_module_specific_results(
+                op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
             )
         else:
@@ -344,14 +361,14 @@ def summarize_results(scenario_directory, subproblem, stage):
     )
 
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(
+    imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
-                   "summarize_module_specific_results"):
+                   "summarize_results"):
             imported_capacity_modules[
-                op_m].summarize_module_specific_results(
+                op_m].summarize_results(
                 scenario_directory, subproblem, stage, summary_results_file
             )
         else:
@@ -362,11 +379,9 @@ def summarize_results(scenario_directory, subproblem, stage):
 ###############################################################################
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
-    The capacity_all.csv file is imported by
-    gridpath.project.capacity.capacity_types.__init__.py
     :param scenario_id:
     :param c:
     :param db:
@@ -374,5 +389,66 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    pass
+    # First import the capacity_all results; the capacity type modules will
+    # then update the database tables rather than insert (all projects
+    # should have been inserted here)
+    # Delete prior results and create temporary import table for ordering
+    if not quiet:
+        print("project capacity")
+
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_capacity",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory, "capacity_all.csv"), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            capacity_type = row[2]
+            technology = row[3]
+            load_zone = row[4]
+            capacity_mw = row[5]
+            hyb_gen_capacity_mw = None if row[6] == "" else row[6]
+            hyb_stor_capacity_mw = None if row[7] == "" else row[7]
+            energy_capacity_mwh = None if row[8] == "" else row[8]
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 capacity_type, technology, load_zone,
+                 capacity_mw, hyb_gen_capacity_mw, hyb_stor_capacity_mw,
+                 energy_capacity_mwh)
+            )
+
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_capacity{}
+        (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
+        hyb_stor_capacity_mw, energy_capacity_mwh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_project_capacity
+        (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
+        hyb_stor_capacity_mw, energy_capacity_mwh)
+        SELECT
+        scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
+        hyb_stor_capacity_mw, energy_capacity_mwh
+        FROM temp_results_project_capacity{}
+        ORDER BY scenario_id, project, period, subproblem_id, 
+        stage_id;""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
