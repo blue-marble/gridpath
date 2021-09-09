@@ -409,9 +409,9 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
-        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
+#        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        # sizing_mode="scale_both"
+        sizing_mode='stretch_width',
     )
 
     # Add stacked area chart to plot
