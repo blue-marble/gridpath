@@ -7,16 +7,16 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx",
-    "sphinx-argparse"
+    "Sphinx==3.3.1",
+    "sphinx-argparse==0.2.5"
 ]
 extras_ui = [
-    "eventlet",  # Async mode for SocketIO
-    "Flask",  # Local API server for UI
-    "Flask-RESTful",  # Flask extension for building REST APIs
-    "Flask-SocketIO",  # Flask client-server communication
-    "psutil",  # Process management
-    "python-socketio[client]",  # SocketIO Python client
+    "eventlet==0.29.1",  # Async mode for SocketIO
+    "Flask==1.1.2",  # Local API server for UI
+    "Flask-RESTful==0.3.8",  # Flask extension for building REST APIs
+    "Flask-SocketIO==4.3.1",  # Flask client-server communication
+    "psutil==5.7.3",  # Process management
+    "python-socketio[client]==4.6.0",  # SocketIO Python client
 ]
 extras_all = extras_ui + extras_doc
 
@@ -35,11 +35,11 @@ setup(name="GridPath",
       ],
       packages=find_packages(),
       install_requires=[
-          "Pyomo",  # Optimization modeling language
-          "pandas",  # Data-processing
-          "bokeh",  # Visualization library
-          "pscript",  # Python to JavaScript compiler (for visualization)
-          "networkx"  # network package for DC OPF
+          "Pyomo==5.7.1",  # Optimization modeling language
+          "pandas==1.1.4",  # Data-processing
+          "bokeh==2.2.3",  # Visualization library
+          "pscript==0.7.4",  # Python to JavaScript compiler (for visualization)
+          "networkx==2.5"  # network package for DC OPF
       ],
       extras_require={
           "doc": extras_doc,
