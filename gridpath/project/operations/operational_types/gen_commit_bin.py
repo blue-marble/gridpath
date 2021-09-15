@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This operational types describes generation projects that can be turned on and
+This operational type describes generation projects that can be turned on and
 off, i.e. that have binary commitment variables associated with them. This is
 particularly useful for production cost modeling approaches where capturing
 the unit commitment decisions is important, e.g. when modeling a slow-starting
@@ -642,6 +642,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | timepoint and the shutdown power in the next timepoint based on the     |
     | :code:`gen_commit_bin_shutdown_plus_ramp_down_rate`.                    |
     +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Commit_When_Unavailable_Constraint`               |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Forces the binary commitment to 0 when the project is unavailable       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Synced_When_Unavailable_Constraint`               |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Forces the synced to 0 when the project is unavailable                  |
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -1084,6 +1094,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GenCommitBin_Power_During_Shutdown_Constraint = Constraint(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         rule=power_during_shutdown_constraint_rule
+    )
+
+    m.GenCommitBin_Commit_When_Unavailable_Constraint = Constraint(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        rule=commit_when_unavailable_constraint_rule
+    )
+
+    m.GenCommitBin_Synced_When_Unavailable_Constraint = Constraint(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        rule=synced_when_unavailable_constraint_rule
     )
 
 
@@ -2051,6 +2071,34 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
             + mod.GenCommitBin_Shutdown[
                 g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp[g, tmp]
+
+
+def commit_when_unavailable_constraint_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenCommitBin_Commit_When_Unavailable_Constraint
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+    Ensure that the commitment flag remains zero while the project is
+    unavailable
+
+    Commit[t] <= Availability_Derate[t]
+    """
+
+    return mod.GenCommitBin_Commit[g, tmp] <= mod.Availability_Derate[g, tmp]
+
+
+def synced_when_unavailable_constraint_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenCommitBin_Synced_When_Unavailable_Constraint
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+    Ensure that the synced flag remains zero while the project is
+    unavailable
+
+    Synced[t] <= Availability_Derate[t]
+    """
+
+    return mod.GenCommitBin_Synced[g, tmp] <= mod.Availability_Derate[g, tmp]
 
 
 # Operational Type Methods

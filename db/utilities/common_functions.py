@@ -630,6 +630,7 @@ def confirm_and_temp_update_affected_tables(
         # no scenarios are affected
         else:
             scenario_reupdate_tuples = []
+            base_subscenario_ids_str, base_subscenario_ids_data = None, None
     # For non-project-level data, we only need to check if any scenarios
     # have this subscenario ID
     else:
