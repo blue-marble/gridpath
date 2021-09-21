@@ -895,6 +895,17 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective("test_new_build_gen_var_stor_hyb",
                                      -5797066114.34292)
 
+    def test_min_max_build_trans(self):
+        """
+        Check validation and objective function value of
+        "test_min_max_build_trans" example
+        :return:
+        """
+
+        self.check_validation("test_min_max_build_trans")
+        self.run_and_check_objective("test_min_max_build_trans",
+                                     -7028538202569.945)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

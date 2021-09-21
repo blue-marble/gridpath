@@ -1675,6 +1675,28 @@ subscenarios_transmission_new_cost
 (transmission_new_cost_scenario_id)
 );
 
+-- Transmission new potential
+DROP TABLE IF EXISTS subscenarios_transmission_new_potential;
+CREATE TABLE subscenarios_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Transmission lines with no min or max build requirements can be included here with
+-- NULL values or excluded from this table
+DROP TABLE IF EXISTS inputs_transmission_new_potential;
+CREATE TABLE inputs_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+PRIMARY KEY (transmission_new_potential_scenario_id, transmission_line, period),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+subscenarios_transmission_new_potential (transmission_new_potential_scenario_id)
+);
+
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
 CREATE TABLE subscenarios_transmission_operational_chars (
@@ -2360,6 +2382,7 @@ transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
+transmission_new_potential_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2502,6 +2525,8 @@ FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
     subscenarios_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+    subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -3751,6 +3776,7 @@ subscenarios_transmission_new_cost.name
 subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
+subscenarios_transmission_new_potential.name AS transmission_new_potential,
 subscenarios_transmission_carbon_cap_zones.name
     AS transmission_carbon_cap_zones,
 subscenarios_transmission_simultaneous_flow_limits.name
@@ -3852,6 +3878,8 @@ LEFT JOIN subscenarios_transmission_operational_chars
     USING (transmission_operational_chars_scenario_id)
 LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
+LEFT JOIN subscenarios_transmission_new_potential
+    USING (transmission_new_potential_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
     USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
