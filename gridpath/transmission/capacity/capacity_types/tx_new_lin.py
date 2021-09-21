@@ -622,7 +622,8 @@ def write_model_inputs(
         )
 
         for row in tx_cost:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def import_results_into_database(
@@ -725,7 +726,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_transmission_new_cost"]
+        tables=["inputs_transmission_new_cost", "inputs_transmission_new_potential"]
     )
 
     # Check dtypes
@@ -788,6 +789,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             errors=validate_row_monotonicity(
                 df=df,
                 col=cols[1],
+                idx_col="transmission_line",
                 rank_col="vintage"
             )
         )

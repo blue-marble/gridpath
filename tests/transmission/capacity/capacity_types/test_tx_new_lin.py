@@ -131,7 +131,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
 
         # Set: TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
         expected_tx_vintage_min_set = sorted([
-            ("Tx_new", 2030), ("Tx_New", 2030)
+            ("Tx_New", 2020), ("Tx_New", 2030)
         ])
         actual_tx_vintage_min_set = sorted(
             [(tx, period)
@@ -161,7 +161,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
 
         # Set: TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
         expected_tx_vintage_max_set = sorted([
-            ("Tx_new", 2030), ("Tx_New", 2030)
+            ("Tx_New", 2020), ("Tx_New", 2030)
         ])
         actual_tx_vintage_max_set = sorted(
             [(tx, period)
@@ -181,7 +181,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         actual_max_new_mw = OrderedDict(
             sorted(
                 {(tx, v):
-                     instance.tx_new_lin_max_cumulative_new_build_mw[prj, v]
+                     instance.tx_new_lin_max_cumulative_new_build_mw[tx, v]
                  for (tx, v)
                  in instance.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
                  }.items()
