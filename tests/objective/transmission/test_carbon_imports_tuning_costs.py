@@ -35,7 +35,7 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
     "transmission.operations.operational_types",
-    "transmission.operations.operations", "transmission.operations.costs",
+    "transmission.operations.operations",
     "transmission.operations.carbon_emissions"]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.transmission.carbon_imports_tuning_costs"

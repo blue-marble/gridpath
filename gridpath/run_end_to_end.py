@@ -38,6 +38,7 @@ from gridpath.common_functions import get_db_parser, get_solve_parser, \
     Logging, determine_scenario_directory
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
+from gridpath.import_scenario_results import _import_rule
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 
 
@@ -362,7 +363,7 @@ def main(args=None):
 
     if not skip_import_results and not parsed_args.skip_import_results:
         try:
-            import_scenario_results.main(args=args)
+            import_scenario_results.main(import_rule=_import_rule, args=args)
         except Exception as e:
             logging.exception(e)
             end_time = update_db_for_run_end(

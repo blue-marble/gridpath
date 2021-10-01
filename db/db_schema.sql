@@ -380,7 +380,9 @@ load_zone VARCHAR(32),
 allow_overgeneration INTEGER,
 overgeneration_penalty_per_mw FLOAT,
 allow_unserved_energy INTEGER,
-unserved_energy_penalty_per_mw FLOAT,
+unserved_energy_penalty_per_mwh FLOAT,
+max_unserved_load_penalty_per_mw FLOAT,
+export_penalty_cost_per_mwh FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id)
@@ -1336,7 +1338,7 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 -- Project carbon tax zones
 -- Which projects are subject to the carbon tax
 -- Depends on carbon tax zone geography
--- This table can include all projects with MULLS for projects not
+-- This table can include all projects with NULLS for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
 CREATE TABLE subscenarios_project_carbon_tax_zones (
@@ -1353,6 +1355,25 @@ carbon_tax_zone VARCHAR(32),
 PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
+
+-- Project carbon tax allowance
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_allowance;
+CREATE TABLE subscenarios_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_allowance;
+CREATE TABLE inputs_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+carbon_tax_allowance_tco2_per_mwh FLOAT,
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
 
 -- Project PRM zones
@@ -2362,6 +2383,7 @@ project_spinning_reserves_ba_scenario_id INTEGER,
 project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
+project_carbon_tax_allowance_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2475,6 +2497,9 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_zones
         (project_carbon_tax_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_allowance
+        (project_carbon_tax_allowance_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -3335,6 +3360,22 @@ carbon_emission_imports_tons_degen FLOAT,
 PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
 );
 
+-- Simultaneous flows
+DROP TABLE IF EXISTS results_transmission_simultaneous_flows;
+CREATE TABLE results_transmission_simultaneous_flows (
+    scenario_id INTEGER,
+    transmission_simultaneous_flow_limit VARCHAR(64),
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    timepoint INTEGER,
+    timepoint_weight FLOAT,
+    period FLOAT,
+    flow_mw FLOAT,
+    dual FLOAT,
+    PRIMARY KEY (scenario_id, transmission_simultaneous_flow_limit,
+                 subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_load_balance;
 CREATE TABLE results_system_load_balance (
 scenario_id INTEGER,
@@ -3544,6 +3585,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 carbon_tax FLOAT,
 total_emissions FLOAT,
+total_allowance FLOAT,
 carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
@@ -3666,6 +3708,7 @@ Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
+Total_Export_Penalty_Cost FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
