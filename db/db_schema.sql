@@ -1718,6 +1718,52 @@ FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
 subscenarios_transmission_new_potential (transmission_new_potential_scenario_id)
 );
 
+-- Transmission availability (e.g. due to planned outages/availability)
+-- Subscenarios
+DROP TABLE IF EXISTS subscenarios_transmission_availability;
+CREATE TABLE subscenarios_transmission_availability (
+transmission_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Define availability type and IDs for type characteristics
+-- TODO: implement check that there are exogenous IDs only for exogenous
+--  types and endogenous IDs only for endogenous types
+DROP TABLE IF EXISTS inputs_transmission_availability;
+CREATE TABLE inputs_transmission_availability (
+transmission_availability_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
+endogenous_availability_scenario_id INTEGER,
+PRIMARY KEY (transmission_availability_scenario_id, transmission_line,
+             availability_type)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_availability_exogenous;
+CREATE TABLE subscenarios_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_availability_exogenous;
+CREATE TABLE inputs_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+availability_derate FLOAT,
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id, stage_id,
+             timepoint),
+FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
+    REFERENCES subscenarios_transmission_availability_exogenous
+        (transmission_line, exogenous_availability_scenario_id)
+);
+
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
 CREATE TABLE subscenarios_transmission_operational_chars (
@@ -2402,6 +2448,7 @@ transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
+transmission_availability_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
@@ -2544,6 +2591,9 @@ FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
     subscenarios_transmission_new_cost
         (transmission_new_cost_scenario_id),
+FOREIGN KEY (transmission_availability_scenario_id) REFERENCES
+    subscenarios_transmission_availability
+        (transmission_availability_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
     subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id),
