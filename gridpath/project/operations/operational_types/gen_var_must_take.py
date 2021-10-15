@@ -19,7 +19,7 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-from pyomo.environ import Param, Set, NonNegativeReals, Constraint
+from pyomo.environ import Param, Set, Reals, Constraint
 import warnings
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -59,7 +59,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`gen_var_must_take_cap_factor`                                  |
     | | *Defined over*: :code:`GEN_VAR_MUST_TAKE`                             |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
     | of its available capacity (i.e. the capacity factor).                   |
@@ -105,10 +105,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    # TODO: allow cap factors greater than 1, but throw a warning?
     m.gen_var_must_take_cap_factor = Param(
         m.GEN_VAR_MUST_TAKE_OPR_TMPS,
-        within=NonNegativeReals
+        within=Reals
     )
 
     # Constraints
@@ -308,8 +307,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
                                  "gen_var_must_take")
 
     # Validate var profiles input table
-    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn,
-                          "gen_var_must_take")
+    cap_factor_validation_error = validate_var_profiles(
+        scenario_id, subscenarios, subproblem, stage, conn,
+        "gen_var_must_take"
+    )
+    if cap_factor_validation_error:
+        warnings.warn("""
+            Found gen_var_must_take cap factors that are <0 or >1. This is 
+            allowed but this warning is here to make sure it is intended.
+            """)
 
     # Other module specific validations
 

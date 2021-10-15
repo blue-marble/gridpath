@@ -59,7 +59,7 @@ def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
 
     # If there are no validation errors to write, simply exit here
     if not errors:
-        return
+        return False
 
     # add timestamp (ISO8601 strings, so truncate to ms)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -74,6 +74,8 @@ def write_validation_to_database(conn, scenario_id, subproblem_id, stage_id,
     """
     spin_on_database_lock(conn, c, sql, rows)
     c.close()
+
+    return True
 
 
 def get_expected_dtypes(conn, tables):
