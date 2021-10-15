@@ -60,7 +60,7 @@ export class ScenarioNewComponent implements OnInit {
     features$regulation_down: new FormControl(),
     features$spinning_reserves: new FormControl(),
     features$frequency_response: new FormControl(),
-    features$energy_target: new FormControl(),
+    features$period_energy_target: new FormControl(),
     features$carbon_cap: new FormControl(),
     features$track_carbon_imports: new FormControl(),
     features$prm: new FormControl(),
