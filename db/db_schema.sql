@@ -1338,7 +1338,7 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 -- Project carbon tax zones
 -- Which projects are subject to the carbon tax
 -- Depends on carbon tax zone geography
--- This table can include all projects with MULLS for projects not
+-- This table can include all projects with NULLS for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
 CREATE TABLE subscenarios_project_carbon_tax_zones (
@@ -1355,6 +1355,25 @@ carbon_tax_zone VARCHAR(32),
 PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
+
+-- Project carbon tax allowance
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_allowance;
+CREATE TABLE subscenarios_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_allowance;
+CREATE TABLE inputs_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+carbon_tax_allowance_tco2_per_mwh FLOAT,
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
 
 -- Project PRM zones
@@ -1675,6 +1694,28 @@ vintage),
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
 subscenarios_transmission_new_cost
 (transmission_new_cost_scenario_id)
+);
+
+-- Transmission new potential
+DROP TABLE IF EXISTS subscenarios_transmission_new_potential;
+CREATE TABLE subscenarios_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Transmission lines with no min or max build requirements can be included here with
+-- NULL values or excluded from this table
+DROP TABLE IF EXISTS inputs_transmission_new_potential;
+CREATE TABLE inputs_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+PRIMARY KEY (transmission_new_potential_scenario_id, transmission_line, period),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+subscenarios_transmission_new_potential (transmission_new_potential_scenario_id)
 );
 
 -- Operational characteristics
@@ -2342,6 +2383,7 @@ project_spinning_reserves_ba_scenario_id INTEGER,
 project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
+project_carbon_tax_allowance_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2362,6 +2404,7 @@ transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
+transmission_new_potential_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2454,6 +2497,9 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_zones
         (project_carbon_tax_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_allowance
+        (project_carbon_tax_allowance_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2504,6 +2550,8 @@ FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
     subscenarios_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+    subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -3537,6 +3585,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 carbon_tax FLOAT,
 total_emissions FLOAT,
+total_allowance FLOAT,
 carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
@@ -3770,6 +3819,7 @@ subscenarios_transmission_new_cost.name
 subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
+subscenarios_transmission_new_potential.name AS transmission_new_potential,
 subscenarios_transmission_carbon_cap_zones.name
     AS transmission_carbon_cap_zones,
 subscenarios_transmission_simultaneous_flow_limits.name
@@ -3871,6 +3921,8 @@ LEFT JOIN subscenarios_transmission_operational_chars
     USING (transmission_operational_chars_scenario_id)
 LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
+LEFT JOIN subscenarios_transmission_new_potential
+    USING (transmission_new_potential_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
     USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits

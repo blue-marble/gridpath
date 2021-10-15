@@ -129,6 +129,66 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                         )
         self.assertDictEqual(expected_cost, actual_cost)
 
+        # Set: TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+        expected_tx_vintage_min_set = sorted([
+            ("Tx_New", 2020), ("Tx_New", 2030)
+        ])
+        actual_tx_vintage_min_set = sorted(
+            [(tx, period)
+             for (tx, period)
+             in instance.TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_tx_vintage_min_set,
+                             actual_tx_vintage_min_set)
+
+        # Params: tx_new_lin_min_cumulative_new_build_mw
+        expected_min_new_mw = OrderedDict(
+            sorted(
+                {("Tx_New", 2020): 0, ("Tx_New", 2030): 0}.items()
+            )
+        )
+        actual_min_new_mw = OrderedDict(
+            sorted(
+                {(tx, v):
+                     instance.tx_new_lin_min_cumulative_new_build_mw[tx, v]
+                 for (tx, v)
+                 in instance.TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
+
+        # Set: TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+        expected_tx_vintage_max_set = sorted([
+            ("Tx_New", 2020), ("Tx_New", 2030)
+        ])
+        actual_tx_vintage_max_set = sorted(
+            [(tx, period)
+             for (tx, period)
+             in instance.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_tx_vintage_max_set,
+                             actual_tx_vintage_max_set)
+
+        # Params: tx_new_lin_max_cumulative_new_build_mw
+        expected_max_new_mw = OrderedDict(
+            sorted(
+                {("Tx_New", 2020): 30, ("Tx_New", 2030): 30}.items()
+            )
+        )
+        actual_max_new_mw = OrderedDict(
+            sorted(
+                {(tx, v):
+                     instance.tx_new_lin_max_cumulative_new_build_mw[tx, v]
+                 for (tx, v)
+                 in instance.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_new_mw, actual_max_new_mw)
+
     def test_derived_data(self):
         """
         Test in-model operations and calculations
