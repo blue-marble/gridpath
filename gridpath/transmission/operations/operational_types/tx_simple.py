@@ -375,14 +375,14 @@ def load_model_data(m, d, data_portal, scenario_directory,
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_operational_type",
+        usecols=["transmission_line", "tx_operational_type",
                  "tx_simple_loss_factor"]
     )
     df = df[df["tx_operational_type"] == "tx_simple"]
 
     # Dict of loss factor by tx_simple line based on raw data
     loss_factor_raw = dict(zip(
-        df["TRANSMISSION_LINES"],
+        df["transmission_line"],
         df["tx_simple_loss_factor"]
     ))
 

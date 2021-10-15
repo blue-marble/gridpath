@@ -116,7 +116,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(
                         scenario_directory, subproblem, stage, "inputs",
                         "transmission_lines.tab"),
-                     select=("TRANSMISSION_LINES", "tx_capacity_type",
+                     select=("transmission_line", "tx_capacity_type",
                              "tx_operational_type",
                              "load_zone_from", "load_zone_to"),
                      index=m.TX_LINES,
@@ -190,11 +190,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t", lineterminator="\n")
 
-        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
-        #  same as database
         # Write header
         writer.writerow(
-            ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
+            ["transmission_line", "tx_capacity_type", "tx_operational_type",
              "load_zone_from", "load_zone_to", "tx_simple_loss_factor",
              "reactance_ohms"]
         )
