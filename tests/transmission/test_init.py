@@ -113,6 +113,22 @@ class TestTransmissionInit(unittest.TestCase):
                                               )
         self.assertDictEqual(expected_cap_type, actual_cap_type)
 
+        # Param: tx_availability_type
+        expected_cap_type = OrderedDict(sorted(
+            {"Tx1": "exogenous",
+             "Tx_New": "exogenous",
+             "Tx2": "exogenous",
+             "Tx3": "exogenous"
+             }.items()
+                                        )
+                                              )
+        actual_cap_type = OrderedDict(sorted(
+            {tx: instance.tx_availability_type[tx]
+             for tx in instance.TX_LINES}.items()
+                                        )
+                                              )
+        self.assertDictEqual(expected_cap_type, actual_cap_type)
+
         # Param: load_zone_from
         expected_load_zone_from = OrderedDict(sorted(
             {"Tx1": "Zone1", "Tx_New": "Zone1", "Tx2": "Zone1", "Tx3": "Zone2"

@@ -76,6 +76,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented transmission availability types
+DROP TABLE IF EXISTS mod_tx_availability_types;
+CREATE TABLE mod_tx_availability_types (
+availability_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Implemented prm types
 DROP TABLE IF EXISTS mod_prm_types;
 CREATE TABLE mod_prm_types (
@@ -4019,6 +4026,14 @@ inputs_project_operational_chars
 USING (project)
 ;
 
+DROP VIEW IF EXISTS transmission_portfolio_opchars;
+CREATE VIEW transmission_portfolio_opchars AS
+SELECT * FROM inputs_transmission_portfolios
+LEFT OUTER JOIN
+inputs_transmission_operational_chars
+USING (transmission_line)
+;
+
 
 -- This view shows the possible operational periods for new projects, based on
 -- the available vintages and their lifetime. E.g. a project available in
@@ -4045,6 +4060,23 @@ SELECT distinct project_new_cost_scenario_id, project, period
 FROM main_data
 ;
 
+
+DROP VIEW IF EXISTS transmission_new_operational_periods;
+CREATE VIEW transmission_new_operational_periods AS
+WITH main_data (transmission_line, transmission_new_cost_scenario_id, period,
+    highrange)
+    AS (
+    SELECT transmission_line, transmission_new_cost_scenario_id, vintage AS period,
+    vintage + tx_lifetime_yrs AS highrange
+    FROM inputs_transmission_new_cost
+    UNION ALL
+    SELECT transmission_line, transmission_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
+SELECT distinct transmission_new_cost_scenario_id, transmission_line, period
+FROM main_data
+;
 
 -- This view shows the possible operational periods for new and specified
 -- projects, based on the available vintage and lifetime and/or the specified
@@ -4073,6 +4105,35 @@ INNER JOIN
 USING (period)
 ;
 
+
+-- This view shows the possible operational periods for new and specified
+-- transmission, based on the available vintage and lifetime and/or the
+-- specified capacity periods, as well as the actual modeled periods.
+DROP VIEW IF EXISTS transmission_operational_periods;
+CREATE VIEW transmission_operational_periods AS
+SELECT transmission_specified_capacity_scenario_id,
+       transmission_new_cost_scenario_id,
+temporal_scenario_id, transmission_line, period
+FROM
+    -- Use left join + union + left join because no outer join in sqlite
+    (SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM inputs_transmission_specified_capacity
+    LEFT JOIN transmission_new_operational_periods USING(transmission_line,
+                                                         period)
+    UNION ALL
+    SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM transmission_new_operational_periods
+    LEFT JOIN inputs_transmission_specified_capacity USING(transmission_line, period)
+    where transmission_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_transmission_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+;
 
 -- This view shows the periods and the respective horizons within each period
 -- for each balancing_type, based on the timepoint-to-horizon mapping and the
@@ -4140,6 +4201,22 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+DROP VIEW IF EXISTS transmission_operational_timepoints;
+CREATE VIEW transmission_operational_timepoints AS
+SELECT transmission_portfolio_scenario_id, transmission_operational_chars_scenario_id,
+transmission_specified_capacity_scenario_id, transmission_new_cost_scenario_id,
+temporal_scenario_id, operational_type,
+subproblem_id, stage_id, transmission_line, timepoint
+-- Get all transmissions in the portfolio (with their opchars)
+FROM transmission_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+transmission_operational_periods
+USING (temporal_scenario_id, transmission_line, period)
+;
 
 -- ratio of hrs that are (not) spinup/lookahead in each period-subproblem-stage
 DROP VIEW IF EXISTS spinup_or_lookahead_ratios;

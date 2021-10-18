@@ -80,7 +80,7 @@ def load_model_data(
     # TODO: move determine_project_subset and rename, as we're using for tx too
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="availability_type",
+        subproblem=subproblem, stage=stage, column="tx_availability_type",
         type="exogenous", prj_or_tx="transmission_line"
     )
 
@@ -123,7 +123,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     required_availability_modules = \
         get_required_subtype_modules_from_projects_file(
             scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, which_type="availability_type",
+            stage=stage, which_type="tx_availability_type",
             prj_or_tx="transmission_line"
         )
     imported_availability_modules = \
