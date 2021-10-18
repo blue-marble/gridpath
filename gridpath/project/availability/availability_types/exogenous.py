@@ -119,7 +119,7 @@ def load_model_data(
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="availability_type",
-        type="exogenous"
+        type="exogenous", prj_or_tx="project"
     )
 
     data_portal.data()["AVL_EXOG"] = {None: project_subset}

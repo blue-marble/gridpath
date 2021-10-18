@@ -341,7 +341,7 @@ def load_model_data(
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="availability_type",
-        type="binary"
+        type="binary", prj_or_tx="project"
     )
 
     data_portal.data()["AVL_BIN"] = {None: project_subset}

@@ -1,0 +1,5 @@
+stage_id,timepoint,availability_derate
+1,20200101,0.5
+1,20200102,0.5
+1,20300101,0.5
+1,20300102,0.5

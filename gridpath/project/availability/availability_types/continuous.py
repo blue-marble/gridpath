@@ -337,7 +337,7 @@ def load_model_data(
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="availability_type",
-        type="continuous"
+        type="continuous", prj_or_tx="project"
     )
 
     data_portal.data()["AVL_CONT"] = {None: project_subset}

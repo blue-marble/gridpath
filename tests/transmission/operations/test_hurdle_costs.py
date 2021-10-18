@@ -34,6 +34,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
+    "transmission.availability.availability",
     "transmission.operations.operational_types",
     "transmission.operations.operations"
 ]

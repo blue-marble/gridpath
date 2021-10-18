@@ -91,6 +91,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TX_LINES,
         within=["tx_new_lin", "tx_spec"]
     )
+    m.tx_availability_type = Param(
+        m.TX_LINES,
+        within=["exogenous"]
+    )
     m.tx_operational_type = Param(
         m.TX_LINES,
         within=["tx_dcopf", "tx_simple"]
@@ -116,11 +120,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(
                         scenario_directory, subproblem, stage, "inputs",
                         "transmission_lines.tab"),
-                     select=("TRANSMISSION_LINES", "tx_capacity_type",
+                     select=("transmission_line", "tx_capacity_type",
+                             "tx_availability_type",
                              "tx_operational_type",
                              "load_zone_from", "load_zone_to"),
                      index=m.TX_LINES,
-                     param=(m.tx_capacity_type, m.tx_operational_type,
+                     param=(m.tx_capacity_type, m.tx_availability_type,
+                            m.tx_operational_type,
                             m.load_zone_from, m.load_zone_to)
                      )
 
@@ -143,27 +149,36 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     #  tx_operational_type rather than here (see also comment in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
-        """SELECT transmission_line, capacity_type, operational_type,
+        """SELECT transmission_line, capacity_type, 
+        availability_type, operational_type,
         load_zone_from, load_zone_to, tx_simple_loss_factor, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
             (SELECT transmission_line, load_zone_from, load_zone_to
             FROM inputs_transmission_load_zones
-            WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
+            WHERE transmission_load_zone_scenario_id = {lz}) as tx_load_zones
+        USING (transmission_line)
+        
+        LEFT OUTER JOIN
+            (SELECT transmission_line, availability_type
+            FROM inputs_transmission_availability
+            WHERE transmission_availability_scenario_id = {avl}) as 
+            tx_availability
         USING (transmission_line)
         
         LEFT OUTER JOIN
             (SELECT transmission_line, operational_type, 
             tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
-            WHERE transmission_operational_chars_scenario_id = {})
+            WHERE transmission_operational_chars_scenario_id = {opchar})
         USING (transmission_line)
         
-        WHERE transmission_portfolio_scenario_id = {};""".format(
-            subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
-            subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+        WHERE transmission_portfolio_scenario_id = {portfolio};""".format(
+            lz=subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
+            avl=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
+            opchar=subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
+            portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
         )
     )
 
@@ -190,11 +205,10 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t", lineterminator="\n")
 
-        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
-        #  same as database
         # Write header
         writer.writerow(
-            ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
+            ["transmission_line", "tx_capacity_type", "tx_availability_type",
+             "tx_operational_type",
              "load_zone_from", "load_zone_to", "tx_simple_loss_factor",
              "reactance_ohms"]
         )
@@ -230,6 +244,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Check data types:
     expected_dtypes = get_expected_dtypes(
         conn, ["inputs_transmission_portfolios",
+               "inputs_transmission_availability",
                "inputs_transmission_load_zones",
                "inputs_transmission_operational_chars"]
     )
@@ -241,7 +256,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_transmisison_portfolios, "
+        db_table="inputs_transmission_portfolios, "
                  "inputs_transmission_load_zones, "
                  "inputs_transmission_operational_chars",
         severity="High",

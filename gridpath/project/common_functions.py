@@ -24,7 +24,7 @@ import pandas as pd
 # TODO: use this in capacity and operational type project subset
 #  determinations
 def determine_project_subset(
-        scenario_directory, subproblem, stage, column, type
+    scenario_directory, subproblem, stage, column, type, prj_or_tx
 ):
     """
     :param scenario_directory:
@@ -41,11 +41,11 @@ def determine_project_subset(
     dynamic_components = \
         pd.read_csv(
             os.path.join(scenario_directory, str(subproblem), str(stage),
-                         "inputs", "projects.tab"),
-            sep="\t", usecols=["project", column]
+                         "inputs", "{}s.tab".format(prj_or_tx)),
+            sep="\t", usecols=[prj_or_tx, column]
         )
 
-    for row in zip(dynamic_components["project"],
+    for row in zip(dynamic_components[prj_or_tx],
                    dynamic_components[column]):
         if row[1] == type:
             project_subset.append(row[0])
