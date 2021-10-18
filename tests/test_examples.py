@@ -932,7 +932,6 @@ class TestExamples(unittest.TestCase):
             -308370294932303.7
         )
 
-
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
