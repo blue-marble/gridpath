@@ -445,7 +445,8 @@ def min_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
+        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -457,7 +458,8 @@ def max_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
+        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def kirchhoff_voltage_law_rule(mod, c, tmp):
