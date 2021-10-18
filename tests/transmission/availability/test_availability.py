@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -25,22 +26,17 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
+    "temporal.operations.timepoints",
+    "temporal.investment.periods",
+    "geography.load_zones",
     "transmission",
-    "transmission.capacity", "transmission.capacity.capacity",
-    "transmission.availability.availability",
-    "transmission.operations.operational_types",
-    "transmission.operations.operations",
-    "transmission.operations.carbon_emissions"
+    "transmission.capacity.capacity"
 ]
-NAME_OF_MODULE_BEING_TESTED = \
-    "system.policy.carbon_cap.aggregate_transmission_carbon_emissions"
+NAME_OF_MODULE_BEING_TESTED = "transmission.availability.availability"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -58,7 +54,7 @@ except ImportError:
           " to test.")
 
 
-class TestTxAggregateCarbonEmissions(unittest.TestCase):
+class TestAvailability(unittest.TestCase):
     """
 
     """
@@ -86,20 +82,21 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
                                      stage=""
                                      )
 
-    def test_data_loaded_correctly(self):
+    def test_initialized_components(self):
         """
-        Test components initialized with data as expected
-        :return:
+        Create components; check they are initialized with data as expected.
+        Capacity-type modules should have added appropriate data;
+        make sure it is all as expected.
         """
-        m, data = \
-            add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                         module_to_test=MODULE_BEING_TESTED,
-                                         test_data_dir=TEST_DATA_DIRECTORY,
-                                         subproblem="",
-                                         stage="")
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
         instance = m.create_instance(data)
 
 
 if __name__ == "__main__":
     unittest.main()
-

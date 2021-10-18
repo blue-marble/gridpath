@@ -102,6 +102,49 @@ def availability_derate_rule(mod, g, tmp):
     return mod.tx_avl_exog_derate[g, tmp]
 
 
+# Input-Output
+###############################################################################
+
+def load_model_data(
+    m, d, data_portal, scenario_directory, subproblem, stage
+):
+    """
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    # Figure out which lines have this availability type
+    # TODO: move determine_project_subset and rename, as we're using for tx too
+    tx_subset = determine_project_subset(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage, column="tx_availability_type",
+        type="exogenous", prj_or_tx="transmission_line"
+    )
+
+    data_portal.data()["TX_AVL_EXOG"] = {None: tx_subset}
+
+    # Availability derates
+    # Get any derates from the tx_availability.tab file if it exists;
+    # if it does not exist, all transmission lines will get 1 as a derate; if
+    # it does exist but tx lines are not specified in it, they will also get 1
+    # assigned as their derate
+    # The test examples do not currently have a
+    # transmission_availability_exogenous.tab, but use the default instead
+    availability_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs",
+        "transmission_availability_exogenous.tab"
+    )
+
+    if os.path.exists(availability_file):
+        data_portal.load(
+            filename=availability_file,
+            param=m.tx_avl_exog_derate
+        )
+    else:
+        pass
 
 # Database
 ###############################################################################

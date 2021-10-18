@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,33 +15,35 @@
 from __future__ import print_function
 
 from builtins import str
-from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
+from tests.project.operations.common_functions import \
+    get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones", "transmission",
-    "transmission.capacity",
-    "transmission.capacity.capacity",
-    "transmission.availability.availability",
-    "transmission.operations.operational_types",
-
+    "temporal.operations.timepoints",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "transmission",
+    "transmission.capacity.capacity"
 ]
-NAME_OF_MODULE_BEING_TESTED = "transmission.operations.operations"
+NAME_OF_MODULE_BEING_TESTED = \
+    "transmission.availability.availability_types.exogenous"
+
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package="gridpath")
+        imported_module = import_module("." + str(mdl), package='gridpath')
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
@@ -49,16 +51,17 @@ for mdl in PREREQUISITE_MODULE_NAMES:
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+                                        package='gridpath')
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
 
 
-class TestTxOperations(unittest.TestCase):
+class TestExogenousAvailabilityType(unittest.TestCase):
     """
 
     """
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -85,39 +88,33 @@ class TestTxOperations(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-
+        Test components initialized with data as expected
         :return:
         """
-        m, data = \
-            add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                         module_to_test=MODULE_BEING_TESTED,
-                                         test_data_dir=TEST_DATA_DIRECTORY,
-                                         subproblem="",
-                                         stage="")
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
         instance = m.create_instance(data)
 
-        # Set: OPR_PRDS_BY_TX_LINE
-        expected_op_p_by_tx = OrderedDict(
-            sorted(
-                {
-                    "Tx1": [2020, 2030], "Tx_New": [2020, 2030],
-                    "Tx2": [2020, 2030], "Tx3": [2020, 2030]
-                }.items()
-            )
-        )
-        actual_op_p_by_tx = OrderedDict(
-            sorted(
-                {
-                    tx: [p for p in
-                         instance.OPR_PRDS_BY_TX_LINE[tx]]
-                    for tx in instance.TX_LINES
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_op_p_by_tx, actual_op_p_by_tx)
-        
-        # Set: TX_OPR_TMPS
-        expect_tx_op_tmp = sorted(
+        # Set: TX_AVL_EXOG
+        expected_tx_subset = sorted([
+            "Tx1", "Tx_New", "Tx2", "Tx3"
+        ])
+        actual_tx_subset = sorted([
+            prj for prj in instance.TX_AVL_EXOG
+        ])
+        self.assertListEqual(expected_tx_subset,
+                             actual_tx_subset)
+
+        # Set: TX_AVL_EXOG_OPR_TMPS
+        # TODO: we have a function to get op timepoints for project; we
+        #  should make that flexible enough to accomodate transmission also
+        #  instead of hardcoding this
+        expected_operational_timepoints_by_tx = sorted(
             [
                 ("Tx1", 20200101), ("Tx1", 20200102),
                 ("Tx1", 20200103), ("Tx1", 20200104),
@@ -265,7 +262,7 @@ class TestTxOperations(unittest.TestCase):
                 ("Tx2", 20300219), ("Tx2", 20300220),
                 ("Tx2", 20300221), ("Tx2", 20300222),
                 ("Tx2", 20300223), ("Tx2", 20300224),
-                
+
                 ("Tx_New", 20200101), ("Tx_New", 20200102),
                 ("Tx_New", 20200103), ("Tx_New", 20200104),
                 ("Tx_New", 20200105), ("Tx_New", 20200106),
@@ -316,124 +313,45 @@ class TestTxOperations(unittest.TestCase):
                 ("Tx_New", 20300223), ("Tx_New", 20300224)
             ]
         )
-        actual_tx_op_tmp = sorted(
-            [(tx, tmp) for (tx, tmp)
-             in instance.TX_OPR_TMPS]
+        actual_operational_timepoints_by_tx = sorted(
+            [(tx, tmp) for (tx, tmp) in
+             instance.TX_AVL_EXOG_OPR_TMPS]
         )
-        self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
-        
-        # Set: TX_LINES_OPR_IN_TMP
-        expected_operational_tx_in_tmp = OrderedDict(sorted({
-            20200101: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200102: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200103: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200104: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200105: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200106: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200107: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200108: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200109: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200110: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200111: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200112: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200113: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200114: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200115: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200116: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200117: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200118: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200119: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200120: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200121: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200122: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200123: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200124: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200201: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200202: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200203: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200204: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200205: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200206: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200207: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200208: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200209: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200210: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200211: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200212: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200213: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200214: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200215: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200216: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200217: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200218: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200219: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200220: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200221: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200222: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200223: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20200224: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300101: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300102: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300103: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300104: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300105: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300106: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300107: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300108: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300109: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300110: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300111: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300112: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300113: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300114: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300115: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300116: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300117: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300118: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300119: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300120: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300121: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300122: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300123: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300124: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300201: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300202: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300203: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300204: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300205: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300206: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300207: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300208: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300209: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300210: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300211: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300212: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300213: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300214: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300215: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300216: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300217: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300218: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300219: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300220: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300221: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300222: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300223: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-            20300224: ["Tx1", "Tx2", "Tx3", "Tx_New"],
-        }.items()
-                                                                  )
-                                             )
-        actual_operational_tx_in_tmp = OrderedDict(sorted({
-            tmp: sorted(
-                [prj for prj
-                 in instance.TX_LINES_OPR_IN_TMP[tmp]]
-            )
-            for tmp in instance.TMPS
-        }.items()
-                                                                )
-                                                         )
-        self.assertDictEqual(expected_operational_tx_in_tmp,
-                             actual_operational_tx_in_tmp)
+        self.assertListEqual(expected_operational_timepoints_by_tx,
+                             actual_operational_timepoints_by_tx)
+
+        # Param: availability_derate
+        availability_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "transmission_availability_exogenous.tab"),
+            sep="\t"
+        )
+        defaults = {
+            (tx, tmp): 1
+            for (tx, tmp) in
+            instance.TX_AVL_EXOG_OPR_TMPS
+        }
+        derates = {
+            (p, tmp): avail for p, tmp, avail
+            in zip(availability_df.transmission_line,
+                   availability_df.timepoint,
+                   availability_df.availability_derate)
+        }
+        expected_availability_derate = dict()
+        for (tx, tmp) in defaults.keys():
+            if (tx, tmp) in derates.keys():
+                expected_availability_derate[tx, tmp] = derates[tx, tmp]
+            else:
+                expected_availability_derate[tx, tmp] = defaults[tx, tmp]
+        actual_availability_derate = {
+            (tx, tmp): instance.tx_avl_exog_derate[tx, tmp]
+            for (tx, tmp) in
+            instance.TX_AVL_EXOG_OPR_TMPS
+        }
+
+        self.assertDictEqual(expected_availability_derate,
+                             actual_availability_derate)
+
 
 if __name__ == "__main__":
     unittest.main()
