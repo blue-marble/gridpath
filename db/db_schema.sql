@@ -1762,14 +1762,22 @@ CREATE TABLE inputs_transmission_availability_exogenous (
 transmission_line VARCHAR(64),
 exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
-timepoint INTEGER,
+timepoint INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ),  -- use 0 for monthly availability
+month INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ), -- use 0 for timepoint-level availability
 availability_derate FLOAT,
 PRIMARY KEY (transmission_line, exogenous_availability_scenario_id, stage_id,
-             timepoint),
+             timepoint, month),
 FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
     REFERENCES subscenarios_transmission_availability_exogenous
         (transmission_line, exogenous_availability_scenario_id)
 );
+
 
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;

@@ -29,9 +29,10 @@ in the :code:`inputs_transmission_availability_exogenous` table. The names and
 descriptions of each :code:`transmission` and
 :code:`exogenous_availability_scenario_id` combination are in the
 :code:`subscenarios_transmission_availability_exogenous` table. The
-availability derate for each combination is defined by stage and timepoint,
-and must be greater than or equal to 0 (0=full derate). Values more than 1
-are allowed.
+availability derate for each combination is defined by stage and timepoint
+or month (if using timepoint-level availability, set the month to 0; if
+using monthly availability, set the timpoint to 0), and must be greater than
+or equal to 0 (0=full derate). Values more than 1 are allowed.
 
 """
 
