@@ -178,7 +178,7 @@ def get_inputs_from_database(
             inputs_transmission_availability_exogenous
         USING (exogenous_availability_scenario_id, transmission_line)
         WHERE stage_id = {stage}
-        AND month != 0  -- exclude month=0 (monthly availability)
+        AND month != 0  -- exclude month=0 (timepoint availability)
         ;
     """.format(
         portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
