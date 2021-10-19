@@ -120,19 +120,47 @@ class TestLoadZones(unittest.TestCase):
         self.assertDictEqual(expected_allow_unserved_energy,
                              actual_allow_unserved_energy)
 
-        # Param: unserved_energy_penalty_per_mw
+        # Param: unserved_energy_penalty_per_mwh
         expected_unserved_energy_penalty = OrderedDict(
             sorted({"Zone1": 99999999, "Zone2": 99999999,
                     "Zone3": 99999999}.items())
         )
         actual_unserved_energy_penalty = OrderedDict(
             sorted(
-                {z: instance.unserved_energy_penalty_per_mw[z]
+                {z: instance.unserved_energy_penalty_per_mwh[z]
                  for z in instance.LOAD_ZONES}.items()
             )
         )
         self.assertDictEqual(expected_unserved_energy_penalty,
                              actual_unserved_energy_penalty)
+
+        # Param: max_unserved_load_penalty_per_mw
+        expected_max_unserved_load_penalty_per_mw = OrderedDict(
+            sorted({"Zone1": 0, "Zone2": 0,
+                    "Zone3": 0}.items())
+        )
+        actual_max_unserved_load_penalty_per_mw = OrderedDict(
+            sorted(
+                {z: instance.max_unserved_load_penalty_per_mw[z]
+                 for z in instance.LOAD_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_max_unserved_load_penalty_per_mw,
+                             actual_max_unserved_load_penalty_per_mw)
+
+        # Param: export_penalty_cost_per_mwh
+        expected_export_penalty_cost_per_mwh = OrderedDict(
+            sorted({"Zone1": 0, "Zone2": 0,
+                    "Zone3": 0}.items())
+        )
+        actual_export_penalty_cost_per_mwh = OrderedDict(
+            sorted(
+                {z: instance.export_penalty_cost_per_mwh[z]
+                 for z in instance.LOAD_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_export_penalty_cost_per_mwh,
+                             actual_export_penalty_cost_per_mwh)
 
 
 if __name__ == "__main__":

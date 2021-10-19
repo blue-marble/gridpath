@@ -88,6 +88,7 @@ def load_data(conn, omit_data, custom_units):
     :param custom_units: Boolean, True if user-specified units
     :return:
     """
+    # TODO: refactor this
     if not omit_data:
         # General Model Data
         load_mod_months(conn=conn)
@@ -96,6 +97,7 @@ def load_data(conn, omit_data, custom_units):
         load_mod_operational_types(conn=conn)
         load_mod_reserve_types(conn=conn)
         load_mod_tx_capacity_types(conn=conn)
+        load_mod_tx_availability_types(conn=conn)
         load_mod_tx_operational_types(conn=conn)
         load_mod_prm_types(conn=conn)
         load_mod_capacity_and_operational_type_invalid_combos(conn=conn)
@@ -166,6 +168,14 @@ def load_mod_tx_capacity_types(conn):
         (capacity_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=conn, filename="mod_tx_capacity_types.csv", sql=sql)
+
+
+def load_mod_tx_availability_types(conn):
+    sql = """
+        INSERT INTO mod_tx_availability_types
+        (availability_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=conn, filename="mod_tx_availability_types.csv", sql=sql)
 
 
 def load_mod_tx_operational_types(conn):

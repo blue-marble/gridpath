@@ -29,10 +29,15 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "transmission",
-     "transmission.capacity",
-     "transmission.capacity.capacity"]
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity",
+    "transmission.availability.availability"
+]
 NAME_OF_MODULE_BEING_TESTED = \
     "transmission.operations.operational_types.tx_simple"
 

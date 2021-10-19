@@ -39,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_carbon_emissions_rule(mod, z, p):
         """
-        Calculate total emissions from all carbonaceous projects in carbon
+        Calculate total emissions from all carbon tax projects in carbon
         tax zone
         :param mod:
         :param z:
@@ -59,6 +59,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=total_carbon_emissions_rule
     )
 
+    def total_carbon_tax_allowance_rule(mod, z, p):
+        """
+        Calculate total emission allowance from all carbon tax projects in carbon
+        tax zone
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return sum(mod.Project_Carbon_Tax_Allowance[g, tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
+                   for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+                   if g in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[z]
+                   and tmp in mod.TMPS_IN_PRD[p]
+                   )
+
+    m.Total_Carbon_Tax_Project_Allowance = Expression(
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
+        rule=total_carbon_tax_allowance_rule
+    )
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -76,8 +98,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(carbon_results_file)
         writer.writerow(["carbon_tax_zone", "period",
                          "discount_factor", "number_years_represented",
-                         "carbon_tax",
-                         "project_carbon_emissions"])
+                         "carbon_tax_cost_per_ton",
+                         "project_total_carbon_emissions_tons",
+                         "project_total_carbon_tax_allowance"])
         for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX:
             writer.writerow([
                 z,
@@ -85,7 +108,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.carbon_tax[z, p]),
-                value(m.Total_Carbon_Tax_Project_Emissions[z, p])
+                value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
+                value(m.Total_Carbon_Tax_Project_Allowance[z, p])
             ])
 
 
@@ -125,18 +149,19 @@ def import_results_into_database(
             period = row[1]
             carbon_tax = row[4]
             project_carbon_emissions = row[5]
+            project_carbon_tax_allowance = row[6]
 
             results.append(
                 (scenario_id, carbon_tax_zone, period, subproblem, stage,
-                 carbon_tax, project_carbon_emissions)
+                 carbon_tax, project_carbon_emissions, project_carbon_tax_allowance)
             )
 
     insert_temp_sql = """
         INSERT INTO 
         temp_results_system_carbon_tax_emissions{}
          (scenario_id, carbon_tax_zone, period, subproblem_id, stage_id,
-         carbon_tax, total_emissions)
-         VALUES (?, ?, ?, ?, ?, ?, ?);
+         carbon_tax, total_emissions, total_allowance)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -144,10 +169,10 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_system_carbon_tax_emissions
         (scenario_id, carbon_tax_zone, period, subproblem_id, stage_id,
-        carbon_tax, total_emissions)
+        carbon_tax, total_emissions, total_allowance)
         SELECT
         scenario_id, carbon_tax_zone, period, subproblem_id, stage_id,
-        carbon_tax, total_emissions
+        carbon_tax, total_emissions, total_allowance
         FROM temp_results_system_carbon_tax_emissions{}
          ORDER BY scenario_id, carbon_tax_zone, period, subproblem_id, 
         stage_id;

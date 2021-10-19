@@ -445,7 +445,8 @@ def min_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
+        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -457,7 +458,8 @@ def max_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
+        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def kirchhoff_voltage_law_rule(mod, c, tmp):
@@ -544,14 +546,14 @@ def load_model_data(m, d, data_portal, scenario_directory,
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "load_zone_from", "load_zone_to",
+        usecols=["transmission_line", "load_zone_from", "load_zone_to",
                  "tx_operational_type", "reactance_ohms"]
     )
     df = df[df["tx_operational_type"] == "tx_dcopf"]
 
     # Dict of reactance by tx_dcopf line
     reactance_ohms = dict(zip(
-        df["TRANSMISSION_LINES"],
+        df["transmission_line"],
         pd.to_numeric(df["reactance_ohms"])
     ))
 

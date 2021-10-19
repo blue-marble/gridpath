@@ -740,7 +740,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_new_solar_carbon_tax")
         self.run_and_check_objective("test_new_solar_carbon_tax",
-                                     -3796369926691.1)
+                                     -3796369926691.2686)
 
     def test_example_2periods_new_build_simple_prm(self):
         """
@@ -894,6 +894,58 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_build_gen_var_stor_hyb")
         self.run_and_check_objective("test_new_build_gen_var_stor_hyb",
                                      -5797066114.34292)
+
+    def test_carbon_tax_allowance(self):
+        """
+        Check validation and objective function value of
+        "test_carbon_tax_allowance" example
+        :return:
+        """
+
+        self.check_validation("test_carbon_tax_allowance")
+        self.run_and_check_objective("test_carbon_tax_allowance",
+                                     -3796356403371.2686)
+
+    def test_min_max_build_trans(self):
+        """
+        Check validation and objective function value of
+        "test_min_max_build_trans" example
+        :return:
+        """
+
+        self.check_validation("test_min_max_build_trans")
+        self.run_and_check_objective("test_min_max_build_trans",
+                                     -7028538202569.945)
+
+    def test_example_2periods_new_build_2zones_transmission_Tx1halfavail(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_2zones_transmission_Tx1halfavail"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_2zones_transmission_Tx1halfavail",
+            -308370294932303.7
+        )
+
+    def test_example_2periods_new_build_2zones_transmission_Tx1halfavailmonthly(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly",
+            -308370294932303.7
+        )
 
     @classmethod
     def tearDownClass(cls):

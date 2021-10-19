@@ -663,16 +663,19 @@ def validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, op
     )
 
     # Check for sign (should be percent fraction)
-    write_validation_to_database(
-        conn=conn,
-        scenario_id=scenario_id,
-        subproblem_id=subproblem,
-        stage_id=stage,
-        gridpath_module=__name__,
-        db_table="inputs_project_variable_generator_profiles",
-        severity="Mid",
-        errors=validate_values(df, ["cap_factor"], min=0, max=1)
-    )
+    cap_factor_validation_error = \
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_project_variable_generator_profiles",
+            severity="Low",
+            errors=validate_values(df, ["cap_factor"], min=0, max=1)
+        )
+
+    return cap_factor_validation_error
 
 
 def load_hydro_opchars(data_portal, scenario_directory, subproblem,
@@ -827,14 +830,14 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
     )
 
     # Check for sign (should be percent fraction)
-    write_validation_to_database(
+    hydro_opchar_fraction_error = write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_hydro_operational_chars",
-        severity="Mid",
+        severity="Low",
         errors=validate_values(df, value_cols, min=0, max=1)
     )
 
@@ -853,6 +856,8 @@ def validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn, o
             idx_col=["project", "horizon"]
         )
     )
+
+    return hydro_opchar_fraction_error
 
 
 def load_startup_chars(data_portal, scenario_directory, subproblem,

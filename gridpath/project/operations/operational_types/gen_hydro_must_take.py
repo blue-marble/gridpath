@@ -15,14 +15,16 @@
 """
 This operational type describes the operations of hydro generation
 projects and is like the *gen_hydro* operational type except that the power
-output is must-take, i.e. curtailment is not allowed.
+output is must-take, i.e. curtailment is not allowed. Negative output is
+allowed, i.e. this module can be used to model pumping.
 
 """
 
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, \
-    Expression, NonNegativeReals, PercentFraction, value
+    Expression, NonNegativeReals, PercentFraction, value, Reals
+import warnings
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -71,21 +73,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`gen_hydro_must_take_max_power_fraction`                        |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_HRZS`                  |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's maximum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_min_power_fraction`                        |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_HRZS`                  |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's minimum power output in each operational horizon as a     |
     | fraction of its available capacity.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_hydro_must_take_average_power_fraction`                    |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_HRZS`                  |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's avarage power output in each operational horizon as a     |
     | fraction of its available capacity. This can be interpreted as the      |
@@ -136,7 +138,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`gen_hydro_must_take_linked_power`                              |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_LINKED_TMPS`               |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power provision in the linked timepoints.                 |
     +-------------------------------------------------------------------------+
@@ -160,7 +162,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`GenHydroMustTake_Gross_Power_MW`                               |
     | | *Defined over*: :code:`GEN_HYDRO_MUST_TAKE_OPR_TMPS`                  |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
@@ -249,17 +251,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.gen_hydro_must_take_max_power_fraction = Param(
         m.GEN_HYDRO_MUST_TAKE_OPR_HRZS,
-        within=PercentFraction
+        within=Reals
     )
 
     m.gen_hydro_must_take_min_power_fraction = Param(
         m.GEN_HYDRO_MUST_TAKE_OPR_HRZS,
-        within=PercentFraction
+        within=Reals
     )
 
     m.gen_hydro_must_take_average_power_fraction = Param(
         m.GEN_HYDRO_MUST_TAKE_OPR_HRZS,
-        within=PercentFraction
+        within=Reals
     )
 
     # Optional Params
@@ -292,7 +294,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.gen_hydro_must_take_linked_power = Param(
         m.GEN_HYDRO_MUST_TAKE_LINKED_TMPS,
-        within=NonNegativeReals
+        within=Reals
     )
 
     m.gen_hydro_must_take_linked_upwards_reserves = Param(
@@ -310,7 +312,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GenHydroMustTake_Gross_Power_MW = Var(
         m.GEN_HYDRO_MUST_TAKE_OPR_TMPS,
-        within=NonNegativeReals
+        within=Reals
     )
 
     # Expressions
@@ -811,5 +813,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
                      "gen_hydro_must_take")
 
     # Validate hydro opchars input table
-    validate_hydro_opchars(scenario_id, subscenarios, subproblem, stage, conn,
-                           "gen_hydro_must_take")
+    hydro_opchar_fraction_error = validate_hydro_opchars(
+        scenario_id, subscenarios, subproblem, stage, conn,
+        "gen_hydro_must_take"
+    )
+
+    if hydro_opchar_fraction_error:
+        warnings.warn(
+            """
+            Found hydro min, max, or average that are <0 or >1. This is 
+            allowed but this warning is here to make sure it is intended.
+            """
+        )

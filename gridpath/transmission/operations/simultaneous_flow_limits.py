@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import os.path
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
     Integers, Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.db_interface import setup_results_import
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -370,6 +372,101 @@ def write_model_inputs(
 
         for row in limit_lines:
             writer.writerow(row)
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("sim flow limits")
+
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_transmission_simultaneous_flows",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory,
+                           "transmission_simultaneous_flow_limits.csv"),
+              "r") as f:
+        reader = csv.reader(f)
+
+        next(reader)  # skip header
+        for row in reader:
+            limit = row[0]
+            timepoint = row[1]
+            period = row[2]
+            timepoimt_weight = row[3]
+            flow = row[4]
+
+            results.append(
+                (scenario_id, limit, subproblem, stage, timepoint,
+                 timepoimt_weight, period, flow)
+            )
+
+        insert_temp_sql = """
+            INSERT INTO 
+            temp_results_transmission_simultaneous_flows{}
+            (scenario_id, transmission_simultaneous_flow_limit, 
+            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
+            flow_mw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            """.format(scenario_id)
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql,
+                              data=results)
+
+        # Insert sorted results into permanent results table
+        insert_sql = """
+            INSERT INTO results_transmission_simultaneous_flows
+            (scenario_id, transmission_simultaneous_flow_limit, 
+            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
+            flow_mw)
+            SELECT
+            scenario_id, transmission_simultaneous_flow_limit, 
+            subproblem_id, stage_id, timepoint, timepoint_weight, period, 
+            flow_mw
+            FROM temp_results_transmission_simultaneous_flows{}
+            ORDER BY scenario_id, transmission_simultaneous_flow_limit, 
+            subproblem_id, stage_id, timepoint;
+            """.format(scenario_id)
+        spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                              many=False)
+
+        # Update duals
+        duals_results = []
+        with open(os.path.join(results_directory, "Sim_Flow_Constraint.csv"),
+                  "r") as duals_file:
+            reader = csv.reader(duals_file)
+
+            next(reader)  # skip header
+
+            for row in reader:
+                duals_results.append(
+                    (row[2], row[0], row[1], scenario_id, subproblem, stage)
+                )
+        duals_sql = """
+            UPDATE results_transmission_simultaneous_flows
+            SET dual = ?
+            WHERE transmission_simultaneous_flow_limit = ?
+            AND timepoint = ?
+            AND scenario_id = ?
+            AND subproblem_id = ?
+            AND stage_id = ?;
+            """
+        spin_on_database_lock(conn=db, cursor=c, sql=duals_sql,
+                              data=duals_results)
 
 
 # Validation

@@ -34,10 +34,13 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
+    "transmission.availability.availability",
     "transmission.operations.operational_types",
-    "transmission.operations.operations", "transmission.operations.costs"]
+    "transmission.operations.operations",
+    "system.load_balance.aggregate_transmission_power",
+    "transmission.operations.export_penalty_costs"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.transmission.aggregate_operational_costs"
+    "objective.transmission.aggregate_export_penalty_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

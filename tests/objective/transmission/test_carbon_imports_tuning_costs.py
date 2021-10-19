@@ -34,8 +34,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
+    "transmission.availability.availability",
     "transmission.operations.operational_types",
-    "transmission.operations.operations", "transmission.operations.costs",
+    "transmission.operations.operations",
     "transmission.operations.carbon_emissions"]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.transmission.carbon_imports_tuning_costs"

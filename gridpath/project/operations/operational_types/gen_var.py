@@ -30,7 +30,8 @@ from __future__ import print_function
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    Expression, value
+    Expression, value, Reals
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -71,7 +72,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`gen_var_cap_factor`                                            |
     | | *Defined over*: :code:`GEN_VAR`                                       |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
     | of its available capacity (i.e. the capacity factor).                   |
@@ -160,10 +161,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    # TODO: allow cap factors greater than 1, but throw a warning?
     m.gen_var_cap_factor = Param(
         m.GEN_VAR_OPR_TMPS,
-        within=NonNegativeReals
+        within=Reals
     )
 
     # Variables
@@ -636,4 +636,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")
 
     # Validate var profiles input table
-    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn, "gen_var")
+    cap_factor_validation_error = validate_var_profiles(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var"
+    )
+    if cap_factor_validation_error:
+        warnings.warn("""
+            Found gen_var_must_take cap factors that are <0 or >1. This is 
+            allowed but this warning is here to make sure it is intended.
+            """)

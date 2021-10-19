@@ -148,14 +148,16 @@ def load_all_from_master_csv(conn, csv_path, csv_data_master, quiet):
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str):
             subscenario = row["subscenario"]
-            table, inputs_dir, project_flag, cols_to_exclude_str, \
-                custom_method, subscenario_type, filename = \
+            table, inputs_dir, project_flag, \
+            project_is_tx, cols_to_exclude_str, \
+            custom_method, subscenario_type, filename = \
                 parse_row(row=row, csv_path=csv_path)
             if not quiet:
                 print("Importing data for subscenario {}, table {} from {}"
                       "...".format(subscenario, table, inputs_dir))
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn, subscenario, table, subscenario_type, project_flag,
+                project_is_tx,
                 cols_to_exclude_str, custom_method, inputs_dir, filename, quiet
             )
         else:
@@ -180,12 +182,14 @@ def load_all_subscenario_ids_from_directory(
     for index, row in csv_data_master.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
-            table, inputs_dir, project_flag, cols_to_exclude_str, \
-                custom_method, subscenario_type, filename = \
+            table, inputs_dir, project_flag, project_is_tx, \
+                cols_to_exclude_str, custom_method, subscenario_type, \
+                filename = \
                 parse_row(row=row, csv_path=csv_path)
             load_all_subscenario_ids_from_dir_to_subscenario_table(
                 conn=conn, subscenario=subscenario, table=table,
                 subscenario_type=subscenario_type, project_flag=project_flag,
+                project_is_tx=project_is_tx,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method, inputs_dir=inputs_dir,
                 filename=filename, quiet=quiet
@@ -225,8 +229,8 @@ def load_single_subscenario_id_from_directory(
         # If we're dealing with project-level data, we'll also get the
         # base_table and base_subscenario (e.g. the opchar table for
         # variable generator profiles); otherwise, these will be None
-        subscenario_table, input_tables, project_flag, base_table, \
-            base_subscenario = determine_tables_to_delete_from(
+        subscenario_table, input_tables, project_flag, project_is_tx, \
+            base_table, base_subscenario = determine_tables_to_delete_from(
                 csv_data_master=csv_data_master, subscenario=subscenario
             )
 
@@ -244,6 +248,7 @@ def load_single_subscenario_id_from_directory(
             base_subscenario_ids_data = \
             confirm_and_temp_update_affected_tables(
                 conn=conn, project_flag=project_flag,
+                project_is_tx=project_is_tx,
                 subscenario=subscenario,
                 subscenario_id=subscenario_id_to_load, project=project,
                 base_table=base_table, base_subscenario=base_subscenario
@@ -254,7 +259,7 @@ def load_single_subscenario_id_from_directory(
             conn=conn, subscenario=subscenario,
             subscenario_id=subscenario_id_to_load, project=project,
             subscenario_table=subscenario_table, input_tables=input_tables,
-            project_flag=project_flag
+            project_flag=project_flag, project_is_tx=project_is_tx
         )
 
     # Import the data
@@ -263,8 +268,9 @@ def load_single_subscenario_id_from_directory(
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
 
             # Parse the row
-            table, inputs_dir, project_flag, cols_to_exclude_str, \
-                custom_method, subscenario_type, filename = \
+            table, inputs_dir, project_flag, project_is_tx, \
+                cols_to_exclude_str, custom_method, subscenario_type, \
+                filename = \
                 parse_row(row=row, csv_path=csv_path)
 
             # Verify project-project_flag alignment
@@ -277,6 +283,7 @@ def load_single_subscenario_id_from_directory(
             load_single_subscenario_id_from_dir_to_subscenario_table(
                 conn=conn, subscenario=subscenario, table=table,
                 subscenario_type=subscenario_type, project_flag=project_flag,
+                project_is_tx=project_is_tx,
                 cols_to_exclude_str=cols_to_exclude_str,
                 custom_method=custom_method, inputs_dir=inputs_dir,
                 filename=filename, quiet=quiet,
@@ -290,7 +297,8 @@ def load_single_subscenario_id_from_directory(
     # we NULLified above
     if delete_flag:
         repopulate_tables(
-            conn=conn, project_flag=project_flag, subscenario=subscenario,
+            conn=conn, project_flag=project_flag,
+            project_is_tx=project_is_tx, subscenario=subscenario,
             subscenario_id=subscenario_id_to_load, project=project,
             base_table=base_table, base_subscenario=base_subscenario,
             scenario_reupdate_tuples=scenario_reupdate_tuples,
@@ -383,13 +391,14 @@ def parse_row(row, csv_path):
     table = row["table"]
     inputs_dir = os.path.join(csv_path, row["path"])
     project_flag = True if int(row["project_input"]) else False
+    project_is_tx = True if int(row["project_is_tx"]) else False
     cols_to_exclude_str = str(row["cols_to_exclude_str"])
     custom_method = str(row["custom_method"])
     subscenario_type = row["subscenario_type"]
     filename = row["filename"]
 
-    return table, inputs_dir, project_flag, cols_to_exclude_str, \
-        custom_method, subscenario_type, filename
+    return table, inputs_dir, project_flag, project_is_tx, \
+        cols_to_exclude_str, custom_method, subscenario_type, filename
 
 
 if __name__ == "__main__":

@@ -32,7 +32,8 @@ transmission line's lifetime.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
+import pandas as pd
+from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value, Constraint
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -41,7 +42,7 @@ from gridpath.auxiliary.dynamic_components import \
     tx_capacity_type_operational_period_sets
 from gridpath.auxiliary.validations import write_validation_to_database, \
     get_expected_dtypes, get_tx_lines, validate_dtypes, validate_values, \
-    validate_idxs
+    validate_idxs, validate_row_monotonicity, validate_column_monotonicity
 
 
 # TODO: can we have different capacities depending on the direction
@@ -60,6 +61,18 @@ def add_model_components(
     | A two-dimensional set of line-vintage combinations to help describe     |
     | the periods in time when transmission line capacity can be built in the |
     | optimization.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT`                              |
+    |                                                                         |
+    | Two-dimensional set of transmission-vintage combinations to describe all|
+    | possible transmission-vintage combinations for transmission lines with  |
+    | a cumulative minimum build capacity specified.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT`                              |
+    |                                                                         |
+    | Two-dimensional set of transmission-vintage combinations to describe all|
+    | possible transmission-vintage combinations for transmission lines with  |
+    | a cumulative maximum build capacity specified.                          |
     +-------------------------------------------------------------------------+
 
     |
@@ -89,6 +102,24 @@ def add_model_components(
         ensure that the :code:`tx_new_lin_lifetime_yrs` and
         :code:`tx_new_lin_annualized_real_cost_per_mw_yr` parameters are
         consistent.
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`tx_new_lin_min_cumulative_new_build_mw`                        |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum cumulative amount of capacity (in MW) that must be built    |
+    | for a transmission line by a certain period.                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_new_lin_max_cumulative_new_build_mw`                        |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum cumulative amount of capacity (in MW) that must be built    |
+    | for a transmission line by a certain period.                            |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -148,6 +179,24 @@ def add_model_components(
     | period.                                                                 |
     +-------------------------------------------------------------------------+
 
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`TxNewLin_Min_Cum_Build_Constraint`                             |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT`              |
+    |                                                                         |
+    | Ensures that certain amount of capacity is built by a certain period,   |
+    | based on :code:`tx_new_lin_min_cumulative_new_build_mw`.                |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxNewLin_Max_Cum_Build_Constraint`                             |
+    | | *Defined over*: :code:`TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT`              |
+    |                                                                         |
+    | Limits the amount of capacity built by a certain period, based on       |
+    | :code:`tx_new_lin_max_cumulative_new_build_mw`.                         |
+    +-------------------------------------------------------------------------+
+
 
     """
 
@@ -155,6 +204,14 @@ def add_model_components(
     ###########################################################################
 
     m.TX_NEW_LIN_VNTS = Set(dimen=2)
+
+    m.TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(
+        dimen=2, within=m.TX_NEW_LIN_VNTS
+    )
+
+    m.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(
+        dimen=2, within=m.TX_NEW_LIN_VNTS
+    )
 
     # Required Params
     ###########################################################################
@@ -166,6 +223,19 @@ def add_model_components(
 
     m.tx_new_lin_annualized_real_cost_per_mw_yr = Param(
         m.TX_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.tx_new_lin_min_cumulative_new_build_mw = Param(
+        m.TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    m.tx_new_lin_max_cumulative_new_build_mw = Param(
+        m.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
         within=NonNegativeReals
     )
 
@@ -201,6 +271,19 @@ def add_model_components(
     m.TxNewLin_Capacity_MW = Expression(
         m.TX_NEW_LIN_OPR_PRDS,
         rule=tx_new_lin_capacity_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.TxNewLin_Min_Cum_Build_Constraint = Constraint(
+        m.TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
+        rule=min_cum_build_rule
+    )
+
+    m.TxNewLin_Max_Cum_Build_Constraint = Constraint(
+        m.TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
+        rule=max_cum_build_rule
     )
 
     # Dynamic Components
@@ -268,6 +351,33 @@ def tx_new_lin_capacity_rule(mod, g, p):
         if gen == g
     )
 
+# Constraint Formulation Rules
+###############################################################################
+
+def min_cum_build_rule(mod, g, p):
+    """
+    **Constraint Name**: TxNewLin_Min_Cum_Build_Constraint
+    **Enforced Over**: TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+
+    Must build a certain amount of transmission capacity by period p.
+    """
+    if mod.tx_new_lin_min_cumulative_new_build_mw == 0:
+        return Constraint.Skip
+    else:
+        return mod.TxNewLin_Capacity_MW[g, p] \
+            >= mod.tx_new_lin_min_cumulative_new_build_mw[g, p]
+
+
+def max_cum_build_rule(mod, g, p):
+    """
+    **Constraint Name**: TxNewLin_Max_Cum_Build_Constraint
+    **Enforced Over**: TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+
+    Can't build more than certain amount of transmission capacity by period p.
+    """
+    return mod.TxNewLin_Capacity_MW[g, p] \
+        <= mod.tx_new_lin_max_cumulative_new_build_mw[g, p]
+
 
 # Tx Capacity Type Methods
 ###############################################################################
@@ -314,6 +424,77 @@ def load_model_data(
         param=(m.tx_new_lin_lifetime_yrs,
                m.tx_new_lin_annualized_real_cost_per_mw_yr)
     )
+
+    # Min and max cumulative capacity
+    transmission_vintages_with_min = list()
+    transmission_vintages_with_max = list()
+    min_cumulative_mw = dict()
+    max_cumulative_mw = dict()
+
+    header = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "new_build_transmission_vintage_costs.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
+
+    optional_columns = ["min_cumulative_new_build_mw",
+                        "max_cumulative_new_build_mw"]
+    used_columns = [c for c in optional_columns if c in header]
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "new_build_transmission_vintage_costs.tab"),
+        sep="\t", usecols=["transmission_line", "vintage"] + used_columns
+    )
+
+    # min_cumulative_new_build_mw is optional,
+    # so TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+    # and min_cumulative_new_build_mw simply won't be initialized if
+    # min_cumulative_new_build_mw does not exist in the input file
+    if "min_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["transmission_line"],
+                       df["vintage"],
+                       df["min_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                transmission_vintages_with_min.append((row[0], row[1]))
+                min_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # max_cumulative_new_build_mw is optional,
+    # so TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+    # and max_cumulative_new_build_mw simply won't be initialized if
+    # max_cumulative_new_build_mw does not exist in the input file
+    if "max_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["transmission_line"],
+                       df["vintage"],
+                       df["max_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                transmission_vintages_with_max.append((row[0], row[1]))
+                max_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # Load min and max cumulative capacity data
+    if not transmission_vintages_with_min:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["TX_NEW_LIN_VNTS_W_MIN_CONSTRAINT"] = \
+            {None: transmission_vintages_with_min}
+    data_portal.data()["tx_new_lin_min_cumulative_new_build_mw"] = \
+        min_cumulative_mw
+
+    if not transmission_vintages_with_max:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["TX_NEW_LIN_VNTS_W_MAX_CONSTRAINT"] = \
+            {None: transmission_vintages_with_max}
+    data_portal.data()["tx_new_lin_max_cumulative_new_build_mw"] = \
+        max_cumulative_mw
 
 
 # TODO: untested
@@ -367,23 +548,42 @@ def get_model_inputs_from_database(
     """
     c = conn.cursor()
 
+    get_potentials = \
+        (" ", " ") if subscenarios.TRANSMISSION_NEW_POTENTIAL_SCENARIO_ID is None \
+            else (
+            """, min_cumulative_new_build_mw, 
+            max_cumulative_new_build_mw """,
+            """LEFT OUTER JOIN
+            (SELECT transmission_line, period AS vintage, 
+            min_cumulative_new_build_mw, max_cumulative_new_build_mw
+            FROM inputs_transmission_new_potential
+            WHERE transmission_new_potential_scenario_id = {}) as potential
+            USING (transmission_line, vintage) """.format(
+                subscenarios.TRANSMISSION_NEW_POTENTIAL_SCENARIO_ID
+            )
+        )
+
     tx_cost = c.execute(
         """SELECT transmission_line, vintage, tx_lifetime_yrs, 
-        tx_annualized_real_cost_per_mw_yr
-        FROM inputs_transmission_portfolios
+        tx_annualized_real_cost_per_mw_yr"""
+        + get_potentials[0] +
+        """FROM inputs_transmission_portfolios
         CROSS JOIN
         (SELECT period as vintage
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
         (SELECT transmission_line, vintage, tx_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr
         FROM inputs_transmission_new_cost
         WHERE transmission_new_cost_scenario_id = {} ) as cost
-        USING (transmission_line, vintage   )
-        WHERE transmission_portfolio_scenario_id = {};""".format(
+        USING (transmission_line, vintage)""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID,
+        )
+        + get_potentials[1] +
+        """WHERE transmission_portfolio_scenario_id = {}
+        AND capacity_type = 'tx_new_lin';""".format(
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
         )
     )
@@ -415,11 +615,15 @@ def write_model_inputs(
         # Write header
         writer.writerow(
             ["transmission_line", "vintage",
-             "tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]
+             "tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"] +
+            ([] if subscenarios.TRANSMISSION_NEW_POTENTIAL_SCENARIO_ID is None
+             else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+             )
         )
 
         for row in tx_cost:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def import_results_into_database(
@@ -514,6 +718,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(tx_cost)
+    df_cols = df.columns
 
     # get the tx lines lists
     tx_lines_w_cost = df["transmission_line"].unique()
@@ -521,7 +726,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_transmission_new_cost"]
+        tables=["inputs_transmission_new_cost", "inputs_transmission_new_potential"]
     )
 
     # Check dtypes
@@ -568,4 +773,41 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
                              idx_label="transmission_line",
                              msg=msg)
     )
+
+    cols = ["min_cumulative_new_build_mw",
+            "max_cumulative_new_build_mw"]
+    # Check that maximum new build doesn't decrease
+    if cols[1] in df_cols:
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_transmission_new_potential",
+            severity="Mid",
+            errors=validate_row_monotonicity(
+                df=df,
+                col=cols[1],
+                idx_col="transmission_line",
+                rank_col="vintage"
+            )
+        )
+
+    # check that min build <= max build
+    if set(cols).issubset(set(df_cols)):
+        write_validation_to_database(
+            conn=conn,
+            scenario_id=scenario_id,
+            subproblem_id=subproblem,
+            stage_id=stage,
+            gridpath_module=__name__,
+            db_table="inputs_transmission_new_potential",
+            severity="High",
+            errors=validate_column_monotonicity(
+                df=df,
+                cols=cols,
+                idx_col=["transmission_line", "vintage"]
+            )
+        )
 
