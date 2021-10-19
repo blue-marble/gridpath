@@ -932,6 +932,21 @@ class TestExamples(unittest.TestCase):
             -308370294932303.7
         )
 
+    def test_example_2periods_new_build_2zones_transmission_Tx1halfavailmonthly(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        :return:
+        """
+
+        self.check_validation(
+            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_2zones_transmission_Tx1halfavailmonthly",
+            -308370294932303.7
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

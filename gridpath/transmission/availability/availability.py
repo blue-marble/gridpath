@@ -13,12 +13,9 @@
 # limitations under the License.
 
 from pyomo.environ import Expression
-import os.path
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
     get_required_subtype_modules_from_projects_file, load_subtype_modules
-from gridpath.project.common_functions import determine_project_subset
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):

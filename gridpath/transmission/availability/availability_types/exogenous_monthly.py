@@ -40,15 +40,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`TX_AVL_EXOG`                                                   |
+    | | :code:`TX_AVL_EXOG_MNTH`                                              |
     |                                                                         |
-    | The set of transmission lines of the :code:`exogenous` availability     |
-    | type.                                                                   |
-    +-------------------------------------------------------------------------+
-    | | :code:`TX_AVL_EXOG_OPR_TMPS`                                          |
-    |                                                                         |
-    | Two-dimensional set with transmission lines of the :code:`exogenous`    |
-    | availability type and their operational timepoints.                     |
+    | The set of transmission lines of the :code:`exogenous_monthly`          |
+    | availability type.                                                      |
     +-------------------------------------------------------------------------+
 
     |
@@ -56,8 +51,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`tx_avl_exog_derate`                                            |
-    | | *Defined over*: :code:`TX_AVL_EXOG_OPR_TMPS`                          |
+    | | :code:`tx_avl_exog_mnth_derate`                                       |
+    | | *Defined over*: :code:`TX_AVL_EXOG_MNTH_OPR_TMPS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
@@ -71,23 +66,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.TX_AVL_EXOG = Set(within=m.TX_LINES)
-
-    # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and availability type modules
-    m.TX_AVL_EXOG_OPR_TMPS = Set(
-        dimen=2, within=m.TX_OPR_TMPS,
-        initialize=lambda mod: list(
-            set((tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS
-                if tx in mod.TX_AVL_EXOG)
-        )
-    )
+    m.TX_AVL_EXOG_MNTH = Set(within=m.TX_LINES)
 
     # Required Params
     ###########################################################################
 
-    m.tx_avl_exog_derate = Param(
-        m.TX_AVL_EXOG_OPR_TMPS,
+    m.tx_avl_exog_mnth_derate = Param(
+        m.TX_AVL_EXOG_MNTH, m.MONTHS,
         within=NonNegativeReals,
         default=1
     )
@@ -99,7 +84,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 def availability_derate_rule(mod, g, tmp):
     """
     """
-    return mod.tx_avl_exog_derate[g, tmp]
+    return mod.tx_avl_exog_mnth_derate[g, mod.month[tmp]]
 
 
 # Input-Output
@@ -121,10 +106,10 @@ def load_model_data(
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="tx_availability_type",
-        type="exogenous", prj_or_tx="transmission_line"
+        type="exogenous_monthly", prj_or_tx="transmission_line"
     )
 
-    data_portal.data()["TX_AVL_EXOG"] = {None: tx_subset}
+    data_portal.data()["TX_AVL_EXOG_MNTH"] = {None: tx_subset}
 
     # Availability derates
     # Get any derates from the tx_availability.tab file if it exists;
@@ -135,13 +120,13 @@ def load_model_data(
     # transmission_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs",
-        "transmission_availability_exogenous.tab"
+        "transmission_availability_exogenous_monthly.tab"
     )
 
     if os.path.exists(availability_file):
         data_portal.load(
             filename=availability_file,
-            param=m.tx_avl_exog_derate
+            param=m.tx_avl_exog_mnth_derate
         )
     else:
         pass
@@ -163,21 +148,15 @@ def get_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     sql = """
-        SELECT transmission_line, timepoint, availability_derate
+        SELECT transmission_line, month, availability_derate
         -- Select only lines, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
         -- and temporal scenario id
         FROM 
-            (SELECT transmission_line, stage_id, timepoint
-            FROM transmission_operational_timepoints
-            WHERE transmission_portfolio_scenario_id = {}
-            AND transmission_operational_chars_scenario_id = {}
-            AND temporal_scenario_id = {}
-            AND (transmission_specified_capacity_scenario_id = {}
-                 OR transmission_new_cost_scenario_id = {})
-            AND subproblem_id = {}
-            AND stage_id = {}
-            ) as tx_periods_timepoints_tbl
+            (SELECT transmission_line
+            FROM inputs_transmission_portfolios
+            WHERE transmission_portfolio_scenario_id = {portfolio}
+            ) as tx_portfolio
         -- Of the lines in the portfolio, select only those that are in 
         -- this transmission_availability_scenario_id and have 'exogenous' as 
         -- their availability type and a non-null 
@@ -187,8 +166,8 @@ def get_inputs_from_database(
         INNER JOIN (
             SELECT transmission_line, exogenous_availability_scenario_id
             FROM inputs_transmission_availability
-            WHERE transmission_availability_scenario_id = {}
-            AND availability_type = '{}'
+            WHERE transmission_availability_scenario_id = {availability_scenario}
+            AND availability_type = '{availability_type}'
             AND exogenous_availability_scenario_id IS NOT NULL
             ) AS avail_char
         USING (transmission_line)
@@ -197,20 +176,15 @@ def get_inputs_from_database(
         -- inputs_transmission_availability_exogenous
         left outer JOIN
             inputs_transmission_availability_exogenous
-        USING (exogenous_availability_scenario_id, transmission_line, stage_id, 
-        timepoint)
-        WHERE timepoint != 0 -- exclude timepoint=0 (monthly availability)
+        USING (exogenous_availability_scenario_id, transmission_line)
+        WHERE stage_id = {stage}
+        AND month != 0  -- exclude month=0 (timepoint availability)
         ;
     """.format(
-        subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-        subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-        subscenarios.TEMPORAL_SCENARIO_ID,
-        subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID,
-        subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID,
-        subproblem,
-        stage,
-        subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
-        "exogenous",
+        portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+        availability_scenario=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
+        availability_type="exogenous_monthly",
+        stage=stage
     )
 
     c = conn.cursor()
@@ -237,7 +211,7 @@ def write_model_inputs(
     if availabilities:
         with open(os.path.join(
                 scenario_directory, str(subproblem), str(stage), "inputs",
-                "transmission_availability_exogenous.tab"
+                "transmission_availability_exogenous_monthly.tab"
         ), "w", newline="") as availability_tab_file:
             writer = csv.writer(
                 availability_tab_file,
@@ -246,7 +220,7 @@ def write_model_inputs(
             )
 
             writer.writerow(
-                ["transmission_line", "timepoint", "availability_derate"]
+                ["transmission_line", "month", "availability_derate"]
             )
 
             for row in availabilities:

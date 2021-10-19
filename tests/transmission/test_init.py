@@ -117,7 +117,7 @@ class TestTransmissionInit(unittest.TestCase):
         expected_cap_type = OrderedDict(sorted(
             {"Tx1": "exogenous",
              "Tx_New": "exogenous",
-             "Tx2": "exogenous",
+             "Tx2": "exogenous_monthly",
              "Tx3": "exogenous"
              }.items()
                                         )
