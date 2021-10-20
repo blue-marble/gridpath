@@ -131,7 +131,7 @@ def get_parallel_get_inputs_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--n_parallel_get_inputs", default=1,
+    parser.add_argument("--n_parallel_get_inputs", default=12,
                         help="Get inputs for n subproblems in parallel.")
 
     return parser
@@ -142,7 +142,7 @@ def get_parallel_solve_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--n_parallel_solve", default=1,
+    parser.add_argument("--n_parallel_solve", default=12,
                         help="Solve n subproblems in parallel.")
 
     return parser
