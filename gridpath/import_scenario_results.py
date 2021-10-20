@@ -45,8 +45,24 @@ def _import_rule(
 
     Rule for whether to import results for a subproblem/stage. Write your
     custom rule here to use this functionality. Must return True or False.
+
+    Import only if unserved energy is found (non-zero values in
+    load_balance.csv results file).
     """
-    import_results = True
+    with open(os.path.join(results_directory,
+                           "load_balance.csv"),
+              "r") as load_balance_file:
+        lb_reader = csv.reader(load_balance_file)
+
+        next(lb_reader)  # skip header
+
+        unserved_energy = [float(row[9]) for row in lb_reader]
+        if any(unserved_energy):
+            print("unserved energy found -- importing")
+            import_results = True
+        else:
+            print("no unserved energy -- skipping")
+            import_results = False
 
     return import_results
 
