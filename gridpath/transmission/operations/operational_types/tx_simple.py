@@ -21,6 +21,7 @@ of line flow.
 
 """
 
+import csv
 import os
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
@@ -158,10 +159,29 @@ def add_model_components(
         )
     )
 
+    m.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT = Set(
+        dimen=3, within=m.TX_SIMPLE * m.BLN_TYPE_HRZS
+    )
+
+    m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT = Set(
+        dimen=2, within=m.TX_SIMPLE_OPR_TMPS,
+        initialize=lambda mod:
+        set((l, tmp) for (l, tmp) in mod.TX_SIMPLE_OPR_TMPS
+            if l in mod.TX_SIMPLE)
+    )
+
     # Params
     ###########################################################################
     m.tx_simple_loss_factor = Param(
         m.TX_SIMPLE, within=PercentFraction, default=0
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.tx_simple_min_transmit_power_mw = Param(
+        m.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT,
+        within=Reals
     )
 
     # Variables
@@ -215,6 +235,10 @@ def add_model_components(
         rule=max_losses_to_rule
     )
 
+    m.TxSimple_Min_Transmit_Power_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT,
+        rule=min_transmit_power_rule
+    )
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -323,6 +347,27 @@ def max_losses_to_rule(mod, l, tmp):
             <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
             * mod.tx_simple_loss_factor[l]
 
+
+def min_transmit_power_rule(mod, l, bt, h):
+    """
+    **Constraint Name**: TxSimple_Min_Transmit_Power_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
+
+    Transmitted power should exceed the defined minimum transmission power in
+    each operational timepoint.
+    """
+    var = mod.tx_simple_min_transmit_power_mw[l, bt, h]
+    if var == 0:
+        return Constraint.Skip
+    elif var > 0:
+        return mod.TxSimple_Transmit_Power_MW[l, mod.
+               ] \
+               >= var
+    else:
+        return mod.TxSimple_Transmit_Power_MW[l, tmp] \
+               <= var
+
+
 # Transmission Operational Type Methods
 ###############################################################################
 
@@ -396,3 +441,121 @@ def load_model_data(m, d, data_portal, scenario_directory,
 
     # Load data
     data_portal.data()["tx_simple_loss_factor"] = loss_factor
+
+    # Min transmit power
+    transmission_horizons_with_min = list()
+    min_transmit_power_mw = dict()
+
+    header = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_min_transmit_power.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
+
+    optional_columns = ["min_transmit_power_mw"]
+    used_columns = [c for c in optional_columns if c in header]
+
+    df = pd.read_csv(
+        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                     "transmission_min_transmit_power.tab"),
+        sep="\t", usecols=["transmission_line", "balancing_type_horizon", "horizon"] + used_columns
+    )
+
+    # min_transmit_power_mw is optional,
+    # so TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT
+    # and min_transmit_power_mw simply won't be initialized if
+    # min_transmit_power_mw does not exist in the input file
+    if "min_transmit_power_mw" in df.columns:
+        for row in zip(df["transmission_line"],
+                       df["balancing_type_horizon"],
+                       df["horizon"],
+                       df["min_transmit_power_mw"]):
+            if row[3] != ".":
+                transmission_horizons_with_min.append((row[0], row[1], row[2]))
+                min_transmit_power_mw[(row[0], row[1], row[2])] = float(row[3])
+            else:
+                pass
+    else:
+        pass
+
+    # Load min transmit power data
+    if not transmission_horizons_with_min:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT"] = \
+            {None: transmission_horizons_with_min}
+
+    data_portal.data()["tx_simple_min_transmit_power_mw"] = \
+        min_transmit_power_mw
+
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    tx_min_transmit_power = c.execute(
+        """SELECT transmission_line, balancing_type_horizon, horizon, min_transmit_power_mw
+        FROM inputs_transmission_min_transmit_power
+        JOIN
+        (SELECT balancing_type_horizon, horizon
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {}) as relevant_horizons
+        USING (balancing_type_horizon, horizon)        
+        JOIN
+        (SELECT transmission_line
+        FROM inputs_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id = {}) as relevant_tx
+        USING (transmission_line)
+        WHERE transmission_min_transmit_power_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_ID = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TRANSMISSION_MIN_TRANSMIT_POWER_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    )
+
+    return tx_min_transmit_power
+
+
+def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and write out the model input
+    transmission_lines.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    tx_min_transmit_power = get_model_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn)
+
+    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
+                           "transmission_min_transmit_power.tab"),
+              "w", newline="") as tx_min_transmit_power_tab_file:
+        writer = csv.writer(tx_min_transmit_power_tab_file, delimiter="\t", lineterminator="\n")
+
+        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
+        #  same as database
+        # Write header
+        writer.writerow(
+            ["transmission_line", "balancing_type_horizon", "horizon", "min_transmit_power_mw"]
+        )
+
+        for row in tx_min_transmit_power:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
