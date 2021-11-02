@@ -76,6 +76,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented transmission availability types
+DROP TABLE IF EXISTS mod_tx_availability_types;
+CREATE TABLE mod_tx_availability_types (
+availability_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Implemented prm types
 DROP TABLE IF EXISTS mod_prm_types;
 CREATE TABLE mod_prm_types (
@@ -1718,6 +1725,59 @@ FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
 subscenarios_transmission_new_potential (transmission_new_potential_scenario_id)
 );
 
+-- Transmission availability (e.g. due to planned outages/availability)
+-- Subscenarios
+DROP TABLE IF EXISTS subscenarios_transmission_availability;
+CREATE TABLE subscenarios_transmission_availability (
+transmission_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Define availability type and IDs for type characteristics
+-- TODO: implement check that there are exogenous IDs only for exogenous
+--  types and endogenous IDs only for endogenous types
+DROP TABLE IF EXISTS inputs_transmission_availability;
+CREATE TABLE inputs_transmission_availability (
+transmission_availability_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
+endogenous_availability_scenario_id INTEGER,
+PRIMARY KEY (transmission_availability_scenario_id, transmission_line,
+             availability_type)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_availability_exogenous;
+CREATE TABLE subscenarios_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_availability_exogenous;
+CREATE TABLE inputs_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ),  -- use 0 for monthly availability
+month INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ), -- use 0 for timepoint-level availability
+availability_derate FLOAT,
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id, stage_id,
+             timepoint, month),
+FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
+    REFERENCES subscenarios_transmission_availability_exogenous
+        (transmission_line, exogenous_availability_scenario_id)
+);
+
 -- Transmission min transmit power
 DROP TABLE IF EXISTS subscenarios_transmission_min_transmit_power;
 CREATE TABLE subscenarios_transmission_min_transmit_power (
@@ -1740,6 +1800,7 @@ balancing_type_horizon, horizon),
 FOREIGN KEY (transmission_min_transmit_power_scenario_id) REFERENCES
 subscenarios_transmission_min_transmit_power (transmission_min_transmit_power_scenario_id)
 );
+
 
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
@@ -2425,6 +2486,7 @@ transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
+transmission_availability_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
@@ -2568,6 +2630,9 @@ FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
     subscenarios_transmission_new_cost
         (transmission_new_cost_scenario_id),
+FOREIGN KEY (transmission_availability_scenario_id) REFERENCES
+    subscenarios_transmission_availability
+        (transmission_availability_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
     subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id),
@@ -3998,6 +4063,14 @@ inputs_project_operational_chars
 USING (project)
 ;
 
+DROP VIEW IF EXISTS transmission_portfolio_opchars;
+CREATE VIEW transmission_portfolio_opchars AS
+SELECT * FROM inputs_transmission_portfolios
+LEFT OUTER JOIN
+inputs_transmission_operational_chars
+USING (transmission_line)
+;
+
 
 -- This view shows the possible operational periods for new projects, based on
 -- the available vintages and their lifetime. E.g. a project available in
@@ -4024,6 +4097,23 @@ SELECT distinct project_new_cost_scenario_id, project, period
 FROM main_data
 ;
 
+
+DROP VIEW IF EXISTS transmission_new_operational_periods;
+CREATE VIEW transmission_new_operational_periods AS
+WITH main_data (transmission_line, transmission_new_cost_scenario_id, period,
+    highrange)
+    AS (
+    SELECT transmission_line, transmission_new_cost_scenario_id, vintage AS period,
+    vintage + tx_lifetime_yrs AS highrange
+    FROM inputs_transmission_new_cost
+    UNION ALL
+    SELECT transmission_line, transmission_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
+SELECT distinct transmission_new_cost_scenario_id, transmission_line, period
+FROM main_data
+;
 
 -- This view shows the possible operational periods for new and specified
 -- projects, based on the available vintage and lifetime and/or the specified
@@ -4052,6 +4142,35 @@ INNER JOIN
 USING (period)
 ;
 
+
+-- This view shows the possible operational periods for new and specified
+-- transmission, based on the available vintage and lifetime and/or the
+-- specified capacity periods, as well as the actual modeled periods.
+DROP VIEW IF EXISTS transmission_operational_periods;
+CREATE VIEW transmission_operational_periods AS
+SELECT transmission_specified_capacity_scenario_id,
+       transmission_new_cost_scenario_id,
+temporal_scenario_id, transmission_line, period
+FROM
+    -- Use left join + union + left join because no outer join in sqlite
+    (SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM inputs_transmission_specified_capacity
+    LEFT JOIN transmission_new_operational_periods USING(transmission_line,
+                                                         period)
+    UNION ALL
+    SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM transmission_new_operational_periods
+    LEFT JOIN inputs_transmission_specified_capacity USING(transmission_line, period)
+    where transmission_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_transmission_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+;
 
 -- This view shows the periods and the respective horizons within each period
 -- for each balancing_type, based on the timepoint-to-horizon mapping and the
@@ -4119,6 +4238,22 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+DROP VIEW IF EXISTS transmission_operational_timepoints;
+CREATE VIEW transmission_operational_timepoints AS
+SELECT transmission_portfolio_scenario_id, transmission_operational_chars_scenario_id,
+transmission_specified_capacity_scenario_id, transmission_new_cost_scenario_id,
+temporal_scenario_id, operational_type,
+subproblem_id, stage_id, transmission_line, timepoint
+-- Get all transmissions in the portfolio (with their opchars)
+FROM transmission_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+transmission_operational_periods
+USING (temporal_scenario_id, transmission_line, period)
+;
 
 -- ratio of hrs that are (not) spinup/lookahead in each period-subproblem-stage
 DROP VIEW IF EXISTS spinup_or_lookahead_ratios;

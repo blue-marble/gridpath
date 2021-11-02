@@ -66,7 +66,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+        usecols=["transmission_line", "tx_capacity_type",
                  "tx_operational_type"]
     )
 
@@ -161,7 +161,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
+        usecols=["transmission_line", "tx_capacity_type",
                  "tx_operational_type"]
     )
 

@@ -252,7 +252,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, str(subproblem), str(stage),
                               "inputs", "transmission_lines.tab"),
-        select=("TRANSMISSION_LINES", "carbon_cap_zone",
+        select=("transmission_line", "carbon_cap_zone",
                 "carbon_cap_zone_import_direction",
                 "tx_co2_intensity_tons_per_mwh"),
         param=(m.tx_carbon_cap_zone,

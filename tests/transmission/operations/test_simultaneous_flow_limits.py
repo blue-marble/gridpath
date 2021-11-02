@@ -33,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods", "geography.load_zones", "transmission",
     "transmission.capacity",
     "transmission.capacity.capacity",
+    "transmission.availability.availability",
     "transmission.operations.operational_types",
     "transmission.operations.operations"]
 NAME_OF_MODULE_BEING_TESTED = \

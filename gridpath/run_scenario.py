@@ -28,7 +28,7 @@ import os.path
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory, \
     SolverStatus, TerminationCondition
 # from pyomo.util.infeasible import log_infeasible_constraints
-from pyutilib.services import TempfileManager
+from pyomo.common.tempfiles import TempfileManager
 import sys
 import warnings
 

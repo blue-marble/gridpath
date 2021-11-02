@@ -921,6 +921,18 @@ def add_model_components(
     | A project cannot be synced (committed or providing startup/shutdown     |
     | power) when unavailable.                                                |
     +-------------------------------------------------------------------------+
+    | Other                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Commit_When_Unavailable_Constraint`               |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Forces the binary commitment to 0 when the project is unavailable       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Synced_When_Unavailable_Constraint`               |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Forces the synced to 0 when the project is unavailable                  |
+    +-------------------------------------------------------------------------+
 
     """
     if bin_or_lin_optype == "gen_commit_bin":
@@ -2696,6 +2708,53 @@ def add_model_components(
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             rule=power_during_shutdown_constraint_rule
+        )
+    )
+
+    def commit_when_unavailable_constraint_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenCommitBin_Commit_When_Unavailable_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+        Ensure that the commitment flag remains zero while the project is
+        unavailable
+        Commit[t] <= Availability_Derate[t]
+        """
+
+        return getattr(
+            mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+            )[g, tmp] \
+            <= mod.Availability_Derate[g, tmp]
+
+    setattr(
+        m,
+        "GenCommit{}_Commit_When_Unavailable_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=commit_when_unavailable_constraint_rule
+        )
+    )
+
+    def synced_when_unavailable_constraint_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenCommitBin_Synced_When_Unavailable_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+        Ensure that the synced flag remains zero while the project is
+        unavailable
+        Synced[t] <= Availability_Derate[t]
+        """
+
+        return getattr(
+            mod,
+            "GenCommit{}_Synced".format(Bin_or_Lin)
+            )[g, tmp] \
+            <= mod.Availability_Derate[g, tmp]
+
+    setattr(
+        m,
+        "GenCommit{}_Synced_When_Unavailable_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=synced_when_unavailable_constraint_rule
         )
     )
 

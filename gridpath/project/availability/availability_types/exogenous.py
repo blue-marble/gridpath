@@ -14,9 +14,9 @@
 
 """
 For each project assigned this *availability type*, the user may specify an
-(un)availability schedule, i.e. a capacity derate of 0 to 1 for each
-timepoint in which the project may be operated. If fully derated in a given
-timepoint, the available project capacity will be 0 in that timepoint and all
+(un)availability schedule, i.e. a capacity derate for each timepoint in
+which the project may be operated. If fully derated in a given timepoint,
+the available project capacity will be 0 in that timepoint and all
 operational decision variables will therefore also be constrained to 0 in the
 optimization.
 
@@ -24,7 +24,7 @@ optimization.
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, PercentFraction
+from pyomo.environ import Param, Set, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import write_validation_to_database, \
@@ -57,11 +57,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`avl_exog_derate`                                               |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
-    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
     | The pre-specified availability derate (e.g. for maintenance/planned     |
-    | outages). Defaults to 1 if not specified.                               |
+    | outages). Defaults to 1 if not specified. Availaibility can also be     |
+    | more than 1.                                                            |
     +-------------------------------------------------------------------------+
 
     """
@@ -86,7 +87,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.avl_exog_derate = Param(
         m.AVL_EXOG_OPR_TMPS,
-        within=PercentFraction,
+        within=NonNegativeReals,
         default=1
     )
 
@@ -118,7 +119,7 @@ def load_model_data(
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="availability_type",
-        type="exogenous"
+        type="exogenous", prj_or_tx="project"
     )
 
     data_portal.data()["AVL_EXOG"] = {None: project_subset}

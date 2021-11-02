@@ -23,7 +23,7 @@ import traceback
 
 
 def get_required_subtype_modules_from_projects_file(
-    scenario_directory, subproblem, stage, which_type
+    scenario_directory, subproblem, stage, which_type, prj_or_tx="project"
 ):
     """
     Get a list of unique types from projects.tab.
@@ -31,7 +31,7 @@ def get_required_subtype_modules_from_projects_file(
     project_df = pd.read_csv(
         os.path.join(
             scenario_directory, str(subproblem), str(stage), "inputs",
-            "projects.tab"
+            "{}s.tab".format(prj_or_tx)
         ),
         sep="\t"
     )

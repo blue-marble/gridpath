@@ -254,7 +254,8 @@ def min_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxSimple_Transmit_Power_MW[l, tmp] \
-        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
+        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -266,7 +267,8 @@ def max_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxSimple_Transmit_Power_MW[l, tmp] \
-        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
+        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+        * mod.Tx_Availability_Derate[l, tmp]
 
 
 def losses_lz_from_rule(mod, l, tmp):
@@ -329,6 +331,7 @@ def max_losses_from_rule(mod, l, tmp):
     else:
         return mod.TxSimple_Losses_LZ_From_MW[l, tmp] \
             <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+            * mod.Tx_Availability_Derate[l, tmp] \
             * mod.tx_simple_loss_factor[l]
 
 
@@ -345,6 +348,7 @@ def max_losses_to_rule(mod, l, tmp):
     else:
         return mod.TxSimple_Losses_LZ_To_MW[l, tmp] \
             <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+            * mod.Tx_Availability_Derate[l, tmp] \
             * mod.tx_simple_loss_factor[l]
 
 
@@ -420,14 +424,14 @@ def load_model_data(m, d, data_portal, scenario_directory,
         os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
                      "transmission_lines.tab"),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_operational_type",
+        usecols=["transmission_line", "tx_operational_type",
                  "tx_simple_loss_factor"]
     )
     df = df[df["tx_operational_type"] == "tx_simple"]
 
     # Dict of loss factor by tx_simple line based on raw data
     loss_factor_raw = dict(zip(
-        df["TRANSMISSION_LINES"],
+        df["transmission_line"],
         df["tx_simple_loss_factor"]
     ))
 

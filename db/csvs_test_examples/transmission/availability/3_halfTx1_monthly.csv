@@ -1,0 +1,5 @@
+transmission_line,availability_type,exogenous_availability_scenario_id,endogenous_availability_scenario_id
+Tx1,exogenous_monthly,1,
+Tx2,exogenous,,
+Tx3,exogenous,,
+Tx_new,exogenous,,
