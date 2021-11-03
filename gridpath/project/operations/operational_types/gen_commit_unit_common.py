@@ -1602,7 +1602,7 @@ def add_model_components(
             'gen_spec', 'gen_ret_bin',  'gen_ret_lin']
                 and getattr(mod, mod.capacity_type[g] + '_capacity_mw') == 0) \
             or (mod.availability_type[g] == 'exogenous'
-                and mod.avl_exog_derate[g, tmp] == 0)\
+                and mod.avl_exog_cap_derate[g, tmp] == 0)\
             or getattr(mod, "gen_commit_{}_min_stable_level_fraction".format(
                 bin_or_lin))[g] == 0:
             startup_shutdown_fraction = 0

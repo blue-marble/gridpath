@@ -313,11 +313,16 @@ def min_time_between_events_rule(mod, g, tmp):
 # Availability Type Methods
 ###############################################################################
 
-def availability_derate_rule(mod, g, tmp):
+def availability_derate_cap_rule(mod, g, tmp):
     """
     """
     return 1 - mod.AvlCont_Unavailable[g, tmp]
 
+
+def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
+    """
+    """
+    return 1
 
 # Input-Output
 ###############################################################################

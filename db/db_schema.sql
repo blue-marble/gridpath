@@ -1132,6 +1132,7 @@ exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
 availability_derate FLOAT,
+hyb_stor_cap_availability_derate FLOAT,
 PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id, timepoint),
 FOREIGN KEY (project, exogenous_availability_scenario_id)
     REFERENCES subscenarios_project_availability_exogenous

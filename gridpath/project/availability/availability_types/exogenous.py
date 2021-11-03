@@ -55,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`avl_exog_derate`                                               |
+    | | :code:`avl_exog_cap_derate`                                               |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |
@@ -85,7 +85,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.avl_exog_derate = Param(
+    m.avl_exog_cap_derate = Param(
+        m.AVL_EXOG_OPR_TMPS,
+        within=NonNegativeReals,
+        default=1
+    )
+
+    m.avl_exog_hyb_gen_cap_derate = Param(
+        m.AVL_EXOG_OPR_TMPS,
+        within=NonNegativeReals,
+        default=1
+    )
+
+    m.avl_exog_hyb_stor_cap_derate = Param(
         m.AVL_EXOG_OPR_TMPS,
         within=NonNegativeReals,
         default=1
@@ -95,10 +107,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Availability Type Methods
 ###############################################################################
 
-def availability_derate_rule(mod, g, tmp):
+def availability_derate_cap_rule(mod, g, tmp):
     """
     """
-    return mod.avl_exog_derate[g, tmp]
+    return mod.avl_exog_cap_derate[g, tmp]
+
+
+def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
+    """
+    """
+    return mod.avl_exog_hyb_stor_cap_derate[g, tmp]
+
+
 
 
 # Input-Output
@@ -139,7 +159,7 @@ def load_model_data(
     if os.path.exists(availability_file):
         data_portal.load(
             filename=availability_file,
-            param=m.avl_exog_derate
+            param=(m.avl_exog_cap_derate, m.avl_exog_hyb_stor_cap_derate)
         )
     else:
         pass
@@ -162,7 +182,8 @@ def get_inputs_from_database(
     stage = 1 if stage == "" else stage
 
     sql = """
-        SELECT project, timepoint, availability_derate
+        SELECT project, timepoint, availability_derate, 
+        hyb_stor_cap_availability_derate
         -- Select only projects, periods, timepoints from the relevant 
         -- portfolio, relevant opchar scenario id, operational type, 
         -- and temporal scenario id
@@ -218,7 +239,7 @@ def get_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     :param scenario_directory:
@@ -238,7 +259,10 @@ def write_model_inputs(
                   "w", newline="") as availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t", lineterminator="\n")
 
-            writer.writerow(["project", "timepoint", "availability_derate"])
+            writer.writerow(
+                ["project", "timepoint", "availability_derate",
+                 "hyb_stor_cap_availability_derate"]
+            )
 
             for row in availabilities:
                 row = ["." if i is None else i for i in row]
