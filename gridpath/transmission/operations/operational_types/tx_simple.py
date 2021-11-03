@@ -163,13 +163,6 @@ def add_model_components(
         dimen=3, within=m.TX_SIMPLE * m.BLN_TYPE_HRZS
     )
 
-    m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT = Set(
-        dimen=2, within=m.TX_SIMPLE_OPR_TMPS,
-        initialize=lambda mod:
-        set((l, tmp) for (l, tmp) in mod.TX_SIMPLE_OPR_TMPS
-            if l in mod.TX_SIMPLE)
-    )
-
     # Params
     ###########################################################################
     m.tx_simple_loss_factor = Param(
@@ -181,7 +174,7 @@ def add_model_components(
 
     m.tx_simple_min_transmit_power_mw = Param(
         m.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT,
-        within=Reals
+        within=Reals, default=0
     )
 
     # Variables
@@ -236,7 +229,7 @@ def add_model_components(
     )
 
     m.TxSimple_Min_Transmit_Power_Constraint = Constraint(
-        m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT,
+        m.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT,
         rule=min_transmit_power_rule
     )
 
@@ -364,12 +357,11 @@ def min_transmit_power_rule(mod, l, bt, h):
     if var == 0:
         return Constraint.Skip
     elif var > 0:
-        return mod.TxSimple_Transmit_Power_MW[l, mod.
-               ] \
-               >= var
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]:
+            return mod.TxSimple_Transmit_Power_MW[l, tmp] >= var
     else:
-        return mod.TxSimple_Transmit_Power_MW[l, tmp] \
-               <= var
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]:
+            return mod.TxSimple_Transmit_Power_MW[l, tmp] <= var
 
 
 # Transmission Operational Type Methods

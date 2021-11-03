@@ -165,6 +165,18 @@ class TestTxOperations(unittest.TestCase):
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
+        # Set: TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT
+        expect_tx_bln_type_hrzs = sorted(
+            [
+                ("Tx_New", "day", 202001), ("Tx_New", "day", 202002)
+            ]
+        )
+        actual_tx_bln_type_hrzs = sorted(
+            [(tx, bt, h) for (tx, bt, h)
+             in instance.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT]
+        )
+        self.assertListEqual(expect_tx_bln_type_hrzs, actual_tx_bln_type_hrzs)
+
         # Param: tx_simple_loss_factor
         expected_lf = OrderedDict(sorted({"Tx_New": 0.1}.items()))
         actual_lf = OrderedDict(
@@ -174,6 +186,17 @@ class TestTxOperations(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_lf, actual_lf)
+
+        # Param: tx_simple_min_transmit_power_mw
+        expected_min_transmit_power = OrderedDict(sorted({("Tx_New", "day", 202001): -0.1,
+                                                          ("Tx_New", "day", 202002): -5.5}.items()))
+        actual_min_transmit_power = OrderedDict(
+            sorted(
+                {(tx, bt, h): instance.tx_simple_min_transmit_power_mw[tx, bt, h]
+                 for (tx, bt, h) in instance.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT}.items()
+            )
+        )
+        self.assertDictEqual(expected_min_transmit_power, actual_min_transmit_power)
 
 
 if __name__ == "__main__":

@@ -947,6 +947,17 @@ class TestExamples(unittest.TestCase):
             -308370294932303.7
         )
 
+    def test_tx_min_transmit_power(self):
+        """
+        Check validation and objective function value of
+        "test_tx_min_transmit_power" example
+        :return:
+        """
+
+        self.check_validation("test_tx_min_transmit_power")
+        self.run_and_check_objective("test_tx_min_transmit_power",
+                                     -58467336323371.43)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
