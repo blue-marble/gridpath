@@ -505,12 +505,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["tx_simple_loss_factor"] = loss_factor
 
     transmission_flow_limits_file = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow_limits.tab",
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "transmission_flow_limits.tab",
+    )
 
     if os.path.exists(transmission_flow_limits_file):
         # Min Flow
