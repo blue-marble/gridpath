@@ -47,6 +47,14 @@ def add_model_components(
     | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT`                      |
+    |                                                                         |
+    | Three-dimensional set of transmission-balancing type-horizon            |
+    | combinations with transmission lines of the :code:`tx_simple`           |
+    | operational type to describe all possible                               |
+    | transmission-balancing type-horizon for transmission lines with a min   |
+    | transmit power specified.                                               |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Params                                                                  |
@@ -57,6 +65,19 @@ def add_model_components(
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The fraction of power that is lost when transmitted over this line.     |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Params                                                         |
+    +=========================================================================+
+    | | :code:`tx_simple_min_transmit_power_mw`                               |
+    | | *Defined over*: :code:`TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT`      |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum transmitted power (in MW) that must be transmitted in a     |
+    | transmission line during all timepoints of a specific                   |
+    | balancing type-horizon combination.                                     |
     +-------------------------------------------------------------------------+
 
 
@@ -136,6 +157,13 @@ def add_model_components(
     | Losses cannot exceed the maximum transmission flow capacity times the   |
     | loss factor in each operational timepoint. Provides upper bound on      |
     | losses.                                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Min_Transmit_Power_Constraint`                        |
+    | | *Defined over*: :code:`TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT`      |
+    |                                                                         |
+    | Transmitted power should exceed the minimum transmitted power in each   |
+    | operational timepoint for every combination of balancing type and       |
+    | horizon.                                                                |
     +-------------------------------------------------------------------------+
 
     """
