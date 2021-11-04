@@ -26,6 +26,7 @@ import os
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
     Reals, PercentFraction
+Negative_Infinity = float('-inf')
 
 
 def add_model_components(
@@ -73,7 +74,7 @@ def add_model_components(
     | | :code:`tx_simple_min_transmit_power_mw`                               |
     | | *Defined over*: :code:`TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT`      |
     | | *Within*: :code:`Reals`                                               |
-    | | *Default*: :code:`0`                                                  |
+    | | *Default*: :code:`Negative_Infinity`                                                  |
     |                                                                         |
     | The minimum transmitted power (in MW) that must be transmitted in a     |
     | transmission line during all timepoints of a specific                   |
@@ -202,7 +203,7 @@ def add_model_components(
 
     m.tx_simple_min_transmit_power_mw = Param(
         m.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT,
-        within=Reals, default=0
+        within=Reals, default=Negative_Infinity
     )
 
     # Variables
