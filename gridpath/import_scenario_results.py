@@ -49,21 +49,31 @@ def _import_rule(
     Import only if unserved energy is found (non-zero values in
     load_balance.csv results file).
     """
-    with open(os.path.join(results_directory,
-                           "load_balance.csv"),
-              "r") as load_balance_file:
-        lb_reader = csv.reader(load_balance_file)
+    # with open(os.path.join(results_directory,
+    #                        "load_balance.csv"),
+    #           "r") as load_balance_file:
+    #     lb_reader = csv.reader(load_balance_file)
+    #
+    #     next(lb_reader)  # skip header
+    #
+    #     unserved_energy = [float(row[9]) for row in lb_reader]
+    #     if any(unserved_energy):
+    #         print("unserved energy found -- importing")
+    #         import_results = True
+    #     else:
+    #         print("no unserved energy -- skipping")
+    #         import_results = False
 
-        next(lb_reader)  # skip header
+    if os.path.exists(
+            os.path.join(results_directory, "load_balance.csv")
+    ):
+        import_results = True
+        print("unserved energy found -- importing")
+    else:
+        import_results = False
+        print("no unserved energy -- skipping")
 
-        unserved_energy = [float(row[9]) for row in lb_reader]
-        if any(unserved_energy):
-            print("unserved energy found -- importing")
-            import_results = True
-        else:
-            print("no unserved energy -- skipping")
-            import_results = False
-
+    print("Import results is ", import_results)
     return import_results
 
 
@@ -318,7 +328,14 @@ def main(import_rule, args=None):
     delete_scenario_results(conn=conn, scenario_id=scenario_id)
 
     # Go through modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    # modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = [
+        "project.operations.operational_types",  # power
+        "system.load_balance.load_balance",  # USE
+        "transmission.operations.operations", # BA-to-BA flows
+        "system.load_balance.aggregate_transmission_power",  # net imports
+        "transmission.operations.simultaneous_flow_limits"  # sim flows
+    ]
     loaded_modules = load_modules(modules_to_use)
 
     # Import appropriate results into database

@@ -26,7 +26,7 @@ import datetime
 from multiprocessing import Pool, Manager
 import os.path
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory, \
-    SolverStatus, TerminationCondition
+    SolverStatus, TerminationCondition, value
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
 import sys
@@ -206,7 +206,16 @@ def run_optimization_for_subproblem_stage(
     )
 
     # Summarize results
-    summarize_results(scenario_directory, subproblem_directory, stage_directory, parsed_arguments)
+    if os.path.exists(
+            os.path.join(
+                scenario_directory, subproblem_directory, stage_directory,
+                "results", "load_balance.csv"
+            )
+    ):
+        summarize_results(scenario_directory, subproblem_directory, stage_directory, parsed_arguments)
+    else:
+        print("skipping results summary")
+
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
     # to log file)
@@ -677,21 +686,31 @@ def export_results(
 
     Export results for each loaded module (if applicable)
     """
-    # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules = \
-        set_up_gridpath_modules(
-            scenario_directory=scenario_directory,
-            subproblem=subproblem, stage=stage
-        )
+    unserved_energy_found = any(
+        [value(instance.Unserved_Energy_MW_Expression[z, tmp])
+         for z in getattr(instance, "LOAD_ZONES")
+         for tmp in getattr(instance, "TMPS")]
+    )
 
-    for m in loaded_modules:
-        if hasattr(m, "export_results"):
-            m.export_results(
-                scenario_directory, subproblem, stage, instance,
-                dynamic_components
+    if unserved_energy_found:
+        print("unserved energy found; exporting results")
+        # Determine/load modules and dynamic components
+        modules_to_use, loaded_modules = \
+            set_up_gridpath_modules(
+                scenario_directory=scenario_directory,
+                subproblem=subproblem, stage=stage
             )
+
+        for m in loaded_modules:
+            if hasattr(m, "export_results"):
+                m.export_results(
+                    scenario_directory, subproblem, stage, instance,
+                    dynamic_components
+                )
+        else:
+            pass
     else:
-        pass
+        print("no unserved energy; skipping results export")
 
 
 def export_pass_through_inputs(
