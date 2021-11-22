@@ -43,9 +43,8 @@ def parse_arguments(arguments):
     parser = ArgumentParser(add_help=True)
 
     # Scenario name and location options
-    parser.add_argument("--database", default="../db/io.db",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ../db/io.db ")
+    parser.add_argument("--database",
+                        default="/Volumes/Samsung_X5/ra/ScenarioA.db")
     parser.add_argument("--db_schema", default="db_schema.sql",
                         help="Name of the SQL file containing the database "
                              "schema. Assumed to be in same directory as"

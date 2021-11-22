@@ -957,12 +957,12 @@ subscenarios_project_heat_rate_curves
 FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
 subscenarios_project_variable_om_curves
 (project, variable_om_curves_scenario_id),
-FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
-subscenarios_project_variable_generator_profiles
-(project, variable_generator_profile_scenario_id),
-FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
-subscenarios_project_hydro_operational_chars
-(project, hydro_operational_chars_scenario_id),
+-- FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
+-- subscenarios_project_variable_generator_profiles
+-- (project, variable_generator_profile_scenario_id),
+-- FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
+-- subscenarios_project_hydro_operational_chars
+-- (project, hydro_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
@@ -4400,4 +4400,53 @@ technology VARCHAR(32),
 color VARCHAR(32),
 plotting_order INTEGER UNIQUE,
 PRIMARY KEY (technology)
+);
+
+
+-----
+-- RA results tables
+
+DROP TABLE IF EXISTS results_ra_unserved_energy_wecc_hourly;
+CREATE TABLE results_ra_unserved_energy_wecc_hourly (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    timepoint INTEGER,
+    wecc_unserved_energy_mw FLOAT,
+    PRIMARY KEY  (scenario_id, subproblem_id, timepoint)
+);
+
+DROP TABLE IF EXISTS results_ra_unserved_energy_load_area_daily;
+CREATE TABLE results_ra_unserved_energy_load_area_daily (
+    scenario_id INTEGER,
+    load_zone VARCHAR(64),
+    subproblem_id INTEGER,
+    day_of_week INTEGER,
+    unserved_energy_mwh FLOAT,
+    unserved_energy_max_mw FLOAT,
+    PRIMARY KEY  (scenario_id, load_zone, subproblem_id, day_of_week)
+);
+
+DROP TABLE IF EXISTS results_ra_unserved_energy_wecc_daily;
+CREATE TABLE results_ra_unserved_energy_wecc_daily (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    day_of_week INTEGER,
+    wecc_load_mwh FLOAT,
+    wecc_unserved_energy_mwh FLOAT,
+    max_wecc_unserved_energy_mw FLOAT,
+    wecc_unserved_energy_mwa FLOAT,
+    PRIMARY KEY  (scenario_id, subproblem_id, day_of_week)
+);
+
+DROP TABLE IF EXISTS
+    results_ra_dispatch_load_area_technology_during_hours_with_use;
+CREATE TABLE results_ra_dispatch_load_area_technology_during_hours_with_use (
+  scenario_id INTEGER,
+  scenario_name VARCHAR(64),
+  subproblem_id INTEGER,
+  timepoint INTEGER,
+  load_zone VARCHAR(64),
+  technology VARCHAR(64),
+  power_mw FLOAT,
+  PRIMARY KEY (scenario_id, subproblem_id, timepoint, load_zone, technology)
 );

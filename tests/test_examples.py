@@ -108,7 +108,7 @@ class TestExamples(unittest.TestCase):
              # "--symbolic",
              "--n_parallel_get_inputs", str(parallel),
              "--n_parallel_solve", str(parallel),
-             "--quiet",
+             # "--quiet",
              "--mute_solver_output",
              "--testing"]
         )

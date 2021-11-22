@@ -94,12 +94,10 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--database", default="../io.db",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ./io.db ")
-    parser.add_argument("--csv_location", default="../csvs_test_examples",
-                        help="Path to the csvs folder including folder name "
-                             "relative to the current working directory.")
+    parser.add_argument("--database",
+                        default="/Volumes/Samsung_X5/ra/ScenarioA.db")
+    parser.add_argument("--csv_location",
+                        default="/Users/ana/dev/gridpath_v0.11+dev/db/csvs_ScenarioA")
     parser.add_argument("--subscenario",
                         default=None,
                         help="The subscenario to load. The script will look "
