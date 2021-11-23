@@ -20,12 +20,12 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, NonNegativeReals, Expression, value
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, \
-    subset_init_by_param_value
-from gridpath.auxiliary.db_interface import update_prj_zone_column, \
-    determine_table_subset_by_start_and_column
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_idxs
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.db_interface import (
+    update_prj_zone_column,
+    determine_table_subset_by_start_and_column,
+)
+from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -90,36 +90,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.CARBON_TAX_PRJS = Set(
-        within=m.PROJECTS
-    )
+    m.CARBON_TAX_PRJS = Set(within=m.PROJECTS)
 
     m.CARBON_TAX_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-         if p in mod.CARBON_TAX_PRJS]
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CARBON_TAX_PRJS
+        ],
     )
 
     m.CARBON_TAX_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
-        initialize=lambda mod:
-        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_PRDS
-         if p in mod.CARBON_TAX_PRJS]
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.PRJ_OPR_PRDS if p in mod.CARBON_TAX_PRJS
+        ],
     )
 
     # Input Params
     ###########################################################################
 
-    m.carbon_tax_zone = Param(
-        m.CARBON_TAX_PRJS,
-        within=m.CARBON_TAX_ZONES
-    )
+    m.carbon_tax_zone = Param(m.CARBON_TAX_PRJS, within=m.CARBON_TAX_ZONES)
 
     m.carbon_tax_allowance = Param(
-        m.CARBON_TAX_PRJS, m.PERIODS,
-        within=NonNegativeReals,
-        default=0
+        m.CARBON_TAX_PRJS, m.PERIODS, within=NonNegativeReals, default=0
     )
 
     # Derived Sets
@@ -130,7 +123,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.CARBON_TAX_PRJS,
         initialize=lambda mod, co2_z: subset_init_by_param_value(
             mod, "CARBON_TAX_PRJS", "carbon_tax_zone", co2_z
-        )
+        ),
     )
 
     # Expressions
@@ -142,17 +135,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         timepoint weight and power to get the total emissions allowance.
         """
 
-        return mod.Power_Provision_MW[prj, tmp] \
-            * mod.carbon_tax_allowance[prj, mod.period[tmp]] \
+        return (
+            mod.Power_Provision_MW[prj, tmp]
+            * mod.carbon_tax_allowance[prj, mod.period[tmp]]
+        )
 
     m.Project_Carbon_Tax_Allowance = Expression(
-        m.CARBON_TAX_PRJ_OPR_TMPS,
-        rule=carbon_tax_allowance_rule
+        m.CARBON_TAX_PRJ_OPR_TMPS, rule=carbon_tax_allowance_rule
     )
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -166,27 +161,33 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "projects.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         select=("project", "carbon_tax_zone"),
-        param=(m.carbon_tax_zone,)
+        param=(m.carbon_tax_zone,),
     )
 
-    data_portal.data()['CARBON_TAX_PRJS'] = {
-        None: list(data_portal.data()['carbon_tax_zone'].keys())
+    data_portal.data()["CARBON_TAX_PRJS"] = {
+        None: list(data_portal.data()["carbon_tax_zone"].keys())
     }
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "project_carbon_tax_allowance.tab"),
-        select=("project", "period",
-                "carbon_tax_allowance_tco2_per_mwh"),
-        param=m.carbon_tax_allowance
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_tax_allowance.tab",
+        ),
+        select=("project", "period", "carbon_tax_allowance_tco2_per_mwh"),
+        param=m.carbon_tax_allowance,
     )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -224,7 +225,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_CARBON_TAX_ZONE_SCENARIO_ID,
-            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
+            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID,
         )
     )
 
@@ -258,15 +259,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_CARBON_TAX_ALLOWANCE_SCENARIO_ID,
-            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
+            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID,
         )
     )
 
     return project_zones, project_carbon_tax_allowance
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage,
-                       conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and project_carbon_tax_allowance.tab files.
@@ -278,7 +280,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     project_zones, project_carbon_tax_allowance = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # projects.tab
     # Make a dict for easy access
@@ -286,10 +289,13 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     for (prj, zone) in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -309,19 +315,27 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
-              newline="") as \
-            projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
     # project_carbon_tax_allowance.tab
     ct_allowance_df = cursor_to_df(project_carbon_tax_allowance)
     if not ct_allowance_df.empty:
         ct_allowance_df = ct_allowance_df.fillna(".")
-        fpath = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                             "project_carbon_tax_allowance.tab")
+        fpath = os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_tax_allowance.tab",
+        )
         ct_allowance_df.to_csv(fpath, index=False, sep="\t")
 
 
@@ -343,10 +357,13 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     for tbl in tables_to_update:
         update_prj_zone_column(
-            conn=db, scenario_id=scenario_id, subscenarios=subscenarios,
+            conn=db,
+            scenario_id=scenario_id,
+            subscenarios=subscenarios,
             subscenario="project_carbon_tax_zone_scenario_id",
             subsc_tbl="inputs_project_carbon_tax_zones",
-            prj_tbl=tbl, col="carbon_tax_zone"
+            prj_tbl=tbl,
+            col="carbon_tax_zone",
         )
 
 
@@ -360,29 +377,50 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results", "carbon_tax_allowance_by_project.csv"),
-              "w", newline="") as carbon_tax_allowance_results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "carbon_tax_allowance_by_project.csv",
+        ),
+        "w",
+        newline="",
+    ) as carbon_tax_allowance_results_file:
         writer = csv.writer(carbon_tax_allowance_results_file)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "timepoint_weight",
-                         "number_of_hours_in_timepoint", "carbon_tax_zone",
-                         "technology", "carbon_tax_allowance_tons"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "carbon_tax_zone",
+                "technology",
+                "carbon_tax_allowance_tons",
+            ]
+        )
         for (p, tmp) in m.CARBON_TAX_PRJ_OPR_TMPS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.carbon_tax_zone[p],
-                m.technology[p],
-                value(m.Project_Carbon_Tax_Allowance[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    m.period[tmp],
+                    m.horizon[tmp, m.balancing_type_project[p]],
+                    tmp,
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    m.carbon_tax_zone[p],
+                    m.technology[p],
+                    value(m.Project_Carbon_Tax_Allowance[p, tmp]),
+                ]
+            )
+
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -395,7 +433,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     project_zones, project_carbon_tax_allowance = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_zones)
@@ -408,7 +447,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     zones = c.execute(
         """SELECT carbon_tax_zone FROM inputs_geography_carbon_tax_zones
         WHERE carbon_tax_zone_scenario_id = {}
-        """.format(subscenarios.CARBON_TAX_ZONE_SCENARIO_ID)
+        """.format(
+            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID
+        )
     )
     zones = [z[0] for z in zones]  # convert to list
 
@@ -421,11 +462,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_carbon_tax_zones",
         severity="High",
-        errors=validate_idxs(actual_idxs=zones_w_project,
-                             req_idxs=zones,
-                             idx_label="carbon_tax_zone",
-                             msg="Each carbon tax zone needs at least 1 "
-                                 "project assigned to it.")
+        errors=validate_idxs(
+            actual_idxs=zones_w_project,
+            req_idxs=zones,
+            idx_label="carbon_tax_zone",
+            msg="Each carbon tax zone needs at least 1 " "project assigned to it.",
+        ),
     )
 
     # TODO: need validation that projects with carbon tax zones also have fuels

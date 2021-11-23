@@ -34,9 +34,7 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "
-            "specify a different database file?".format(
-                os.path.abspath(db_path)
-            )
+            "specify a different database file?".format(os.path.abspath(db_path))
         )
 
     conn = sqlite3.connect(db_path, timeout=timeout, detect_types=detect_types)
@@ -47,8 +45,9 @@ def connect_to_database(db_path="../db/io.db", timeout=5, detect_types=0):
     return conn
 
 
-def spin_on_database_lock(conn, cursor, sql, data, many=True,
-                          max_attempts=61, interval=10, quiet=True):
+def spin_on_database_lock(
+    conn, cursor, sql, data, many=True, max_attempts=61, interval=10, quiet=True
+):
     """
     :param conn: the connection object
     :param cursor: the cursor object
@@ -90,11 +89,15 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
             conn.commit()
         except sqlite3.OperationalError as e:
             if "locked" in str(e):
-                print("Database is locked, sleeping for {} seconds, "
-                      "then retrying.".format(interval))
+                print(
+                    "Database is locked, sleeping for {} seconds, "
+                    "then retrying.".format(interval)
+                )
                 if i == max_attempts:
-                    print("Database still locked after {} seconds. "
-                          "Exiting.".format(max_attempts * interval))
+                    print(
+                        "Database still locked after {} seconds. "
+                        "Exiting.".format(max_attempts * interval)
+                    )
                     sys.exit(1)
                 else:
                     time.sleep(interval)

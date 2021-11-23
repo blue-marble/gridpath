@@ -21,25 +21,29 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "temporal.operations.horizons",
-                             "temporal.investment.periods",
-                             "geography.load_zones",
-                             "geography.prm_zones",
-                             "project", "project.capacity.capacity",
-                             "system.reliability.prm.prm_requirement",
-                             "project.reliability.prm",
-                             "project.reliability.prm.prm_types",
-                             "project.reliability.prm.prm_simple"]
-NAME_OF_MODULE_BEING_TESTED = \
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "geography.prm_zones",
+    "project",
+    "project.capacity.capacity",
+    "system.reliability.prm.prm_requirement",
+    "project.reliability.prm",
+    "project.reliability.prm.prm_types",
+    "project.reliability.prm.prm_simple",
+]
+NAME_OF_MODULE_BEING_TESTED = (
     "system.reliability.prm.aggregate_project_simple_prm_contribution"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -50,40 +54,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestAggPrjSimplePRM(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -95,7 +100,7 @@ class TestAggPrjSimplePRM(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 

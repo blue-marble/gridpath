@@ -22,21 +22,25 @@ import pandas as pd
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
     "temporal.investment.periods",
     "geography.load_zones",
     "geography.frequency_response_balancing_areas",
-    "project", "project.capacity.capacity", "project.fuels",
+    "project",
+    "project.capacity.capacity",
+    "project.fuels",
     "project.operations",
-    "project.operations.reserves.frequency_response"]
+    "project.operations.reserves.frequency_response",
+]
 NAME_OF_MODULE_BEING_TESTED = "system.reserves.requirement.frequency_response"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -48,40 +52,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestFrequencyResponseRequirement(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -93,60 +98,58 @@ class TestFrequencyResponseRequirement(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: FREQUENCY_RESPONSE_BA_TIMEPOINTS
-        req_df = \
-            pd.read_csv(
-                os.path.join(
-                    TEST_DATA_DIRECTORY, "inputs",
-                    "frequency_response_tmp_requirement.tab"
-                ),
-                sep="\t"
-            )
-
-        expected_ba_tmps = sorted(
-            list(zip(req_df.ba, req_df.timepoint))
+        req_df = pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs", "frequency_response_tmp_requirement.tab"
+            ),
+            sep="\t",
         )
-        actual_ba_tmps = sorted([
-            (z, tmp) for (z, tmp)
-            in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
-        ])
+
+        expected_ba_tmps = sorted(list(zip(req_df.ba, req_df.timepoint)))
+        actual_ba_tmps = sorted(
+            [(z, tmp) for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS]
+        )
         self.assertListEqual(expected_ba_tmps, actual_ba_tmps)
 
         # Param: frequency_response_requirement_mw
         expected_req = OrderedDict(
             sorted(
-                req_df.set_index(
-                    ['ba', 'timepoint']
-                ).to_dict()['requirement_mw'].items()
+                req_df.set_index(["ba", "timepoint"])
+                .to_dict()["requirement_mw"]
+                .items()
             )
         )
-        actual_req = OrderedDict(sorted({
-            (z, tmp): instance.frequency_response_requirement_mw[z, tmp]
-            for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
-                                              }.items()
-                                            )
-                                     )
+        actual_req = OrderedDict(
+            sorted(
+                {
+                    (z, tmp): instance.frequency_response_requirement_mw[z, tmp]
+                    for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
+                }.items()
+            )
+        )
         self.assertDictEqual(expected_req, actual_req)
-        
+
         # Param: frequency_response_partial_requirement_mw
         expected_partial_req = OrderedDict(
             sorted(
-                req_df.set_index(
-                    ['ba', 'timepoint']
-                ).to_dict()['partial_requirement_mw'].items()
+                req_df.set_index(["ba", "timepoint"])
+                .to_dict()["partial_requirement_mw"]
+                .items()
             )
         )
-        actual_partial_req = OrderedDict(sorted({
-            (z, tmp): instance.frequency_response_requirement_partial_mw[z,
-                                                                         tmp]
-            for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
-                                              }.items()
-                                            )
-                                     )
+        actual_partial_req = OrderedDict(
+            sorted(
+                {
+                    (z, tmp): instance.frequency_response_requirement_partial_mw[z, tmp]
+                    for (z, tmp) in instance.FREQUENCY_RESPONSE_BAS * instance.TMPS
+                }.items()
+            )
+        )
         self.assertDictEqual(expected_partial_req, actual_partial_req)
 
 

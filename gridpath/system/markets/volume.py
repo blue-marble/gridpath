@@ -15,73 +15,63 @@
 import csv
 import os.path
 from pyomo.environ import Expression, Param, Constraint
-Infinity = float('inf')
+
+Infinity = float("inf")
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """
+    """ """
+    m.max_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
 
-    """
-    m.max_market_sales = Param(
-        m.MARKETS, m.TMPS,
-        default=Infinity
-    )
-
-    m.max_market_purchases = Param(
-        m.MARKETS, m.TMPS,
-        default=Infinity
-    )
+    m.max_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
 
     def total_market_sales_rule(mod, market, tmp):
-        return sum(mod.Sell_Power[lz, mrkt, tmp]
+        return sum(
+            mod.Sell_Power[lz, mrkt, tmp]
             for (lz, mrkt) in mod.LZ_MARKETS
             if mrkt == market
-            )
+        )
 
-    m.Total_Market_Sales = Expression(
-        m.MARKETS, m.TMPS,
-        rule=total_market_sales_rule
-    )
+    m.Total_Market_Sales = Expression(m.MARKETS, m.TMPS, rule=total_market_sales_rule)
 
     def total_market_purchases_rule(mod, market, tmp):
-        return sum(mod.Buy_Power[lz, mrkt, tmp]
+        return sum(
+            mod.Buy_Power[lz, mrkt, tmp]
             for (lz, mrkt) in mod.LZ_MARKETS
             if mrkt == market
-            )
+        )
 
     m.Total_Market_Purchases = Expression(
-        m.MARKETS, m.TMPS,
-        rule=total_market_purchases_rule
+        m.MARKETS, m.TMPS, rule=total_market_purchases_rule
     )
 
     def max_market_sales_rule(mod, hub, tmp):
-        return mod.Total_Market_Sales[hub, tmp] \
-               <= mod.max_market_sales[hub, tmp]
+        return mod.Total_Market_Sales[hub, tmp] <= mod.max_market_sales[hub, tmp]
 
     m.Max_Market_Sales_Constraint = Constraint(
-        m.MARKETS, m.TMPS,
-        rule=max_market_sales_rule
+        m.MARKETS, m.TMPS, rule=max_market_sales_rule
     )
 
     def max_market_purchases_rule(mod, hub, tmp):
-        return mod.Total_Market_Purchases[hub, tmp] \
-               <= mod.max_market_purchases[hub, tmp]
+        return (
+            mod.Total_Market_Purchases[hub, tmp] <= mod.max_market_purchases[hub, tmp]
+        )
 
     m.Max_Market_Purchases_Constraint = Constraint(
-        m.MARKETS, m.TMPS,
-        rule=max_market_purchases_rule
+        m.MARKETS, m.TMPS, rule=max_market_purchases_rule
     )
 
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "market_volume.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "market_volume.tab",
         ),
-        param=(m.max_market_sales, m.max_market_purchases)
+        param=(m.max_market_sales, m.max_market_purchases),
     )
 
 
@@ -122,15 +112,19 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         USING (market, timepoint)
         ;
         """,
-        (subscenarios.MARKET_SCENARIO_ID,
-         subscenarios.TEMPORAL_SCENARIO_ID,
-         subscenarios.MARKET_VOLUME_SCENARIO_ID)
+        (
+            subscenarios.MARKET_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.MARKET_VOLUME_SCENARIO_ID,
+        ),
     )
 
     return market_limits
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
@@ -147,14 +141,20 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     )
 
     with open(
-            os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "market_volume.tab"
-            ), "w", newline=""
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "market_volume.tab",
+        ),
+        "w",
+        newline="",
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerow(["market", "timepoint", "max_market_sales",
-                         "max_market_purchases"])
+        writer.writerow(
+            ["market", "timepoint", "max_market_sales", "max_market_purchases"]
+        )
         for row in market_limits:
             writer.writerow(row)

@@ -20,9 +20,7 @@ from ui.server.api.view_data import get_table_data
 
 
 class ScenarioResultsOptions(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -37,68 +35,103 @@ class ScenarioResultsOptions(Resource):
 
         options_api = dict()
 
-        load_zone_options = [z[0] for z in c.execute(
-            """SELECT load_zone FROM inputs_geography_load_zones
+        load_zone_options = [
+            z[0]
+            for z in c.execute(
+                """SELECT load_zone FROM inputs_geography_load_zones
             WHERE load_zone_scenario_id = (
             SELECT load_zone_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["loadZoneOptions"] = ["Select Zone"] + load_zone_options
 
-        energy_target_zone_options = [z[0] for z in c.execute(
-            """SELECT energy_target_zone FROM inputs_geography_energy_target_zones
+        energy_target_zone_options = [
+            z[0]
+            for z in c.execute(
+                """SELECT energy_target_zone FROM inputs_geography_energy_target_zones
             WHERE energy_target_zone_scenario_id = (
             SELECT energy_target_zone_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["energyTargetZoneOptions"] = ['Select RPS Area'] + energy_target_zone_options
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["energyTargetZoneOptions"] = [
+            "Select RPS Area"
+        ] + energy_target_zone_options
 
-        carbon_cap_zone_options = [z[0] for z in c.execute(
-            """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
+        carbon_cap_zone_options = [
+            z[0]
+            for z in c.execute(
+                """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
             WHERE carbon_cap_zone_scenario_id = (
             SELECT carbon_cap_zone_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["carbonCapZoneOptions"] = \
-          ['Select Carbon Cap Area'] + carbon_cap_zone_options
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["carbonCapZoneOptions"] = [
+            "Select Carbon Cap Area"
+        ] + carbon_cap_zone_options
 
-        period_options = [p[0] for p in c.execute(
-            """SELECT period FROM inputs_temporal_periods
+        period_options = [
+            p[0]
+            for p in c.execute(
+                """SELECT period FROM inputs_temporal_periods
             WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["periodOptions"] = ['Select Period'] + period_options
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["periodOptions"] = ["Select Period"] + period_options
 
-        subproblem_options = [h[0] for h in c.execute(
-            """SELECT DISTINCT subproblem_id
+        subproblem_options = [
+            h[0]
+            for h in c.execute(
+                """SELECT DISTINCT subproblem_id
             FROM inputs_temporal_subproblems
             WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
 
-        options_api["subproblemOptions"] = ['Select Subproblem'] + \
-                                           subproblem_options
+        options_api["subproblemOptions"] = ["Select Subproblem"] + subproblem_options
         # TODO: we need to keep track of subproblems, as stages can differ
         #  by subproblem
-        stage_options = [h[0] for h in c.execute(
-            """SELECT DISTINCT stage_id
+        stage_options = [
+            h[0]
+            for h in c.execute(
+                """SELECT DISTINCT stage_id
             FROM inputs_temporal_subproblems_stages
             WHERE temporal_scenario_id = (
             SELECT temporal_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
 
-        options_api["stageOptions"] = ['Select Stage'] + stage_options
+        options_api["stageOptions"] = ["Select Stage"] + stage_options
 
-        commit_project_options = [h[0] for h in c.execute("""
+        commit_project_options = [
+            h[0]
+            for h in c.execute(
+                """
             SELECT project
             FROM inputs_project_portfolios
             JOIN inputs_project_operational_chars
@@ -113,35 +146,55 @@ class ScenarioResultsOptions(Resource):
             WHERE scenario_id = {})
             AND operational_type in ('gen_commit_bin', 'gen_commit_lin',
             'gen_commit_cap');
-            """.format(scenario_id, scenario_id)
-          ).fetchall()]
-        options_api["commitProjectOptions"] = \
-            ['Select Generator'] + commit_project_options
+            """.format(
+                    scenario_id, scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["commitProjectOptions"] = [
+            "Select Generator"
+        ] + commit_project_options
 
-        project_options = [h[0] for h in c.execute(
-            """SELECT project FROM inputs_project_portfolios
+        project_options = [
+            h[0]
+            for h in c.execute(
+                """SELECT project FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = (
             SELECT project_portfolio_scenario_id
             FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["projectOptions"] = \
-            ['Select Project'] + project_options
+            WHERE scenario_id = {});""".format(
+                    scenario_id
+                )
+            ).fetchall()
+        ]
+        options_api["projectOptions"] = ["Select Project"] + project_options
 
         return options_api
 
 
 class ScenarioResultsPlot(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, plot, scenario_id, load_zone, energy_target_zone, carbon_cap_zone,
-            period, horizon, start_timepoint, end_timepoint, subproblem, stage,
-            project, commit_project, ymax):
+    def get(
+        self,
+        plot,
+        scenario_id,
+        load_zone,
+        energy_target_zone,
+        carbon_cap_zone,
+        period,
+        horizon,
+        start_timepoint,
+        end_timepoint,
+        subproblem,
+        stage,
+        project,
+        commit_project,
+        ymax,
+    ):
         """
 
         :return:
@@ -152,82 +205,82 @@ class ScenarioResultsPlot(Resource):
 
         base_arguments = [
             "--return_json",
-            "--database", self.db_path,
-            "--scenario_id", scenario_id,
-            "--scenario_name_in_title"
+            "--database",
+            self.db_path,
+            "--scenario_id",
+            scenario_id,
+            "--scenario_name_in_title",
         ]
 
         filter_arguments = []
-        if load_zone == 'default':
+        if load_zone == "default":
             pass
         else:
             filter_arguments.append("--load_zone")
             filter_arguments.append(load_zone)
 
-        if energy_target_zone == 'default':
+        if energy_target_zone == "default":
             pass
         else:
             filter_arguments.append("--energy_target_zone")
             filter_arguments.append(energy_target_zone)
 
-        if carbon_cap_zone == 'default':
+        if carbon_cap_zone == "default":
             pass
         else:
             filter_arguments.append("--carbon_cap_zone")
             filter_arguments.append(carbon_cap_zone)
 
-        if period == 'default':
+        if period == "default":
             pass
         else:
             filter_arguments.append("--period")
             filter_arguments.append(period)
 
-        if horizon == 'default':
+        if horizon == "default":
             pass
         else:
             filter_arguments.append("--horizon")
             filter_arguments.append(horizon)
 
-        if start_timepoint == 'default':
+        if start_timepoint == "default":
             pass
         else:
             filter_arguments.append("--starting_tmp")
             filter_arguments.append(start_timepoint)
 
-        if end_timepoint == 'default':
+        if end_timepoint == "default":
             pass
         else:
             filter_arguments.append("--ending_tmp")
             filter_arguments.append(end_timepoint)
 
-        if subproblem == 'default':
+        if subproblem == "default":
             pass
         else:
             filter_arguments.append("--subproblem")
             filter_arguments.append(subproblem)
 
-        if stage == 'default':
+        if stage == "default":
             pass
         else:
             filter_arguments.append("--stage")
             filter_arguments.append(stage)
 
-        if project == 'default':
+        if project == "default":
             pass
         else:
             filter_arguments.append("--project")
             filter_arguments.append(project)
 
-        if commit_project == 'default':
+        if commit_project == "default":
             pass
         else:
             filter_arguments.append("--project")
             filter_arguments.append(commit_project)
 
-        if ymax == 'default':
-            plot_api["plotJSON"] = plot_module.main(
-                base_arguments + filter_arguments
-            )
+        if ymax == "default":
+            plot_api["plotJSON"] = plot_module.main(base_arguments + filter_arguments)
         else:
             plot_api["plotJSON"] = plot_module.main(
                 base_arguments + filter_arguments + ["--ylimit", ymax]
@@ -237,9 +290,7 @@ class ScenarioResultsPlot(Resource):
 
 
 class ScenarioResultsIncludedPlots(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -253,7 +304,7 @@ class ScenarioResultsIncludedPlots(Resource):
         c = conn.cursor()
 
         plots_query = c.execute(
-          """SELECT results_plot, caption, load_zone_form_control,
+            """SELECT results_plot, caption, load_zone_form_control,
           energy_target_zone_form_control, carbon_cap_zone_form_control,
           period_form_control, horizon_form_control,
           start_timepoint_form_control, end_timepoint_form_control,
@@ -266,31 +317,37 @@ class ScenarioResultsIncludedPlots(Resource):
         # TODO: add formGroup, Ymax and button
         included_plots_api = []
         for plot in plots_query:
-            (results_plot, caption, load_zone_form_control,
-                energy_target_zone_form_control, carbon_cap_zone_form_control,
-                period_form_control, horizon_form_control,
-                start_timepoint_form_control, end_timepoint_form_control,
-                subproblem_form_control, stage_form_control,
-                project_form_control, commit_project_form_control) \
-                = plot
+            (
+                results_plot,
+                caption,
+                load_zone_form_control,
+                energy_target_zone_form_control,
+                carbon_cap_zone_form_control,
+                period_form_control,
+                horizon_form_control,
+                start_timepoint_form_control,
+                end_timepoint_form_control,
+                subproblem_form_control,
+                stage_form_control,
+                project_form_control,
+                commit_project_form_control,
+            ) = plot
             plot_api = {
                 "plotType": results_plot,
                 "caption": caption,
                 "loadZone": [] if load_zone_form_control else "default",
-                "energyTargetZone": [] if energy_target_zone_form_control else "default",
-                "carbonCapZone": [] if carbon_cap_zone_form_control
+                "energyTargetZone": []
+                if energy_target_zone_form_control
                 else "default",
+                "carbonCapZone": [] if carbon_cap_zone_form_control else "default",
                 "period": [] if period_form_control else "default",
                 "horizon": [] if horizon_form_control else "default",
-                "startTimepoint": [] if start_timepoint_form_control
-                else "default",
-                "endTimepoint": [] if end_timepoint_form_control
-                else "default",
+                "startTimepoint": [] if start_timepoint_form_control else "default",
+                "endTimepoint": [] if end_timepoint_form_control else "default",
                 "subproblem": [] if subproblem_form_control else "default",
                 "stage": [] if stage_form_control else "default",
                 "project": [] if project_form_control else "default",
-                "commitProject": [] if commit_project_form_control else
-                "default"
+                "commitProject": [] if commit_project_form_control else "default",
             }
             included_plots_api.append(plot_api)
 
@@ -298,9 +355,7 @@ class ScenarioResultsIncludedPlots(Resource):
 
 
 class ScenarioResultsTable(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -314,16 +369,12 @@ class ScenarioResultsTable(Resource):
             return None
         else:
             return create_data_table_api(
-              db_path=self.db_path,
-              table=table,
-              scenario_id=scenario_id
+                db_path=self.db_path, table=table, scenario_id=scenario_id
             )
 
 
 class ScenarioResultsIncludedTables(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -344,17 +395,13 @@ class ScenarioResultsIncludedTables(Resource):
 
         included_tables_api = []
         for table in tables_query:
-            table_api = {
-              "table": table[0].replace("_", "-"),
-              "caption": table[1]
-            }
+            table_api = {"table": table[0].replace("_", "-"), "caption": table[1]}
             included_tables_api.append(table_api)
 
         return included_tables_api
 
 
-def create_data_table_api(
-      db_path, table, scenario_id):
+def create_data_table_api(db_path, table, scenario_id):
     """
     :param db_path:
     :param table:
@@ -365,25 +412,27 @@ def create_data_table_api(
     c = conn.cursor()
 
     data_table_api = dict()
-    data_table_api['table'] = table
+    data_table_api["table"] = table
 
-    data_table_api['caption'] = c.execute(
+    data_table_api["caption"] = c.execute(
         """SELECT caption FROM ui_scenario_results_table_metadata
-        WHERE results_table = '{}';""".format(table.replace("-", "_"))
+        WHERE results_table = '{}';""".format(
+            table.replace("-", "_")
+        )
     ).fetchone()[0]
 
-    data_table_api['columns'] = get_table_data(
+    data_table_api["columns"] = get_table_data(
         db_path=db_path,
         table=table.replace("-", "_"),
         scenario_id=scenario_id,
-        other_scenarios=[]
-    )['columns']
+        other_scenarios=[],
+    )["columns"]
 
-    data_table_api['rowsData'] = get_table_data(
+    data_table_api["rowsData"] = get_table_data(
         db_path=db_path,
         table=table.replace("-", "_"),
         scenario_id=scenario_id,
-        other_scenarios=[]
-    )['rowsData']
+        other_scenarios=[],
+    )["rowsData"]
 
     return data_table_api

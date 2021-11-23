@@ -25,10 +25,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     m.REGULATION_UP_ZONES = Set()
-    
-    m.regulation_up_allow_violation = Param(
-        m.REGULATION_UP_ZONES, within=Boolean
-    )
+
+    m.regulation_up_allow_violation = Param(m.REGULATION_UP_ZONES, within=Boolean)
     m.regulation_up_violation_penalty_per_mw = Param(
         m.REGULATION_UP_ZONES, within=NonNegativeReals
     )
@@ -46,13 +44,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "regulation_up_balancing_areas.tab"),
-        select=("balancing_area", "allow_violation",
-                "violation_penalty_per_mw"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "regulation_up_balancing_areas.tab",
+        ),
+        select=("balancing_area", "allow_violation", "violation_penalty_per_mw"),
         index=m.REGULATION_UP_ZONES,
-        param=(m.regulation_up_allow_violation,
-               m.regulation_up_violation_penalty_per_mw)
+        param=(
+            m.regulation_up_allow_violation,
+            m.regulation_up_violation_penalty_per_mw,
+        ),
     )
 
 
@@ -93,7 +97,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     regulation_up_balancing_areas.tab file.
@@ -106,17 +112,31 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     reg_up_bas = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "regulation_up_balancing_areas.tab"), "w", newline="") as \
-            reg_up_bas_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "regulation_up_balancing_areas.tab",
+        ),
+        "w",
+        newline="",
+    ) as reg_up_bas_tab_file:
         writer = csv.writer(reg_up_bas_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["balancing_area", "allow_violation",
-                         "violation_penalty_per_mw",
-                         "reserve_to_energy_adjustment"])
+        writer.writerow(
+            [
+                "balancing_area",
+                "allow_violation",
+                "violation_penalty_per_mw",
+                "reserve_to_energy_adjustment",
+            ]
+        )
 
         for row in reg_up_bas:
             replace_nulls = ["." if i is None else i for i in row]

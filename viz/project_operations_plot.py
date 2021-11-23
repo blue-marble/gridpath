@@ -34,8 +34,12 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_unit
+from viz.common_functions import (
+    show_hide_legend,
+    show_plot,
+    get_parent_parser,
+    get_unit,
+)
 
 
 def create_parser():
@@ -44,22 +48,38 @@ def create_parser():
     :return:
     """
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
-                                              "no --scenario is specified.")
-    parser.add_argument("--scenario", help="The scenario name. Required if "
-                                           "no --scenario_id is specified.")
-    parser.add_argument("--project", required=True, type=str,
-                        help="The name of the project. Required")
-    parser.add_argument("--period", required=True, type=int,
-                        help="The desired modeling period. Required")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
-    parser.add_argument("--horizon_start", type=int,
-                        help="The desired starting horizon. Assumes horizons"
-                             "are a set of increasing numbers. Optional")
-    parser.add_argument("--horizon_end", type=int,
-                        help="The desired ending horizon. Assumes horizons are"
-                             "a set of increasing numbers. Optional")
+    parser.add_argument(
+        "--scenario_id",
+        help="The scenario ID. Required if " "no --scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario name. Required if " "no --scenario_id is specified.",
+    )
+    parser.add_argument(
+        "--project", required=True, type=str, help="The name of the project. Required"
+    )
+    parser.add_argument(
+        "--period",
+        required=True,
+        type=int,
+        help="The desired modeling period. Required",
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
+    parser.add_argument(
+        "--horizon_start",
+        type=int,
+        help="The desired starting horizon. Assumes horizons"
+        "are a set of increasing numbers. Optional",
+    )
+    parser.add_argument(
+        "--horizon_end",
+        type=int,
+        help="The desired ending horizon. Assumes horizons are"
+        "a set of increasing numbers. Optional",
+    )
 
     return parser
 
@@ -75,8 +95,9 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, project, period, stage,
-                      horizon_start, horizon_end, **kwargs):
+def get_plotting_data(
+    conn, scenario_id, project, period, stage, horizon_start, horizon_end, **kwargs
+):
     """
     Get operations by timepoint for a given scenario/project/period/stage and
     horizon range.
@@ -106,9 +127,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         ;"""
     operational_type = c.execute(sql, (scenario_id, project)).fetchone()[0]
 
-    if operational_type not in [
-        "gen_commit_cap","gen_commit_bin", "gen_commit_lin"
-    ]:
+    if operational_type not in ["gen_commit_cap", "gen_commit_bin", "gen_commit_lin"]:
         raise ValueError(
             "Selected project does not have commitment decisions."
             "Please select a project of one of the operational types with "
@@ -205,22 +224,22 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         USING (scenario_id, project)
         
         ORDER BY horizon, timepoint
-        ;""".format(operational_type, horizon_start_slice, horizon_end_slice)
-
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(scenario_id, project, period, stage)
+        ;""".format(
+        operational_type, horizon_start_slice, horizon_end_slice
     )
+
+    df = pd.read_sql(sql, con=conn, params=(scenario_id, project, period, stage))
 
     # Add additional info for hovers
     df["power_pct_of_committed"] = df["power_mw"] / df["committed_mw"]
-    df["min_stable_level_pct_of_committed"] = \
+    df["min_stable_level_pct_of_committed"] = (
         df["min_stable_level_mw"] / df["committed_mw"]
+    )
 
     # Add helper columns for reserves
-    df["bottom_reserves"] = df["power_mw"] - \
-        df[["reg_down_mw", "lf_down_mw"]].sum(axis=1)
+    df["bottom_reserves"] = df["power_mw"] - df[["reg_down_mw", "lf_down_mw"]].sum(
+        axis=1
+    )
 
     # Rename columns for cleaner plotting
     rename_dict = {
@@ -232,7 +251,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         "lf_up_mw": "Load Following Up",
         "reg_up_mw": "Regulation Up",
         "frq_resp_mw": "Frequency Response",
-        "spin_mw": "Spinning Reserves"
+        "spin_mw": "Spinning Reserves",
     }
     df.rename(columns=rename_dict, inplace=True)
 
@@ -257,21 +276,29 @@ def create_plot(df, title, power_unit, ylimit=None):
     power_col = "Power"
     commitment_col = "Committed Capacity"
     stable_level_col = "Minimum Output"
-    all_reserves = ["bottom_reserves", "Regulation Down", "Load Following Down",
-                    "Load Following Up", "Regulation Up",
-                    "Frequency Response", "Spinning Reserves"]
-    active_reserves = list(df[all_reserves].columns[
-        df[all_reserves].notna().all() &
-        df[all_reserves].mean() > 0
-    ])
+    all_reserves = [
+        "bottom_reserves",
+        "Regulation Down",
+        "Load Following Down",
+        "Load Following Up",
+        "Regulation Up",
+        "Frequency Response",
+        "Spinning Reserves",
+    ]
+    active_reserves = list(
+        df[all_reserves].columns[
+            df[all_reserves].notna().all() & df[all_reserves].mean() > 0
+        ]
+    )
 
     # Setup the reserve colors
-    colors = grey(len(active_reserves)+2)[1:-1]  # skip the white/black colors
-    alphas = [0] + [1] * (len(active_reserves)-1) if active_reserves else []
+    colors = grey(len(active_reserves) + 2)[1:-1]  # skip the white/black colors
+    alphas = [0] + [1] * (len(active_reserves) - 1) if active_reserves else []
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800,
+        plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
     )
@@ -320,13 +347,13 @@ def create_plot(df, title, power_unit, ylimit=None):
     legend_items = [
         (commitment_renderer.name, [commitment_renderer]),
         (power_renderer.name, [power_renderer]),
-        (stable_level_renderer.name, [stable_level_renderer])
+        (stable_level_renderer.name, [stable_level_renderer]),
     ] + list(reversed([(r.name, [r]) for r in area_renderers[1:]]))
 
     # Add Legend
     legend = Legend(items=legend_items)
-    plot.add_layout(legend, 'right')
-    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
+    plot.add_layout(legend, "right")
+    plot.legend.click_policy = "hide"  # Add interactivity to the legend
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
@@ -341,15 +368,15 @@ def create_plot(df, title, power_unit, ylimit=None):
     # Add HoverTools
     # Note: stepped lines or varea charts not yet supported (lines/bars OK)
     # Note: skip bottom renderer for vbars/areas since it's just a helper
-    hover_renderers = area_renderers[1:] + \
-        [commitment_renderer, power_renderer, stable_level_renderer]
+    hover_renderers = area_renderers[1:] + [
+        commitment_renderer,
+        power_renderer,
+        stable_level_renderer,
+    ]
     for r in hover_renderers:
-        tooltips = [("Hour", "@%s" % x_col),
-                    (r.name, "@$name{0,0} %s" % power_unit)]
+        tooltips = [("Hour", "@%s" % x_col), (r.name, "@$name{0,0} %s" % power_unit)]
         if r.name == "Power":
-            tooltips.append(
-                ("% of Committed", "@power_pct_of_committed{0%}")
-            )
+            tooltips.append(("% of Committed", "@power_pct_of_committed{0%}"))
         elif r.name == "Minimum Output":
             tooltips.append(
                 ("% of Committed", "@min_stable_level_pct_of_committed{0%}")
@@ -377,17 +404,20 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="project_operations_plot"
+        script="project_operations_plot",
     )
 
     power_unit = get_unit(c, "power")
 
     plot_title = "{}Operations Plot - {} - {} - Stage {}".format(
-        "{} - ".format(scenario)
-        if parsed_args.scenario_name_in_title else "",
-        parsed_args.project, parsed_args.period, parsed_args.stage)
+        "{} - ".format(scenario) if parsed_args.scenario_name_in_title else "",
+        parsed_args.project,
+        parsed_args.period,
+        parsed_args.stage,
+    )
     plot_name = "OperationsPlot-{}-{}-{}".format(
-        parsed_args.project, parsed_args.period, parsed_args.stage)
+        parsed_args.project, parsed_args.period, parsed_args.stage
+    )
 
     start = parsed_args.horizon_start
     end = parsed_args.horizon_end
@@ -409,22 +439,21 @@ def main(args=None):
         period=parsed_args.period,
         stage=parsed_args.stage,
         horizon_start=parsed_args.horizon_start,
-        horizon_end=parsed_args.horizon_end
+        horizon_end=parsed_args.horizon_end,
     )
 
     plot = create_plot(
-        df=df,
-        title=plot_title,
-        power_unit=power_unit,
-        ylimit=parsed_args.ylimit
+        df=df, title=plot_title, power_unit=power_unit, ylimit=parsed_args.ylimit
     )
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory,
-                  scenario=scenario)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+            scenario=scenario,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

@@ -22,13 +22,21 @@ import pandas as pd
 
 from db.common_functions import connect_to_database
 from ui.server.api.view_data import get_table_data as get_results_table_data
-from ui.server.api.scenario_inputs import create_input_data_table_api as \
-  get_inputs_table_data
+from ui.server.api.scenario_inputs import (
+    create_input_data_table_api as get_inputs_table_data,
+)
 
 
-def save_table_data_to_csv(db_path, download_path, scenario_id,
-                           other_scenarios, table, table_type,
-                           ui_table_name_in_db, ui_row_name_in_db):
+def save_table_data_to_csv(
+    db_path,
+    download_path,
+    scenario_id,
+    other_scenarios,
+    table,
+    table_type,
+    ui_table_name_in_db,
+    ui_row_name_in_db,
+):
     """
 
     :param db_path:
@@ -51,14 +59,14 @@ def save_table_data_to_csv(db_path, download_path, scenario_id,
             db_path=db_path,
             table_type=table_type,
             ui_table_name_in_db=ui_table_name_in_db,
-            ui_row_name_in_db=ui_row_name_in_db
+            ui_row_name_in_db=ui_row_name_in_db,
         )
     else:
         table_data = get_results_table_data(
             scenario_id=scenario_id,
             other_scenarios=other_scenarios,
             table=table,
-            db_path=db_path
+            db_path=db_path,
         )
 
     with open(download_path, "w", newline="") as f:
@@ -69,10 +77,22 @@ def save_table_data_to_csv(db_path, download_path, scenario_id,
             writer.writerow(values)
 
 
-def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
-                          load_zone, carbon_cap_zone, energy_target_zone,
-                          period, horizon, start_timepoint, end_timepoint,
-                          subproblem, stage, project):
+def save_plot_data_to_csv(
+    db_path,
+    download_path,
+    scenario_id_list,
+    plot_type,
+    load_zone,
+    carbon_cap_zone,
+    energy_target_zone,
+    period,
+    horizon,
+    start_timepoint,
+    end_timepoint,
+    subproblem,
+    stage,
+    project,
+):
     """
     :param db_path: string, the path to the database
     :param download_path: string, the CSV file path
@@ -113,11 +133,7 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
     # a list
     df_list = []
     try:
-        imp_m = \
-            import_module(
-              "." + plot_type,
-              package="viz"
-            )
+        imp_m = import_module("." + plot_type, package="viz")
         for scenario_id in scenario_id_list:
             df = imp_m.get_plotting_data(
                 conn=conn,
@@ -133,18 +149,24 @@ def save_plot_data_to_csv(db_path, download_path, scenario_id_list, plot_type,
                 stage=stage,
                 project=project,
             )
-            df.insert(0, "scenario_name",
-                      conn.cursor().execute("""
+            df.insert(
+                0,
+                "scenario_name",
+                conn.cursor()
+                .execute(
+                    """
                       SELECT scenario_name
                       FROM scenarios
                       WHERE scenario_id = {};
-                      """.format(scenario_id)
-                                          ).fetchone()[0]
-                      )
+                      """.format(
+                        scenario_id
+                    )
+                )
+                .fetchone()[0],
+            )
             df_list.append(df)
     except ImportError:
         print("ERROR! Visualization module " + plot_type + " not found.")
 
     export_df = pd.concat(df_list)
     export_df.to_csv(download_path, index=False)
-

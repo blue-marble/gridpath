@@ -22,9 +22,7 @@ from db.common_functions import connect_to_database
 
 
 class ScenarioNewAPI(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -40,15 +38,12 @@ class ScenarioNewAPI(Resource):
             ORDER BY ui_table_id ASC;"""
         ).fetchall()
 
-        scenario_new_api = {
-          "allRowIdentifiers": None,
-          "SettingsTables": []
-        }
+        scenario_new_api = {"allRowIdentifiers": None, "SettingsTables": []}
 
         for ui_table in all_tables:
             row_identifiers, settings_tables = create_scenario_new_api(
-                    c=c, ui_table_name_in_db=ui_table[0]
-                )
+                c=c, ui_table_name_in_db=ui_table[0]
+            )
             if scenario_new_api["allRowIdentifiers"] is None:
                 scenario_new_api["allRowIdentifiers"] = row_identifiers
             else:
@@ -67,27 +62,29 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     """
     # Get and set the table caption for this table
     table_caption = c.execute(
-      """SELECT ui_table_caption
+        """SELECT ui_table_caption
       FROM ui_scenario_detail_table_metadata
       WHERE ui_table = '{}'
-      AND include = 1;""".format(ui_table_name_in_db)
+      AND include = 1;""".format(
+            ui_table_name_in_db
+        )
     ).fetchone()
 
     settings_table_api = {
-      "uiTableNameInDB": ui_table_name_in_db,
-      "tableCaption": table_caption[0],
-      "settingRows": []
+        "uiTableNameInDB": ui_table_name_in_db,
+        "tableCaption": table_caption[0],
+        "settingRows": [],
     }
 
     row_metadata = c.execute(
-      """SELECT ui_table_row,
+        """SELECT ui_table_row,
       ui_row_caption, ui_row_db_subscenario_table_id_column,
       ui_row_db_subscenario_table
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}'
       AND include = 1;""".format(
-        ui_table_name_in_db
-      )
+            ui_table_name_in_db
+        )
     ).fetchall()
 
     # Keep track of the the row identifiers in a list; we will use the final
@@ -103,12 +100,12 @@ def create_scenario_new_api(c, ui_table_name_in_db):
         row_identifier = ui_table_name_in_db + "$" + ui_row_name_in_db
         all_row_identifiers.append(row_identifier)
 
-        if ui_table_name_in_db == 'features':
+        if ui_table_name_in_db == "features":
             setting_options_query = []
         else:
             setting_options_query = c.execute(
                 """SELECT {}, name FROM {};""".format(
-                  row_subscenario_id, row_subscenario_table
+                    row_subscenario_id, row_subscenario_table
                 )
             ).fetchall()
 
@@ -117,22 +114,22 @@ def create_scenario_new_api(c, ui_table_name_in_db):
             if not setting_options_query:
                 pass
             else:
-                settings.append(
-                    {'id': setting[0], 'name': setting[1]}
-                )
+                settings.append({"id": setting[0], "name": setting[1]})
 
-        settings_table_api["settingRows"].append({
-          "uiRowNameInDB": ui_row_name_in_db,
-          "rowName": row_caption,
-          "rowFormControlName": row_identifier,
-          "settingOptions": settings
-        })
+        settings_table_api["settingRows"].append(
+            {
+                "uiRowNameInDB": ui_row_name_in_db,
+                "rowName": row_caption,
+                "rowFormControlName": row_identifier,
+                "settingOptions": settings,
+            }
+        )
 
     # Sort the 'Features' table features by caption
     if ui_table_name_in_db == "features":
-        sorted_features = \
-            sorted(settings_table_api["settingRows"],
-                   key=lambda k: k['rowName'])
+        sorted_features = sorted(
+            settings_table_api["settingRows"], key=lambda k: k["rowName"]
+        )
         settings_table_api["settingRows"] = sorted_features
 
     return all_row_identifiers, settings_table_api

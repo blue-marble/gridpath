@@ -21,13 +21,12 @@ import pandas as pd
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
-from tests.project.operations.common_functions import \
-    get_project_operational_timepoints
+from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -35,56 +34,57 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
-    "transmission.capacity.capacity"
+    "transmission.capacity.capacity",
 ]
-NAME_OF_MODULE_BEING_TESTED = \
+NAME_OF_MODULE_BEING_TESTED = (
     "transmission.availability.availability_types.exogenous_monthly"
+)
 
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package='gridpath')
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestExogenousAvailabilityType(unittest.TestCase):
-    """
-
-    """
+    """ """
 
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -96,36 +96,36 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: TX_AVL_EXOG_MNTH
-        expected_tx_subset = sorted([
-            "Tx2"
-        ])
-        actual_tx_subset = sorted([
-            prj for prj in instance.TX_AVL_EXOG_MNTH
-        ])
-        self.assertListEqual(expected_tx_subset,
-                             actual_tx_subset)
-
+        expected_tx_subset = sorted(["Tx2"])
+        actual_tx_subset = sorted([prj for prj in instance.TX_AVL_EXOG_MNTH])
+        self.assertListEqual(expected_tx_subset, actual_tx_subset)
 
         # Param: availability_derate
         availability_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "transmission_availability_exogenous_monthly.tab"),
-            sep="\t"
+            os.path.join(
+                TEST_DATA_DIRECTORY,
+                "inputs",
+                "transmission_availability_exogenous_monthly.tab",
+            ),
+            sep="\t",
         )
         defaults = {
             (tx, mnth): 1
-            for tx in instance.TX_AVL_EXOG_MNTH for mnth in instance.MONTHS
+            for tx in instance.TX_AVL_EXOG_MNTH
+            for mnth in instance.MONTHS
         }
         derates = {
-            (p, tmp): avail for p, tmp, avail
-            in zip(availability_df.transmission_line,
-                   availability_df.month,
-                   availability_df.availability_derate)
+            (p, tmp): avail
+            for p, tmp, avail in zip(
+                availability_df.transmission_line,
+                availability_df.month,
+                availability_df.availability_derate,
+            )
         }
         expected_availability_derate = dict()
         for (tx, tmp) in defaults.keys():
@@ -135,11 +135,11 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 expected_availability_derate[tx, tmp] = defaults[tx, tmp]
         actual_availability_derate = {
             (tx, mnth): instance.tx_avl_exog_mnth_derate[tx, mnth]
-            for tx in instance.TX_AVL_EXOG_MNTH for mnth in instance.MONTHS
+            for tx in instance.TX_AVL_EXOG_MNTH
+            for mnth in instance.MONTHS
         }
 
-        self.assertDictEqual(expected_availability_derate,
-                             actual_availability_derate)
+        self.assertDictEqual(expected_availability_derate, actual_availability_derate)
 
 
 if __name__ == "__main__":

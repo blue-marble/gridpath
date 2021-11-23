@@ -32,18 +32,24 @@ from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
-    Constraint, value
+from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, Constraint, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
-    validate_idxs
-from gridpath.project.capacity.capacity_types.common_methods import \
-    operational_periods_by_project_vintage, project_operational_periods, \
-    project_vintages_operational_in_period, update_capacity_results_table
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_values,
+    get_expected_dtypes,
+    get_projects,
+    validate_dtypes,
+    validate_idxs,
+)
+from gridpath.project.capacity.capacity_types.common_methods import (
+    operational_periods_by_project_vintage,
+    project_operational_periods,
+    project_vintages_operational_in_period,
+    update_capacity_results_table,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -157,64 +163,46 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.GEN_NEW_BIN = Set(
-        within=m.PROJECTS
-    )
+    m.GEN_NEW_BIN = Set(within=m.PROJECTS)
 
-    m.GEN_NEW_BIN_VNTS = Set(
-        dimen=2, within=m.PROJECTS*m.PERIODS
-    )
+    m.GEN_NEW_BIN_VNTS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
 
     # Required Params
     ###########################################################################
 
     m.gen_new_bin_lifetime_yrs_by_vintage = Param(
-        m.GEN_NEW_BIN_VNTS,
-        within=NonNegativeReals
+        m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
     m.gen_new_bin_annualized_real_cost_per_mw_yr = Param(
-        m.GEN_NEW_BIN_VNTS,
-        within=NonNegativeReals
+        m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
-    m.gen_new_bin_build_size_mw = Param(
-        m.GEN_NEW_BIN,
-        within=NonNegativeReals
-    )
+    m.gen_new_bin_build_size_mw = Param(m.GEN_NEW_BIN, within=NonNegativeReals)
 
     # Derived Sets
     ###########################################################################
 
     m.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE = Set(
-        m.GEN_NEW_BIN_VNTS,
-        initialize=operational_periods_by_generator_vintage
+        m.GEN_NEW_BIN_VNTS, initialize=operational_periods_by_generator_vintage
     )
 
-    m.GEN_NEW_BIN_OPR_PRDS = Set(
-        dimen=2,
-        initialize=gen_new_bin_operational_periods
-    )
+    m.GEN_NEW_BIN_OPR_PRDS = Set(dimen=2, initialize=gen_new_bin_operational_periods)
 
     m.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD = Set(
-        m.PERIODS, dimen=2,
-        initialize=gen_new_bin_vintages_operational_in_period
+        m.PERIODS, dimen=2, initialize=gen_new_bin_vintages_operational_in_period
     )
 
     # Variables
     ###########################################################################
 
-    m.GenNewBin_Build = Var(
-        m.GEN_NEW_BIN_VNTS,
-        within=Binary
-    )
+    m.GenNewBin_Build = Var(m.GEN_NEW_BIN_VNTS, within=Binary)
 
     # Constraints
     ###########################################################################
 
     m.GenNewBin_Only_Build_Once_Constraint = Constraint(
-        m.GEN_NEW_BIN_OPR_PRDS,
-        rule=only_build_once_rule
+        m.GEN_NEW_BIN_OPR_PRDS, rule=only_build_once_rule
     )
 
     # Dynamic Components
@@ -226,8 +214,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "GEN_NEW_BIN_OPR_PRDS",
     )
 
+
 # Set Rules
 ###############################################################################
+
 
 def operational_periods_by_generator_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
@@ -235,29 +225,28 @@ def operational_periods_by_generator_vintage(mod, prj, v):
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.gen_new_bin_lifetime_yrs_by_vintage[prj, v]
+        lifetime_yrs=mod.gen_new_bin_lifetime_yrs_by_vintage[prj, v],
     )
 
 
 def gen_new_bin_operational_periods(mod):
     return project_operational_periods(
         project_vintages_set=mod.GEN_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=
-        mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE
+        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
     )
 
 
 def gen_new_bin_vintages_operational_in_period(mod, p):
     return project_vintages_operational_in_period(
         project_vintage_set=mod.GEN_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=
-        mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
-        period=p
+        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+        period=p,
     )
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def only_build_once_rule(mod, g, p):
     """
@@ -273,15 +262,19 @@ def only_build_once_rule(mod, g, p):
     constraint if we want to allow multiple units to be built.
     """
 
-    return sum(
-        mod.GenNewBin_Build[g, v] for (gen, v)
-        in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
-        if gen == g
-    ) <= 1
+    return (
+        sum(
+            mod.GenNewBin_Build[g, v]
+            for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
+            if gen == g
+        )
+        <= 1
+    )
 
 
 # Capacity Type Methods
 ###############################################################################
+
 
 def capacity_rule(mod, g, p):
     """
@@ -294,8 +287,7 @@ def capacity_rule(mod, g, p):
     """
 
     return sum(
-        mod.GenNewBin_Build[g, v]
-        * mod.gen_new_bin_build_size_mw[g]
+        mod.GenNewBin_Build[g, v] * mod.gen_new_bin_build_size_mw[g]
         for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )
@@ -329,16 +321,18 @@ def new_capacity_rule(mod, g, p):
     New capacity built at project g in period p.
     Returns 0 if we can't build capacity at this project in period p.
     """
-    return mod.GenNewBin_Build[g, p] * mod.gen_new_bin_build_size_mw[g] \
-        if (g, p) in mod.GEN_NEW_BIN_VNTS else 0
+    return (
+        mod.GenNewBin_Build[g, p] * mod.gen_new_bin_build_size_mw[g]
+        if (g, p) in mod.GEN_NEW_BIN_VNTS
+        else 0
+    )
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -350,21 +344,32 @@ def load_model_data(
     """
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "new_binary_build_generator_vintage_costs.tab"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_binary_build_generator_vintage_costs.tab",
+        ),
         index=m.GEN_NEW_BIN_VNTS,
-        select=("project", "vintage", "lifetime_yrs",
-                "annualized_real_cost_per_mw_yr"),
-        param=(m.gen_new_bin_lifetime_yrs_by_vintage,
-               m.gen_new_bin_annualized_real_cost_per_mw_yr)
+        select=("project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
+        param=(
+            m.gen_new_bin_lifetime_yrs_by_vintage,
+            m.gen_new_bin_annualized_real_cost_per_mw_yr,
+        ),
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "new_binary_build_generator_size.tab"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_binary_build_generator_size.tab",
+        ),
         index=m.GEN_NEW_BIN,
         select=("project", "binary_build_size_mw"),
-        param=(m.gen_new_bin_build_size_mw)
+        param=(m.gen_new_bin_build_size_mw),
     )
 
 
@@ -378,27 +383,43 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "capacity_gen_new_bin.csv"),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_new_bin.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
 
         writer = csv.writer(f)
-        writer.writerow(["project", "vintage", "technology", "load_zone",
-                         "new_build_binary", "new_build_mw"])
+        writer.writerow(
+            [
+                "project",
+                "vintage",
+                "technology",
+                "load_zone",
+                "new_build_binary",
+                "new_build_mw",
+            ]
+        )
         for (prj, v) in m.GEN_NEW_BIN_VNTS:
-            writer.writerow([
-                prj,
-                v,
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.GenNewBin_Build[prj, v]),
-                value(m.GenNewBin_Build[prj, v] * m.gen_new_bin_build_size_mw[prj])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    v,
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.GenNewBin_Build[prj, v]),
+                    value(m.GenNewBin_Build[prj, v] * m.gen_new_bin_build_size_mw[prj]),
+                ]
+            )
 
 
-def summarize_results(
-    scenario_directory, subproblem, stage, summary_results_file
-):
+def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
     """
     Summarize new binary build generation capacity results.
     :param scenario_directory:
@@ -410,30 +431,34 @@ def summarize_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "results", "capacity_gen_new_bin.csv")
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_new_bin.csv",
+        )
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"],
-        as_index=True
+        by=["load_zone", "technology", "vintage"], as_index=True
     ).sum()
 
     # Get all technologies with the new binary build capacity
     new_build_df = pd.DataFrame(
-        capacity_results_agg_df[
-            capacity_results_agg_df["new_build_mw"] > 0
-        ]["new_build_mw"]
+        capacity_results_agg_df[capacity_results_agg_df["new_build_mw"] > 0][
+            "new_build_mw"
+        ]
     )
 
     # Get the power units from the units.csv file
-    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
-                           index_col="metric")
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
     power_unit = units_df.loc["power", "unit"]
 
     # Rename column header
-    new_build_df.columns = ["New Binary Build Capacity ({})".format(
-        power_unit)]
+    new_build_df.columns = ["New Binary Build Capacity ({})".format(power_unit)]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Binary Build Generation Capacity <--\n")
@@ -447,9 +472,8 @@ def summarize_results(
 # Database
 ###############################################################################
 
-def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-):
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -480,7 +504,7 @@ def get_model_inputs_from_database(
         AND capacity_type = 'gen_new_bin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -498,7 +522,7 @@ def get_model_inputs_from_database(
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'gen_new_bin';""".format(
             subscenarios.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -506,7 +530,7 @@ def get_model_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -521,32 +545,48 @@ def write_model_inputs(
     """
 
     new_gen_costs, new_gen_build_size = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "new_binary_build_generator_vintage_costs.tab"),
-              "w", newline="") as new_gen_costs_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_binary_build_generator_vintage_costs.tab",
+        ),
+        "w",
+        newline="",
+    ) as new_gen_costs_tab_file:
         writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
-             "annualized_real_cost_per_mw_yr"]
+            ["project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"]
         )
 
         for row in new_gen_costs:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "new_binary_build_generator_size.tab"),
-              "w", newline="") as new_build_size_tab_file:
-        writer = csv.writer(new_build_size_tab_file, delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_binary_build_generator_size.tab",
+        ),
+        "w",
+        newline="",
+    ) as new_build_size_tab_file:
+        writer = csv.writer(
+            new_build_size_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
-        writer.writerow(
-            ["project", "binary_build_size_mw"]
-        )
+        writer.writerow(["project", "binary_build_size_mw"])
 
         for row in new_gen_build_size:
             replace_nulls = ["." if i is None else i for i in row]
@@ -554,7 +594,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -572,14 +612,19 @@ def import_results_into_database(
         print("project new binary build generator")
 
     update_capacity_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="capacity_gen_new_bin.csv"
+        db=db,
+        c=c,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_file="capacity_gen_new_bin.csv",
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -593,9 +638,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Get the binary build generator inputs
     new_gen_costs, new_build_size = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_new_bin")
+    projects = get_projects(
+        conn, scenario_id, subscenarios, "capacity_type", "gen_new_bin"
+    )
 
     # Convert input data into pandas DataFrame
     cost_df = cursor_to_df(new_gen_costs)
@@ -608,8 +656,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_project_new_cost",
-                "inputs_project_new_binary_build_size"]
+        tables=["inputs_project_new_cost", "inputs_project_new_binary_build_size"],
     )
 
     # Check dtypes - cost_df
@@ -622,12 +669,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative - cost_df
-    numeric_columns = [c for c in cost_df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in cost_df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -637,7 +683,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=validate_values(cost_df, valid_numeric_columns, min=0)
+        errors=validate_values(cost_df, valid_numeric_columns, min=0),
     )
 
     # Check dtypes - bld_size_df
@@ -650,12 +696,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_binary_build_size",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative - bld_size_df
-    numeric_columns = [c for c in bld_size_df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [
+        c for c in bld_size_df.columns if expected_dtypes[c] == "numeric"
+    ]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -665,7 +712,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_binary_build_size",
         severity="High",
-        errors=validate_values(bld_size_df, valid_numeric_columns, min=0)
+        errors=validate_values(bld_size_df, valid_numeric_columns, min=0),
     )
 
     # Check that all binary new build projects are available in >=1 vintage
@@ -678,10 +725,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="Mid",
-        errors=validate_idxs(actual_idxs=cost_projects,
-                             req_idxs=projects,
-                             idx_label="project",
-                             msg=msg)
+        errors=validate_idxs(
+            actual_idxs=cost_projects, req_idxs=projects, idx_label="project", msg=msg
+        ),
     )
 
     # Check that all binary new build projects have build size specified
@@ -693,8 +739,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_binary_build_size",
         severity="High",
-        errors=validate_idxs(actual_idxs=bld_size_projects,
-                             req_idxs=projects,
-                             idx_label="project")
+        errors=validate_idxs(
+            actual_idxs=bld_size_projects, req_idxs=projects, idx_label="project"
+        ),
     )
-

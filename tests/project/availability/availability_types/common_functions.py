@@ -29,10 +29,14 @@ def get_endogenous_params(test_data_directory, param, project_subset):
     """
     all_dict = OrderedDict(
         pd.read_csv(
-            os.path.join(test_data_directory, "inputs",
-                         "project_availability_endogenous.tab"),
-            sep="\t"
-        ).set_index('project').to_dict()[param].items()
+            os.path.join(
+                test_data_directory, "inputs", "project_availability_endogenous.tab"
+            ),
+            sep="\t",
+        )
+        .set_index("project")
+        .to_dict()[param]
+        .items()
     )
     subset_dict = dict()
     for prj in all_dict:

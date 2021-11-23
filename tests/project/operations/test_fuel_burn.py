@@ -18,22 +18,25 @@ import pandas as pd
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
-from tests.project.operations.common_functions import \
-    get_project_operational_timepoints
+from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.availability.availability",
-    "project.fuels", "project.operations",
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
     "project.operations.operational_types",
-    "project.operations.power"]
+    "project.operations.power",
+]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.fuel_burn"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -45,40 +48,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestFuelBurn(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -90,27 +94,25 @@ class TestFuelBurn(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Load test data as dataframes
         projects_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab")
-            , sep="\t"
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"), sep="\t"
         )
 
         hr_curve_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "heat_rate_curves.tab")
-            , sep="\t"
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "heat_rate_curves.tab"),
+            sep="\t",
         )
 
-        timepoints_df = \
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
-                sep="\t", usecols=['timepoint', 'period']
-            )
+        timepoints_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
+            sep="\t",
+            usecols=["timepoint", "period"],
+        )
 
         # Set: FUEL_PRJ_OPR_TMPS
         expected_fuel_projects = sorted(
@@ -119,27 +121,24 @@ class TestFuelBurn(unittest.TestCase):
         expected_fuel_prj_tmps = get_project_operational_timepoints(
             expected_fuel_projects
         )
-        actual_fuel_prj_tmps = \
-            sorted([(p, tmp) for (p, tmp) in instance.FUEL_PRJ_OPR_TMPS])
+        actual_fuel_prj_tmps = sorted(
+            [(p, tmp) for (p, tmp) in instance.FUEL_PRJ_OPR_TMPS]
+        )
 
-        self.assertListEqual(expected_fuel_prj_tmps,
-                             actual_fuel_prj_tmps)
+        self.assertListEqual(expected_fuel_prj_tmps, actual_fuel_prj_tmps)
 
         # Set: HR_CURVE_PRJS_OPR_TMPS
-        expected_hr_curve_projects = sorted(
-            hr_curve_df["project"].unique().tolist()
-        )
+        expected_hr_curve_projects = sorted(hr_curve_df["project"].unique().tolist())
 
         expected_hr_curve_prj_tmps = get_project_operational_timepoints(
             expected_hr_curve_projects
         )
 
-        actual_hr_curve_prj_tmps = \
-            sorted([(p, tmp) for (p, tmp) in
-                    instance.HR_CURVE_PRJS_OPR_TMPS])
+        actual_hr_curve_prj_tmps = sorted(
+            [(p, tmp) for (p, tmp) in instance.HR_CURVE_PRJS_OPR_TMPS]
+        )
 
-        self.assertListEqual(expected_hr_curve_prj_tmps,
-                             actual_hr_curve_prj_tmps)
+        self.assertListEqual(expected_hr_curve_prj_tmps, actual_hr_curve_prj_tmps)
 
         # Set: HR_CURVE_PRJS_OPR_TMPS_SGMS
         expected_segments_by_prj_period = {
@@ -176,38 +175,42 @@ class TestFuelBurn(unittest.TestCase):
             ("Clunky_Old_Gen2", 2020): [0],
             ("Clunky_Old_Gen2", 2030): [0],
             ("Nuclear_Flexible", 2020): [0],
-            ("Nuclear_Flexible", 2030): [0]
+            ("Nuclear_Flexible", 2030): [0],
         }
         expected_hr_curve_prj_tmp_sgms = list()
         for (prj, tmp) in expected_hr_curve_prj_tmps:
-            prd = timepoints_df[
-                timepoints_df["timepoint"] == tmp
-                ].iloc[0]["period"]
+            prd = timepoints_df[timepoints_df["timepoint"] == tmp].iloc[0]["period"]
             segments = expected_segments_by_prj_period[prj, prd]
             for sgm in segments:
                 expected_hr_curve_prj_tmp_sgms.append((prj, tmp, sgm))
 
-        actual_hr_curve_prj_tmp_sgms = \
-            sorted([(prj, tmp, sgm) for (prj, tmp, sgm) in
-                    instance.HR_CURVE_PRJS_OPR_TMPS_SGMS])
+        actual_hr_curve_prj_tmp_sgms = sorted(
+            [
+                (prj, tmp, sgm)
+                for (prj, tmp, sgm) in instance.HR_CURVE_PRJS_OPR_TMPS_SGMS
+            ]
+        )
 
-        self.assertListEqual(expected_hr_curve_prj_tmp_sgms,
-                             actual_hr_curve_prj_tmp_sgms)
+        self.assertListEqual(
+            expected_hr_curve_prj_tmp_sgms, actual_hr_curve_prj_tmp_sgms
+        )
 
         # Set: STARTUP_FUEL_PRJ_OPR_TMPS
         expected_startup_fuel_projects = sorted(
             projects_df[projects_df["startup_fuel_mmbtu_per_mw"] != "."][
-                "project"].tolist()
+                "project"
+            ].tolist()
         )
         expected_startup_fuel_prj_tmps = get_project_operational_timepoints(
             expected_startup_fuel_projects
         )
-        actual_startup_fuel_prj_tmps = \
-            sorted([(p, tmp) for (p, tmp)
-                    in instance.STARTUP_FUEL_PRJ_OPR_TMPS])
+        actual_startup_fuel_prj_tmps = sorted(
+            [(p, tmp) for (p, tmp) in instance.STARTUP_FUEL_PRJ_OPR_TMPS]
+        )
 
-        self.assertListEqual(expected_startup_fuel_prj_tmps,
-                             actual_startup_fuel_prj_tmps)
+        self.assertListEqual(
+            expected_startup_fuel_prj_tmps, actual_startup_fuel_prj_tmps
+        )
 
 
 if __name__ == "__main__":

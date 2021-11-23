@@ -19,9 +19,8 @@ import gridpath.auxiliary.auxiliary as auxiliary_module_to_test
 
 
 class TestAuxiliary(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_join_sets(self):
         """
 
@@ -37,16 +36,16 @@ class TestAuxiliary(unittest.TestCase):
         mod.set1 = [1, 2, 3]
         set_list_single_set = ["set1"]
         single_set_expected = [1, 2, 3]
-        single_set_actual = \
-            auxiliary_module_to_test.join_sets(mod, set_list_single_set)
+        single_set_actual = auxiliary_module_to_test.join_sets(mod, set_list_single_set)
         self.assertListEqual(single_set_expected, single_set_actual)
 
         # If more than one set
         mod.set2 = [4, 5, 6]
         set_list_two_sets = ["set1", "set2"]
         two_sets_joined_expected = [1, 2, 3, 4, 5, 6]
-        two_sets_joined_actual = \
-            auxiliary_module_to_test.join_sets(mod, set_list_two_sets)
+        two_sets_joined_actual = auxiliary_module_to_test.join_sets(
+            mod, set_list_two_sets
+        )
         self.assertListEqual(two_sets_joined_expected, two_sets_joined_actual)
 
     def test_check_list_has_single_item(self):
@@ -55,8 +54,7 @@ class TestAuxiliary(unittest.TestCase):
         :return:
         """
         with self.assertRaises(ValueError):
-            auxiliary_module_to_test.\
-                check_list_has_single_item([1, 2], "Error_Msg")
+            auxiliary_module_to_test.check_list_has_single_item([1, 2], "Error_Msg")
 
     def test_find_item_position(self):
         """
@@ -64,20 +62,17 @@ class TestAuxiliary(unittest.TestCase):
         :return:
         """
         l = [1, 2, 3]
-        self.assertEqual([0],
-                         auxiliary_module_to_test.
-                         find_list_item_position(l=l, item=1)
-                         )
+        self.assertEqual(
+            [0], auxiliary_module_to_test.find_list_item_position(l=l, item=1)
+        )
 
-        self.assertEqual([1],
-                         auxiliary_module_to_test.
-                         find_list_item_position(l=l, item=2)
-                         )
+        self.assertEqual(
+            [1], auxiliary_module_to_test.find_list_item_position(l=l, item=2)
+        )
 
-        self.assertEqual([2],
-                         auxiliary_module_to_test.
-                         find_list_item_position(l=l, item=3)
-                         )
+        self.assertEqual(
+            [2], auxiliary_module_to_test.find_list_item_position(l=l, item=3)
+        )
 
     def test_check_list_items_are_unique(self):
         """

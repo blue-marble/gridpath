@@ -25,8 +25,7 @@ import os.path
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import \
-    prm_balance_provision_components
+from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -39,10 +38,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_PRM_from_All_Sources_Expression = Expression(
         m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
-        rule=lambda mod, z, p:
-        sum(getattr(mod, component)[z, p] for component
-            in getattr(d, prm_balance_provision_components)
-            )
+        rule=lambda mod, z, p: sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(d, prm_balance_provision_components)
+        ),
     )
 
     m.PRM_Shortage_MW = Var(
@@ -64,13 +63,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return mod.Total_PRM_from_All_Sources_Expression[z, p] \
-            + mod.PRM_Shortage_MW_Expression[z, p] \
+        return (
+            mod.Total_PRM_from_All_Sources_Expression[z, p]
+            + mod.PRM_Shortage_MW_Expression[z, p]
             >= mod.prm_requirement_mw[z, p]
+        )
 
     m.PRM_Constraint = Constraint(
-        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
-        rule=prm_requirement_rule
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=prm_requirement_rule
     )
 
 
@@ -84,33 +84,45 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "prm.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", "prm.csv"
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["prm_zone", "period",
-                         "discount_factor", "number_years_represented",
-                         "prm_requirement_mw",
-                         "prm_provision_mw",
-                         "prm_shortage_mw"])
+        writer.writerow(
+            [
+                "prm_zone",
+                "period",
+                "discount_factor",
+                "number_years_represented",
+                "prm_requirement_mw",
+                "prm_provision_mw",
+                "prm_shortage_mw",
+            ]
+        )
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([
-                z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
-                float(m.prm_requirement_mw[z, p]),
-                value(m.Total_PRM_from_All_Sources_Expression[z, p]),
-                value(m.PRM_Shortage_MW_Expression[z, p])
-            ])
+            writer.writerow(
+                [
+                    z,
+                    p,
+                    m.discount_factor[p],
+                    m.number_years_represented[p],
+                    float(m.prm_requirement_mw[z, p]),
+                    value(m.Total_PRM_from_All_Sources_Expression[z, p]),
+                    value(m.PRM_Shortage_MW_Expression[z, p]),
+                ]
+            )
 
 
 def save_duals(m):
-    m.constraint_indices["PRM_Constraint"] = \
-        ["prm_zone", "period", "dual"]
+    m.constraint_indices["PRM_Constraint"] = ["prm_zone", "period", "dual"]
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -139,14 +151,16 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=nullify_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
 
     results = []
-    with open(os.path.join(results_directory,
-                           "prm.csv"), "r") as \
-            surface_file:
+    with open(os.path.join(results_directory, "prm.csv"), "r") as surface_file:
         reader = csv.reader(surface_file)
 
         next(reader)  # skip header
@@ -158,12 +172,20 @@ def import_results_into_database(
             prm_req_mw = row[4]
             prm_prov_mw = row[5]
             shortage_mw = row[6]
-            
+
             results.append(
-                (prm_req_mw, prm_prov_mw, shortage_mw,
-                 discount_factor, number_years,
-                 scenario_id, prm_zone, period,
-                 subproblem, stage)
+                (
+                    prm_req_mw,
+                    prm_prov_mw,
+                    shortage_mw,
+                    discount_factor,
+                    number_years,
+                    scenario_id,
+                    prm_zone,
+                    period,
+                    subproblem,
+                    stage,
+                )
             )
 
     update_sql = """
@@ -182,8 +204,9 @@ def import_results_into_database(
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "PRM_Constraint.csv"),
-              "r") as prm_duals_file:
+    with open(
+        os.path.join(results_directory, "PRM_Constraint.csv"), "r"
+    ) as prm_duals_file:
         reader = csv.reader(prm_duals_file)
 
         next(reader)  # skip header
@@ -212,6 +235,6 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+    )

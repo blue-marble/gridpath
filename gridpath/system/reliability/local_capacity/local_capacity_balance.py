@@ -25,8 +25,9 @@ import os.path
 from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import \
-    local_capacity_balance_provision_components
+from gridpath.auxiliary.dynamic_components import (
+    local_capacity_balance_provision_components,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -39,24 +40,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Local_Capacity_from_All_Sources_Expression_MW = Expression(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
-        rule=lambda mod, z, p:
-        sum(getattr(mod, component)[z, p] for component
-            in getattr(d, local_capacity_balance_provision_components)
-            )
+        rule=lambda mod, z, p: sum(
+            getattr(mod, component)[z, p]
+            for component in getattr(d, local_capacity_balance_provision_components)
+        ),
     )
 
     m.Local_Capacity_Shortage_MW = Var(
-        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
-        within=NonNegativeReals
+        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.Local_Capacity_Shortage_MW[z, p] * \
-               mod.local_capacity_allow_violation[z]
+        return (
+            mod.Local_Capacity_Shortage_MW[z, p] * mod.local_capacity_allow_violation[z]
+        )
 
     m.Local_Capacity_Shortage_MW_Expression = Expression(
-        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
-        rule=violation_expression_rule
+        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT, rule=violation_expression_rule
     )
 
     def local_capacity_requirement_rule(mod, z, p):
@@ -68,13 +68,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return mod.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p] \
-            + mod.Local_Capacity_Shortage_MW_Expression[z, p] \
+        return (
+            mod.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]
+            + mod.Local_Capacity_Shortage_MW_Expression[z, p]
             >= mod.local_capacity_requirement_mw[z, p]
+        )
 
     m.Local_Capacity_Constraint = Constraint(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
-        rule=local_capacity_requirement_rule
+        rule=local_capacity_requirement_rule,
     )
 
 
@@ -88,35 +90,53 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "local_capacity.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "local_capacity.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["local_capacity_zone", "period",
-                         "discount_factor", "number_years_represented",
-                         "local_capacity_requirement_mw",
-                         "local_capacity_provision_mw",
-                         "local_capacity_shortage_mw"])
+        writer.writerow(
+            [
+                "local_capacity_zone",
+                "period",
+                "discount_factor",
+                "number_years_represented",
+                "local_capacity_requirement_mw",
+                "local_capacity_provision_mw",
+                "local_capacity_shortage_mw",
+            ]
+        )
         for (z, p) in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([
-                z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
-                float(m.local_capacity_requirement_mw[z, p]),
-                value(
-                    m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]
-                ),
-                value(m.Local_Capacity_Shortage_MW_Expression[z, p])
-            ])
+            writer.writerow(
+                [
+                    z,
+                    p,
+                    m.discount_factor[p],
+                    m.number_years_represented[p],
+                    float(m.local_capacity_requirement_mw[z, p]),
+                    value(m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]),
+                    value(m.Local_Capacity_Shortage_MW_Expression[z, p]),
+                ]
+            )
 
 
 def save_duals(m):
-    m.constraint_indices["Local_Capacity_Constraint"] = \
-        ["local_capacity_zone", "period", "dual"]
+    m.constraint_indices["Local_Capacity_Constraint"] = [
+        "local_capacity_zone",
+        "period",
+        "dual",
+    ]
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -139,15 +159,21 @@ def import_results_into_database(
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """.format(scenario_id, subproblem, stage)
-    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql, 
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+        """.format(
+        scenario_id, subproblem, stage
+    )
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=nullify_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
 
     results = []
-    with open(os.path.join(results_directory,
-                           "local_capacity.csv"), "r") as \
-            surface_file:
+    with open(
+        os.path.join(results_directory, "local_capacity.csv"), "r"
+    ) as surface_file:
         reader = csv.reader(surface_file)
 
         next(reader)  # skip header
@@ -161,10 +187,16 @@ def import_results_into_database(
             shortage_mw = row[6]
 
             results.append(
-                (local_capacity_req_mw, local_capacity_prov_mw,
-                 shortage_mw,
-                 discount_factor, number_years,
-                 scenario_id, local_capacity_zone, period)
+                (
+                    local_capacity_req_mw,
+                    local_capacity_prov_mw,
+                    shortage_mw,
+                    discount_factor,
+                    number_years,
+                    scenario_id,
+                    local_capacity_zone,
+                    period,
+                )
             )
 
     update_sql = """
@@ -181,8 +213,9 @@ def import_results_into_database(
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "Local_Capacity_Constraint.csv"),
-              "r") as local_capacity_duals_file:
+    with open(
+        os.path.join(results_directory, "Local_Capacity_Constraint.csv"), "r"
+    ) as local_capacity_duals_file:
         reader = csv.reader(local_capacity_duals_file)
 
         next(reader)  # skip header
@@ -212,6 +245,6 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+    )

@@ -18,12 +18,9 @@ import os.path
 from db.common_functions import spin_on_database_lock
 
 
-def insert_availability_results(
-     db, c, results_directory, scenario_id, results_file
-):
+def insert_availability_results(db, c, results_directory, scenario_id, results_file):
     results = []
-    with open(os.path.join(results_directory, results_file), "r") as \
-            capacity_file:
+    with open(os.path.join(results_directory, results_file), "r") as capacity_file:
         reader = csv.reader(capacity_file)
         header = next(reader)
 
@@ -31,25 +28,25 @@ def insert_availability_results(
             results.append((scenario_id,) + tuple(row))
 
     # Get the CREATE statemnt for the persistent table
-    tbl_sql = c.execute("""
+    tbl_sql = c.execute(
+        """
         SELECT sql 
         FROM sqlite_master
         WHERE type='table'
         AND name='results_project_availability_endogenous'
-        """).fetchone()[0]
+        """
+    ).fetchone()[0]
 
     # Create a temporary table with the same structure as the persistent table
-    temp_tbl_sql = \
-        tbl_sql.replace(
-            "CREATE TABLE results_project_availability_endogenous",
-            """CREATE TEMPORARY TABLE 
+    temp_tbl_sql = tbl_sql.replace(
+        "CREATE TABLE results_project_availability_endogenous",
+        """CREATE TEMPORARY TABLE 
             temp_results_project_availability_endogenous{}""".format(
-                scenario_id
-            )
-        )
+            scenario_id
+        ),
+    )
 
-    spin_on_database_lock(conn=db, cursor=c, sql=temp_tbl_sql,
-                          data=(), many=False)
+    spin_on_database_lock(conn=db, cursor=c, sql=temp_tbl_sql, data=(), many=False)
 
     # Insert the results into the temporary table
     insert_temp_sql = """
@@ -60,7 +57,9 @@ def insert_availability_results(
         load_zone, technology, unavailability_decision, start_unavailablity, 
         stop_unavailability, availability_derate)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-    """.format(scenario_id)
+    """.format(
+        scenario_id
+    )
 
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -79,15 +78,17 @@ def insert_availability_results(
         stop_unavailability, availability_derate
         FROM temp_results_project_availability_endogenous{}
         ORDER BY scenario_id, subproblem_id, stage_id, project, timepoint
-    """.format(scenario_id)
+    """.format(
+        scenario_id
+    )
 
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql,
-                          data=(), many=False)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Drop the temporary table
     drop_temp_sql = """
         DROP TABLE temp_results_project_availability_endogenous{}
-    """.format(scenario_id)
+    """.format(
+        scenario_id
+    )
 
-    spin_on_database_lock(conn=db, cursor=c, sql=drop_temp_sql,
-                          data=(), many=False)
+    spin_on_database_lock(conn=db, cursor=c, sql=drop_temp_sql, data=(), many=False)

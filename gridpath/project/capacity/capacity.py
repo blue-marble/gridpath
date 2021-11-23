@@ -26,12 +26,14 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value
 
-from gridpath.auxiliary.auxiliary import \
-    get_required_subtype_modules_from_projects_file, join_sets
-from gridpath.project.capacity.common_functions import \
-    load_project_capacity_type_modules
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules_from_projects_file,
+    join_sets,
+)
+from gridpath.project.capacity.common_functions import (
+    load_project_capacity_type_modules,
+)
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
@@ -109,8 +111,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
     )
 
     # Import needed capacity type modules
@@ -122,9 +126,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     for op_m in required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(
-                m, d, scenario_directory, subproblem, stage
-            )
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     # Sets
     ###########################################################################
@@ -132,91 +134,76 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.PRJ_OPR_PRDS = Set(
         dimen=2,
         within=m.PROJECTS * m.PERIODS,
-        initialize=lambda mod:
-        join_sets(mod, getattr(d, capacity_type_operational_period_sets),),
+        initialize=lambda mod: join_sets(
+            mod,
+            getattr(d, capacity_type_operational_period_sets),
+        ),
     )  # assumes capacity types model components are already added!
 
     m.OPR_PRDS_BY_PRJ = Set(
         m.PROJECTS,
-        initialize=lambda mod, project:
-        operational_periods_by_project(
-            prj=project,
-            project_operational_periods=mod.PRJ_OPR_PRDS
-        )
+        initialize=lambda mod, project: operational_periods_by_project(
+            prj=project, project_operational_periods=mod.PRJ_OPR_PRDS
+        ),
     )
 
     m.PRJ_OPR_TMPS = Set(
         dimen=2,
         initialize=lambda mod: [
-            (g, tmp) for g in mod.PROJECTS
+            (g, tmp)
+            for g in mod.PROJECTS
             for p in mod.OPR_PRDS_BY_PRJ[g]
             for tmp in mod.TMPS_IN_PRD[p]
-        ]
+        ],
     )
 
-    m.OPR_PRJS_IN_TMP = Set(
-        m.TMPS,
-        initialize=op_gens_by_tmp
-    )
+    m.OPR_PRJS_IN_TMP = Set(m.TMPS, initialize=op_gens_by_tmp)
 
     # Expressions
     ###########################################################################
 
     def capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type],
-                   "capacity_rule"):
-            return imported_capacity_modules[cap_type]. \
-                capacity_rule(mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type], "capacity_rule"):
+            return imported_capacity_modules[cap_type].capacity_rule(mod, prj, prd)
         else:
             return cap_type_init.capacity_rule(mod, prj, prd)
 
-    m.Capacity_MW = Expression(
-        m.PRJ_OPR_PRDS,
-        rule=capacity_rule
-    )
+    m.Capacity_MW = Expression(m.PRJ_OPR_PRDS, rule=capacity_rule)
 
     def hyb_gen_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type],
-                   "hyb_gen_capacity_rule"):
-            return imported_capacity_modules[cap_type]. \
-                hyb_gen_capacity_rule(mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type], "hyb_gen_capacity_rule"):
+            return imported_capacity_modules[cap_type].hyb_gen_capacity_rule(
+                mod, prj, prd
+            )
         else:
             return cap_type_init.hyb_gen_capacity_rule(mod, prj, prd)
 
-    m.Hyb_Gen_Capacity_MW = Expression(
-        m.PRJ_OPR_PRDS,
-        rule=hyb_gen_capacity_rule
-    )
+    m.Hyb_Gen_Capacity_MW = Expression(m.PRJ_OPR_PRDS, rule=hyb_gen_capacity_rule)
 
     def hyb_stor_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type],
-                   "hyb_stor_capacity_rule"):
-            return imported_capacity_modules[cap_type]. \
-                hyb_stor_capacity_rule(mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type], "hyb_stor_capacity_rule"):
+            return imported_capacity_modules[cap_type].hyb_stor_capacity_rule(
+                mod, prj, prd
+            )
         else:
             return cap_type_init.hyb_stor_capacity_rule(mod, prj, prd)
 
-    m.Hyb_Stor_Capacity_MW = Expression(
-        m.PRJ_OPR_PRDS,
-        rule=hyb_stor_capacity_rule
-    )
+    m.Hyb_Stor_Capacity_MW = Expression(m.PRJ_OPR_PRDS, rule=hyb_stor_capacity_rule)
 
     def energy_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type],
-                   "energy_capacity_rule"):
-            return imported_capacity_modules[cap_type]. \
-                energy_capacity_rule(mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type], "energy_capacity_rule"):
+            return imported_capacity_modules[cap_type].energy_capacity_rule(
+                mod, prj, prd
+            )
         else:
             return cap_type_init.energy_capacity_rule(mod, prj, prd)
 
-    m.Energy_Capacity_MWh = Expression(
-        m.PRJ_OPR_PRDS,
-        rule=energy_capacity_rule
-    )
+    m.Energy_Capacity_MWh = Expression(m.PRJ_OPR_PRDS, rule=energy_capacity_rule)
+
 
 # Set Rules
 ###############################################################################
@@ -231,30 +218,32 @@ def op_gens_by_tmp(mod, tmp):
     """
     Figure out which generators are operational in each timepoins.
     """
-    gens = list(
-        g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp
-    )
+    gens = list(g for (g, t) in mod.PRJ_OPR_TMPS if t == tmp)
     return gens
 
 
 def operational_periods_by_project(prj, project_operational_periods):
-    """
-    """
+    """ """
     return list(
-        set(period for (project, period) in project_operational_periods
-            if project == prj)
+        set(
+            period
+            for (project, period) in project_operational_periods
+            if project == prj
+        )
     )
 
 
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-    """
+    """ """
     required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
     )
 
     # Import needed capacity type modules
@@ -262,10 +251,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
-        if hasattr(imported_capacity_modules[op_m],
-                   "load_model_data"):
+        if hasattr(imported_capacity_modules[op_m], "load_model_data"):
             imported_capacity_modules[op_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage)
+                m, d, data_portal, scenario_directory, subproblem, stage
+            )
         else:
             pass
 
@@ -283,30 +272,52 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Total capacity for all projects
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "capacity_all.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_all.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period",
-                         "capacity_type", "technology", "load_zone",
-                         "capacity_mw", "hyb_gen_capacity_mw",
-                         "hyb_stor_capacity_mw", "capacity_mwh"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "capacity_type",
+                "technology",
+                "load_zone",
+                "capacity_mw",
+                "hyb_gen_capacity_mw",
+                "hyb_stor_capacity_mw",
+                "capacity_mwh",
+            ]
+        )
         for (prj, p) in m.PRJ_OPR_PRDS:
-            writer.writerow([
-                prj,
-                p,
-                m.capacity_type[prj],
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.Capacity_MW[prj, p]),
-                value(m.Hyb_Gen_Capacity_MW[prj, p]),
-                value(m.Hyb_Stor_Capacity_MW[prj, p]),
-                value(m.Energy_Capacity_MWh[prj, p])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.capacity_type[prj],
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.Capacity_MW[prj, p]),
+                    value(m.Hyb_Gen_Capacity_MW[prj, p]),
+                    value(m.Hyb_Stor_Capacity_MW[prj, p]),
+                    value(m.Energy_Capacity_MWh[prj, p]),
+                ]
+            )
 
     # Module-specific capacity results
     required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
     )
 
     # Import needed capacity type modules
@@ -314,10 +325,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
-        if hasattr(imported_capacity_modules[op_m],
-                   "export_results"):
-            imported_capacity_modules[
-                op_m].export_results(
+        if hasattr(imported_capacity_modules[op_m], "export_results"):
+            imported_capacity_modules[op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
             )
         else:
@@ -343,19 +352,24 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Open in 'append' mode, so that results already written by other
     # modules are not overridden
     with open(summary_results_file, "a") as outfile:
-        outfile.write(
-            "\n### CAPACITY RESULTS ###\n"
-        )
+        outfile.write("\n### CAPACITY RESULTS ###\n")
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                     "capacity_all.csv")
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_all.csv",
+        )
     )
 
     required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
     )
 
     # Import needed capacity type modules
@@ -363,10 +377,8 @@ def summarize_results(scenario_directory, subproblem, stage):
         required_capacity_modules
     )
     for op_m in required_capacity_modules:
-        if hasattr(imported_capacity_modules[op_m],
-                   "summarize_results"):
-            imported_capacity_modules[
-                op_m].summarize_results(
+        if hasattr(imported_capacity_modules[op_m], "summarize_results"):
+            imported_capacity_modules[op_m].summarize_results(
                 scenario_directory, subproblem, stage, summary_results_file
             )
         else:

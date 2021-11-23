@@ -31,17 +31,22 @@ import os.path
 from pyomo.environ import Set, Param, Reals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    tx_capacity_type_operational_period_sets
-from gridpath.auxiliary.validations import get_tx_lines, get_expected_dtypes, \
-    write_validation_to_database, validate_dtypes, \
-    validate_idxs, validate_missing_inputs, validate_column_monotonicity
+from gridpath.auxiliary.dynamic_components import (
+    tx_capacity_type_operational_period_sets,
+)
+from gridpath.auxiliary.validations import (
+    get_tx_lines,
+    get_expected_dtypes,
+    write_validation_to_database,
+    validate_dtypes,
+    validate_idxs,
+    validate_missing_inputs,
+    validate_column_monotonicity,
+)
 
 
 # TODO: add fixed O&M costs similar to gen_spec
-def add_model_components(
-        m, d, scenario_directory, subproblem, stage
-):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -89,25 +94,18 @@ def add_model_components(
     # Required Params
     ###########################################################################
 
-    m.tx_spec_min_flow_mw = Param(
-        m.TX_SPEC_OPR_PRDS,
-        within=Reals
-    )
-    m.tx_spec_max_flow_mw = Param(
-        m.TX_SPEC_OPR_PRDS,
-        within=Reals
-    )
+    m.tx_spec_min_flow_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
+    m.tx_spec_max_flow_mw = Param(m.TX_SPEC_OPR_PRDS, within=Reals)
 
     # Dynamic Components
     ###########################################################################
 
-    getattr(d, tx_capacity_type_operational_period_sets).append(
-        "TX_SPEC_OPR_PRDS"
-    )
+    getattr(d, tx_capacity_type_operational_period_sets).append("TX_SPEC_OPR_PRDS")
 
 
 # Transmission Capacity Type Methods
 ###############################################################################
+
 
 def min_transmission_capacity_rule(mod, tx, p):
     return mod.tx_spec_min_flow_mw[tx, p]
@@ -128,24 +126,32 @@ def tx_capacity_cost_rule(mod, g, p):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory,
-                              subproblem, stage):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "specified_transmission_line_capacities.tab"),
-        select=("transmission_line", "period",
-                "specified_tx_min_mw", "specified_tx_max_mw"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "specified_transmission_line_capacities.tab",
+        ),
+        select=(
+            "transmission_line",
+            "period",
+            "specified_tx_min_mw",
+            "specified_tx_max_mw",
+        ),
         index=m.TX_SPEC_OPR_PRDS,
-        param=(m.tx_spec_min_flow_mw,
-               m.tx_spec_max_flow_mw)
+        param=(m.tx_spec_min_flow_mw, m.tx_spec_max_flow_mw),
     )
 
 
 # Database
 ###############################################################################
 
-def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn):
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -169,7 +175,7 @@ def get_model_inputs_from_database(
         WHERE transmission_portfolio_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.TRANSMISSION_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -177,7 +183,8 @@ def get_model_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     specified_transmission_line_capacities.tab file.
@@ -190,18 +197,32 @@ def write_model_inputs(
     """
 
     tx_capacities = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "specified_transmission_line_capacities.tab"),
-              "w", newline="") as existing_tx_capacity_tab_file:
-        writer = csv.writer(existing_tx_capacity_tab_file,
-                            delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "specified_transmission_line_capacities.tab",
+        ),
+        "w",
+        newline="",
+    ) as existing_tx_capacity_tab_file:
+        writer = csv.writer(
+            existing_tx_capacity_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(
-            ["transmission_line", "period", "specified_tx_min_mw",
-             "specified_tx_max_mw"]
+            [
+                "transmission_line",
+                "period",
+                "specified_tx_min_mw",
+                "specified_tx_max_mw",
+            ]
         )
 
         for row in tx_capacities:
@@ -210,6 +231,7 @@ def write_model_inputs(
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -222,7 +244,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     tx_capacities = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     tx_lines = get_tx_lines(conn, scenario_id, subscenarios, "capacity_type", "tx_spec")
 
@@ -232,8 +255,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
-        conn=conn,
-        tables=["inputs_transmission_specified_capacity"]
+        conn=conn, tables=["inputs_transmission_specified_capacity"]
     )
 
     # Check dtypes
@@ -246,7 +268,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_specified_capacity",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Ensure tx_line capacity is specified in at least 1 period
@@ -259,10 +281,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_specified_capacity",
         severity="High",
-        errors=validate_idxs(actual_idxs=spec_tx_lines,
-                             req_idxs=tx_lines,
-                             idx_label="transmission_line",
-                             msg=msg)
+        errors=validate_idxs(
+            actual_idxs=spec_tx_lines,
+            req_idxs=tx_lines,
+            idx_label="transmission_line",
+            msg=msg,
+        ),
     )
 
     # Check for missing values (vs. missing row entries above)
@@ -275,7 +299,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_specified_capacity",
         severity="High",
-        errors=validate_missing_inputs(df, cols)
+        errors=validate_missing_inputs(df, cols),
     )
 
     # check that min <= max
@@ -288,8 +312,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         db_table="inputs_project_new_potential",
         severity="High",
         errors=validate_column_monotonicity(
-            df=df,
-            cols=cols,
-            idx_col=["project", "period"]
-        )
+            df=df, cols=cols, idx_col=["project", "period"]
+        ),
     )
