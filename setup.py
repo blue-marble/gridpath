@@ -43,6 +43,8 @@ setup(name="GridPath",
           "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
           "networkx==2.5.1",  # network package for DC OPF
           "pyutilib==6.0.0",  # used for solver temp file management
+          "coverage",  # test coverage
+          "coveralls"  # automated coverage results with Travis CI
       ],
       extras_require={
           "doc": extras_doc,
