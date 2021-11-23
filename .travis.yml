@@ -1,0 +1,15 @@
+language: python
+python:
+  - "3.8"
+install:
+  - pip install .
+script:
+  - python -m unittest discover tests
+
+# whitelist
+branches:
+  only:
+    - main
+    - develop
+    - travis
+
