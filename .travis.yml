@@ -3,6 +3,7 @@ python:
   - "3.8"
 before_install:
   - "sudo apt-get install coinor-cbc"
+  - "cbc --version"
 install:
   - pip install .
 script:
