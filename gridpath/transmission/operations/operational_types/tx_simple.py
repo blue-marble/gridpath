@@ -381,6 +381,12 @@ def min_transmit_power_rule(mod, l, bt, h):
 
     Transmitted power should exceed the defined minimum transmission power in
     each operational timepoint.
+
+    If the minimum transmitted power is positive, the transmitted power should
+    exceed the minimum transmitted power in the transmission line's positive direction.
+
+    If the minimum transmitted power is negative, the transmitted power should
+    exceed the minimum transmitted power in transmission line's negative direction.
     """
     var = mod.tx_simple_min_transmit_power_mw[l, bt, h]
     if var == 0:
