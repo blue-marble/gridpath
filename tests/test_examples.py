@@ -521,7 +521,7 @@ class TestExamples(unittest.TestCase):
         #  using parallel processing; skip test on linux for the time being
         if platform.system() == "Linux":
             print("Skipping test_example_multi_stage_prod_cost_parallel on ",
-                  platform)
+                  platform.system())
         else:
             self.run_and_check_objective("multi_stage_prod_cost",
                                          {1: {1: -1265436373826.0408,
