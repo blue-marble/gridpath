@@ -2,7 +2,9 @@ language: python
 python:
   - "3.8"
 before_install:
-  - "sudo apt-get install coinor-cbc=2.10.5"
+  - "sudo apt-get install coinor-cbc"
+  - "sudo apt-get install -y apt-show-versions"
+  - "apt-show-versions coinor-cbc"
 install:
   - pip install .
 script:
