@@ -8,7 +8,9 @@ before_install:
 install:
   - pip install .  # install GridPath
 script:
-  - python -m unittest discover tests  # run tests
+  - coverage run -m unittest discover tests  # run tests
+after_success:
+  coveralls
 
 # whitelist
 branches:
