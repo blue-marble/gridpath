@@ -15,6 +15,7 @@
 import logging
 import multiprocessing
 import os
+import platform
 import sqlite3
 import unittest
 
@@ -379,6 +380,8 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission" example
         :return:
         """
+        print("platform: ", platform.system())
+        print("release: ", platform.release())
 
         self.check_validation("2periods_new_build_2zones_transmission")
         self.run_and_check_objective("2periods_new_build_2zones_transmission",
@@ -498,24 +501,29 @@ class TestExamples(unittest.TestCase):
                                           2: -1265436373826.0408,
                                           3: -1265436373826.099}})
 
-    # def test_example_multi_stage_prod_cost_parallel(self):
-    #     """
-    #     Check validation and objective function values of
-    #     "multi_stage_prod_cost" example
-    #     :return:
-    #     """
-    #
-    #     self.run_and_check_objective("multi_stage_prod_cost",
-    #                                  {1: {1: -1265436373826.0408,
-    #                                       2: -1265436373826.0408,
-    #                                       3: -1265436373826.099},
-    #                                   2: {1: -1265436373826.0408,
-    #                                       2: -1265436373826.0408,
-    #                                       3: -1265436373826.099},
-    #                                   3: {1: -1265436373826.0408,
-    #                                       2: -1265436373826.0408,
-    #                                       3: -1265436373826.099}},
-    #                                  parallel=3)
+    def test_example_multi_stage_prod_cost_parallel(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost" example
+        :return:
+        """
+        # TODO: figure why run_e2e processed gets terminated on linux when
+        #  using parallel processing; skip test on linux for the time being
+        if platform == "Linux":
+            print("Skipping test_example_multi_stage_prod_cost_parallel on ",
+                  platform)
+        else:
+            self.run_and_check_objective("multi_stage_prod_cost",
+                                         {1: {1: -1265436373826.0408,
+                                              2: -1265436373826.0408,
+                                              3: -1265436373826.099},
+                                          2: {1: -1265436373826.0408,
+                                              2: -1265436373826.0408,
+                                              3: -1265436373826.099},
+                                          3: {1: -1265436373826.0408,
+                                              2: -1265436373826.0408,
+                                              3: -1265436373826.099}},
+                                         parallel=3)
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """

@@ -2,13 +2,13 @@ language: python
 python:
   - "3.8"
 before_install:
-  - "sudo apt-get install coinor-cbc"
-  - "sudo apt-get install -y apt-show-versions"
-  - "apt-show-versions coinor-cbc"
+  - "sudo apt-get install coinor-cbc"  # install cbc
+  - "sudo apt-get install -y apt-show-versions"  # install apt-show-versions
+  - "apt-show-versions coinor-cbc"  # check cbc version
 install:
-  - pip install .
+  - pip install .  # install GridPath
 script:
-  - python -m unittest discover tests
+  - python -m unittest discover tests  # run tests
 
 # whitelist
 branches:
