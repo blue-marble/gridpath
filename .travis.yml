@@ -15,5 +15,3 @@ branches:
   only:
     - main
     - develop
-    - travis
-
