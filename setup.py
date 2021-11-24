@@ -50,7 +50,7 @@ setup(
         "doc": extras_doc,
         "ui": extras_ui,
         "all": extras_all,
-        "travis": extras_coverage
+        "travis": extras_coverage,
     },
     include_package_data=True,
     entry_points={
