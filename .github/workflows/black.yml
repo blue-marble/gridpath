@@ -1,6 +1,16 @@
 name: Lint Black
 
-on: [push, pull_request]
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main and develop branches
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
   lint:
