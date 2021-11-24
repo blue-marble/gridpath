@@ -18,28 +18,24 @@ from pyomo.environ import Param, Reals
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """
-
-    """
+    """ """
     # Price by market and timepoint
     # Prices are allowed to be negative
-    m.market_price = Param(
-        m.MARKETS, m.TMPS,
-        within=Reals
-    )
+    m.market_price = Param(m.MARKETS, m.TMPS, within=Reals)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-
-    """
+    """ """
 
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "market_prices.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "market_prices.tab",
         ),
-        param=m.market_price
+        param=m.market_price,
     )
 
 
@@ -77,15 +73,19 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         USING (market, timepoint)
         ;
         """,
-        (subscenarios.MARKET_SCENARIO_ID,
-         subscenarios.TEMPORAL_SCENARIO_ID,
-         subscenarios.MARKET_PRICE_SCENARIO_ID)
+        (
+            subscenarios.MARKET_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.MARKET_PRICE_SCENARIO_ID,
+        ),
     )
 
     return prices
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     :param scenario_directory: string, the scenario directory
     :param subscenarios: SubScenarios object with all subscenario info
@@ -102,10 +102,15 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     )
 
     with open(
-            os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "market_prices.tab"
-            ), "w", newline=""
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "market_prices.tab",
+        ),
+        "w",
+        newline="",
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 

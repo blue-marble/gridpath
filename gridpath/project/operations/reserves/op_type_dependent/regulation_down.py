@@ -23,25 +23,25 @@ import csv
 import os.path
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_values
-from gridpath.project.operations.reserves.op_type_dependent.\
-    reserve_limits_by_op_type import \
-    generic_add_model_components, generic_load_model_data
+from gridpath.auxiliary.validations import write_validation_to_database, validate_values
+from gridpath.project.operations.reserves.op_type_dependent.reserve_limits_by_op_type import (
+    generic_add_model_components,
+    generic_load_model_data,
+)
 
 
 # Inputs
-RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE = \
+RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE = (
     "regulation_down_ramp_rate_limit"
+)
 # Model components
 RESERVE_PROVISION_VARIABLE_NAME = "Provide_Regulation_Down_MW"
-RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME = \
+RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME = (
     "Regulation_Down_Provision_Ramp_Rate_Limit_Constraint"
-RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME = \
-    "regulation_down_ramp_rate_limit"
+)
+RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME = "regulation_down_ramp_rate_limit"
 RESERVE_PROJECTS_SET_NAME = "REGULATION_DOWN_PROJECTS"
-RESERVE_PRJ_OPR_TMPS_SET_NAME = \
-    "REGULATION_DOWN_PRJ_OPR_TMPS"
+RESERVE_PRJ_OPR_TMPS_SET_NAME = "REGULATION_DOWN_PRJ_OPR_TMPS"
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -59,13 +59,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         subproblem=subproblem,
         stage=stage,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
-        reserve_project_operational_timepoints_set=
-        RESERVE_PRJ_OPR_TMPS_SET_NAME,
+        reserve_project_operational_timepoints_set=RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
-        reserve_provision_ramp_rate_limit_param
-        =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,
-        reserve_provision_ramp_rate_limit_constraint=
-        RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME,
+        reserve_provision_ramp_rate_limit_param=RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,
+        reserve_provision_ramp_rate_limit_constraint=RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME,
     )
 
 
@@ -87,10 +84,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory=scenario_directory,
         subproblem=subproblem,
         stage=stage,
-        ramp_rate_limit_column_name
-        =RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
-        reserve_provision_ramp_rate_limit_param
-        =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME
+        ramp_rate_limit_column_name=RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
+        reserve_provision_ramp_rate_limit_param=RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,
     )
 
 
@@ -141,11 +136,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="Mid",
-        errors=validate_values(df, ["regulation_down_ramp_rate"], min=0, max=1)
+        errors=validate_values(df, ["regulation_down_ramp_rate"], min=0, max=1),
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -157,17 +154,21 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     prj_ramp_rates = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_ramp_rate_dict = dict()
     for (prj, ramp_rate) in prj_ramp_rates:
-        prj_ramp_rate_dict[str(prj)] = \
-            "." if ramp_rate is None else str(ramp_rate)
+        prj_ramp_rate_dict[str(prj)] = "." if ramp_rate is None else str(ramp_rate)
 
     # Add params to projects file
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
@@ -189,7 +190,12 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             # Add resulting row to new_rows list
             new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
-            projects_file_out:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

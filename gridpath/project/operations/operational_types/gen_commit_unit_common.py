@@ -49,19 +49,33 @@ from __future__ import division
 
 import csv
 import os.path
-from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Binary, PercentFraction, Boolean, Expression, value
+from pyomo.environ import (
+    Var,
+    Set,
+    Param,
+    Constraint,
+    NonNegativeReals,
+    Binary,
+    PercentFraction,
+    Boolean,
+    Expression,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
-from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, load_optype_model_data, \
-    load_startup_chars, check_for_tmps_to_link
-from gridpath.project.common_functions import \
-    check_if_boundary_type_and_first_timepoint, \
-    check_if_first_timepoint, check_if_last_timepoint, \
-    check_boundary_type
+from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.operations.operational_types.common_functions import (
+    determine_relevant_timepoints,
+    load_optype_model_data,
+    load_startup_chars,
+    check_for_tmps_to_link,
+)
+from gridpath.project.common_functions import (
+    check_if_boundary_type_and_first_timepoint,
+    check_if_first_timepoint,
+    check_if_last_timepoint,
+    check_boundary_type,
+)
 
 
 def add_model_components(
@@ -946,65 +960,86 @@ def add_model_components(
         Bin_or_Lin = "Lin"
         Pyomo_Binary_or_PercentFraction = PercentFraction
     else:
-        raise ValueError("""GridPath ERROR:
+        raise ValueError(
+            """GridPath ERROR:
         Allowed types are 'gen_commit_unit_bin' or 'gen_commit_unit_lin'. 
-        You used {}.""".format(bin_or_lin_optype)
-                         )
+        You used {}.""".format(
+                bin_or_lin_optype
+            )
+        )
 
     # Sets
     ###########################################################################
 
     setattr(
-        m, "GEN_COMMIT_{}".format(BIN_OR_LIN),
-        Set(within=m.PROJECTS,
-            initialize=lambda mod:
-            subset_init_by_param_value(
+        m,
+        "GEN_COMMIT_{}".format(BIN_OR_LIN),
+        Set(
+            within=m.PROJECTS,
+            initialize=lambda mod: subset_init_by_param_value(
                 mod, "PROJECTS", "operational_type", bin_or_lin_optype
-                )
-            )
+            ),
+        ),
     )
 
     setattr(
-        m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN),
-        Set(dimen=2, within=m.PRJ_OPR_TMPS,
-            initialize=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in getattr(mod, "GEN_COMMIT_{}".format(BIN_OR_LIN)))
-            )
-        )
+        m,
+        "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN),
+        Set(
+            dimen=2,
+            within=m.PRJ_OPR_TMPS,
+            initialize=lambda mod: set(
+                (g, tmp)
+                for (g, tmp) in mod.PRJ_OPR_TMPS
+                if g in getattr(mod, "GEN_COMMIT_{}".format(BIN_OR_LIN))
+            ),
+        ),
+    )
 
     setattr(
-        m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS".format(BIN_OR_LIN),
-        Set(within=getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+        m,
+        "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS".format(BIN_OR_LIN),
+        Set(
+            within=getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
             initialize=lambda mod: list(
-                prj for prj in mod.STARTUP_BY_ST_PRJS
+                prj
+                for prj in mod.STARTUP_BY_ST_PRJS
                 if mod.operational_type[prj] == bin_or_lin_optype
-                )
-            )
-        )
+            ),
+        ),
+    )
 
     setattr(
-        m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN),
-        Set(dimen=2,
+        m,
+        "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN),
+        Set(
+            dimen=2,
             ordered=True,
-            initialize=lambda mod: sorted(list(
-                (prj, s) for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
-                if mod.operational_type[prj] == bin_or_lin_optype
-                ))
-            )
-        )
+            initialize=lambda mod: sorted(
+                list(
+                    (prj, s)
+                    for (prj, s) in mod.STARTUP_BY_ST_PRJS_TYPES
+                    if mod.operational_type[prj] == bin_or_lin_optype
+                )
+            ),
+        ),
+    )
 
     setattr(
-        m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN),
-        Set(dimen=3,
-            initialize=lambda mod:
-            set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
-                for _g, s in
-                getattr(mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES"
-                        .format(BIN_OR_LIN))
-                if g == _g)
-            )
-        )
+        m,
+        "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN),
+        Set(
+            dimen=3,
+            initialize=lambda mod: set(
+                (g, tmp, s)
+                for (g, tmp) in mod.PRJ_OPR_TMPS
+                for _g, s in getattr(
+                    mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)
+                )
+                if g == _g
+            ),
+        ),
+    )
 
     def get_startup_types_by_project(mod, g):
         """
@@ -1012,307 +1047,413 @@ def add_model_components(
         coldest.
         """
         types = sorted(
-            [s for (_g, s) in
-             getattr(mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(
-                 BIN_OR_LIN))
-             if g == _g
-             ]
+            [
+                s
+                for (_g, s) in getattr(
+                    mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)
+                )
+                if g == _g
+            ]
         )
         return types
 
     setattr(
-        m, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN),
-        Set(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+        m,
+        "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN),
+        Set(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
             initialize=get_startup_types_by_project,
-            ordered=True
-            )
-        )
-
-    setattr(
-        m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN),
-        Set(dimen=2)
+            ordered=True,
+        ),
     )
 
+    setattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN), Set(dimen=2))
+
     setattr(
-        m, "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(BIN_OR_LIN),
-        Set(dimen=3,
-            initialize=lambda mod:
-            set((g, tmp, s) for (g, tmp) in
-                getattr(mod, "GEN_COMMIT_{}_LINKED_TMPS".format(
-                    BIN_OR_LIN))
-                for _g, s in
-                getattr(mod,
-                        "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(
-                            BIN_OR_LIN))
-                if g == _g)
-            )
+        m,
+        "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(BIN_OR_LIN),
+        Set(
+            dimen=3,
+            initialize=lambda mod: set(
+                (g, tmp, s)
+                for (g, tmp) in getattr(
+                    mod, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)
+                )
+                for _g, s in getattr(
+                    mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)
+                )
+                if g == _g
+            ),
+        ),
     )
 
     # Required Params
     ###########################################################################
     setattr(
-        m, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction)
+        m,
+        "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin),
+        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)), within=PercentFraction),
     )
 
     # Optional Params
     ###########################################################################
 
     setattr(
-        m, "gen_commit_{}_ramp_up_when_on_rate".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction, default=1)
+        m,
+        "gen_commit_{}_ramp_up_when_on_rate".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=1,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_ramp_down_when_on_rate".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction, default=1)
+        m,
+        "gen_commit_{}_ramp_down_when_on_rate".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=1,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_startup_plus_ramp_up_rate_by_st".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(
-              BIN_OR_LIN)),
-              within=PercentFraction, default=1)
+        m,
+        "gen_commit_{}_startup_plus_ramp_up_rate_by_st".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=1,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_shutdown_plus_ramp_down_rate".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction, default=1)
+        m,
+        "gen_commit_{}_shutdown_plus_ramp_down_rate".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=1,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_min_up_time_hours".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=NonNegativeReals, default=0)
+        m,
+        "gen_commit_{}_min_up_time_hours".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+            default=0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_min_down_time_hours".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=NonNegativeReals, default=0)
+        m,
+        "gen_commit_{}_min_down_time_hours".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+            default=0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_aux_consumption_frac_capacity".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction, default=0)
+        m,
+        "gen_commit_{}_aux_consumption_frac_capacity".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_aux_consumption_frac_power".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=PercentFraction, default=0)
+        m,
+        "gen_commit_{}_aux_consumption_frac_power".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_down_time_cutoff_hours".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES"
-                      .format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_down_time_cutoff_hours".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     # Derived Params
     ###########################################################################
 
     setattr(
-        m, "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=Boolean,
-              initialize=lambda mod, prj:
-              1 if prj in mod.RAMP_UP_VIOL_PRJS else 0
-              )
+        m,
+        "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=Boolean,
+            initialize=lambda mod, prj: 1 if prj in mod.RAMP_UP_VIOL_PRJS else 0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=Boolean,
-              initialize=lambda mod, prj:
-              1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0
-              )
+        m,
+        "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=Boolean,
+            initialize=lambda mod, prj: 1 if prj in mod.RAMP_DOWN_VIOL_PRJS else 0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_allow_min_up_time_violation".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=Boolean,
-              initialize=lambda mod, prj:
-              1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0
-              )
+        m,
+        "gen_commit_{}_allow_min_up_time_violation".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=Boolean,
+            initialize=lambda mod, prj: 1 if prj in mod.MIN_UP_TIME_VIOL_PRJS else 0,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_allow_min_down_time_violation".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-              within=Boolean,
-              initialize=lambda mod, prj:
-              1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0
-              )
+        m,
+        "gen_commit_{}_allow_min_down_time_violation".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=Boolean,
+            initialize=lambda mod, prj: 1 if prj in mod.MIN_DOWN_TIME_VIOL_PRJS else 0,
+        ),
     )
 
     # Linked Params
     ###########################################################################
 
     setattr(
-        m, "gen_commit_{}_linked_commit".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=PercentFraction)
+        m,
+        "gen_commit_{}_linked_commit".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=PercentFraction,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_startup".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=PercentFraction)
+        m,
+        "gen_commit_{}_linked_startup".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=PercentFraction,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_shutdown".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=PercentFraction)
+        m,
+        "gen_commit_{}_linked_shutdown".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=PercentFraction,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_downwards_reserves".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_downwards_reserves".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp".format(bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
-            bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(
-                BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(
-            bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(
-            BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_provide_power_shutdown_mw".format(
-            bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_provide_power_shutdown_mw".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     setattr(
-        m, "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(
-            bin_or_lin),
-        Param(getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
-              within=NonNegativeReals)
+        m,
+        "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+        ),
     )
 
     # Variables
     ###########################################################################
 
     setattr(
-        m, "GenCommit{}_Commit".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=Pyomo_Binary_or_PercentFraction)
+        m,
+        "GenCommit{}_Commit".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=Pyomo_Binary_or_PercentFraction,
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Startup".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=Pyomo_Binary_or_PercentFraction)
+        m,
+        "GenCommit{}_Startup".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=Pyomo_Binary_or_PercentFraction,
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Startup_Type".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
-            within=Pyomo_Binary_or_PercentFraction)
+        m,
+        "GenCommit{}_Startup_Type".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            within=Pyomo_Binary_or_PercentFraction,
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Shutdown".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=Pyomo_Binary_or_PercentFraction)
+        m,
+        "GenCommit{}_Shutdown".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=Pyomo_Binary_or_PercentFraction,
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Synced".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=Pyomo_Binary_or_PercentFraction)
+        m,
+        "GenCommit{}_Synced".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=Pyomo_Binary_or_PercentFraction,
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=NonNegativeReals)
-    )
-
-    setattr(
-        m, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin),
-        Var(getattr(m,
-                    "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
-            within=NonNegativeReals)
-    )
-
-    setattr(
-        m, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            within=NonNegativeReals)
-    )
-
-    setattr(
-        m, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+        m,
+        "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             within=NonNegativeReals,
-            initialize=0)
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+        m,
+        "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
             within=NonNegativeReals,
-            initialize=0)
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+        m,
+        "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             within=NonNegativeReals,
-            initialize=0)
+        ),
     )
 
     setattr(
-        m, "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
-        Var(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+        m,
+        "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             within=NonNegativeReals,
-            initialize=0)
+            initialize=0,
+        ),
+    )
+
+    setattr(
+        m,
+        "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+            initialize=0,
+        ),
+    )
+
+    setattr(
+        m,
+        "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+            initialize=0,
+        ),
+    )
+
+    setattr(
+        m,
+        "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
+        Var(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            within=NonNegativeReals,
+            initialize=0,
+        ),
     )
 
     # Expressions
@@ -1323,13 +1464,14 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Pmax_MW
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+        return mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
 
     setattr(
-        m, "GenCommit{}_Pmax_MW".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=pmax_rule)
+        m,
+        "GenCommit{}_Pmax_MW".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)), rule=pmax_rule
+        ),
     )
 
     def pmin_rule(mod, g, tmp):
@@ -1337,17 +1479,20 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Pmin_MW
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            * getattr(mod, "gen_commit_{}_min_stable_level_fraction".format(
-                bin_or_lin))[g]
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * getattr(
+                mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)
+            )[g]
+        )
 
     setattr(
-        m, "GenCommit{}_Pmin_MW".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Pmin_MW".format(Bin_or_Lin),
         Expression(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=pmin_rule
-        )
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)), rule=pmin_rule
+        ),
     )
 
     def provide_power_startup_rule(mod, g, tmp):
@@ -1356,18 +1501,21 @@ def add_model_components(
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
         return sum(
-            getattr(mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(
-                Bin_or_Lin))[g, tmp, s]
-            for s in getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(
-                BIN_OR_LIN))[g]
+            getattr(
+                mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
+            )[g, tmp, s]
+            for s in getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
+                g
+            ]
         )
 
     setattr(
-        m, "GenCommit{}_Provide_Power_Startup_MW".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Provide_Power_Startup_MW".format(Bin_or_Lin),
         Expression(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=provide_power_startup_rule
-        )
+            rule=provide_power_startup_rule,
+        ),
     )
 
     def provide_power_rule(mod, g, tmp):
@@ -1375,19 +1523,27 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Provide_Power_MW
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                           Bin_or_Lin))[g, tmp] \
-            + getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp] \
-            * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] \
-            + getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(
-                Bin_or_Lin))[g, tmp] \
-            + getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                Bin_or_Lin))[g, tmp]
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            + getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+            * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+            + getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            + getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+        )
 
     setattr(
-        m, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=provide_power_rule)
+        m,
+        "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=provide_power_rule,
+        ),
     )
 
     def ramp_up_rate_rule(mod, g, tmp):
@@ -1407,17 +1563,21 @@ def add_model_components(
             * minutes per hour [min/hour]
             = ramp up rate [MW/timepoint]
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp] \
-               * getattr(mod, "gen_commit_{}_ramp_up_when_on_rate".format(
-            bin_or_lin))[g] \
-               * mod.hrs_in_tmp[tmp] \
-               * 60  # convert min to hours
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * getattr(mod, "gen_commit_{}_ramp_up_when_on_rate".format(bin_or_lin))[g]
+            * mod.hrs_in_tmp[tmp]
+            * 60
+        )  # convert min to hours
 
     setattr(
-        m, "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=ramp_up_rate_rule)
+        m,
+        "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=ramp_up_rate_rule,
+        ),
     )
 
     def ramp_down_rate_rule(mod, g, tmp):
@@ -1437,17 +1597,21 @@ def add_model_components(
             * minutes per hour [min/hour]
             = ramp down rate [MW/timepoint]
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp] \
-               * getattr(mod, "gen_commit_{}_ramp_down_when_on_rate".format(
-            bin_or_lin))[g] \
-               * mod.hrs_in_tmp[tmp] \
-               * 60  # convert min to hours
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * getattr(mod, "gen_commit_{}_ramp_down_when_on_rate".format(bin_or_lin))[g]
+            * mod.hrs_in_tmp[tmp]
+            * 60
+        )  # convert min to hours
 
     setattr(
-        m, "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=ramp_down_rate_rule)
+        m,
+        "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=ramp_down_rate_rule,
+        ),
     )
 
     def startup_ramp_rate_rule(mod, g, tmp, s):
@@ -1455,19 +1619,27 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Startup_Ramp_Rate_By_ST_MW_Per_Tmp
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp] \
-               * min(getattr(mod,
-                             "gen_commit_{}_startup_plus_ramp_up_rate_by_st"
-                             .format(bin_or_lin))[g, s]
-                     * mod.hrs_in_tmp[tmp]
-                     * 60, 1)
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * min(
+                getattr(
+                    mod,
+                    "gen_commit_{}_startup_plus_ramp_up_rate_by_st".format(bin_or_lin),
+                )[g, s]
+                * mod.hrs_in_tmp[tmp]
+                * 60,
+                1,
+            )
+        )
 
     setattr(
-        m, "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(
-            BIN_OR_LIN)),
-                   rule=startup_ramp_rate_rule)
+        m,
+        "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            rule=startup_ramp_rate_rule,
+        ),
     )
 
     def shutdown_ramp_rate_rule(mod, g, tmp):
@@ -1475,18 +1647,26 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp] \
-               * min(getattr(mod,
-                             "gen_commit_{}_shutdown_plus_ramp_down_rate"
-                             .format(bin_or_lin))[g]
-                     * mod.hrs_in_tmp[tmp]
-                     * 60, 1)
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * min(
+                getattr(
+                    mod, "gen_commit_{}_shutdown_plus_ramp_down_rate".format(bin_or_lin)
+                )[g]
+                * mod.hrs_in_tmp[tmp]
+                * 60,
+                1,
+            )
+        )
 
     setattr(
-        m, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=shutdown_ramp_rate_rule)
+        m,
+        "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=shutdown_ramp_rate_rule,
+        ),
     )
 
     def active_startup_rule(mod, g, tmp):
@@ -1494,34 +1674,44 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Active_Startup_Type
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return sum(getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[
-                       g, tmp, s] * s
-                   for s in getattr(mod,
-                                    "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(
-                                        BIN_OR_LIN))[g])
+        return sum(
+            getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[g, tmp, s] * s
+            for s in getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
+                g
+            ]
+        )
 
     setattr(
-        m, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=active_startup_rule)
+        m,
+        "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=active_startup_rule,
+        ),
     )
 
     def upwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, headroom_variables)[g])
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+
     setattr(
-        m, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=upwards_reserve_rule)
+        m,
+        "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=upwards_reserve_rule,
+        ),
     )
 
     def downwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, footroom_variables)[g])
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+
     setattr(
-        m, "GenCommit{}_Downwards_Reserves_MW".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=downwards_reserve_rule)
+        m,
+        "GenCommit{}_Downwards_Reserves_MW".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=downwards_reserve_rule,
+        ),
     )
 
     def auxiliary_consumption_rule(mod, g, tmp):
@@ -1529,21 +1719,26 @@ def add_model_components(
         **Expression Name**: GenCommitBin_Auxiliary_Consumption_MW
         **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-               * mod.Availability_Derate[g, tmp] \
-               * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] \
-               * getattr(mod,
-                         "gen_commit_{}_aux_consumption_frac_capacity".format(
-                             bin_or_lin))[g] \
-               + \
-               getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
-                   g, tmp] * \
-               getattr(mod, "gen_commit_{}_aux_consumption_frac_power".format(
-                   bin_or_lin))[g]
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+            * getattr(
+                mod, "gen_commit_{}_aux_consumption_frac_capacity".format(bin_or_lin)
+            )[g]
+            + getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+            * getattr(
+                mod, "gen_commit_{}_aux_consumption_frac_power".format(bin_or_lin)
+            )[g]
+        )
+
     setattr(
-        m, "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
-        Expression(getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                   rule=auxiliary_consumption_rule)
+        m,
+        "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+        Expression(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=auxiliary_consumption_rule,
+        ),
     )
 
     # Constraints
@@ -1568,17 +1763,18 @@ def add_model_components(
         unit while still unavailable, thus avoiding startup costs, which are
         based on available capacity started up.
         """
-        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
-                   g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
             <= mod.Availability_Derate[g, tmp]
+        )
 
     setattr(
-        m, "GenCommit{}_No_Sync_When_Unavailable_Constraint".format(
-            Bin_or_Lin),
+        m,
+        "GenCommit{}_No_Sync_When_Unavailable_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=no_sync_when_unavailable_constraint_rule
-        )
+            rule=no_sync_when_unavailable_constraint_rule,
+        ),
     )
 
     def synced_constraint_rule(mod, g, tmp):
@@ -1598,35 +1794,44 @@ def add_model_components(
         # or capacity being zero, there will be no startup/shutdown power
         # (it is limited by the Pmin expression), so we can drop the second
         # RHS term which checks for startup/shutdown power
-        if (mod.capacity_type[g] in [
-            'gen_spec', 'gen_ret_bin',  'gen_ret_lin']
-                and getattr(mod, mod.capacity_type[g] + '_capacity_mw') == 0) \
-            or (mod.availability_type[g] == 'exogenous'
-                and mod.avl_exog_derate[g, tmp] == 0)\
-            or getattr(mod, "gen_commit_{}_min_stable_level_fraction".format(
-                bin_or_lin))[g] == 0:
+        if (
+            (
+                mod.capacity_type[g] in ["gen_spec", "gen_ret_bin", "gen_ret_lin"]
+                and getattr(mod, mod.capacity_type[g] + "_capacity_mw") == 0
+            )
+            or (
+                mod.availability_type[g] == "exogenous"
+                and mod.avl_exog_derate[g, tmp] == 0
+            )
+            or getattr(
+                mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)
+            )[g]
+            == 0
+        ):
             startup_shutdown_fraction = 0
         else:
-            startup_shutdown_fraction = \
-                (getattr(mod, "GenCommit{}_Provide_Power_Startup_MW"
-                         .format(Bin_or_Lin)
-                         )[g, tmp]
-                 + getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW"
-                           .format(Bin_or_Lin)
-                           )[g, tmp]) \
-                / getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin)
-                          )[g, tmp]
+            startup_shutdown_fraction = (
+                getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(Bin_or_Lin))[
+                    g, tmp
+                ]
+                + getattr(
+                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+                )[g, tmp]
+            ) / getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
 
-        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp] \
-            >= getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
+            >= getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
             + startup_shutdown_fraction
+        )
 
     setattr(
-        m, "GenCommit{}_Synced_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Synced_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=synced_constraint_rule
-        )
+            rule=synced_constraint_rule,
+        ),
     )
 
     # Commitment
@@ -1647,8 +1852,10 @@ def add_model_components(
         # If this is the first timepoint of a linear horizon, skip the
         # constraint
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
@@ -1656,33 +1863,34 @@ def add_model_components(
             # previous timepoint's commitment to that in the closest linked
             # timepoint (the linked timepoint with index 0)
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_timepoint_commit = getattr(
                     mod, "gen_commit_{}_linked_commit".format(bin_or_lin)
                 )[g, 0]
             # Otherwise, use the previous timepoint's commitment
             else:
-                prev_timepoint_commit = \
-                    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
+                prev_timepoint_commit = getattr(
+                    mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
-            return getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                       g, tmp] \
-                   - prev_timepoint_commit \
-                   == getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[
-                       g, tmp] \
-                   - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                       g, tmp]
+            return (
+                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                - prev_timepoint_commit
+                == getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp]
+                - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
+            )
+
     setattr(
-        m, "GenCommit{}_Binary_Logic_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Binary_Logic_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=binary_logic_constraint_rule
-            )
+            rule=binary_logic_constraint_rule,
+        ),
     )
 
     # Power
@@ -1700,24 +1908,27 @@ def add_model_components(
         so commitment and therefore power provision is 0 (see
         no_sync_when_unavailable_constraint_rule()).
         """
-        return \
-            (getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                Bin_or_Lin))[g, tmp]
-             + getattr(mod,
-                       "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[
-                 g, tmp]) \
-            <= \
-            (getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
-             - getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
-             ) \
-            * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[g, tmp]
+        ) <= (
+            getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
+            - getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        ) * getattr(
+            mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+        )[
+            g, tmp
+        ]
 
     setattr(
-        m, "GenCommit{}_Max_Power_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Max_Power_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=max_power_constraint_rule
-        )
+            rule=max_power_constraint_rule,
+        ),
     )
 
     def min_power_constraint_rule(mod, g, tmp):
@@ -1730,18 +1941,23 @@ def add_model_components(
         don't look at downward reserves. In that case, enforcing
         provide_power_above_pmin to be within NonNegativeReals is sufficient.
         """
-        return getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-            Bin_or_Lin))[g, tmp] \
-            - getattr(mod, "GenCommit{}_Downwards_Reserves_MW".format(
-                Bin_or_Lin))[g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            - getattr(mod, "GenCommit{}_Downwards_Reserves_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
             >= 0
+        )
 
     setattr(
-        m, "GenCommit{}_Min_Power_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Min_Power_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=min_power_constraint_rule
-        )
+            rule=min_power_constraint_rule,
+        ),
     )
 
     # Minimum Up and Down Time
@@ -1796,18 +2012,19 @@ def add_model_components(
         """
 
         relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
-            mod, g, tmp,
-            getattr(mod, "gen_commit_{}_min_up_time_hours".format(bin_or_lin))[
-                g]
+            mod,
+            g,
+            tmp,
+            getattr(mod, "gen_commit_{}_min_up_time_hours".format(bin_or_lin))[g],
         )
 
-        number_of_starts_min_up_time_or_less_hours_ago = \
-            sum(getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tp]
-                for tp in relevant_tmps) \
-            + sum(getattr(mod,
-                          "gen_commit_{}_linked_startup".format(bin_or_lin))[
-                      g, ltp] for ltp in
-                  relevant_linked_timepoints)
+        number_of_starts_min_up_time_or_less_hours_ago = sum(
+            getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tp]
+            for tp in relevant_tmps
+        ) + sum(
+            getattr(mod, "gen_commit_{}_linked_startup".format(bin_or_lin))[g, ltp]
+            for ltp in relevant_linked_timepoints
+        )
 
         # If we've reached the first timepoint in linear boundary mode and
         # the total duration of the relevant timepoints (which includes *tmp*)
@@ -1815,45 +2032,47 @@ def add_model_components(
         # timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        if (mod.boundary[
-            mod.balancing_type_project[g],
-            mod.horizon[tmp, mod.balancing_type_project[g]]
-        ] == "linear"
-                and
-                relevant_tmps[-1]
-                == mod.first_hrz_tmp[
-                    mod.balancing_type_project[g],
-                    mod.horizon[tmp, mod.balancing_type_project[g]]
-                ]
-                and
-                sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-                < getattr(mod, "gen_commit_{}_min_up_time_hours".format(
-                    bin_or_lin))[g]
-                and
-                tmp != mod.last_hrz_tmp[
-                    mod.balancing_type_project[g],
-                    mod.horizon[tmp, mod.balancing_type_project[g]]
-                ]):
+        if (
+            mod.boundary[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+            == "linear"
+            and relevant_tmps[-1]
+            == mod.first_hrz_tmp[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+            and sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
+            < getattr(mod, "gen_commit_{}_min_up_time_hours".format(bin_or_lin))[g]
+            and tmp
+            != mod.last_hrz_tmp[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+        ):
             return Constraint.Skip
         # Otherwise, if there was a start min_up_time or less ago, the unit has
         # to remain committed.
         else:
-            return getattr(mod,
-                           "GenCommit{}_Commit".format(Bin_or_Lin)
-                           )[g, tmp] + \
-                   getattr(mod,
-                           "gen_commit_{}_allow_min_up_time_violation".format(
-                               bin_or_lin))[g] * \
-                   getattr(mod, "GenCommit{}_Min_Up_Time_Violation".format(
-                       Bin_or_Lin))[g, tmp] \
-                   >= number_of_starts_min_up_time_or_less_hours_ago
+            return (
+                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                + getattr(
+                    mod, "gen_commit_{}_allow_min_up_time_violation".format(bin_or_lin)
+                )[g]
+                * getattr(mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin))[
+                    g, tmp
+                ]
+                >= number_of_starts_min_up_time_or_less_hours_ago
+            )
 
     setattr(
-        m, "GenCommit{}_Min_Up_Time_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Min_Up_Time_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=min_up_time_constraint_rule
-        )
+            rule=min_up_time_constraint_rule,
+        ),
     )
 
     def min_down_time_constraint_rule(mod, g, tmp):
@@ -1883,20 +2102,20 @@ def add_model_components(
         Constraint (7) in Morales-Espana et al. (2013)
         """
 
-        relevant_tmps, relevant_linked_timepoints = \
-            determine_relevant_timepoints(
-                mod, g, tmp,
-                getattr(mod, "gen_commit_{}_min_down_time_hours".format(
-                                         bin_or_lin))[g]
-            )
+        relevant_tmps, relevant_linked_timepoints = determine_relevant_timepoints(
+            mod,
+            g,
+            tmp,
+            getattr(mod, "gen_commit_{}_min_down_time_hours".format(bin_or_lin))[g],
+        )
 
-        number_of_stops_min_down_time_or_less_hours_ago = \
-            sum(getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tp]
-                for tp in relevant_tmps) \
-            + sum(getattr(mod,
-                          "gen_commit_{}_linked_shutdown".format(bin_or_lin))[
-                      g, ltp] for ltp in
-                  relevant_linked_timepoints)
+        number_of_stops_min_down_time_or_less_hours_ago = sum(
+            getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tp]
+            for tp in relevant_tmps
+        ) + sum(
+            getattr(mod, "gen_commit_{}_linked_shutdown".format(bin_or_lin))[g, ltp]
+            for ltp in relevant_linked_timepoints
+        )
 
         # If we've reached the first timepoint in linear boundary mode and
         # the total duration of the relevant timepoints (which includes *tmp*)
@@ -1904,45 +2123,53 @@ def add_model_components(
         # next timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        if (mod.boundary[
-            mod.balancing_type_project[g],
-            mod.horizon[tmp, mod.balancing_type_project[g]]
-        ] == "linear"
-                and
-                relevant_tmps[-1]
-                == mod.first_hrz_tmp[
-                    mod.balancing_type_project[g],
-                    mod.horizon[tmp, mod.balancing_type_project[g]]
-                ]
-                and
-                sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
-                < getattr(mod, "gen_commit_{}_min_down_time_hours".format(
-                    bin_or_lin))[g]
-                and
-                tmp != mod.last_hrz_tmp[
-                    mod.balancing_type_project[g],
-                    mod.horizon[tmp, mod.balancing_type_project[g]]
-                ]):
+        if (
+            mod.boundary[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+            == "linear"
+            and relevant_tmps[-1]
+            == mod.first_hrz_tmp[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+            and sum(mod.hrs_in_tmp[t] for t in relevant_tmps)
+            < getattr(mod, "gen_commit_{}_min_down_time_hours".format(bin_or_lin))[g]
+            and tmp
+            != mod.last_hrz_tmp[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]],
+            ]
+        ):
             return Constraint.Skip
         # Otherwise, if there was a shutdown min_down_time or less ago, the
         # unit has to remain shut down.
         else:
-            return 1 - \
-                   (getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                        g, tmp] -
-                    getattr(mod,
-                            "gen_commit_{}_allow_min_down_time_violation"
-                            .format(bin_or_lin))[g] *
-                    getattr(mod, "GenCommit{}_Min_Down_Time_Violation".format(
-                        Bin_or_Lin))[g, tmp]) \
-                   >= number_of_stops_min_down_time_or_less_hours_ago
+            return (
+                1
+                - (
+                    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                    - getattr(
+                        mod,
+                        "gen_commit_{}_allow_min_down_time_violation".format(
+                            bin_or_lin
+                        ),
+                    )[g]
+                    * getattr(
+                        mod, "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin)
+                    )[g, tmp]
+                )
+                >= number_of_stops_min_down_time_or_less_hours_ago
+            )
 
     setattr(
-        m, "GenCommit{}_Min_Down_Time_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Min_Down_Time_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=min_down_time_constraint_rule
-        )
+            rule=min_down_time_constraint_rule,
+        ),
     )
 
     # Ramps
@@ -1961,84 +2188,86 @@ def add_model_components(
         Constraint (12) in Morales-Espana et al. (2013)
         """
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-                prev_tmp_power_above_pmin = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_power_above_pmin".format(
-                                bin_or_lin))[g, 0]
-                prev_tmp_downwards_reserves = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_downwards_reserves".format(
-                                bin_or_lin))[g, 0]
-                prev_tmp_ramp_up_rate_mw_per_tmp = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp"
-                            .format(bin_or_lin))[g, 0]
+                prev_tmp_power_above_pmin = getattr(
+                    mod, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin)
+                )[g, 0]
+                prev_tmp_downwards_reserves = getattr(
+                    mod, "gen_commit_{}_linked_downwards_reserves".format(bin_or_lin)
+                )[g, 0]
+                prev_tmp_ramp_up_rate_mw_per_tmp = getattr(
+                    mod,
+                    "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp".format(bin_or_lin),
+                )[g, 0]
             else:
-                prev_tmp_hrs_in_tmp = \
-                    mod.hrs_in_tmp[
-                        mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_power_above_pmin = \
-                    getattr(mod,
-                            "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_downwards_reserves = \
-                    getattr(mod, "GenCommit{}_Downwards_Reserves_MW".format(
-                        Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_ramp_up_rate_mw_per_tmp = \
-                    getattr(mod, "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp".format(
-                        Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
+                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+                prev_tmp_power_above_pmin = getattr(
+                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                prev_tmp_downwards_reserves = getattr(
+                    mod, "GenCommit{}_Downwards_Reserves_MW".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                prev_tmp_ramp_up_rate_mw_per_tmp = getattr(
+                    mod, "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
             # Apply constraints
             # If ramp rate limits, adjusted for timepoint duration, allow you
             # to ramp up the full operable range between timepoints, constraint
             # won't bind, so skip
-            if (getattr(mod, "gen_commit_{}_ramp_up_when_on_rate".format(
-                    bin_or_lin))[g] * 60
-                    * prev_tmp_hrs_in_tmp
-                    >= (1 - getattr(mod,
-                                    "gen_commit_{}_min_stable_level_fraction"
-                                            .format(bin_or_lin))[g])):
+            if getattr(mod, "gen_commit_{}_ramp_up_when_on_rate".format(bin_or_lin))[
+                g
+            ] * 60 * prev_tmp_hrs_in_tmp >= (
+                1
+                - getattr(
+                    mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)
+                )[g]
+            ):
                 return Constraint.Skip
             else:
-                return \
-                    (getattr(mod,
-                             "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                 Bin_or_Lin))[g, tmp]
-                     + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(
-                                Bin_or_Lin))[g, tmp]) \
-                    - (prev_tmp_power_above_pmin
-                       - prev_tmp_downwards_reserves) \
-                    <= prev_tmp_ramp_up_rate_mw_per_tmp + \
-                    getattr(mod,
-                            "gen_commit_{}_allow_ramp_up_violation".format(
-                                bin_or_lin))[g] * \
-                    getattr(mod, "GenCommit{}_Ramp_Up_Violation_MW".format(
-                        Bin_or_Lin))[g, tmp]
+                return (
+                    getattr(
+                        mod,
+                        "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin),
+                    )[g, tmp]
+                    + getattr(
+                        mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin)
+                    )[g, tmp]
+                ) - (
+                    prev_tmp_power_above_pmin - prev_tmp_downwards_reserves
+                ) <= prev_tmp_ramp_up_rate_mw_per_tmp + getattr(
+                    mod, "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin)
+                )[
+                    g
+                ] * getattr(
+                    mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
+                )[
+                    g, tmp
+                ]
 
-    setattr(m, "GenCommit{}_Ramp_Up_Constraint".format(Bin_or_Lin),
-            Constraint(
-                getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-                rule=ramp_up_constraint_rule
-                )
-            )
+    setattr(
+        m,
+        "GenCommit{}_Ramp_Up_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=ramp_up_constraint_rule,
+        ),
+    )
 
     def ramp_down_constraint_rule(mod, g, tmp):
         """
@@ -2054,83 +2283,81 @@ def add_model_components(
         Constraint (13) in Morales-Espana et al. (2013)
         """
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-                prev_tmp_power_above_pmin = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_power_above_pmin".format(
-                                bin_or_lin))[g, 0]
-                prev_tmp_upwards_reserves = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_upwards_reserves".format(
-                                bin_or_lin))[g, 0]
-                prev_tmp_ramp_down_rate_mw_per_tmp = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp"
-                            .format(bin_or_lin))[g, 0]
+                prev_tmp_power_above_pmin = getattr(
+                    mod, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin)
+                )[g, 0]
+                prev_tmp_upwards_reserves = getattr(
+                    mod, "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin)
+                )[g, 0]
+                prev_tmp_ramp_down_rate_mw_per_tmp = getattr(
+                    mod,
+                    "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp".format(bin_or_lin),
+                )[g, 0]
             else:
-                prev_tmp_hrs_in_tmp = \
-                    mod.hrs_in_tmp[
-                        mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_power_above_pmin = \
-                    getattr(mod,
-                            "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_upwards_reserves = \
-                    getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(
-                        Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
-                prev_tmp_ramp_down_rate_mw_per_tmp = \
-                    getattr(mod,
-                            "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp".format(
-                                Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                    ]
+                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+                prev_tmp_power_above_pmin = getattr(
+                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                prev_tmp_upwards_reserves = getattr(
+                    mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                prev_tmp_ramp_down_rate_mw_per_tmp = getattr(
+                    mod, "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
             # If ramp rate limits, adjusted for timepoint duration, allow you
             # to ramp down the full operable range between timepoints,
             # constraint won't bind, so skip
-            if (getattr(mod, "gen_commit_{}_ramp_down_when_on_rate".format(
-                    bin_or_lin))[g] * 60
-                    * prev_tmp_hrs_in_tmp
-                    >= (1 - getattr(mod,
-                                    "gen_commit_{}_min_stable_level_fraction"
-                                            .format(bin_or_lin))[g])):
+            if getattr(mod, "gen_commit_{}_ramp_down_when_on_rate".format(bin_or_lin))[
+                g
+            ] * 60 * prev_tmp_hrs_in_tmp >= (
+                1
+                - getattr(
+                    mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)
+                )[g]
+            ):
                 return Constraint.Skip
             else:
-                return \
-                    (prev_tmp_power_above_pmin + prev_tmp_upwards_reserves) \
-                    - \
-                    (getattr(mod,
-                             "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                 Bin_or_Lin))[g, tmp]
-                     - getattr(mod, "GenCommit{}_Downwards_Reserves_MW".format(
-                                Bin_or_Lin))[g, tmp]) \
-                    <= prev_tmp_ramp_down_rate_mw_per_tmp + \
-                    getattr(mod,
-                            "gen_commit_{}_allow_ramp_down_violation".format(
-                                bin_or_lin))[g] * \
-                    getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(
-                        Bin_or_Lin))[g, tmp]
+                return (prev_tmp_power_above_pmin + prev_tmp_upwards_reserves) - (
+                    getattr(
+                        mod,
+                        "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin),
+                    )[g, tmp]
+                    - getattr(
+                        mod, "GenCommit{}_Downwards_Reserves_MW".format(Bin_or_Lin)
+                    )[g, tmp]
+                ) <= prev_tmp_ramp_down_rate_mw_per_tmp + getattr(
+                    mod, "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin)
+                )[
+                    g
+                ] * getattr(
+                    mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin)
+                )[
+                    g, tmp
+                ]
 
     setattr(
-        m, "GenCommit{}_Ramp_Down_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Ramp_Down_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=ramp_down_constraint_rule
-        )
+            rule=ramp_down_constraint_rule,
+        ),
     )
 
     # Startup Power
@@ -2142,27 +2369,28 @@ def add_model_components(
         Only one startup type can be active (>= 1) at the same time.
         """
 
-        if g not in getattr(mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS".format(
-                BIN_OR_LIN)):
+        if g not in getattr(mod, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS".format(BIN_OR_LIN)):
             return Constraint.Skip
 
         sum_startup_types = sum(
-            getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[
-                g, tmp, s]
-            for s in
-            getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
-                g]
+            getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[g, tmp, s]
+            for s in getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
+                g
+            ]
         )
 
-        return sum_startup_types == \
-               getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp]
+        return (
+            sum_startup_types
+            == getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp]
+        )
 
     setattr(
-        m, "GenCommit{}_Unique_Startup_Type_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Unique_Startup_Type_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=unique_startup_type_constraint_rule
-        )
+            rule=unique_startup_type_constraint_rule,
+        ),
     )
 
     def active_startup_type_constraint_rule(mod, g, tmp, s):
@@ -2200,21 +2428,31 @@ def add_model_components(
         """
 
         # Coldest startup type is un-constrained
-        if s == getattr(mod,
-                        "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
-            g][-1]:
+        if (
+            s
+            == getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[g][-1]
+        ):
             return Constraint.Skip
 
         # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
         relevant_tmps1, relevant_linked_tmps1 = determine_relevant_timepoints(
-            mod, g, tmp, getattr(mod, "gen_commit_{}_down_time_cutoff_hours"
-                                 .format(bin_or_lin))[g, s])
+            mod,
+            g,
+            tmp,
+            getattr(mod, "gen_commit_{}_down_time_cutoff_hours".format(bin_or_lin))[
+                g, s
+            ],
+        )
         relevant_tmps2, relevant_linked_tmps2 = determine_relevant_timepoints(
-            mod, g, tmp, getattr(mod, "gen_commit_{}_down_time_cutoff_hours"
-                                 .format(bin_or_lin))[g, s + 1])
+            mod,
+            g,
+            tmp,
+            getattr(mod, "gen_commit_{}_down_time_cutoff_hours".format(bin_or_lin))[
+                g, s + 1
+            ],
+        )
         relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
-        relevant_linked_tmps = \
-            set(relevant_linked_tmps2) - set(relevant_linked_tmps1)
+        relevant_linked_tmps = set(relevant_linked_tmps2) - set(relevant_linked_tmps1)
 
         # Skip constraint if we are within TSU,s hours from the start of the
         # horizon (linear horizon boundary), from the start of the furthest
@@ -2227,24 +2465,26 @@ def add_model_components(
 
         # Equal to 1 if unit has been down within interval [TSU,s; TSU,s+1)
         # before hour t. This "activates" this particular startup type
-        shutdown_within_interval = \
-            sum(getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tp]
-                for tp in relevant_tmps) \
-            + sum(getattr(mod,
-                          "gen_commit_{}_linked_shutdown".format(bin_or_lin))[
-                      g, ltp]
-                  for ltp in relevant_linked_tmps)
+        shutdown_within_interval = sum(
+            getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tp]
+            for tp in relevant_tmps
+        ) + sum(
+            getattr(mod, "gen_commit_{}_linked_shutdown".format(bin_or_lin))[g, ltp]
+            for ltp in relevant_linked_tmps
+        )
 
-        return getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[
-                   g, tmp, s] <= shutdown_within_interval
+        return (
+            getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[g, tmp, s]
+            <= shutdown_within_interval
+        )
 
     setattr(
-        m, "GenCommit{}_Active_Startup_Type_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Active_Startup_Type_Constraint".format(Bin_or_Lin),
         Constraint(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(
-                BIN_OR_LIN)),
-            rule=active_startup_type_constraint_rule
-        )
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            rule=active_startup_type_constraint_rule,
+        ),
     )
 
     def max_startup_power_constraint_rule(mod, g, tmp):
@@ -2256,19 +2496,21 @@ def add_model_components(
         equal to the minimum stable level when not committed.
         """
 
-        return getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(
-            Bin_or_Lin))[g, tmp] \
-            <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                g, tmp]) \
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Startup_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp])
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        )
 
     setattr(
         m,
         "GenCommit{}_Max_Startup_Power_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=max_startup_power_constraint_rule
-        )
+            rule=max_startup_power_constraint_rule,
+        ),
     )
 
     def ramp_during_startup_by_st_constraint_rule(mod, g, tmp, s):
@@ -2286,62 +2528,61 @@ def add_model_components(
         """
 
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_tmp_provide_power_startup = getattr(
                     mod,
-                    "gen_commit_{}_linked_provide_power_startup_by_st_mw"
-                    .format(bin_or_lin)
+                    "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
+                        bin_or_lin
+                    ),
                 )[g, 0, s]
                 prev_tmp_startup_ramp_rate_mw_per_tmp = getattr(
                     mod,
-                    "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp"
-                    .format(bin_or_lin)
+                    "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(
+                        bin_or_lin
+                    ),
                 )[g, 0, s]
             else:
                 prev_tmp_provide_power_startup = getattr(
-                    mod,
-                    "GenCommit{}_Provide_Power_Startup_By_ST_MW"
-                    .format(Bin_or_Lin)
+                    mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
                 )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
                 prev_tmp_startup_ramp_rate_mw_per_tmp = getattr(
                     mod,
-                    "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp"
-                    .format(Bin_or_Lin)
+                    "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(Bin_or_Lin),
                 )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
 
-            return \
+            return (
                 getattr(
-                    mod,
-                    "GenCommit{}_Provide_Power_Startup_By_ST_MW"
-                    .format(Bin_or_Lin)
-                )[g, tmp, s] \
-                - prev_tmp_provide_power_startup \
-                <= prev_tmp_startup_ramp_rate_mw_per_tmp \
+                    mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
+                )[g, tmp, s]
+                - prev_tmp_provide_power_startup
+                <= prev_tmp_startup_ramp_rate_mw_per_tmp
                 + getattr(
-                    mod,
-                    "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin)
-                )[g] * \
-                getattr(
-                    mod,
-                    "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
-                )[g, tmp]
+                    mod, "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin)
+                )[g]
+                * getattr(mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin))[
+                    g, tmp
+                ]
+            )
 
     setattr(
-        m, "GenCommit{}_Ramp_During_Startup_By_ST_Constraint".format(
-            Bin_or_Lin),
+        m,
+        "GenCommit{}_Ramp_During_Startup_By_ST_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
-            rule=ramp_during_startup_by_st_constraint_rule
-        )
+            rule=ramp_during_startup_by_st_constraint_rule,
+        ),
     )
 
     def increasing_startup_power_by_st_constraint_rule(mod, g, tmp, s):
@@ -2360,51 +2601,48 @@ def add_model_components(
         back to 0 without ever committing the unit.
         """
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_tmp_provide_power_startup = getattr(
                     mod,
-                    "gen_commit_{}_linked_provide_power_startup_by_st_mw"
-                    .format(bin_or_lin)
+                    "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
+                        bin_or_lin
+                    ),
                 )[g, 0, s]
             else:
                 prev_tmp_provide_power_startup = getattr(
-                    mod,
-                    "GenCommit{}_Provide_Power_Startup_By_ST_MW"
-                    .format(Bin_or_Lin)
+                    mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
                 )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
 
-            return \
+            return (
                 getattr(
-                    mod,
-                    "GenCommit{}_Provide_Power_Startup_By_ST_MW"
-                    .format(Bin_or_Lin)
-                )[g, tmp, s] \
-                - prev_tmp_provide_power_startup \
-                >= \
-                - getattr(
-                    mod,
-                    "GenCommit{}_Startup_Type".format(Bin_or_Lin)
-                )[g, tmp, s] \
-                * getattr(
-                    mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin)
-                )[g, tmp]
+                    mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
+                )[g, tmp, s]
+                - prev_tmp_provide_power_startup
+                >= -getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[
+                    g, tmp, s
+                ]
+                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+            )
 
     setattr(
-        m, "GenCommit{}_Increasing_Startup_Power_By_ST_Constraint".format(
-            Bin_or_Lin),
+        m,
+        "GenCommit{}_Increasing_Startup_Power_By_ST_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
-            rule=increasing_startup_power_by_st_constraint_rule
-        )
+            rule=increasing_startup_power_by_st_constraint_rule,
+        ),
     )
 
     def power_during_startup_by_st_constraint_rule(mod, g, tmp, s):
@@ -2435,67 +2673,68 @@ def add_model_components(
         """
 
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
-                prev_tmp_provide_power_startup = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
-                                bin_or_lin))[g, 0, s]
-                prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                    getattr(mod,
-                            "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(
-                                bin_or_lin))[g, 0, s]
+                prev_tmp_provide_power_startup = getattr(
+                    mod,
+                    "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
+                        bin_or_lin
+                    ),
+                )[g, 0, s]
+                prev_tmp_startup_ramp_rate_mw_per_tmp = getattr(
+                    mod,
+                    "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(
+                        bin_or_lin
+                    ),
+                )[g, 0, s]
             else:
-                prev_tmp_provide_power_startup = \
-                    getattr(mod,
-                            "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(
-                                Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                    ]
-                prev_tmp_startup_ramp_rate_mw_per_tmp = \
-                    getattr(mod,
-                            "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(
-                                Bin_or_Lin))[
-                        g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s
-                    ]
+                prev_tmp_provide_power_startup = getattr(
+                    mod, "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(Bin_or_Lin)
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
+                prev_tmp_startup_ramp_rate_mw_per_tmp = getattr(
+                    mod,
+                    "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(Bin_or_Lin),
+                )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]], s]
 
-            return (getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                        g, tmp]
-                    * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[
-                        g, tmp]
-                    + getattr(mod,
-                              "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                  Bin_or_Lin))[g, tmp]
-                    ) \
-                   + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(
-                Bin_or_Lin))[g, tmp] \
-                   - prev_tmp_provide_power_startup \
-                   <= \
-                   (1 - getattr(mod,
-                                "GenCommit{}_Startup_Type".format(Bin_or_Lin))[
-                       g, tmp, s]) \
-                   * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[
-                       g, tmp] \
-                   + getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[
-                       g, tmp] \
-                   * prev_tmp_startup_ramp_rate_mw_per_tmp
+            return (
+                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+                + getattr(
+                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+                )[g, tmp]
+            ) + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[
+                g, tmp
+            ] - prev_tmp_provide_power_startup <= (
+                1
+                - getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[g, tmp, s]
+            ) * getattr(
+                mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
+            )[
+                g, tmp
+            ] + getattr(
+                mod, "GenCommit{}_Startup".format(Bin_or_Lin)
+            )[
+                g, tmp
+            ] * prev_tmp_startup_ramp_rate_mw_per_tmp
 
     setattr(
-        m, "GenCommit{}_Power_During_Startup_By_ST_Constraint".format(
-            Bin_or_Lin),
+        m,
+        "GenCommit{}_Power_During_Startup_By_ST_Constraint".format(Bin_or_Lin),
         Constraint(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(
-                BIN_OR_LIN)),
-            rule=power_during_startup_by_st_constraint_rule
-        )
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)),
+            rule=power_during_startup_by_st_constraint_rule,
+        ),
     )
 
     # Shutdown Power
@@ -2508,18 +2747,21 @@ def add_model_components(
         equal to the minimum stable level when not committed
         """
 
-        return getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(
-            Bin_or_Lin))[g, tmp] \
-               <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-            g, tmp]) \
-               * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp])
+            * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+        )
 
     setattr(
-        m, "GenCommit{}_Max_Shutdown_Power_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Max_Shutdown_Power_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=max_shutdown_power_constraint_rule
-        )
+            rule=max_shutdown_power_constraint_rule,
+        ),
     )
 
     def ramp_during_shutdown_constraint_rule(mod, g, tmp):
@@ -2537,51 +2779,58 @@ def add_model_components(
         """
 
         if check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-                boundary_type="linear"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
         ):
             return Constraint.Skip
         else:
             if check_if_boundary_type_and_first_timepoint(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
             ):
                 prev_tmp_provide_power_shutdown = getattr(
-                    mod, "gen_commit_{}_linked_provide_power_shutdown_mw"
-                        .format(bin_or_lin)
+                    mod,
+                    "gen_commit_{}_linked_provide_power_shutdown_mw".format(bin_or_lin),
                 )[g, 0]
                 prev_tmp_shutdown_ramp_rate_mw_per_tmp = getattr(
-                    mod, "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp"
-                         .format(bin_or_lin)
+                    mod,
+                    "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(
+                        bin_or_lin
+                    ),
                 )[g, 0]
             else:
                 prev_tmp_provide_power_shutdown = getattr(
-                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                                Bin_or_Lin)
+                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
                 )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                 prev_tmp_shutdown_ramp_rate_mw_per_tmp = getattr(
-                    mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(
-                                Bin_or_Lin)
+                    mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
                 )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
-            return prev_tmp_provide_power_shutdown \
-                - getattr(mod,
-                          "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                             Bin_or_Lin))[g, tmp] \
-                <= prev_tmp_shutdown_ramp_rate_mw_per_tmp + \
-                getattr(mod,
-                        "gen_commit_{}_allow_ramp_down_violation".format(
-                           bin_or_lin))[g] * \
-                getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(
-                   Bin_or_Lin))[g, tmp]
+            return (
+                prev_tmp_provide_power_shutdown
+                - getattr(
+                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+                )[g, tmp]
+                <= prev_tmp_shutdown_ramp_rate_mw_per_tmp
+                + getattr(
+                    mod, "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin)
+                )[g]
+                * getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin))[
+                    g, tmp
+                ]
+            )
 
     setattr(
-        m, "GenCommit{}_Ramp_During_Shutdown_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Ramp_During_Shutdown_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=ramp_during_shutdown_constraint_rule
-        )
+            rule=ramp_during_shutdown_constraint_rule,
+        ),
     )
 
     def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
@@ -2598,40 +2847,43 @@ def add_model_components(
         previously having committed the unit.
         """
         if check_if_last_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
         ) and (
-                check_boundary_type(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linear"
-                ) or
-                check_boundary_type(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
-                )
+            check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linear",
+            )
+            or check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
+            )
         ):
             return Constraint.Skip
         else:
-            return \
-                getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                    Bin_or_Lin))[g, tmp] \
-                - getattr(mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                    Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-                >= \
-                - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[
-                    g, tmp]
+            return (
+                getattr(
+                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+                )[g, tmp]
+                - getattr(
+                    mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+                )[g, mod.next_tmp[tmp, mod.balancing_type_project[g]]]
+                >= -getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
+                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+            )
 
     setattr(
-        m, "GenCommit{}_Decreasing_Shutdown_Power_Constraint".format(
-            Bin_or_Lin),
+        m,
+        "GenCommit{}_Decreasing_Shutdown_Power_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=decreasing_shutdown_power_constraint_rule
-        )
+            rule=decreasing_shutdown_power_constraint_rule,
+        ),
     )
 
     def power_during_shutdown_constraint_rule(mod, g, tmp):
@@ -2661,54 +2913,61 @@ def add_model_components(
         """
 
         if check_if_last_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
         ) and (
-                check_boundary_type(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linear"
-                ) or
-                check_boundary_type(
-                    mod=mod, tmp=tmp,
-                    balancing_type=mod.balancing_type_project[g],
-                    boundary_type="linked"
-                )
+            check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linear",
+            )
+            or check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[g],
+                boundary_type="linked",
+            )
         ):
             return Constraint.Skip
         else:
-            return (getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
-                        g, tmp]
-                    * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[
-                        g, tmp]
-                    + getattr(mod,
-                              "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
-                                  Bin_or_Lin))[g, tmp]) \
-                   + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(
-                    Bin_or_Lin))[g, tmp] \
-                   - getattr(mod,
-                             "GenCommit{}_Provide_Power_Shutdown_MW".format(
-                                 Bin_or_Lin)
-                             )[g, mod.next_tmp[tmp,
-                                               mod.balancing_type_project[g]]]\
-                   <= \
-                   (1 -
-                    getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                        g, mod.next_tmp[
-                            tmp, mod.balancing_type_project[g]]]) \
-                   * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[
-                       g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-                   + getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
-                       g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
-                   * getattr(mod,
-                             "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp"
-                             .format(Bin_or_Lin))[g, tmp]
+            return (
+                getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+                * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+                + getattr(
+                    mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+                )[g, tmp]
+            ) + getattr(mod, "GenCommit{}_Upwards_Reserves_MW".format(Bin_or_Lin))[
+                g, tmp
+            ] - getattr(
+                mod, "GenCommit{}_Provide_Power_Shutdown_MW".format(Bin_or_Lin)
+            )[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+            ] <= (
+                1
+                - getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[
+                    g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+                ]
+            ) * getattr(
+                mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin)
+            )[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+            ] + getattr(
+                mod, "GenCommit{}_Shutdown".format(Bin_or_Lin)
+            )[
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]
+            ] * getattr(
+                mod, "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(Bin_or_Lin)
+            )[
+                g, tmp
+            ]
 
     setattr(
-        m, "GenCommit{}_Power_During_Shutdown_Constraint".format(Bin_or_Lin),
+        m,
+        "GenCommit{}_Power_During_Shutdown_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=power_during_shutdown_constraint_rule
-        )
+            rule=power_during_shutdown_constraint_rule,
+        ),
     )
 
     def commit_when_unavailable_constraint_rule(mod, g, tmp):
@@ -2720,18 +2979,18 @@ def add_model_components(
         Commit[t] <= Availability_Derate[t]
         """
 
-        return getattr(
-            mod, "GenCommit{}_Commit".format(Bin_or_Lin)
-            )[g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
             <= mod.Availability_Derate[g, tmp]
+        )
 
     setattr(
         m,
         "GenCommit{}_Commit_When_Unavailable_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=commit_when_unavailable_constraint_rule
-        )
+            rule=commit_when_unavailable_constraint_rule,
+        ),
     )
 
     def synced_when_unavailable_constraint_rule(mod, g, tmp):
@@ -2743,24 +3002,24 @@ def add_model_components(
         Synced[t] <= Availability_Derate[t]
         """
 
-        return getattr(
-            mod,
-            "GenCommit{}_Synced".format(Bin_or_Lin)
-            )[g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
             <= mod.Availability_Derate[g, tmp]
+        )
 
     setattr(
         m,
         "GenCommit{}_Synced_When_Unavailable_Constraint".format(Bin_or_Lin),
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=synced_when_unavailable_constraint_rule
-        )
+            rule=synced_when_unavailable_constraint_rule,
+        ),
     )
 
 
 # Operational Type Methods
 ###############################################################################
+
 
 def power_provision_rule(mod, g, tmp, Bin_or_Lin):
     """
@@ -2768,12 +3027,12 @@ def power_provision_rule(mod, g, tmp, Bin_or_Lin):
     constrained to be between the generator's minimum stable level and its
     capacity if the generator is committed and 0 otherwise.
     """
-    return getattr(
-        mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-    )[g, tmp] - \
-        getattr(
-            mod, "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin)
-        )[g, tmp]
+    return (
+        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+        - getattr(mod, "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin))[
+            g, tmp
+        ]
+    )
 
 
 def commitment_rule(mod, g, tmp, Bin_or_Lin):
@@ -2789,8 +3048,10 @@ def online_capacity_rule(mod, g, tmp, Bin_or_Lin):
     """
     Capacity online in each timepoint.
     """
-    return getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    return (
+        getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
+    )
 
 
 def variable_om_cost_rule(mod, g, tmp, Bin_or_Lin):
@@ -2814,10 +3075,10 @@ def variable_om_cost_rule(mod, g, tmp, Bin_or_Lin):
     minus the auxiliary consumption. The variable cost should be applied to
     the gross power.
     """
-    return getattr(
-        mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-    )[g, tmp] \
+    return (
+        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
         * mod.variable_om_cost_per_mwh[g]
+    )
 
 
 def variable_om_cost_by_ll_rule(mod, g, tmp, s, Bin_or_Lin):
@@ -2835,13 +3096,13 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s, Bin_or_Lin):
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
     """
-    return mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
-        * getattr(
-        mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-    )[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
-        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    return (
+        mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s]
+        * getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s]
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
+    )
 
 
 def startup_cost_simple_rule(mod, g, tmp, Bin_or_Lin):
@@ -2850,9 +3111,11 @@ def startup_cost_simple_rule(mod, g, tmp, Bin_or_Lin):
     capacity (in MW) that is started up in that timepoint and the startup cost
     parameter.
     """
-    return getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp] \
-        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    return (
+        getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp]
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * mod.startup_cost_per_mw[g]
+    )
 
 
 def startup_cost_by_st_rule(mod, g, tmp, BIN_OR_LIN, Bin_or_Lin):
@@ -2862,15 +3125,16 @@ def startup_cost_by_st_rule(mod, g, tmp, BIN_OR_LIN, Bin_or_Lin):
     the startup cost parameter for that startup type. We take the sum across
     all startup types since only one startup type is active at the same time.
     """
-    return sum(
-        mod.startup_cost_by_st_per_mw[g, s]
-        * getattr(
-            mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin)
-        )[g, tmp, s]
-        for s in getattr(
-            mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN)
-        )[g]
-    ) * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
+    return (
+        sum(
+            mod.startup_cost_by_st_per_mw[g, s]
+            * getattr(mod, "GenCommit{}_Startup_Type".format(Bin_or_Lin))[g, tmp, s]
+            for s in getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[
+                g
+            ]
+        )
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
+    )
 
 
 def shutdown_cost_rule(mod, g, tmp, Bin_or_Lin):
@@ -2879,22 +3143,22 @@ def shutdown_cost_rule(mod, g, tmp, Bin_or_Lin):
     capacity (in Mw) that is shut down in that timepoint and the shutdown
     cost parameter.
     """
-    return getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp] \
-        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    return (
+        getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[g, tmp]
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * mod.shutdown_cost_per_mw[g]
+    )
 
 
 def fuel_burn_by_ll_rule(mod, g, tmp, s, Bin_or_Lin):
-    """
-    """
-    return \
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
-        * getattr(
-            mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-        )[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
-        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    """ """
+    return (
+        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s]
+        * getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[g, tmp]
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s]
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
+    )
 
 
 def startup_fuel_burn_rule(mod, g, tmp, Bin_or_Lin):
@@ -2903,9 +3167,11 @@ def startup_fuel_burn_rule(mod, g, tmp, Bin_or_Lin):
     capacity (in MW) that is started up in that timepoint and the startup
     fuel parameter. This does not vary by startup type.
     """
-    return getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp] \
-        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp] \
+    return (
+        getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[g, tmp]
+        * getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[g, tmp]
         * mod.startup_fuel_mmbtu_per_mw[g]
+    )
 
 
 def power_delta_rule(mod, g, tmp, Bin_or_Lin):
@@ -2919,29 +3185,35 @@ def power_delta_rule(mod, g, tmp, Bin_or_Lin):
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
     ) and (
         check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
         )
     ):
         pass
     else:
-        return getattr(
-            mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
-        )[g, tmp] \
+        return (
+            getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
             - getattr(
-            mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
-        )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin)
+            )[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+        )
 
 
 def fix_commitment(mod, g, tmp, Bin_or_Lin):
-    """
-    """
-    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp] = \
-        mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
+    """ """
+    getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
+        g, tmp
+    ] = mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
     getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp].fixed = True
 
 
@@ -2953,52 +3225,69 @@ def operational_violation_cost_rule(mod, g, tmp, bin_or_lin, Bin_or_Lin):
     :param tmp:
     :return:
     """
-    ramp_up_violation = \
-        (getattr(
-            mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
-        )[g, tmp] *
-         mod.ramp_up_violation_penalty[g])\
+    ramp_up_violation = (
+        (
+            getattr(mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin))[g, tmp]
+            * mod.ramp_up_violation_penalty[g]
+        )
+        if getattr(mod, "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin))[g]
+        else 0
+    )
+    ramp_down_violation = (
+        (
+            getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            * mod.ramp_down_violation_penalty[g]
+        )
+        if getattr(mod, "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin))[g]
+        else 0
+    )
+    min_up_time_violation = (
+        (
+            getattr(mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin))[g, tmp]
+            * mod.min_up_time_violation_penalty[g]
+        )
+        if getattr(mod, "gen_commit_{}_allow_min_up_time_violation".format(bin_or_lin))[
+            g
+        ]
+        else 0
+    )
+    min_down_time_violation = (
+        (
+            getattr(mod, "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin))[
+                g, tmp
+            ]
+            * mod.min_down_time_violation_penalty[g]
+        )
         if getattr(
-            mod, "gen_commit_{}_allow_ramp_up_violation".format(bin_or_lin)
-        )[g] else 0
-    ramp_down_violation = \
-        (getattr(
-            mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin)
-        )[g, tmp] *
-         mod.ramp_down_violation_penalty[g]) \
-        if getattr(
-            mod, "gen_commit_{}_allow_ramp_down_violation".format(bin_or_lin)
-        )[g] else 0
-    min_up_time_violation = \
-        (getattr(
-            mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin)
-        )[g, tmp] *
-         mod.min_up_time_violation_penalty[g]) \
-        if getattr(
-            mod, "gen_commit_{}_allow_min_up_time_violation".format(bin_or_lin)
-        )[g] else 0
-    min_down_time_violation = \
-        (getattr(
-            mod, "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin)
-        )[g, tmp] *
-         mod.min_down_time_violation_penalty[g]) \
-        if getattr(
-            mod, "gen_commit_{}_allow_min_down_time_violation".format(
-                bin_or_lin)
-        )[g] else 0
+            mod, "gen_commit_{}_allow_min_down_time_violation".format(bin_or_lin)
+        )[g]
+        else 0
+    )
 
-    return ramp_up_violation \
-        + ramp_down_violation \
-        + min_up_time_violation \
+    return (
+        ramp_up_violation
+        + ramp_down_violation
+        + min_up_time_violation
         + min_down_time_violation
+    )
 
 
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(
-    mod, d, data_portal, scenario_directory, subproblem, stage,
-    bin_or_lin_optype, bin_or_lin, BIN_OR_LIN
+    mod,
+    d,
+    data_portal,
+    scenario_directory,
+    subproblem,
+    stage,
+    bin_or_lin_optype,
+    bin_or_lin,
+    BIN_OR_LIN,
 ):
     """
     :param mod:
@@ -3011,82 +3300,113 @@ def load_model_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_model_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type=bin_or_lin_optype
+        mod=mod,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type=bin_or_lin_optype,
     )
 
     # Load data from startup_chars.tab (if it exists)
     load_startup_chars(
         data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type=bin_or_lin_optype, projects=projects
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type=bin_or_lin_optype,
+        projects=projects,
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_{}_linked_timepoint_params.tab".format(bin_or_lin)
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "gen_commit_{}_linked_timepoint_params.tab".format(bin_or_lin),
+    )
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
-            index=getattr(mod, "GEN_COMMIT_{}_LINKED_TMPS".format(
-                BIN_OR_LIN)),
+            index=getattr(mod, "GEN_COMMIT_{}_LINKED_TMPS".format(BIN_OR_LIN)),
             param=(
                 getattr(mod, "gen_commit_{}_linked_commit".format(bin_or_lin)),
-                getattr(mod, "gen_commit_{}_linked_startup".format(bin_or_lin)
-                        ),
-                getattr(mod, "gen_commit_{}_linked_shutdown".format(bin_or_lin)
-                        ),
-                getattr(mod, "gen_commit_{}_linked_power_above_pmin".format(
-                    bin_or_lin)),
-                getattr(mod, "gen_commit_{}_linked_upwards_reserves".format(
-                    bin_or_lin)),
-                getattr(mod, "gen_commit_{}_linked_downwards_reserves".format(
-                    bin_or_lin)),
-                getattr(mod, "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp"
-                        .format(bin_or_lin)),
-                getattr(mod, "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp"
-                        .format(bin_or_lin)),
-                getattr(mod,
-                        "gen_commit_{}_linked_provide_power_shutdown_mw"
-                        "".format(bin_or_lin)),
-                getattr(mod,
-                        "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp"
-                        .format(bin_or_lin))
-            )
+                getattr(mod, "gen_commit_{}_linked_startup".format(bin_or_lin)),
+                getattr(mod, "gen_commit_{}_linked_shutdown".format(bin_or_lin)),
+                getattr(
+                    mod, "gen_commit_{}_linked_power_above_pmin".format(bin_or_lin)
+                ),
+                getattr(
+                    mod, "gen_commit_{}_linked_upwards_reserves".format(bin_or_lin)
+                ),
+                getattr(
+                    mod, "gen_commit_{}_linked_downwards_reserves".format(bin_or_lin)
+                ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_ramp_up_rate_mw_per_tmp".format(bin_or_lin),
+                ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_ramp_down_rate_mw_per_tmp".format(bin_or_lin),
+                ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_provide_power_shutdown_mw"
+                    "".format(bin_or_lin),
+                ),
+                getattr(
+                    mod,
+                    "gen_commit_{}_linked_shutdown_ramp_rate_mw_per_tmp".format(
+                        bin_or_lin
+                    ),
+                ),
+            ),
         )
     else:
         pass
 
     # Linked timepoint params (by startup type)
     linked_startup_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_{}_linked_timepoint_str_type_params.tab".format(bin_or_lin)
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "gen_commit_{}_linked_timepoint_str_type_params.tab".format(bin_or_lin),
+    )
     if os.path.exists(linked_startup_inputs_filename):
         data_portal.load(
             filename=linked_startup_inputs_filename,
             param=(
                 getattr(
-                    mod, "gen_commit_{}_linked_provide_power_startup_by_st_mw"
-                         .format(bin_or_lin)
+                    mod,
+                    "gen_commit_{}_linked_provide_power_startup_by_st_mw".format(
+                        bin_or_lin
+                    ),
                 ),
                 getattr(
                     mod,
-                    "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp"
-                    .format(bin_or_lin)
-                )
-            )
+                    "gen_commit_{}_linked_startup_ramp_rate_by_st_mw_per_tmp".format(
+                        bin_or_lin
+                    ),
+                ),
+            ),
         )
     else:
         pass
 
 
 def export_results(
-    mod, d, scenario_directory, subproblem, stage, BIN_OR_LIN, Bin_or_Lin,
-    bin_or_lin, results_filename
+    mod,
+    d,
+    scenario_directory,
+    subproblem,
+    stage,
+    BIN_OR_LIN,
+    Bin_or_Lin,
+    bin_or_lin,
+    results_filename,
 ):
     """
     :param scenario_directory:
@@ -3096,105 +3416,145 @@ def export_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results",
-                           results_filename),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", results_filename
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project",
-                         "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "power_mw", "gross_power_mw",
-                         "auxiliary_consumption_mw", "net_power_mw",
-                         "committed_mw", "committed_units",
-                         "started_units", "stopped_units",
-                         "synced_units", "active_startup_type",
-                         "ramp_up_violation", "ramp_down_violation",
-                         "min_up_time_violation", "min_down_time_violation"
-                         ])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "balancing_type_project",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "technology",
+                "load_zone",
+                "power_mw",
+                "gross_power_mw",
+                "auxiliary_consumption_mw",
+                "net_power_mw",
+                "committed_mw",
+                "committed_units",
+                "started_units",
+                "stopped_units",
+                "synced_units",
+                "active_startup_type",
+                "ramp_up_violation",
+                "ramp_down_violation",
+                "min_up_time_violation",
+                "min_down_time_violation",
+            ]
+        )
 
-        for (p, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(
-                BIN_OR_LIN)):
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.balancing_type_project[p],
-                mod.horizon[tmp, mod.balancing_type_project[p]],
-                tmp,
-                mod.tmp_weight[tmp],
-                mod.hrs_in_tmp[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Power_Provision_MW[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Auxiliary_Consumption_MW".format(
-                            Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin)
-                )[p, tmp]) -
-                value(getattr(
-                    mod, "GenCommit{}_Auxiliary_Consumption_MW".format(
-                        Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[p, tmp]
-                      )
-                * value(getattr(
-                    mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                        ),
-                value(getattr(
-                    mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                      ),
-                value(getattr(
-                    mod, "GenCommit{}_Startup".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Shutdown".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Synced".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Ramp_Down_Violation_MW".format(
-                        Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin)
-                )[p, tmp]),
-                value(getattr(
-                    mod, "GenCommit{}_Min_Down_Time_Violation".format(
-                        Bin_or_Lin)
-                )[p, tmp])
-            ])
+        for (p, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
+            writer.writerow(
+                [
+                    p,
+                    mod.period[tmp],
+                    mod.balancing_type_project[p],
+                    mod.horizon[tmp, mod.balancing_type_project[p]],
+                    tmp,
+                    mod.tmp_weight[tmp],
+                    mod.hrs_in_tmp[tmp],
+                    mod.technology[p],
+                    mod.load_zone[p],
+                    value(mod.Power_Provision_MW[p, tmp]),
+                    value(
+                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                            p, tmp
+                        ]
+                    ),
+                    value(
+                        getattr(
+                            mod,
+                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                            p, tmp
+                        ]
+                    )
+                    - value(
+                        getattr(
+                            mod,
+                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[p, tmp]
+                    )
+                    * value(
+                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[p, tmp]
+                    ),
+                    value(
+                        getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[p, tmp]
+                    ),
+                    value(
+                        getattr(
+                            mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin)
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(
+                            mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(
+                            mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin)
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(
+                            mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin)
+                        )[p, tmp]
+                    ),
+                    value(
+                        getattr(
+                            mod,
+                            "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
+                        )[p, tmp]
+                    ),
+                ]
+            )
 
     # Export any results that will be become inputs to a linked subproblem
     export_linked_subproblem_inputs(
-        mod=mod, d=d, scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, Bin_or_Lin=Bin_or_Lin,
-        BIN_OR_LIN=BIN_OR_LIN, bin_or_lin=bin_or_lin
+        mod=mod,
+        d=d,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        Bin_or_Lin=Bin_or_Lin,
+        BIN_OR_LIN=BIN_OR_LIN,
+        bin_or_lin=bin_or_lin,
     )
 
 
 def export_linked_subproblem_inputs(
-    mod, d, scenario_directory, subproblem, stage, Bin_or_Lin, BIN_OR_LIN,
-    bin_or_lin
+    mod, d, scenario_directory, subproblem, stage, Bin_or_Lin, BIN_OR_LIN, bin_or_lin
 ):
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
     # next subproblem
     tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage
+        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
     )
 
     # If the list of timepoints to link is not empty, write the linked
@@ -3204,146 +3564,220 @@ def export_linked_subproblem_inputs(
         next_subproblem = str(int(subproblem) + 1)
 
         # Export params by project and timepoint
-        with open(os.path.join(
-                scenario_directory, next_subproblem, stage, "inputs",
-                "gen_commit_{}_linked_timepoint_params.tab".format(bin_or_lin)
-        ), "w", newline=""
+        with open(
+            os.path.join(
+                scenario_directory,
+                next_subproblem,
+                stage,
+                "inputs",
+                "gen_commit_{}_linked_timepoint_params.tab".format(bin_or_lin),
+            ),
+            "w",
+            newline="",
         ) as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
-                ["project", "linked_timepoint", "linked_commit",
-                 "linked_startup", "linked_shutdown",
-                 "linked_provide_power_above_pmin",
-                 "linked_upward_reserves",
-                 "linked_downward_reserves",
-                 "linked_ramp_up_rate_mw_per_tmp",
-                 "linked_ramp_down_rate_mw_per_tmp",
-                 "linked_provide_power_shutdown",
-                 "linked_shutdown_ramp_rate_mw_per_tmp"]
+                [
+                    "project",
+                    "linked_timepoint",
+                    "linked_commit",
+                    "linked_startup",
+                    "linked_shutdown",
+                    "linked_provide_power_above_pmin",
+                    "linked_upward_reserves",
+                    "linked_downward_reserves",
+                    "linked_ramp_up_rate_mw_per_tmp",
+                    "linked_ramp_down_rate_mw_per_tmp",
+                    "linked_provide_power_shutdown",
+                    "linked_shutdown_ramp_rate_mw_per_tmp",
+                ]
             )
 
             for (p, tmp) in sorted(
-                    getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
+                getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
             ):
                 if tmp in tmps_to_link:
-                    writer.writerow([
-                        p,
-                        tmp_linked_tmp_dict[tmp],
-                        max(
-                            min(value(
-                                getattr(mod, "GenCommit{}_Commit".format(
-                                Bin_or_Lin))[p,tmp]
+                    writer.writerow(
+                        [
+                            p,
+                            tmp_linked_tmp_dict[tmp],
+                            max(
+                                min(
+                                    value(
+                                        getattr(
+                                            mod, "GenCommit{}_Commit".format(Bin_or_Lin)
+                                        )[p, tmp]
+                                    ),
+                                    1,
+                                ),
+                                0,
                             ),
-                                1),
-                            0
-                        ),
-                        max(
-                            min(value(getattr(
-                                mod, "GenCommit{}_Startup".format(Bin_or_Lin)
-                            )[p, tmp]), 1),
-                            0
-                        ),
-                        max(
-                            min(value(
-                                getattr(mod, "GenCommit{}_Shutdown".format(
-                                    Bin_or_Lin)
-                                        )[p, tmp]), 1),
-                            0
+                            max(
+                                min(
+                                    value(
+                                        getattr(
+                                            mod,
+                                            "GenCommit{}_Startup".format(Bin_or_Lin),
+                                        )[p, tmp]
+                                    ),
+                                    1,
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(
-                                mod,
-                                "GenCommit{}_Provide_Power_Above_Pmin_MW"
-                                .format(Bin_or_Lin)
-                            )[p, tmp]),
-                            0
+                            max(
+                                min(
+                                    value(
+                                        getattr(
+                                            mod,
+                                            "GenCommit{}_Shutdown".format(Bin_or_Lin),
+                                        )[p, tmp]
+                                    ),
+                                    1,
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod, "GenCommit{}_Upwards_Reserves_MW"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Provide_Power_Above_Pmin_MW".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod, "GenCommit{}_Downwards_Reserves_MW"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Upwards_Reserves_MW".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod, "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Downwards_Reserves_MW".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod,
-                                    "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Ramp_Up_Rate_MW_Per_Tmp".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod,
-                                    "GenCommit{}_Provide_Power_Shutdown_MW"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Ramp_Down_Rate_MW_Per_Tmp".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
                             ),
-                        max(value(
-                            getattr(mod,
-                                    "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp"
-                                    .format(Bin_or_Lin)
-                                    )[p, tmp]),
-                            0
-                            )
-                    ])
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Provide_Power_Shutdown_MW".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
+                            ),
+                            max(
+                                value(
+                                    getattr(
+                                        mod,
+                                        "GenCommit{}_Shutdown_Ramp_Rate_MW_Per_Tmp".format(
+                                            Bin_or_Lin
+                                        ),
+                                    )[p, tmp]
+                                ),
+                                0,
+                            ),
+                        ]
+                    )
             # Export params by project, timepoint, and startup type
             # Only write this file if there are data for these results to
             # avoid throwing an index error when trying to load these inputs
             # into the next subproblem
-            if getattr(mod, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(
-                    BIN_OR_LIN)):
-                with open(os.path.join(
-                        scenario_directory, next_subproblem, stage, "inputs",
-                        "gen_commit_{}_linked_timepoint_str_type_params.tab"
-                        .format(bin_or_lin)
-                ), "w", newline=""
+            if getattr(mod, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)):
+                with open(
+                    os.path.join(
+                        scenario_directory,
+                        next_subproblem,
+                        stage,
+                        "inputs",
+                        "gen_commit_{}_linked_timepoint_str_type_params.tab".format(
+                            bin_or_lin
+                        ),
+                    ),
+                    "w",
+                    newline="",
                 ) as f:
                     writer = csv.writer(f, delimiter="\t", lineterminator="\n")
                     writer.writerow(
-                        ["project", "linked_timepoint", "startup_type",
-                         "linked_provide_power_startup",
-                         "linked_startup_ramp_rate_mw_per_tmp"]
+                        [
+                            "project",
+                            "linked_timepoint",
+                            "startup_type",
+                            "linked_provide_power_startup",
+                            "linked_startup_ramp_rate_mw_per_tmp",
+                        ]
                     )
                     for (p, tmp, s) in sorted(
-                            getattr(
-                                mod, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES"
-                                        .format(BIN_OR_LIN)
-                            )
+                        getattr(
+                            mod, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)
+                        )
                     ):
                         if tmp in tmps_to_link:
-                            writer.writerow([
-                                p,
-                                tmp_linked_tmp_dict[tmp],
-                                s,
-                                max(value(
-                                    getattr(
-                                        mod,
-                                        "GenCommit{}_Provide_Power_Startup_By_ST_MW"
-                                            .format(Bin_or_Lin)
-                                    )[p, tmp, s]),
-                                    0
+                            writer.writerow(
+                                [
+                                    p,
+                                    tmp_linked_tmp_dict[tmp],
+                                    s,
+                                    max(
+                                        value(
+                                            getattr(
+                                                mod,
+                                                "GenCommit{}_Provide_Power_Startup_By_ST_MW".format(
+                                                    Bin_or_Lin
+                                                ),
+                                            )[p, tmp, s]
+                                        ),
+                                        0,
                                     ),
-                                max(value(
-                                    getattr(
-                                        mod,
-                                        "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp"
-                                            .format(Bin_or_Lin)
-                                    )[p, tmp, s]),
-                                    0
-                                    )
-                            ])
+                                    max(
+                                        value(
+                                            getattr(
+                                                mod,
+                                                "GenCommit{}_Startup_Ramp_Rate_By_ST_MW_Per_Tmp".format(
+                                                    Bin_or_Lin
+                                                ),
+                                            )[p, tmp, s]
+                                        ),
+                                        0,
+                                    ),
+                                ]
+                            )
             else:
                 pass
     else:

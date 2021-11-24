@@ -39,21 +39,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     m.Carbon_Tax_Cost = Var(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
-        within=NonNegativeReals
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, within=NonNegativeReals
     )
 
     # Constraints
     ###########################################################################
     def carbon_tax_cost_constraint_rule(mod, z, p):
-        return mod.Carbon_Tax_Cost[z, p] >= \
-               (mod.Total_Carbon_Tax_Project_Emissions[z, p] -
-                mod.Total_Carbon_Tax_Project_Allowance[z, p])\
-               * mod.carbon_tax[z, p]
+        return (
+            mod.Carbon_Tax_Cost[z, p]
+            >= (
+                mod.Total_Carbon_Tax_Project_Emissions[z, p]
+                - mod.Total_Carbon_Tax_Project_Allowance[z, p]
+            )
+            * mod.carbon_tax[z, p]
+        )
 
     m.Carbon_Tax_Cost_Constraint = Constraint(
-        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX,
-        rule=carbon_tax_cost_constraint_rule
+        m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX, rule=carbon_tax_cost_constraint_rule
     )
 
 
@@ -67,31 +69,43 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results", "carbon_tax.csv"),
-              "w", newline="") as carbon_tax_results_file:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", "carbon_tax.csv"
+        ),
+        "w",
+        newline="",
+    ) as carbon_tax_results_file:
         writer = csv.writer(carbon_tax_results_file)
-        writer.writerow(["carbon_tax_zone", "period",
-                         "discount_factor", "number_years_represented",
-                         "carbon_tax_per_ton",
-                         "total_carbon_emissions_tons",
-                         "total_carbon_tax_allowance_tons",
-                         "total_carbon_tax_cost"])
+        writer.writerow(
+            [
+                "carbon_tax_zone",
+                "period",
+                "discount_factor",
+                "number_years_represented",
+                "carbon_tax_per_ton",
+                "total_carbon_emissions_tons",
+                "total_carbon_tax_allowance_tons",
+                "total_carbon_tax_cost",
+            ]
+        )
         for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX:
-            writer.writerow([
-                z,
-                p,
-                m.discount_factor[p],
-                m.number_years_represented[p],
-                float(m.carbon_tax[z, p]),
-                value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
-                value(m.Total_Carbon_Tax_Project_Allowance[z, p]),
-                value(m.Carbon_Tax_Cost[z, p])
-            ])
+            writer.writerow(
+                [
+                    z,
+                    p,
+                    m.discount_factor[p],
+                    m.number_years_represented[p],
+                    float(m.carbon_tax[z, p]),
+                    value(m.Total_Carbon_Tax_Project_Emissions[z, p]),
+                    value(m.Total_Carbon_Tax_Project_Allowance[z, p]),
+                    value(m.Carbon_Tax_Cost[z, p]),
+                ]
+            )
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -117,14 +131,16 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=nullify_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
 
     results = []
-    with open(os.path.join(results_directory,
-                           "carbon_tax.csv"), "r") as \
-            emissions_file:
+    with open(os.path.join(results_directory, "carbon_tax.csv"), "r") as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -136,9 +152,16 @@ def import_results_into_database(
             costs = row[7]
 
             results.append(
-                (costs, discount_factor, number_years,
-                 scenario_id, carbon_tax_zone, period,
-                 subproblem, stage)
+                (
+                    costs,
+                    discount_factor,
+                    number_years,
+                    scenario_id,
+                    carbon_tax_zone,
+                    period,
+                    subproblem,
+                    stage,
+                )
             )
 
     total_sql = """
@@ -153,4 +176,3 @@ def import_results_into_database(
         AND stage_id = ?;"""
 
     spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)
-

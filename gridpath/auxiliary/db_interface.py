@@ -16,15 +16,18 @@ def get_required_capacity_types_from_database(conn, scenario_id):
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
     ).fetchone()[0]
 
     required_capacity_type_modules = [
-        p[0] for p in c.execute(
+        p[0]
+        for p in c.execute(
             """SELECT DISTINCT capacity_type 
             FROM inputs_project_portfolios
             WHERE project_portfolio_scenario_id = ?""",
-            (project_portfolio_scenario_id, )
+            (project_portfolio_scenario_id,),
         ).fetchall()
     ]
 
@@ -49,19 +52,24 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     if scenario_id_arg is None and scenario_name_arg is None:
         raise TypeError(
             """ERROR: Either scenario_id or scenario_name must be specified. 
-            Run 'python """ + script + """'.py --help' for help."""
+            Run 'python """
+            + script
+            + """'.py --help' for help."""
         )
 
     elif scenario_id_arg is not None and scenario_name_arg is None:
         result = c.execute(
             """SELECT scenario_name
                FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id_arg)
+               WHERE scenario_id = {};""".format(
+                scenario_id_arg
+            )
         ).fetchone()
         if result is None:
             raise ValueError(
-                """ERROR: No matching scenario found for scenario_id '{}'"""
-                .format(scenario_id_arg)
+                """ERROR: No matching scenario found for scenario_id '{}'""".format(
+                    scenario_id_arg
+                )
             )
         else:
             return scenario_id_arg, result[0]
@@ -70,12 +78,15 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
         result = c.execute(
             """SELECT scenario_id
                FROM scenarios
-               WHERE scenario_name = '{}';""".format(scenario_name_arg)
+               WHERE scenario_name = '{}';""".format(
+                scenario_name_arg
+            )
         ).fetchone()
         if result is None:
             raise ValueError(
-                """ERROR: No matching scenario found for scenario_name '{}'"""
-                .format(scenario_name_arg)
+                """ERROR: No matching scenario found for scenario_name '{}'""".format(
+                    scenario_name_arg
+                )
             )
         else:
             return result[0], scenario_name_arg
@@ -85,12 +96,15 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
         result = c.execute(
             """SELECT scenario_name
                FROM scenarios
-               WHERE scenario_id = {};""".format(scenario_id_arg)
+               WHERE scenario_id = {};""".format(
+                scenario_id_arg
+            )
         ).fetchone()
         if result is None:
             raise ValueError(
-                """ERROR: No matching scenario found for scenario_id '{}'"""
-                .format(scenario_id_arg)
+                """ERROR: No matching scenario found for scenario_id '{}'""".format(
+                    scenario_id_arg
+                )
             )
         elif result[0] != scenario_name_arg:
             raise ValueError(
@@ -120,36 +134,48 @@ def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """.format(table)
-    spin_on_database_lock(conn=conn, cursor=cursor, sql=del_sql,
-                          data=(scenario_id, subproblem, stage), many=False)
+        """.format(
+        table
+    )
+    spin_on_database_lock(
+        conn=conn,
+        cursor=cursor,
+        sql=del_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
 
     # Create temporary table, which we'll use to sort the results before
     # inserting them into our persistent table
-    drop_tbl_sql = \
-        """DROP TABLE IF EXISTS temp_{}{};
-        """.format(table, scenario_id)
-    spin_on_database_lock(conn=conn, cursor=cursor, sql=drop_tbl_sql,
-                          data=(), many=False)
+    drop_tbl_sql = """DROP TABLE IF EXISTS temp_{}{};
+        """.format(
+        table, scenario_id
+    )
+    spin_on_database_lock(
+        conn=conn, cursor=cursor, sql=drop_tbl_sql, data=(), many=False
+    )
 
     # Get the CREATE statemnt for the persistent table
-    tbl_sql = cursor.execute("""
+    tbl_sql = cursor.execute(
+        """
         SELECT sql 
         FROM sqlite_master
         WHERE type='table'
         AND name='{}'
-        """.format(table)
-                             ).fetchone()[0]
+        """.format(
+            table
+        )
+    ).fetchone()[0]
 
     # Create a temporary table with the same structure as the persistent table
-    temp_tbl_sql = \
-        tbl_sql.replace(
-            "CREATE TABLE {}".format(table),
-            "CREATE TEMPORARY TABLE temp_{}{}".format(table, scenario_id)
-        )
+    temp_tbl_sql = tbl_sql.replace(
+        "CREATE TABLE {}".format(table),
+        "CREATE TEMPORARY TABLE temp_{}{}".format(table, scenario_id),
+    )
 
-    spin_on_database_lock(conn=conn, cursor=cursor, sql=temp_tbl_sql,
-                          data=(), many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=cursor, sql=temp_tbl_sql, data=(), many=False
+    )
 
 
 def update_prj_zone_column(
@@ -173,10 +199,7 @@ def update_prj_zone_column(
         """SELECT project, {}
             FROM {}
             WHERE {} = {}""".format(
-            col,
-            subsc_tbl,
-            subscenario,
-            getattr(subscenarios, subscenario.upper())
+            col, subsc_tbl, subscenario, getattr(subscenarios, subscenario.upper())
         )
     ).fetchall()
 
@@ -189,7 +212,9 @@ def update_prj_zone_column(
         SET {} = ?
         WHERE scenario_id = ?
         AND project = ?;
-        """.format(prj_tbl, col)
+        """.format(
+        prj_tbl, col
+    )
     spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=updates)
 
 
@@ -210,9 +235,7 @@ def determine_table_subset_by_start_and_column(conn, tbl_start, cols):
     for tbl_tuple in all_tables:
         table = tbl_tuple[0]
         if table.startswith(tbl_start):
-            table_data_query = c.execute(
-              """SELECT * FROM {};""".format(table)
-            )
+            table_data_query = c.execute("""SELECT * FROM {};""".format(table))
             column_names = [s[0] for s in table_data_query.description]
             if all(col in column_names for col in cols):
                 table_subset.append(table)

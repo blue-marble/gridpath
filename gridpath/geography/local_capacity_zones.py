@@ -51,13 +51,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs",
-                                           "local_capacity_zones.tab"),
-                     index=m.LOCAL_CAPACITY_ZONES,
-                     param=(m.local_capacity_allow_violation,
-                            m.local_capacity_violation_penalty_per_mw)
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "local_capacity_zones.tab",
+        ),
+        index=m.LOCAL_CAPACITY_ZONES,
+        param=(
+            m.local_capacity_allow_violation,
+            m.local_capacity_violation_penalty_per_mw,
+        ),
+    )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -99,7 +106,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     local_capacity_zones.tab file.
@@ -112,17 +121,27 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     local_capacity_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "local_capacity_zones.tab"),
-              "w", newline="") as \
-            local_capacity_zones_file:
-        writer = csv.writer(local_capacity_zones_file, delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "local_capacity_zones.tab",
+        ),
+        "w",
+        newline="",
+    ) as local_capacity_zones_file:
+        writer = csv.writer(
+            local_capacity_zones_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(
-            ["local_capacity_zone", "allow_violation",
-             "violation_penalty_per_mw"]
+            ["local_capacity_zone", "allow_violation", "violation_penalty_per_mw"]
         )
 
         for row in local_capacity_zones:

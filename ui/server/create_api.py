@@ -13,13 +13,15 @@
 # limitations under the License.
 
 # RESTful API api
-from ui.server.api.home import ServerStatus, ScenarioRunStatus, \
-  ScenarioValidationStatus
+from ui.server.api.home import ServerStatus, ScenarioRunStatus, ScenarioValidationStatus
 from ui.server.api.scenario_detail import ScenarioDetailAPI
-from ui.server.api.scenario_results import \
-  ScenarioResultsOptions, ScenarioResultsTable, \
-  ScenarioResultsIncludedTables, ScenarioResultsPlot, \
-  ScenarioResultsIncludedPlots
+from ui.server.api.scenario_results import (
+    ScenarioResultsOptions,
+    ScenarioResultsTable,
+    ScenarioResultsIncludedTables,
+    ScenarioResultsPlot,
+    ScenarioResultsIncludedPlots,
+)
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.scenario_inputs import ScenarioInputs
@@ -51,9 +53,9 @@ def add_scenarios_resources(api, db_path):
     Add the API api for the Angular 'scenarios' component.
     """
     # Scenario list
-    api.add_resource(Scenarios, '/scenarios/',
-                     resource_class_kwargs={'db_path': db_path}
-                     )
+    api.add_resource(
+        Scenarios, "/scenarios/", resource_class_kwargs={"db_path": db_path}
+    )
 
 
 def add_scenario_detail_resources(api, db_path):
@@ -66,8 +68,8 @@ def add_scenario_detail_resources(api, db_path):
     # Refactored
     api.add_resource(
         ScenarioDetailAPI,
-        '/scenarios/<scenario_id>',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/<scenario_id>",
+        resource_class_kwargs={"db_path": db_path},
     )
 
 
@@ -79,9 +81,7 @@ def add_scenario_new_resources(api, db_path):
     Add the API for the Angular 'scenario-new' component.
     """
     api.add_resource(
-        ScenarioNewAPI,
-        '/scenario-new',
-        resource_class_kwargs={'db_path': db_path}
+        ScenarioNewAPI, "/scenario-new", resource_class_kwargs={"db_path": db_path}
     )
 
 
@@ -94,8 +94,8 @@ def add_scenario_inputs_resources(api, db_path):
     """
     api.add_resource(
         ScenarioInputs,
-        '/scenarios/<scenario_id>/<table_type>/<table>/<row>',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/<scenario_id>/<table_type>/<table>/<row>",
+        resource_class_kwargs={"db_path": db_path},
     )
 
 
@@ -107,20 +107,18 @@ def add_home_resource(api, db_path):
     Add API for the Angular 'home' component.
     """
     # Server status
-    api.add_resource(ServerStatus, '/server-status')
+    api.add_resource(ServerStatus, "/server-status")
 
     # Scenario run status
     api.add_resource(
-        ScenarioRunStatus,
-        '/run-status',
-        resource_class_kwargs={'db_path': db_path}
+        ScenarioRunStatus, "/run-status", resource_class_kwargs={"db_path": db_path}
     )
 
     # Scenario validation status
     api.add_resource(
         ScenarioValidationStatus,
-        '/validation-status',
-        resource_class_kwargs={'db_path': db_path}
+        "/validation-status",
+        resource_class_kwargs={"db_path": db_path},
     )
 
 
@@ -134,35 +132,35 @@ def add_scenario_results_resources(api, db_path):
 
     api.add_resource(
         ScenarioResultsOptions,
-        '/scenarios/<scenario_id>/scenario-results-options',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/<scenario_id>/scenario-results-options",
+        resource_class_kwargs={"db_path": db_path},
     )
 
     api.add_resource(
         ScenarioResultsPlot,
-        '/scenarios/<scenario_id>/results/<plot>/<load_zone>/<energy_target_zone>'
-        '/<carbon_cap_zone>/<period>/<horizon>'
-        '/<start_timepoint>/<end_timepoint>'
-        '/<subproblem>/<stage>/<project>/<commit_project>/<ymax>',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/<scenario_id>/results/<plot>/<load_zone>/<energy_target_zone>"
+        "/<carbon_cap_zone>/<period>/<horizon>"
+        "/<start_timepoint>/<end_timepoint>"
+        "/<subproblem>/<stage>/<project>/<commit_project>/<ymax>",
+        resource_class_kwargs={"db_path": db_path},
     )
 
     api.add_resource(
         ScenarioResultsIncludedPlots,
-        '/scenarios/results/plots',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/results/plots",
+        resource_class_kwargs={"db_path": db_path},
     )
 
     api.add_resource(
         ScenarioResultsIncludedTables,
-        '/scenarios/results/tables',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/results/tables",
+        resource_class_kwargs={"db_path": db_path},
     )
 
     api.add_resource(
         ScenarioResultsTable,
-        '/scenarios/<scenario_id>/results/<table>',
-        resource_class_kwargs={'db_path': db_path}
+        "/scenarios/<scenario_id>/results/<table>",
+        resource_class_kwargs={"db_path": db_path},
     )
 
 
@@ -174,7 +172,7 @@ def add_view_data_resources(api, db_path):
     :return:
     """
     api.add_resource(
-      ViewDataAPI,
-      '/scenarios/<scenario_id>/<table>',
-      resource_class_kwargs={'db_path': db_path}
+        ViewDataAPI,
+        "/scenarios/<scenario_id>/<table>",
+        resource_class_kwargs={"db_path": db_path},
     )

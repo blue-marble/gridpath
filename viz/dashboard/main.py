@@ -37,8 +37,15 @@ TODO:
 """
 
 from argparse import ArgumentParser
-from bokeh.models import Tabs, Panel, PreText, Select, MultiSelect, DataTable, \
-    TableColumn
+from bokeh.models import (
+    Tabs,
+    Panel,
+    PreText,
+    Select,
+    MultiSelect,
+    DataTable,
+    TableColumn,
+)
 from bokeh.plotting import figure
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
@@ -51,25 +58,27 @@ from viz.dashboard.data import DataProvider
 
 def create_parser():
     parser = ArgumentParser(add_help=True)
-    parser.add_argument("--database",
-                        default="../../db/io.db",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ../db/io.db")
+    parser.add_argument(
+        "--database",
+        default="../../db/io.db",
+        help="The database file path relative to the current "
+        "working directory. Defaults to ../db/io.db",
+    )
     return parser
 
 
 def create_datatable(src):
     # TODO: use Bokeh NumberFormatter on number columns
     # TableColumn(field=, title=, formatter=NumberFormatter(format='0,0[.]00')
-    cols_to_use = [c for c in src.data.keys()
-                   if c not in ['stage_id', 'index']]
+    cols_to_use = [c for c in src.data.keys() if c not in ["stage_id", "index"]]
     columns = [TableColumn(field=c, title=c) for c in cols_to_use]
     summary_table = DataTable(
-        columns=columns, source=src,
+        columns=columns,
+        source=src,
         index_position=None,
         fit_columns=True,
         # width=800,
-        height=300
+        height=300,
     )
     return summary_table
 
@@ -94,30 +103,18 @@ def update_plots(attr, old, new):
         stage=stage,
         period=period,
         zone=zone,
-        capacity_metric=capacity_metric
+        capacity_metric=capacity_metric,
     )
     energy_src, energy_x_col = data.get_energy_src(
-        scenario=scenario,
-        stage=stage,
-        period=period,
-        zone=zone
+        scenario=scenario, stage=stage, period=period, zone=zone
     )
     cost_src, cost_x_col = data.get_cost_src(
-        scenario=scenario,
-        stage=stage,
-        period=period,
-        zone=zone
+        scenario=scenario, stage=stage, period=period, zone=zone
     )
     summary_src = data.get_summary_src(
-        scenario=scenario,
-        stage=stage,
-        period=period,
-        zone=zone
+        scenario=scenario, stage=stage, period=period, zone=zone
     )
-    objective_src = data.get_objective_src(
-        scenario=scenario,
-        stage=stage
-    )
+    objective_src = data.get_objective_src(scenario=scenario, stage=stage)
 
     # Create Bokeh Plots and Tables
     title = PreText(text="Results: {} - {} - {}".format(scenario, period, zone))
@@ -128,21 +125,21 @@ def update_plots(attr, old, new):
         x_col=cap_x_col,
         title="Capacity by Technology",
         category_label="Technology",
-        y_label="Capacity (MW)"
+        y_label="Capacity (MW)",
     )
     energy_plot = create_stacked_bar_plot(
         source=energy_src,
         x_col=energy_x_col,
         title="Energy by Technology",
         category_label="Technology",
-        y_label="Energy (MWh)"  # TODO: link to units
+        y_label="Energy (MWh)",  # TODO: link to units
     )
     cost_plot = create_stacked_bar_plot(
         source=cost_src,
         x_col=cost_x_col,
         title="Cost by Component",
         category_label="Cost Component",
-        y_label="Cost (million USD)"  # TODO: link to units
+        y_label="Cost (million USD)",  # TODO: link to units
     )
 
     # Update layout with new plots
@@ -164,22 +161,24 @@ conn = connect_to_database(db_path=parsed_args.database)
 data = DataProvider(conn)
 
 # Set up selection widgets
-scenario_select = MultiSelect(title="Select Scenario(s):",
-                              value=data.scenario_options,
-                              # width=600,
-                              options=data.scenario_options)
-period_select = MultiSelect(title="Select Period(s):",
-                            value=data.period_options,
-                            options=data.period_options)
-stage_select = Select(title="Select Stage:",
-                      value=data.stage_options[0],
-                      options=data.stage_options)
-zone_select = Select(title="Select Load Zone:",
-                     value=data.zone_options[0],
-                     options=data.zone_options)
-capacity_select = Select(title="Select Capacity Metric:",
-                         value=data.cap_options[2],
-                         options=data.cap_options)
+scenario_select = MultiSelect(
+    title="Select Scenario(s):",
+    value=data.scenario_options,
+    # width=600,
+    options=data.scenario_options,
+)
+period_select = MultiSelect(
+    title="Select Period(s):", value=data.period_options, options=data.period_options
+)
+stage_select = Select(
+    title="Select Stage:", value=data.stage_options[0], options=data.stage_options
+)
+zone_select = Select(
+    title="Select Load Zone:", value=data.zone_options[0], options=data.zone_options
+)
+capacity_select = Select(
+    title="Select Capacity Metric:", value=data.cap_options[2], options=data.cap_options
+)
 
 # Set up Bokeh Layout with placeholders
 title = PreText()
@@ -188,33 +187,36 @@ objective_table = DataTable()
 cost_plot = figure()
 energy_plot = figure()
 cap_plot = figure()
-selectors = column(scenario_select, period_select,
-                   stage_select, zone_select, capacity_select)
+selectors = column(
+    scenario_select, period_select, stage_select, zone_select, capacity_select
+)
 top_row = row(selectors, summary_table, objective_table)
 middle_row = row(cap_plot, energy_plot)
 bottom_row = row(cost_plot)
 layout = column(title, top_row, middle_row, bottom_row)
 
 # Set up tabs
-tab1 = Panel(child=layout, title='General')
-storage_dummy = PreText(text='storage summary here, incl. duration', width=600)
-policy_dummy = PreText(text='policy summary here, including duals', width=600)
-inputs_dummy = PreText(text='inputs summary here, e.g. loads (profile charts, min, max, avg), costs',
-                       width=600)
-tab2 = Panel(child=storage_dummy, title='Storage')
-tab3 = Panel(child=policy_dummy, title='Policy Targets')
-tab4 = Panel(child=inputs_dummy, title='Inputs')
+tab1 = Panel(child=layout, title="General")
+storage_dummy = PreText(text="storage summary here, incl. duration", width=600)
+policy_dummy = PreText(text="policy summary here, including duals", width=600)
+inputs_dummy = PreText(
+    text="inputs summary here, e.g. loads (profile charts, min, max, avg), costs",
+    width=600,
+)
+tab2 = Panel(child=storage_dummy, title="Storage")
+tab3 = Panel(child=policy_dummy, title="Policy Targets")
+tab4 = Panel(child=inputs_dummy, title="Inputs")
 tabs = Tabs(tabs=[tab1, tab2, tab3, tab4])  # Put all tabs in one application
 
 # Update Plots based on selected values
 update_plots(attr="", old="", new="")
 
 # Set up callback behavior (update plots if user changes selection)
-scenario_select.on_change('value', update_plots)
-period_select.on_change('value', update_plots)
-stage_select.on_change('value', update_plots)
-zone_select.on_change('value', update_plots)
-capacity_select.on_change('value', update_plots)
+scenario_select.on_change("value", update_plots)
+period_select.on_change("value", update_plots)
+stage_select.on_change("value", update_plots)
+zone_select.on_change("value", update_plots)
+capacity_select.on_change("value", update_plots)
 
 # Set up curdoc
 curdoc().add_root(tabs)

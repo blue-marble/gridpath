@@ -23,13 +23,19 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, Expression, \
-    NonNegativeReals, value
+from pyomo.environ import (
+    Param,
+    Set,
+    Var,
+    Constraint,
+    Expression,
+    NonNegativeReals,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.dynamic_components import \
-    carbon_cap_balance_emission_components
+from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -125,33 +131,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.CRB_TX_LINES = Set(
-        within=m.TX_LINES
-    )
+    m.CRB_TX_LINES = Set(within=m.TX_LINES)
 
     m.CRB_TX_OPR_TMPS = Set(
         within=m.TX_OPR_TMPS,
-        initialize=lambda mod: [(tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS
-                          if tx in mod.CRB_TX_LINES]
+        initialize=lambda mod: [
+            (tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS if tx in mod.CRB_TX_LINES
+        ],
     )
 
     # Required Input Params
     ###########################################################################
 
-    m.tx_carbon_cap_zone = Param(
-        m.CRB_TX_LINES,
-        within=m.CARBON_CAP_ZONES
-    )
+    m.tx_carbon_cap_zone = Param(m.CRB_TX_LINES, within=m.CARBON_CAP_ZONES)
 
     m.carbon_cap_zone_import_direction = Param(
-        m.CRB_TX_LINES,
-        within=["positive", "negative"]
+        m.CRB_TX_LINES, within=["positive", "negative"]
     )
 
-    m.tx_co2_intensity_tons_per_mwh = Param(
-        m.CRB_TX_LINES,
-        within=NonNegativeReals
-    )
+    m.tx_co2_intensity_tons_per_mwh = Param(m.CRB_TX_LINES, within=NonNegativeReals)
 
     # Derived Sets
     ###########################################################################
@@ -159,29 +157,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.CRB_TX_LINES_BY_CARBON_CAP_ZONE = Set(
         m.CARBON_CAP_ZONES,
         within=m.CRB_TX_LINES,
-        initialize=lambda mod, co2_z:
-        [tx for tx in mod.CRB_TX_LINES if mod.tx_carbon_cap_zone[tx] == co2_z]
+        initialize=lambda mod, co2_z: [
+            tx for tx in mod.CRB_TX_LINES if mod.tx_carbon_cap_zone[tx] == co2_z
+        ],
     )
 
     # Variables
     ###########################################################################
 
-    m.Import_Carbon_Emissions_Tons = Var(
-        m.CRB_TX_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Import_Carbon_Emissions_Tons = Var(m.CRB_TX_OPR_TMPS, within=NonNegativeReals)
 
     # Constraints
     ###########################################################################
 
     m.Carbon_Emissions_Imports_Constraint = Constraint(
-        m.CRB_TX_OPR_TMPS,
-        rule=carbon_emissions_imports_rule
+        m.CRB_TX_OPR_TMPS, rule=carbon_emissions_imports_rule
     )
 
 
 # Expression Rules
 ###############################################################################
+
 
 def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
     """
@@ -193,20 +189,29 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
     carbon cap is non-binding), we can post-process to figure out what the
     actual imported emissions are (e.g. instead of applying a tuning cost).
     """
-    if mod.carbon_cap_zone_import_direction[tx_line] == "positive" \
-            and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
-        return value(mod.Transmit_Power_MW[tx_line, timepoint]) \
-               * mod.tx_co2_intensity_tons_per_mwh[tx_line]
-    elif mod.carbon_cap_zone_import_direction[tx_line] == "negative" \
-            and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
-        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) \
-               * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+    if (
+        mod.carbon_cap_zone_import_direction[tx_line] == "positive"
+        and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0
+    ):
+        return (
+            value(mod.Transmit_Power_MW[tx_line, timepoint])
+            * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+        )
+    elif (
+        mod.carbon_cap_zone_import_direction[tx_line] == "negative"
+        and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0
+    ):
+        return (
+            -value(mod.Transmit_Power_MW[tx_line, timepoint])
+            * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+        )
     else:
         return 0
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def carbon_emissions_imports_rule(mod, tx, tmp):
     """
@@ -218,24 +223,26 @@ def carbon_emissions_imports_rule(mod, tx, tmp):
     line, based on its CO2-intensity.
     """
     if mod.carbon_cap_zone_import_direction[tx] == "positive":
-        return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-            >= mod.Transmit_Power_MW[tx, tmp] \
-            * mod.tx_co2_intensity_tons_per_mwh[tx]
+        return (
+            mod.Import_Carbon_Emissions_Tons[tx, tmp]
+            >= mod.Transmit_Power_MW[tx, tmp] * mod.tx_co2_intensity_tons_per_mwh[tx]
+        )
     elif mod.carbon_cap_zone_import_direction[tx] == "negative":
-        return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-            >= -mod.Transmit_Power_MW[tx, tmp] \
-            * mod.tx_co2_intensity_tons_per_mwh[tx]
+        return (
+            mod.Import_Carbon_Emissions_Tons[tx, tmp]
+            >= -mod.Transmit_Power_MW[tx, tmp] * mod.tx_co2_intensity_tons_per_mwh[tx]
+        )
     else:
-        raise ValueError("The parameter carbon_cap_zone_import_direction "
-                         "have a value of either 'positive' or "
-                         "'negative,' not {}.".format(
-                          mod.carbon_cap_zone_import_direction[tx]
-                            )
-                         )
+        raise ValueError(
+            "The parameter carbon_cap_zone_import_direction "
+            "have a value of either 'positive' or "
+            "'negative,' not {}.".format(mod.carbon_cap_zone_import_direction[tx])
+        )
 
 
 # Inputs-Outputs
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -250,18 +257,28 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "transmission_lines.tab"),
-        select=("transmission_line", "carbon_cap_zone",
-                "carbon_cap_zone_import_direction",
-                "tx_co2_intensity_tons_per_mwh"),
-        param=(m.tx_carbon_cap_zone,
-               m.carbon_cap_zone_import_direction,
-               m.tx_co2_intensity_tons_per_mwh)
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        select=(
+            "transmission_line",
+            "carbon_cap_zone",
+            "carbon_cap_zone_import_direction",
+            "tx_co2_intensity_tons_per_mwh",
+        ),
+        param=(
+            m.tx_carbon_cap_zone,
+            m.carbon_cap_zone_import_direction,
+            m.tx_co2_intensity_tons_per_mwh,
+        ),
     )
 
-    data_portal.data()['CRB_TX_LINES'] = {
-        None: list(data_portal.data()['tx_carbon_cap_zone'].keys())
+    data_portal.data()["CRB_TX_LINES"] = {
+        None: list(data_portal.data()["tx_carbon_cap_zone"].keys())
     }
 
 
@@ -275,28 +292,46 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "carbon_emission_imports_by_tx_line.csv"),
-              "w", newline="") as carbon_emission_imports__results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "carbon_emission_imports_by_tx_line.csv",
+        ),
+        "w",
+        newline="",
+    ) as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
-        writer.writerow(["tx_line", "period", "timepoint",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
-                         "carbon_emission_imports_tons",
-                         "carbon_emission_imports_tons_degen"])
+        writer.writerow(
+            [
+                "tx_line",
+                "period",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "carbon_emission_imports_tons",
+                "carbon_emission_imports_tons_degen",
+            ]
+        )
         for (tx, tmp) in m.CRB_TX_OPR_TMPS:
-            writer.writerow([
-                tx,
-                m.period[tmp],
-                tmp,
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
-                calculate_carbon_emissions_imports(m, tx, tmp)
-            ])
+            writer.writerow(
+                [
+                    tx,
+                    m.period[tmp],
+                    tmp,
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
+                    calculate_carbon_emissions_imports(m, tx, tmp),
+                ]
+            )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -336,17 +371,26 @@ def write_model_inputs(
     """
 
     transmission_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_zone_dict = dict()
     for (prj, zone, direction, intensity) in transmission_zones:
-        prj_zone_dict[str(prj)] = \
-            (".", ".", ".") if zone is None \
-            else (str(zone), str(direction), intensity)
+        prj_zone_dict[str(prj)] = (
+            (".", ".", ".") if zone is None else (str(zone), str(direction), intensity)
+        )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
-              "r") as tx_file_in:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        "r",
+    ) as tx_file_in:
         reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
@@ -373,14 +417,23 @@ def write_model_inputs(
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
-              "w", newline="") as tx_file_out:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        "w",
+        newline="",
+    ) as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -399,16 +452,19 @@ def import_results_into_database(
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_transmission_carbon_emissions",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "carbon_emission_imports_by_tx_line.csv"),
-              "r") as emissions_file:
+    with open(
+        os.path.join(results_directory, "carbon_emission_imports_by_tx_line.csv"), "r"
+    ) as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -422,11 +478,18 @@ def import_results_into_database(
             carbon_emission_imports_tons_degen = row[6]
 
             results.append(
-                (scenario_id, tx_line, period, subproblem, stage,
-                 timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 carbon_emission_imports_tons,
-                 carbon_emission_imports_tons_degen)
+                (
+                    scenario_id,
+                    tx_line,
+                    period,
+                    subproblem,
+                    stage,
+                    timepoint,
+                    timepoint_weight,
+                    number_of_hours_in_timepoint,
+                    carbon_emission_imports_tons,
+                    carbon_emission_imports_tons_degen,
+                )
             )
 
     insert_temp_sql = """
@@ -438,7 +501,9 @@ def import_results_into_database(
          carbon_emission_imports_tons, 
          carbon_emission_imports_tons_degen)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(scenario_id)
+         """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -453,13 +518,15 @@ def import_results_into_database(
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen
         FROM temp_results_transmission_carbon_emissions{}
          ORDER BY scenario_id, tx_line, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -474,4 +541,3 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Validation to be added
     # transmission_zones = get_inputs_from_database(
     #     scenario_id, subscenarios, subproblem, stage, conn)
-

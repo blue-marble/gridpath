@@ -22,15 +22,15 @@ from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def generic_add_model_components(
-        m,
-        d,
-        reserve_zone_set,
-        reserve_violation_variable,
-        reserve_violation_expression,
-        reserve_violation_allowed_param,
-        reserve_requirement_expression,
-        total_reserve_provision_expression,
-        meet_reserve_constraint,
+    m,
+    d,
+    reserve_zone_set,
+    reserve_violation_variable,
+    reserve_violation_expression,
+    reserve_violation_allowed_param,
+    reserve_requirement_expression,
+    total_reserve_provision_expression,
+    meet_reserve_constraint,
 ):
     """
     Ensure reserves are balanced
@@ -47,10 +47,11 @@ def generic_add_model_components(
     """
 
     # Penalty for violation
-    setattr(m, reserve_violation_variable,
-            Var(getattr(m, reserve_zone_set), m.TMPS,
-                within=NonNegativeReals)
-            )
+    setattr(
+        m,
+        reserve_violation_variable,
+        Var(getattr(m, reserve_zone_set), m.TMPS, within=NonNegativeReals),
+    )
 
     def violation_expression_rule(mod, ba, tmp):
         """
@@ -60,30 +61,45 @@ def generic_add_model_components(
         :param tmp:
         :return:
         """
-        return getattr(mod, reserve_violation_allowed_param)[ba] \
+        return (
+            getattr(mod, reserve_violation_allowed_param)[ba]
             * getattr(mod, reserve_violation_variable)[ba, tmp]
+        )
 
-    setattr(m, reserve_violation_expression,
-            Expression(getattr(m, reserve_zone_set), m.TMPS,
-                       rule=violation_expression_rule))
+    setattr(
+        m,
+        reserve_violation_expression,
+        Expression(
+            getattr(m, reserve_zone_set), m.TMPS, rule=violation_expression_rule
+        ),
+    )
 
     # Reserve constraints
     def meet_reserve_rule(mod, ba, tmp):
-        return getattr(mod, total_reserve_provision_expression)[ba, tmp] \
-            + getattr(mod, reserve_violation_expression)[ba, tmp] \
+        return (
+            getattr(mod, total_reserve_provision_expression)[ba, tmp]
+            + getattr(mod, reserve_violation_expression)[ba, tmp]
             == getattr(mod, reserve_requirement_expression)[ba, tmp]
+        )
 
-    setattr(m, meet_reserve_constraint,
-            Constraint(getattr(m, reserve_zone_set), m.TMPS,
-                       rule=meet_reserve_rule))
+    setattr(
+        m,
+        meet_reserve_constraint,
+        Constraint(getattr(m, reserve_zone_set), m.TMPS, rule=meet_reserve_rule),
+    )
 
 
-def generic_export_results(scenario_directory, subproblem, stage, m, d,
-                           filename,
-                           column_name,
-                           reserve_zone_set,
-                           reserve_violation_expression
-                           ):
+def generic_export_results(
+    scenario_directory,
+    subproblem,
+    stage,
+    m,
+    d,
+    filename,
+    column_name,
+    reserve_zone_set,
+    reserve_violation_expression,
+):
     """
 
     :param scenario_directory:
@@ -97,26 +113,38 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :param reserve_violation_expression:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           filename), "w", newline="") \
-            as results_file:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", filename
+        ),
+        "w",
+        newline="",
+    ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["ba", "period", "timepoint",
-                         "discount_factor", "number_years_represented",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
-                         column_name]
-                        )
-        for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
-            writer.writerow([
-                ba,
-                m.period[tmp],
-                tmp,
-                m.discount_factor[m.period[tmp]],
-                m.number_years_represented[m.period[tmp]],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                value(getattr(m, reserve_violation_expression)[ba, tmp])
+        writer.writerow(
+            [
+                "ba",
+                "period",
+                "timepoint",
+                "discount_factor",
+                "number_years_represented",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                column_name,
             ]
+        )
+        for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
+            writer.writerow(
+                [
+                    ba,
+                    m.period[tmp],
+                    tmp,
+                    m.discount_factor[m.period[tmp]],
+                    m.number_years_represented[m.period[tmp]],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    value(getattr(m, reserve_violation_expression)[ba, tmp]),
+                ]
             )
 
 
@@ -127,12 +155,12 @@ def generic_save_duals(m, reserve_constraint_name):
     :param reserve_constraint_name:
     :return:
     """
-    m.constraint_indices[reserve_constraint_name] = \
-        ["zone", "timepoint", "dual"]
+    m.constraint_indices[reserve_constraint_name] = ["zone", "timepoint", "dual"]
 
 
-def generic_import_results_to_database(scenario_id, subproblem, stage,
-                                       c, db, results_directory, reserve_type):
+def generic_import_results_to_database(
+    scenario_id, subproblem, stage, c, db, results_directory, reserve_type
+):
     """
 
     :param scenario_id:
@@ -147,16 +175,19 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
-        table="results_system_{}_balance""".format(reserve_type),
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        conn=db,
+        cursor=c,
+        table="results_system_{}_balance" "".format(reserve_type),
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           reserve_type + "_violation.csv"),
-              "r") as violation_file:
+    with open(
+        os.path.join(results_directory, reserve_type + "_violation.csv"), "r"
+    ) as violation_file:
         reader = csv.reader(violation_file)
 
         next(reader)  # skip header
@@ -171,10 +202,19 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
             violation = row[7]
 
             results.append(
-                (scenario_id, ba, period,
-                 subproblem, stage, timepoint,
-                 discount_factor, number_years_represented, timepoint_weight,
-                 number_of_hours_in_timepoint, violation)
+                (
+                    scenario_id,
+                    ba,
+                    period,
+                    subproblem,
+                    stage,
+                    timepoint,
+                    discount_factor,
+                    number_years_represented,
+                    timepoint_weight,
+                    number_of_hours_in_timepoint,
+                    violation,
+                )
             )
 
     insert_temp_sql = """
@@ -186,7 +226,9 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         number_of_hours_in_timepoint,
         violation_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(reserve_type, scenario_id, reserve_type)
+        """.format(
+        reserve_type, scenario_id, reserve_type
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -204,10 +246,15 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         FROM temp_results_system_{}_balance{}
         ORDER BY scenario_id, {}_ba, 
         subproblem_id, stage_id, timepoint;
-        """.format( reserve_type, reserve_type, reserve_type, reserve_type,
-                    scenario_id, reserve_type)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        reserve_type,
+        reserve_type,
+        reserve_type,
+        reserve_type,
+        scenario_id,
+        reserve_type,
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Update duals
     dual_files = {
@@ -216,14 +263,14 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         "regulation_up": "Meet_Regulation_Up_Constraint.csv",
         "regulation_down": "Meet_Regulation_Down_Constraint.csv",
         "frequency_response": "Meet_Frequency_Response_Constraint.csv",
-        "frequency_response_partial":
-            "Meet_Frequency_Response_Partial_Constraint.csv",
-        "spinning_reserves": "Meet_Spinning_Reserves_Constraint.csv"
+        "frequency_response_partial": "Meet_Frequency_Response_Partial_Constraint.csv",
+        "spinning_reserves": "Meet_Spinning_Reserves_Constraint.csv",
     }
 
     duals_results = []
-    with open(os.path.join(results_directory, dual_files[reserve_type]),
-              "r") as reserve_balance_duals_file:
+    with open(
+        os.path.join(results_directory, dual_files[reserve_type]), "r"
+    ) as reserve_balance_duals_file:
         reader = csv.reader(reserve_balance_duals_file)
 
         next(reader)  # skip header
@@ -241,7 +288,9 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         AND scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """.format(reserve_type, reserve_type)
+        """.format(
+        reserve_type, reserve_type
+    )
 
     spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
@@ -254,7 +303,9 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """.format(reserve_type)
-    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+        """.format(
+        reserve_type
+    )
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+    )

@@ -37,13 +37,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] +
-             mod.Hurdle_Cost_Neg_Dir[tx, tmp])
+            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] + mod.Hurdle_Cost_Neg_Dir[tx, tmp])
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp) in mod.TX_OPR_TMPS)
+            for (tx, tmp) in mod.TX_OPR_TMPS
+        )
 
     m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
 
@@ -57,7 +57,4 @@ def record_dynamic_components(dynamic_components):
     Add total transmission hurdle costs to cost components
     """
 
-    getattr(dynamic_components, cost_components).append(
-        "Total_Hurdle_Cost")
-
-
+    getattr(dynamic_components, cost_components).append("Total_Hurdle_Cost")

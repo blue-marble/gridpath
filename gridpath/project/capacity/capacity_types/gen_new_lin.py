@@ -36,18 +36,34 @@ from builtins import zip
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
-    Constraint, value
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Expression,
+    NonNegativeReals,
+    Constraint,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_values, get_expected_dtypes, get_projects, validate_dtypes, \
-    validate_idxs, validate_row_monotonicity, validate_column_monotonicity
-from gridpath.project.capacity.capacity_types.common_methods import \
-    operational_periods_by_project_vintage, project_operational_periods, \
-    project_vintages_operational_in_period, update_capacity_results_table
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_values,
+    get_expected_dtypes,
+    get_projects,
+    validate_dtypes,
+    validate_idxs,
+    validate_row_monotonicity,
+    validate_column_monotonicity,
+)
+from gridpath.project.capacity.capacity_types.common_methods import (
+    operational_periods_by_project_vintage,
+    project_operational_periods,
+    project_vintages_operational_in_period,
+    update_capacity_results_table,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -202,91 +218,70 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.GEN_NEW_LIN_VNTS = Set(
-        dimen=2, within=m.PROJECTS*m.PERIODS
-    )
+    m.GEN_NEW_LIN_VNTS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
 
     # TODO: rename vintage to period since the constraint is by
     #  project-period, not project-vintage?
-    m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(
-        dimen=2, within=m.GEN_NEW_LIN_VNTS
-    )
+    m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
-    m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(
-        dimen=2, within=m.GEN_NEW_LIN_VNTS
-    )
+    m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
     # Required Params
     ###########################################################################
 
     m.gen_new_lin_lifetime_yrs_by_vintage = Param(
-        m.GEN_NEW_LIN_VNTS,
-        within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS, within=NonNegativeReals
     )
 
     m.gen_new_lin_annualized_real_cost_per_mw_yr = Param(
-        m.GEN_NEW_LIN_VNTS,
-        within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS, within=NonNegativeReals
     )
 
     # Optional Params
     ###########################################################################
 
     m.gen_new_lin_min_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
-        within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, within=NonNegativeReals
     )
 
     m.gen_new_lin_max_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
-        within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, within=NonNegativeReals
     )
 
     # Derived Sets
     ###########################################################################
 
     m.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE = Set(
-        m.GEN_NEW_LIN_VNTS,
-        initialize=operational_periods_by_generator_vintage
+        m.GEN_NEW_LIN_VNTS, initialize=operational_periods_by_generator_vintage
     )
 
-    m.GEN_NEW_LIN_OPR_PRDS = Set(
-        dimen=2,
-        initialize=gen_new_lin_operational_periods
-    )
+    m.GEN_NEW_LIN_OPR_PRDS = Set(dimen=2, initialize=gen_new_lin_operational_periods)
 
     m.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD = Set(
-        m.PERIODS, dimen=2,
-        initialize=gen_new_lin_vintages_operational_in_period
+        m.PERIODS, dimen=2, initialize=gen_new_lin_vintages_operational_in_period
     )
 
     # Variables
     ###########################################################################
 
-    m.GenNewLin_Build_MW = Var(
-        m.GEN_NEW_LIN_VNTS,
-        within=NonNegativeReals
-    )
+    m.GenNewLin_Build_MW = Var(m.GEN_NEW_LIN_VNTS, within=NonNegativeReals)
 
     # Expressions
     ###########################################################################
 
     m.GenNewLin_Capacity_MW = Expression(
-        m.GEN_NEW_LIN_OPR_PRDS,
-        rule=gen_new_lin_capacity_rule
+        m.GEN_NEW_LIN_OPR_PRDS, rule=gen_new_lin_capacity_rule
     )
 
     # Constraints
     ###########################################################################
 
     m.GenNewLin_Min_Cum_Build_Constraint = Constraint(
-        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
-        rule=min_cum_build_rule
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, rule=min_cum_build_rule
     )
 
     m.GenNewLin_Max_Cum_Build_Constraint = Constraint(
-        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
-        rule=max_cum_build_rule
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, rule=max_cum_build_rule
     )
 
     # Dynamic Components
@@ -302,35 +297,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
+
 def operational_periods_by_generator_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v]
+        lifetime_yrs=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v],
     )
 
 
 def gen_new_lin_operational_periods(mod):
     return project_operational_periods(
         project_vintages_set=mod.GEN_NEW_LIN_VNTS,
-        operational_periods_by_project_vintage_set=
-        mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE
+        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE,
     )
 
 
 def gen_new_lin_vintages_operational_in_period(mod, p):
     return project_vintages_operational_in_period(
         project_vintage_set=mod.GEN_NEW_LIN_VNTS,
-        operational_periods_by_project_vintage_set=
-        mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE,
-        period=p
+        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE,
+        period=p,
     )
 
 
 # Expression Rules
 ###############################################################################
+
 
 def gen_new_lin_capacity_rule(mod, g, p):
     """
@@ -349,13 +344,16 @@ def gen_new_lin_capacity_rule(mod, g, p):
     in 2050, the capacity would be undefined (i.e. 0 for the purposes of the
     objective function).
     """
-    return sum(mod.GenNewLin_Build_MW[g, v] for (gen, v)
-               in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
-               if gen == g)
+    return sum(
+        mod.GenNewLin_Build_MW[g, v]
+        for (gen, v) in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
+        if gen == g
+    )
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def min_cum_build_rule(mod, g, p):
     """
@@ -367,8 +365,10 @@ def min_cum_build_rule(mod, g, p):
     if mod.gen_new_lin_min_cumulative_new_build_mw == 0:
         return Constraint.Skip
     else:
-        return mod.GenNewLin_Capacity_MW[g, p] \
+        return (
+            mod.GenNewLin_Capacity_MW[g, p]
             >= mod.gen_new_lin_min_cumulative_new_build_mw[g, p]
+        )
 
 
 def max_cum_build_rule(mod, g, p):
@@ -378,12 +378,15 @@ def max_cum_build_rule(mod, g, p):
 
     Can't build more than certain amount of capacity by period p.
     """
-    return mod.GenNewLin_Capacity_MW[g, p] \
+    return (
+        mod.GenNewLin_Capacity_MW[g, p]
         <= mod.gen_new_lin_max_cumulative_new_build_mw[g, p]
+    )
 
 
 # Capacity Type Methods
 ###############################################################################
+
 
 def capacity_rule(mod, g, p):
     """
@@ -407,27 +410,26 @@ def capacity_cost_rule(mod, g, p):
     capacity-build of a particular vintage times the annualized cost for
     that vintage summed over all vintages operational in the period.
     """
-    return sum(mod.GenNewLin_Build_MW[g, v]
-               * mod.gen_new_lin_annualized_real_cost_per_mw_yr[g, v]
-               for (gen, v)
-               in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
-               if gen == g)
+    return sum(
+        mod.GenNewLin_Build_MW[g, v]
+        * mod.gen_new_lin_annualized_real_cost_per_mw_yr[g, v]
+        for (gen, v) in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
+        if gen == g
+    )
 
 
 def new_capacity_rule(mod, g, p):
     """
     New capacity built at project g in period p.
     """
-    return mod.GenNewLin_Build_MW[g, p] \
-        if (g, p) in mod.GEN_NEW_LIN_VNTS else 0
+    return mod.GenNewLin_Build_MW[g, p] if (g, p) in mod.GEN_NEW_LIN_VNTS else 0
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -440,16 +442,21 @@ def load_model_data(
 
     # TODO: throw an error when a generator of the 'gen_new_lin' capacity
     #   type is not found in new_build_option_vintage_costs.tab
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, str(subproblem), str(stage),
-                                  "inputs",
-                                  "new_build_generator_vintage_costs.tab"),
-                     index=m.GEN_NEW_LIN_VNTS,
-                     select=("project", "vintage",
-                             "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
-                     param=(m.gen_new_lin_lifetime_yrs_by_vintage,
-                            m.gen_new_lin_annualized_real_cost_per_mw_yr)
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_build_generator_vintage_costs.tab",
+        ),
+        index=m.GEN_NEW_LIN_VNTS,
+        select=("project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
+        param=(
+            m.gen_new_lin_lifetime_yrs_by_vintage,
+            m.gen_new_lin_annualized_real_cost_per_mw_yr,
+        ),
+    )
 
     # Min and max cumulative capacity
     project_vintages_with_min = list()
@@ -458,19 +465,31 @@ def load_model_data(
     max_cumulative_mw = dict()
 
     header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "new_build_generator_vintage_costs.tab"),
-        sep="\t", header=None, nrows=1
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_build_generator_vintage_costs.tab",
+        ),
+        sep="\t",
+        header=None,
+        nrows=1,
     ).values[0]
 
-    optional_columns = ["min_cumulative_new_build_mw",
-                        "max_cumulative_new_build_mw"]
+    optional_columns = ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "new_build_generator_vintage_costs.tab"),
-        sep="\t", usecols=["project", "vintage"] + used_columns
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_build_generator_vintage_costs.tab",
+        ),
+        sep="\t",
+        usecols=["project", "vintage"] + used_columns,
     )
 
     # min_cumulative_new_build_mw is optional,
@@ -478,9 +497,7 @@ def load_model_data(
     # and min_cumulative_new_build_mw simply won't be initialized if
     # min_cumulative_new_build_mw does not exist in the input file
     if "min_cumulative_new_build_mw" in df.columns:
-        for row in zip(df["project"],
-                       df["vintage"],
-                       df["min_cumulative_new_build_mw"]):
+        for row in zip(df["project"], df["vintage"], df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_min.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -494,9 +511,7 @@ def load_model_data(
     # and max_cumulative_new_build_mw simply won't be initialized if
     # max_cumulative_new_build_mw does not exist in the input file
     if "max_cumulative_new_build_mw" in df.columns:
-        for row in zip(df["project"],
-                       df["vintage"],
-                       df["max_cumulative_new_build_mw"]):
+        for row in zip(df["project"], df["vintage"], df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_max.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -509,23 +524,21 @@ def load_model_data(
     if not project_vintages_with_min:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()["GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT"] = \
-            {None: project_vintages_with_min}
-    data_portal.data()["gen_new_lin_min_cumulative_new_build_mw"] = \
-        min_cumulative_mw
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT"] = {
+            None: project_vintages_with_min
+        }
+    data_portal.data()["gen_new_lin_min_cumulative_new_build_mw"] = min_cumulative_mw
 
     if not project_vintages_with_max:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()["GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT"] = \
-            {None: project_vintages_with_max}
-    data_portal.data()["gen_new_lin_max_cumulative_new_build_mw"] = \
-        max_cumulative_mw
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT"] = {
+            None: project_vintages_with_max
+        }
+    data_portal.data()["gen_new_lin_max_cumulative_new_build_mw"] = max_cumulative_mw
 
 
-def export_results(
-        scenario_directory, subproblem, stage, m, d
-):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -535,25 +548,35 @@ def export_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "capacity_gen_new_lin.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_new_lin.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
 
         writer = csv.writer(f)
-        writer.writerow(["project", "vintage", "technology", "load_zone",
-                         "new_build_mw"])
+        writer.writerow(
+            ["project", "vintage", "technology", "load_zone", "new_build_mw"]
+        )
         for (prj, p) in m.GEN_NEW_LIN_VNTS:
-            writer.writerow([
-                prj,
-                p,
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.GenNewLin_Build_MW[prj, p])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.GenNewLin_Build_MW[prj, p]),
+                ]
+            )
 
 
-def summarize_results(
-    scenario_directory, subproblem, stage, summary_results_file
-):
+def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
     """
     Summarize new build generation capacity results.
     :param scenario_directory:
@@ -565,25 +588,30 @@ def summarize_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "results", "capacity_gen_new_lin.csv")
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_new_lin.csv",
+        )
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology", "vintage"],
-        as_index=True
+        by=["load_zone", "technology", "vintage"], as_index=True
     ).sum()
 
     # Get all technologies with the new build capacity
     new_build_df = pd.DataFrame(
-        capacity_results_agg_df[
-            capacity_results_agg_df["new_build_mw"] > 0
-        ]["new_build_mw"]
+        capacity_results_agg_df[capacity_results_agg_df["new_build_mw"] > 0][
+            "new_build_mw"
+        ]
     )
 
     # Get the power units from the units.csv file
-    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
-                           index_col="metric")
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
     power_unit = units_df.loc["power", "unit"]
 
     # Rename column header
@@ -601,9 +629,8 @@ def summarize_results(
 # Database
 ###############################################################################
 
-def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-):
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -616,8 +643,9 @@ def get_model_inputs_from_database(
     # TODO: the fact that cumulative new build is specified by period whereas
     #  the costs are by vintage can be confusing and could be a reason not to
     #  combine both tables in one input table/file
-    get_potentials = \
-        (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
+    get_potentials = (
+        (" ", " ")
+        if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
         else (
             """, min_cumulative_new_build_mw, 
             max_cumulative_new_build_mw """,
@@ -628,14 +656,15 @@ def get_model_inputs_from_database(
             WHERE project_new_potential_scenario_id = {}) as potential
             USING (project, vintage) """.format(
                 subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID
-            )
+            ),
         )
+    )
 
     new_gen_costs = c.execute(
         """SELECT project, vintage, lifetime_yrs,
         annualized_real_cost_per_mw_yr"""
-        + get_potentials[0] +
-        """FROM inputs_project_portfolios
+        + get_potentials[0]
+        + """FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period AS vintage
         FROM inputs_temporal_periods
@@ -649,8 +678,8 @@ def get_model_inputs_from_database(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )
-        + get_potentials[1] +
-        """WHERE project_portfolio_scenario_id = {}
+        + get_potentials[1]
+        + """WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'gen_new_lin';""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -660,7 +689,7 @@ def get_model_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -674,20 +703,30 @@ def write_model_inputs(
     """
 
     new_gen_costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "new_build_generator_vintage_costs.tab"), "w", newline="") as \
-            new_gen_costs_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "new_build_generator_vintage_costs.tab",
+        ),
+        "w",
+        newline="",
+    ) as new_gen_costs_tab_file:
         writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
-             "annualized_real_cost_per_mw_yr"] +
-            ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-             else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
-             )
+            ["project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"]
+            + (
+                []
+                if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
+                else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+            )
         )
 
         for row in new_gen_costs:
@@ -696,7 +735,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -714,14 +753,19 @@ def import_results_into_database(
         print("project new build generator")
 
     update_capacity_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="capacity_gen_new_lin.csv"
+        db=db,
+        c=c,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_file="capacity_gen_new_lin.csv",
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -734,9 +778,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     new_gen_costs = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_new_lin")
+    projects = get_projects(
+        conn, scenario_id, subscenarios, "capacity_type", "gen_new_lin"
+    )
 
     # Convert input data into pandas DataFrame
     cost_df = cursor_to_df(new_gen_costs)
@@ -747,8 +794,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
-        conn=conn,
-        tables=["inputs_project_new_cost", "inputs_project_new_potential"]
+        conn=conn, tables=["inputs_project_new_cost", "inputs_project_new_potential"]
     )
 
     # Check dtypes
@@ -761,12 +807,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in cost_df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in cost_df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -776,7 +821,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="High",
-        errors=validate_values(cost_df, valid_numeric_columns, min=0)
+        errors=validate_values(cost_df, valid_numeric_columns, min=0),
     )
 
     # Check that all binary new build projects are available in >=1 vintage
@@ -789,14 +834,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_new_cost",
         severity="Mid",
-        errors=validate_idxs(actual_idxs=cost_projects,
-                             req_idxs=projects,
-                             idx_label="project",
-                             msg=msg)
+        errors=validate_idxs(
+            actual_idxs=cost_projects, req_idxs=projects, idx_label="project", msg=msg
+        ),
     )
 
-    cols = ["min_cumulative_new_build_mw",
-            "max_cumulative_new_build_mw"]
+    cols = ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
     # Check that maximum new build doesn't decrease
     if cols[1] in df_cols:
         write_validation_to_database(
@@ -808,10 +851,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             db_table="inputs_project_new_potential",
             severity="Mid",
             errors=validate_row_monotonicity(
-                df=cost_df,
-                col=cols[1],
-                rank_col="vintage"
-            )
+                df=cost_df, col=cols[1], rank_col="vintage"
+            ),
         )
 
     # check that min build <= max build
@@ -825,8 +866,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             db_table="inputs_project_new_potential",
             severity="High",
             errors=validate_column_monotonicity(
-                df=cost_df,
-                cols=cols,
-                idx_col=["project", "vintage"]
-            )
+                df=cost_df, cols=cols, idx_col=["project", "vintage"]
+            ),
         )

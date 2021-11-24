@@ -21,8 +21,7 @@ import csv
 import os.path
 from pyomo.environ import Param, NonNegativeReals
 
-from gridpath.auxiliary.dynamic_components import \
-    load_balance_consumption_components
+from gridpath.auxiliary.dynamic_components import load_balance_consumption_components
 
 
 def record_dynamic_components(dynamic_components):
@@ -32,7 +31,8 @@ def record_dynamic_components(dynamic_components):
     This method adds the static load to the load balance dynamic components.
     """
     getattr(dynamic_components, load_balance_consumption_components).append(
-        "static_load_mw")
+        "static_load_mw"
+    )
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -48,8 +48,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     # Static load
-    m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS,
-                             within=NonNegativeReals)
+    m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -69,7 +68,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         filename=os.path.join(
             scenario_directory, subproblem, stage, "inputs", "load_mw.tab"
         ),
-        param=m.static_load_mw
+        param=m.static_load_mw,
     )
 
 
@@ -112,7 +111,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             stage,
             subscenarios.LOAD_ZONE_SCENARIO_ID,
             subscenarios.LOAD_SCENARIO_ID,
-            stage
+            stage,
         )
     )
 
@@ -134,7 +133,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     load_mw.tab file.
@@ -146,18 +147,19 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
 
-    loads = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+    loads = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "load_mw.tab"), "w", newline="") as \
-            load_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "load_mw.tab"
+        ),
+        "w",
+        newline="",
+    ) as load_tab_file:
         writer = csv.writer(load_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(
-            ["LOAD_ZONES", "timepoint", "load_mw"]
-        )
+        writer.writerow(["LOAD_ZONES", "timepoint", "load_mw"])
 
         for row in loads:
             writer.writerow(row)

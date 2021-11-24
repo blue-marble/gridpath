@@ -26,9 +26,16 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit, \
-    process_stacked_plot_data, get_capacity_data
+from viz.common_functions import (
+    create_stacked_bar_plot,
+    show_plot,
+    get_parent_parser,
+    get_tech_colors,
+    get_tech_plotting_order,
+    get_unit,
+    process_stacked_plot_data,
+    get_capacity_data,
+)
 
 
 def create_parser():
@@ -37,14 +44,24 @@ def create_parser():
     :return:
     """
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--period", required=True, type=int,
-                        help="The selected modeling period. Required.")
-    parser.add_argument("--load_zone", required=True, type=str,
-                        help="The name of the load zone. Required.")
-    parser.add_argument("--subproblem", default=1, type=int,
-                        help="The subproblem ID. Defaults to 1.")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
+    parser.add_argument(
+        "--period",
+        required=True,
+        type=int,
+        help="The selected modeling period. Required.",
+    )
+    parser.add_argument(
+        "--load_zone",
+        required=True,
+        type=str,
+        help="The name of the load zone. Required.",
+    )
+    parser.add_argument(
+        "--subproblem", default=1, type=int, help="The subproblem ID. Defaults to 1."
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
 
     return parser
 
@@ -60,8 +77,9 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, subproblem, stage, scenario_id=None,
-                      load_zone=None, period=None, **kwargs):
+def get_plotting_data(
+    conn, subproblem, stage, scenario_id=None, load_zone=None, period=None, **kwargs
+):
     """
     See get_capacity_data()
 
@@ -69,8 +87,9 @@ def get_plotting_data(conn, subproblem, stage, scenario_id=None,
     function with extra arguments from the UI.
     """
 
-    return get_capacity_data(conn, subproblem, stage, "capacity_mw",
-                             scenario_id, load_zone, period)
+    return get_capacity_data(
+        conn, subproblem, stage, "capacity_mw", scenario_id, load_zone, period
+    )
 
 
 def main(args=None):
@@ -89,32 +108,26 @@ def main(args=None):
     tech_plotting_order = get_tech_plotting_order(conn.cursor())
     power_unit = get_unit(conn.cursor(), "power")
 
-    plot_title = "Total Capacity by Scenario - {} - Subproblem {} - Stage {}"\
-        .format(
-            parsed_args.load_zone,
-            parsed_args.subproblem,
-            parsed_args.stage
-        )
-    plot_name = "TotalCapacityPlot-{}-{}-{}"\
-        .format(
-            parsed_args.load_zone,
-            parsed_args.subproblem,
-            parsed_args.stage
-        )
+    plot_title = "Total Capacity by Scenario - {} - Subproblem {} - Stage {}".format(
+        parsed_args.load_zone, parsed_args.subproblem, parsed_args.stage
+    )
+    plot_name = "TotalCapacityPlot-{}-{}-{}".format(
+        parsed_args.load_zone, parsed_args.subproblem, parsed_args.stage
+    )
 
     df = get_plotting_data(
         conn=conn,
         period=parsed_args.period,
         load_zone=parsed_args.load_zone,
         subproblem=parsed_args.subproblem,
-        stage=parsed_args.stage
+        stage=parsed_args.stage,
     )
 
     source, x_col_reordered = process_stacked_plot_data(
         df=df,
         y_col="capacity_mw",
         x_col=["period", "scenario_id"],
-        category_col="technology"
+        category_col="technology",
     )
 
     # Multi-level index in CDS will be joined into one column with "_" separator
@@ -129,14 +142,16 @@ def main(args=None):
         category_colors=tech_colors,
         category_order=tech_plotting_order,
         title=plot_title,
-        ylimit=parsed_args.ylimit
+        ylimit=parsed_args.ylimit,
     )
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

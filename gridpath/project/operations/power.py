@@ -30,8 +30,7 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import \
-    load_operational_type_modules
+from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
 
@@ -61,8 +60,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -82,21 +83,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         type.
         """
         gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "power_provision_rule"):
-            return imported_operational_modules[gen_op_type].\
-                power_provision_rule(mod, prj, tmp)
+        if hasattr(imported_operational_modules[gen_op_type], "power_provision_rule"):
+            return imported_operational_modules[gen_op_type].power_provision_rule(
+                mod, prj, tmp
+            )
         else:
             return op_type_init.power_provision_rule(mod, prj, tmp)
 
-    m.Power_Provision_MW = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=power_provision_rule
-    )
+    m.Power_Provision_MW = Expression(m.PRJ_OPR_TMPS, rule=power_provision_rule)
 
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -113,27 +112,49 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # First power
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "dispatch_all.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "dispatch_all.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "operational_type", "balancing_type",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
-                         "load_zone", "technology", "power_mw"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "horizon",
+                "timepoint",
+                "operational_type",
+                "balancing_type",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "load_zone",
+                "technology",
+                "power_mw",
+            ]
+        )
         for (p, tmp) in m.PRJ_OPR_TMPS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.operational_type[p],
-                m.balancing_type_project[p],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.Power_Provision_MW[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    m.period[tmp],
+                    m.horizon[tmp, m.balancing_type_project[p]],
+                    tmp,
+                    m.operational_type[p],
+                    m.balancing_type_project[p],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    m.load_zone[p],
+                    m.technology[p],
+                    value(m.Power_Provision_MW[p, tmp]),
+                ]
+            )
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -153,9 +174,7 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Open in 'append' mode, so that results already written by other
     # modules are not overridden
     with open(summary_results_file, "a") as outfile:
-        outfile.write(
-            "\n### OPERATIONAL RESULTS ###\n"
-        )
+        outfile.write("\n### OPERATIONAL RESULTS ###\n")
 
     # Next, our goal is to get a summary table of power production by load
     # zone, technology, and period
@@ -163,19 +182,23 @@ def summarize_results(scenario_directory, subproblem, stage):
 
     # Get the results CSV as dataframe
     operational_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "results", "dispatch_all.csv")
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "dispatch_all.csv",
+        )
     )
 
-    operational_results_df["weighted_power_mwh"] = \
-        operational_results_df["power_mw"] \
-        * operational_results_df["timepoint_weight"]
+    operational_results_df["weighted_power_mwh"] = (
+        operational_results_df["power_mw"] * operational_results_df["timepoint_weight"]
+    )
 
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
         operational_results_df.groupby(
-            by=["load_zone", "period", "technology"],
-            as_index=True
+            by=["load_zone", "period", "technology"], as_index=True
         ).sum()["weighted_power_mwh"]
     )
 
@@ -185,10 +208,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     # to find the percentage of total power by technology (for each load
     # zone and period)
     lz_period_power_df = pd.DataFrame(
-        operational_results_df.groupby(
-            by=["load_zone", "period"],
-            as_index=True
-        ).sum()["weighted_power_mwh"]
+        operational_results_df.groupby(by=["load_zone", "period"], as_index=True).sum()[
+            "weighted_power_mwh"
+        ]
     )
 
     # Name the power column
@@ -204,33 +226,38 @@ def summarize_results(scenario_directory, subproblem, stage):
         if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
             pct = 0
         else:
-            pct = operational_results_agg_df.weighted_power_mwh[indx] \
-                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
+            pct = (
+                operational_results_agg_df.weighted_power_mwh[indx]
+                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
                 * 100.0
+            )
         operational_results_agg_df.percent_total_power[indx] = pct
 
     # Get the energy units from the units.csv file
-    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
-                           index_col="metric")
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
     energy_unit = units_df.loc["energy", "unit"]
     # units_dict = dict(zip(units_df["metric"], units_df["unit"]))
 
     # Rename the columns for the final table
-    operational_results_agg_df.columns = \
-        (["Annual Energy ({})".format(energy_unit), "% Total Power"])
+    operational_results_agg_df.columns = [
+        "Annual Energy ({})".format(energy_unit),
+        "% Total Power",
+    ]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Energy Production <--\n")
-        operational_results_agg_df.to_string(outfile,
-                                             float_format="{:,.2f}".format)
+        operational_results_agg_df.to_string(outfile, float_format="{:,.2f}".format)
         outfile.write("\n")
 
 
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -264,9 +291,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         DELETE FROM results_project_dispatch_by_technology 
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Aggregate dispatch by technology
     agg_sql = """
@@ -284,9 +311,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         load_zone, technology
         ORDER BY subproblem_id, stage_id, timepoint, 
         load_zone, technology;"""
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )
 
     if not quiet:
         print("aggregate dispatch by technology-period")
@@ -296,9 +323,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         DELETE FROM results_project_dispatch_by_technology_period 
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Aggregate dispatch by technology, period, and spinup_or_lookahead
     agg_sql = """
@@ -316,6 +343,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead;"""
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )

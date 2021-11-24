@@ -29,8 +29,12 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_unit
+from viz.common_functions import (
+    show_hide_legend,
+    show_plot,
+    get_parent_parser,
+    get_unit,
+)
 
 
 def create_parser():
@@ -39,16 +43,26 @@ def create_parser():
     :return:
     """
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
-                                              "no --scenario is specified.")
-    parser.add_argument("--scenario", help="The scenario name. Required if "
-                                           "no --scenario_id is specified.")
-    parser.add_argument("--carbon_cap_zone", required=True, type=str,
-                        help="The name of the carbon cap zone. Required")
-    parser.add_argument("--subproblem", default=1, type=int,
-                        help="The subproblem ID. Defaults to 1.")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
+    parser.add_argument(
+        "--scenario_id",
+        help="The scenario ID. Required if " "no --scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario name. Required if " "no --scenario_id is specified.",
+    )
+    parser.add_argument(
+        "--carbon_cap_zone",
+        required=True,
+        type=str,
+        help="The name of the carbon cap zone. Required",
+    )
+    parser.add_argument(
+        "--subproblem", default=1, type=int, help="The subproblem ID. Defaults to 1."
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
 
     return parser
 
@@ -64,8 +78,7 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
-                      **kwargs):
+def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage, **kwargs):
     """
     Get the carbon results by period for a given
     scenario/carbon_cap_zone/subproblem/stage.
@@ -100,9 +113,7 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
         ;"""
 
     df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(scenario_id, carbon_cap_zone, subproblem, stage)
+        sql, con=conn, params=(scenario_id, carbon_cap_zone, subproblem, stage)
     )
 
     # For Testing:
@@ -120,11 +131,13 @@ def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
     # TODO: division will fail if total_emissions_degen is NULL, e.g. when
     #  there are no carbon transmission lines.
     # Add project/import fractions
-    df["fraction_of_project_emissions"] = df["in_zone_project_emissions"] \
-        / df["total_emissions_degen"]
+    df["fraction_of_project_emissions"] = (
+        df["in_zone_project_emissions"] / df["total_emissions_degen"]
+    )
 
-    df["fraction_of_import_emissions"] = df["import_emissions_degen"] \
-        / df["total_emissions_degen"]
+    df["fraction_of_import_emissions"] = (
+        df["import_emissions_degen"] / df["total_emissions_degen"]
+    )
 
     return df
 
@@ -152,15 +165,15 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     # Order of stacked_cols will define order of stacked areas in chart
     x_col = "period"
     line_col = "carbon_cap"
-    stacked_cols = ["in_zone_project_emissions",
-                    "import_emissions_degen"]
+    stacked_cols = ["in_zone_project_emissions", "import_emissions_degen"]
 
     # Stacked Area Colors
-    colors = ['#666666', "#999999"]
+    colors = ["#666666", "#999999"]
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800,
+        plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         x_range=df[x_col]
@@ -184,21 +197,21 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
         size=20,
         color="black",
         fill_alpha=0.2,
-        line_width=2
+        line_width=2,
     )
 
     # Create legend items
     legend_items = [
         ("Project Emissions", [bar_renderers[0]]),
         ("Import Emissions", [bar_renderers[1]]),
-        ("Carbon Target", [target_renderer])
+        ("Carbon Target", [target_renderer]),
     ]
 
     # Add Legend
     legend = Legend(items=legend_items)
-    plot.add_layout(legend, 'right')
+    plot.add_layout(legend, "right")
     plot.legend[0].items.reverse()  # Reverse legend to match stacked order
-    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
+    plot.legend.click_policy = "hide"  # Add interactivity to the legend
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
@@ -215,12 +228,15 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     hover = HoverTool(
         tooltips=[
             ("Period", "@period"),
-            ("Project Emissions",
-             "@%s{0,0} %s (@fraction_of_project_emissions{0%%})"
-             % (stacked_cols[0], carbon_unit)),
+            (
+                "Project Emissions",
+                "@%s{0,0} %s (@fraction_of_project_emissions{0%%})"
+                % (stacked_cols[0], carbon_unit),
+            ),
         ],
         renderers=[r_delivered],
-        toggleable=False)
+        toggleable=False,
+    )
     plot.add_tools(hover)
 
     # Add curtailed RPS HoverTool
@@ -228,12 +244,15 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
     hover = HoverTool(
         tooltips=[
             ("Period", "@period"),
-            ("Import Emissions",
-             "@%s{0,0} %s (@fraction_of_import_emissions{0%%})"
-             % (stacked_cols[1], carbon_unit)),
+            (
+                "Import Emissions",
+                "@%s{0,0} %s (@fraction_of_import_emissions{0%%})"
+                % (stacked_cols[1], carbon_unit),
+            ),
         ],
         renderers=[r_curtailed],
-        toggleable=False)
+        toggleable=False,
+    )
     plot.add_tools(hover)
 
     # Add RPS Target HoverTool
@@ -241,11 +260,15 @@ def create_plot(df, title, carbon_unit, cost_unit, ylimit=None):
         tooltips=[
             ("Period", "@period"),
             ("Carbon Target", "@%s{0,0} %s" % (line_col, carbon_unit)),
-            ("Marginal Cost", "@carbon_cap_marginal_cost_per_emission{0,0} %s/%s"
-             % (cost_unit, carbon_unit))
+            (
+                "Marginal Cost",
+                "@carbon_cap_marginal_cost_per_emission{0,0} %s/%s"
+                % (cost_unit, carbon_unit),
+            ),
         ],
         renderers=[target_renderer],
-        toggleable=False)
+        toggleable=False,
+    )
     plot.add_tools(hover)
 
     return plot
@@ -268,27 +291,28 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="carbon_plot"
+        script="carbon_plot",
     )
 
     carbon_unit = get_unit(c, "carbon_emissions")
     cost_unit = get_unit(c, "cost")
 
-    plot_title = "{}Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
-        .format(
-            "{} - ".format(scenario)
-            if parsed_args.scenario_name_in_title else "",
-            parsed_args.carbon_cap_zone, parsed_args.subproblem,
-            parsed_args.stage)
+    plot_title = "{}Carbon Emissions by Period - {} - Subproblem {} - Stage {}".format(
+        "{} - ".format(scenario) if parsed_args.scenario_name_in_title else "",
+        parsed_args.carbon_cap_zone,
+        parsed_args.subproblem,
+        parsed_args.stage,
+    )
     plot_name = "CarbonPlot-{}-{}-{}".format(
-        parsed_args.carbon_cap_zone, parsed_args.subproblem, parsed_args.stage)
+        parsed_args.carbon_cap_zone, parsed_args.subproblem, parsed_args.stage
+    )
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
         carbon_cap_zone=parsed_args.carbon_cap_zone,
         subproblem=parsed_args.subproblem,
-        stage=parsed_args.stage
+        stage=parsed_args.stage,
     )
 
     plot = create_plot(
@@ -296,15 +320,17 @@ def main(args=None):
         title=plot_title,
         carbon_unit=carbon_unit,
         cost_unit=cost_unit,
-        ylimit=parsed_args.ylimit
+        ylimit=parsed_args.ylimit,
     )
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory,
-                  scenario=scenario)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+            scenario=scenario,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

@@ -21,63 +21,66 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones", "project"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.stor_new_bin"
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "project",
+]
+NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.stor_new_bin"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package='gridpath')
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestStorNewBin(unittest.TestCase):
-    """
-
-    """
+    """ """
 
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -89,17 +92,16 @@ class TestStorNewBin(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: STOR_NEW_BIN
         expected_stor_new_bin_project_set = ["Battery_Binary"]
-        actual_stor_new_bin_project_set = sorted(
-            [prj for prj in instance.STOR_NEW_BIN]
+        actual_stor_new_bin_project_set = sorted([prj for prj in instance.STOR_NEW_BIN])
+        self.assertListEqual(
+            expected_stor_new_bin_project_set, actual_stor_new_bin_project_set
         )
-        self.assertListEqual(expected_stor_new_bin_project_set,
-                             actual_stor_new_bin_project_set)
 
         # Param: stor_new_bin_build_size_mw
         expected_stor_new_bin_build_size_mw = OrderedDict(
@@ -107,14 +109,15 @@ class TestStorNewBin(unittest.TestCase):
         )
         actual_stor_new_bin_build_size_mw = OrderedDict(
             sorted(
-                {prj:
-                    instance.stor_new_bin_build_size_mw[prj]
-                 for prj in instance.STOR_NEW_BIN
-                 }.items()
+                {
+                    prj: instance.stor_new_bin_build_size_mw[prj]
+                    for prj in instance.STOR_NEW_BIN
+                }.items()
             )
         )
-        self.assertDictEqual(expected_stor_new_bin_build_size_mw,
-                             actual_stor_new_bin_build_size_mw)
+        self.assertDictEqual(
+            expected_stor_new_bin_build_size_mw, actual_stor_new_bin_build_size_mw
+        )
 
         # Param: stor_new_bin_build_size_mwh
         expected_stor_new_bin_build_size_mwh = OrderedDict(
@@ -122,72 +125,73 @@ class TestStorNewBin(unittest.TestCase):
         )
         actual_stor_new_bin_build_size_mwh = OrderedDict(
             sorted(
-                {prj:
-                    instance.stor_new_bin_build_size_mwh[prj]
-                 for prj in instance.STOR_NEW_BIN
-                 }.items()
+                {
+                    prj: instance.stor_new_bin_build_size_mwh[prj]
+                    for prj in instance.STOR_NEW_BIN
+                }.items()
             )
         )
-        self.assertDictEqual(expected_stor_new_bin_build_size_mwh,
-                             actual_stor_new_bin_build_size_mwh)
+        self.assertDictEqual(
+            expected_stor_new_bin_build_size_mwh, actual_stor_new_bin_build_size_mwh
+        )
 
         # Set: STOR_NEW_BIN_VNTS
-        expected_storage_vintage_set = sorted([
-            ("Battery_Binary", 2020),
-            ("Battery_Binary", 2030)
-        ])
-        actual_storage_vintage_set = sorted(
-            [(prj, period)
-             for (prj, period) in instance.STOR_NEW_BIN_VNTS
-             ]
+        expected_storage_vintage_set = sorted(
+            [("Battery_Binary", 2020), ("Battery_Binary", 2030)]
         )
-        self.assertListEqual(expected_storage_vintage_set,
-                             actual_storage_vintage_set)
+        actual_storage_vintage_set = sorted(
+            [(prj, period) for (prj, period) in instance.STOR_NEW_BIN_VNTS]
+        )
+        self.assertListEqual(expected_storage_vintage_set, actual_storage_vintage_set)
 
         # Params: stor_new_bin_lifetime_yrs
         expected_lifetime = OrderedDict(
-            sorted({("Battery_Binary", 2020): 10,
-                    ("Battery_Binary", 2030): 10}.items())
+            sorted({("Battery_Binary", 2020): 10, ("Battery_Binary", 2030): 10}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.stor_new_bin_lifetime_yrs[
-                        prj, vintage]
-                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
-                 }.items()
+                {
+                    (prj, vintage): instance.stor_new_bin_lifetime_yrs[prj, vintage]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
         # Params: stor_new_bin_annualized_real_cost_per_mw_yr
         expected_mw_yr_cost = OrderedDict(
-            sorted({("Battery_Binary", 2020): 1,
-                    ("Battery_Binary", 2030): 1}.items())
+            sorted({("Battery_Binary", 2020): 1, ("Battery_Binary", 2030): 1}.items())
         )
         actual_mw_yr_cost = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.stor_new_bin_annualized_real_cost_per_mw_yr[
-                        prj, vintage]
-                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
-                 }.items()
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.stor_new_bin_annualized_real_cost_per_mw_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
             )
         )
         self.assertDictEqual(expected_mw_yr_cost, actual_mw_yr_cost)
 
         # Params: stor_new_bin_annualized_real_cost_per_mw_yr
         expected_mwh_yr_cost = OrderedDict(
-            sorted({("Battery_Binary", 2020): 1,
-                    ("Battery_Binary", 2030): 1}.items())
+            sorted({("Battery_Binary", 2020): 1, ("Battery_Binary", 2030): 1}.items())
         )
         actual_mwh_yr_cost = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.stor_new_bin_annualized_real_cost_per_mwh_yr[
-                        prj, vintage]
-                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
-                 }.items()
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.stor_new_bin_annualized_real_cost_per_mwh_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
             )
         )
         self.assertDictEqual(expected_mwh_yr_cost, actual_mwh_yr_cost)
@@ -202,49 +206,47 @@ class TestStorNewBin(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Sets: OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
         expected_op_periods_by_stor_vintage = {
             ("Battery_Binary", 2020): [2020],
-            ("Battery_Binary", 2030): [2030]
+            ("Battery_Binary", 2030): [2030],
         }
         actual_periods_by_stor_vintage = {
-            (prj, vintage):
-                [period for period in
-                 instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE[
-                    prj, vintage]]
-            for (prj, vintage) in
-                instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
+            (prj, vintage): [
+                period
+                for period in instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE[prj, vintage]
+            ]
+            for (prj, vintage) in instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
         }
-        self.assertDictEqual(expected_op_periods_by_stor_vintage,
-                             actual_periods_by_stor_vintage)
+        self.assertDictEqual(
+            expected_op_periods_by_stor_vintage, actual_periods_by_stor_vintage
+        )
 
         # Sets: STOR_NEW_BIN_OPR_PRDS
-        expected_stor_op_periods = sorted([
-            ("Battery_Binary", 2020),
-            ("Battery_Binary", 2030)
-        ])
-        actual_stor_op_periods = sorted([
-            (prj, period) for (prj, period) in
-            instance.STOR_NEW_BIN_OPR_PRDS
-        ])
+        expected_stor_op_periods = sorted(
+            [("Battery_Binary", 2020), ("Battery_Binary", 2030)]
+        )
+        actual_stor_op_periods = sorted(
+            [(prj, period) for (prj, period) in instance.STOR_NEW_BIN_OPR_PRDS]
+        )
         self.assertListEqual(expected_stor_op_periods, actual_stor_op_periods)
 
         # Sets: STOR_NEW_BIN_VNTS_OPR_IN_PRD
         expected_stor_vintage_op_in_period = {
             2020: [("Battery_Binary", 2020)],
-            2030: [("Battery_Binary", 2030)]
+            2030: [("Battery_Binary", 2030)],
         }
         actual_stor_vintage_op_in_period = {
-            p: [(g, v) for (g, v) in
-                instance.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
-                ] for p in instance.PERIODS
+            p: [(g, v) for (g, v) in instance.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]]
+            for p in instance.PERIODS
         }
-        self.assertDictEqual(expected_stor_vintage_op_in_period,
-                             actual_stor_vintage_op_in_period)
+        self.assertDictEqual(
+            expected_stor_vintage_op_in_period, actual_stor_vintage_op_in_period
+        )
 
 
 if __name__ == "__main__":

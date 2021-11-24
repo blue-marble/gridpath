@@ -32,5 +32,5 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "LF_RESERVES_DOWN_ZONES",
         "LF_RESERVES_DOWN_PROJECTS",
         "Provide_LF_Reserves_Down_MW",
-        "Total_LF_Reserves_Down_Provision_MW"
-        )
+        "Total_LF_Reserves_Down_Provision_MW",
+    )

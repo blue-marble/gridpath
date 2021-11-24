@@ -48,9 +48,14 @@ import os.path
 from pyomo.environ import Set, Param, PositiveIntegers
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_values, \
-    validate_single_input, validate_missing_inputs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_expected_dtypes,
+    validate_dtypes,
+    validate_values,
+    validate_single_input,
+    validate_missing_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -155,26 +160,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.BLN_TYPE_HRZS = Set(
-        dimen=2, ordered=True
-    )
+    m.BLN_TYPE_HRZS = Set(dimen=2, ordered=True)
 
-    m.TMPS_BY_BLN_TYPE_HRZ = Set(
-        m.BLN_TYPE_HRZS,
-        within=PositiveIntegers, ordered=True
-    )
+    m.TMPS_BY_BLN_TYPE_HRZ = Set(m.BLN_TYPE_HRZS, within=PositiveIntegers, ordered=True)
 
     # Derived Sets
     ###########################################################################
 
-    m.BLN_TYPES = Set(
-        initialize=balancing_types_init
-    )
+    m.BLN_TYPES = Set(initialize=balancing_types_init)
 
     m.HRZS_BY_BLN_TYPE = Set(
-        m.BLN_TYPES,
-        within=PositiveIntegers,
-        initialize=horizons_by_balancing_type_init
+        m.BLN_TYPES, within=PositiveIntegers, initialize=horizons_by_balancing_type_init
     )
 
     # Required Params
@@ -182,14 +178,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # TODO: can create here instead of upstream in data (i.e. we can get the
     #  balancing type index from the horizon of the timepoint)
-    m.horizon = Param(
-        m.TMPS, m.BLN_TYPES
-    )
+    m.horizon = Param(m.TMPS, m.BLN_TYPES)
 
-    m.boundary = Param(
-        m.BLN_TYPE_HRZS,
-        within=['circular', 'linear', 'linked']
-    )
+    m.boundary = Param(m.BLN_TYPE_HRZS, within=["circular", "linear", "linked"])
 
     # Derived Params
     ###########################################################################
@@ -197,32 +188,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.first_hrz_tmp = Param(
         m.BLN_TYPE_HRZS,
         within=PositiveIntegers,
-        initialize=lambda mod, b, h:
-        list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[0]
+        initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[0],
     )
 
     m.last_hrz_tmp = Param(
         m.BLN_TYPE_HRZS,
         within=PositiveIntegers,
-        initialize=lambda mod, b, h:
-        list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1]
+        initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1],
     )
 
     m.prev_tmp = Param(
-        m.TMPS, m.BLN_TYPES,
-        within=m.TMPS | {None},
-        initialize=prev_tmp_init
+        m.TMPS, m.BLN_TYPES, within=m.TMPS | {None}, initialize=prev_tmp_init
     )
 
     m.next_tmp = Param(
-        m.TMPS, m.BLN_TYPES,
-        within=m.TMPS | {None},
-        initialize=next_tmp_init
+        m.TMPS, m.BLN_TYPES, within=m.TMPS | {None}, initialize=next_tmp_init
     )
 
 
 # Set Rules
 ###############################################################################
+
 
 def balancing_types_init(mod):
     """
@@ -260,6 +246,7 @@ def horizons_by_balancing_type_init(mod, bt):
 # Param Rules
 ###############################################################################
 
+
 def prev_tmp_init(mod, tmp, balancing_type_horizon):
     """
     **Param Name**: prev_tmp
@@ -284,16 +271,15 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for balancing type "
-                        "horizon '{} {}'".
-                        format(mod.boundary[bt, hrz], bt, hrz)
-                        + "\n" +
-                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
+                        + "\n"
+                        + "Horizon boundary must be 'circular,' 'linear,' "
                         "or 'linked.'"
                     )
             else:
-                prev_tmp_dict[tmp, bt] = list(
-                    mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-                )[list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) - 1]
+                prev_tmp_dict[tmp, bt] = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
+                    list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) - 1
+                ]
 
     return prev_tmp_dict
 
@@ -321,16 +307,15 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for balancing "
-                        "type horizon '{} {}'".
-                        format(mod.boundary[bt, hrz], bt, hrz)
-                        + "\n" +
-                        "Horizon boundary must be 'circular,' 'linear,' "
+                        "type horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
+                        + "\n"
+                        + "Horizon boundary must be 'circular,' 'linear,' "
                         "or 'linked.'"
                     )
             else:
-                next_tmp_dict[tmp, bt] = list(
-                    mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
-                )[list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) + 1]
+                next_tmp_dict[tmp, bt] = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
+                    list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) + 1
+                ]
 
     return next_tmp_dict
 
@@ -338,20 +323,27 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-    """
+    """ """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "horizons.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"
+        ),
         select=("balancing_type_horizon", "horizon", "boundary"),
         index=m.BLN_TYPE_HRZS,
-        param=m.boundary
+        param=m.boundary,
     )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "inputs", "horizon_timepoints.tab")
-              ) as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "horizon_timepoints.tab",
+        )
+    ) as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
         next(reader)
         tmps_on_horizon = dict()
@@ -371,6 +363,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 # Database
 ###############################################################################
 
+
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -389,9 +382,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         AND subproblem_id = {}
         ORDER BY balancing_type_horizon, horizon;
         """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
     )
 
@@ -403,16 +394,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
        AND subproblem_id = {}
        AND stage_id = {}
        ORDER BY balancing_type_horizon, timepoint;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
     )
 
     return horizons, horizon_timepoints
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     horizons.tab file.
@@ -425,12 +416,17 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     horizons, horizon_timepoints = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"),
-              "w", newline="") as horizons_tab_file:
-        hwriter = csv.writer(horizons_tab_file, delimiter="\t",
-                             lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "horizons.tab"
+        ),
+        "w",
+        newline="",
+    ) as horizons_tab_file:
+        hwriter = csv.writer(horizons_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
@@ -438,10 +434,20 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         for row in horizons:
             hwriter.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "horizon_timepoints.tab"), "w",
-              newline="") as horizon_timepoints_tab_file:
-        htwriter = csv.writer(horizon_timepoints_tab_file, delimiter="\t",
-                              lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "horizon_timepoints.tab",
+        ),
+        "w",
+        newline="",
+    ) as horizon_timepoints_tab_file:
+        htwriter = csv.writer(
+            horizon_timepoints_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
         htwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
@@ -452,6 +458,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -475,7 +482,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
         and stage_id = {}
-        """.format(subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage)
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+        )
     )
 
     df_hrzs = cursor_to_df(hrzs)
@@ -485,8 +494,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_temporal_horizons",
-                "inputs_temporal_horizon_timepoints"]
+        tables=["inputs_temporal_horizons", "inputs_temporal_horizon_timepoints"],
     )
 
     # Check dtypes horizons
@@ -499,7 +507,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_horizons",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check dtypes horizon_timepoints
@@ -512,12 +520,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_horizon_timepoints",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative - horizons
-    numeric_columns = [c for c in df_hrzs.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df_hrzs.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -527,12 +534,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_horizons",
         severity="Mid",
-        errors=validate_values(df_hrzs, valid_numeric_columns, "horizon", min=0)
+        errors=validate_values(df_hrzs, valid_numeric_columns, "horizon", min=0),
     )
 
     # Check valid numeric columns are non-negative - horizon_timepoints
-    numeric_columns = [c for c in df_hrzs.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df_hrzs.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -542,8 +548,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_horizon_timepoints",
         severity="Mid",
-        errors=validate_values(df_hrz_tmps, valid_numeric_columns,
-                               ["horizon", "timepoint"], min=0)
+        errors=validate_values(
+            df_hrz_tmps, valid_numeric_columns, ["horizon", "timepoint"], min=0
+        ),
     )
 
     # One horizon cannot straddle multiple periods
@@ -557,10 +564,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         db_table="inputs_temporal_horizon_timepoints",
         severity="High",
         errors=validate_single_input(
-            df=df_periods_hrzs,
-            idx_col=["balancing_type_horizon", "horizon"],
-            msg=msg
-        )
+            df=df_periods_hrzs, idx_col=["balancing_type_horizon", "horizon"], msg=msg
+        ),
     )
 
     # Make sure there are no missing horizon inputs
@@ -575,6 +580,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         errors=validate_missing_inputs(
             df=df_hrz_tmps,
             col="horizon",
-            idx_col=["balancing_type_horizon", "timepoint"]
-        )
+            idx_col=["balancing_type_horizon", "timepoint"],
+        ),
     )
