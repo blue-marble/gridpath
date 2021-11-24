@@ -6,10 +6,7 @@ with open("./version.py") as fp:
     exec(fp.read(), version)
 
 # Set up extras
-extras_doc = [
-    "Sphinx==4.0.2",
-    "sphinx-argparse==0.2.5"
-]
+extras_doc = ["Sphinx==4.0.2", "sphinx-argparse==0.2.5"]
 extras_ui = [
     "eventlet==0.31.0",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
@@ -18,13 +15,13 @@ extras_ui = [
     "psutil==5.8.0",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
 ]
+extras_black = ["black"]
 
 extras_coverage = [
     "coverage",  # test coverage
     "coveralls",  # automated coverage results with Travis CI
 ]
-extras_all = extras_ui + extras_doc + extras_coverage
-
+extras_all = extras_ui + extras_doc + extras_black + extras_coverage
 
 setup(
     name="GridPath",
@@ -46,6 +43,8 @@ setup(
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF
         "pyutilib==6.0.0",  # used for solver temp file management
+        "coverage",  # test coverage
+        "coveralls",  # automated coverage results with Travis CI
     ],
     extras_require={
         "doc": extras_doc,
@@ -65,5 +64,5 @@ setup(
             "gridpath_run_server = ui.server.run_server:main",
             "gridpath_run_queue_manager = ui.server.run_queue_manager:main",
         ]
-    }
+    },
 )

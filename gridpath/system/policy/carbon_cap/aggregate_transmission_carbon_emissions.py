@@ -22,15 +22,21 @@ from __future__ import print_function
 from builtins import next
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, Expression, \
-    NonNegativeReals, value
+from pyomo.environ import (
+    Param,
+    Set,
+    Var,
+    Constraint,
+    Expression,
+    NonNegativeReals,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import \
-    carbon_cap_balance_emission_components
-from gridpath.transmission.operations.carbon_emissions import \
-    calculate_carbon_emissions_imports
-
+from gridpath.auxiliary.dynamic_components import carbon_cap_balance_emission_components
+from gridpath.transmission.operations.carbon_emissions import (
+    calculate_carbon_emissions_imports,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -40,6 +46,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+
     def total_carbon_emissions_imports_rule(mod, z, p):
         """
         Calculate total emissions from all carbonaceous transmission lines
@@ -49,19 +56,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return sum(mod.Import_Carbon_Emissions_Tons[tx, tmp]
-                   * mod.hrs_in_tmp[tmp]
-                   * mod.tmp_weight[tmp]
-                   for (tx, tmp) in
-                   mod.CRB_TX_OPR_TMPS
-                   if tx in
-                   mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-                   and tmp in mod.TMPS_IN_PRD[p]
-                   )
+        return sum(
+            mod.Import_Carbon_Emissions_Tons[tx, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for (tx, tmp) in mod.CRB_TX_OPR_TMPS
+            if tx in mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
+            and tmp in mod.TMPS_IN_PRD[p]
+        )
 
     m.Total_Carbon_Emission_Imports_Tons = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
-        rule=total_carbon_emissions_imports_rule
+        rule=total_carbon_emissions_imports_rule,
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -90,15 +96,13 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
     :param p:
     :return:
     """
-    return sum(calculate_carbon_emissions_imports(mod, tx, tmp)
-               * mod.hrs_in_tmp[tmp]
-               * mod.tmp_weight[tmp]
-               for (tx, tmp) in
-               mod.CRB_TX_OPR_TMPS
-               if tx in
-               mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-               and tmp in mod.TMPS_IN_PRD[p]
-               )
+    return sum(
+        calculate_carbon_emissions_imports(mod, tx, tmp)
+        * mod.hrs_in_tmp[tmp]
+        * mod.tmp_weight[tmp]
+        for (tx, tmp) in mod.CRB_TX_OPR_TMPS
+        if tx in mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z] and tmp in mod.TMPS_IN_PRD[p]
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -111,25 +115,41 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results", "carbon_cap_total_transmission.csv"),
-              "w", newline="") as carbon_results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "carbon_cap_total_transmission.csv",
+        ),
+        "w",
+        newline="",
+    ) as carbon_results_file:
         writer = csv.writer(carbon_results_file)
-        writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target",
-                         "transmission_carbon_emissions",
-                         "transmission_carbon_emissions_degen"])
+        writer.writerow(
+            [
+                "carbon_cap_zone",
+                "period",
+                "carbon_cap_target",
+                "transmission_carbon_emissions",
+                "transmission_carbon_emissions_degen",
+            ]
+        )
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
-            writer.writerow([
-                z,
-                p,
-                float(m.carbon_cap_target[z, p]),
-                value(m.Total_Carbon_Emission_Imports_Tons[z, p]),
-                total_carbon_emissions_imports_degen_expr_rule(m, z, p)
-            ])
+            writer.writerow(
+                [
+                    z,
+                    p,
+                    float(m.carbon_cap_target[z, p]),
+                    value(m.Total_Carbon_Emission_Imports_Tons[z, p]),
+                    total_carbon_emissions_imports_degen_expr_rule(m, z, p),
+                ]
+            )
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -156,14 +176,18 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=nullify_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
 
     results = []
-    with open(os.path.join(results_directory,
-                           "carbon_cap_total_transmission.csv"), "r") as \
-            emissions_file:
+    with open(
+        os.path.join(results_directory, "carbon_cap_total_transmission.csv"), "r"
+    ) as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -172,12 +196,17 @@ def import_results_into_database(
             period = row[1]
             tx_carbon_emissions = row[3]
             tx_carbon_emissions_degen = row[4]
-            
+
             results.append(
-                (tx_carbon_emissions,
+                (
+                    tx_carbon_emissions,
                     tx_carbon_emissions_degen,
-                    scenario_id, carbon_cap_zone, period,
-                    subproblem, stage)
+                    scenario_id,
+                    carbon_cap_zone,
+                    period,
+                    subproblem,
+                    stage,
+                )
             )
 
     imports_sql = """
@@ -201,6 +230,10 @@ def import_results_into_database(
            AND subproblem_id = ?
            AND stage_id = ?;
            """
-    spin_on_database_lock(conn=db, cursor=c, sql=total_degen_sql,
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=total_degen_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )

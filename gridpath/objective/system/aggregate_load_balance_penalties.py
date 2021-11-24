@@ -40,38 +40,42 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.Max_Unserved_Load_Penalty = Var(
-        m.LOAD_ZONES,
-        within=NonNegativeReals,
-        initialize=0
+        m.LOAD_ZONES, within=NonNegativeReals, initialize=0
     )
 
     def max_unserved_load_penalty_constraint_rule(mod, lz, tmp):
         if mod.max_unserved_load_penalty_per_mw[lz] == 0:
             return Constraint.Skip
         else:
-            return mod.Max_Unserved_Load_Penalty[lz] >= \
-                   mod.Unserved_Energy_MW_Expression[lz, tmp]
+            return (
+                mod.Max_Unserved_Load_Penalty[lz]
+                >= mod.Unserved_Energy_MW_Expression[lz, tmp]
+            )
 
     m.Max_Unserved_Load_Penalty_Constraint = Constraint(
-        m.LOAD_ZONES, m.TMPS,
-        rule=max_unserved_load_penalty_constraint_rule
+        m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_penalty_constraint_rule
     )
 
     def total_penalty_costs_rule(mod):
-        return sum((mod.Unserved_Energy_MW_Expression[z, tmp]
-                    * mod.unserved_energy_penalty_per_mwh[z] +
-                    mod.Overgeneration_MW_Expression[z, tmp]
-                    * mod.overgeneration_penalty_per_mw[z])
-                   * mod.hrs_in_tmp[tmp]
-                   * mod.tmp_weight[tmp]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for z in mod.LOAD_ZONES for tmp in mod.TMPS) \
-            + sum(mod.Max_Unserved_Load_Penalty[z]
-                  * mod.max_unserved_load_penalty_per_mw[z]
-                  for z in mod.LOAD_ZONES)
-    m.Total_Load_Balance_Penalty_Costs = Expression(
-        rule=total_penalty_costs_rule)
+        return sum(
+            (
+                mod.Unserved_Energy_MW_Expression[z, tmp]
+                * mod.unserved_energy_penalty_per_mwh[z]
+                + mod.Overgeneration_MW_Expression[z, tmp]
+                * mod.overgeneration_penalty_per_mw[z]
+            )
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            * mod.number_years_represented[mod.period[tmp]]
+            * mod.discount_factor[mod.period[tmp]]
+            for z in mod.LOAD_ZONES
+            for tmp in mod.TMPS
+        ) + sum(
+            mod.Max_Unserved_Load_Penalty[z] * mod.max_unserved_load_penalty_per_mw[z]
+            for z in mod.LOAD_ZONES
+        )
+
+    m.Total_Load_Balance_Penalty_Costs = Expression(rule=total_penalty_costs_rule)
 
     record_dynamic_components(dynamic_components=d)
 

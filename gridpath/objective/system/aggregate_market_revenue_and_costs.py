@@ -18,8 +18,7 @@ This module adds market revenue and costs to the objective function components.
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import cost_components, \
-    revenue_components
+from gridpath.auxiliary.dynamic_components import cost_components, revenue_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -31,6 +30,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     dynamic component to the objective function.
 
     """
+
     def total_market_revenue_rule(mod):
         return sum(
             mod.Total_Market_Sales[market, tmp]
@@ -39,8 +39,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for market in mod.MARKETS for tmp in mod.TMPS
+            for market in mod.MARKETS
+            for tmp in mod.TMPS
         )
+
     m.Total_Market_Revenue = Expression(rule=total_market_revenue_rule)
 
     def total_market_cost_rule(mod):
@@ -51,8 +53,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for market in mod.MARKETS for tmp in mod.TMPS
+            for market in mod.MARKETS
+            for tmp in mod.TMPS
         )
+
     m.Total_Market_Cost = Expression(rule=total_market_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
@@ -66,6 +70,4 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append("Total_Market_Cost")
-    getattr(dynamic_components, revenue_components).append(
-        "Total_Market_Revenue"
-    )
+    getattr(dynamic_components, revenue_components).append("Total_Market_Revenue")

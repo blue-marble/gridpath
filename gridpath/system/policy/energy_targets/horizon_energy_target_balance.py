@@ -39,17 +39,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.Horizon_Energy_Target_Shortage_MWh = Var(
-        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
-        within=NonNegativeReals
+        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET, within=NonNegativeReals
     )
 
     def violation_expression_rule(mod, z, bt, h):
-        return mod.Horizon_Energy_Target_Shortage_MWh[z, bt, h] \
+        return (
+            mod.Horizon_Energy_Target_Shortage_MWh[z, bt, h]
             * mod.energy_target_allow_violation[z]
+        )
 
     m.Horizon_Energy_Target_Shortage_MWh_Expression = Expression(
         m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
-        rule=violation_expression_rule
+        rule=violation_expression_rule,
     )
 
     def energy_target_rule(mod, z, bt, h):
@@ -61,13 +62,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param h:
         :return:
         """
-        return mod.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h] \
-            + mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h] \
+        return (
+            mod.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+            + mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]
             >= mod.Horizon_Energy_Target[z, bt, h]
+        )
 
     m.Horizon_Energy_Target_Constraint = Constraint(
-        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET,
-        rule=energy_target_rule
+        m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET, rule=energy_target_rule
     )
 
 
@@ -81,57 +83,84 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), 
-                           "results", "horizon_energy_target.csv"),
-              "w", newline="") as energy_target_results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "horizon_energy_target.csv",
+        ),
+        "w",
+        newline="",
+    ) as energy_target_results_file:
         writer = csv.writer(energy_target_results_file)
-        writer.writerow(["energy_target_zone", "balancing_type", "horizon",
-                         "energy_target_mwh",
-                         "delivered_energy_target_energy_mwh",
-                         "curtailed_energy_target_energy_mwh",
-                         "total_energy_target_energy_mwh",
-                         "fraction_of_energy_target_met",
-                         "fraction_of_energy_target_energy_curtailed",
-                         "energy_target_shortage_mwh"])
+        writer.writerow(
+            [
+                "energy_target_zone",
+                "balancing_type",
+                "horizon",
+                "energy_target_mwh",
+                "delivered_energy_target_energy_mwh",
+                "curtailed_energy_target_energy_mwh",
+                "total_energy_target_energy_mwh",
+                "fraction_of_energy_target_met",
+                "fraction_of_energy_target_energy_curtailed",
+                "energy_target_shortage_mwh",
+            ]
+        )
         for (z, bt, h) in m.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET:
-            writer.writerow([
-                z,
-                bt,
-                h,
-                value(m.Horizon_Energy_Target[z, bt, h]),
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
-                          z, bt, h]),
-                value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
-                          z, bt, h]),
-                value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
-                          z, bt, h]) +
-                value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
-                          z, bt, h]),
-                1 if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
-                else value(
-                    m.Total_Delivered_Horizon_Energy_Target_Energy_MWh
-                    [z, bt, h]) /
-                float(m.horizon_energy_target_mwh[z, bt, h]),
-                0 if (value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
-                                z, bt, h])
-                      + value(
-                            m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
-                                z, bt, h])) == 0
-                else value(
-                    m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
-                        z, bt, h]) /
-                (value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[
-                           z, bt, h])
-                 + value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[
-                             z, bt, h])),
-                value(m.Horizon_Energy_Target_Shortage_MWh_Expression[
-                          z, bt, h])
-            ])
+            writer.writerow(
+                [
+                    z,
+                    bt,
+                    h,
+                    value(m.Horizon_Energy_Target[z, bt, h]),
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
+                    value(m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]),
+                    value(m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h])
+                    + value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    ),
+                    1
+                    if float(m.horizon_energy_target_mwh[z, bt, h]) == 0
+                    else value(
+                        m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                    / float(m.horizon_energy_target_mwh[z, bt, h]),
+                    0
+                    if (
+                        value(
+                            m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                        )
+                        + value(
+                            m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                        )
+                    )
+                    == 0
+                    else value(
+                        m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                    )
+                    / (
+                        value(
+                            m.Total_Delivered_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                        )
+                        + value(
+                            m.Total_Curtailed_Horizon_Energy_Target_Energy_MWh[z, bt, h]
+                        )
+                    ),
+                    value(m.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]),
+                ]
+            )
 
 
 def save_duals(m):
-    m.constraint_indices["Horizon_Energy_Target_Constraint"] = \
-        ["energy_target_zone", "balancing_type", "horizon", "dual"]
+    m.constraint_indices["Horizon_Energy_Target_Constraint"] = [
+        "energy_target_zone",
+        "balancing_type",
+        "horizon",
+        "dual",
+    ]
 
 
 def summarize_results(scenario_directory, subproblem, stage):
@@ -151,25 +180,31 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Open in 'append' mode, so that results already written by other
     # modules are not overridden
     with open(summary_results_file, "a") as outfile:
-        outfile.write(
-            "\n### HORIZON ENERGY TARGET RESULTS ###\n"
-        )
+        outfile.write("\n### HORIZON ENERGY TARGET RESULTS ###\n")
 
     # All these files are small, so won't be setting indices
 
     # Get the main energy-target results file
-    energy_target_df = \
-        pd.read_csv(os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results",
-            "horizon_energy_target.csv")
-                    )
+    energy_target_df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "horizon_energy_target.csv",
+        )
+    )
 
     # Get the energy-target dual results
-    energy_target_duals_df = \
-        pd.read_csv(os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results",
-            "Horizon_Energy_Target_Constraint.csv")
+    energy_target_duals_df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "Horizon_Energy_Target_Constraint.csv",
         )
+    )
 
     # # Get the input metadata for periods
     # periods_df = \
@@ -183,35 +218,42 @@ def summarize_results(scenario_directory, subproblem, stage):
             right=energy_target_duals_df,
             how="left",
             left_on=["energy_target_zone", "balancing_type", "horizon"],
-            right_on=["energy_target_zone", "balancing_type", "horizon"]
+            right_on=["energy_target_zone", "balancing_type", "horizon"],
         )
     )
 
-    results_df.set_index(["energy_target_zone", "balancing_type", "horizon"],
-                         inplace=True,
-                         verify_integrity=True)
+    results_df.set_index(
+        ["energy_target_zone", "balancing_type", "horizon"],
+        inplace=True,
+        verify_integrity=True,
+    )
 
     # Calculate:
     # 1) the percent of energy-target energy that was curtailed
     # 2) the marginal energy-target cost per MWh based on the energy-target constraint duals --
     # to convert back to 'real' dollars, we need to divide by the discount
     # factor and the number of years a period represents
-    results_df["percent_curtailed"] = pd.Series(
-        index=results_df.index, dtype="float64"
-    )
+    results_df["percent_curtailed"] = pd.Series(index=results_df.index, dtype="float64")
     results_df["energy_target_marginal_cost_per_mwh"] = pd.Series(
         index=results_df.index, dtype="float64"
     )
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
-        if (results_df.delivered_energy_target_energy_mwh[indx] +
-                results_df.curtailed_energy_target_energy_mwh[indx]) == 0:
+        if (
+            results_df.delivered_energy_target_energy_mwh[indx]
+            + results_df.curtailed_energy_target_energy_mwh[indx]
+        ) == 0:
             pct = 0
         else:
-            pct = results_df.curtailed_energy_target_energy_mwh[indx] \
-                / (results_df.delivered_energy_target_energy_mwh[indx] +
-                   results_df.curtailed_energy_target_energy_mwh[indx]) * 100
+            pct = (
+                results_df.curtailed_energy_target_energy_mwh[indx]
+                / (
+                    results_df.delivered_energy_target_energy_mwh[indx]
+                    + results_df.curtailed_energy_target_energy_mwh[indx]
+                )
+                * 100
+            )
         results_df.percent_curtailed[indx] = pct
 
         # results_df.energy_target_marginal_cost_per_mwh[indx] = \
@@ -249,16 +291,19 @@ def import_results_into_database(
     """
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_system_horizon_energy_target",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
-    
+
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "horizon_energy_target.csv"), "r") as \
-            energy_target_file:
+    with open(
+        os.path.join(results_directory, "horizon_energy_target.csv"), "r"
+    ) as energy_target_file:
         reader = csv.reader(energy_target_file)
 
         next(reader)  # skip header
@@ -275,12 +320,23 @@ def import_results_into_database(
             shortage = row[9]
 
             results.append(
-                (scenario_id, energy_target_zone, balancing_type,
-                 horizon, subproblem, stage, energy_target,
-                 energy_target_provision, curtailment, total,
-                 fraction_met, fraction_curtailed, shortage)
+                (
+                    scenario_id,
+                    energy_target_zone,
+                    balancing_type,
+                    horizon,
+                    subproblem,
+                    stage,
+                    energy_target,
+                    energy_target_provision,
+                    curtailment,
+                    total,
+                    fraction_met,
+                    fraction_curtailed,
+                    shortage,
+                )
             )
-            
+
     insert_temp_sql = """
         INSERT INTO temp_results_system_horizon_energy_target{}
          (scenario_id, energy_target_zone, balancing_type_horizon, horizon, 
@@ -290,7 +346,9 @@ def import_results_into_database(
          fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
          energy_target_shortage_mwh)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(scenario_id)
+         """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -312,22 +370,23 @@ def import_results_into_database(
         FROM temp_results_system_horizon_energy_target{}
         ORDER BY scenario_id, energy_target_zone, balancing_type_horizon, 
         horizon, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Update duals
     duals_results = []
-    with open(os.path.join(results_directory, "Horizon_Energy_Target_Constraint.csv"),
-              "r") as energy_target_duals_file:
+    with open(
+        os.path.join(results_directory, "Horizon_Energy_Target_Constraint.csv"), "r"
+    ) as energy_target_duals_file:
         reader = csv.reader(energy_target_duals_file)
 
         next(reader)  # skip header
 
         for row in reader:
             duals_results.append(
-                (row[3], row[0], row[1], row[2], scenario_id, subproblem,
-                 stage)
+                (row[3], row[0], row[1], row[2], scenario_id, subproblem, stage)
             )
 
     duals_sql = """
@@ -354,6 +413,3 @@ def import_results_into_database(
     # spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
     #                       data=(scenario_id, subproblem, stage),
     #                       many=False)
-
-
-

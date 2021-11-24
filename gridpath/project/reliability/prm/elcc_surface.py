@@ -19,14 +19,14 @@ Contributions to ELCC surface
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, \
-    value
+from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.project.operations.operational_types.common_functions import \
-    get_param_dict
+from gridpath.project.operations.operational_types.common_functions import (
+    get_param_dict,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -43,26 +43,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PRM_PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PRM_PROJECTS", "contributes_to_elcc_surface", 1
-        )
+        ),
     )
 
-    m.elcc_surface_cap_factor = Param(
-        m.ELCC_SURFACE_PROJECTS,
-        within=NonNegativeReals
-    )
+    m.elcc_surface_cap_factor = Param(m.ELCC_SURFACE_PROJECTS, within=NonNegativeReals)
 
-    m.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE = \
-        Set(m.PRM_ZONES, within=m.ELCC_SURFACE_PROJECTS,
-            initialize=lambda mod, prm_z: subset_init_by_param_value(
-                mod, "ELCC_SURFACE_PROJECTS", "prm_zone", prm_z
-                )
-            )
+    m.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE = Set(
+        m.PRM_ZONES,
+        within=m.ELCC_SURFACE_PROJECTS,
+        initialize=lambda mod, prm_z: subset_init_by_param_value(
+            mod, "ELCC_SURFACE_PROJECTS", "prm_zone", prm_z
+        ),
+    )
 
     # Define the ELCC surface
     # Surface is limited to 1000 facets
     m.PROJECT_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3,
-        within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
+        dimen=3, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
     )
 
     # The project coefficient for the surface
@@ -75,9 +72,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PROJECT_PERIOD_ELCC_SURFACE_FACETS, within=NonNegativeReals
     )
 
-    m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE = Set(
-        within=m.PRM_ZONES * m.PERIODS
-    )
+    m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE = Set(within=m.PRM_ZONES * m.PERIODS)
 
     # Loads for normalization
     m.prm_peak_load_mw = Param(
@@ -90,26 +85,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # ELCC surface contribution of each project
     def elcc_surface_contribution_rule(mod, prj, p, f):
         """
-        
-        :param mod: 
-        :param prj: 
-        :param p: 
-        :param f: 
-        :return: 
+
+        :param mod:
+        :param prj:
+        :param p:
+        :param f:
+        :return:
         """
         if (prj, p) in mod.PRJ_OPR_PRDS:
-            return mod.elcc_surface_coefficient[prj, p, f] \
-                   * mod.prm_peak_load_mw[mod.prm_zone[prj], p] \
-                   * mod.ELCC_Eligible_Capacity_MW[prj, p]\
-                   * 8760 \
-                   * mod.elcc_surface_cap_factor[prj] \
-                   / mod.prm_annual_load_mwh[mod.prm_zone[prj], p]
+            return (
+                mod.elcc_surface_coefficient[prj, p, f]
+                * mod.prm_peak_load_mw[mod.prm_zone[prj], p]
+                * mod.ELCC_Eligible_Capacity_MW[prj, p]
+                * 8760
+                * mod.elcc_surface_cap_factor[prj]
+                / mod.prm_annual_load_mwh[mod.prm_zone[prj], p]
+            )
         else:
             return 0
 
     m.ELCC_Surface_Contribution_MW = Expression(
-        m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
-        rule=elcc_surface_contribution_rule
+        m.PROJECT_PERIOD_ELCC_SURFACE_FACETS, rule=elcc_surface_contribution_rule
     )
 
 
@@ -127,45 +123,50 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Projects that contribute to the ELCC surface
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"),
+            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+        ),
         select=("project", "contributes_to_elcc_surface"),
-        param=(m.contributes_to_elcc_surface,)
+        param=(m.contributes_to_elcc_surface,),
     )
 
     elcc_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs",
-                     "projects.tab"),
+        os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
         sep="\t",
-        usecols=["project", "contributes_to_elcc_surface",
-                 "elcc_surface_cap_factor"],
-        dtype=object  # we'll be checking for objects later
+        usecols=["project", "contributes_to_elcc_surface", "elcc_surface_cap_factor"],
+        dtype=object,  # we'll be checking for objects later
     )
 
     elcc_proj_df = elcc_df[elcc_df["contributes_to_elcc_surface"] == "1"]
 
     data_portal.data()["elcc_surface_cap_factor"] = get_param_dict(
-        df=elcc_proj_df, column_name="elcc_surface_cap_factor",
-        cast_as_type=float
+        df=elcc_proj_df, column_name="elcc_surface_cap_factor", cast_as_type=float
     )
 
     # Project-period-facet
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
-            "project_elcc_surface_coefficients.tab"),
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "project_elcc_surface_coefficients.tab",
+        ),
         index=m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
         param=m.elcc_surface_coefficient,
-        select=("project", "period", "facet", "elcc_surface_coefficient")
+        select=("project", "period", "facet", "elcc_surface_coefficient"),
     )
 
     # Loads for the normalization
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
-            "elcc_surface_normalization_loads.tab"
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "elcc_surface_normalization_loads.tab",
         ),
         index=m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE,
-        param=(m.prm_peak_load_mw, m.prm_annual_load_mwh)
+        param=(m.prm_peak_load_mw, m.prm_annual_load_mwh),
     )
 
 
@@ -179,29 +180,47 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "prm_project_elcc_surface_contribution.csv"),
-              "w", newline="") as \
-            results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "prm_project_elcc_surface_contribution.csv",
+        ),
+        "w",
+        newline="",
+    ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["project", "period", "prm_zone", "facet",
-                         "load_zone", "technology", "capacity_mw",
-                         "elcc_eligible_capacity_mw",
-                         "elcc_surface_coefficient",
-                         "elcc_mw"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "prm_zone",
+                "facet",
+                "load_zone",
+                "technology",
+                "capacity_mw",
+                "elcc_eligible_capacity_mw",
+                "elcc_surface_coefficient",
+                "elcc_mw",
+            ]
+        )
         for (prj, period, facet) in m.PROJECT_PERIOD_ELCC_SURFACE_FACETS:
-            writer.writerow([
-                prj,
-                period,
-                m.prm_zone[prj],
-                facet,
-                m.load_zone[prj],
-                m.technology[prj],
-                value(m.Capacity_MW[prj, period]),
-                value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                value(m.elcc_surface_coefficient[prj, period, facet]),
-                value(m.ELCC_Surface_Contribution_MW[prj, period, facet])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    period,
+                    m.prm_zone[prj],
+                    facet,
+                    m.load_zone[prj],
+                    m.technology[prj],
+                    value(m.Capacity_MW[prj, period]),
+                    value(m.ELCC_Eligible_Capacity_MW[prj, period]),
+                    value(m.elcc_surface_coefficient[prj, period, facet]),
+                    value(m.ELCC_Surface_Contribution_MW[prj, period, facet]),
+                ]
+            )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -218,7 +237,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c1 = conn.cursor()
 
     # Which projects will contribute to the surface and their cap factors
-    project_contr_cf = c1.execute("""
+    project_contr_cf = c1.execute(
+        """
         SELECT project, contributes_to_elcc_surface, elcc_surface_cap_factor
         FROM 
         -- Only select project in the scenario's portfolio
@@ -247,13 +267,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID
+            subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
     c2 = conn.cursor()
     # The coefficients for the surface
-    coefficients = c2.execute("""
+    coefficients = c2.execute(
+        """
         SELECT project, period, facet, elcc_surface_coefficient
         FROM
         (SELECT project
@@ -268,13 +289,14 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         AND temporal_scenario_id = {};""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
+            subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
     c3 = conn.cursor()
     # The peak and annual load for the normalization
-    elcc_norm_loads = c3.execute("""
+    elcc_norm_loads = c3.execute(
+        """
         SELECT prm_zone, period, prm_peak_load_mw, prm_annual_load_mwh
         FROM 
         -- only select the PRM zones and periods in the scenario and cross 
@@ -294,7 +316,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID
+            subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
@@ -317,7 +339,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and
@@ -330,15 +354,20 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     project_contr_cf, coefficients, elcc_norm_loads = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_contr_cf_dict = dict()
     for (prj, contr, cf) in project_contr_cf:
         prj_contr_cf_dict[str(prj)] = (contr, cf)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
@@ -354,10 +383,16 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             prj = row[0]
             # If project specified add the values
             if prj in list(prj_contr_cf_dict.keys()):
-                row.append(prj_contr_cf_dict[prj][0] if prj_contr_cf_dict[
-                    prj][0] is not None else ".")
-                row.append(prj_contr_cf_dict[prj][1] if prj_contr_cf_dict[
-                    prj][1] is not None else ".")
+                row.append(
+                    prj_contr_cf_dict[prj][0]
+                    if prj_contr_cf_dict[prj][0] is not None
+                    else "."
+                )
+                row.append(
+                    prj_contr_cf_dict[prj][1]
+                    if prj_contr_cf_dict[prj][1] is not None
+                    else "."
+                )
                 new_rows.append(row)
             # If project not specified, specify no chars
             else:
@@ -365,30 +400,47 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
-            projects_file_out:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "project_elcc_surface_coefficients.tab"), "w", newline="") as \
-            coefficients_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_elcc_surface_coefficients.tab",
+        ),
+        "w",
+        newline="",
+    ) as coefficients_file:
         writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
-        writer.writerow(
-            ["project", "period", "facet", "elcc_surface_coefficient"]
-        )
+        writer.writerow(["project", "period", "facet", "elcc_surface_coefficient"])
         # Write data
         for row in coefficients:
             writer.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "elcc_surface_normalization_loads.tab"), "w",
-              newline="") as \
-            coefficients_file:
-        writer = csv.writer(coefficients_file, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "elcc_surface_normalization_loads.tab",
+        ),
+        "w",
+        newline="",
+    ) as coefficients_file:
+        writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
         writer.writerow(
@@ -400,32 +452,36 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
-    :param scenario_id: 
-    :param c: 
-    :param db: 
+    :param scenario_id:
+    :param c:
+    :param db:
     :param results_directory:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("project elcc surface")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_elcc_surface",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "prm_project_elcc_surface_contribution.csv"), "r") \
-            as elcc_file:
+    with open(
+        os.path.join(results_directory, "prm_project_elcc_surface_contribution.csv"),
+        "r",
+    ) as elcc_file:
         reader = csv.reader(elcc_file)
 
         next(reader)  # skip header
@@ -440,11 +496,23 @@ def import_results_into_database(
             elcc_eligible_capacity = row[7]
             coefficient = row[8]
             elcc = row[9]
-            
+
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 prm_zone, facet, technology, load_zone,
-                 capacity, elcc_eligible_capacity, coefficient, elcc)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    prm_zone,
+                    facet,
+                    technology,
+                    load_zone,
+                    capacity,
+                    elcc_eligible_capacity,
+                    coefficient,
+                    elcc,
+                )
             )
 
     insert_temp_sql = """
@@ -454,7 +522,9 @@ def import_results_into_database(
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -471,6 +541,7 @@ def import_results_into_database(
         elcc_surface_coefficient, elcc_mw
         FROM temp_results_project_elcc_surface{}
         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

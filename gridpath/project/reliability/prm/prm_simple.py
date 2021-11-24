@@ -27,8 +27,11 @@ from pyomo.environ import Param, PercentFraction, Expression, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_values, validate_missing_inputs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_values,
+    validate_missing_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -45,17 +48,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def elcc_simple_rule(mod, g, p):
         """
-        
-        :param g: 
-        :param p: 
-        :return: 
-        """
-        return mod.ELCC_Eligible_Capacity_MW[g, p] \
-            * mod.elcc_simple_fraction[g]
 
-    m.PRM_Simple_Contribution_MW = Expression(
-        m.PRM_PRJ_OPR_PRDS, rule=elcc_simple_rule
-    )
+        :param g:
+        :param p:
+        :return:
+        """
+        return mod.ELCC_Eligible_Capacity_MW[g, p] * mod.elcc_simple_fraction[g]
+
+    m.PRM_Simple_Contribution_MW = Expression(m.PRM_PRJ_OPR_PRDS, rule=elcc_simple_rule)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -69,12 +69,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "projects.tab"),
-                     select=("project", "elcc_simple_fraction"),
-                     param=(m.elcc_simple_fraction,)
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+        ),
+        select=("project", "elcc_simple_fraction"),
+        param=(m.elcc_simple_fraction,),
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -87,29 +88,45 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "prm_project_elcc_simple_contribution.csv"),
-              "w", newline="") as \
-            results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "prm_project_elcc_simple_contribution.csv",
+        ),
+        "w",
+        newline="",
+    ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["project", "period", "prm_zone", "technology",
-                         "load_zone",
-                         "capacity_mw",
-                         "elcc_eligible_capacity_mw",
-                         "elcc_simple_fraction",
-                         "elcc_mw"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "prm_zone",
+                "technology",
+                "load_zone",
+                "capacity_mw",
+                "elcc_eligible_capacity_mw",
+                "elcc_simple_fraction",
+                "elcc_mw",
+            ]
+        )
         for (prj, period) in m.PRM_PRJ_OPR_PRDS:
-            writer.writerow([
-                prj,
-                period,
-                m.prm_zone[prj],
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.Capacity_MW[prj, period]),
-                value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                value(m.elcc_simple_fraction[prj]),
-                value(m.PRM_Simple_Contribution_MW[prj, period])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    period,
+                    m.prm_zone[prj],
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.Capacity_MW[prj, period]),
+                    value(m.ELCC_Eligible_Capacity_MW[prj, period]),
+                    value(m.elcc_simple_fraction[prj]),
+                    value(m.PRM_Simple_Contribution_MW[prj, period]),
+                ]
+            )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -135,7 +152,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE project_elcc_chars_scenario_id = {}) as frac_tbl
         USING (project);""".format(
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
         )
     )
 
@@ -167,7 +184,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_elcc_chars",
         severity="High",
-        errors=validate_values(df, ["elcc_simple_fraction"], min=0, max=1)
+        errors=validate_values(df, ["elcc_simple_fraction"], min=0, max=1),
     )
 
     # Make sure fraction is specified
@@ -179,11 +196,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_elcc_chars",
         severity="High",
-        errors=validate_missing_inputs(df, "elcc_simple_fraction")
+        errors=validate_missing_inputs(df, "elcc_simple_fraction"),
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -195,15 +214,20 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     project_fractions = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_frac_dict = dict()
     for (prj, fraction) in project_fractions:
         prj_frac_dict[str(prj)] = "." if fraction is None else str(fraction)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
@@ -224,39 +248,47 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
-            projects_file_out:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
-    :param scenario_id: 
-    :param c: 
-    :param db: 
+    :param scenario_id:
+    :param c:
+    :param db:
     :param results_directory:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("project simple elcc")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_elcc_simple",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "prm_project_elcc_simple_contribution.csv"), "r") \
-            as elcc_file:
+    with open(
+        os.path.join(results_directory, "prm_project_elcc_simple_contribution.csv"), "r"
+    ) as elcc_file:
         reader = csv.reader(elcc_file)
 
         next(reader)  # skip header
@@ -270,11 +302,22 @@ def import_results_into_database(
             elcc_eligible_capacity = row[6]
             prm_fraction = row[7]
             elcc = row[8]
-            
+
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                        prm_zone, technology, load_zone,
-                        capacity, elcc_eligible_capacity, prm_fraction, elcc)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    prm_zone,
+                    technology,
+                    load_zone,
+                    capacity,
+                    elcc_eligible_capacity,
+                    prm_fraction,
+                    elcc,
+                )
             )
 
     insert_temp_sql = """
@@ -284,7 +327,9 @@ def import_results_into_database(
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_simple_contribution_fraction, elcc_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -301,6 +346,7 @@ def import_results_into_database(
         elcc_simple_contribution_fraction, elcc_mw
         FROM temp_results_project_elcc_simple{}
         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

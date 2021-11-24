@@ -28,6 +28,7 @@ from gridpath.auxiliary.db_interface import setup_results_import
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
@@ -47,15 +48,20 @@ def import_results_into_database(
         print("project capacity")
 
     # Delete prior results and create temporary import table for ordering
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_capacity",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_project_capacity",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory, "capacity_all.csv"), "r") as \
-            capacity_file:
+    with open(
+        os.path.join(results_directory, "capacity_all.csv"), "r"
+    ) as capacity_file:
         reader = csv.reader(capacity_file)
 
         next(reader)  # skip header
@@ -71,10 +77,20 @@ def import_results_into_database(
             energy_capacity_mwh = None if row[8] == "" else row[8]
 
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 capacity_type, technology, load_zone,
-                 capacity_mw, hyb_gen_capacity_mw, hyb_stor_capacity_mw,
-                 energy_capacity_mwh)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    capacity_type,
+                    technology,
+                    load_zone,
+                    capacity_mw,
+                    hyb_gen_capacity_mw,
+                    hyb_stor_capacity_mw,
+                    energy_capacity_mwh,
+                )
             )
 
     insert_temp_sql = """
@@ -83,7 +99,9 @@ def import_results_into_database(
         technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
         hyb_stor_capacity_mw, energy_capacity_mwh)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -98,6 +116,7 @@ def import_results_into_database(
         hyb_stor_capacity_mw, energy_capacity_mwh
         FROM temp_results_project_capacity{}
         ORDER BY scenario_id, project, period, subproblem_id, 
-        stage_id;""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        stage_id;""".format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

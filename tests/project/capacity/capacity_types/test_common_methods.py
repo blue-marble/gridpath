@@ -18,21 +18,19 @@ from importlib import import_module
 import unittest
 
 
-NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.gen_new_lin"
+NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.gen_new_lin"
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestCapacityTypeCommonMethods(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_operational_periods_by_project_vintage(self):
         """
 
@@ -41,49 +39,68 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         test_case_numbers = [1, 2, 3, 4]
         test_case_params = {
             # within study period
-            1: ([2020, 2030, 2040, 2050],
+            1: (
+                [2020, 2030, 2040, 2050],
                 {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
                 {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
-                2030, 20),
+                2030,
+                20,
+            ),
             # within study period
-            2: ([2020, 2030, 2040, 2050],
+            2: (
+                [2020, 2030, 2040, 2050],
                 {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
                 {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
-                2040, 10),
+                2040,
+                10,
+            ),
             # all periods
-            3: ([2020, 2030, 2040, 2050],
+            3: (
+                [2020, 2030, 2040, 2050],
                 {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
                 {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
-                2020, 40),
+                2020,
+                40,
+            ),
             # outside study period
-            4: ([2020, 2030, 2040, 2050],
+            4: (
+                [2020, 2030, 2040, 2050],
                 {2020: 2020, 2030: 2030, 2040: 2040, 2050: 2050},
                 {2020: 2029, 2030: 2039, 2040: 2049, 2050: 2059},
-                2060, 10),
+                2060,
+                10,
+            ),
             # fractional years and lifetimes
-            5: ([1, 2, 3, 4],
+            5: (
+                [1, 2, 3, 4],
                 {1: 2020.0, 2: 2020.5, 3: 2021, 4: 2021.5},
                 {1: 2020.49, 2: 2020.99, 3: 2021.49, 4: 2021.99},
-                2020.2, 0.75)
+                2020.2,
+                0.75,
+            ),
         }
         expected_operational_periods_dict = {
-            1: [2030, 2040], 2: [2040], 3: [2020, 2030, 2040, 2050],
-            4: [], 5: [1, 2, 3]
+            1: [2030, 2040],
+            2: [2040],
+            3: [2020, 2030, 2040, 2050],
+            4: [],
+            5: [1, 2, 3],
         }
 
         for test_case in test_case_numbers:
-            expected_operational_periods = \
-                expected_operational_periods_dict[test_case]
-            actual_operational_periods = \
+            expected_operational_periods = expected_operational_periods_dict[test_case]
+            actual_operational_periods = (
                 MODULE_BEING_TESTED.operational_periods_by_project_vintage(
                     periods=test_case_params[test_case][0],
                     period_start_year=test_case_params[test_case][1],
                     period_end_year=test_case_params[test_case][2],
                     vintage=test_case_params[test_case][3],
-                    lifetime_yrs=test_case_params[test_case][4]
+                    lifetime_yrs=test_case_params[test_case][4],
                 )
-            self.assertListEqual(expected_operational_periods,
-                                 actual_operational_periods)
+            )
+            self.assertListEqual(
+                expected_operational_periods, actual_operational_periods
+            )
 
     def test_project_operational_periods(self):
         """
@@ -92,34 +109,51 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         :return:
         """
         project_vintages = [
-            ("G1", 2020), ("G1", 2030), ("G1", 2040), ("G1", 2050),
-            ("G2", 2030), ("G2", 2040), ("G3", 2020)
+            ("G1", 2020),
+            ("G1", 2030),
+            ("G1", 2040),
+            ("G1", 2050),
+            ("G2", 2030),
+            ("G2", 2040),
+            ("G3", 2020),
         ]
         operational_periods_by_project_vintage = {
-            ("G1", 2020): [2020, 2030, 2040], ("G1", 2030): [2030, 2040, 2050],
-            ("G1", 2040): [2040, 2050], ("G1", 2050): [2050],
-            ("G2", 2030): [2030], ("G2", 2040): [2040],
-            ("G3", 2020): [2020, 2030, 2040, 2050]
+            ("G1", 2020): [2020, 2030, 2040],
+            ("G1", 2030): [2030, 2040, 2050],
+            ("G1", 2040): [2040, 2050],
+            ("G1", 2050): [2050],
+            ("G2", 2030): [2030],
+            ("G2", 2040): [2040],
+            ("G3", 2020): [2020, 2030, 2040, 2050],
         }
 
-        expected_project_operational_periods = sorted([
-            ("G1", 2020), ("G1", 2030), ("G1", 2040), ("G1", 2050),
-            ("G2", 2030), ("G2", 2040),
-            ("G3", 2020), ("G3", 2030), ("G3", 2040), ("G3", 2050)
-        ])
+        expected_project_operational_periods = sorted(
+            [
+                ("G1", 2020),
+                ("G1", 2030),
+                ("G1", 2040),
+                ("G1", 2050),
+                ("G2", 2030),
+                ("G2", 2040),
+                ("G3", 2020),
+                ("G3", 2030),
+                ("G3", 2040),
+                ("G3", 2050),
+            ]
+        )
 
         actual_project_operational_periods = sorted(
             list(
                 MODULE_BEING_TESTED.project_operational_periods(
-                project_vintages_set=project_vintages,
-                operational_periods_by_project_vintage_set=
-                operational_periods_by_project_vintage
+                    project_vintages_set=project_vintages,
+                    operational_periods_by_project_vintage_set=operational_periods_by_project_vintage,
                 )
             )
         )
 
-        self.assertListEqual(expected_project_operational_periods,
-                             actual_project_operational_periods)
+        self.assertListEqual(
+            expected_project_operational_periods, actual_project_operational_periods
+        )
 
     def test_project_vintages_operational_in_period(self):
         """
@@ -128,37 +162,47 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         :return:
         """
         project_vintages = [
-            ("G1", 2020), ("G1", 2030), ("G1", 2040), ("G1", 2050),
-            ("G2", 2030), ("G2", 2040), ("G3", 2020)
+            ("G1", 2020),
+            ("G1", 2030),
+            ("G1", 2040),
+            ("G1", 2050),
+            ("G2", 2030),
+            ("G2", 2040),
+            ("G3", 2020),
         ]
         operational_periods_by_project_vintage = {
-            ("G1", 2020): [2020, 2030, 2040], ("G1", 2030): [2030, 2040, 2050],
-            ("G1", 2040): [2040, 2050], ("G1", 2050): [2050],
-            ("G2", 2030): [2030], ("G2", 2040): [2040],
-            ("G3", 2020): [2020, 2030, 2040, 2050]
+            ("G1", 2020): [2020, 2030, 2040],
+            ("G1", 2030): [2030, 2040, 2050],
+            ("G1", 2040): [2040, 2050],
+            ("G1", 2050): [2050],
+            ("G2", 2030): [2030],
+            ("G2", 2040): [2040],
+            ("G3", 2020): [2020, 2030, 2040, 2050],
         }
 
         expected_project_vintages_by_period = {
             2020: [("G1", 2020), ("G3", 2020)],
             2030: [("G1", 2020), ("G1", 2030), ("G2", 2030), ("G3", 2020)],
-            2040: [("G1", 2020), ("G1", 2030), ("G1", 2040), ("G2", 2040),
-                   ("G3", 2020)],
-            2050: [("G1", 2030), ("G1", 2040), ("G1", 2050), ("G3", 2020)]
+            2040: [
+                ("G1", 2020),
+                ("G1", 2030),
+                ("G1", 2040),
+                ("G2", 2040),
+                ("G3", 2020),
+            ],
+            2050: [("G1", 2030), ("G1", 2040), ("G1", 2050), ("G3", 2020)],
         }
 
         for p in [2020, 2030, 2040, 2050]:
-            expected_project_vintages = \
-                sorted(expected_project_vintages_by_period[p])
+            expected_project_vintages = sorted(expected_project_vintages_by_period[p])
             actual_project_vintages = sorted(
                 MODULE_BEING_TESTED.project_vintages_operational_in_period(
                     project_vintage_set=project_vintages,
-                    operational_periods_by_project_vintage_set=
-                    operational_periods_by_project_vintage,
-                    period=p
+                    operational_periods_by_project_vintage_set=operational_periods_by_project_vintage,
+                    period=p,
                 )
             )
-            self.assertListEqual(expected_project_vintages,
-                                 actual_project_vintages)
+            self.assertListEqual(expected_project_vintages, actual_project_vintages)
 
 
 if __name__ == "__main__":

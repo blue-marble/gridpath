@@ -21,11 +21,11 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -36,15 +36,19 @@ PREREQUISITE_MODULE_NAMES = [
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
     "system.policy.energy_targets.period_energy_target",
-    "project", "project.capacity.capacity",
+    "project",
+    "project.capacity.capacity",
     "project.availability.availability",
-    "project.fuels", "project.operations",
+    "project.fuels",
+    "project.operations",
     "project.operations.operational_types",
     "project.operations.power",
     "project.operations.energy_target_contributions",
-    "system.policy.energy_targets.aggregate_period_energy_target_contributions"
+    "system.policy.energy_targets.aggregate_period_energy_target_contributions",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.period_energy_target_balance"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.energy_targets.period_energy_target_balance"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -55,40 +59,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestRPSBalance(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -100,9 +105,10 @@ class TestRPSBalance(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
+
 
 if __name__ == "__main__":
     unittest.main()

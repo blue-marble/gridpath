@@ -32,5 +32,5 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "REGULATION_UP_ZONES",
         "REGULATION_UP_PROJECTS",
         "Provide_Regulation_Up_MW",
-        "Total_Regulation_Up_Provision_MW"
-        )
+        "Total_Regulation_Up_Provision_MW",
+    )

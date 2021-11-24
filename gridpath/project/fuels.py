@@ -21,8 +21,13 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_columns, validate_idxs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_dtypes,
+    get_expected_dtypes,
+    validate_columns,
+    validate_idxs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -36,8 +41,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=NonNegativeReals)
 
     m.fuel_price_per_mmbtu = Param(
-        m.FUELS, m.PERIODS, m.MONTHS,
-        within=NonNegativeReals
+        m.FUELS, m.PERIODS, m.MONTHS, within=NonNegativeReals
     )
 
 
@@ -63,9 +67,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
     else:
         data_portal.load(
-            filename=fuels_file,
-            index=m.FUELS,
-            param=m.co2_intensity_tons_per_mmbtu
+            filename=fuels_file, index=m.FUELS, param=m.co2_intensity_tons_per_mmbtu
         )
 
     # Load fuel prices only if there are data
@@ -78,10 +80,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     if fuels_df.empty:
         pass
     else:
-        data_portal.load(
-            filename=fuels_prices_file,
-            param=m.fuel_price_per_mmbtu
-        )
+        data_portal.load(filename=fuels_prices_file, param=m.fuel_price_per_mmbtu)
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -123,7 +122,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.FUEL_SCENARIO_ID
+            subscenarios.FUEL_SCENARIO_ID,
         )
     )
 
@@ -164,7 +163,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.FUEL_PRICE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
+            subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
@@ -183,7 +182,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Get the fuel input data
     fuels, fuel_prices = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Get the projects fuels
     c1 = conn.cursor()
@@ -198,7 +198,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         USING (project)
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -222,11 +222,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get relevant lists
     fuels = fuels_df["fuel"].to_list()
     actual_fuel_periods_months = list(
-        fuel_prices_df[["fuel", "period", "month"]]
-        .itertuples(index=False, name=None)
+        fuel_prices_df[["fuel", "period", "month"]].itertuples(index=False, name=None)
     )
-    req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months
-                               for f in fuels]
+    req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months for f in fuels]
 
     # Check data types
     expected_dtypes = get_expected_dtypes(
@@ -242,7 +240,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuels",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     dtype_errors, error_columns = validate_dtypes(fuel_prices_df, expected_dtypes)
@@ -254,7 +252,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuel_prices",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # TODO: couldn't this be a simple foreign key or is NULL not allowed then?
@@ -268,7 +266,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_columns(prj_df, "fuel", valids=fuels)
+        errors=validate_columns(prj_df, "fuel", valids=fuels),
     )
 
     # Check that fuel prices exist for the period and month
@@ -280,13 +278,17 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_fuel_prices",
         severity="High",
-        errors=validate_idxs(actual_idxs=actual_fuel_periods_months,
-                             req_idxs=req_fuel_periods_months,
-                             idx_label="(fuel, period, month)")
+        errors=validate_idxs(
+            actual_idxs=actual_fuel_periods_months,
+            req_idxs=req_fuel_periods_months,
+            idx_label="(fuel, period, month)",
+        ),
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     fuels.tab and fuel_prices.tab files.
@@ -299,30 +301,35 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     fuels, fuel_prices = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "fuels.tab"), "w", newline="") as \
-            fuels_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "fuels.tab"
+        ),
+        "w",
+        newline="",
+    ) as fuels_tab_file:
         writer = csv.writer(fuels_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(
-            ["FUELS", "co2_intensity_tons_per_mmbtu"]
-        )
+        writer.writerow(["FUELS", "co2_intensity_tons_per_mmbtu"])
 
         for row in fuels:
             writer.writerow(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "fuel_prices.tab"), "w", newline="") as \
-            fuel_prices_tab_file:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "fuel_prices.tab"
+        ),
+        "w",
+        newline="",
+    ) as fuel_prices_tab_file:
         writer = csv.writer(fuel_prices_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(
-            ["fuel", "period", "month", "fuel_price_per_mmbtu"]
-        )
+        writer.writerow(["fuel", "period", "month", "fuel_price_per_mmbtu"])
 
         for row in fuel_prices:
             writer.writerow(row)

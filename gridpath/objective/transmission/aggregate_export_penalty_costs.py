@@ -32,8 +32,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     def total_export_penalty_cost_rule(mod):
-        """
-        """
+        """ """
         return sum(
             mod.Export_Penalty_Cost[lz, tmp]
             * mod.hrs_in_tmp[tmp]
@@ -44,9 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             for tmp in mod.TMPS
         )
 
-    m.Total_Export_Penalty_Cost = Expression(
-        rule=total_export_penalty_cost_rule
-    )
+    m.Total_Export_Penalty_Cost = Expression(rule=total_export_penalty_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -58,5 +55,4 @@ def record_dynamic_components(dynamic_components):
     Add total transmission hurdle costs to cost components
     """
 
-    getattr(dynamic_components, cost_components).append(
-        "Total_Export_Penalty_Cost")
+    getattr(dynamic_components, cost_components).append("Total_Export_Penalty_Cost")

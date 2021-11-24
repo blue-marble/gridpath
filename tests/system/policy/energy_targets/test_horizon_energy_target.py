@@ -21,11 +21,11 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -34,10 +34,9 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "geography.energy_target_zones",
-    "system.load_balance.static_load_requirement"
+    "system.load_balance.static_load_requirement",
 ]
-NAME_OF_MODULE_BEING_TESTED = \
-    "system.policy.energy_targets.horizon_energy_target"
+NAME_OF_MODULE_BEING_TESTED = "system.policy.energy_targets.horizon_energy_target"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -48,40 +47,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestHorizonEnergyTarget(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -93,63 +93,95 @@ class TestHorizonEnergyTarget(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
-        expected_energy_target_zone_bt_horizons = sorted([
-            ("RPS_Zone_1", "year", 2020), ("RPS_Zone_1", "year", 2030),
-            ("RPS_Zone_2", "year", 2020), ("RPS_Zone_2", "year", 2030)
-        ])
-        actual_energy_target_zone_periods = sorted([
-            (z, bt, h) for (z, bt, h) in
-            instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
-        ])
-        self.assertListEqual(expected_energy_target_zone_bt_horizons,
-                             actual_energy_target_zone_periods)
+        expected_energy_target_zone_bt_horizons = sorted(
+            [
+                ("RPS_Zone_1", "year", 2020),
+                ("RPS_Zone_1", "year", 2030),
+                ("RPS_Zone_2", "year", 2020),
+                ("RPS_Zone_2", "year", 2030),
+            ]
+        )
+        actual_energy_target_zone_periods = sorted(
+            [
+                (z, bt, h)
+                for (
+                    z,
+                    bt,
+                    h,
+                ) in instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
+            ]
+        )
+        self.assertListEqual(
+            expected_energy_target_zone_bt_horizons, actual_energy_target_zone_periods
+        )
 
         # Param: horizon_energy_target_mwh
-        expected_energy_target = OrderedDict(sorted({
-            ("RPS_Zone_1", "year", 2020): 50, ("RPS_Zone_1", "year", 2030): 50,
-            ("RPS_Zone_2", "year", 2020): 10, ("RPS_Zone_2", "year", 2030): 10}.items()
-                                                 )
-                                          )
-        actual_energy_target = OrderedDict(sorted({
-            (z, bt, h): instance.horizon_energy_target_mwh[z, bt, h]
-            for (z, bt, h) in
-            instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET}
-                                                  .items()
-                                               )
-                                        )
+        expected_energy_target = OrderedDict(
+            sorted(
+                {
+                    ("RPS_Zone_1", "year", 2020): 50,
+                    ("RPS_Zone_1", "year", 2030): 50,
+                    ("RPS_Zone_2", "year", 2020): 10,
+                    ("RPS_Zone_2", "year", 2030): 10,
+                }.items()
+            )
+        )
+        actual_energy_target = OrderedDict(
+            sorted(
+                {
+                    (z, bt, h): instance.horizon_energy_target_mwh[z, bt, h]
+                    for (
+                        z,
+                        bt,
+                        h,
+                    ) in instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
+                }.items()
+            )
+        )
         self.assertDictEqual(expected_energy_target, actual_energy_target)
 
         # Param: horizon_energy_target_fraction
-        expected_energy_target_fraction = OrderedDict(sorted({
-            ("RPS_Zone_1", "year", 2020): 0.2, ("RPS_Zone_1", "year", 2030): 0.33,
-            ("RPS_Zone_2", "year", 2020): 0, ("RPS_Zone_2", "year", 2030): 0}.items()
-                                                 )
-                                          )
-        actual_energy_target_fraction = OrderedDict(sorted({
-            (z, bt, h): instance.horizon_energy_target_fraction[z, bt, h]
-            for (z, bt, h) in
-            instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET}
-                                                             .items()
-                                               )
-                                        )
-        self.assertDictEqual(expected_energy_target_fraction, actual_energy_target_fraction)
+        expected_energy_target_fraction = OrderedDict(
+            sorted(
+                {
+                    ("RPS_Zone_1", "year", 2020): 0.2,
+                    ("RPS_Zone_1", "year", 2030): 0.33,
+                    ("RPS_Zone_2", "year", 2020): 0,
+                    ("RPS_Zone_2", "year", 2030): 0,
+                }.items()
+            )
+        )
+        actual_energy_target_fraction = OrderedDict(
+            sorted(
+                {
+                    (z, bt, h): instance.horizon_energy_target_fraction[z, bt, h]
+                    for (
+                        z,
+                        bt,
+                        h,
+                    ) in instance.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_energy_target_fraction, actual_energy_target_fraction
+        )
 
         # Set: HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES
-        expected_energy_target_zone_load_zones = sorted([
-            ("RPS_Zone_1", "Zone1"), ("RPS_Zone_1", "Zone2"),
-            ("RPS_Zone_2", "Zone3")
-        ])
-        actual_energy_target_zone_load_zones = sorted([
-            (z, lz) for (z, lz) in
-            instance.HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES
-        ])
-        self.assertListEqual(expected_energy_target_zone_load_zones,
-                             actual_energy_target_zone_load_zones)
+        expected_energy_target_zone_load_zones = sorted(
+            [("RPS_Zone_1", "Zone1"), ("RPS_Zone_1", "Zone2"), ("RPS_Zone_2", "Zone3")]
+        )
+        actual_energy_target_zone_load_zones = sorted(
+            [(z, lz) for (z, lz) in instance.HORIZON_ENERGY_TARGET_ZONE_LOAD_ZONES]
+        )
+        self.assertListEqual(
+            expected_energy_target_zone_load_zones, actual_energy_target_zone_load_zones
+        )
 
 
 if __name__ == "__main__":
