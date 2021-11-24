@@ -20,8 +20,7 @@ load-balance constraint.
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.dynamic_components import \
-    load_balance_production_components
+from gridpath.auxiliary.dynamic_components import load_balance_production_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -43,12 +42,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # TODO: is this better done with a set intersection (all projects in the
     #  zone intersected with all operational project sin the timepoint)
     def total_power_production_rule(mod, z, tmp):
-        return sum(mod.Power_Provision_MW[g, tmp]
-                   for g in mod.OPR_PRJS_IN_TMP[tmp]
-                   if mod.load_zone[g] == z)
-    m.Power_Production_in_Zone_MW = \
-        Expression(m.LOAD_ZONES, m.TMPS,
-                   rule=total_power_production_rule)
+        return sum(
+            mod.Power_Provision_MW[g, tmp]
+            for g in mod.OPR_PRJS_IN_TMP[tmp]
+            if mod.load_zone[g] == z
+        )
+
+    m.Power_Production_in_Zone_MW = Expression(
+        m.LOAD_ZONES, m.TMPS, rule=total_power_production_rule
+    )
 
     record_dynamic_components(dynamic_components=d)
 
@@ -60,4 +62,5 @@ def record_dynamic_components(dynamic_components):
 
     """
     getattr(dynamic_components, load_balance_production_components).append(
-        "Power_Production_in_Zone_MW")
+        "Power_Production_in_Zone_MW"
+    )

@@ -35,16 +35,28 @@ from __future__ import division
 
 import csv
 import os.path
-from pyomo.environ import Var, Set, Constraint, Param, Expression, \
-    NonNegativeReals, PercentFraction, value
+from pyomo.environ import (
+    Var,
+    Set,
+    Constraint,
+    Param,
+    Expression,
+    NonNegativeReals,
+    PercentFraction,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
-from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
-from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_model_data, check_for_tmps_to_link, validate_opchars
+from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.common_functions import (
+    check_if_first_timepoint,
+    check_boundary_type,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    load_optype_model_data,
+    check_for_tmps_to_link,
+    validate_opchars,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -236,15 +248,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "stor"
-        )
+        ),
     )
 
     m.STOR_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.STOR)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.STOR)
+        ),
     )
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
@@ -252,13 +264,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.stor_charging_efficiency = Param(
-        m.STOR, within=PercentFraction
-    )
+    m.stor_charging_efficiency = Param(m.STOR, within=PercentFraction)
 
-    m.stor_discharging_efficiency = Param(
-        m.STOR, within=PercentFraction
-    )
+    m.stor_discharging_efficiency = Param(m.STOR, within=PercentFraction)
 
     # Optional Params
     ###########################################################################
@@ -273,105 +281,76 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR, within=NonNegativeReals, default=1.0
     )
 
-
     # Linked Params
     ###########################################################################
 
     m.stor_linked_starting_energy_in_storage = Param(
-        m.STOR_LINKED_TMPS,
-        within=NonNegativeReals
+        m.STOR_LINKED_TMPS, within=NonNegativeReals
     )
 
-    m.stor_linked_discharge = Param(
-        m.STOR_LINKED_TMPS,
-        within=NonNegativeReals
-    )
+    m.stor_linked_discharge = Param(m.STOR_LINKED_TMPS, within=NonNegativeReals)
 
-    m.stor_linked_charge = Param(
-        m.STOR_LINKED_TMPS,
-        within=NonNegativeReals
-    )
+    m.stor_linked_charge = Param(m.STOR_LINKED_TMPS, within=NonNegativeReals)
 
     # Variables
     ###########################################################################
 
-    m.Stor_Charge_MW = Var(
-        m.STOR_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Stor_Charge_MW = Var(m.STOR_OPR_TMPS, within=NonNegativeReals)
 
-    m.Stor_Discharge_MW = Var(
-        m.STOR_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Stor_Discharge_MW = Var(m.STOR_OPR_TMPS, within=NonNegativeReals)
 
     m.Stor_Starting_Energy_in_Storage_MWh = Var(
-        m.STOR_OPR_TMPS,
-        within=NonNegativeReals
+        m.STOR_OPR_TMPS, within=NonNegativeReals
     )
 
     # Expressions
     ###########################################################################
 
     def upward_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, headroom_variables)[g])
-    m.Stor_Upward_Reserves_MW = Expression(
-        m.STOR_OPR_TMPS,
-        rule=upward_reserve_rule
-    )
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+
+    m.Stor_Upward_Reserves_MW = Expression(m.STOR_OPR_TMPS, rule=upward_reserve_rule)
 
     def downward_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, footroom_variables)[g])
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+
     m.Stor_Downward_Reserves_MW = Expression(
-        m.STOR_OPR_TMPS,
-        rule=downward_reserve_rule
+        m.STOR_OPR_TMPS, rule=downward_reserve_rule
     )
 
     # Constraints
     ###########################################################################
 
     # Power and State of Charge
-    m.Stor_Max_Charge_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_charge_rule
-    )
+    m.Stor_Max_Charge_Constraint = Constraint(m.STOR_OPR_TMPS, rule=max_charge_rule)
 
     m.Stor_Max_Discharge_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_discharge_rule
+        m.STOR_OPR_TMPS, rule=max_discharge_rule
     )
 
     m.Stor_Energy_Tracking_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=energy_tracking_rule
+        m.STOR_OPR_TMPS, rule=energy_tracking_rule
     )
 
     m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_energy_in_storage_rule
+        m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
     )
 
     # Reserves
     m.Stor_Max_Headroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_headroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_power_rule
     )
 
     m.Stor_Max_Footroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_footroom_power_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_power_rule
     )
 
     m.Stor_Max_Headroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_headroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
     )
 
     m.Stor_Max_Footroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS,
-        rule=max_footroom_energy_rule
+        m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
     )
 
 
@@ -386,10 +365,12 @@ def max_discharge_rule(mod, s, tmp):
 
     Storage discharging power can't exceed available capacity.
     """
-    return mod.Stor_Discharge_MW[s, tmp] \
-        <= mod.Capacity_MW[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp] \
+    return (
+        mod.Stor_Discharge_MW[s, tmp]
+        <= mod.Capacity_MW[s, mod.period[tmp]]
+        * mod.Availability_Derate[s, tmp]
         * mod.stor_discharging_capacity_multiplier[s]
+    )
 
 
 def max_charge_rule(mod, s, tmp):
@@ -399,10 +380,12 @@ def max_charge_rule(mod, s, tmp):
 
     Storage charging power can't exceed available capacity.
     """
-    return mod.Stor_Charge_MW[s, tmp] \
-        <= mod.Capacity_MW[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp] \
+    return (
+        mod.Stor_Charge_MW[s, tmp]
+        <= mod.Capacity_MW[s, mod.period[tmp]]
+        * mod.Availability_Derate[s, tmp]
         * mod.stor_charging_capacity_multiplier[s]
+    )
 
 
 # TODO: adjust storage energy for reserves provided
@@ -417,48 +400,53 @@ def energy_tracking_rule(mod, s, tmp):
     charging efficiency and timepoint duration).
     """
     if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
     ) and check_boundary_type(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[s],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
         ) and check_boundary_type(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s],
-            boundary_type="linked"
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[s],
+            boundary_type="linked",
         ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_starting_energy_in_storage = \
+            prev_tmp_starting_energy_in_storage = (
                 mod.stor_linked_starting_energy_in_storage[s, 0]
+            )
             prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
             prev_tmp_charge = mod.stor_linked_charge[s, 0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[s]]
             ]
-            prev_tmp_starting_energy_in_storage = \
+            prev_tmp_starting_energy_in_storage = (
                 mod.Stor_Starting_Energy_in_Storage_MWh[
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
-            prev_tmp_discharge = \
-                mod.Stor_Discharge_MW[
-                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
-            prev_tmp_charge = \
-                mod.Stor_Charge_MW[
-                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-                ]
+            )
+            prev_tmp_discharge = mod.Stor_Discharge_MW[
+                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+            ]
+            prev_tmp_charge = mod.Stor_Charge_MW[
+                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+            ]
 
-        return \
-            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
-            == prev_tmp_starting_energy_in_storage \
-            + prev_tmp_charge * prev_tmp_hrs_in_tmp \
-            * mod.stor_charging_efficiency[s] \
-            - prev_tmp_discharge * prev_tmp_hrs_in_tmp \
+        return (
+            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+            == prev_tmp_starting_energy_in_storage
+            + prev_tmp_charge * prev_tmp_hrs_in_tmp * mod.stor_charging_efficiency[s]
+            - prev_tmp_discharge
+            * prev_tmp_hrs_in_tmp
             / mod.stor_discharging_efficiency[s]
+        )
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
@@ -469,9 +457,10 @@ def max_energy_in_storage_rule(mod, s, tmp):
     The amount of energy stored in each operational timepoint cannot exceed
     the available energy capacity.
     """
-    return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
-        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp]
+    return (
+        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+    )
 
 
 # Reserves
@@ -484,11 +473,12 @@ def max_headroom_power_rule(mod, s, tmp):
     Going from charging to non-charging also counts as headroom, doubling the
     the maximum amount of potential headroom.
     """
-    return mod.Stor_Upward_Reserves_MW[s, tmp] \
-        <= mod.Capacity_MW[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp] \
-        - mod.Stor_Discharge_MW[s, tmp] \
+    return (
+        mod.Stor_Upward_Reserves_MW[s, tmp]
+        <= mod.Capacity_MW[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+        - mod.Stor_Discharge_MW[s, tmp]
         + mod.Stor_Charge_MW[s, tmp]
+    )
 
 
 def max_footroom_power_rule(mod, s, tmp):
@@ -500,11 +490,12 @@ def max_footroom_power_rule(mod, s, tmp):
     Going from non-charging to charging also counts as footroom, doubling
     the the maximum amount of potential footroom.
     """
-    return mod.Stor_Downward_Reserves_MW[s, tmp] \
-        <= mod.Stor_Discharge_MW[s, tmp] \
-        + mod.Capacity_MW[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp] \
+    return (
+        mod.Stor_Downward_Reserves_MW[s, tmp]
+        <= mod.Stor_Discharge_MW[s, tmp]
+        + mod.Capacity_MW[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
         - mod.Stor_Charge_MW[s, tmp]
+    )
 
 
 # Headroom and footroom energy constraints
@@ -529,16 +520,18 @@ def max_headroom_energy_rule(mod, s, tmp):
     must have enough energy available to be at the new set point (for
     the full duration of the timepoint).
     """
-    return mod.Stor_Upward_Reserves_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
-        / mod.stor_discharging_efficiency[s] \
-        <= mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
-        + mod.Stor_Charge_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
-        * mod.stor_charging_efficiency[s] \
-        - mod.Stor_Discharge_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
+    return (
+        mod.Stor_Upward_Reserves_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
         / mod.stor_discharging_efficiency[s]
+        <= mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        + mod.Stor_Charge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        * mod.stor_charging_efficiency[s]
+        - mod.Stor_Discharge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        / mod.stor_discharging_efficiency[s]
+    )
 
 
 def max_footroom_energy_rule(mod, s, tmp):
@@ -551,22 +544,24 @@ def max_footroom_energy_rule(mod, s, tmp):
     must have enough 'room left in the tank' (remaining energy capacity)
     to be at the new set point (for the full duration of the timepoint).
     """
-    return mod.Stor_Downward_Reserves_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
-        * mod.stor_charging_efficiency[s] \
-        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
-        * mod.Availability_Derate[s, tmp] - \
-        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
-        - mod.Stor_Charge_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
-        * mod.stor_charging_efficiency[s] \
-        + mod.Stor_Discharge_MW[s, tmp] \
-        * mod.hrs_in_tmp[tmp] \
+    return (
+        mod.Stor_Downward_Reserves_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        * mod.stor_charging_efficiency[s]
+        <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] * mod.Availability_Derate[s, tmp]
+        - mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+        - mod.Stor_Charge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
+        * mod.stor_charging_efficiency[s]
+        + mod.Stor_Discharge_MW[s, tmp]
+        * mod.hrs_in_tmp[tmp]
         / mod.stor_discharging_efficiency[s]
+    )
 
 
 # Operational Type Methods
 ###############################################################################
+
 
 def power_provision_rule(mod, s, tmp):
     """
@@ -577,8 +572,7 @@ def power_provision_rule(mod, s, tmp):
     charge (i.e. can't charge when the storage is full; can't discharge when
     storage is empty).
     """
-    return mod.Stor_Discharge_MW[s, tmp] \
-        - mod.Stor_Charge_MW[s, tmp]
+    return mod.Stor_Discharge_MW[s, tmp] - mod.Stor_Charge_MW[s, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
@@ -594,9 +588,9 @@ def rec_provision_rule(mod, g, tmp):
     absorb RPS-eligible energy that would otherwise be curtailed, making it
     appear as if it were delivered to load.
     """
-    return (mod.Stor_Discharge_MW[g, tmp] -
-            mod.Stor_Charge_MW[g, tmp]) \
-        * mod.stor_losses_factor_in_energy_target
+    return (
+        mod.Stor_Discharge_MW[g, tmp] - mod.Stor_Charge_MW[g, tmp]
+    ) * mod.stor_losses_factor_in_energy_target
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -616,32 +610,31 @@ def power_delta_rule(mod, g, tmp):
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
     ) and (
         check_boundary_type(
-            mod=mod, tmp=tmp,
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp,
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
+            boundary_type="linked",
         )
     ):
         pass
     else:
-        return (mod.Stor_Discharge_MW[g, tmp] -
-                mod.Stor_Charge_MW[g, tmp]) \
-            - (mod.Stor_Discharge_MW[g, mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]]]
-               - mod.Stor_Charge_MW[g, mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]]])
+        return (mod.Stor_Discharge_MW[g, tmp] - mod.Stor_Charge_MW[g, tmp]) - (
+            mod.Stor_Discharge_MW[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            - mod.Stor_Charge_MW[g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+        )
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    mod, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param mod:
@@ -652,16 +645,22 @@ def load_model_data(
     :return:
     """
     load_optype_model_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="stor"
+        mod=mod,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="stor",
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "stor_linked_timepoint_params.tab"
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "stor_linked_timepoint_params.tab",
+    )
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
@@ -669,15 +668,14 @@ def load_model_data(
             param=(
                 mod.stor_linked_starting_energy_in_storage,
                 mod.stor_linked_discharge,
-                mod.stor_linked_charge
-            )
+                mod.stor_linked_charge,
+            ),
         )
     else:
         pass
 
 
-def export_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
@@ -687,37 +685,57 @@ def export_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "dispatch_stor.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "dispatch_stor.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project",
-                         "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
-                         "technology", "load_zone",
-                         "starting_energy_mwh",
-                         "charge_mw", "discharge_mw"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "balancing_type_project",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "technology",
+                "load_zone",
+                "starting_energy_mwh",
+                "charge_mw",
+                "discharge_mw",
+            ]
+        )
         for (p, tmp) in mod.STOR_OPR_TMPS:
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.balancing_type_project[p],
-                mod.horizon[tmp, mod.balancing_type_project[p]],
-                tmp,
-                mod.tmp_weight[tmp],
-                mod.hrs_in_tmp[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
-                value(mod.Stor_Charge_MW[p, tmp]),
-                value(mod.Stor_Discharge_MW[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    mod.period[tmp],
+                    mod.balancing_type_project[p],
+                    mod.horizon[tmp, mod.balancing_type_project[p]],
+                    tmp,
+                    mod.tmp_weight[tmp],
+                    mod.hrs_in_tmp[tmp],
+                    mod.technology[p],
+                    mod.load_zone[p],
+                    value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
+                    value(mod.Stor_Charge_MW[p, tmp]),
+                    value(mod.Stor_Discharge_MW[p, tmp]),
+                ]
+            )
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
     # next subproblem
     tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage
+        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
     )
 
     # If the list of timepoints to link is not empty, write the linked
@@ -727,30 +745,41 @@ def export_results(mod, d,
         next_subproblem = str(int(subproblem) + 1)
 
         # Export params by project and timepoint
-        with open(os.path.join(
-                scenario_directory, next_subproblem, stage, "inputs",
-                "stor_linked_timepoint_params.tab"
-        ), "w", newline=""
+        with open(
+            os.path.join(
+                scenario_directory,
+                next_subproblem,
+                stage,
+                "inputs",
+                "stor_linked_timepoint_params.tab",
+            ),
+            "w",
+            newline="",
         ) as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
-                ["project", "linked_timepoint",
-                 "linked_starting_energy_in_storage",
-                 "linked_discharge",
-                 "linked_charge"]
+                [
+                    "project",
+                    "linked_timepoint",
+                    "linked_starting_energy_in_storage",
+                    "linked_discharge",
+                    "linked_charge",
+                ]
             )
             for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
                 if tmp in tmps_to_link:
-                    writer.writerow([
-                        p,
-                        tmp_linked_tmp_dict[tmp],
-                        max(value(mod.Stor_Starting_Energy_in_Storage_MWh[
-                                      p, tmp]),
-                            0
+                    writer.writerow(
+                        [
+                            p,
+                            tmp_linked_tmp_dict[tmp],
+                            max(
+                                value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
+                                0,
                             ),
-                        max(value(mod.Stor_Discharge_MW[p, tmp]), 0),
-                        max(value(mod.Stor_Charge_MW[p, tmp]), 0)
-                    ])
+                            max(value(mod.Stor_Discharge_MW[p, tmp]), 0),
+                            max(value(mod.Stor_Charge_MW[p, tmp]), 0),
+                        ]
+                    )
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):

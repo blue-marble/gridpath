@@ -15,9 +15,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-from .reserve_balance import generic_add_model_components, \
-    generic_export_results, generic_save_duals, \
-    generic_import_results_to_database
+from .reserve_balance import (
+    generic_add_model_components,
+    generic_export_results,
+    generic_save_duals,
+    generic_import_results_to_database,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -36,10 +39,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_violation_expression="Regulation_Down_Violation_MW_Expression",
         reserve_violation_allowed_param="regulation_down_allow_violation",
         reserve_requirement_expression="Reg_Down_Requirement",
-        total_reserve_provision_expression
-        ="Total_Regulation_Down_Provision_MW",
-        meet_reserve_constraint="Meet_Regulation_Down_Constraint"
-        )
+        total_reserve_provision_expression="Total_Regulation_Down_Provision_MW",
+        meet_reserve_constraint="Meet_Regulation_Down_Constraint",
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -52,12 +54,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    generic_export_results(scenario_directory, subproblem, stage, m, d,
-                           "regulation_down_violation.csv",
-                           "regulation_down_violation_mw",
-                           "REGULATION_DOWN_ZONES",
-                           "Regulation_Down_Violation_MW_Expression"
-                           )
+    generic_export_results(
+        scenario_directory,
+        subproblem,
+        stage,
+        m,
+        d,
+        "regulation_down_violation.csv",
+        "regulation_down_violation_mw",
+        "REGULATION_DOWN_ZONES",
+        "Regulation_Down_Violation_MW_Expression",
+    )
 
 
 def save_duals(m):
@@ -70,7 +77,7 @@ def save_duals(m):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -91,5 +98,5 @@ def import_results_into_database(
         c=c,
         db=db,
         results_directory=results_directory,
-        reserve_type="regulation_down"
+        reserve_type="regulation_down",
     )

@@ -20,22 +20,26 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
-from tests.project.operations.common_functions import \
-    get_project_operational_timepoints
+from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity", "project.availability.availability",
-     "project.fuels", "project.operations"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.stor"
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
+]
+NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.stor"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -46,40 +50,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestStor(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_capacity_data_load_correctly(self):
         """
@@ -91,49 +96,43 @@ class TestStor(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Sets: STOR
         expected_projects = ["Battery", "Battery_Binary", "Battery_Specified"]
-        actual_projects = sorted(
-            [p for p in instance.STOR]
-        )
+        actual_projects = sorted([p for p in instance.STOR])
         self.assertListEqual(expected_projects, actual_projects)
 
         # STOR_OPR_TMPS
-        expected_tmps = sorted(
-            get_project_operational_timepoints(expected_projects)
-        )
-        actual_tmps = sorted([
-            tmp for tmp in
-            instance.STOR_OPR_TMPS
-            ])
+        expected_tmps = sorted(get_project_operational_timepoints(expected_projects))
+        actual_tmps = sorted([tmp for tmp in instance.STOR_OPR_TMPS])
         self.assertListEqual(expected_tmps, actual_tmps)
 
         # Param: stor_charging_efficiency
         expected_charging_efficiency = {
-            "Battery": 0.8, "Battery_Binary": 0.8, "Battery_Specified": 0.8
+            "Battery": 0.8,
+            "Battery_Binary": 0.8,
+            "Battery_Specified": 0.8,
         }
         actual_charging_efficiency = {
-            prj: instance.stor_charging_efficiency[prj]
-            for prj in instance.STOR
+            prj: instance.stor_charging_efficiency[prj] for prj in instance.STOR
         }
-        self.assertDictEqual(expected_charging_efficiency,
-                             actual_charging_efficiency)
+        self.assertDictEqual(expected_charging_efficiency, actual_charging_efficiency)
 
         # Param: stor_discharging_efficiency
         expected_discharging_efficiency = {
-            "Battery": 0.8, "Battery_Binary": 0.8, "Battery_Specified": 0.8
+            "Battery": 0.8,
+            "Battery_Binary": 0.8,
+            "Battery_Specified": 0.8,
         }
         actual_discharging_efficiency = {
-            prj: instance.stor_discharging_efficiency[prj]
-            for prj in instance.STOR
+            prj: instance.stor_discharging_efficiency[prj] for prj in instance.STOR
         }
-        self.assertDictEqual(expected_discharging_efficiency,
-                             actual_discharging_efficiency)
-
+        self.assertDictEqual(
+            expected_discharging_efficiency, actual_discharging_efficiency
+        )
 
 
 if __name__ == "__main__":

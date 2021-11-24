@@ -43,8 +43,12 @@ import os.path
 from pyomo.environ import Set, Param, PositiveIntegers, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_values
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_expected_dtypes,
+    validate_dtypes,
+    validate_values,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -184,38 +188,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.PERIODS = Set(
-        within=PositiveIntegers,
-        ordered=True
-    )
+    m.PERIODS = Set(within=PositiveIntegers, ordered=True)
 
     # Required Input Params
     ###########################################################################
 
-    m.discount_factor = Param(
-        m.PERIODS,
-        within=NonNegativeReals
-    )
+    m.discount_factor = Param(m.PERIODS, within=NonNegativeReals)
 
-    m.hours_in_period_timepoints = Param(
-        m.PERIODS,
-        within=NonNegativeReals
-    )
+    m.hours_in_period_timepoints = Param(m.PERIODS, within=NonNegativeReals)
 
-    m.period_start_year = Param(
-        m.PERIODS,
-        within=NonNegativeReals
-    )
+    m.period_start_year = Param(m.PERIODS, within=NonNegativeReals)
 
-    m.period_end_year = Param(
-        m.PERIODS,
-        within=NonNegativeReals
-    )
+    m.period_end_year = Param(m.PERIODS, within=NonNegativeReals)
 
-    m.period = Param(
-        m.TMPS,
-        within=m.PERIODS
-    )
+    m.period = Param(m.TMPS, within=m.PERIODS)
 
     # Derived Sets
     ###########################################################################
@@ -224,12 +210,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PERIODS,
         initialize=lambda mod, p: list(
             set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)
-        )
+        ),
     )
 
     m.NOT_FIRST_PRDS = Set(
-        within=m.PERIODS,
-        initialize=lambda mod: list(mod.PERIODS)[1:]
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[1:]
     )
 
     # Derived Input Params
@@ -238,58 +223,67 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.number_years_represented = Param(
         m.PERIODS,
         within=NonNegativeReals,
-        initialize=lambda mod, p:
-        mod.period_end_year[p] - mod.period_start_year[p]
+        initialize=lambda mod, p: mod.period_end_year[p] - mod.period_start_year[p],
     )
 
     m.first_period = Param(
-        within=m.PERIODS,
-        initialize=lambda mod: list(mod.PERIODS)[0]
+        within=m.PERIODS, initialize=lambda mod: list(mod.PERIODS)[0]
     )
 
     m.prev_period = Param(
         m.NOT_FIRST_PRDS,
         within=m.PERIODS,
-        initialize=lambda mod, p:
-        list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
+        initialize=lambda mod, p: list(mod.PERIODS)[list(mod.PERIODS).index(p) - 1],
     )
 
     m.hours_in_subproblem_period = Param(
         m.PERIODS,
         within=NonNegativeReals,
-        initialize=lambda mod, p:
-        sum(mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-            for tmp in mod.TMPS_IN_PRD[p])
+        initialize=lambda mod, p: sum(
+            mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp] for tmp in mod.TMPS_IN_PRD[p]
+        ),
     )
 
 
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-    """
+    """ """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "periods.tab"),
-        select=("period", "discount_factor", "hours_in_period_timepoints",
-                "period_start_year", "period_end_year"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
+        ),
+        select=(
+            "period",
+            "discount_factor",
+            "hours_in_period_timepoints",
+            "period_start_year",
+            "period_end_year",
+        ),
         index=m.PERIODS,
-        param=(m.discount_factor, m.hours_in_period_timepoints, m.period_start_year,
-               m.period_end_year)
+        param=(
+            m.discount_factor,
+            m.hours_in_period_timepoints,
+            m.period_start_year,
+            m.period_end_year,
+        ),
     )
 
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "timepoints.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
+        ),
         select=("timepoint", "period"),
         index=m.TMPS,
-        param=m.period
+        param=m.period,
     )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -323,16 +317,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
            AND stage_id = {}
            GROUP BY period) as hours_in_period_timepoints_tbl
            USING (period);""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID, subscenarios.TEMPORAL_SCENARIO_ID, stage
         )
     )
 
     return periods
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     periods.tab file.
@@ -345,19 +339,28 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     periods = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), 
-                           "inputs", "periods.tab"),
-              "w", newline="") as periods_tab_file:
-        writer = csv.writer(periods_tab_file, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
+        ),
+        "w",
+        newline="",
+    ) as periods_tab_file:
+        writer = csv.writer(periods_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["period", "discount_factor",
-             "period_start_year", "period_end_year",
-             "hours_in_period_timepoints"])
+            [
+                "period",
+                "discount_factor",
+                "period_start_year",
+                "period_end_year",
+                "hours_in_period_timepoints",
+            ]
+        )
 
         for row in periods:
             writer.writerow(row)
@@ -365,6 +368,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -387,10 +391,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     df = cursor_to_df(periods)
 
     # Get expected dtypes
-    expected_dtypes = get_expected_dtypes(
-        conn=conn,
-        tables=["inputs_temporal_periods"]
-    )
+    expected_dtypes = get_expected_dtypes(conn=conn, tables=["inputs_temporal_periods"])
     # Hard-code data type for hours_in_period_timepoints
     expected_dtypes["hours_in_period_timepoints"] = "numeric"
 
@@ -404,12 +405,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_periods",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -419,5 +419,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_temporal_periods",
         severity="Mid",
-        errors=validate_values(df, valid_numeric_columns, "period", min=0)
+        errors=validate_values(df, valid_numeric_columns, "period", min=0),
     )

@@ -22,8 +22,9 @@ built, available to be retired, etc.
 import pandas as pd
 import os.path
 
-from gridpath.transmission.capacity.common_functions import \
-    load_tx_capacity_type_modules
+from gridpath.transmission.capacity.common_functions import (
+    load_tx_capacity_type_modules,
+)
 
 
 def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
@@ -46,7 +47,8 @@ def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
     """
     c = conn.cursor()
     required_tx_capacity_modules = [
-        p[0] for p in c.execute(
+        p[0]
+        for p in c.execute(
             """SELECT DISTINCT capacity_type
             FROM inputs_transmission_portfolios
             LEFT OUTER JOIN
@@ -62,7 +64,7 @@ def get_required_capacity_type_modules(scenario_id, subscenarios, conn):
             WHERE transmission_portfolio_scenario_id = {};""".format(
                 subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
                 subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
             )
         ).fetchall()
     ]
@@ -83,22 +85,25 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Load in the required tx capacity type modules
 
     required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, subscenarios, conn)
+        scenario_id, subscenarios, conn
+    )
     imported_capacity_type_modules = load_tx_capacity_type_modules(
-            required_capacity_type_modules)
+        required_capacity_type_modules
+    )
 
     # Validate module-specific inputs
     for op_m in required_capacity_type_modules:
-        if hasattr(imported_capacity_type_modules[op_m],
-                   "validate_inputs"):
-            imported_capacity_type_modules[op_m]. \
-                validate_inputs(
-                    scenario_id, subscenarios, subproblem, stage, conn)
+        if hasattr(imported_capacity_type_modules[op_m], "validate_inputs"):
+            imported_capacity_type_modules[op_m].validate_inputs(
+                scenario_id, subscenarios, subproblem, stage, conn
+            )
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input .tab file.
     :param scenario_directory: string, the scenario directory
@@ -110,17 +115,17 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
     # Load in the required capacity type modules
     required_capacity_type_modules = get_required_capacity_type_modules(
-        scenario_id, subscenarios, conn)
+        scenario_id, subscenarios, conn
+    )
     imported_capacity_type_modules = load_tx_capacity_type_modules(
-            required_capacity_type_modules)
+        required_capacity_type_modules
+    )
 
     # Write module-specific inputs
     for op_m in required_capacity_type_modules:
-        if hasattr(imported_capacity_type_modules[op_m],
-                   "write_model_inputs"):
-            imported_capacity_type_modules[op_m]. \
-                write_model_inputs(
-                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+        if hasattr(imported_capacity_type_modules[op_m], "write_model_inputs"):
+            imported_capacity_type_modules[op_m].write_model_inputs(
+                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
         else:
             pass

@@ -33,18 +33,34 @@ from builtins import zip
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Expression, \
-    NonNegativeReals, value
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Constraint,
+    Expression,
+    NonNegativeReals,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets
-from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
-    write_validation_to_database, validate_dtypes, validate_values, \
-    validate_idxs, validate_row_monotonicity, validate_missing_inputs
-from gridpath.project.capacity.capacity_types.common_methods import \
-    spec_get_inputs_from_database, spec_write_tab_file, \
-    spec_determine_inputs, update_capacity_results_table
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import (
+    get_projects,
+    get_expected_dtypes,
+    write_validation_to_database,
+    validate_dtypes,
+    validate_values,
+    validate_idxs,
+    validate_row_monotonicity,
+    validate_missing_inputs,
+)
+from gridpath.project.capacity.capacity_types.common_methods import (
+    spec_get_inputs_from_database,
+    spec_write_tab_file,
+    spec_determine_inputs,
+    update_capacity_results_table,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -125,26 +141,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.GEN_RET_LIN_OPR_PRDS = Set(dimen=2)
 
     m.GEN_RET_LIN = Set(
-        initialize=lambda mod: list(
-            set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS)
-        )
+        initialize=lambda mod: list(set(g for (g, p) in mod.GEN_RET_LIN_OPR_PRDS))
     )
 
     m.OPR_PRDS_BY_GEN_RET_LIN = Set(
         m.GEN_RET_LIN,
         initialize=lambda mod, prj: list(
-            set(period for (project, period) in mod.GEN_RET_LIN_OPR_PRDS
-                if project == prj)
-        )
+            set(
+                period
+                for (project, period) in mod.GEN_RET_LIN_OPR_PRDS
+                if project == prj
+            )
+        ),
     )
 
     # Required Params
     ###########################################################################
 
-    m.gen_ret_lin_capacity_mw = Param(
-        m.GEN_RET_LIN_OPR_PRDS,
-        within=NonNegativeReals
-    )
+    m.gen_ret_lin_capacity_mw = Param(m.GEN_RET_LIN_OPR_PRDS, within=NonNegativeReals)
 
     m.gen_ret_lin_fixed_cost_per_mw_yr = Param(
         m.GEN_RET_LIN_OPR_PRDS,
@@ -156,33 +170,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.gen_ret_lin_first_period = Param(
         m.GEN_RET_LIN,
-        initialize=lambda mod, g:
-        min(p for p in mod.OPR_PRDS_BY_GEN_RET_LIN[g])
+        initialize=lambda mod, g: min(p for p in mod.OPR_PRDS_BY_GEN_RET_LIN[g]),
     )
 
     # Variables
     ###########################################################################
 
     # Retire capacity variable
-    m.GenRetLin_Retire_MW = Var(
-        m.GEN_RET_LIN_OPR_PRDS,
-        bounds=retire_capacity_bounds
-    )
+    m.GenRetLin_Retire_MW = Var(m.GEN_RET_LIN_OPR_PRDS, bounds=retire_capacity_bounds)
 
     # Expressions
     ###########################################################################
 
     m.GenRetLin_Capacity_MW = Expression(
-        m.GEN_RET_LIN_OPR_PRDS,
-        rule=gen_ret_lin_capacity_rule
+        m.GEN_RET_LIN_OPR_PRDS, rule=gen_ret_lin_capacity_rule
     )
 
     # Constraints
     ###########################################################################
 
     m.GenRetLin_Retire_Forever_Constraint = Constraint(
-        m.GEN_RET_LIN_OPR_PRDS,
-        rule=retire_forever_rule
+        m.GEN_RET_LIN_OPR_PRDS, rule=retire_forever_rule
     )
 
     # Dynamic Components
@@ -198,6 +206,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Variable Bound Rules
 ###############################################################################
 
+
 def retire_capacity_bounds(mod, g, p):
     """
     Shouldn't be able to retire more than available capacity
@@ -208,6 +217,7 @@ def retire_capacity_bounds(mod, g, p):
 # Expression Rules
 ###############################################################################
 
+
 def gen_ret_lin_capacity_rule(mod, g, p):
     """
     **Expressions Name**: GenRetLin_Capacity_MW
@@ -215,12 +225,12 @@ def gen_ret_lin_capacity_rule(mod, g, p):
 
     Existing capacity minus retirements.
     """
-    return mod.gen_ret_lin_capacity_mw[g, p] \
-        - mod.GenRetLin_Retire_MW[g, p]
+    return mod.gen_ret_lin_capacity_mw[g, p] - mod.GenRetLin_Retire_MW[g, p]
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def retire_forever_rule(mod, g, p):
     """
@@ -238,13 +248,15 @@ def retire_forever_rule(mod, g, p):
     if p == mod.gen_ret_lin_first_period[g]:
         return Constraint.Skip
     else:
-        return mod.GenRetLin_Capacity_MW[g, p] \
-            <= mod.GenRetLin_Capacity_MW[
-                g, mod.prev_period[p]]
+        return (
+            mod.GenRetLin_Capacity_MW[g, p]
+            <= mod.GenRetLin_Capacity_MW[g, mod.prev_period[p]]
+        )
 
 
 # Capacity Type Methods
 ###############################################################################
+
 
 def capacity_rule(mod, g, p):
     """
@@ -261,16 +273,14 @@ def capacity_cost_rule(mod, g, p):
     capacity (pre-specified capacity minus retired capacity) times the per-mw
     fixed cost for each of the project's operational periods.
     """
-    return mod.GenRetLin_Capacity_MW[g, p] \
-        * mod.gen_ret_lin_fixed_cost_per_mw_yr[g, p]
+    return mod.GenRetLin_Capacity_MW[g, p] * mod.gen_ret_lin_fixed_cost_per_mw_yr[g, p]
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -281,24 +291,25 @@ def load_model_data(
     :return:
     """
 
-    project_period_list, spec_params_dict = \
-        spec_determine_inputs(
-            scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, capacity_type="gen_ret_lin"
-        )
+    project_period_list, spec_params_dict = spec_determine_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type="gen_ret_lin",
+    )
 
     data_portal.data()["GEN_RET_LIN_OPR_PRDS"] = {None: project_period_list}
 
-    data_portal.data()["gen_ret_lin_capacity_mw"] = \
-        spec_params_dict["specified_capacity_mw"]
+    data_portal.data()["gen_ret_lin_capacity_mw"] = spec_params_dict[
+        "specified_capacity_mw"
+    ]
 
-    data_portal.data()["gen_ret_lin_fixed_cost_per_mw_yr"] = \
-        spec_params_dict["fixed_cost_per_mw_yr"]
+    data_portal.data()["gen_ret_lin_fixed_cost_per_mw_yr"] = spec_params_dict[
+        "fixed_cost_per_mw_yr"
+    ]
 
 
-def export_results(
-        scenario_directory, subproblem, stage, m, d
-):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export gen_ret_lin retirement results.
     :param scenario_directory:
@@ -308,25 +319,32 @@ def export_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "capacity_gen_ret_lin"
-                           ".csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_ret_lin" ".csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
-                         "retired_mw"])
+        writer.writerow(["project", "period", "technology", "load_zone", "retired_mw"])
         for (prj, p) in m.GEN_RET_LIN_OPR_PRDS:
-            writer.writerow([
-                prj,
-                p,
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.GenRetLin_Retire_MW[prj, p])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.GenRetLin_Retire_MW[prj, p]),
+                ]
+            )
 
 
-def summarize_results(
-    scenario_directory, subproblem, stage, summary_results_file
-):
+def summarize_results(scenario_directory, subproblem, stage, summary_results_file):
     """
     Summarize existing gen linear economic retirement capacity results.
     :param scenario_directory:
@@ -338,25 +356,28 @@ def summarize_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                     "capacity_gen_ret_lin.csv")
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_gen_ret_lin.csv",
+        )
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
-        by=["load_zone", "technology",'period'],
-        as_index=True
+        by=["load_zone", "technology", "period"], as_index=True
     ).sum()
 
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
-        capacity_results_agg_df[
-            capacity_results_agg_df["retired_mw"] > 0
-        ]["retired_mw"]
+        capacity_results_agg_df[capacity_results_agg_df["retired_mw"] > 0]["retired_mw"]
     )
 
     # Get the power units from the units.csv file
-    units_df = pd.read_csv(os.path.join(scenario_directory, "units.csv"),
-                           index_col="metric")
+    units_df = pd.read_csv(
+        os.path.join(scenario_directory, "units.csv"), index_col="metric"
+    )
     power_unit = units_df.loc["power", "unit"]
 
     # Rename column header
@@ -375,9 +396,7 @@ def summarize_results(
 ###############################################################################
 
 
-def get_model_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn
-):
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -406,18 +425,21 @@ def write_model_inputs(
     """
 
     spec_project_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, spec_project_params=spec_project_params
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        spec_project_params=spec_project_params,
     )
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -435,14 +457,19 @@ def import_results_into_database(
         print("project linear economic retirements")
 
     update_capacity_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="capacity_gen_ret_lin.csv"
+        db=db,
+        c=c,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_file="capacity_gen_ret_lin.csv",
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -455,9 +482,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     gen_ret_lin_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "gen_ret_lin")
+    projects = get_projects(
+        conn, scenario_id, subscenarios, "capacity_type", "gen_ret_lin"
+    )
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(gen_ret_lin_params)
@@ -466,8 +496,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_project_specified_capacity",
-                "inputs_project_specified_fixed_cost"]
+        tables=[
+            "inputs_project_specified_capacity",
+            "inputs_project_specified_fixed_cost",
+        ],
     )
 
     # Check dtypes
@@ -479,14 +511,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -495,9 +526,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
     # Check project capacity & fixed cost is specified in at least 1 period
@@ -509,12 +540,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_idxs(actual_idxs=spec_projects,
-                             req_idxs=projects,
-                             idx_label="project",
-                             msg=msg)
+        errors=validate_idxs(
+            actual_idxs=spec_projects, req_idxs=projects, idx_label="project", msg=msg
+        ),
     )
 
     # Check for missing values (vs. missing row entries above)
@@ -526,14 +556,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_missing_inputs(df, cols)
+        errors=validate_missing_inputs(df, cols),
     )
 
     # Check project capacity is not increasing
-    msg = "gen_ret_lin projects are not expected to have increasing " \
-          "specified capacity. Any increases will force retirements. "
+    msg = (
+        "gen_ret_lin projects are not expected to have increasing "
+        "specified capacity. Any increases will force retirements. "
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -547,6 +579,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             col="specified_capacity_mw",
             rank_col="period",
             increasing=False,
-            msg=msg
-        )
+            msg=msg,
+        ),
     )

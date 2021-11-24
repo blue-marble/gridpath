@@ -27,9 +27,13 @@ import os.path
 from pyomo.environ import Param, Set, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_values, \
-    validate_missing_inputs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_expected_dtypes,
+    validate_dtypes,
+    validate_values,
+    validate_missing_inputs,
+)
 from gridpath.project.common_functions import determine_project_subset
 
 
@@ -72,27 +76,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     m.tx_avl_exog_mnth_derate = Param(
-        m.TX_AVL_EXOG_MNTH, m.MONTHS,
-        within=NonNegativeReals,
-        default=1
+        m.TX_AVL_EXOG_MNTH, m.MONTHS, within=NonNegativeReals, default=1
     )
 
 
 # Availability Type Methods
 ###############################################################################
 
+
 def availability_derate_rule(mod, g, tmp):
-    """
-    """
+    """ """
     return mod.tx_avl_exog_mnth_derate[g, mod.month[tmp]]
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     :param m:
     :param data_portal:
@@ -105,8 +106,11 @@ def load_model_data(
     # TODO: move determine_project_subset and rename, as we're using for tx too
     tx_subset = determine_project_subset(
         scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="tx_availability_type",
-        type="exogenous_monthly", prj_or_tx="transmission_line"
+        subproblem=subproblem,
+        stage=stage,
+        column="tx_availability_type",
+        type="exogenous_monthly",
+        prj_or_tx="transmission_line",
     )
 
     data_portal.data()["TX_AVL_EXOG_MNTH"] = {None: tx_subset}
@@ -119,24 +123,24 @@ def load_model_data(
     # The test examples do not currently have a
     # transmission_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "transmission_availability_exogenous_monthly.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "transmission_availability_exogenous_monthly.tab",
     )
 
     if os.path.exists(availability_file):
-        data_portal.load(
-            filename=availability_file,
-            param=m.tx_avl_exog_mnth_derate
-        )
+        data_portal.load(filename=availability_file, param=m.tx_avl_exog_mnth_derate)
     else:
         pass
+
 
 # Database
 ###############################################################################
 
-def get_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn
-):
+
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -184,7 +188,7 @@ def get_inputs_from_database(
         portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         availability_scenario=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
         availability_type="exogenous_monthly",
-        stage=stage
+        stage=stage,
     )
 
     c = conn.cursor()
@@ -209,19 +213,22 @@ def write_model_inputs(
     ).fetchall()
 
     if availabilities:
-        with open(os.path.join(
-                scenario_directory, str(subproblem), str(stage), "inputs",
-                "transmission_availability_exogenous_monthly.tab"
-        ), "w", newline="") as availability_tab_file:
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "transmission_availability_exogenous_monthly.tab",
+            ),
+            "w",
+            newline="",
+        ) as availability_tab_file:
             writer = csv.writer(
-                availability_tab_file,
-                delimiter="\t",
-                lineterminator="\n"
+                availability_tab_file, delimiter="\t", lineterminator="\n"
             )
 
-            writer.writerow(
-                ["transmission_line", "month", "availability_derate"]
-            )
+            writer.writerow(["transmission_line", "month", "availability_derate"])
 
             for row in availabilities:
                 row = ["." if i is None else i for i in row]
@@ -230,6 +237,7 @@ def write_model_inputs(
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -249,8 +257,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_transmission_availability",
-               "inputs_transmission_availability_exogenous"])
+        conn,
+        [
+            "inputs_transmission_availability",
+            "inputs_transmission_availability_exogenous",
+        ],
+    )
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
@@ -260,14 +272,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_availability_exogenous",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check for missing inputs
-    msg = "If not specified, availability is assumed to be 100%. If you " \
-          "don't want to specify any availability derates, simply leave the " \
-          "exogenous_availability_scenario_id empty and this message will " \
-          "disappear."
+    msg = (
+        "If not specified, availability is assumed to be 100%. If you "
+        "don't want to specify any availability derates, simply leave the "
+        "exogenous_availability_scenario_id empty and this message will "
+        "disappear."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -276,7 +290,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_availability_exogenous",
         severity="Low",
-        errors=validate_missing_inputs(df, value_cols, idx_cols, msg)
+        errors=validate_missing_inputs(df, value_cols, idx_cols, msg),
     )
 
     # Check for correct sign
@@ -289,5 +303,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_transmission_availability_exogenous",
             severity="Low",
-            errors=validate_values(df, value_cols, min=0)
+            errors=validate_values(df, value_cols, min=0),
         )

@@ -37,10 +37,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     # Add costs to objective function
     def total_capacity_cost_rule(mod):
-        return sum(mod.Capacity_Cost_in_Period[g, p]
-                   * mod.discount_factor[p]
-                   * mod.number_years_represented[p]
-                   for (g, p) in mod.PRJ_OPR_PRDS)
+        return sum(
+            mod.Capacity_Cost_in_Period[g, p]
+            * mod.discount_factor[p]
+            * mod.number_years_represented[p]
+            for (g, p) in mod.PRJ_OPR_PRDS
+        )
+
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
@@ -53,5 +56,4 @@ def record_dynamic_components(dynamic_components):
     Add total capacity costs to cost components
     """
 
-    getattr(dynamic_components, cost_components).append(
-        "Total_Capacity_Costs")
+    getattr(dynamic_components, cost_components).append("Total_Capacity_Costs")

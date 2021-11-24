@@ -34,13 +34,21 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets
-from gridpath.auxiliary.validations import get_projects, get_expected_dtypes, \
-    write_validation_to_database, validate_dtypes, validate_values, \
-    validate_idxs, validate_missing_inputs
-from gridpath.project.capacity.capacity_types.common_methods import \
-    spec_get_inputs_from_database, spec_write_tab_file, spec_determine_inputs
+from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.validations import (
+    get_projects,
+    get_expected_dtypes,
+    write_validation_to_database,
+    validate_dtypes,
+    validate_values,
+    validate_idxs,
+    validate_missing_inputs,
+)
+from gridpath.project.capacity.capacity_types.common_methods import (
+    spec_get_inputs_from_database,
+    spec_write_tab_file,
+    spec_determine_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -104,24 +112,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.stor_spec_power_capacity_mw = Param(
-        m.STOR_SPEC_OPR_PRDS,
-        within=NonNegativeReals
-    )
+    m.stor_spec_power_capacity_mw = Param(m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals)
 
     m.stor_spec_energy_capacity_mwh = Param(
-        m.STOR_SPEC_OPR_PRDS,
-        within=NonNegativeReals
+        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
     m.stor_spec_fixed_cost_per_mw_yr = Param(
-        m.STOR_SPEC_OPR_PRDS,
-        within=NonNegativeReals
+        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
     m.stor_spec_fixed_cost_per_mwh_yr = Param(
-        m.STOR_SPEC_OPR_PRDS,
-        within=NonNegativeReals
+        m.STOR_SPEC_OPR_PRDS, within=NonNegativeReals
     )
 
     # Dynamic Components
@@ -136,6 +138,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # Capacity Type Methods
 ###############################################################################
+
 
 def capacity_rule(mod, g, p):
     """
@@ -160,46 +163,49 @@ def capacity_cost_rule(mod, g, p):
     cost plus the energy capacity times the per-mwh fixed cost for each of
     the project's operational periods.
     """
-    return mod.stor_spec_power_capacity_mw[g, p] \
-        * mod.stor_spec_fixed_cost_per_mw_yr[g, p] \
-        + mod.stor_spec_energy_capacity_mwh[g, p] \
+    return (
+        mod.stor_spec_power_capacity_mw[g, p] * mod.stor_spec_fixed_cost_per_mw_yr[g, p]
+        + mod.stor_spec_energy_capacity_mwh[g, p]
         * mod.stor_spec_fixed_cost_per_mwh_yr[g, p]
+    )
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
-    project_period_list, spec_params_dict = \
-        spec_determine_inputs(
-            scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, capacity_type="stor_spec"
-        )
 
-    data_portal.data()["STOR_SPEC_OPR_PRDS"] = \
-        {None: project_period_list}
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    project_period_list, spec_params_dict = spec_determine_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type="stor_spec",
+    )
 
-    data_portal.data()["stor_spec_power_capacity_mw"] = \
-        spec_params_dict["specified_capacity_mw"]
+    data_portal.data()["STOR_SPEC_OPR_PRDS"] = {None: project_period_list}
 
-    data_portal.data()["stor_spec_energy_capacity_mwh"] = \
-        spec_params_dict["specified_capacity_mwh"]
+    data_portal.data()["stor_spec_power_capacity_mw"] = spec_params_dict[
+        "specified_capacity_mw"
+    ]
 
-    data_portal.data()["stor_spec_fixed_cost_per_mw_yr"] = \
-        spec_params_dict["fixed_cost_per_mw_yr"]
+    data_portal.data()["stor_spec_energy_capacity_mwh"] = spec_params_dict[
+        "specified_capacity_mwh"
+    ]
 
-    data_portal.data()["stor_spec_fixed_cost_per_mwh_yr"] = \
-        spec_params_dict["fixed_cost_per_mwh_yr"]
+    data_portal.data()["stor_spec_fixed_cost_per_mw_yr"] = spec_params_dict[
+        "fixed_cost_per_mw_yr"
+    ]
+
+    data_portal.data()["stor_spec_fixed_cost_per_mwh_yr"] = spec_params_dict[
+        "fixed_cost_per_mwh_yr"
+    ]
 
 
 # Database
 ###############################################################################
 
-def get_model_inputs_from_database(
-    scenario_id, subscenarios, subproblem, stage, conn
-):
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -227,18 +233,22 @@ def write_model_inputs(
     """
 
     spec_project_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # If spec_capacity_period_params.tab file already exists, append
     # rows to it
     spec_write_tab_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, spec_project_params=spec_project_params
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        spec_project_params=spec_project_params,
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -251,9 +261,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     stor_spec_params = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    projects = get_projects(conn, scenario_id, subscenarios, "capacity_type", "stor_spec")
+    projects = get_projects(
+        conn, scenario_id, subscenarios, "capacity_type", "stor_spec"
+    )
 
     # Convert input data into pandas DataFrame and extract data
     df = cursor_to_df(stor_spec_params)
@@ -262,8 +275,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
         conn=conn,
-        tables=["inputs_project_specified_capacity",
-                "inputs_project_specified_fixed_cost"]
+        tables=[
+            "inputs_project_specified_capacity",
+            "inputs_project_specified_fixed_cost",
+        ],
     )
 
     # Check dtypes
@@ -275,14 +290,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in df.columns
-                       if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -291,9 +305,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
     # Ensure project capacity & fixed cost is specified in at least 1 period
@@ -305,18 +319,19 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_idxs(actual_idxs=spec_projects,
-                             req_idxs=projects,
-                             idx_label="project",
-                             msg=msg)
+        errors=validate_idxs(
+            actual_idxs=spec_projects, req_idxs=projects, idx_label="project", msg=msg
+        ),
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw",
-            "fixed_cost_per_mw_year",
-            "fixed_cost_per_mwh_year"]
+    cols = [
+        "specified_capacity_mw",
+        "fixed_cost_per_mw_year",
+        "fixed_cost_per_mwh_year",
+    ]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -324,8 +339,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage_id=stage,
         gridpath_module=__name__,
         db_table="inputs_project_specified_capacity, "
-                 "inputs_project_specified_fixed_cost",
+        "inputs_project_specified_fixed_cost",
         severity="High",
-        errors=validate_missing_inputs(df, cols)
+        errors=validate_missing_inputs(df, cols),
     )
-

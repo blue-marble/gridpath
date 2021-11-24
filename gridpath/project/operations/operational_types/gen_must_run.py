@@ -32,17 +32,29 @@ Costs for this operational type include fuel costs and variable O&M costs.
 import csv
 import os
 import warnings
-from pyomo.environ import Constraint, Set, Param, NonNegativeReals, \
-    PositiveReals, PercentFraction, Expression, value
+from pyomo.environ import (
+    Constraint,
+    Set,
+    Param,
+    NonNegativeReals,
+    PositiveReals,
+    PercentFraction,
+    Expression,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value, cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_projects_by_reserve, validate_idxs, \
-    validate_single_input
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
-from gridpath.project.operations.operational_types.common_functions import \
-    load_optype_model_data, validate_opchars
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_projects_by_reserve,
+    validate_idxs,
+    validate_single_input,
+)
+from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.operations.operational_types.common_functions import (
+    load_optype_model_data,
+    validate_opchars,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -61,9 +73,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Two-dimensional set with generators of the :code:`gen_must_run`         |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    
+
     |
-    
+
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
@@ -102,24 +114,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "gen_must_run"
-        )
+        ),
     )
 
     m.GEN_MUST_RUN_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.GEN_MUST_RUN)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_MUST_RUN)
+        ),
     )
-    
+
     # Optional Params
     ###########################################################################
 
     m.gen_must_run_aux_consumption_frac_capacity = Param(
-        m.GEN_MUST_RUN,
-        within=PercentFraction,
-        default=0
+        m.GEN_MUST_RUN, within=PercentFraction, default=0
     )
 
     # Expressions
@@ -130,13 +140,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         **Expression Name**: GenMustRun_Auxiliary_Consumption_MW
         **Defined Over**: GEN_MUST_RUN_OPR_TMPS
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
             * mod.gen_must_run_aux_consumption_frac_capacity[g]
+        )
 
     m.GenMustRun_Auxiliary_Consumption_MW = Expression(
-        m.GEN_MUST_RUN_OPR_TMPS,
-        rule=auxiliary_consumption_rule
+        m.GEN_MUST_RUN_OPR_TMPS, rule=auxiliary_consumption_rule
     )
 
     # Constraints
@@ -159,15 +170,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 for project {} with '.' (no value) in projects.tab. Model will 
                 add constraint to ensure project {} cannot provide upward 
                 reserves.
-                """.format(g, g, g)
+                """.format(
+                    g, g, g
+                )
             )
-            return sum(getattr(mod, c)[g, tmp]
-                       for c in getattr(d, headroom_variables)[g]) == 0
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+                == 0
+            )
         else:
             return Constraint.Skip
+
     m.GenMustRun_No_Upward_Reserves_Constraint = Constraint(
-        m.GEN_MUST_RUN_OPR_TMPS,
-        rule=no_upward_reserve_rule
+        m.GEN_MUST_RUN_OPR_TMPS, rule=no_upward_reserve_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
@@ -187,50 +202,56 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 BA for project {} with '.' (no value) in projects.tab. Model 
                 will add constraint to ensure project {} cannot provide 
                 downward reserves.
-                """.format(g, g, g)
+                """.format(
+                    g, g, g
+                )
             )
-            return sum(getattr(mod, c)[g, tmp]
-                       for c in getattr(d, footroom_variables)[g]) == 0
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+                == 0
+            )
         else:
             return Constraint.Skip
+
     m.GenMustRun_No_Downward_Reserves_Constraint = Constraint(
-        m.GEN_MUST_RUN_OPR_TMPS,
-        rule=no_downward_reserve_rule
+        m.GEN_MUST_RUN_OPR_TMPS, rule=no_downward_reserve_rule
     )
 
 
 # Operational Type Methods
 ###############################################################################
 
+
 def power_provision_rule(mod, g, tmp):
     """
     Power provision for must run generators is simply their capacity in all
     timepoints when they are operational minus any auxiliary power consumption.
     """
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
+    return (
+        mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
         * (1 - mod.gen_must_run_aux_consumption_frac_capacity[g])
+    )
 
 
 def fuel_burn_rule(mod, g, tmp):
-    """
-    """
-    return mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0] \
+    """ """
+    return (
+        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], 0]
         * mod.Power_Provision_MW[g, tmp]
+    )
 
 
 def power_delta_rule(mod, g, tmp):
-    """
-    """
+    """ """
     return 0
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    mod, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
     :param mod:
     :param data_portal:
@@ -242,14 +263,16 @@ def load_model_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_model_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_must_run"
+        mod=mod,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_must_run",
     )
 
 
-def export_results(mod, d,
-                                   scenario_directory, subproblem, stage):
+def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
@@ -259,40 +282,60 @@ def export_results(mod, d,
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results", "dispatch_gen_must_run.csv"),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "dispatch_gen_must_run.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project",
-                         "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
-                         "technology", "load_zone", "power_mw",
-                         "gross_power_mw",
-                         "auxiliary_consumption_mw"
-                         ])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "balancing_type_project",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "technology",
+                "load_zone",
+                "power_mw",
+                "gross_power_mw",
+                "auxiliary_consumption_mw",
+            ]
+        )
 
         for (p, tmp) in mod.GEN_MUST_RUN_OPR_TMPS:
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.balancing_type_project[p],
-                mod.horizon[tmp, mod.balancing_type_project[p]],
-                tmp,
-                mod.tmp_weight[tmp],
-                mod.hrs_in_tmp[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Power_Provision_MW[p, tmp]),
-                value(mod.Capacity_MW[p, mod.period[tmp]])
-                * value(mod.Availability_Derate[p, tmp]),
-                value(mod.Capacity_MW[p, mod.period[tmp]])
-                * value(mod.Availability_Derate[p, tmp])
-                * mod.gen_must_run_aux_consumption_frac_capacity[p]
-            ])
+            writer.writerow(
+                [
+                    p,
+                    mod.period[tmp],
+                    mod.balancing_type_project[p],
+                    mod.horizon[tmp, mod.balancing_type_project[p]],
+                    tmp,
+                    mod.tmp_weight[tmp],
+                    mod.hrs_in_tmp[tmp],
+                    mod.technology[p],
+                    mod.load_zone[p],
+                    value(mod.Power_Provision_MW[p, tmp]),
+                    value(mod.Capacity_MW[p, mod.period[tmp]])
+                    * value(mod.Availability_Derate[p, tmp]),
+                    value(mod.Capacity_MW[p, mod.period[tmp]])
+                    * value(mod.Availability_Derate[p, tmp])
+                    * mod.gen_must_run_aux_consumption_frac_capacity[p],
+                ]
+            )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -305,8 +348,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
-                                 "gen_must_run")
+    opchar_df = validate_opchars(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_must_run"
+    )
 
     # Other module specific validations
 
@@ -326,10 +370,11 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         FROM inputs_project_heat_rate_curves) as heat_rates
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
-        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "gen_must_run",
-                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-                   )
+        """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            "gen_must_run",
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
     )
 
     # Convert inputs to data frame
@@ -344,9 +389,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_heat_rate_curves",
         severity="Mid",
-        errors=validate_single_input(df=hr_df,
-                                     msg="gen_must_run can only have one load "
-                                         "point (constant heat rate).")
+        errors=validate_single_input(
+            df=hr_df,
+            msg="gen_must_run can only have one load " "point (constant heat rate).",
+        ),
     )
 
     # Check that the project does not show up in any of the
@@ -358,7 +404,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         reserve_errors = validate_idxs(
             actual_idxs=opchar_df["project"],
             invalid_idxs=projects_w_ba,
-            msg="gen_must_run cannot provide {}.".format(reserve)
+            msg="gen_must_run cannot provide {}.".format(reserve),
         )
 
         write_validation_to_database(
@@ -369,6 +415,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table=table,
             severity="Mid",
-            errors=reserve_errors
+            errors=reserve_errors,
         )
-

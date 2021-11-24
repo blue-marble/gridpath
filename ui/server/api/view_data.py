@@ -18,9 +18,7 @@ from db.common_functions import connect_to_database
 
 
 class ViewDataAPI(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -36,7 +34,7 @@ class ViewDataAPI(Resource):
             scenario_id=scenario_id,
             other_scenarios=[],  # todo: does this break anything
             table=table,
-            db_path=self.db_path
+            db_path=self.db_path,
         )
 
 
@@ -53,9 +51,7 @@ def get_table_data(scenario_id, other_scenarios, table, db_path):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    query_for_column_names = c.execute(
-      """SELECT * FROM {} LIMIT 1;""".format(table)
-    )
+    query_for_column_names = c.execute("""SELECT * FROM {} LIMIT 1;""".format(table))
 
     column_names = [s[0] for s in query_for_column_names.description]
 
@@ -77,14 +73,15 @@ def get_table_data(scenario_id, other_scenarios, table, db_path):
         for scenario in other_scenarios:
             other_scenarios_string += ", {}".format(scenario)
 
-    table_data_query = c.execute("""
+    table_data_query = c.execute(
+        """
       SELECT {}
       FROM {}
       JOIN scenarios USING (scenario_id)
       WHERE scenario_id in ({}{});
       """.format(
-          columns_for_query, table, scenario_id, other_scenarios_string
-      )
+            columns_for_query, table, scenario_id, other_scenarios_string
+        )
     )
 
     rows_data = []
@@ -93,9 +90,6 @@ def get_table_data(scenario_id, other_scenarios, table, db_path):
         row_dict = dict(zip(column_names, row_values))
         rows_data.append(row_dict)
 
-    data_table_api = {
-        'columns': column_names,
-        'rowsData': rows_data
-    }
+    data_table_api = {"columns": column_names, "rowsData": rows_data}
 
     return data_table_api

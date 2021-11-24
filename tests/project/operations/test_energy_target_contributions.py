@@ -21,25 +21,28 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
-from tests.project.operations.common_functions import \
-    get_project_operational_timepoints
+from tests.common_functions import create_abstract_model, add_components_and_load_data
+from tests.project.operations.common_functions import get_project_operational_timepoints
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
     "system.load_balance.static_load_requirement",
     "geography.energy_target_zones",
     "system.policy.energy_targets.period_energy_target",
-    "project", "project.capacity.capacity", "project.availability.availability",
-    "project.fuels", "project.operations",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
     "project.operations.operational_types",
-    "project.operations.power"]
+    "project.operations.power",
+]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.energy_target_contributions"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -51,40 +54,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestRECs(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -96,39 +100,45 @@ class TestRECs(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: ENERGY_TARGET_PRJS
         expected_energy_target_projects = sorted(["Wind", "Wind_z2"])
         actual_energy_target_projects = sorted([p for p in instance.ENERGY_TARGET_PRJS])
-        self.assertListEqual(expected_energy_target_projects, actual_energy_target_projects)
+        self.assertListEqual(
+            expected_energy_target_projects, actual_energy_target_projects
+        )
 
         # Param: energy_target_zone
-        expected_energy_target_zone_by_prj = OrderedDict(sorted({
-           "Wind": "RPS_Zone_1", "Wind_z2": "RPS_Zone_2"
-                                                      }.items()
-                                                      )
-                                               )
-        actual_energy_target_zone_by_prj = OrderedDict(sorted({
-            p: instance.energy_target_zone[p] for p in instance.ENERGY_TARGET_PRJS}.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_energy_target_zone_by_prj, actual_energy_target_zone_by_prj)
+        expected_energy_target_zone_by_prj = OrderedDict(
+            sorted({"Wind": "RPS_Zone_1", "Wind_z2": "RPS_Zone_2"}.items())
+        )
+        actual_energy_target_zone_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.energy_target_zone[p]
+                    for p in instance.ENERGY_TARGET_PRJS
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_energy_target_zone_by_prj, actual_energy_target_zone_by_prj
+        )
 
         # Set: ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE
-        expected_prj_by_zone = OrderedDict(sorted({
-            "RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]
-                                                  }.items()
-                                                  )
-                                           )
-        actual_prj_by_zone = OrderedDict(sorted({
-            z: [p for p in instance.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]]
-            for z in instance.ENERGY_TARGET_ZONES
-                                                }.items()
-                                                )
-                                         )
+        expected_prj_by_zone = OrderedDict(
+            sorted({"RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]}.items())
+        )
+        actual_prj_by_zone = OrderedDict(
+            sorted(
+                {
+                    z: [p for p in instance.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]]
+                    for z in instance.ENERGY_TARGET_ZONES
+                }.items()
+            )
+        )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
 
         # Set: ENERGY_TARGET_PRJ_OPR_TMPS
@@ -136,11 +146,12 @@ class TestRECs(unittest.TestCase):
             get_project_operational_timepoints(expected_energy_target_projects)
         )
 
-        actual_energy_target_prj_op_tmp = sorted([
-            (prj, tmp) for (prj, tmp)
-            in instance.ENERGY_TARGET_PRJ_OPR_TMPS
-        ])
-        self.assertListEqual(expected_energy_target_prj_op_tmp, actual_energy_target_prj_op_tmp)
+        actual_energy_target_prj_op_tmp = sorted(
+            [(prj, tmp) for (prj, tmp) in instance.ENERGY_TARGET_PRJ_OPR_TMPS]
+        )
+        self.assertListEqual(
+            expected_energy_target_prj_op_tmp, actual_energy_target_prj_op_tmp
+        )
 
 
 if __name__ == "__main__":

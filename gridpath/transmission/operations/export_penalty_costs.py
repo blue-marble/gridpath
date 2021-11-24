@@ -27,26 +27,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Tuning cost can be applied on exports from a load zone to prioritize
     # meeting local load first
-    m.LZ_Exports = Var(
-        m.LOAD_ZONES, m.TMPS,
-        within=NonNegativeReals
-    )
+    m.LZ_Exports = Var(m.LOAD_ZONES, m.TMPS, within=NonNegativeReals)
 
     def exports_tuning_cost_constraint_rule(mod, lz, tmp):
-        return mod.LZ_Exports[lz, tmp] \
-            >= \
-            mod.Transmission_from_Zone_MW[lz, tmp] \
+        return (
+            mod.LZ_Exports[lz, tmp]
+            >= mod.Transmission_from_Zone_MW[lz, tmp]
             - mod.Transmission_to_Zone_MW[lz, tmp]
+        )
 
     m.Positive_Exports_Tuning_Cost_Constraint = Constraint(
-        m.LOAD_ZONES, m.TMPS,
-        rule=exports_tuning_cost_constraint_rule
+        m.LOAD_ZONES, m.TMPS, rule=exports_tuning_cost_constraint_rule
     )
 
     def export_penalty_cost_rule(mod, lz, tmp):
         return mod.LZ_Exports[lz, tmp] * mod.export_penalty_cost_per_mwh[lz]
 
     m.Export_Penalty_Cost = Expression(
-        m.LOAD_ZONES, m.TMPS,
-        rule=export_penalty_cost_rule
+        m.LOAD_ZONES, m.TMPS, rule=export_penalty_cost_rule
     )

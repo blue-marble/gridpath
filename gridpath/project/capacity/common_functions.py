@@ -13,5 +13,5 @@ def load_project_capacity_type_modules(required_capacity_modules):
     return load_subtype_modules(
         required_subtype_modules=required_capacity_modules,
         package="gridpath.project.capacity.capacity_types",
-        required_attributes=[]
+        required_attributes=[],
     )

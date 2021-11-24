@@ -30,11 +30,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.PRM_ZONE_PERIODS_WITH_REQUIREMENT = \
-        Set(dimen=2, within=m.PRM_ZONES * m.PERIODS)
+    m.PRM_ZONE_PERIODS_WITH_REQUIREMENT = Set(dimen=2, within=m.PRM_ZONES * m.PERIODS)
     m.prm_requirement_mw = Param(
-        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
-        within=NonNegativeReals)
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, within=NonNegativeReals
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -48,13 +47,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs", "prm_requirement.tab"),
-                     index=m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
-                     param=m.prm_requirement_mw,
-                     select=("prm_zone", "period",
-                             "prm_requirement_mw")
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "prm_requirement.tab",
+        ),
+        index=m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
+        param=m.prm_requirement_mw,
+        select=("prm_zone", "period", "prm_requirement_mw"),
+    )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -85,7 +89,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.PRM_REQUIREMENT_SCENARIO_ID
+            subscenarios.PRM_REQUIREMENT_SCENARIO_ID,
         )
     )
 
@@ -107,7 +111,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     prm_requirement.tab file.
@@ -120,18 +126,26 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     prm_requirement = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "prm_requirement.tab"), "w", newline="") as \
-            prm_requirement_tab_file:
-        writer = csv.writer(prm_requirement_tab_file,
-                            delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "prm_requirement.tab",
+        ),
+        "w",
+        newline="",
+    ) as prm_requirement_tab_file:
+        writer = csv.writer(
+            prm_requirement_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
-        writer.writerow(
-            ["prm_zone", "period", "prm_requirement_mw"]
-        )
+        writer.writerow(["prm_zone", "period", "prm_requirement_mw"])
 
         for row in prm_requirement:
             writer.writerow(row)

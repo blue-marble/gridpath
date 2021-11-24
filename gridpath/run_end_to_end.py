@@ -32,12 +32,22 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
-from gridpath.common_functions import get_db_parser, get_solve_parser, \
-    get_required_e2e_arguments_parser, get_parallel_get_inputs_parser, \
-    get_parallel_solve_parser, create_logs_directory_if_not_exists,\
-    Logging, determine_scenario_directory
-from gridpath import get_scenario_inputs, run_scenario, \
-    import_scenario_results, process_results
+from gridpath.common_functions import (
+    get_db_parser,
+    get_solve_parser,
+    get_required_e2e_arguments_parser,
+    get_parallel_get_inputs_parser,
+    get_parallel_solve_parser,
+    create_logs_directory_if_not_exists,
+    Logging,
+    determine_scenario_directory,
+)
+from gridpath import (
+    get_scenario_inputs,
+    run_scenario,
+    import_scenario_results,
+    process_results,
+)
 from gridpath.import_scenario_results import _import_rule
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 
@@ -53,31 +63,47 @@ def parse_arguments(args):
 
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_required_e2e_arguments_parser(),
-                 get_solve_parser(), get_parallel_get_inputs_parser(),
-                 get_parallel_solve_parser()]
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(),
+            get_solve_parser(),
+            get_parallel_get_inputs_parser(),
+            get_parallel_solve_parser(),
+        ],
     )
 
     # Arguments to skip an E2E step
-    parser.add_argument("--skip_get_inputs", default=False,
-                        action="store_true",
-                        help="Skip the 'get_scenario_inputs' E2E step.")
-    parser.add_argument("--skip_run_scenario", default=False,
-                        action="store_true",
-                        help="Skip the 'run_scenario' E2E step.")
-    parser.add_argument("--skip_import_results", default=False,
-                        action="store_true",
-                        help="Skip the 'import_scenario_results' E2E step.")
-    parser.add_argument("--skip_process_results", default=False,
-                        action="store_true",
-                        help="Skip the 'process_results' E2E step.")
+    parser.add_argument(
+        "--skip_get_inputs",
+        default=False,
+        action="store_true",
+        help="Skip the 'get_scenario_inputs' E2E step.",
+    )
+    parser.add_argument(
+        "--skip_run_scenario",
+        default=False,
+        action="store_true",
+        help="Skip the 'run_scenario' E2E step.",
+    )
+    parser.add_argument(
+        "--skip_import_results",
+        default=False,
+        action="store_true",
+        help="Skip the 'import_scenario_results' E2E step.",
+    )
+    parser.add_argument(
+        "--skip_process_results",
+        default=False,
+        action="store_true",
+        help="Skip the 'process_results' E2E step.",
+    )
 
     # Run only a single E2E step
-    parser.add_argument("--single_e2e_step_only",
-                        choices=["get_inputs", "run_scenario",
-                                 "import_results", "process_results"],
-                        help="Run only the specified E2E step. All others "
-                             "will be skipped.")
+    parser.add_argument(
+        "--single_e2e_step_only",
+        choices=["get_inputs", "run_scenario", "import_results", "process_results"],
+        help="Run only the specified E2E step. All others " "will be skipped.",
+    )
 
     parsed_arguments = parser.parse_args(args=args)
 
@@ -104,8 +130,9 @@ def update_run_status(db_path, scenario, status_id):
         WHERE scenario_name = ?;
         """
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=sql,
-                          data=(status_id, scenario), many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=sql, data=(status_id, scenario), many=False
+    )
 
 
 def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
@@ -129,9 +156,11 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
         """
 
     spin_on_database_lock(
-        conn=conn, cursor=c, sql=sql,
+        conn=conn,
+        cursor=c,
+        sql=sql,
         data=(process_id, start_time, scenario),
-        many=False
+        many=False,
     )
 
     conn.close()
@@ -158,9 +187,7 @@ def record_end_time(db_path, scenario, process_id, end_time):
         """
 
     spin_on_database_lock(
-        conn=conn, cursor=c, sql=sql,
-        data=(end_time, scenario, process_id),
-        many=False
+        conn=conn, cursor=c, sql=sql, data=(end_time, scenario, process_id), many=False
     )
 
     conn.close()
@@ -182,7 +209,9 @@ def check_if_in_queue(db_path, scenario):
         SELECT queue_order_id
         FROM scenarios
         WHERE scenario_name = '{}'
-        """.format(scenario)
+        """.format(
+            scenario
+        )
     ).fetchone()[0]
 
     conn.close()
@@ -209,9 +238,7 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
             UPDATE scenarios SET queue_order_id = NULL WHERE scenario_name = ?
         """
         spin_on_database_lock(
-            conn=conn, cursor=c, sql=sql,
-            data=(scenario,),
-            many=False
+            conn=conn, cursor=c, sql=sql, data=(scenario,), many=False
         )
     else:
         pass
@@ -248,13 +275,13 @@ def main(args=None):
     # If directed to do so, log e2e run
     scenario_directory = determine_scenario_directory(
         scenario_location=parsed_args.scenario_location,
-        scenario_name=parsed_args.scenario
+        scenario_name=parsed_args.scenario,
     )
 
     if parsed_args.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory=scenario_directory,
-            subproblem="", stage="")
+            scenario_directory=scenario_directory, subproblem="", stage=""
+        )
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout
@@ -268,7 +295,7 @@ def main(args=None):
             logs_dir=logs_directory,
             start_time=start_time,
             e2e=True,
-            process_id=process_id
+            process_id=process_id,
         )
         sys.stdout = logger
         sys.stderr = logger
@@ -281,7 +308,7 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=conn.cursor(),
-        script="run_end_to_end"
+        script="run_end_to_end",
     )
     conn.close()
 
@@ -310,13 +337,13 @@ def main(args=None):
     skip_import_results = True
     skip_process_results = True
 
-    if parsed_args.single_e2e_step_only == 'get_inputs':
+    if parsed_args.single_e2e_step_only == "get_inputs":
         skip_get_inputs = False
-    elif parsed_args.single_e2e_step_only == 'run_scenario':
+    elif parsed_args.single_e2e_step_only == "run_scenario":
         skip_run_scenario = False
-    elif parsed_args.single_e2e_step_only == 'import_results':
+    elif parsed_args.single_e2e_step_only == "import_results":
         skip_import_results = False
-    elif parsed_args.single_e2e_step_only == 'process_results':
+    elif parsed_args.single_e2e_step_only == "process_results":
         skip_process_results = False
     else:
         skip_get_inputs = False
@@ -335,16 +362,18 @@ def main(args=None):
                 scenario=scenario,
                 queue_order_id=queue_order_id,
                 process_id=process_id,
-                run_status_id=3
+                run_status_id=3,
             )
-            print("Error encountered when getting inputs from the database for "
-                  "scenario {}. End time: {}.".format(scenario, end_time))
+            print(
+                "Error encountered when getting inputs from the database for "
+                "scenario {}. End time: {}.".format(scenario, end_time)
+            )
             sys.exit(1)
 
     if not skip_run_scenario and not parsed_args.skip_run_scenario:
         try:
             # make sure run_scenario.py gets the required --scenario argument
-            run_scenario_args = args + ['--scenario', scenario]
+            run_scenario_args = args + ["--scenario", scenario]
             expected_objective_values = run_scenario.main(args=run_scenario_args)
         except Exception as e:
             logging.exception(e)
@@ -353,10 +382,13 @@ def main(args=None):
                 scenario=scenario,
                 queue_order_id=queue_order_id,
                 process_id=process_id,
-                run_status_id=3
+                run_status_id=3,
             )
-            print("Error encountered when running scenario {}. End time: {}."
-                  .format(scenario, end_time))
+            print(
+                "Error encountered when running scenario {}. End time: {}.".format(
+                    scenario, end_time
+                )
+            )
             sys.exit(1)
     else:
         expected_objective_values = None
@@ -371,10 +403,12 @@ def main(args=None):
                 scenario=scenario,
                 queue_order_id=queue_order_id,
                 process_id=process_id,
-                run_status_id=3
+                run_status_id=3,
             )
-            print("Error encountered when importing results for "
-                  "scenario {}. End time: {}.".format(scenario, end_time))
+            print(
+                "Error encountered when importing results for "
+                "scenario {}. End time: {}.".format(scenario, end_time)
+            )
             sys.exit(1)
 
     if not skip_process_results and not parsed_args.skip_process_results:
@@ -387,10 +421,12 @@ def main(args=None):
                 scenario=scenario,
                 queue_order_id=queue_order_id,
                 process_id=process_id,
-                run_status_id=3
+                run_status_id=3,
             )
-            print('Error encountered when importing results for '
-                  'scenario {}. End time: {}.'.format(scenario, end_time))
+            print(
+                "Error encountered when importing results for "
+                "scenario {}. End time: {}.".format(scenario, end_time)
+            )
             sys.exit(1)
 
     # If we make it here, mark run as complete and update run end time
@@ -399,7 +435,7 @@ def main(args=None):
         scenario=scenario,
         queue_order_id=queue_order_id,
         process_id=process_id,
-        run_status_id=2
+        run_status_id=2,
     )
     # TODO: should the process ID be set back to NULL?
     if not parsed_args.quiet:
@@ -415,9 +451,7 @@ def main(args=None):
     return expected_objective_values
 
 
-def update_db_for_run_end(
-    db_path, scenario, queue_order_id, process_id, run_status_id
-):
+def update_db_for_run_end(db_path, scenario, queue_order_id, process_id, run_status_id):
     """
     Make the necessary database updates when a run ends (remove from queue,
     update the run status, and record the end time).
@@ -427,8 +461,7 @@ def update_db_for_run_end(
     remove_from_queue_if_in_queue(db_path, scenario, queue_order_id)
     update_run_status(db_path, scenario, run_status_id)
     record_end_time(
-        db_path=db_path, scenario=scenario,
-        process_id=process_id, end_time=end_time
+        db_path=db_path, scenario=scenario, process_id=process_id, end_time=end_time
     )
 
     return end_time
@@ -440,7 +473,7 @@ def exit_gracefully():
     """
     Clean up before exit
     """
-    print('Exiting gracefully')
+    print("Exiting gracefully")
     args = sys.argv[1:]
     parsed_args = parse_arguments(args)
 
@@ -450,7 +483,7 @@ def exit_gracefully():
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=conn.cursor(),
-        script="run_end_to_end"
+        script="run_end_to_end",
     )
 
     # Check if running from queue

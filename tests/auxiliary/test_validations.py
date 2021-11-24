@@ -21,9 +21,7 @@ import gridpath.auxiliary.validations as module_to_test
 
 
 class TestValidations(unittest.TestCase):
-    """
-
-    """
+    """ """
 
     def test_get_expected_dtypes(self):
         """
@@ -51,11 +49,9 @@ class TestValidations(unittest.TestCase):
             "col2": "numeric",
             "col3": "numeric",
             "col4": "string",
-            "col5": "string"
+            "col5": "string",
         }
-        actual_dict = module_to_test.get_expected_dtypes(
-            conn, ["table1"]
-        )
+        actual_dict = module_to_test.get_expected_dtypes(conn, ["table1"])
         self.assertDictEqual(expected_dict, actual_dict)
 
         # Test dict gets created properly for multiple tables
@@ -66,11 +62,9 @@ class TestValidations(unittest.TestCase):
             "col4": "string",
             "col5": "string",
             "col6": "string",
-            "col7": "string"
+            "col7": "string",
         }
-        actual_dict = module_to_test.get_expected_dtypes(
-            conn, ["table1", "table2"]
-        )
+        actual_dict = module_to_test.get_expected_dtypes(conn, ["table1", "table2"])
         self.assertDictEqual(expected_dict, actual_dict)
 
         # Tear down: close connection
@@ -84,94 +78,84 @@ class TestValidations(unittest.TestCase):
         df_columns = ["project", "capacity"]
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["gas_ct", 10], ["coal_plant", 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
-                "result": ([], [])
-                },
+            1: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[["gas_ct", 10], ["coal_plant", 20]]
+                ),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
+                "result": ([], []),
+            },
             # Test invalid string column
-            2: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 10], ["coal_plant", "string"]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
+            2: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[["gas_ct", 10], ["coal_plant", "string"]]
+                ),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
                 "result": (
                     ["Invalid data type for column 'capacity'; expected numeric"],
-                    ["capacity"]
-                )},
+                    ["capacity"],
+                ),
+            },
             # Test invalid numeric column
-            3: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[[1, 10], [1, 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
+            3: {
+                "df": pd.DataFrame(columns=df_columns, data=[[1, 10], [1, 20]]),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
                 "result": (
                     ["Invalid data type for column 'project'; expected string"],
-                    ["project"]
-                )},
+                    ["project"],
+                ),
+            },
             # If at least one string in the column, pandas will convert
             # all column data to string so there will be no error
-            4: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct", 10], [1, 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
-                "result": ([], [])
-                },
+            4: {
+                "df": pd.DataFrame(columns=df_columns, data=[["gas_ct", 10], [1, 20]]),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
+                "result": ([], []),
+            },
             # Columns with all None are ignored
-            5: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[[None, 10], [None, 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
-                "result": ([], [])
-                },
+            5: {
+                "df": pd.DataFrame(columns=df_columns, data=[[None, 10], [None, 20]]),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
+                "result": ([], []),
+            },
             # Columns with all NaN are ignored
-            6: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[[np.nan, 10], [np.nan, 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
-                "result": ([], [])
-                },
+            6: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[[np.nan, 10], [np.nan, 20]]
+                ),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
+                "result": ([], []),
+            },
             # Columns with some None are not ignored
-            7: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[[10, 10], [None, 20]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
+            7: {
+                "df": pd.DataFrame(columns=df_columns, data=[[10, 10], [None, 20]]),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
                 "result": (
                     ["Invalid data type for column 'project'; expected string"],
-                    ["project"]
-                )},
+                    ["project"],
+                ),
+            },
             # Test multiple error columns
-            8: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[[10, "string"], [10, "string"]]),
-                "expected_dtypes": {
-                    "project": "string",
-                    "capacity": "numeric"},
+            8: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[[10, "string"], [10, "string"]]
+                ),
+                "expected_dtypes": {"project": "string", "capacity": "numeric"},
                 "result": (
-                    ["Invalid data type for column 'project'; expected string",
-                     "Invalid data type for column 'capacity'; expected numeric"],
-                    ["project", "capacity"]
-                )}
+                    [
+                        "Invalid data type for column 'project'; expected string",
+                        "Invalid data type for column 'capacity'; expected numeric",
+                    ],
+                    ["project", "capacity"],
+                ),
+            },
         }
 
         for test_case in test_cases.keys():
             expected_tuple = test_cases[test_case]["result"]
             actual_tuple = module_to_test.validate_dtypes(
                 df=test_cases[test_case]["df"],
-                expected_dtypes=test_cases[test_case]["expected_dtypes"]
+                expected_dtypes=test_cases[test_case]["expected_dtypes"],
             )
             self.assertTupleEqual(expected_tuple, actual_tuple)
 
@@ -180,65 +164,81 @@ class TestValidations(unittest.TestCase):
 
         :return:
         """
-        cols = ["project", "load_point_fraction",
-                "average_heat_rate_mmbtu_per_mwh"]
-        cols_to_check = ["load_point_fraction",
-                         "average_heat_rate_mmbtu_per_mwh"]
+        cols = ["project", "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+        cols_to_check = ["load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
         idx_col = "project"
         test_cases = {
             # Make sure correct inputs aren't flagged
-            1: {"df": pd.DataFrame(
+            1: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 0, 10.5],
-                          ["gas_ct", 1, 9],
-                          ["coal_plant", 0.5, 10]
-                          ]),
+                    data=[
+                        ["gas_ct", 0, 10.5],
+                        ["gas_ct", 1, 9],
+                        ["coal_plant", 0.5, 10],
+                    ],
+                ),
                 "min": 0,
                 "max": np.inf,
                 "strict_min": False,
                 "strict_max": False,
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure strict inequality requirement works
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 0, 10.5],
-                      ["gas_ct", 1, 9],
-                      ["coal_plant", 0.5, 10]
-                      ]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 0, 10.5],
+                        ["gas_ct", 1, 9],
+                        ["coal_plant", 0.5, 10],
+                    ],
+                ),
                 "min": 0,
                 "max": np.inf,
                 "strict_min": True,
                 "strict_max": False,
-                "result": ["project(s) 'gas_ct': Expected 0 < 'load_point_fraction' <= inf"]
-                },
+                "result": [
+                    "project(s) 'gas_ct': Expected 0 < 'load_point_fraction' <= inf"
+                ],
+            },
             # If >1 error in different columns separate error msgs are created
-            3: {"df": pd.DataFrame(
+            3: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 0, -10.5],
-                          ["gas_ct", -1, 9],
-                          ["coal_plant", -0.5, 10]
-                          ]),
+                    data=[
+                        ["gas_ct", 0, -10.5],
+                        ["gas_ct", -1, 9],
+                        ["coal_plant", -0.5, 10],
+                    ],
+                ),
                 "min": 0,
                 "max": np.inf,
                 "strict_min": False,
                 "strict_max": False,
-                "result": ["project(s) 'gas_ct, coal_plant': Expected 0 <= 'load_point_fraction' <= inf",
-                           "project(s) 'gas_ct': Expected 0 <= 'average_heat_rate_mmbtu_per_mwh' <= inf"]
-                },
+                "result": [
+                    "project(s) 'gas_ct, coal_plant': Expected 0 <= 'load_point_fraction' <= inf",
+                    "project(s) 'gas_ct': Expected 0 <= 'average_heat_rate_mmbtu_per_mwh' <= inf",
+                ],
+            },
             # Make sure upper bounds are working
-            4: {"df": pd.DataFrame(
+            4: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 0.2, 1],
-                          ["gas_ct", 0.5, 0.9],
-                          ["coal_plant", 1, 1.9]
-                          ]),
+                    data=[
+                        ["gas_ct", 0.2, 1],
+                        ["gas_ct", 0.5, 0.9],
+                        ["coal_plant", 1, 1.9],
+                    ],
+                ),
                 "min": 0,
                 "max": 1,
                 "strict_min": False,
                 "strict_max": False,
-                "result": ["project(s) 'coal_plant': Expected 0 <= 'average_heat_rate_mmbtu_per_mwh' <= 1"]
-                },
+                "result": [
+                    "project(s) 'coal_plant': Expected 0 <= 'average_heat_rate_mmbtu_per_mwh' <= 1"
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -260,37 +260,49 @@ class TestValidations(unittest.TestCase):
         :return:
         """
 
-        df_columns = ["project", "min_stable_level_fraction", "unit_size_mw",
-                      "startup_cost_per_mw", "shutdown_cost_per_mw"]
+        df_columns = [
+            "project",
+            "min_stable_level_fraction",
+            "unit_size_mw",
+            "startup_cost_per_mw",
+            "shutdown_cost_per_mw",
+        ]
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", 0.5, 100, None, None]]),
+            1: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[["nuclear", 0.5, 100, None, None]]
+                ),
                 "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure missing required inputs are flagged
-            2: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", None, 100, None, None]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[["nuclear", None, 100, None, None]]
+                ),
                 "columns": ["min_stable_level_fraction", "unit_size_mw"],
                 "required": True,
                 "category": "Always_on",
-                "result": ["project(s) 'nuclear'; Always_on should have "
-                           "inputs for 'min_stable_level_fraction'"]
-                },
+                "result": [
+                    "project(s) 'nuclear'; Always_on should have "
+                    "inputs for 'min_stable_level_fraction'"
+                ],
+            },
             # Make sure incompatible inputs are flagged
-            3: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", 0.5, 100, 1000, None]]),
+            3: {
+                "df": pd.DataFrame(
+                    columns=df_columns, data=[["nuclear", 0.5, 100, 1000, None]]
+                ),
                 "columns": ["startup_cost_per_mw", "shutdown_cost_per_mw"],
                 "required": False,
                 "category": "Always_on",
-                "result": ["project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
-                }
+                "result": [
+                    "project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -299,7 +311,7 @@ class TestValidations(unittest.TestCase):
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 required=test_cases[test_case]["required"],
-                category=test_cases[test_case]["category"]
+                category=test_cases[test_case]["category"],
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -308,79 +320,98 @@ class TestValidations(unittest.TestCase):
         cols2 = ["transmission_line", "capacity_type", "operational_type"]
         test_cases = {
             # Make sure matching valids don't throw errors
-            1: {"df": pd.DataFrame(
-                    columns=cols1,
-                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+            1: {
+                "df": pd.DataFrame(
+                    columns=cols1, data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]
+                ),
                 "columns": "capacity_type",
                 "valids": ["gen_new_lin"],
                 "invalids": [],
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure non-matching invalids don't throw errors
             # and test out multiple columns
-            2: {"df": pd.DataFrame(
-                    columns=cols1,
-                    data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols1, data=[["gas_ct", "gen_new_lin", "gen_commit_cap"]]
+                ),
                 "columns": ["capacity_type", "operational_type"],
                 "valids": [],
                 "invalids": [("invalid1", "invalid2")],
                 "result": [],
-                },
+            },
             # Make sure non-matching valids are detected
-            3: {"df": pd.DataFrame(
+            3: {
+                "df": pd.DataFrame(
                     columns=cols1,
-                    data=[["gas_ct1", "gen_new_lin", "gen_commit_cap"],
-                          ["gas_ct2", "invalid_cap_type", "gen_commit_cap"],
-                          ["storage_plant", "stor_new_lin", "stor"]
-                          ]),
+                    data=[
+                        ["gas_ct1", "gen_new_lin", "gen_commit_cap"],
+                        ["gas_ct2", "invalid_cap_type", "gen_commit_cap"],
+                        ["storage_plant", "stor_new_lin", "stor"],
+                    ],
+                ),
                 "columns": "capacity_type",
                 "valids": ["gen_new_lin", "stor_new_lin"],
                 "invalids": [],
-                "result": ["project(s) 'gas_ct2': Invalid entry for "
-                           "capacity_type. Valid options are ['gen_new_lin', "
-                           "'stor_new_lin']."]
-                },
+                "result": [
+                    "project(s) 'gas_ct2': Invalid entry for "
+                    "capacity_type. Valid options are ['gen_new_lin', "
+                    "'stor_new_lin']."
+                ],
+            },
             # Make sure matching invalids are detected
-            4: {"df": pd.DataFrame(
+            4: {
+                "df": pd.DataFrame(
                     columns=cols1,
-                    data=[["gas_ct1", "cap1", "op2"],
-                          ["gas_ct2", "cap1", "op3"]
-                          ]),
+                    data=[["gas_ct1", "cap1", "op2"], ["gas_ct2", "cap1", "op3"]],
+                ),
                 "columns": ["capacity_type", "operational_type"],
                 "valids": [],
                 "invalids": [("cap1", "op2")],
-                "result": ["project(s) 'gas_ct1': Invalid entry for "
-                           "['capacity_type', 'operational_type']. Invalid "
-                           "options are [('cap1', 'op2')]."]
-                },
+                "result": [
+                    "project(s) 'gas_ct1': Invalid entry for "
+                    "['capacity_type', 'operational_type']. Invalid "
+                    "options are [('cap1', 'op2')]."
+                ],
+            },
             # Make sure non-matching valids and matching invalids and are
             # detected
-            5: {"df": pd.DataFrame(
-                columns=cols1,
-                data=[["gas_ct1", "cap1", "op2"],
-                      ["gas_ct2", "cap1", "op3"],
-                      ]),
+            5: {
+                "df": pd.DataFrame(
+                    columns=cols1,
+                    data=[
+                        ["gas_ct1", "cap1", "op2"],
+                        ["gas_ct2", "cap1", "op3"],
+                    ],
+                ),
                 "columns": ["capacity_type", "operational_type"],
                 "valids": [("cap1", "op1")],
                 "invalids": [("cap1", "op2")],
-                "result": ["project(s) 'gas_ct1, gas_ct2': Invalid entry for "
-                           "['capacity_type', 'operational_type']. Valid "
-                           "options are [('cap1', 'op1')]. Invalid "
-                           "options are [('cap1', 'op2')]."]
-                },
+                "result": [
+                    "project(s) 'gas_ct1, gas_ct2': Invalid entry for "
+                    "['capacity_type', 'operational_type']. Valid "
+                    "options are [('cap1', 'op1')]. Invalid "
+                    "options are [('cap1', 'op2')]."
+                ],
+            },
             # Test idx_col lookup for transmission lines
-            6: {"df": pd.DataFrame(
-                columns=cols2,
-                data=[["tx1", "new_build", "tx_dcopf"],
-                      ["tx2", "new_build", "tx_simple"]
-                      ]),
+            6: {
+                "df": pd.DataFrame(
+                    columns=cols2,
+                    data=[
+                        ["tx1", "new_build", "tx_dcopf"],
+                        ["tx2", "new_build", "tx_simple"],
+                    ],
+                ),
                 "columns": ["capacity_type", "operational_type"],
                 "valids": [],
                 "invalids": [("new_build", "tx_dcopf")],
-                "result": ["transmission_line(s) 'tx1': Invalid entry for "
-                           "['capacity_type', 'operational_type']. Invalid "
-                           "options are [('new_build', 'tx_dcopf')]."]
-                }
+                "result": [
+                    "transmission_line(s) 'tx1': Invalid entry for "
+                    "['capacity_type', 'operational_type']. Invalid "
+                    "options are [('new_build', 'tx_dcopf')]."
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -389,62 +420,75 @@ class TestValidations(unittest.TestCase):
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 valids=test_cases[test_case]["valids"],
-                invalids=test_cases[test_case]["invalids"]
+                invalids=test_cases[test_case]["invalids"],
             )
             self.assertListEqual(expected_list, actual_list)
 
     def test_validate_idxs(self):
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"actual_idxs": ["gas_ct", "coal_plant"],
+            1: {
+                "actual_idxs": ["gas_ct", "coal_plant"],
                 "req_idxs": ["gas_ct"],
                 "invalid_idxs": ["gen_gas_ct2"],
                 "idx_label": "project",
                 "msg": "",
                 "result": [],
-                },
+            },
             # Make sure missing required indexes inputs are detected
-            2: {"actual_idxs": [],
+            2: {
+                "actual_idxs": [],
                 "req_idxs": ["gas_ct"],
                 "invalid_idxs": [],
                 "idx_label": "project",
                 "msg": "",
-                "result": ["Missing required inputs for project: ['gas_ct']. "]
-                },
+                "result": ["Missing required inputs for project: ['gas_ct']. "],
+            },
             # Make sure missing required tuple indexes are properly detected
-            3: {"actual_idxs": [],
+            3: {
+                "actual_idxs": [],
                 "req_idxs": [("gas_ct", 2020)],
                 "invalid_idxs": [],
                 "idx_label": "(project, period)",
                 "msg": "",
-                "result": ["Missing required inputs for (project, period): [('gas_ct', 2020)]. "]
-                },
+                "result": [
+                    "Missing required inputs for (project, period): [('gas_ct', 2020)]. "
+                ],
+            },
             # Make sure multiple missing required tuple indexes are properly
             # detected (results are sorted!)
-            4: {"actual_idxs": [],
-                "req_idxs": [("gas_ct", 2020),
-                             ("coal_plant", 2020)],
+            4: {
+                "actual_idxs": [],
+                "req_idxs": [("gas_ct", 2020), ("coal_plant", 2020)],
                 "invalid_idxs": [],
                 "idx_label": "(project, period)",
                 "msg": "",
-                "result": ["Missing required inputs for (project, period): [('coal_plant', 2020), ('gas_ct', 2020)]. "]
-                },
+                "result": [
+                    "Missing required inputs for (project, period): [('coal_plant', 2020), ('gas_ct', 2020)]. "
+                ],
+            },
             # Make sure invalid idxs are detected and error message is added.
-            5: {"actual_idxs": ["gas_ct", "btm_solar"],
+            5: {
+                "actual_idxs": ["gas_ct", "btm_solar"],
                 "req_idxs": [],
                 "invalid_idxs": ["btm_solar"],
                 "idx_label": "project",
                 "msg": "gen_var_must_take cannot provide lf_down.",
-                "result": ["Invalid inputs for project: ['btm_solar']. gen_var_must_take cannot provide lf_down."]
-                },
+                "result": [
+                    "Invalid inputs for project: ['btm_solar']. gen_var_must_take cannot provide lf_down."
+                ],
+            },
             # Make sure multiple invalid idxs are detected correctly
-            6: {"actual_idxs": ["gas_ct", "btm_solar", "btm_wind"],
+            6: {
+                "actual_idxs": ["gas_ct", "btm_solar", "btm_wind"],
                 "req_idxs": [],
                 "invalid_idxs": ["btm_solar", "btm_wind"],
                 "idx_label": "project",
                 "msg": "gen_var_must_take cannot provide lf_down.",
-                "result": ["Invalid inputs for project: ['btm_solar', 'btm_wind']. gen_var_must_take cannot provide lf_down."]
-                },
+                "result": [
+                    "Invalid inputs for project: ['btm_solar', 'btm_wind']. gen_var_must_take cannot provide lf_down."
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -454,7 +498,7 @@ class TestValidations(unittest.TestCase):
                 req_idxs=test_cases[test_case]["req_idxs"],
                 invalid_idxs=test_cases[test_case]["invalid_idxs"],
                 idx_label=test_cases[test_case]["idx_label"],
-                msg=test_cases[test_case]["msg"]
+                msg=test_cases[test_case]["msg"],
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -467,24 +511,24 @@ class TestValidations(unittest.TestCase):
         df_columns = ["project", "load_point_fraction"]
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
-                    columns=df_columns,
-                    data=[["nuclear", 100]]),
+            1: {
+                "df": pd.DataFrame(columns=df_columns, data=[["nuclear", 100]]),
                 "idx_col": "project",
                 "msg": "test msg",
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure multiple inputs per index are flagged
-            2: {"df": pd.DataFrame(
+            2: {
+                "df": pd.DataFrame(
                     columns=df_columns,
-                    data=[["nuclear", 100],
-                          ["nuclear", 200],
-                          ["gas_ct", 10]
-                          ]),
+                    data=[["nuclear", 100], ["nuclear", 200], ["gas_ct", 10]],
+                ),
                 "idx_col": "project",
                 "msg": "test msg",
-                "result": ["project(s) 'nuclear': Too many inputs! Maximum 1 input per project. test msg"]
-                }
+                "result": [
+                    "project(s) 'nuclear': Too many inputs! Maximum 1 input per project. test msg"
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -497,38 +541,48 @@ class TestValidations(unittest.TestCase):
             self.assertListEqual(expected_list, actual_list)
 
     def test_validate_piecewise_curves(self):
-        df_columns = ["project", "period",
-                      "load_point_fraction", "average_heat_rate_mmbtu_per_mwh"]
+        df_columns = [
+            "project",
+            "period",
+            "load_point_fraction",
+            "average_heat_rate_mmbtu_per_mwh",
+        ]
         x_col = "load_point_fraction"
         slope_col = "average_heat_rate_mmbtu_per_mwh"
         y_name = "fuel burn"
         test_cases = {
             # Make sure correct inputs don't throw error
-            1: {"df": pd.DataFrame(
+            1: {
+                "df": pd.DataFrame(
                     columns=df_columns,
-                    data=[["gas_ct", 2020, 10, 10.5],
-                          ["gas_ct", 2020, 20, 9],
-                          ["coal_plant", 2020, 100, 10]
-                          ]),
-                "result": []
-                },
+                    data=[
+                        ["gas_ct", 2020, 10, 10.5],
+                        ["gas_ct", 2020, 20, 9],
+                        ["coal_plant", 2020, 100, 10],
+                    ],
+                ),
+                "result": [],
+            },
             # Make sure all different error types are detected
-            2: {"df": pd.DataFrame(
-                columns=df_columns,
-                data=[["gas_ct2", 2020, 10, 11],
-                      ["gas_ct2", 2020, 10, 12],
-                      ["gas_ct3", 2020, 10, 11],
-                      ["gas_ct3", 2020, 20, 5],
-                      ["gas_ct4", 2020, 10, 11],
-                      ["gas_ct4", 2020, 20, 10],
-                      ["gas_ct4", 2020, 30, 9]
-                      ]),
-                "result": ["project-period 'gas_ct2-2020': load_point_fraction values can not be identical",
-                           "project-period 'gas_ct3-2020': fuel burn should increase with increasing load",
-                           "project-period 'gas_ct4-2020': fuel burn curve should be convex, i.e. the slope should increase with increasing load_point_fraction"
-                           ]
-                },
-
+            2: {
+                "df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[
+                        ["gas_ct2", 2020, 10, 11],
+                        ["gas_ct2", 2020, 10, 12],
+                        ["gas_ct3", 2020, 10, 11],
+                        ["gas_ct3", 2020, 20, 5],
+                        ["gas_ct4", 2020, 10, 11],
+                        ["gas_ct4", 2020, 20, 10],
+                        ["gas_ct4", 2020, 30, 9],
+                    ],
+                ),
+                "result": [
+                    "project-period 'gas_ct2-2020': load_point_fraction values can not be identical",
+                    "project-period 'gas_ct3-2020': fuel burn should increase with increasing load",
+                    "project-period 'gas_ct4-2020': fuel burn curve should be convex, i.e. the slope should increase with increasing load_point_fraction",
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -537,7 +591,7 @@ class TestValidations(unittest.TestCase):
                 df=test_cases[test_case]["df"],
                 x_col=x_col,
                 slope_col=slope_col,
-                y_name=y_name
+                y_name=y_name,
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -547,115 +601,152 @@ class TestValidations(unittest.TestCase):
         :return:
         """
 
-        prj_df_columns = ["project", "operational_type",
-                          "min_stable_level_fraction"]
-        su_df_columns = ["project", "down_time_cutoff_hours",
-                         "startup_plus_ramp_up_rate"]
+        prj_df_columns = ["project", "operational_type", "min_stable_level_fraction"]
+        su_df_columns = [
+            "project",
+            "down_time_cutoff_hours",
+            "startup_plus_ramp_up_rate",
+        ]
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
-            1: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["ccgt", "gen_commit_bin", 0.6]]),
+            1: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns, data=[["ccgt", "gen_commit_bin", 0.6]]
+                ),
                 "su_df": pd.DataFrame(columns=su_df_columns),
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure correct inputs don't throw errors
-            2: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns + ["min_down_time_hours",
-                                              "shutdown_plus_ramp_down_rate",
-                                              "startup_fuel_mmbtu_per_mw"],
-                    data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 0]]),
+            2: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns
+                    + [
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate",
+                        "startup_fuel_mmbtu_per_mw",
+                    ],
+                    data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 0]],
+                ),
                 "su_df": pd.DataFrame(
                     columns=su_df_columns,
-                    data=[["ccgt", 8, 0.00334],
-                          ["ccgt", 12, 0.002]]),
-                "result": []
-                },
+                    data=[["ccgt", 8, 0.00334], ["ccgt", 12, 0.002]],
+                ),
+                "result": [],
+            },
             # Make sure too short min down time is flagged
-            3: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns + ["min_down_time_hours",
-                                              "shutdown_plus_ramp_down_rate",
-                                              "startup_fuel_mmbtu_per_mw"],
-                    data=[["ccgt", "gen_commit_bin", 0.6, 4, 0.00334, 0]]),
+            3: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns
+                    + [
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate",
+                        "startup_fuel_mmbtu_per_mw",
+                    ],
+                    data=[["ccgt", "gen_commit_bin", 0.6, 4, 0.00334, 0]],
+                ),
                 "su_df": pd.DataFrame(
                     columns=su_df_columns,
-                    data=[["ccgt", 4, 0.00334],
-                          ["ccgt", 12, 0.002]]),
-                "result": ["Project(s) 'ccgt': Startup ramp duration plus shutdown ramp duration "
-                           "should be less than the minimum down time. Make sure the minimum "
-                           "down time is long enough to fit the (coldest) "
-                           "trajectories!"]
-                },
+                    data=[["ccgt", 4, 0.00334], ["ccgt", 12, 0.002]],
+                ),
+                "result": [
+                    "Project(s) 'ccgt': Startup ramp duration plus shutdown ramp duration "
+                    "should be less than the minimum down time. Make sure the minimum "
+                    "down time is long enough to fit the (coldest) "
+                    "trajectories!"
+                ],
+            },
             # Make sure multiple projects get flagged correctly
-            4: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns + ["min_down_time_hours",
-                                          "shutdown_plus_ramp_down_rate",
-                                          "startup_fuel_mmbtu_per_mw"],
-                    data=[["ccgt", "gen_commit_bin", 0.6, 4, 0.00334, 0],
-                          ["ccgt2", "gen_commit_bin", 0.6, 4, 0.00334, 0]]),
+            4: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns
+                    + [
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate",
+                        "startup_fuel_mmbtu_per_mw",
+                    ],
+                    data=[
+                        ["ccgt", "gen_commit_bin", 0.6, 4, 0.00334, 0],
+                        ["ccgt2", "gen_commit_bin", 0.6, 4, 0.00334, 0],
+                    ],
+                ),
                 "su_df": pd.DataFrame(
                     columns=su_df_columns,
-                    data=[["ccgt", 4, 0.00334],
-                          ["ccgt2", 4, 0.00334]]),
-                "result": ["Project(s) 'ccgt, ccgt2': Startup ramp duration plus shutdown ramp duration"
-                           " should be less than the minimum down time. Make sure the minimum"
-                           " down time is long enough to fit the (coldest) "
-                           "trajectories!"]
-                },
+                    data=[["ccgt", 4, 0.00334], ["ccgt2", 4, 0.00334]],
+                ),
+                "result": [
+                    "Project(s) 'ccgt, ccgt2': Startup ramp duration plus shutdown ramp duration"
+                    " should be less than the minimum down time. Make sure the minimum"
+                    " down time is long enough to fit the (coldest) "
+                    "trajectories!"
+                ],
+            },
             # Make sure a startup trajectory without min down time gets flagged
-            5: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["ccgt", "gen_commit_bin", 0.6]]),
+            5: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns, data=[["ccgt", "gen_commit_bin", 0.6]]
+                ),
                 "su_df": pd.DataFrame(
-                    columns=su_df_columns,
-                    data=[["ccgt", 8, 0.00334]]),
+                    columns=su_df_columns, data=[["ccgt", 8, 0.00334]]
+                ),
                 "result": [
                     "Project(s) 'ccgt': Startup ramp duration plus shutdown ramp duration"
                     " should be less than the minimum down time. Make sure the minimum"
                     " down time is long enough to fit the (coldest) trajectories!",
                     "Project(s) 'ccgt': down_time_cutoff_hours of hottest start should "
                     "match project's minimum_down_time_hours. If there is no minimum "
-                    "down time, set cutoff to zero."]
-                },
+                    "down time, set cutoff to zero.",
+                ],
+            },
             # Make sure quick-start units don't get flagged even if no min down
             # time provided (defaults to zero)
-            6: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns,
-                    data=[["ccgt", "gen_commit_bin", 0.6]]),
-                "su_df": pd.DataFrame(
-                    columns=su_df_columns,
-                    data=[["ccgt", 0, 0.012]]),
-                "result": []
-                },
+            6: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns, data=[["ccgt", "gen_commit_bin", 0.6]]
+                ),
+                "su_df": pd.DataFrame(columns=su_df_columns, data=[["ccgt", 0, 0.012]]),
+                "result": [],
+            },
             # Make sure startup fuel + trajectory combination is flagged
-            7: {"prj_df": pd.DataFrame(
-                    columns=prj_df_columns + ["min_down_time_hours",
-                                              "shutdown_plus_ramp_down_rate",
-                                              "startup_fuel_mmbtu_per_mw"],
-                    data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 1]]),
+            7: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns
+                    + [
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate",
+                        "startup_fuel_mmbtu_per_mw",
+                    ],
+                    data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 1]],
+                ),
                 "su_df": pd.DataFrame(
-                    columns=su_df_columns,
-                    data=[["ccgt", 8, 0.00334]]),
-                "result": ["Project(s) 'ccgt': Cannot have both startup_fuel inputs and a startup "
-                           "trajectory that takes multiple timepoints as this will double "
-                           "count startup fuel consumption. Please adjust startup ramp rate or"
-                           " startup fuel consumption inputs"]
-                },
+                    columns=su_df_columns, data=[["ccgt", 8, 0.00334]]
+                ),
+                "result": [
+                    "Project(s) 'ccgt': Cannot have both startup_fuel inputs and a startup "
+                    "trajectory that takes multiple timepoints as this will double "
+                    "count startup fuel consumption. Please adjust startup ramp rate or"
+                    " startup fuel consumption inputs"
+                ],
+            },
             # Make sure ramp rates decrease with increasing down time cutoff
-            8: {"prj_df": pd.DataFrame(
-                columns=prj_df_columns + ["min_down_time_hours",
-                                          "shutdown_plus_ramp_down_rate",
-                                          "startup_fuel_mmbtu_per_mw"],
-                data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 0]]),
+            8: {
+                "prj_df": pd.DataFrame(
+                    columns=prj_df_columns
+                    + [
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate",
+                        "startup_fuel_mmbtu_per_mw",
+                    ],
+                    data=[["ccgt", "gen_commit_bin", 0.6, 8, 0.00334, 0]],
+                ),
                 "su_df": pd.DataFrame(
                     columns=su_df_columns,
-                    data=[["ccgt", 8, 0.00334],
-                          ["ccgt", 12, 0.005]]),
+                    data=[["ccgt", 8, 0.00334], ["ccgt", 12, 0.005]],
+                ),
                 "result": [
                     "Project(s) 'ccgt': Startup ramp rate should decrease with "
-                    "increasing down time cutoff (colder starts are slower)."]
+                    "increasing down time cutoff (colder starts are slower)."
+                ],
             },
-
             # TODO: there are more situations to test (see aux #4 and #5)
         }
 
@@ -664,7 +755,7 @@ class TestValidations(unittest.TestCase):
             actual_list = module_to_test.validate_startup_shutdown_rate_inputs(
                 prj_df=test_cases[test_case]["prj_df"],
                 su_df=test_cases[test_case]["su_df"],
-                hrs_in_tmp=1
+                hrs_in_tmp=1,
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -680,32 +771,29 @@ class TestValidations(unittest.TestCase):
 
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
-            1: {"df": pd.DataFrame(
-                    columns=cols,
-                    data=[[1, 2020, 8760, 8760],
-                          [1, 2030, 8760, 8760]]),
-                "result": []
-                },
+            1: {
+                "df": pd.DataFrame(
+                    columns=cols, data=[[1, 2020, 8760, 8760], [1, 2030, 8760, 8760]]
+                ),
+                "result": [],
+            },
             # Make sure invalids are properly captured. Note that .values
             # somehow adds whitespace in front of the number
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[[1, 2020, 8761, 8760],
-                      [1, 2030, 8760, 8760]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols, data=[[1, 2020, 8761, 8760], [1, 2030, 8760, 8760]]
+                ),
                 "result": [
                     "['stage_id', 'period'](s) [[   1 2020]]: values in "
                     "column n_hours and hours_in_period_timepoints should be equal. "
-                    ]
-                }
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
             actual_list = module_to_test.validate_cols_equal(
-                df=test_cases[test_case]["df"],
-                col1=col1,
-                col2=col2,
-                idx_col=idx_col
+                df=test_cases[test_case]["df"], col1=col1, col2=col2, idx_col=idx_col
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -718,33 +806,42 @@ class TestValidations(unittest.TestCase):
 
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
-            1: {"df": pd.DataFrame(
+            1: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", "cap1", "op1"],
-                          ["gas_ct2", "cap2", "op1"]]),
+                    data=[["gas_ct", "cap1", "op1"], ["gas_ct2", "cap2", "op1"]],
+                ),
                 "idx_col": "project",
                 "result_cap_col": [],
-                "result_both_cols": []
-                },
+                "result_both_cols": [],
+            },
             # Make sure missing inputs are detected
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", "cap1", "op1"],
-                      ["gas_ct2", None, None]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", "cap1", "op1"], ["gas_ct2", None, None]],
+                ),
                 "idx_col": "project",
-                "result_cap_col": ["Missing capacity_type inputs for project(s): ['gas_ct2']. "],
-                "result_both_cols": ["Missing capacity_type inputs for project(s): ['gas_ct2']. ",
-                                     "Missing operational_type inputs for project(s): ['gas_ct2']. "]
-                },
+                "result_cap_col": [
+                    "Missing capacity_type inputs for project(s): ['gas_ct2']. "
+                ],
+                "result_both_cols": [
+                    "Missing capacity_type inputs for project(s): ['gas_ct2']. ",
+                    "Missing operational_type inputs for project(s): ['gas_ct2']. ",
+                ],
+            },
             # Make sure idx_col with list of cols works
-            3: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", "cap1", "op1"],
-                      ["gas_ct2", "cap1", None]]),
+            3: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[["gas_ct", "cap1", "op1"], ["gas_ct2", "cap1", None]],
+                ),
                 "idx_col": ["project", "capacity_type"],
                 "result_cap_col": [],
-                "result_both_cols": ["Missing operational_type inputs for ['project', 'capacity_type'](s): [['gas_ct2' 'cap1']]. "]
-            }
+                "result_both_cols": [
+                    "Missing operational_type inputs for ['project', 'capacity_type'](s): [['gas_ct2' 'cap1']]. "
+                ],
+            },
         }
 
         for test_case in test_cases.keys():
@@ -753,7 +850,7 @@ class TestValidations(unittest.TestCase):
             actual_list = module_to_test.validate_missing_inputs(
                 df=test_cases[test_case]["df"],
                 idx_col=test_cases[test_case]["idx_col"],
-                col="capacity_type"
+                col="capacity_type",
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -762,7 +859,7 @@ class TestValidations(unittest.TestCase):
             actual_list = module_to_test.validate_missing_inputs(
                 df=test_cases[test_case]["df"],
                 idx_col=test_cases[test_case]["idx_col"],
-                col=["capacity_type", "operational_type"]
+                col=["capacity_type", "operational_type"],
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -774,72 +871,104 @@ class TestValidations(unittest.TestCase):
         cols = ["project", "period", "max_mw", "max_mwh"]
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
-            1: {"df": pd.DataFrame(
+            1: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 2020, 10, 20],
-                          ["gas_ct", 2030, 10, 20],
-                          ["coal", 2030, 20, 20]]),
+                    data=[
+                        ["gas_ct", 2020, 10, 20],
+                        ["gas_ct", 2030, 10, 20],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw"],
                 "increasing": True,
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure a case with only basic inputs doesn't throw errors
             # - checking multiple columns
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 20],
-                      ["gas_ct", 2030, 10, 20],
-                      ["coal", 2030, 20, 20]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 20],
+                        ["gas_ct", 2030, 10, 20],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw", "max_mwh"],
                 "increasing": True,
-                "result": []
-                },
+                "result": [],
+            },
             # Decreasing values are flagged
-            3: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 20],
-                      ["gas_ct", 2030, 5, 20],
-                      ["coal", 2030, 20, 20]]),
+            3: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 20],
+                        ["gas_ct", 2030, 5, 20],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw"],
                 "increasing": True,
-                "result": ["project(s) 'gas_ct': max_mw should monotonically "
-                           "increase with period. "]
-                },
+                "result": [
+                    "project(s) 'gas_ct': max_mw should monotonically "
+                    "increase with period. "
+                ],
+            },
             # Decreasing values are flagged - multiple columns
-            4: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 20],
-                      ["gas_ct", 2030, 5, 15],
-                      ["coal", 2030, 20, 20]]),
+            4: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 20],
+                        ["gas_ct", 2030, 5, 15],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw", "max_mwh"],
                 "increasing": True,
-                "result": ["project(s) 'gas_ct': max_mw should monotonically "
-                           "increase with period. ",
-                           "project(s) 'gas_ct': max_mwh should monotonically "
-                           "increase with period. "]
-                },
+                "result": [
+                    "project(s) 'gas_ct': max_mw should monotonically "
+                    "increase with period. ",
+                    "project(s) 'gas_ct': max_mwh should monotonically "
+                    "increase with period. ",
+                ],
+            },
             # None values are ignored
-            5: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 20],
-                      ["gas_ct", 2030, 5, None],
-                      ["coal", 2030, 20, 20]]),
+            5: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 20],
+                        ["gas_ct", 2030, 5, None],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw", "max_mwh"],
                 "increasing": True,
-                "result": ["project(s) 'gas_ct': max_mw should monotonically "
-                           "increase with period. "]
-                },
+                "result": [
+                    "project(s) 'gas_ct': max_mw should monotonically "
+                    "increase with period. "
+                ],
+            },
             # Increasing values are flagged w increasing=False
-            6: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 5, 20],
-                      ["gas_ct", 2030, 10, 20],
-                      ["coal", 2030, 20, 20]]),
+            6: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 5, 20],
+                        ["gas_ct", 2030, 10, 20],
+                        ["coal", 2030, 20, 20],
+                    ],
+                ),
                 "col": ["max_mw"],
                 "increasing": False,
-                "result": ["project(s) 'gas_ct': max_mw should monotonically "
-                           "decrease with period. "]
-                }
+                "result": [
+                    "project(s) 'gas_ct': max_mw should monotonically "
+                    "decrease with period. "
+                ],
+            },
         }
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
@@ -847,7 +976,7 @@ class TestValidations(unittest.TestCase):
                 df=test_cases[test_case]["df"],
                 col=test_cases[test_case]["col"],
                 rank_col="period",
-                increasing=test_cases[test_case]["increasing"]
+                increasing=test_cases[test_case]["increasing"],
             )
             self.assertListEqual(expected_list, actual_list)
 
@@ -859,48 +988,68 @@ class TestValidations(unittest.TestCase):
         cols = ["project", "period", "min_mw", "avg_mw", "max_mw"]
         test_cases = {
             # Make sure a case with only basic inputs doesn't throw errors
-            1: {"df": pd.DataFrame(
+            1: {
+                "df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", 2020, 10, 15, 20],
-                          ["gas_ct", 2030, 10, 15, 20],
-                          ["coal", 2030, 20, 20, 20]]),
+                    data=[
+                        ["gas_ct", 2020, 10, 15, 20],
+                        ["gas_ct", 2030, 10, 15, 20],
+                        ["coal", 2030, 20, 20, 20],
+                    ],
+                ),
                 "cols": ["min_mw", "avg_mw", "max_mw"],
                 "idx_col": "project",
-                "result": []
-                },
+                "result": [],
+            },
             # Make sure erroneous inputs are properly caught
-            2: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 15, 20],
-                      ["gas_ct", 2030, 21, 15, 20],
-                      ["coal", 2030, 20, 20, 20]]),
+            2: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 15, 20],
+                        ["gas_ct", 2030, 21, 15, 20],
+                        ["coal", 2030, 20, 20, 20],
+                    ],
+                ),
                 "cols": ["min_mw", "avg_mw", "max_mw"],
                 "idx_col": "project",
-                "result": ["project(s) ['gas_ct']: Values cannot decrease "
-                           "between ['min_mw', 'avg_mw', 'max_mw']. "]
-                },
+                "result": [
+                    "project(s) ['gas_ct']: Values cannot decrease "
+                    "between ['min_mw', 'avg_mw', 'max_mw']. "
+                ],
+            },
             # None values are ignored
-            3: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 15, 20],
-                      ["gas_ct", 2030, None, 15, 20],
-                      ["coal", 2030, 20, 20, 20]]),
+            3: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 15, 20],
+                        ["gas_ct", 2030, None, 15, 20],
+                        ["coal", 2030, 20, 20, 20],
+                    ],
+                ),
                 "cols": ["min_mw", "max_mw"],
                 "idx_col": "project",
-                "result": []
-                },
+                "result": [],
+            },
             # idx_col can be list of strings
-            4: {"df": pd.DataFrame(
-                columns=cols,
-                data=[["gas_ct", 2020, 10, 15, 20],
-                      ["gas_ct", 2030, 21, 15, 20],
-                      ["coal", 2030, 20, 20, 20]]),
+            4: {
+                "df": pd.DataFrame(
+                    columns=cols,
+                    data=[
+                        ["gas_ct", 2020, 10, 15, 20],
+                        ["gas_ct", 2030, 21, 15, 20],
+                        ["coal", 2030, 20, 20, 20],
+                    ],
+                ),
                 "cols": ["min_mw", "avg_mw", "max_mw"],
                 "idx_col": ["project", "period"],
-                "result": ["['project', 'period'](s) [['gas_ct' 2030]]: "
-                           "Values cannot decrease between "
-                           "['min_mw', 'avg_mw', 'max_mw']. "]
-                }
+                "result": [
+                    "['project', 'period'](s) [['gas_ct' 2030]]: "
+                    "Values cannot decrease between "
+                    "['min_mw', 'avg_mw', 'max_mw']. "
+                ],
+            },
         }
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]

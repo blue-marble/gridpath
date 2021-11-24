@@ -22,15 +22,12 @@ import pandas as pd
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "geography.load_zones"]
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints", "geography.load_zones"]
 NAME_OF_MODULE_BEING_TESTED = "system.load_balance.static_load_requirement"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -42,40 +39,41 @@ for mdl in PREREQUISITE_MODULE_NAMES:
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="gridpath")
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestLoadRequirement(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -87,29 +85,30 @@ class TestLoadRequirement(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Param: static_load_mw
-        load_df = \
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs", "load_mw.tab"),
-                sep="\t"
-            )
+        load_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "load_mw.tab"), sep="\t"
+        )
         expected_static_load = OrderedDict(
             sorted(
-                load_df.set_index(
-                    ['LOAD_ZONES', 'timepoint']
-                ).to_dict()['load_mw'].items()
+                load_df.set_index(["LOAD_ZONES", "timepoint"])
+                .to_dict()["load_mw"]
+                .items()
             )
         )
-        actual_static_load = OrderedDict(sorted({
-            (z, tmp): instance.static_load_mw[z, tmp]
-            for z in instance.LOAD_ZONES for tmp in instance.TMPS
-                                                }.items()
-                                                )
-                                         )
+        actual_static_load = OrderedDict(
+            sorted(
+                {
+                    (z, tmp): instance.static_load_mw[z, tmp]
+                    for z in instance.LOAD_ZONES
+                    for tmp in instance.TMPS
+                }.items()
+            )
+        )
         self.assertDictEqual(expected_static_load, actual_static_load)
 
 

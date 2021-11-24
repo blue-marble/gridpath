@@ -18,8 +18,7 @@ Create or update scenario based on input from the UI client.
 
 from flask_socketio import emit
 
-from db.utilities.scenario import create_scenario, \
-  update_scenario_multiple_columns
+from db.utilities.scenario import create_scenario, update_scenario_multiple_columns
 from db.common_functions import connect_to_database
 
 
@@ -38,36 +37,36 @@ def add_or_update_scenario(db_path, msg):
     # Check if this is a new scenario or if we're updating an existing scenario
     # TODO: implement UI warnings if scenario exists
     scenario_exists = c.execute(
-            "SELECT scenario_name"
-            " FROM scenarios "
-            "WHERE scenario_name = '{}';".format(msg['scenarioName'])
+        "SELECT scenario_name"
+        " FROM scenarios "
+        "WHERE scenario_name = '{}';".format(msg["scenarioName"])
     ).fetchone()
 
     if scenario_exists is not None:
-        print('Updating scenario {}'.format(msg['scenarioName']))
+        print("Updating scenario {}".format(msg["scenarioName"]))
         # TODO: need a process for dealing with updating scenarios that have
         #  been run
         update_scenario_multiple_columns(
-            io=conn, c=c,
-            scenario_name=msg['scenarioName'],
-            column_values_dict=make_column_values_dict(db_path=db_path,
-                                                       msg=msg)
+            io=conn,
+            c=c,
+            scenario_name=msg["scenarioName"],
+            column_values_dict=make_column_values_dict(db_path=db_path, msg=msg),
         )
     else:
-        print('Inserting new scenario {}'.format(msg['scenarioName']))
+        print("Inserting new scenario {}".format(msg["scenarioName"]))
         create_scenario(
-            io=conn, c=c,
-            column_values_dict=make_column_values_dict(db_path=db_path,
-                                                       msg=msg)
+            io=conn,
+            c=c,
+            column_values_dict=make_column_values_dict(db_path=db_path, msg=msg),
         )
 
     scenario_id = c.execute(
-        "SELECT scenario_id FROM scenarios WHERE scenario_name = '{}'".format
-        (msg['scenarioName']
-         )
+        "SELECT scenario_id FROM scenarios WHERE scenario_name = '{}'".format(
+            msg["scenarioName"]
+        )
     ).fetchone()[0]
 
-    emit('return_new_scenario_id', scenario_id)
+    emit("return_new_scenario_id", scenario_id)
 
 
 def make_column_values_dict(db_path, msg):
@@ -90,11 +89,9 @@ def make_column_values_dict(db_path, msg):
         if key == "scenarioName":
             pass
         elif key == "scenarioDescription":
-            column_values_dict["scenario_description"] = \
-                msg["scenarioDescription"]
+            column_values_dict["scenario_description"] = msg["scenarioDescription"]
         else:
-            id_column, column_value = \
-                get_subscenario_id_value(c=c, msg=msg, key=key)
+            id_column, column_value = get_subscenario_id_value(c=c, msg=msg, key=key)
 
             column_values_dict[id_column] = column_value
 
@@ -126,9 +123,9 @@ def get_subscenario_id_value(c, msg, key):
             setting_value = None
         else:
             setting_value = c.execute(
-              """SELECT {} FROM {} WHERE name = '{}';""".format(
-                id_column, table, msg[key]
-              )
+                """SELECT {} FROM {} WHERE name = '{}';""".format(
+                    id_column, table, msg[key]
+                )
             ).fetchone()[0]
 
     return id_column, setting_value
@@ -151,16 +148,18 @@ def get_meta_data(c, form_key):
     """
     sep = form_key.index("$")
     ui_table = form_key[:sep]
-    ui_table_row = form_key[sep+1:]
+    ui_table_row = form_key[sep + 1 :]
 
     (subscenario_table, subscenario_id_column) = c.execute(
-      """SELECT ui_row_db_subscenario_table,
+        """SELECT ui_row_db_subscenario_table,
       ui_row_db_subscenario_table_id_column
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}'
-      AND ui_table_row = '{}';""".format(ui_table, ui_table_row)
+      AND ui_table_row = '{}';""".format(
+            ui_table, ui_table_row
+        )
     ).fetchone()
 
-    feature_bool = True if ui_table == 'features' else False
+    feature_bool = True if ui_table == "features" else False
 
     return feature_bool, subscenario_table, subscenario_id_column

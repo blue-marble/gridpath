@@ -34,26 +34,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "FREQUENCY_RESPONSE_BAS",
         "FREQUENCY_RESPONSE_PROJECTS",
         "Provide_Frequency_Response_MW",
-        "Total_Frequency_Response_Provision_MW"
-        )
+        "Total_Frequency_Response_Provision_MW",
+    )
 
-    m.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT = \
-        Set(m.TMPS,
-            initialize=lambda mod, tmp:
-            mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS &
-                mod.OPR_PRJS_IN_TMP[tmp])
+    m.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT = Set(
+        m.TMPS,
+        initialize=lambda mod, tmp: mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS
+        & mod.OPR_PRJS_IN_TMP[tmp],
+    )
 
     # Reserve provision
     def total_partial_frequency_response_rule(mod, ba, tmp):
-        return \
-            sum(mod.Provide_Frequency_Response_MW[g, tmp]
-                for g in
-                mod.
-                FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT[
-                    tmp]
-                if mod.frequency_response_ba[g] == ba
-                   )
-    m.Total_Partial_Frequency_Response_Provision_MW = \
-        Expression(m.FREQUENCY_RESPONSE_BAS, m.TMPS,
-                   rule=total_partial_frequency_response_rule)
+        return sum(
+            mod.Provide_Frequency_Response_MW[g, tmp]
+            for g in mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT[
+                tmp
+            ]
+            if mod.frequency_response_ba[g] == ba
+        )
 
+    m.Total_Partial_Frequency_Response_Provision_MW = Expression(
+        m.FREQUENCY_RESPONSE_BAS, m.TMPS, rule=total_partial_frequency_response_rule
+    )

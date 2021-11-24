@@ -55,17 +55,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         and timepoint weight to get the total emissions amount.
         """
 
-        return mod.Total_Fuel_Burn_MMBtu[prj, tmp] * \
-            mod.co2_intensity_tons_per_mmbtu[mod.fuel[prj]]
+        return (
+            mod.Total_Fuel_Burn_MMBtu[prj, tmp]
+            * mod.co2_intensity_tons_per_mmbtu[mod.fuel[prj]]
+        )
 
     m.Project_Carbon_Emissions = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
-        rule=carbon_emissions_rule
+        m.FUEL_PRJ_OPR_TMPS, rule=carbon_emissions_rule
     )
 
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -77,33 +79,53 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "results", "carbon_emissions_by_project.csv"),
-              "w", newline="") as carbon_emissions_results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "carbon_emissions_by_project.csv",
+        ),
+        "w",
+        newline="",
+    ) as carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "timepoint_weight",
-                         "number_of_hours_in_timepoint", "load_zone",
-                         "technology", "carbon_emissions_tons"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "load_zone",
+                "technology",
+                "carbon_emissions_tons",
+            ]
+        )
         for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.Project_Carbon_Emissions[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    m.period[tmp],
+                    m.horizon[tmp, m.balancing_type_project[p]],
+                    tmp,
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    m.load_zone[p],
+                    m.technology[p],
+                    value(m.Project_Carbon_Emissions[p, tmp]),
+                ]
+            )
 
 
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -120,16 +142,19 @@ def import_results_into_database(
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_carbon_emissions",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "carbon_emissions_by_project.csv"),
-              "r") as emissions_file:
+    with open(
+        os.path.join(results_directory, "carbon_emissions_by_project.csv"), "r"
+    ) as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -145,10 +170,20 @@ def import_results_into_database(
             carbon_emissions_tons = row[8]
 
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, technology, carbon_emissions_tons)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    horizon,
+                    timepoint,
+                    timepoint_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone,
+                    technology,
+                    carbon_emissions_tons,
+                )
             )
 
     insert_temp_sql = """
@@ -159,7 +194,9 @@ def import_results_into_database(
          number_of_hours_in_timepoint,
          load_zone, technology, carbon_emission_tons)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(scenario_id)
+         """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -174,9 +211,10 @@ def import_results_into_database(
         load_zone, technology, carbon_emission_tons
         FROM temp_results_project_carbon_emissions{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-         """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+         """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -196,9 +234,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         DELETE FROM results_project_carbon_emissions_by_technology_period 
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Aggregate emissions by technology, period, and spinup_or_lookahead
     agg_sql = """
@@ -215,6 +253,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, technology, 
         spinup_or_lookahead;"""
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )

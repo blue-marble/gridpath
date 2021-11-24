@@ -136,10 +136,8 @@ def all_modules_list():
         "system.reserves.balance.regulation_down",
         "system.reserves.balance.frequency_response",
         "system.reserves.balance.spinning_reserves",
-        "system.policy.energy_targets"
-        ".aggregate_period_energy_target_contributions",
-        "system.policy.energy_targets"
-        ".aggregate_horizon_energy_target_contributions",
+        "system.policy.energy_targets" ".aggregate_period_energy_target_contributions",
+        "system.policy.energy_targets" ".aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
@@ -150,8 +148,7 @@ def all_modules_list():
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
-        "system.reliability.local_capacity"
-        ".aggregate_local_capacity_contribution",
+        "system.reliability.local_capacity" ".aggregate_local_capacity_contribution",
         "system.reliability.local_capacity.local_capacity_balance",
         "system.markets.volume",
         "objective.project.aggregate_capacity_costs",
@@ -169,8 +166,7 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.regulation_down",
         "objective.system.reserve_violation_penalties.frequency_response",
         "objective.system.reserve_violation_penalties.spinning_reserves",
-        "objective.system.policy"
-        ".aggregate_period_energy_target_violation_penalties",
+        "objective.system.policy" ".aggregate_period_energy_target_violation_penalties",
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
@@ -180,7 +176,7 @@ def all_modules_list():
         "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_violation_penalties",
         "objective.system.aggregate_market_revenue_and_costs",
-        "objective.max_npv"
+        "objective.max_npv",
     ]
     return all_modules
 
@@ -194,134 +190,138 @@ def optional_modules_list():
     as the dictionary keys). Each of these modules belongs to only one feature.
     """
     optional_modules = {
-        "transmission":
-            ["transmission",
-             "transmission.capacity.capacity_types",
-             "transmission.capacity.capacity",
-             "transmission.availability.availability",
-             "transmission.operations.operational_types",
-             "transmission.operations.operations",
-             "system.load_balance.aggregate_transmission_power",
-             "transmission.operations.export_penalty_costs",
-             "objective.transmission.aggregate_capacity_costs",
-             "objective.transmission.aggregate_export_penalty_costs"],
-        "lf_reserves_up":
-            ["geography.load_following_up_balancing_areas",
-             "system.reserves.requirement.lf_reserves_up",
-             "project.operations.reserves.lf_reserves_up",
-             "project.operations.reserves.op_type_dependent.lf_reserves_up",
-             "system.reserves.aggregation.lf_reserves_up",
-             "system.reserves.balance.lf_reserves_up",
-             "objective.system.reserve_violation_penalties.lf_reserves_up"],
-        "lf_reserves_down":
-            ["geography.load_following_down_balancing_areas",
-             "system.reserves.requirement.lf_reserves_down",
-             "project.operations.reserves.lf_reserves_down",
-             "project.operations.reserves.op_type_dependent.lf_reserves_down",
-             "system.reserves.aggregation.lf_reserves_down",
-             "system.reserves.balance.lf_reserves_down",
-             "objective.system.reserve_violation_penalties.lf_reserves_down"],
-        "regulation_up":
-            ["geography.regulation_up_balancing_areas",
-             "system.reserves.requirement.regulation_up",
-             "project.operations.reserves.regulation_up",
-             "project.operations.reserves.op_type_dependent.regulation_up",
-             "system.reserves.aggregation.regulation_up",
-             "system.reserves.balance.regulation_up",
-             "objective.system.reserve_violation_penalties.regulation_up"],
-        "regulation_down":
-            ["geography.regulation_down_balancing_areas",
-             "system.reserves.requirement.regulation_down",
-             "project.operations.reserves.regulation_down",
-             "system.reserves.aggregation.regulation_down",
-             "project.operations.reserves.op_type_dependent.regulation_down",
-             "system.reserves.balance.regulation_down",
-             "objective.system.reserve_violation_penalties.regulation_down"],
-        "frequency_response":
-            ["geography.frequency_response_balancing_areas",
-             "system.reserves.requirement.frequency_response",
-             "project.operations.reserves.frequency_response",
-             "project.operations.reserves.op_type_dependent."
-             "frequency_response",
-             "system.reserves.aggregation.frequency_response",
-             "system.reserves.balance.frequency_response",
-             "objective.system.reserve_violation_penalties.frequency_response"
-             ],
-        "spinning_reserves":
-            ["geography.spinning_reserves_balancing_areas",
-             "system.reserves.requirement.spinning_reserves",
-             "project.operations.reserves.spinning_reserves",
-             "project.operations.reserves.op_type_dependent.spinning_reserves",
-             "system.reserves.aggregation.spinning_reserves",
-             "system.reserves.balance.spinning_reserves",
-             "objective.system.reserve_violation_penalties.spinning_reserves"],
-        "period_energy_target":
-            ["system.policy.energy_targets.period_energy_target",
-             "system.policy.energy_targets"
-             ".aggregate_period_energy_target_contributions",
-             "system.policy.energy_targets.period_energy_target_balance",
-             "objective.system.policy"
-             ".aggregate_period_energy_target_violation_penalties"],
-        "horizon_energy_target":
-            ["system.policy.energy_targets.horizon_energy_target",
-             "system.policy.energy_targets"
-             ".aggregate_horizon_energy_target_contributions",
-             "system.policy.energy_targets.horizon_energy_target_balance",
-             "objective.system.policy"
-             ".aggregate_horizon_energy_target_violation_penalties"],
-        "carbon_cap":
-            ["geography.carbon_cap_zones",
-             "system.policy.carbon_cap.carbon_cap",
-             "project.operations.carbon_cap",
-             "system.policy.carbon_cap.aggregate_project_carbon_emissions",
-             "system.policy.carbon_cap.carbon_balance",
-             "objective.system.policy.aggregate_carbon_cap_violation_penalties"
-             ],
-        "carbon_tax":
-            ["geography.carbon_tax_zones",
-             "system.policy.carbon_tax.carbon_tax",
-             "project.operations.carbon_tax",
-             "system.policy.carbon_tax.aggregate_project_carbon_emissions",
-             "system.policy.carbon_tax.carbon_tax_costs",
-             "objective.system.policy.aggregate_carbon_tax_costs"
-            ],
-        "prm":
-            ["geography.prm_zones",
-             "system.reliability.prm.prm_requirement",
-             "project.reliability.prm",
-             "project.reliability.prm.prm_types",
-             "project.reliability.prm.prm_simple",
-             "project.reliability.prm.group_costs",
-             "system.reliability.prm."
-             "aggregate_project_simple_prm_contribution",
-             "system.reliability.prm.prm_balance",
-             "objective.project."
-             "aggregate_prm_group_costs",
-             "objective.system.reliability.prm."
-             "aggregate_prm_violation_penalties"
-             ],
+        "transmission": [
+            "transmission",
+            "transmission.capacity.capacity_types",
+            "transmission.capacity.capacity",
+            "transmission.availability.availability",
+            "transmission.operations.operational_types",
+            "transmission.operations.operations",
+            "system.load_balance.aggregate_transmission_power",
+            "transmission.operations.export_penalty_costs",
+            "objective.transmission.aggregate_capacity_costs",
+            "objective.transmission.aggregate_export_penalty_costs",
+        ],
+        "lf_reserves_up": [
+            "geography.load_following_up_balancing_areas",
+            "system.reserves.requirement.lf_reserves_up",
+            "project.operations.reserves.lf_reserves_up",
+            "project.operations.reserves.op_type_dependent.lf_reserves_up",
+            "system.reserves.aggregation.lf_reserves_up",
+            "system.reserves.balance.lf_reserves_up",
+            "objective.system.reserve_violation_penalties.lf_reserves_up",
+        ],
+        "lf_reserves_down": [
+            "geography.load_following_down_balancing_areas",
+            "system.reserves.requirement.lf_reserves_down",
+            "project.operations.reserves.lf_reserves_down",
+            "project.operations.reserves.op_type_dependent.lf_reserves_down",
+            "system.reserves.aggregation.lf_reserves_down",
+            "system.reserves.balance.lf_reserves_down",
+            "objective.system.reserve_violation_penalties.lf_reserves_down",
+        ],
+        "regulation_up": [
+            "geography.regulation_up_balancing_areas",
+            "system.reserves.requirement.regulation_up",
+            "project.operations.reserves.regulation_up",
+            "project.operations.reserves.op_type_dependent.regulation_up",
+            "system.reserves.aggregation.regulation_up",
+            "system.reserves.balance.regulation_up",
+            "objective.system.reserve_violation_penalties.regulation_up",
+        ],
+        "regulation_down": [
+            "geography.regulation_down_balancing_areas",
+            "system.reserves.requirement.regulation_down",
+            "project.operations.reserves.regulation_down",
+            "system.reserves.aggregation.regulation_down",
+            "project.operations.reserves.op_type_dependent.regulation_down",
+            "system.reserves.balance.regulation_down",
+            "objective.system.reserve_violation_penalties.regulation_down",
+        ],
+        "frequency_response": [
+            "geography.frequency_response_balancing_areas",
+            "system.reserves.requirement.frequency_response",
+            "project.operations.reserves.frequency_response",
+            "project.operations.reserves.op_type_dependent." "frequency_response",
+            "system.reserves.aggregation.frequency_response",
+            "system.reserves.balance.frequency_response",
+            "objective.system.reserve_violation_penalties.frequency_response",
+        ],
+        "spinning_reserves": [
+            "geography.spinning_reserves_balancing_areas",
+            "system.reserves.requirement.spinning_reserves",
+            "project.operations.reserves.spinning_reserves",
+            "project.operations.reserves.op_type_dependent.spinning_reserves",
+            "system.reserves.aggregation.spinning_reserves",
+            "system.reserves.balance.spinning_reserves",
+            "objective.system.reserve_violation_penalties.spinning_reserves",
+        ],
+        "period_energy_target": [
+            "system.policy.energy_targets.period_energy_target",
+            "system.policy.energy_targets"
+            ".aggregate_period_energy_target_contributions",
+            "system.policy.energy_targets.period_energy_target_balance",
+            "objective.system.policy"
+            ".aggregate_period_energy_target_violation_penalties",
+        ],
+        "horizon_energy_target": [
+            "system.policy.energy_targets.horizon_energy_target",
+            "system.policy.energy_targets"
+            ".aggregate_horizon_energy_target_contributions",
+            "system.policy.energy_targets.horizon_energy_target_balance",
+            "objective.system.policy"
+            ".aggregate_horizon_energy_target_violation_penalties",
+        ],
+        "carbon_cap": [
+            "geography.carbon_cap_zones",
+            "system.policy.carbon_cap.carbon_cap",
+            "project.operations.carbon_cap",
+            "system.policy.carbon_cap.aggregate_project_carbon_emissions",
+            "system.policy.carbon_cap.carbon_balance",
+            "objective.system.policy.aggregate_carbon_cap_violation_penalties",
+        ],
+        "carbon_tax": [
+            "geography.carbon_tax_zones",
+            "system.policy.carbon_tax.carbon_tax",
+            "project.operations.carbon_tax",
+            "system.policy.carbon_tax.aggregate_project_carbon_emissions",
+            "system.policy.carbon_tax.carbon_tax_costs",
+            "objective.system.policy.aggregate_carbon_tax_costs",
+        ],
+        "prm": [
+            "geography.prm_zones",
+            "system.reliability.prm.prm_requirement",
+            "project.reliability.prm",
+            "project.reliability.prm.prm_types",
+            "project.reliability.prm.prm_simple",
+            "project.reliability.prm.group_costs",
+            "system.reliability.prm." "aggregate_project_simple_prm_contribution",
+            "system.reliability.prm.prm_balance",
+            "objective.project." "aggregate_prm_group_costs",
+            "objective.system.reliability.prm." "aggregate_prm_violation_penalties",
+        ],
         "local_capacity": [
             "geography.local_capacity_zones",
-             "system.reliability.local_capacity.local_capacity_requirement",
-             "project.reliability.local_capacity",
-             "project.reliability.local_capacity.local_capacity_contribution",
-             "system.reliability.local_capacity"
-             ".aggregate_local_capacity_contribution",
-             "system.reliability.local_capacity.local_capacity_balance",
-             "objective.system.reliability.local_capacity"
-             ".aggregate_local_capacity_violation_penalties",
-            ],
+            "system.reliability.local_capacity.local_capacity_requirement",
+            "project.reliability.local_capacity",
+            "project.reliability.local_capacity.local_capacity_contribution",
+            "system.reliability.local_capacity"
+            ".aggregate_local_capacity_contribution",
+            "system.reliability.local_capacity.local_capacity_balance",
+            "objective.system.reliability.local_capacity"
+            ".aggregate_local_capacity_violation_penalties",
+        ],
         "markets": [
             "geography.markets",
             "system.markets.prices",
             "system.load_balance.market_participation",
             "system.markets.volume",
-            "objective.system.aggregate_market_revenue_and_costs"
-            ],
+            "objective.system.aggregate_market_revenue_and_costs",
+        ],
         "tuning": [
             "project.operations.tuning_costs",
-            "objective.project.aggregate_operational_tuning_costs"
-            ]
+            "objective.project.aggregate_operational_tuning_costs",
+        ],
     }
     return optional_modules
 
@@ -336,22 +336,27 @@ def cross_feature_modules_list():
     described in the 'cross_modules' dictionary here.
     """
     cross_modules = {
-        ("transmission", "transmission_hurdle_rates"):
-            ["transmission.operations.hurdle_costs",
-             "objective.transmission.aggregate_hurdle_costs"],
-        ("transmission", "carbon_cap", "track_carbon_imports"):
-            ["system.policy.carbon_cap"
-             ".aggregate_transmission_carbon_emissions",
-             "transmission.operations.carbon_emissions"],
-        ("transmission", "carbon_cap", "track_carbon_imports", "tuning"):
-            ["objective.transmission.carbon_imports_tuning_costs"],
-        ("transmission", "simultaneous_flow_limits"):
-            ["transmission.operations.simultaneous_flow_limits"],
-        ("prm", "elcc_surface"):
-            ["project.reliability.prm.elcc_surface",
-             "system.reliability.prm.elcc_surface"],
-        ("prm", "elcc_surface", "tuning"):
-            ["objective.system.reliability.prm.dynamic_elcc_tuning_penalties"]
+        ("transmission", "transmission_hurdle_rates"): [
+            "transmission.operations.hurdle_costs",
+            "objective.transmission.aggregate_hurdle_costs",
+        ],
+        ("transmission", "carbon_cap", "track_carbon_imports"): [
+            "system.policy.carbon_cap" ".aggregate_transmission_carbon_emissions",
+            "transmission.operations.carbon_emissions",
+        ],
+        ("transmission", "carbon_cap", "track_carbon_imports", "tuning"): [
+            "objective.transmission.carbon_imports_tuning_costs"
+        ],
+        ("transmission", "simultaneous_flow_limits"): [
+            "transmission.operations.simultaneous_flow_limits"
+        ],
+        ("prm", "elcc_surface"): [
+            "project.reliability.prm.elcc_surface",
+            "system.reliability.prm.elcc_surface",
+        ],
+        ("prm", "elcc_surface", "tuning"): [
+            "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
+        ],
     }
     return cross_modules
 
@@ -363,16 +368,19 @@ def feature_shared_modules_list():
         values
     """
     shared_modules = {
-        ("period_energy_target", "horizon_energy_target"):
-            ["geography.energy_target_zones",
-             "project.operations.energy_target_contributions"],
+        ("period_energy_target", "horizon_energy_target"): [
+            "geography.energy_target_zones",
+            "project.operations.energy_target_contributions",
+        ],
     }
 
     return shared_modules
 
 
 def determine_modules(
-    features=None, scenario_directory=None, multi_stage=None,
+    features=None,
+    scenario_directory=None,
+    multi_stage=None,
 ):
     """
     :param features: List of requested features. Optional input; if
@@ -405,9 +413,11 @@ def determine_modules(
     those modules from the list of modules to use.
     """
     if (scenario_directory is None) and (features is None):
-        raise IOError("""Need to specify either 'scenario_directory', the
+        raise IOError(
+            """Need to specify either 'scenario_directory', the
                       directory where 'features.csv' is saved, or 'features',
-                      the list of requested features""")
+                      the list of requested features"""
+        )
     elif features is not None:
         requested_features = features
     elif scenario_directory is not None:
@@ -415,9 +425,11 @@ def determine_modules(
         try:
             requested_features = pd.read_csv(features_file)["features"].tolist()
         except IOError:
-            print("ERROR! Features file {} not found in {}.".format(
-                features_file, scenario_directory
-            ))
+            print(
+                "ERROR! Features file {} not found in {}.".format(
+                    features_file, scenario_directory
+                )
+            )
             sys.exit(1)
 
     # Remove any modules not requested by user
@@ -473,14 +485,13 @@ def determine_modules(
         else:
             for m in shared_modules[feature_group]:
                 modules_to_use.remove(m)
-            
+
     # Some modules depend on more than one feature
     # We have to check if all features that the module depends on are
     # specified before removing it
     cross_feature_modules = cross_feature_modules_list()
     for feature_group in list(cross_feature_modules.keys()):
-        if all(feature in requested_features
-               for feature in feature_group):
+        if all(feature in requested_features for feature in feature_group):
             pass
         else:
             for m in cross_feature_modules[feature_group]:
@@ -500,7 +511,7 @@ def load_modules(modules_to_use):
     loaded_modules = list()
     for m in modules_to_use:
         try:
-            imported_module = import_module("."+m, package='gridpath')
+            imported_module = import_module("." + m, package="gridpath")
             loaded_modules.append(imported_module)
         except ImportError:
             print("ERROR! Unable to import module " + str(m) + ".")

@@ -25,13 +25,14 @@ class ServerStatus(Resource):
 
     @staticmethod
     def get():
-        return 'running'
+        return "running"
 
 
 class ScenarioRunStatus(Resource):
     """
     Number of scenarios by run status type.
     """
+
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
@@ -39,13 +40,15 @@ class ScenarioRunStatus(Resource):
         conn = connect_to_database(db_path=self.db_path)
         c = conn.cursor()
 
-        run_status_api = c.execute("""
+        run_status_api = c.execute(
+            """
             SELECT run_status_name, COUNT(run_status_id)
             FROM scenarios
             JOIN mod_run_status_types
               USING (run_status_id)
             GROUP BY run_status_name
-        """).fetchall()
+        """
+        ).fetchall()
 
         return run_status_api
 
@@ -62,12 +65,14 @@ class ScenarioValidationStatus(Resource):
         conn = connect_to_database(db_path=self.db_path)
         c = conn.cursor()
 
-        validation_status_api = c.execute("""
+        validation_status_api = c.execute(
+            """
                 SELECT validation_status_name, COUNT(validation_status_id)
                 FROM scenarios
                 JOIN mod_validation_status_types
                   USING (validation_status_id)
                 GROUP BY validation_status_name
-            """).fetchall()
+            """
+        ).fetchall()
 
         return validation_status_api
