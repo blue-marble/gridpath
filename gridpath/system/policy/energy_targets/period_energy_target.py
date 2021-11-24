@@ -18,8 +18,7 @@ Simplest implementation with a MWh target
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, \
-    Expression
+from pyomo.environ import Set, Param, NonNegativeReals, PercentFraction, Expression
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -31,28 +30,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET = Set(
-        dimen=2,
-        within=m.ENERGY_TARGET_ZONES * m.PERIODS
+        dimen=2, within=m.ENERGY_TARGET_ZONES * m.PERIODS
     )
 
     # RPS target specified in energy terms
     m.period_energy_target_mwh = Param(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=NonNegativeReals,
-        default=0
+        default=0,
     )
 
     # RPS target specified in 'percent of load' terms
     m.period_energy_target_fraction = Param(
         m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
         within=PercentFraction,
-        default=0
+        default=0,
     )
 
     # Load zones included in RPS percentage target
     m.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES = Set(
-        dimen=2,
-        within=m.ENERGY_TARGET_ZONES * m.LOAD_ZONES
+        dimen=2, within=m.ENERGY_TARGET_ZONES * m.LOAD_ZONES
     )
 
     def energy_target_rule(mod, energy_target_zone, period):
@@ -68,23 +65,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         # target; if no map provided, the percentage_target is 0
         if mod.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES:
             total_period_static_load = sum(
-                mod.static_load_mw[lz, tmp]
-                * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
-                for (_energy_target_zone, lz) in mod.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES
+                mod.static_load_mw[lz, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
+                for (
+                    _energy_target_zone,
+                    lz,
+                ) in mod.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES
                 if _energy_target_zone == energy_target_zone
-                for tmp in mod.TMPS if tmp in mod.TMPS_IN_PRD[period]
+                for tmp in mod.TMPS
+                if tmp in mod.TMPS_IN_PRD[period]
             )
-            percentage_target = \
-                mod.period_energy_target_fraction[energy_target_zone, period] \
+            percentage_target = (
+                mod.period_energy_target_fraction[energy_target_zone, period]
                 * total_period_static_load
+            )
         else:
             percentage_target = 0
 
-        return mod.period_energy_target_mwh[energy_target_zone, period] + percentage_target
+        return (
+            mod.period_energy_target_mwh[energy_target_zone, period] + percentage_target
+        )
 
     m.Period_Energy_Target = Expression(
-        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-        rule=energy_target_rule
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET, rule=energy_target_rule
     )
 
 
@@ -101,22 +103,32 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     # Load the targets
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "period_energy_targets.tab"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "period_energy_targets.tab",
+        ),
         index=m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-        param=(m.period_energy_target_mwh, m.period_energy_target_fraction, )
+        param=(
+            m.period_energy_target_mwh,
+            m.period_energy_target_fraction,
+        ),
     )
 
     # If we have a RPS zone to load zone map input file, load it; otherwise,
     # initialize PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES as an empty list
     map_filename = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs",
-        "period_energy_target_load_zone_map.tab"
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "period_energy_target_load_zone_map.tab",
     )
     if os.path.exists(map_filename):
         data_portal.load(
-            filename=map_filename,
-            set=m.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES
+            filename=map_filename, set=m.PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES
         )
     else:
         data_portal.data()["PERIOD_ENERGY_TARGET_ZONE_LOAD_ZONES"] = {None: []}
@@ -157,7 +169,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID,
             subscenarios.PERIOD_ENERGY_TARGET_SCENARIO_ID,
             subproblem,
-            stage
+            stage,
         )
     )
 
@@ -174,7 +186,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE period_energy_target_scenario_id = {}
         """.format(
             subscenarios.ENERGY_TARGET_ZONE_SCENARIO_ID,
-            subscenarios.PERIOD_ENERGY_TARGET_SCENARIO_ID
+            subscenarios.PERIOD_ENERGY_TARGET_SCENARIO_ID,
         )
     )
 
@@ -198,7 +210,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     period_energy_targets.tab file.
@@ -211,17 +225,32 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     energy_targets, lz_mapping = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "period_energy_targets.tab"), "w", newline="") as \
-            energy_targets_tab_file:
-        writer = csv.writer(energy_targets_tab_file,
-                            delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "period_energy_targets.tab",
+        ),
+        "w",
+        newline="",
+    ) as energy_targets_tab_file:
+        writer = csv.writer(
+            energy_targets_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(
-            ["energy_target_zone", "period", "energy_target_mwh", "energy_target_fraction"]
+            [
+                "energy_target_zone",
+                "period",
+                "energy_target_mwh",
+                "energy_target_fraction",
+            ]
         )
 
         for row in energy_targets:
@@ -233,18 +262,23 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # there are any mappings only
     energy_target_lz_map_list = [row for row in lz_mapping]
     if energy_target_lz_map_list:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                               "inputs",
-                               "period_energy_target_load_zone_map.tab"), "w",
-                  newline="") as \
-                energy_target_lz_map_tab_file:
-            writer = csv.writer(energy_target_lz_map_tab_file,
-                                delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "period_energy_target_load_zone_map.tab",
+            ),
+            "w",
+            newline="",
+        ) as energy_target_lz_map_tab_file:
+            writer = csv.writer(
+                energy_target_lz_map_tab_file, delimiter="\t", lineterminator="\n"
+            )
 
             # Write header
-            writer.writerow(
-                ["energy_target_zone", "load_zone"]
-            )
+            writer.writerow(["energy_target_zone", "load_zone"])
             for row in energy_target_lz_map_list:
                 writer.writerow(row)
     else:

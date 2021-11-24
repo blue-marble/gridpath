@@ -54,8 +54,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp)
-            in mod.CRB_TX_OPR_TMPS
+            for (tx, tmp) in mod.CRB_TX_OPR_TMPS
         )
 
     m.Total_Import_Carbon_Tuning_Cost = Expression(
@@ -73,7 +72,8 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Import_Carbon_Tuning_Cost")
+        "Total_Import_Carbon_Tuning_Cost"
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -92,10 +92,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     if os.path.exists(tuning_param_file):
-        data_portal.load(filename=tuning_param_file,
-                         select=("import_carbon_tuning_cost_per_ton",),
-                         param=m.import_carbon_tuning_cost_per_ton
-                         )
+        data_portal.load(
+            filename=tuning_param_file,
+            select=("import_carbon_tuning_cost_per_ton",),
+            param=m.import_carbon_tuning_cost_per_ton,
+        )
     else:
         pass
 
@@ -137,7 +138,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file.
@@ -150,13 +153,30 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     import_carbon_tuning_cost = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab")):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"), "r"
-                  ) as projects_file_in:
+    if os.path.isfile(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "tuning_params.tab",
+        )
+    ):
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "r",
+        ) as projects_file_in:
             reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
             new_rows = list()
@@ -171,16 +191,36 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             param_value.append(import_carbon_tuning_cost)
             new_rows.append(param_value)
 
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as \
-                tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerows(new_rows)
 
     else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as \
-                tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerows(["import_carbon_tuning_cost_per_ton"])
             writer.writerows([import_carbon_tuning_cost])

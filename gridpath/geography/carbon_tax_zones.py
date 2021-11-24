@@ -47,10 +47,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                           "inputs", "carbon_tax_zones.tab"),
-                     set=m.CARBON_TAX_ZONES,
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "carbon_tax_zones.tab",
+        ),
+        set=m.CARBON_TAX_ZONES,
+    )
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -91,7 +97,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     carbon_tax_zones.tab file.
@@ -104,11 +112,20 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     carbon_tax_zone = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "carbon_tax_zones.tab"), "w", newline="") as \
-            carbon_tax_zones_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "carbon_tax_zones.tab",
+        ),
+        "w",
+        newline="",
+    ) as carbon_tax_zones_file:
         writer = csv.writer(carbon_tax_zones_file, delimiter="\t", lineterminator="\n")
 
         # Write header

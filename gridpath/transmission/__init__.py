@@ -23,9 +23,15 @@ import pandas as pd
 from pyomo.environ import Set, Param
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, get_load_zones, validate_dtypes, \
-    validate_columns, validate_values, validate_missing_inputs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_expected_dtypes,
+    get_load_zones,
+    validate_dtypes,
+    validate_columns,
+    validate_values,
+    validate_missing_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -87,20 +93,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Input Params
     ###########################################################################
 
-    m.tx_capacity_type = Param(
-        m.TX_LINES,
-        within=["tx_new_lin", "tx_spec"]
+    m.tx_capacity_type = Param(m.TX_LINES, within=["tx_new_lin", "tx_spec"])
+    m.tx_availability_type = Param(
+        m.TX_LINES, within=["exogenous", "exogenous_monthly"]
     )
-    m.tx_operational_type = Param(
-        m.TX_LINES,
-        within=["tx_dcopf", "tx_simple"]
-    )
+    m.tx_operational_type = Param(m.TX_LINES, within=["tx_dcopf", "tx_simple"])
     m.load_zone_from = Param(m.TX_LINES, within=m.LOAD_ZONES)
     m.load_zone_to = Param(m.TX_LINES, within=m.LOAD_ZONES)
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -113,20 +117,32 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "transmission_lines.tab"),
-                     select=("TRANSMISSION_LINES", "tx_capacity_type",
-                             "tx_operational_type",
-                             "load_zone_from", "load_zone_to"),
-                     index=m.TX_LINES,
-                     param=(m.tx_capacity_type, m.tx_operational_type,
-                            m.load_zone_from, m.load_zone_to)
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs", "transmission_lines.tab"
+        ),
+        select=(
+            "transmission_line",
+            "tx_capacity_type",
+            "tx_availability_type",
+            "tx_operational_type",
+            "load_zone_from",
+            "load_zone_to",
+        ),
+        index=m.TX_LINES,
+        param=(
+            m.tx_capacity_type,
+            m.tx_availability_type,
+            m.tx_operational_type,
+            m.load_zone_from,
+            m.load_zone_to,
+        ),
+    )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -143,34 +159,45 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     #  tx_operational_type rather than here (see also comment in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
-        """SELECT transmission_line, capacity_type, operational_type,
+        """SELECT transmission_line, capacity_type, 
+        availability_type, operational_type,
         load_zone_from, load_zone_to, tx_simple_loss_factor, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
             (SELECT transmission_line, load_zone_from, load_zone_to
             FROM inputs_transmission_load_zones
-            WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
+            WHERE transmission_load_zone_scenario_id = {lz}) as tx_load_zones
+        USING (transmission_line)
+        
+        LEFT OUTER JOIN
+            (SELECT transmission_line, availability_type
+            FROM inputs_transmission_availability
+            WHERE transmission_availability_scenario_id = {avl}) as 
+            tx_availability
         USING (transmission_line)
         
         LEFT OUTER JOIN
             (SELECT transmission_line, operational_type, 
             tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
-            WHERE transmission_operational_chars_scenario_id = {})
+            WHERE transmission_operational_chars_scenario_id = {opchar})
         USING (transmission_line)
         
-        WHERE transmission_portfolio_scenario_id = {};""".format(
-            subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
-            subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+        WHERE transmission_portfolio_scenario_id = {portfolio};""".format(
+            lz=subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
+            avl=subscenarios.TRANSMISSION_AVAILABILITY_SCENARIO_ID,
+            opchar=subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
+            portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
     )
 
     return transmission_lines
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     transmission_lines.tab file.
@@ -183,20 +210,36 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     transmission_lines = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"),
-              "w", newline="") as \
-            transmission_lines_tab_file:
-        writer = csv.writer(transmission_lines_tab_file, delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        "w",
+        newline="",
+    ) as transmission_lines_tab_file:
+        writer = csv.writer(
+            transmission_lines_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
-        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
-        #  same as database
         # Write header
         writer.writerow(
-            ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to", "tx_simple_loss_factor",
-             "reactance_ohms"]
+            [
+                "transmission_line",
+                "tx_capacity_type",
+                "tx_availability_type",
+                "tx_operational_type",
+                "load_zone_from",
+                "load_zone_to",
+                "tx_simple_loss_factor",
+                "reactance_ohms",
+            ]
         )
 
         for row in transmission_lines:
@@ -206,6 +249,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -229,9 +273,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_transmission_portfolios",
-               "inputs_transmission_load_zones",
-               "inputs_transmission_operational_chars"]
+        conn,
+        [
+            "inputs_transmission_portfolios",
+            "inputs_transmission_availability",
+            "inputs_transmission_load_zones",
+            "inputs_transmission_operational_chars",
+        ],
     )
 
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
@@ -241,16 +289,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_transmisison_portfolios, "
-                 "inputs_transmission_load_zones, "
-                 "inputs_transmission_operational_chars",
+        db_table="inputs_transmission_portfolios, "
+        "inputs_transmission_load_zones, "
+        "inputs_transmission_operational_chars",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in df.columns if
-                       expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
 
     write_validation_to_database(
@@ -261,7 +308,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
     # Ensure we're not combining incompatible capacity and operational types
@@ -269,7 +316,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     invalid_combos = c.execute(
         """
         SELECT {} FROM mod_tx_capacity_and_tx_operational_type_invalid_combos
-        """.format(",".join(cols))
+        """.format(
+            ",".join(cols)
+        )
     ).fetchall()
     write_validation_to_database(
         conn=conn,
@@ -279,7 +328,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars, inputs_tranmission_portfolios",
         severity="High",
-        errors=validate_columns(df, cols, invalids=invalid_combos)
+        errors=validate_columns(df, cols, invalids=invalid_combos),
     )
 
     # Check reactance > 0
@@ -291,12 +340,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_values(df, ["reactance_ohms"], min=0, strict_min=True)
+        errors=validate_values(df, ["reactance_ohms"], min=0, strict_min=True),
     )
 
     # Check that all portfolio tx lines are present in the opchar inputs
-    msg = "All tx lines in the portfolio should have an operational type " \
-          "specified in the inputs_transmission_operational_chars table."
+    msg = (
+        "All tx lines in the portfolio should have an operational type "
+        "specified in the inputs_transmission_operational_chars table."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -305,15 +356,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_operational_chars",
         severity="High",
-        errors=validate_missing_inputs(df,
-                                       ["operational_type"],
-                                       idx_col="transmission_line",
-                                       msg=msg)
+        errors=validate_missing_inputs(
+            df, ["operational_type"], idx_col="transmission_line", msg=msg
+        ),
     )
 
     # Check that all portfolio tx lines are present in the load zone inputs
-    msg = "All tx lines in the portfolio should have a load zone from/to " \
-          "specified in the inputs_transmission_load_zones table."
+    msg = (
+        "All tx lines in the portfolio should have a load zone from/to "
+        "specified in the inputs_transmission_load_zones table."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -322,10 +374,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_transmission_load_zones",
         severity="High",
-        errors=validate_missing_inputs(df,
-                                       ["load_zone_from", "load_zone_to"],
-                                       idx_col="transmission_line",
-                                       msg=msg)
+        errors=validate_missing_inputs(
+            df, ["load_zone_from", "load_zone_to"], idx_col="transmission_line", msg=msg
+        ),
     )
 
     # Check that all tx load zones are part of the active load zones
@@ -339,5 +390,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table="inputs_transmission_load_zones",
             severity="High",
-            errors=validate_columns(df, col, valids=load_zones)
+            errors=validate_columns(df, col, valids=load_zones),
         )

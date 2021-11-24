@@ -28,25 +28,22 @@ capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 headroom_variables = "headroom_variables"
 footroom_variables = "footroom_variables"
 reserve_variable_derate_params = "reserve_variable_derate_params"
-reserve_to_energy_adjustment_params = \
-    "reserve_to_energy_adjustment_params"
+reserve_to_energy_adjustment_params = "reserve_to_energy_adjustment_params"
 
 prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
 
-tx_capacity_type_operational_period_sets = \
-    "tx_capacity_type_operational_period_sets"
+tx_capacity_type_operational_period_sets = "tx_capacity_type_operational_period_sets"
 
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
 
-carbon_cap_balance_emission_components = \
-    "carbon_cap_balance_emission_components"
+carbon_cap_balance_emission_components = "carbon_cap_balance_emission_components"
 
-prm_balance_provision_components = \
-    "prm_balance_provision_components"
-local_capacity_balance_provision_components = \
+prm_balance_provision_components = "prm_balance_provision_components"
+local_capacity_balance_provision_components = (
     "local_capacity_balance_provision_components"
+)
 
 cost_components = "cost_components"
 revenue_components = "revenue_components"
@@ -60,6 +57,7 @@ class DynamicComponents(object):
     are selected (i.e. certain modules are called) and based on the scenario
     input data.
     """
+
     def __init__(self):
         """
         Initialize the dynamic components.

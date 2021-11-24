@@ -50,18 +50,29 @@ from __future__ import print_function
 
 import csv
 import os.path
-from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    NonPositiveReals, PercentFraction, Reals, value, Expression
+from pyomo.environ import (
+    Var,
+    Set,
+    Constraint,
+    Param,
+    NonNegativeReals,
+    NonPositiveReals,
+    PercentFraction,
+    Reals,
+    value,
+    Expression,
+)
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
-from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, update_dispatch_results_table, \
-    load_optype_model_data, check_for_tmps_to_link, \
-    validate_opchars
-from gridpath.project.common_functions import \
-    check_if_boundary_type_and_first_timepoint
+from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.operations.operational_types.common_functions import (
+    determine_relevant_timepoints,
+    update_dispatch_results_table,
+    load_optype_model_data,
+    check_for_tmps_to_link,
+    validate_opchars,
+)
+from gridpath.project.common_functions import check_if_boundary_type_and_first_timepoint
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -396,120 +407,89 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "gen_commit_cap"
-        )
+        ),
     )
 
     m.GEN_COMMIT_CAP_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.GEN_COMMIT_CAP)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_COMMIT_CAP)
+        ),
     )
 
     m.GEN_COMMIT_CAP_LINKED_TMPS = Set(dimen=2)
 
     # Required Params
     ###########################################################################
-    m.gen_commit_cap_unit_size_mw = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals
-    )
+    m.gen_commit_cap_unit_size_mw = Param(m.GEN_COMMIT_CAP, within=NonNegativeReals)
     m.gen_commit_cap_min_stable_level_fraction = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction
+        m.GEN_COMMIT_CAP, within=PercentFraction
     )
 
     # Optional Params
     ###########################################################################
 
     m.gen_commit_cap_startup_plus_ramp_up_rate = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=1
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=1
     )
     m.gen_commit_cap_shutdown_plus_ramp_down_rate = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=1
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=1
     )
     m.gen_commit_cap_ramp_up_when_on_rate = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=1
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=1
     )
     m.gen_commit_cap_ramp_down_when_on_rate = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=1
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=1
     )
     m.gen_commit_cap_min_up_time_hours = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals,
-        default=1
+        m.GEN_COMMIT_CAP, within=NonNegativeReals, default=1
     )
     m.gen_commit_cap_min_down_time_hours = Param(
-        m.GEN_COMMIT_CAP,
-        within=NonNegativeReals,
-        default=1
+        m.GEN_COMMIT_CAP, within=NonNegativeReals, default=1
     )
 
     m.gen_commit_cap_aux_consumption_frac_capacity = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=0
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=0
     )
 
     m.gen_commit_cap_aux_consumption_frac_power = Param(
-        m.GEN_COMMIT_CAP,
-        within=PercentFraction,
-        default=0
+        m.GEN_COMMIT_CAP, within=PercentFraction, default=0
     )
 
     # Linked Params
     ###########################################################################
 
     m.gen_commit_cap_linked_commit_capacity = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     m.gen_commit_cap_linked_power = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     m.gen_commit_cap_linked_upwards_reserves = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     m.gen_commit_cap_linked_downwards_reserves = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     m.gen_commit_cap_linked_startup = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     m.gen_commit_cap_linked_shutdown = Param(
-        m.GEN_COMMIT_CAP_LINKED_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_LINKED_TMPS, within=NonNegativeReals
     )
 
     # Variables
     ###########################################################################
     m.GenCommitCap_Provide_Power_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
+        m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals
     )
-    m.Commit_Capacity_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Commit_Capacity_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
 
     # Variables for optional ramp constraints
     # We'll have separate treatment of ramps of:
@@ -526,58 +506,37 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # when turning units off)
     # They also need to be separate variables, as if they were combined,
     # the only solution would be for there to be no startups/shutdowns
-    m.Ramp_Up_Startup_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=Reals
-    )
-    m.Ramp_Down_Shutdown_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=Reals
-    )
+    m.Ramp_Up_Startup_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=Reals)
+    m.Ramp_Down_Shutdown_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=Reals)
 
-    m.Ramp_Up_When_On_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
-    )
-    m.Ramp_Down_When_On_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonPositiveReals
-    )
+    m.Ramp_Up_When_On_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
+    m.Ramp_Down_When_On_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonPositiveReals)
 
     # Variables for constraining up and down time
     # Startup and shutdown variables, must be non-negative
-    m.GenCommitCap_Startup_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
-    )
-    m.GenCommitCap_Shutdown_MW = Var(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.GenCommitCap_Startup_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
+    m.GenCommitCap_Shutdown_MW = Var(m.GEN_COMMIT_CAP_OPR_TMPS, within=NonNegativeReals)
 
     # Expressions
     ###########################################################################
     # TODO: the reserve rules are the same in all modules, so should be
     #  consolidated
     def upwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, headroom_variables)[g])
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+
     m.GenCommitCap_Upwards_Reserves_MW = Expression(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=upwards_reserve_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=upwards_reserve_rule
     )
 
     def downwards_reserve_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp]
-                   for c in getattr(d, footroom_variables)[g])
+        return sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+
     m.GenCommitCap_Downwards_Reserves_MW = Expression(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=downwards_reserve_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=downwards_reserve_rule
     )
 
     m.GenCommitCap_Auxiliary_Consumption_MW = Expression(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=auxiliary_consumption_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=auxiliary_consumption_rule
     )
 
     # Constraints
@@ -585,80 +544,65 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Commitment and power
     m.Commit_Capacity_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=commit_capacity_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=commit_capacity_constraint_rule
     )
 
     m.GenCommitCap_Max_Power_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=max_power_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=max_power_rule
     )
 
     m.GenCommitCap_Min_Power_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=min_power_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_power_rule
     )
 
     # Ramping
     m.Ramp_Up_Off_to_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_up_off_to_on_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_off_to_on_constraint_rule
     )
 
     m.Ramp_Up_When_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_up_on_to_on_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_constraint_rule
     )
 
     m.Ramp_Up_When_On_Headroom_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_up_on_to_on_headroom_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_on_to_on_headroom_constraint_rule
     )
 
     m.GenCommitCap_Ramp_Up_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_up_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_up_constraint_rule
     )
 
     m.Ramp_Down_On_to_Off_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_down_on_to_off_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_off_constraint_rule
     )
 
     m.Ramp_Down_When_On_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_down_on_to_on_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_constraint_rule
     )
 
     m.Ramp_Down_When_On_Headroom_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_down_on_to_on_headroom_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_on_to_on_headroom_constraint_rule
     )
 
     m.GenCommitCap_Ramp_Down_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=ramp_down_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=ramp_down_constraint_rule
     )
 
     # Min up and down time
     m.GenCommitCap_Startup_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=startup_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=startup_constraint_rule
     )
 
     m.GenCommitCap_Shutdown_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=shutdown_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=shutdown_constraint_rule
     )
 
     m.GenCommitCap_Min_Up_Time_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=min_up_time_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_up_time_constraint_rule
     )
 
     m.GenCommitCap_Min_Down_Time_Constraint = Constraint(
-        m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=min_down_time_constraint_rule
+        m.GEN_COMMIT_CAP_OPR_TMPS, rule=min_down_time_constraint_rule
     )
 
 
@@ -669,10 +613,12 @@ def auxiliary_consumption_rule(mod, g, tmp):
     **Expression Name**: GenCommitCap_Auxiliary_Consumption_MW
     **Defined Over**: GEN_COMMIT_CAP_OPR_TMPS
     """
-    return mod.Commit_Capacity_MW[g, tmp] \
-        * mod.gen_commit_cap_aux_consumption_frac_capacity[g] \
-        + mod.GenCommitCap_Provide_Power_MW[g, tmp] * \
-        mod.gen_commit_cap_aux_consumption_frac_power[g]
+    return (
+        mod.Commit_Capacity_MW[g, tmp]
+        * mod.gen_commit_cap_aux_consumption_frac_capacity[g]
+        + mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        * mod.gen_commit_cap_aux_consumption_frac_power[g]
+    )
 
 
 # Constraint Formulation Rules
@@ -686,9 +632,10 @@ def commit_capacity_constraint_rule(mod, g, tmp):
 
     Can't commit more capacity than available in each timepoint.
     """
-    return mod.Commit_Capacity_MW[g, tmp] \
-        <= mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp]
+    return (
+        mod.Commit_Capacity_MW[g, tmp]
+        <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+    )
 
 
 def max_power_rule(mod, g, tmp):
@@ -698,9 +645,11 @@ def max_power_rule(mod, g, tmp):
 
     Power plus upward services cannot exceed capacity.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp] \
+    return (
+        mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp]
         <= mod.Commit_Capacity_MW[g, tmp]
+    )
 
 
 def min_power_rule(mod, g, tmp):
@@ -710,10 +659,12 @@ def min_power_rule(mod, g, tmp):
 
     Power minus downward services cannot be below a minimum stable level.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp] \
-        >= mod.Commit_Capacity_MW[g, tmp] \
+    return (
+        mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp]
+        >= mod.Commit_Capacity_MW[g, tmp]
         * mod.gen_commit_cap_min_stable_level_fraction[g]
+    )
 
 
 # Ramping
@@ -732,32 +683,36 @@ def ramp_up_off_to_on_constraint_rule(mod, g, tmp):
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-            prev_tmp_commit_capacity = \
-                mod.Commit_Capacity_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
+            prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
 
-        return mod.Ramp_Up_Startup_MW[g, tmp] \
-            <= \
-            (mod.Commit_Capacity_MW[g, tmp] - prev_tmp_commit_capacity) \
-            * mod.gen_commit_cap_startup_plus_ramp_up_rate[g] * 60 \
+        return (
+            mod.Ramp_Up_Startup_MW[g, tmp]
+            <= (mod.Commit_Capacity_MW[g, tmp] - prev_tmp_commit_capacity)
+            * mod.gen_commit_cap_startup_plus_ramp_up_rate[g]
+            * 60
             * prev_tmp_hrs_in_tmp
+        )
 
 
 def ramp_up_on_to_on_constraint_rule(mod, g, tmp):
@@ -787,31 +742,35 @@ def ramp_up_on_to_on_constraint_rule(mod, g, tmp):
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-            prev_tmp_commit_capacity = \
-                mod.Commit_Capacity_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-        return mod.Ramp_Up_When_On_MW[g, tmp] \
-            <= \
-            prev_tmp_commit_capacity \
-            * mod.gen_commit_cap_ramp_up_when_on_rate[g] * 60 \
+            prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+        return (
+            mod.Ramp_Up_When_On_MW[g, tmp]
+            <= prev_tmp_commit_capacity
+            * mod.gen_commit_cap_ramp_up_when_on_rate[g]
+            * 60
             * prev_tmp_hrs_in_tmp
+        )
 
 
 def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
@@ -828,36 +787,37 @@ def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
     """
     # TODO: check behavior more carefully (same for ramp down)
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
-            prev_tmp_power = \
-                mod.gen_commit_cap_linked_power[g, 0]
-            prev_tmp_downwards_reserves = \
-                mod.gen_commit_cap_linked_downwards_reserves[g, 0]
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            prev_tmp_power = mod.gen_commit_cap_linked_power[g, 0]
+            prev_tmp_downwards_reserves = mod.gen_commit_cap_linked_downwards_reserves[
+                g, 0
+            ]
         else:
             prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
-                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = mod.GenCommitCap_Provide_Power_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-            prev_tmp_downwards_reserves = \
-                mod.GenCommitCap_Downwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-        return mod.Ramp_Up_When_On_MW[g, tmp] \
-            <= \
-            prev_tmp_commit_capacity \
-            - (prev_tmp_power - prev_tmp_downwards_reserves)
+            prev_tmp_downwards_reserves = mod.GenCommitCap_Downwards_Reserves_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+        return mod.Ramp_Up_When_On_MW[g, tmp] <= prev_tmp_commit_capacity - (
+            prev_tmp_power - prev_tmp_downwards_reserves
+        )
 
 
 def ramp_up_constraint_rule(mod, g, tmp):
@@ -882,50 +842,56 @@ def ramp_up_constraint_rule(mod, g, tmp):
     timepoint
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power = \
-                mod.gen_commit_cap_linked_power[g, 0]
-            prev_tmp_downwards_reserves = \
-                mod.gen_commit_cap_linked_downwards_reserves[g, 0]
+            prev_tmp_power = mod.gen_commit_cap_linked_power[g, 0]
+            prev_tmp_downwards_reserves = mod.gen_commit_cap_linked_downwards_reserves[
+                g, 0
+            ]
         else:
-            prev_tmp_hrs_in_tmp = \
-                mod.hrs_in_tmp[mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
-            prev_tmp_power = \
-                mod.GenCommitCap_Provide_Power_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
-            prev_tmp_downwards_reserves = \
-                mod.GenCommitCap_Downwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
-                ]
+            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_power = mod.GenCommitCap_Provide_Power_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            prev_tmp_downwards_reserves = mod.GenCommitCap_Downwards_Reserves_MW[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # start up the full capacity and ramp up the full operable range
         # between timepoints, constraint won't bind, so skip
-        if (
-                mod.gen_commit_cap_startup_plus_ramp_up_rate[g] * 60
-                * prev_tmp_hrs_in_tmp
-                >= 1
-                and mod.gen_commit_cap_ramp_up_when_on_rate[g] * 60
-                * prev_tmp_hrs_in_tmp
-                >= (1 - mod.gen_commit_cap_min_stable_level_fraction[g])
+        if mod.gen_commit_cap_startup_plus_ramp_up_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp >= 1 and mod.gen_commit_cap_ramp_up_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp >= (
+            1 - mod.gen_commit_cap_min_stable_level_fraction[g]
         ):
             return Constraint.Skip
         else:
-            return (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-                    + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp]) \
-                - (prev_tmp_power - prev_tmp_downwards_reserves) \
-                <= \
-                mod.Ramp_Up_Startup_MW[g, tmp] \
-                + mod.Ramp_Up_When_On_MW[g, tmp]
+            return (
+                mod.GenCommitCap_Provide_Power_MW[g, tmp]
+                + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power - prev_tmp_downwards_reserves
+            ) <= mod.Ramp_Up_Startup_MW[
+                g, tmp
+            ] + mod.Ramp_Up_When_On_MW[
+                g, tmp
+            ]
 
 
 def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
@@ -944,18 +910,21 @@ def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]
@@ -963,11 +932,13 @@ def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
             prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        return mod.Ramp_Down_Shutdown_MW[g, tmp] \
-            >= \
-            (mod.Commit_Capacity_MW[g, tmp] - prev_tmp_commit_capacity) \
-            * mod.gen_commit_cap_shutdown_plus_ramp_down_rate[g] * 60 \
+        return (
+            mod.Ramp_Down_Shutdown_MW[g, tmp]
+            >= (mod.Commit_Capacity_MW[g, tmp] - prev_tmp_commit_capacity)
+            * mod.gen_commit_cap_shutdown_plus_ramp_down_rate[g]
+            * 60
             * prev_tmp_hrs_in_tmp
+        )
 
 
 def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
@@ -980,25 +951,31 @@ def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
     ramp rate fraction. Shutdowns are treated separately.
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        return mod.Ramp_Down_When_On_MW[g, tmp] \
-            >= \
-            mod.Commit_Capacity_MW[g, tmp] \
-            * (-mod.gen_commit_cap_ramp_down_when_on_rate[g]) * 60 \
+        return (
+            mod.Ramp_Down_When_On_MW[g, tmp]
+            >= mod.Commit_Capacity_MW[g, tmp]
+            * (-mod.gen_commit_cap_ramp_down_when_on_rate[g])
+            * 60
             * prev_tmp_hrs_in_tmp
+        )
 
 
 def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
@@ -1016,16 +993,17 @@ def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
     # TODO: bug -- this shouldn't be skipping the first tmp of linear
     #  horizons as it's not looking to a previous timepoint
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
-        return -mod.Ramp_Down_When_On_MW[g, tmp] \
-            <= \
-            mod.Commit_Capacity_MW[g, tmp] \
-            - (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-               - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp])
+        return -mod.Ramp_Down_When_On_MW[g, tmp] <= mod.Commit_Capacity_MW[g, tmp] - (
+            mod.GenCommitCap_Provide_Power_MW[g, tmp]
+            - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp]
+        )
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1048,50 +1026,55 @@ def ramp_down_constraint_rule(mod, g, tmp):
     at a certain rate since the previous timepoint
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
             prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_power = \
-                mod.gen_commit_cap_linked_power[g, 0]
-            prev_tmp_upwards_reserves = \
-                mod.gen_commit_cap_linked_upwards_reserves[g, 0]
+            prev_tmp_power = mod.gen_commit_cap_linked_power[g, 0]
+            prev_tmp_upwards_reserves = mod.gen_commit_cap_linked_upwards_reserves[g, 0]
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                  mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_power = mod.GenCommitCap_Provide_Power_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
             prev_tmp_upwards_reserves = mod.GenCommitCap_Upwards_Reserves_MW[
-                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
 
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # shut down the full capacity and ramp down the full operable range
         # between timepoints, constraint won't bind, so skip
-        if (
-                mod.gen_commit_cap_shutdown_plus_ramp_down_rate[g] * 60
-                * prev_tmp_hrs_in_tmp
-                >= 1
-                and
-                mod.gen_commit_cap_ramp_down_when_on_rate[g] * 60
-                * prev_tmp_hrs_in_tmp
-                >= (1 - mod.gen_commit_cap_min_stable_level_fraction[g])
+        if mod.gen_commit_cap_shutdown_plus_ramp_down_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp >= 1 and mod.gen_commit_cap_ramp_down_when_on_rate[
+            g
+        ] * 60 * prev_tmp_hrs_in_tmp >= (
+            1 - mod.gen_commit_cap_min_stable_level_fraction[g]
         ):
             return Constraint.Skip
         else:
-            return (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-                    - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp]) \
-                - (prev_tmp_power + prev_tmp_upwards_reserves) \
-                >= \
-                mod.Ramp_Down_Shutdown_MW[g, tmp] \
-                + mod.Ramp_Down_When_On_MW[g, tmp]
+            return (
+                mod.GenCommitCap_Provide_Power_MW[g, tmp]
+                - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp]
+            ) - (
+                prev_tmp_power + prev_tmp_upwards_reserves
+            ) >= mod.Ramp_Down_Shutdown_MW[
+                g, tmp
+            ] + mod.Ramp_Down_When_On_MW[
+                g, tmp
+            ]
 
 
 def startup_constraint_rule(mod, g, tmp):
@@ -1103,23 +1086,28 @@ def startup_constraint_rule(mod, g, tmp):
     has to be non-negative)
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
             prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        return mod.GenCommitCap_Startup_MW[g, tmp] \
+        return (
+            mod.GenCommitCap_Startup_MW[g, tmp]
             >= mod.Commit_Capacity_MW[g, tmp] - prev_tmp_commit_capacity
+        )
 
 
 def shutdown_constraint_rule(mod, g, tmp):
@@ -1131,23 +1119,28 @@ def shutdown_constraint_rule(mod, g, tmp):
     has to be non-negative)
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
         if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linked"
-    ):
-            prev_tmp_commit_capacity = \
-                mod.gen_commit_cap_linked_commit_capacity[g, 0]
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        ):
+            prev_tmp_commit_capacity = mod.gen_commit_cap_linked_commit_capacity[g, 0]
         else:
             prev_tmp_commit_capacity = mod.Commit_Capacity_MW[
                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
             ]
-        return mod.GenCommitCap_Shutdown_MW[g, tmp] \
+        return (
+            mod.GenCommitCap_Shutdown_MW[g, tmp]
             >= prev_tmp_commit_capacity - mod.Commit_Capacity_MW[g, tmp]
+        )
 
 
 def min_up_time_constraint_rule(mod, g, tmp):
@@ -1182,13 +1175,17 @@ def min_up_time_constraint_rule(mod, g, tmp):
     # Otherwise, we must have at least as much capacity committed as was
     # started up in the relevant timepoints
     else:
-        capacity_turned_on_min_up_time_or_less_hours_ago = \
-            sum(mod.GenCommitCap_Startup_MW[g, tp] for tp in relevant_tmps) \
-            + sum(mod.gen_commit_cap_linked_startup[g, ltp]
-                  for ltp in relevant_linked_timepoints)
+        capacity_turned_on_min_up_time_or_less_hours_ago = sum(
+            mod.GenCommitCap_Startup_MW[g, tp] for tp in relevant_tmps
+        ) + sum(
+            mod.gen_commit_cap_linked_startup[g, ltp]
+            for ltp in relevant_linked_timepoints
+        )
 
-        return mod.Commit_Capacity_MW[g, tmp] \
+        return (
+            mod.Commit_Capacity_MW[g, tmp]
             >= capacity_turned_on_min_up_time_or_less_hours_ago
+        )
 
 
 def min_down_time_constraint_rule(mod, g, tmp):
@@ -1214,10 +1211,11 @@ def min_down_time_constraint_rule(mod, g, tmp):
         mod, g, tmp, mod.gen_commit_cap_min_down_time_hours[g]
     )
 
-    capacity_turned_off_min_down_time_or_less_hours_ago = \
-        sum(mod.GenCommitCap_Shutdown_MW[g, tp] for tp in relevant_tmps) \
-        + sum(mod.gen_commit_cap_linked_shutdown[g, ltp]
-              for ltp in relevant_linked_timepoints)
+    capacity_turned_off_min_down_time_or_less_hours_ago = sum(
+        mod.GenCommitCap_Shutdown_MW[g, tp] for tp in relevant_tmps
+    ) + sum(
+        mod.gen_commit_cap_linked_shutdown[g, ltp] for ltp in relevant_linked_timepoints
+    )
 
     # If only the current timepoint is determined to be relevant (and there
     # are no linked timepoints), this constraint is redundant (it will
@@ -1229,10 +1227,11 @@ def min_down_time_constraint_rule(mod, g, tmp):
     # Otherwise, we must have at least as much capacity off as was shut
     # down in the relevant timepoints
     else:
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            - mod.Commit_Capacity_MW[g, tmp] \
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]] * mod.Availability_Derate[g, tmp]
+            - mod.Commit_Capacity_MW[g, tmp]
             >= capacity_turned_off_min_down_time_or_less_hours_ago
+        )
 
 
 # Operational Type Methods
@@ -1243,8 +1242,10 @@ def power_provision_rule(mod, g, tmp):
     variable constrained to be between the minimum stable level (defined as
     a fraction of committed capacity) and the committed capacity.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \
-        mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp]
+    return (
+        mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        - mod.GenCommitCap_Auxiliary_Consumption_MW[g, tmp]
+    )
 
 
 def commitment_rule(mod, g, tmp):
@@ -1263,13 +1264,13 @@ def online_capacity_rule(mod, g, tmp):
 
 
 def fuel_burn_by_ll_rule(mod, g, tmp, s):
-    """
-    """
-    return \
-        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s] \
+    """ """
+    return (
+        mod.fuel_burn_slope_mmbtu_per_mwh[g, mod.period[tmp], s]
+        * mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        + mod.fuel_burn_intercept_mmbtu_per_mw_hr[g, mod.period[tmp], s]
         * mod.Commit_Capacity_MW[g, tmp]
+    )
 
 
 def variable_om_cost_rule(mod, g, tmp):
@@ -1293,8 +1294,7 @@ def variable_om_cost_rule(mod, g, tmp):
     minus the auxiliary consumption. The variable cost should be applied to
     the gross power.
     """
-    return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        * mod.variable_om_cost_per_mwh[g]
+    return mod.GenCommitCap_Provide_Power_MW[g, tmp] * mod.variable_om_cost_per_mwh[g]
 
 
 def variable_om_cost_by_ll_rule(mod, g, tmp, s):
@@ -1312,10 +1312,12 @@ def variable_om_cost_by_ll_rule(mod, g, tmp, s):
     operational characteristics table.  Only operational types with
     commitment decisions can have the second component.
     """
-    return mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s] \
-        * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
-        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s] \
+    return (
+        mod.vom_slope_cost_per_mwh[g, mod.period[tmp], s]
+        * mod.GenCommitCap_Provide_Power_MW[g, tmp]
+        + mod.vom_intercept_cost_per_mw_hr[g, mod.period[tmp], s]
         * mod.Commit_Capacity_MW[g, tmp]
+    )
 
 
 def startup_cost_simple_rule(mod, g, tmp):
@@ -1324,8 +1326,7 @@ def startup_cost_simple_rule(mod, g, tmp):
     (in MW) that is started up in that timepoint and the startup cost
     parameter.
     """
-    return mod.GenCommitCap_Startup_MW[g, tmp] \
-        * mod.startup_cost_per_mw[g]
+    return mod.GenCommitCap_Startup_MW[g, tmp] * mod.startup_cost_per_mw[g]
 
 
 def shutdown_cost_rule(mod, g, tmp):
@@ -1334,8 +1335,7 @@ def shutdown_cost_rule(mod, g, tmp):
     capacity (in Mw) that is shut down in that timepoint and the shutdown
     cost parameter.
     """
-    return mod.GenCommitCap_Shutdown_MW[g, tmp] \
-        * mod.shutdown_cost_per_mw[g]
+    return mod.GenCommitCap_Shutdown_MW[g, tmp] * mod.shutdown_cost_per_mw[g]
 
 
 def startup_fuel_burn_rule(mod, g, tmp):
@@ -1344,8 +1344,7 @@ def startup_fuel_burn_rule(mod, g, tmp):
     capacity (in MW) that is started up in that timepoint and the startup
     fuel parameter.
     """
-    return mod.GenCommitCap_Startup_MW[g, tmp] \
-        * mod.startup_fuel_mmbtu_per_mw[g]
+    return mod.GenCommitCap_Startup_MW[g, tmp] * mod.startup_fuel_mmbtu_per_mw[g]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -1353,39 +1352,40 @@ def power_delta_rule(mod, g, tmp):
     This rule is only used in tuning costs, so fine to skip for linked
     horizon's first timepoint.
     """
-    if (
-            check_if_boundary_type_and_first_timepoint(
-            mod=mod, tmp=tmp,
-            balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-            ) or
-            check_if_boundary_type_and_first_timepoint(
-                mod=mod, tmp=tmp,
-                balancing_type=mod.balancing_type_project[g],
-                boundary_type="linked"
-            )
+    if check_if_boundary_type_and_first_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
+    ) or check_if_boundary_type_and_first_timepoint(
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linked",
     ):
         pass
     else:
-        return mod.GenCommitCap_Provide_Power_MW[g, tmp] \
+        return (
+            mod.GenCommitCap_Provide_Power_MW[g, tmp]
             - mod.GenCommitCap_Provide_Power_MW[
-                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+        )
 
 
 def fix_commitment(mod, g, tmp):
     """
     Fix committed capacity based on number of committed units and unit size
     """
-    mod.Commit_Capacity_MW[g, tmp] = \
-        mod.fixed_commitment[g, mod.prev_stage_tmp_map[tmp]]
+    mod.Commit_Capacity_MW[g, tmp] = mod.fixed_commitment[
+        g, mod.prev_stage_tmp_map[tmp]
+    ]
     mod.Commit_Capacity_MW[g, tmp].fixed = True
 
 
 # Input-Output
 ###############################################################################
-def load_model_data(
-    mod, d, data_portal, scenario_directory, subproblem, stage
-):
+def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param mod:
@@ -1398,16 +1398,22 @@ def load_model_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_model_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_commit_cap"
+        mod=mod,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_commit_cap",
     )
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "gen_commit_cap_linked_timepoint_params.tab"
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "gen_commit_cap_linked_timepoint_params.tab",
+    )
     if os.path.exists(linked_inputs_filename):
         data_portal.load(
             filename=linked_inputs_filename,
@@ -1418,16 +1424,14 @@ def load_model_data(
                 mod.gen_commit_cap_linked_upwards_reserves,
                 mod.gen_commit_cap_linked_downwards_reserves,
                 mod.gen_commit_cap_linked_startup,
-                mod.gen_commit_cap_linked_shutdown
-            )
+                mod.gen_commit_cap_linked_shutdown,
+            ),
         )
     else:
         pass
 
 
-def export_results(
-        mod, d, scenario_directory, subproblem, stage
-):
+def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
@@ -1437,48 +1441,66 @@ def export_results(
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "dispatch_capacity_commit.csv"),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "dispatch_capacity_commit.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project",
-                         "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
-                         "technology", "load_zone", "power_mw",
-                         "gross_power_mw",
-                         "auxiliary_consumption_mw", "net_power_mw",
-                         "committed_mw", "committed_units"
-                         ])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "balancing_type_project",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "technology",
+                "load_zone",
+                "power_mw",
+                "gross_power_mw",
+                "auxiliary_consumption_mw",
+                "net_power_mw",
+                "committed_mw",
+                "committed_units",
+            ]
+        )
 
-        for (p, tmp) \
-                in mod. \
-                GEN_COMMIT_CAP_OPR_TMPS:
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.balancing_type_project[p],
-                mod.horizon[tmp, mod.balancing_type_project[p]],
-                tmp,
-                mod.tmp_weight[tmp],
-                mod.hrs_in_tmp[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Power_Provision_MW[p, tmp]),
-                value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                value(mod.GenCommitCap_Provide_Power_MW[p, tmp]) -
-                value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                value(mod.Commit_Capacity_MW[p, tmp]),
-                value(mod.Commit_Capacity_MW[p, tmp]) /
-                mod.gen_commit_cap_unit_size_mw[p]
-            ])
+        for (p, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS:
+            writer.writerow(
+                [
+                    p,
+                    mod.period[tmp],
+                    mod.balancing_type_project[p],
+                    mod.horizon[tmp, mod.balancing_type_project[p]],
+                    tmp,
+                    mod.tmp_weight[tmp],
+                    mod.hrs_in_tmp[tmp],
+                    mod.technology[p],
+                    mod.load_zone[p],
+                    value(mod.Power_Provision_MW[p, tmp]),
+                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
+                    value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
+                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp])
+                    - value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
+                    value(mod.Commit_Capacity_MW[p, tmp]),
+                    value(mod.Commit_Capacity_MW[p, tmp])
+                    / mod.gen_commit_cap_unit_size_mw[p],
+                ]
+            )
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
     # next subproblem
     tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage
+        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
     )
 
     # If the list of timepoints to link is not empty, write the linked
@@ -1488,67 +1510,83 @@ def export_results(
         next_subproblem = str(int(subproblem) + 1)
 
         # Export params by project and timepoint
-        with open(os.path.join(
-                scenario_directory, next_subproblem, stage, "inputs",
-                "gen_commit_cap_linked_timepoint_params.tab"
-        ), "w", newline=""
+        with open(
+            os.path.join(
+                scenario_directory,
+                next_subproblem,
+                stage,
+                "inputs",
+                "gen_commit_cap_linked_timepoint_params.tab",
+            ),
+            "w",
+            newline="",
         ) as f:
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             writer.writerow(
-                ["project", "linked_timepoint",
-                 "linked_commitment",
-                 "linked_provide_power",
-                 "linked_upward_reserves",
-                 "linked_downward_reserves",
-                 "linked_startup",
-                 "linked_shutdown"]
+                [
+                    "project",
+                    "linked_timepoint",
+                    "linked_commitment",
+                    "linked_provide_power",
+                    "linked_upward_reserves",
+                    "linked_downward_reserves",
+                    "linked_startup",
+                    "linked_shutdown",
+                ]
             )
             for (p, tmp) in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
                 if tmp in tmps_to_link:
-                    writer.writerow([
-                        p,
-                        tmp_linked_tmp_dict[tmp],
-                        max(value(mod.Commit_Capacity_MW[p, tmp]), 0),
-                        max(value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                            0),
-                        max(value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]
-                                  ), 0),
-                        max(value(mod.GenCommitCap_Downwards_Reserves_MW[
-                                      p, tmp]), 0),
-                        max(value(mod.GenCommitCap_Startup_MW[p, tmp]), 0),
-                        max(value(mod.GenCommitCap_Shutdown_MW[p, tmp]), 0)
-                    ])
+                    writer.writerow(
+                        [
+                            p,
+                            tmp_linked_tmp_dict[tmp],
+                            max(value(mod.Commit_Capacity_MW[p, tmp]), 0),
+                            max(value(mod.GenCommitCap_Provide_Power_MW[p, tmp]), 0),
+                            max(value(mod.GenCommitCap_Upwards_Reserves_MW[p, tmp]), 0),
+                            max(
+                                value(mod.GenCommitCap_Downwards_Reserves_MW[p, tmp]), 0
+                            ),
+                            max(value(mod.GenCommitCap_Startup_MW[p, tmp]), 0),
+                            max(value(mod.GenCommitCap_Shutdown_MW[p, tmp]), 0),
+                        ]
+                    )
 
 
 # Database
 ###############################################################################
 
+
 def import_model_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
     :param scenario_id:
     :param subproblem:
     :param stage:
-    :param c: 
-    :param db: 
+    :param c:
+    :param db:
     :param results_directory:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("project dispatch capacity commit")
 
     update_dispatch_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="dispatch_capacity_commit.csv"
+        db=db,
+        c=c,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_file="dispatch_capacity_commit.csv",
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -1561,4 +1599,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_cap")
+    validate_opchars(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_commit_cap"
+    )

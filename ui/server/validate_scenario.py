@@ -26,7 +26,5 @@ def validate_scenario(db_path, client_message):
     :param client_message:
     :return:
     """
-    scenario_id = str(client_message['scenario'])
-    validate_inputs.main(
-      ["--database", db_path, "--scenario_id", scenario_id]
-    )
+    scenario_id = str(client_message["scenario"])
+    validate_inputs.main(["--database", db_path, "--scenario_id", scenario_id])

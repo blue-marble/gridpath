@@ -31,16 +31,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum(mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]
-                   * mod.energy_target_violation_penalty_per_mwh[z]
-                   * mod.number_years_represented[mod.period[
-                                                      mod.last_hrz_tmp[bt, h]]]
-                   * mod.discount_factor[mod.period[
-                                                      mod.last_hrz_tmp[bt, h]]]
-                   for (z, bt, h) in
-                   mod.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET)
+        return sum(
+            mod.Horizon_Energy_Target_Shortage_MWh_Expression[z, bt, h]
+            * mod.energy_target_violation_penalty_per_mwh[z]
+            * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
+            * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
+            for (z, bt, h) in mod.ENERGY_TARGET_ZONE_BLN_TYPE_HRZS_WITH_ENERGY_TARGET
+        )
+
     m.Total_Horizon_Energy_Target_Balance_Penalty_Costs = Expression(
-        rule=total_penalty_costs_rule)
+        rule=total_penalty_costs_rule
+    )
 
     record_dynamic_components(dynamic_components=d)
 

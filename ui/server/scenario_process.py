@@ -22,8 +22,11 @@ import psutil
 import subprocess
 
 from db.common_functions import connect_to_database
-from gridpath.run_end_to_end import update_run_status, check_if_in_queue, \
-  remove_from_queue_if_in_queue
+from gridpath.run_end_to_end import (
+    update_run_status,
+    check_if_in_queue,
+    remove_from_queue_if_in_queue,
+)
 from ui.server.db_ops.delete_scenario import clear as clear_scenario
 from ui.server.common_functions import get_executable_path
 
@@ -47,21 +50,18 @@ def launch_scenario_process(
     c = conn.cursor()
 
     scenario_name = get_scenario_name_from_scenario_id(
-      cursor=c, scenario_id=scenario_id
+        cursor=c, scenario_id=scenario_id
     )
 
     # First, check if the scenario is already running
     run_status, process_id = check_scenario_run_status(
-        db_path=db_path,
-        scenario_id=scenario_id
+        db_path=db_path, scenario_id=scenario_id
     )
-    if run_status == 'running':
+    if run_status == "running":
         # This shouldn't ever happen, as the Run Scenario button should
         # disappear when status changes to 'running'
         print("Scenario already running.")
-        emit(
-            "scenario_already_running"
-        )
+        emit("scenario_already_running")
     # If the scenario is not found among the running processes, launch a
     # process
     else:
@@ -73,14 +73,21 @@ def launch_scenario_process(
         )
 
         p = subprocess.Popen(
-            [run_gridpath_e2e_executable,
-             "--log",
-             "--database", db_path,
-             "--scenario", scenario_name,
-             "--scenario_location", scenarios_directory,
-             "--solver", solver,
-             "--solver_executable", solver_executable],
-            shell=False
+            [
+                run_gridpath_e2e_executable,
+                "--log",
+                "--database",
+                db_path,
+                "--scenario",
+                scenario_name,
+                "--scenario_location",
+                scenarios_directory,
+                "--solver",
+                solver,
+                "--solver_executable",
+                solver_executable,
+            ],
+            shell=False,
         )
 
         return p, scenario_id, scenario_name
@@ -92,13 +99,16 @@ def check_scenario_run_status(db_path, scenario_id):
     """
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
-    run_status, process_id = c.execute("""
+    run_status, process_id = c.execute(
+        """
         SELECT run_status_name, run_process_id
         FROM scenarios
         JOIN mod_run_status_types
         USING (run_status_id)
         WHERE scenario_id = {}
-        """.format(scenario_id)
+        """.format(
+            scenario_id
+        )
     ).fetchone()
 
     return run_status, process_id
@@ -112,7 +122,7 @@ def stop_scenario_run(db_path, scenario_id):
     :return:
     """
     run_status, process_id = check_scenario_run_status(
-      db_path=db_path, scenario_id=scenario_id
+        db_path=db_path, scenario_id=scenario_id
     )
     if run_status != "running":
         # TODO: Tell user scenario is not running
@@ -121,9 +131,7 @@ def stop_scenario_run(db_path, scenario_id):
     # the process likely did not exit cleanly, so we'll clear scenario
     # results and update the run status to 'run_error'
     elif process_id is None:
-        clean_up_scenario_with_no_process_id(
-          db_path=db_path, scenario_id=scenario_id
-        )
+        clean_up_scenario_with_no_process_id(db_path=db_path, scenario_id=scenario_id)
     else:
         print("Attempting to terminate process ID {}".format(process_id))
         # TODO: is there an additional check to do, to make sure we don't
@@ -143,9 +151,7 @@ def stop_scenario_run(db_path, scenario_id):
         # run_end_to_end, which updates the scenario status
         if os.name == "nt":
             connect_to_db_and_update_run_status(
-              db_path=db_path,
-              scenario_id=scenario_id,
-              status_id=4
+                db_path=db_path, scenario_id=scenario_id, status_id=4
             )
 
 
@@ -156,9 +162,7 @@ def get_scenario_name_from_scenario_id(cursor, scenario_id):
     :return:
     """
     scenario_name = cursor.execute(
-        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
-            scenario_id
-        )
+        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(scenario_id)
     ).fetchone()[0]
 
     return scenario_name
@@ -169,17 +173,12 @@ def connect_to_db_and_update_run_status(db_path, scenario_id, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
     scenario_name = get_scenario_name_from_scenario_id(
-      cursor=c, scenario_id=scenario_id
+        cursor=c, scenario_id=scenario_id
     )
     # Check if running from queue
-    queue_order_id = check_if_in_queue(
-        db_path, scenario_id
-    )
-    remove_from_queue_if_in_queue(
-        db_path, scenario_id, queue_order_id
-    )
-    update_run_status(db_path=db_path, scenario=scenario_name,
-                      status_id=status_id)
+    queue_order_id = check_if_in_queue(db_path, scenario_id)
+    remove_from_queue_if_in_queue(db_path, scenario_id, queue_order_id)
+    update_run_status(db_path=db_path, scenario=scenario_name, status_id=status_id)
 
 
 def clean_up_scenario_with_no_process_id(db_path, scenario_id):
@@ -191,14 +190,10 @@ def clean_up_scenario_with_no_process_id(db_path, scenario_id):
     """
     print("No such process")
     # Warn the user about what we're about to do
-    emit(
-      "process_id_not_found"
-    )
+    emit("process_id_not_found")
     # Clear scenario from database
     clear_scenario(db_path=db_path, scenario_id=scenario_id)
     # Update status to 'run_error'
     connect_to_db_and_update_run_status(
-      db_path=db_path,
-      scenario_id=scenario_id,
-      status_id=3
+        db_path=db_path, scenario_id=scenario_id, status_id=3
     )

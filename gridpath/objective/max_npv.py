@@ -51,8 +51,7 @@ import os
 from pyomo.environ import Expression, Objective, maximize, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import cost_components, \
-    revenue_components
+from gridpath.auxiliary.dynamic_components import cost_components, revenue_components
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
@@ -74,15 +73,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Aggregate all revenue
     def total_revenue_rule(mod):
-        return sum(getattr(mod, c)
-                   for c in getattr(d, revenue_components))
+        return sum(getattr(mod, c) for c in getattr(d, revenue_components))
 
     m.Total_Revenue = m.Expression(initialize=total_revenue_rule)
 
     # Aggregate all costs
     def total_cost_rule(mod):
-        return sum(getattr(mod, c)
-                   for c in getattr(d, cost_components))
+        return sum(getattr(mod, c) for c in getattr(d, cost_components))
 
     m.Total_Cost = m.Expression(initialize=total_cost_rule)
 
@@ -95,6 +92,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -110,22 +108,21 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
     with open(
-            os.path.join(
-                scenario_directory, str(subproblem), str(stage), "results",
-                "npv.csv"
-            ),
-            "w",
-            newline=""
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", "npv.csv"
+        ),
+        "w",
+        newline="",
     ) as f:
         writer = csv.writer(f)
-        components = \
-            getattr(d, revenue_components) + getattr(d, cost_components)
+        components = getattr(d, revenue_components) + getattr(d, cost_components)
         writer.writerow(components)
         writer.writerow((value(getattr(m, c)) for c in components))
 
 
 # Database
 ###############################################################################
+
 
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
@@ -144,15 +141,18 @@ def import_results_into_database(
         print("results system cost")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_system_costs",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     df = pd.read_csv(os.path.join(results_directory, "npv.csv"))
-    df['scenario_id'] = scenario_id
-    df['subproblem_id'] = subproblem
-    df['stage_id'] = stage
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
     results = df.to_records(index=False)
 
     # Register numpy types with sqlite, so that they are properly inserted
@@ -165,7 +165,7 @@ def import_results_into_database(
         INSERT INTO results_system_costs
         ({})
         VALUES ({});
-        """.format(", ".join(df.columns),
-                   ", ".join(["?"] * (len(df.columns))))
+        """.format(
+        ", ".join(df.columns), ", ".join(["?"] * (len(df.columns)))
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=results)
-

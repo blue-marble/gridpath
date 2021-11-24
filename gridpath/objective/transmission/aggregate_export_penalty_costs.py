@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2021 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,10 @@
 # limitations under the License.
 
 """
-This module aggregates transmission-line-timepoint-level operational costs
-for use in the objective function.
+This module aggregates the cost of exports from a load zone in each
+timepoint and adds the total to the objective function.
 """
+
 
 from pyomo.environ import Expression
 
@@ -30,22 +31,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    def total_hurdle_cost_rule(mod):
-        """
-        Hurdle costs for all transmission lines across all timepoints
-        :param mod:
-        :return:
-        """
+    def total_export_penalty_cost_rule(mod):
+        """ """
         return sum(
-            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] +
-             mod.Hurdle_Cost_Neg_Dir[tx, tmp])
+            mod.Export_Penalty_Cost[lz, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp) in mod.TX_OPR_TMPS)
+            for lz in mod.LOAD_ZONES
+            for tmp in mod.TMPS
+        )
 
-    m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
+    m.Total_Export_Penalty_Cost = Expression(rule=total_export_penalty_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -57,7 +55,4 @@ def record_dynamic_components(dynamic_components):
     Add total transmission hurdle costs to cost components
     """
 
-    getattr(dynamic_components, cost_components).append(
-        "Total_Hurdle_Cost")
-
-
+    getattr(dynamic_components, cost_components).append("Total_Export_Penalty_Cost")

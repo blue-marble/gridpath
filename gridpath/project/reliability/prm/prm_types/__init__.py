@@ -20,8 +20,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Expression
 
-from gridpath.project.reliability.prm.common_functions import \
-    load_prm_type_modules
+from gridpath.project.reliability.prm.common_functions import load_prm_type_modules
 
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
@@ -35,14 +34,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     # Import needed PRM modules
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         sep="\t",
-        usecols=["project", "prm_type"]
+        usecols=["project", "prm_type"],
     )
     required_prm_modules = [
-        prm_type for prm_type in project_df.prm_type.unique() if
-        prm_type != "."
+        prm_type for prm_type in project_df.prm_type.unique() if prm_type != "."
     ]
 
     imported_prm_modules = load_prm_type_modules(required_prm_modules)
@@ -56,12 +55,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # For each PRM project, get the ELCC-eligible capacity
     def elcc_eligible_capacity_rule(mod, g, p):
         prm_type = mod.prm_type[g]
-        return imported_prm_modules[prm_type]. \
-            elcc_eligible_capacity_rule(mod, g, p)
+        return imported_prm_modules[prm_type].elcc_eligible_capacity_rule(mod, g, p)
 
     m.ELCC_Eligible_Capacity_MW = Expression(
-        m.PRM_PRJ_OPR_PRDS,
-        rule=elcc_eligible_capacity_rule
+        m.PRM_PRJ_OPR_PRDS, rule=elcc_eligible_capacity_rule
     )
 
 
@@ -79,23 +76,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         sep="\t",
-        usecols=["project", "prm_type"]
+        usecols=["project", "prm_type"],
     )
     required_prm_modules = [
-        prm_type for prm_type in project_df.prm_type.unique() if
-        prm_type != "."
+        prm_type for prm_type in project_df.prm_type.unique() if prm_type != "."
     ]
 
     imported_prm_modules = load_prm_type_modules(required_prm_modules)
 
     for prm_m in required_prm_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "load_model_data"):
+        if hasattr(imported_prm_modules[prm_m], "load_model_data"):
             imported_prm_modules[prm_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage)
+                m, d, data_portal, scenario_directory, subproblem, stage
+            )
         else:
             pass
 
@@ -117,32 +114,36 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     # Export module-specific results
     # Operational type modules
     project_df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         sep="\t",
-        usecols=["project", "prm_type"]
+        usecols=["project", "prm_type"],
     )
     required_prm_modules = [
-        prm_type for prm_type in project_df.prm_type.unique() if
-        prm_type != "."
+        prm_type for prm_type in project_df.prm_type.unique() if prm_type != "."
     ]
 
     imported_prm_modules = load_prm_type_modules(required_prm_modules)
 
     for prm_m in required_prm_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "export_results"):
-            imported_prm_modules[prm_m]. \
-                export_results(
-                m, d, scenario_directory, subproblem, stage,
+        if hasattr(imported_prm_modules[prm_m], "export_results"):
+            imported_prm_modules[prm_m].export_results(
+                m,
+                d,
+                scenario_directory,
+                subproblem,
+                stage,
             )
         else:
             pass
 
 
 def get_required_prm_type_modules(
-    c, project_portfolio_scenario_id, project_prm_zone_scenario_id,
-    project_elcc_chars_scenario_id
+    c,
+    project_portfolio_scenario_id,
+    project_prm_zone_scenario_id,
+    project_elcc_chars_scenario_id,
 ):
     """
     :param c:
@@ -158,7 +159,8 @@ def get_required_prm_type_modules(
     # the scenario's portfolio
     # This list will be used to know which PRM type modules to load
     required_prm_type_modules = [
-        p[0] for p in c.execute(
+        p[0]
+        for p in c.execute(
             """SELECT DISTINCT(prm_type)
             FROM 
             (SELECT project FROM inputs_project_portfolios
@@ -175,7 +177,7 @@ def get_required_prm_type_modules(
             WHERE prm_type IS NOT NULL;""".format(
                 project_portfolio_scenario_id,
                 project_prm_zone_scenario_id,
-                project_elcc_chars_scenario_id
+                project_elcc_chars_scenario_id,
             )
         ).fetchall()
     ]
@@ -197,27 +199,25 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     required_prm_type_modules = get_required_prm_type_modules(
         c=c,
-        project_portfolio_scenario_id
-        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-        project_elcc_chars_scenario_id
-        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+        project_elcc_chars_scenario_id=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
     )
-    imported_prm_modules = \
-        load_prm_type_modules(required_prm_type_modules)
+    imported_prm_modules = load_prm_type_modules(required_prm_type_modules)
 
     # Validate module-specific inputs
     for prm_m in required_prm_type_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "validate_inputs"):
-            imported_prm_modules[prm_m]. \
-                validate_inputs(
-                    scenario_id, subscenarios, subproblem, stage, conn)
+        if hasattr(imported_prm_modules[prm_m], "validate_inputs"):
+            imported_prm_modules[prm_m].validate_inputs(
+                scenario_id, subscenarios, subproblem, stage, conn
+            )
         else:
             pass
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input .tab files.
     :param scenario_directory: string, the scenario directory
@@ -231,28 +231,24 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     # Load in the required prm type modules
     required_prm_type_modules = get_required_prm_type_modules(
         c=c,
-        project_portfolio_scenario_id
-        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-        project_elcc_chars_scenario_id
-        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+        project_elcc_chars_scenario_id=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
     )
-    imported_prm_modules = \
-        load_prm_type_modules(required_prm_type_modules)
+    imported_prm_modules = load_prm_type_modules(required_prm_type_modules)
 
     # Write module-specific inputs
     for prm_m in required_prm_type_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "write_model_inputs"):
-            imported_prm_modules[prm_m]. \
-                write_model_inputs(
-                    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn)
+        if hasattr(imported_prm_modules[prm_m], "write_model_inputs"):
+            imported_prm_modules[prm_m].write_model_inputs(
+                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+            )
         else:
             pass
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -264,13 +260,19 @@ def import_results_into_database(
     :return:
     """
 
-    (project_portfolio_scenario_id, project_prm_zone_scenario_id,
-     project_elcc_chars_scenario_id) = c.execute("""
+    (
+        project_portfolio_scenario_id,
+        project_prm_zone_scenario_id,
+        project_elcc_chars_scenario_id,
+    ) = c.execute(
+        """
         SELECT project_portfolio_scenario_id, project_prm_zone_scenario_id, 
         project_elcc_chars_scenario_id
         FROM scenarios
         WHERE scenario_id = {}
-        """.format(scenario_id)
+        """.format(
+            scenario_id
+        )
     ).fetchone()
 
     # Required modules are the unique set of generator PRM types in
@@ -280,19 +282,16 @@ def import_results_into_database(
         c=c,
         project_portfolio_scenario_id=project_portfolio_scenario_id,
         project_prm_zone_scenario_id=project_prm_zone_scenario_id,
-        project_elcc_chars_scenario_id=project_elcc_chars_scenario_id
+        project_elcc_chars_scenario_id=project_elcc_chars_scenario_id,
     )
 
     # Import module-specific results
     # Load in the required operational modules
-    imported_prm_modules = \
-        load_prm_type_modules(required_prm_type_modules)
+    imported_prm_modules = load_prm_type_modules(required_prm_type_modules)
 
     for prm_m in required_prm_type_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "import_results_into_database"):
-            imported_prm_modules[prm_m]. \
-                import_results_into_database(
+        if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
+            imported_prm_modules[prm_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
@@ -313,25 +312,23 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     # This list will be used to know which PRM type modules to load
     required_prm_type_modules = get_required_prm_type_modules(
         c=c,
-        project_portfolio_scenario_id
-        =subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         project_prm_zone_scenario_id=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-        project_elcc_chars_scenario_id
-        =subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+        project_elcc_chars_scenario_id=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
     )
 
     # Import module-specific results
     # Load in the required operational modules
-    imported_prm_modules = \
-        load_prm_type_modules(required_prm_type_modules)
+    imported_prm_modules = load_prm_type_modules(required_prm_type_modules)
 
     for prm_m in required_prm_type_modules:
-        if hasattr(imported_prm_modules[prm_m],
-                   "process_model_results"):
-            imported_prm_modules[prm_m]. \
-                process_model_results(
-                db=db, c=c, scenario_id=scenario_id,
-                subscenarios=subscenarios, quiet=quiet
+        if hasattr(imported_prm_modules[prm_m], "process_model_results"):
+            imported_prm_modules[prm_m].process_model_results(
+                db=db,
+                c=c,
+                scenario_id=scenario_id,
+                subscenarios=subscenarios,
+                quiet=quiet,
             )
         else:
             pass

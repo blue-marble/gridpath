@@ -76,6 +76,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented transmission availability types
+DROP TABLE IF EXISTS mod_tx_availability_types;
+CREATE TABLE mod_tx_availability_types (
+availability_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Implemented prm types
 DROP TABLE IF EXISTS mod_prm_types;
 CREATE TABLE mod_prm_types (
@@ -380,7 +387,9 @@ load_zone VARCHAR(32),
 allow_overgeneration INTEGER,
 overgeneration_penalty_per_mw FLOAT,
 allow_unserved_energy INTEGER,
-unserved_energy_penalty_per_mw FLOAT,
+unserved_energy_penalty_per_mwh FLOAT,
+max_unserved_load_penalty_per_mw FLOAT,
+export_penalty_cost_per_mwh FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id)
@@ -1336,7 +1345,7 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 -- Project carbon tax zones
 -- Which projects are subject to the carbon tax
 -- Depends on carbon tax zone geography
--- This table can include all projects with MULLS for projects not
+-- This table can include all projects with NULLS for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_tax_zones;
 CREATE TABLE subscenarios_project_carbon_tax_zones (
@@ -1353,6 +1362,25 @@ carbon_tax_zone VARCHAR(32),
 PRIMARY KEY (project_carbon_tax_zone_scenario_id, project),
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_zones (project_carbon_tax_zone_scenario_id)
+);
+
+-- Project carbon tax allowance
+DROP TABLE IF EXISTS subscenarios_project_carbon_tax_allowance;
+CREATE TABLE subscenarios_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_carbon_tax_allowance;
+CREATE TABLE inputs_project_carbon_tax_allowance (
+project_carbon_tax_allowance_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+carbon_tax_allowance_tco2_per_mwh FLOAT,
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+ subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
 
 -- Project PRM zones
@@ -1674,6 +1702,82 @@ FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
 subscenarios_transmission_new_cost
 (transmission_new_cost_scenario_id)
 );
+
+-- Transmission new potential
+DROP TABLE IF EXISTS subscenarios_transmission_new_potential;
+CREATE TABLE subscenarios_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Transmission lines with no min or max build requirements can be included here with
+-- NULL values or excluded from this table
+DROP TABLE IF EXISTS inputs_transmission_new_potential;
+CREATE TABLE inputs_transmission_new_potential (
+transmission_new_potential_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+min_cumulative_new_build_mw FLOAT,
+max_cumulative_new_build_mw FLOAT,
+PRIMARY KEY (transmission_new_potential_scenario_id, transmission_line, period),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+subscenarios_transmission_new_potential (transmission_new_potential_scenario_id)
+);
+
+-- Transmission availability (e.g. due to planned outages/availability)
+-- Subscenarios
+DROP TABLE IF EXISTS subscenarios_transmission_availability;
+CREATE TABLE subscenarios_transmission_availability (
+transmission_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Define availability type and IDs for type characteristics
+-- TODO: implement check that there are exogenous IDs only for exogenous
+--  types and endogenous IDs only for endogenous types
+DROP TABLE IF EXISTS inputs_transmission_availability;
+CREATE TABLE inputs_transmission_availability (
+transmission_availability_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
+endogenous_availability_scenario_id INTEGER,
+PRIMARY KEY (transmission_availability_scenario_id, transmission_line,
+             availability_type)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_availability_exogenous;
+CREATE TABLE subscenarios_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_availability_exogenous;
+CREATE TABLE inputs_transmission_availability_exogenous (
+transmission_line VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ),  -- use 0 for monthly availability
+month INTEGER CHECK (
+    (timepoint = 0 AND month > 0)
+        or (timepoint > 0 AND month = 0)
+    ), -- use 0 for timepoint-level availability
+availability_derate FLOAT,
+PRIMARY KEY (transmission_line, exogenous_availability_scenario_id, stage_id,
+             timepoint, month),
+FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
+    REFERENCES subscenarios_transmission_availability_exogenous
+        (transmission_line, exogenous_availability_scenario_id)
+);
+
 
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
@@ -2340,6 +2444,7 @@ project_spinning_reserves_ba_scenario_id INTEGER,
 project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
+project_carbon_tax_allowance_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2358,8 +2463,10 @@ transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_specified_capacity_scenario_id INTEGER,
 transmission_new_cost_scenario_id INTEGER,
+transmission_availability_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
+transmission_new_potential_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2452,6 +2559,9 @@ FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_zones
         (project_carbon_tax_zone_scenario_id),
+FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
+    subscenarios_project_carbon_tax_allowance
+        (project_carbon_tax_allowance_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2496,12 +2606,17 @@ FOREIGN KEY (transmission_specified_capacity_scenario_id) REFERENCES
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
     subscenarios_transmission_new_cost
         (transmission_new_cost_scenario_id),
+FOREIGN KEY (transmission_availability_scenario_id) REFERENCES
+    subscenarios_transmission_availability
+        (transmission_availability_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
     subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id),
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
     subscenarios_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id),
+FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
+    subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -3310,6 +3425,22 @@ carbon_emission_imports_tons_degen FLOAT,
 PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
 );
 
+-- Simultaneous flows
+DROP TABLE IF EXISTS results_transmission_simultaneous_flows;
+CREATE TABLE results_transmission_simultaneous_flows (
+    scenario_id INTEGER,
+    transmission_simultaneous_flow_limit VARCHAR(64),
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    timepoint INTEGER,
+    timepoint_weight FLOAT,
+    period FLOAT,
+    flow_mw FLOAT,
+    dual FLOAT,
+    PRIMARY KEY (scenario_id, transmission_simultaneous_flow_limit,
+                 subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_system_load_balance;
 CREATE TABLE results_system_load_balance (
 scenario_id INTEGER,
@@ -3519,6 +3650,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 carbon_tax FLOAT,
 total_emissions FLOAT,
+total_allowance FLOAT,
 carbon_tax_cost FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
@@ -3641,6 +3773,7 @@ Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
+Total_Export_Penalty_Cost FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
@@ -3751,6 +3884,7 @@ subscenarios_transmission_new_cost.name
 subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
+subscenarios_transmission_new_potential.name AS transmission_new_potential,
 subscenarios_transmission_carbon_cap_zones.name
     AS transmission_carbon_cap_zones,
 subscenarios_transmission_simultaneous_flow_limits.name
@@ -3852,6 +3986,8 @@ LEFT JOIN subscenarios_transmission_operational_chars
     USING (transmission_operational_chars_scenario_id)
 LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
+LEFT JOIN subscenarios_transmission_new_potential
+    USING (transmission_new_potential_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
     USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
@@ -3898,6 +4034,14 @@ inputs_project_operational_chars
 USING (project)
 ;
 
+DROP VIEW IF EXISTS transmission_portfolio_opchars;
+CREATE VIEW transmission_portfolio_opchars AS
+SELECT * FROM inputs_transmission_portfolios
+LEFT OUTER JOIN
+inputs_transmission_operational_chars
+USING (transmission_line)
+;
+
 
 -- This view shows the possible operational periods for new projects, based on
 -- the available vintages and their lifetime. E.g. a project available in
@@ -3924,6 +4068,23 @@ SELECT distinct project_new_cost_scenario_id, project, period
 FROM main_data
 ;
 
+
+DROP VIEW IF EXISTS transmission_new_operational_periods;
+CREATE VIEW transmission_new_operational_periods AS
+WITH main_data (transmission_line, transmission_new_cost_scenario_id, period,
+    highrange)
+    AS (
+    SELECT transmission_line, transmission_new_cost_scenario_id, vintage AS period,
+    vintage + tx_lifetime_yrs AS highrange
+    FROM inputs_transmission_new_cost
+    UNION ALL
+    SELECT transmission_line, transmission_new_cost_scenario_id, period + 1 AS period,
+    highrange
+    FROM main_data
+    WHERE period < highrange - 1)
+SELECT distinct transmission_new_cost_scenario_id, transmission_line, period
+FROM main_data
+;
 
 -- This view shows the possible operational periods for new and specified
 -- projects, based on the available vintage and lifetime and/or the specified
@@ -3952,6 +4113,35 @@ INNER JOIN
 USING (period)
 ;
 
+
+-- This view shows the possible operational periods for new and specified
+-- transmission, based on the available vintage and lifetime and/or the
+-- specified capacity periods, as well as the actual modeled periods.
+DROP VIEW IF EXISTS transmission_operational_periods;
+CREATE VIEW transmission_operational_periods AS
+SELECT transmission_specified_capacity_scenario_id,
+       transmission_new_cost_scenario_id,
+temporal_scenario_id, transmission_line, period
+FROM
+    -- Use left join + union + left join because no outer join in sqlite
+    (SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM inputs_transmission_specified_capacity
+    LEFT JOIN transmission_new_operational_periods USING(transmission_line,
+                                                         period)
+    UNION ALL
+    SELECT transmission_specified_capacity_scenario_id,
+    transmission_new_cost_scenario_id, transmission_line, period
+    FROM transmission_new_operational_periods
+    LEFT JOIN inputs_transmission_specified_capacity USING(transmission_line, period)
+    where transmission_specified_capacity_scenario_id IS NULL
+    ) AS all_operational_transmission_periods
+INNER JOIN
+    (SELECT temporal_scenario_id, period
+    FROM inputs_temporal_periods
+    ) as relevant_periods_tbl
+USING (period)
+;
 
 -- This view shows the periods and the respective horizons within each period
 -- for each balancing_type, based on the timepoint-to-horizon mapping and the
@@ -4019,6 +4209,22 @@ project_operational_periods
 USING (temporal_scenario_id, project, period)
 ;
 
+DROP VIEW IF EXISTS transmission_operational_timepoints;
+CREATE VIEW transmission_operational_timepoints AS
+SELECT transmission_portfolio_scenario_id, transmission_operational_chars_scenario_id,
+transmission_specified_capacity_scenario_id, transmission_new_cost_scenario_id,
+temporal_scenario_id, operational_type,
+subproblem_id, stage_id, transmission_line, timepoint
+-- Get all transmissions in the portfolio (with their opchars)
+FROM transmission_portfolio_opchars
+-- Add all the timepoints
+CROSS JOIN
+inputs_temporal
+-- Only select timepoints from the actual operational periods
+INNER JOIN
+transmission_operational_periods
+USING (temporal_scenario_id, transmission_line, period)
+;
 
 -- ratio of hrs that are (not) spinup/lookahead in each period-subproblem-stage
 DROP VIEW IF EXISTS spinup_or_lookahead_ratios;

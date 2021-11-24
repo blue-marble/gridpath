@@ -11,8 +11,7 @@ import pandas as pd
 import sys
 import warnings
 
-from db.common_functions import connect_to_database, \
-    spin_on_database_lock
+from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.common_functions import confirm
 
 
@@ -27,24 +26,36 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--database", default="../io.db",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ../io.db ")
-    parser.add_argument("--csv_path",
-                        default="../csvs_test_examples/scenarios.csv",
-                        help="Path to the scenarios CSV. Defaults to "
-                             "../csvs_test_examples/scenarios.csv")
-    parser.add_argument("--scenario",
-                        help="The scenario to load (or delete). If not "
-                             "specified, the script will load data for all "
-                             "scenarios in the CSV.")
-    parser.add_argument("--delete", default=False, action="store_true",
-                        help="Delete the specified scenario. No data "
-                             "will be imported. WARNING: this will delete "
-                             "all prior results and data associated with "
-                             "this scenario.")
-    parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print output.")
+    parser.add_argument(
+        "--database",
+        default="../io.db",
+        help="The database file path relative to the current "
+        "working directory. Defaults to ../io.db ",
+    )
+    parser.add_argument(
+        "--csv_path",
+        default="../csvs_test_examples/scenarios.csv",
+        help="Path to the scenarios CSV. Defaults to "
+        "../csvs_test_examples/scenarios.csv",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario to load (or delete). If not "
+        "specified, the script will load data for all "
+        "scenarios in the CSV.",
+    )
+    parser.add_argument(
+        "--delete",
+        default=False,
+        action="store_true",
+        help="Delete the specified scenario. No data "
+        "will be imported. WARNING: this will delete "
+        "all prior results and data associated with "
+        "this scenario.",
+    )
+    parser.add_argument(
+        "--quiet", default=False, action="store_true", help="Don't print output."
+    )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -74,43 +85,47 @@ def create_scenario(io, c, column_values_dict):
     # TODO: add a check that the column names are correct and values are
     #  integers
     for column_name in column_values_dict.keys():
-        if column_name == 'scenario_id':
+        if column_name == "scenario_id":
             warnings.warn(
                 "The scenario_id is an AUTOINCREMENT column and should not be "
                 "inserted directly. \n"
                 "Your scenario will be assigned a scenario_id automatically.\n"
                 "Remove the 'scenario_id' key from the dictionary to avoid "
-                "seeing this warning again.")
+                "seeing this warning again."
+            )
         else:
             if list(column_values_dict.keys()).index(column_name) == 0:
                 column_names_sql_string += "{}, ".format(column_name)
                 column_values_sql_string += "?,"
                 column_values_data = (column_values_dict[column_name],)
-            elif list(column_values_dict.keys()).index(column_name) \
-                    == len(list(column_values_dict.keys())) - 1:
+            elif (
+                list(column_values_dict.keys()).index(column_name)
+                == len(list(column_values_dict.keys())) - 1
+            ):
                 column_names_sql_string += "{}".format(column_name)
                 column_values_sql_string += "?"
-                column_values_data = \
-                    column_values_data + (column_values_dict[column_name],)
+                column_values_data = column_values_data + (
+                    column_values_dict[column_name],
+                )
             else:
                 column_names_sql_string += "{}, ".format(column_name)
                 column_values_sql_string += "?,"
-                column_values_data = \
-                    column_values_data + (column_values_dict[column_name],)
+                column_values_data = column_values_data + (
+                    column_values_dict[column_name],
+                )
 
     sql = """
         INSERT INTO scenarios ({}) VALUES ({});
-        """.format(column_names_sql_string, column_values_sql_string)
+        """.format(
+        column_names_sql_string, column_values_sql_string
+    )
 
-    spin_on_database_lock(conn=io, cursor=c, sql=sql, data=column_values_data,
-                          many=False)
+    spin_on_database_lock(
+        conn=io, cursor=c, sql=sql, data=column_values_data, many=False
+    )
 
 
-def update_scenario_multiple_columns(
-        io, c,
-        scenario_name,
-        column_values_dict
-):
+def update_scenario_multiple_columns(io, c, scenario_name, column_values_dict):
     """
 
     :param io:
@@ -125,16 +140,11 @@ def update_scenario_multiple_columns(
             c=c,
             scenario_name=scenario_name,
             column_name=column_name,
-            column_value=column_values_dict[column_name]
+            column_value=column_values_dict[column_name],
         )
 
 
-def update_scenario_single_column(
-        io, c,
-        scenario_name,
-        column_name,
-        column_value
-):
+def update_scenario_single_column(io, c, scenario_name, column_name, column_value):
     """
 
     :param io:
@@ -146,18 +156,24 @@ def update_scenario_single_column(
     """
     # If no value specified, update to NULL
     if column_value is None:
-        column_value = 'NULL'
+        column_value = "NULL"
 
     # Update the column value for the scenario
     update_sql = """
         UPDATE scenarios
         SET {} = ?
         WHERE scenario_name = ?;
-        """.format(column_name)
+        """.format(
+        column_name
+    )
 
-    spin_on_database_lock(conn=io, cursor=c, sql=update_sql,
-                          data=(column_value, scenario_name),
-                          many=False)
+    spin_on_database_lock(
+        conn=io,
+        cursor=c,
+        sql=update_sql,
+        data=(column_value, scenario_name),
+        many=False,
+    )
 
 
 def delete_scenario(conn, scenario_id):
@@ -174,9 +190,9 @@ def delete_scenario(conn, scenario_id):
     # Delete from scenarios table
     c = conn.cursor()
     sc_id_sql = "DELETE FROM scenarios WHERE scenario_id = ?"
-    spin_on_database_lock(conn=conn, cursor=c, sql=sc_id_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=sc_id_sql, data=(scenario_id,), many=False
+    )
 
 
 def delete_scenario_results_and_status(conn, scenario_id):
@@ -192,20 +208,19 @@ def delete_scenario_results_and_status(conn, scenario_id):
         "SELECT name FROM sqlite_master WHERE type='table';"
     ).fetchall()
 
-    results_tables = [
-        tbl[0] for tbl in all_tables if tbl[0].startswith("results")
-    ]
-    status_tables = [
-        tbl[0] for tbl in all_tables if tbl[0].startswith("status")
-    ]
+    results_tables = [tbl[0] for tbl in all_tables if tbl[0].startswith("results")]
+    status_tables = [tbl[0] for tbl in all_tables if tbl[0].startswith("status")]
 
     # Delete from all results and status tables
     for tbl in results_tables + status_tables:
         sql = """
             DELETE FROM {} WHERE scenario_id = ?;
-            """.format(tbl)
-        spin_on_database_lock(conn=conn, cursor=c, sql=sql,
-                              data=(scenario_id,), many=False)
+            """.format(
+            tbl
+        )
+        spin_on_database_lock(
+            conn=conn, cursor=c, sql=sql, data=(scenario_id,), many=False
+        )
 
     # Update statuses in scenarios table to defaults
     status_sql = """
@@ -216,8 +231,9 @@ def delete_scenario_results_and_status(conn, scenario_id):
         run_process_id=NULL
         WHERE scenario_id = ?
     """
-    spin_on_database_lock(conn=conn, cursor=c, sql=status_sql,
-                          data=(scenario_id,), many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=status_sql, data=(scenario_id,), many=False
+    )
 
 
 def delete_scenario_results(conn, scenario_id):
@@ -233,17 +249,18 @@ def delete_scenario_results(conn, scenario_id):
         "SELECT name FROM sqlite_master WHERE type='table';"
     ).fetchall()
 
-    results_tables = [
-        tbl[0] for tbl in all_tables if tbl[0].startswith("results")
-    ]
+    results_tables = [tbl[0] for tbl in all_tables if tbl[0].startswith("results")]
 
     # Delete from all results tables
     for tbl in results_tables:
         sql = """
             DELETE FROM {} WHERE scenario_id = ?;
-            """.format(tbl)
-        spin_on_database_lock(conn=conn, cursor=c, sql=sql,
-                              data=(scenario_id,), many=False)
+            """.format(
+            tbl
+        )
+        spin_on_database_lock(
+            conn=conn, cursor=c, sql=sql, data=(scenario_id,), many=False
+        )
 
 
 def check_if_scenario_name_exists(conn, scenario_name):
@@ -255,7 +272,7 @@ def check_if_scenario_name_exists(conn, scenario_name):
     c = conn.cursor()
 
     sql = "SELECT scenario_id FROM scenarios WHERE scenario_name = ?"
-    query = c.execute(sql, (scenario_name, )).fetchone()
+    query = c.execute(sql, (scenario_name,)).fetchone()
 
     if query is None:
         scenario_id = None
@@ -301,17 +318,15 @@ def load_scenario_from_df(conn, scenarios_df, scenario_name):
     c = conn.cursor()
 
     # Convert the dataframe to dictionary
-    scenario_info = scenarios_df.set_index(
-        'optional_feature_or_subscenarios'
-    )[scenario_name].to_dict()
+    scenario_info = scenarios_df.set_index("optional_feature_or_subscenarios")[
+        scenario_name
+    ].to_dict()
 
     # Add the scenario name
     scenario_info["scenario_name"] = scenario_name
 
     # Create the scenario (add to scenarios table)
-    create_scenario(
-        io=conn, c=c, column_values_dict=scenario_info
-    )
+    create_scenario(io=conn, c=c, column_values_dict=scenario_info)
 
     c.close()
 
@@ -332,9 +347,7 @@ def main(args=None):
     if not os.path.isfile(db_path):
         raise OSError(
             "The database file {} was not found. Did you mean to "
-            "specify a different database?".format(
-                os.path.abspath(db_path)
-            )
+            "specify a different database?".format(os.path.abspath(db_path))
         )
 
     # Connect to database
@@ -343,23 +356,26 @@ def main(args=None):
     # Check if the user has requested that a scenario be deleted
     if delete_flag:
         if scenario is None:
-            raise ValueError("You must specify which scenario you'd like to "
-                             "delete with the '--delete' flag.")
+            raise ValueError(
+                "You must specify which scenario you'd like to "
+                "delete with the '--delete' flag."
+            )
         else:
             proceed = confirm(
-                prompt=
-                """WARNING: Would you like to delete all data associated 
+                prompt="""WARNING: Would you like to delete all data associated 
                 with scenario '{}'? If you select 'yes' all prior results 
-                associated with scenario '{}' will be deleted."""
-                .format(scenario, scenario)
+                associated with scenario '{}' will be deleted.""".format(
+                    scenario, scenario
+                )
             )
             if proceed:
                 sid = check_if_scenario_name_exists(
                     conn=db_conn, scenario_name=scenario
                 )
                 if sid is None:
-                    raise ValueError("Scenario {} not found in the "
-                                     "database.".format(scenario))
+                    raise ValueError(
+                        "Scenario {} not found in the " "database.".format(scenario)
+                    )
                 else:
                     delete_scenario(conn=db_conn, scenario_id=sid)
     # If '--delete' not specified, try to load data
@@ -378,9 +394,7 @@ def main(args=None):
         for scenario in scenarios:
             if not quiet:
                 print("...{}".format(scenario))
-            sid = check_if_scenario_name_exists(
-                conn=db_conn, scenario_name=scenario
-            )
+            sid = check_if_scenario_name_exists(conn=db_conn, scenario_name=scenario)
             # If the scenario name does not exist, load the data
             if sid is None:
                 load_scenario_from_df(
@@ -391,19 +405,18 @@ def main(args=None):
             # info
             else:
                 proceed = confirm(
-                    prompt=
-                    """There is already a scenario named '{}' in the 
+                    prompt="""There is already a scenario named '{}' in the 
                     database. Would you like to delete all data associated 
                     with this scenario and re-load the scenario definition info? 
                     WARNING: if you select 'yes' all prior results 
-                    associated with scenario '{}' will be deleted."""
-                        .format(scenario, scenario)
+                    associated with scenario '{}' will be deleted.""".format(
+                        scenario, scenario
+                    )
                 )
                 if proceed:
                     delete_scenario(conn=db_conn, scenario_id=sid)
                     load_scenario_from_df(
-                        conn=db_conn, scenarios_df=csv_to_df,
-                        scenario_name=scenario
+                        conn=db_conn, scenarios_df=csv_to_df, scenario_name=scenario
                     )
                 else:
                     pass

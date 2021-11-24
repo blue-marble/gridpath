@@ -20,11 +20,15 @@ import csv
 import os.path
 
 from gridpath.auxiliary.dynamic_components import headroom_variables
-from gridpath.project.operations.reserves.reserve_provision import \
-    generic_record_dynamic_components, generic_add_model_components, \
-    generic_load_model_data, generic_export_results, \
-    generic_import_results_into_database, generic_get_inputs_from_database, \
-    generic_validate_project_bas
+from gridpath.project.operations.reserves.reserve_provision import (
+    generic_record_dynamic_components,
+    generic_add_model_components,
+    generic_load_model_data,
+    generic_export_results,
+    generic_import_results_into_database,
+    generic_get_inputs_from_database,
+    generic_validate_project_bas,
+)
 
 
 # Reserve-module variables
@@ -34,18 +38,15 @@ HEADROOM_OR_FOOTROOM_DICT_NAME = headroom_variables
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_derate"
-RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
-    "load_following_up_balancing_areas.tab"
+RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = "load_following_up_balancing_areas.tab"
 # Model components
 RESERVE_PROVISION_VARIABLE_NAME = "Provide_LF_Reserves_Up_MW"
 RESERVE_PROVISION_DERATE_PARAM_NAME = "lf_reserves_up_derate"
-RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME = \
-    "lf_reserves_up_reserve_to_energy_adjustment"
+RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME = "lf_reserves_up_reserve_to_energy_adjustment"
 RESERVE_BALANCING_AREA_PARAM_NAME = "lf_reserves_up_zone"
 RESERVE_PROJECTS_SET_NAME = "LF_RESERVES_UP_PROJECTS"
 RESERVE_BALANCING_AREAS_SET_NAME = "LF_RESERVES_UP_ZONES"
-RESERVE_PRJ_OPR_TMPS_SET_NAME = \
-    "LF_RESERVES_UP_PRJ_OPR_TMPS"
+RESERVE_PRJ_OPR_TMPS_SET_NAME = "LF_RESERVES_UP_PRJ_OPR_TMPS"
 
 
 def record_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -66,11 +67,9 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
-        reserve_provision_derate_param_name=
-        RESERVE_PROVISION_DERATE_PARAM_NAME,
-        reserve_to_energy_adjustment_param_name=
-        RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME,
-        reserve_balancing_area_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
+        reserve_provision_derate_param_name=RESERVE_PROVISION_DERATE_PARAM_NAME,
+        reserve_to_energy_adjustment_param_name=RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME,
+        reserve_balancing_area_param_name=RESERVE_BALANCING_AREA_PARAM_NAME,
     )
 
 
@@ -91,11 +90,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_balancing_area_param=RESERVE_BALANCING_AREA_PARAM_NAME,
         reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
         reserve_balancing_areas_set=RESERVE_BALANCING_AREAS_SET_NAME,
-        reserve_project_operational_timepoints_set=
-        RESERVE_PRJ_OPR_TMPS_SET_NAME,
+        reserve_project_operational_timepoints_set=RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
-        reserve_to_energy_adjustment_param=
-        RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME
+        reserve_to_energy_adjustment_param=RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME,
     )
 
 
@@ -118,15 +115,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         subproblem=subproblem,
         stage=stage,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
-        derate_column_name=
-        RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
+        derate_column_name=RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
         reserve_balancing_area_param=RESERVE_BALANCING_AREA_PARAM_NAME,
         reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
-        reserve_to_energy_adjustment_param
-        =RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME,
-        reserve_balancing_areas_input_file
-        =RESERVE_BALANCING_AREAS_INPUT_FILE_NAME
+        reserve_to_energy_adjustment_param=RESERVE_TO_ENERGY_ADJUSTMENT_PARAM_NAME,
+        reserve_balancing_areas_input_file=RESERVE_BALANCING_AREAS_INPUT_FILE_NAME,
     )
 
 
@@ -148,10 +142,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         subproblem=subproblem,
         stage=stage,
         module_name=MODULE_NAME,
-        reserve_project_operational_timepoints_set=
-        RESERVE_PRJ_OPR_TMPS_SET_NAME,
+        reserve_project_operational_timepoints_set=RESERVE_PRJ_OPR_TMPS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
-        reserve_ba_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
+        reserve_ba_param_name=RESERVE_BALANCING_AREA_PARAM_NAME,
     )
 
 
@@ -174,10 +167,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         stage=stage,
         conn=conn,
         reserve_type="lf_reserves_up",
-        project_ba_subscenario_id=
-        subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
-        ba_subscenario_id=subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID
-
+        project_ba_subscenario_id=subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
     )
 
     return project_bas, prj_derates
@@ -200,13 +191,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         stage=stage,
         conn=conn,
         reserve_type="lf_reserves_up",
-        project_ba_subscenario_id=
-        subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
-        ba_subscenario_id=subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID
+        project_ba_subscenario_id=subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
+        ba_subscenario_id=subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
     )
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -218,7 +210,8 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     project_bas, prj_derates = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_ba_dict = dict()
@@ -231,8 +224,12 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
@@ -262,25 +259,30 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             # Add resulting row to new_rows list
             new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w", newline="") as \
-            projects_file_out:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
     :param scenario_id:
     :param subproblem:
     :param stage:
-    :param c: 
-    :param db: 
+    :param c:
+    :param db:
     :param results_directory:
     :param quiet:
-    :return: 
+    :return:
     """
     if not quiet:
         print("project lf reserves up provision")
@@ -292,5 +294,5 @@ def import_results_into_database(
         c=c,
         db=db,
         results_directory=results_directory,
-        reserve_type="lf_reserves_up"
+        reserve_type="lf_reserves_up",
     )

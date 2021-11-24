@@ -22,9 +22,7 @@ from gridpath.auxiliary.scenario_chars import SolverOptions
 
 # ### API: Scenario Detail ### #
 class ScenarioDetailAPI(Resource):
-    """
-
-    """
+    """ """
 
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
@@ -36,8 +34,16 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api = dict()
 
         # Get the scenario name
-        [scenario_name, scenario_description, validation_status, run_status,
-         run_process_id, run_start_time, run_end_time] = c.execute("""
+        [
+            scenario_name,
+            scenario_description,
+            validation_status,
+            run_status,
+            run_process_id,
+            run_start_time,
+            run_end_time,
+        ] = c.execute(
+            """
           SELECT scenarios.scenario_name, scenarios.scenario_description,
             scenarios_view.validation_status,
             scenarios_view.run_status,
@@ -48,7 +54,9 @@ class ScenarioDetailAPI(Resource):
           JOIN scenarios_view
             USING (scenario_id)
           WHERE scenario_id = {}
-          """.format(scenario_id)
+          """.format(
+                scenario_id
+            )
         ).fetchone()
 
         scenario_detail_api["scenarioName"] = scenario_name
@@ -57,26 +65,30 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api["runStatus"] = run_status
         scenario_detail_api["runPID"] = run_process_id
         # Format for to match logfile name
-        scenario_detail_api["runStartTime"] = \
-            "" if run_start_time is None else string_from_time(
-                datetime.datetime.strptime(
-                  run_start_time, '%Y-%m-%d %H:%M:%S.%f'
-                )
+        scenario_detail_api["runStartTime"] = (
+            ""
+            if run_start_time is None
+            else string_from_time(
+                datetime.datetime.strptime(run_start_time, "%Y-%m-%d %H:%M:%S.%f")
             )
-        scenario_detail_api["runEndTime"] = \
-            "" if run_end_time is None else run_end_time
-        scenario_detail_api["runElapsedTime"] = \
-            "" if run_start_time is None else \
-            str(datetime.datetime.now() - datetime.datetime.strptime(
-                  run_start_time, '%Y-%m-%d %H:%M:%S.%f'
-                ))
+        )
+        scenario_detail_api["runEndTime"] = "" if run_end_time is None else run_end_time
+        scenario_detail_api["runElapsedTime"] = (
+            ""
+            if run_start_time is None
+            else str(
+                datetime.datetime.now()
+                - datetime.datetime.strptime(run_start_time, "%Y-%m-%d %H:%M:%S.%f")
+            )
+        )
 
         # TODO: should probably specify the default solver somewhere in the
         #  code and use that parameter here
-        scenario_detail_api["solver"] = \
-            "cbc" if SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER \
-            is None \
+        scenario_detail_api["solver"] = (
+            "cbc"
+            if SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER is None
             else SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER
+        )
 
         # Get the UI table structure and make a dictionary of scenarios_view
         # columns with their ui_table_name_in_db and ui_table_row_name_in_db
@@ -84,7 +96,7 @@ class ScenarioDetailAPI(Resource):
         ui_table_row_by_view_column = dict()
         relevant_scenarios_view_columns = list()
         for row in c.execute(
-          """SELECT ui_table, ui_table_row, ui_row_db_scenarios_view_column
+            """SELECT ui_table, ui_table_row, ui_row_db_scenarios_view_column
           FROM ui_scenario_detail_table_row_metadata
           WHERE include = 1;"""
         ).fetchall():
@@ -93,9 +105,9 @@ class ScenarioDetailAPI(Resource):
 
         # Get the values for scenario-edit
         scenario_edit_query = c.execute(
-          "SELECT * "
-          "FROM scenarios_view "
-          "WHERE scenario_id = {}".format(scenario_id)
+            "SELECT * "
+            "FROM scenarios_view "
+            "WHERE scenario_id = {}".format(scenario_id)
         )
 
         column_names = [s[0] for s in scenario_edit_query.description]
@@ -106,26 +118,24 @@ class ScenarioDetailAPI(Resource):
         # Replace feature columns yes/no's with booleans (for the checkboxes
         # when editing a scenario)
         for n in column_names:
-            if n.startswith('feature'):
+            if n.startswith("feature"):
                 index = column_names.index(n)
-                column_values[index] = \
-                    True if column_values[index] == "yes" else False
+                column_values[index] = True if column_values[index] == "yes" else False
 
         scenario_edit_api_all = dict(zip(column_names, column_values))
         scenario_edit_api = dict()
 
         # We'll need scenario ID and name, which we add separately as they
         # are not in the ui_scenario_detail_table_row_metadata table
-        for base_column in [
-          "scenario_id", "scenario_name", "scenario_description"
-        ]:
+        for base_column in ["scenario_id", "scenario_name", "scenario_description"]:
             scenario_edit_api[base_column] = scenario_edit_api_all[base_column]
 
         # Add only columns requested by the UI to the final scenario-edit API
         for column in relevant_scenarios_view_columns:
             if column in scenario_edit_api_all.keys():
-                scenario_edit_api[ui_table_row_by_view_column[column]] = \
-                    scenario_edit_api_all[column]
+                scenario_edit_api[
+                    ui_table_row_by_view_column[column]
+                ] = scenario_edit_api_all[column]
 
         # Add the edit API to the general scenario-detail API
         scenario_detail_api["editScenarioValues"] = scenario_edit_api
@@ -142,9 +152,7 @@ class ScenarioDetailAPI(Resource):
         for ui_table in all_tables:
             scenario_detail_api["scenarioDetailTables"].append(
                 get_scenario_detail(
-                  cursor=c,
-                  scenario_id=scenario_id,
-                  ui_table_name_in_db=ui_table[0]
+                    cursor=c, scenario_id=scenario_id, ui_table_name_in_db=ui_table[0]
                 )
             )
 
@@ -167,7 +175,9 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
         """SELECT ui_table, ui_table_caption
         FROM ui_scenario_detail_table_metadata
         WHERE ui_table = '{}'
-        AND include = 1;""".format(ui_table_name_in_db)
+        AND include = 1;""".format(
+            ui_table_name_in_db
+        )
     ).fetchone()
 
     scenario_detail_table_api = dict()
@@ -182,15 +192,19 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
         ui_row_db_scenarios_view_column, ui_row_db_input_table
         FROM ui_scenario_detail_table_row_metadata
         WHERE ui_table = '{}'
-        AND include = 1;""".format(ui_table_name_in_db)
+        AND include = 1;""".format(
+            ui_table_name_in_db
+        )
     ).fetchall()
 
     for row in row_metadata:
         row_value = c.execute(
-              """SELECT {}
+            """SELECT {}
                 FROM scenarios_view
-                WHERE scenario_id = {}""".format(row[2], scenario_id)
-          ).fetchone()[0]
+                WHERE scenario_id = {}""".format(
+                row[2], scenario_id
+            )
+        ).fetchone()[0]
         # Replace yes/no with booleans in 'Features' table, so that we can
         # create checkboxes
         if table_caption[1] == "Features":
@@ -199,18 +213,21 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
             else:
                 row_value = False
 
-        scenario_detail_table_api["scenarioDetailTableRows"].append({
-            'uiRowNameInDB': row[0],
-            'rowCaption': row[1],
-            'rowValue': row_value,
-            'inputTable':  row[3]
-        })
+        scenario_detail_table_api["scenarioDetailTableRows"].append(
+            {
+                "uiRowNameInDB": row[0],
+                "rowCaption": row[1],
+                "rowValue": row_value,
+                "inputTable": row[3],
+            }
+        )
 
     # Sort the 'Features' table features by caption
     if ui_table_name_in_db == "features":
-        sorted_features = \
-            sorted(scenario_detail_table_api["scenarioDetailTableRows"],
-                   key=lambda k: k['rowCaption'])
+        sorted_features = sorted(
+            scenario_detail_table_api["scenarioDetailTableRows"],
+            key=lambda k: k["rowCaption"],
+        )
         scenario_detail_table_api["scenarioDetailTableRows"] = sorted_features
 
     return scenario_detail_table_api

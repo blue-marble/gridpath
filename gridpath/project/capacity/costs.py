@@ -29,8 +29,9 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.capacity.common_functions import \
-    load_project_capacity_type_modules
+from gridpath.project.capacity.common_functions import (
+    load_project_capacity_type_modules,
+)
 from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.capacity.capacity_types as cap_type_init
 
@@ -59,8 +60,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     required_capacity_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="capacity_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="capacity_type",
     )
 
     imported_capacity_modules = load_project_capacity_type_modules(
@@ -81,25 +84,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         accordingly.
         """
         cap_type = mod.capacity_type[prj]
-        if hasattr(imported_capacity_modules[cap_type],
-                   "capacity_cost_rule"):
-            capacity_cost = imported_capacity_modules[cap_type]. \
-                capacity_cost_rule(mod, prj, prd)
+        if hasattr(imported_capacity_modules[cap_type], "capacity_cost_rule"):
+            capacity_cost = imported_capacity_modules[cap_type].capacity_cost_rule(
+                mod, prj, prd
+            )
         else:
             capacity_cost = cap_type_init.capacity_cost_rule(mod, prj, prd)
 
-        return capacity_cost \
-            * mod.hours_in_subproblem_period[prd] \
+        return (
+            capacity_cost
+            * mod.hours_in_subproblem_period[prd]
             / mod.hours_in_period_timepoints[prd]
+        )
 
-    m.Capacity_Cost_in_Period = Expression(
-        m.PRJ_OPR_PRDS,
-        rule=capacity_cost_rule
-    )
+    m.Capacity_Cost_in_Period = Expression(m.PRJ_OPR_PRDS, rule=capacity_cost_rule)
 
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -112,32 +115,49 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "costs_capacity_all_projects.csv"),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "costs_capacity_all_projects.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "hours_in_period_timepoints",
-             "hours_in_subproblem_period", "technology", "load_zone",
-             "capacity_cost"]
+            [
+                "project",
+                "period",
+                "hours_in_period_timepoints",
+                "hours_in_subproblem_period",
+                "technology",
+                "load_zone",
+                "capacity_cost",
+            ]
         )
         for (prj, p) in m.PRJ_OPR_PRDS:
-            writer.writerow([
-                prj,
-                p,
-                m.hours_in_period_timepoints[p],
-                m.hours_in_subproblem_period[p],
-                m.technology[prj],
-                m.load_zone[prj],
-                value(m.Capacity_Cost_in_Period[prj, p])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.hours_in_period_timepoints[p],
+                    m.hours_in_subproblem_period[p],
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.Capacity_Cost_in_Period[prj, p]),
+                ]
+            )
 
 
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -151,16 +171,20 @@ def import_results_into_database(
     # Capacity cost results
     if not quiet:
         print("project capacity costs")
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_costs_capacity",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_project_costs_capacity",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "costs_capacity_all_projects.csv"),
-              "r") as capacity_costs_file:
+    with open(
+        os.path.join(results_directory, "costs_capacity_all_projects.csv"), "r"
+    ) as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
         next(reader)  # skip header
@@ -174,9 +198,18 @@ def import_results_into_database(
             capacity_cost = row[6]
 
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 hours_in_period_timepoints, hours_in_subproblem_period,
-                 technology, load_zone, capacity_cost)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    hours_in_period_timepoints,
+                    hours_in_subproblem_period,
+                    technology,
+                    load_zone,
+                    capacity_cost,
+                )
             )
 
     insert_temp_sql = """
@@ -185,7 +218,9 @@ def import_results_into_database(
         hours_in_period_timepoints, hours_in_subproblem_period, technology, load_zone, 
         capacity_cost)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -200,9 +235,10 @@ def import_results_into_database(
         capacity_cost
         FROM temp_results_project_costs_capacity{}
         ORDER BY scenario_id, project, period, subproblem_id, 
-        stage_id;""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        stage_id;""".format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Update the capacity cost removing the fraction attributable to the
     # spinup and lookahead hours
@@ -224,8 +260,7 @@ def import_results_into_database(
         ;
     """
 
-    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(),
-                          many=False)
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -246,9 +281,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         DELETE FROM results_project_costs_capacity_agg 
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Insert new results
     agg_sql = """
@@ -284,7 +319,6 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         USING (scenario_id, subproblem_id, stage_id, period, load_zone)
         ;"""
 
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(scenario_id,),
-                          many=False)
-
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )

@@ -22,14 +22,11 @@ stor operational type) in order to force smoother dispatch.
 from builtins import next
 import csv
 import os.path
-from pyomo.environ import Param, Var, Expression, Constraint, \
-    NonNegativeReals
+from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import \
-    load_operational_type_modules
-from gridpath.project.common_functions import \
-    check_if_boundary_type_and_first_timepoint
+from gridpath.project.operations.common_functions import load_operational_type_modules
+from gridpath.project.common_functions import check_if_boundary_type_and_first_timepoint
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -107,8 +104,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -125,43 +124,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def ramp_rule(mod, g, tmp):
         gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            power_delta_rule(mod, g, tmp)
+        return imported_operational_modules[gen_op_type].power_delta_rule(mod, g, tmp)
 
-    m.Ramp_Expression = Expression(
-        m.PRJ_OPR_TMPS,
-        rule=ramp_rule
-    )
+    m.Ramp_Expression = Expression(m.PRJ_OPR_TMPS, rule=ramp_rule)
 
     # Variables
     ###########################################################################
 
-    m.Ramp_Up_Tuning_Cost = Var(
-        m.PRJ_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Ramp_Up_Tuning_Cost = Var(m.PRJ_OPR_TMPS, within=NonNegativeReals)
 
-    m.Ramp_Down_Tuning_Cost = Var(
-        m.PRJ_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.Ramp_Down_Tuning_Cost = Var(m.PRJ_OPR_TMPS, within=NonNegativeReals)
 
     # Constraints
     ###########################################################################
 
-    m.Ramp_Up_Tuning_Cost_Constraint = Constraint(
-        m.PRJ_OPR_TMPS,
-        rule=ramp_up_rule
-    )
+    m.Ramp_Up_Tuning_Cost_Constraint = Constraint(m.PRJ_OPR_TMPS, rule=ramp_up_rule)
 
-    m.Ramp_Down_Tuning_Cost_Constraint = Constraint(
-        m.PRJ_OPR_TMPS,
-        rule=ramp_down_rule
-    )
+    m.Ramp_Down_Tuning_Cost_Constraint = Constraint(m.PRJ_OPR_TMPS, rule=ramp_down_rule)
 
 
 # Constraint Rules
 ###############################################################################
+
 
 def ramp_up_rule(mod, g, tmp):
     """
@@ -169,20 +153,24 @@ def ramp_up_rule(mod, g, tmp):
     **Enforced Over**: PRJ_OPR_TMPS
     """
     gen_op_type = mod.operational_type[g]
-    tuning_cost = mod.ramp_tuning_cost_per_mw \
-        if gen_op_type in ["gen_hydro", "gen_hydro_must_take", "stor"] \
+    tuning_cost = (
+        mod.ramp_tuning_cost_per_mw
+        if gen_op_type in ["gen_hydro", "gen_hydro_must_take", "stor"]
         else 0
+    )
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     elif tuning_cost == 0:
         return Constraint.Skip
     else:
-        return mod.Ramp_Up_Tuning_Cost[g, tmp] \
-               >= mod.Ramp_Expression[g, tmp] \
-               * tuning_cost
+        return (
+            mod.Ramp_Up_Tuning_Cost[g, tmp] >= mod.Ramp_Expression[g, tmp] * tuning_cost
+        )
 
 
 def ramp_down_rule(mod, g, tmp):
@@ -192,24 +180,30 @@ def ramp_down_rule(mod, g, tmp):
     """
     gen_op_type = mod.operational_type[g]
     # TODO: is storage missing on purpose?
-    tuning_cost = mod.ramp_tuning_cost_per_mw \
-        if gen_op_type in ["gen_hydro", "gen_hydro_must_take"] \
+    tuning_cost = (
+        mod.ramp_tuning_cost_per_mw
+        if gen_op_type in ["gen_hydro", "gen_hydro_must_take"]
         else 0
+    )
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     elif tuning_cost == 0:
         return Constraint.Skip
     else:
-        return mod.Ramp_Down_Tuning_Cost[g, tmp] \
-            >= mod.Ramp_Expression[g, tmp] \
-            * - tuning_cost
+        return (
+            mod.Ramp_Down_Tuning_Cost[g, tmp]
+            >= mod.Ramp_Expression[g, tmp] * -tuning_cost
+        )
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -230,7 +224,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.load(
             filename=tuning_param_file,
             select=("ramp_tuning_cost_per_mw",),
-            param=m.ramp_tuning_cost_per_mw
+            param=m.ramp_tuning_cost_per_mw,
         )
     else:
         pass
@@ -238,6 +232,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -262,7 +257,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     return ramp_tuning_cost
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file (to be precise, amend it).
@@ -274,15 +271,31 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     ramp_tuning_cost = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab")):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "r") as projects_file_in:
-            reader = csv.reader(projects_file_in, delimiter="\t",
-                                lineterminator="\n")
+    if os.path.isfile(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "tuning_params.tab",
+        )
+    ):
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "r",
+        ) as projects_file_in:
+            reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
             new_rows = list()
 
@@ -296,23 +309,44 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             param_value.append(ramp_tuning_cost)
             new_rows.append(param_value)
 
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t",
-                                lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerows(new_rows)
 
     else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t",
-                                lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerow(["ramp_tuning_cost_per_mw"])
             writer.writerow([ramp_tuning_cost])
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """

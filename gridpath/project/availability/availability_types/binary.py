@@ -25,19 +25,26 @@ implemented on the minimum and maximum duration between unavailability events.
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, Binary, value, \
-    NonNegativeReals
+from pyomo.environ import Param, Set, Var, Constraint, Binary, value, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_expected_dtypes, validate_dtypes, validate_missing_inputs, \
-    validate_column_monotonicity
-from gridpath.project.availability.availability_types.common_functions import \
-    insert_availability_results
-from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints
-from gridpath.project.common_functions import determine_project_subset,\
-    check_if_boundary_type_and_first_timepoint
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_expected_dtypes,
+    validate_dtypes,
+    validate_missing_inputs,
+    validate_column_monotonicity,
+)
+from gridpath.project.availability.availability_types.common_functions import (
+    insert_availability_results,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    determine_relevant_timepoints,
+)
+from gridpath.project.common_functions import (
+    determine_project_subset,
+    check_if_boundary_type_and_first_timepoint,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -154,83 +161,64 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.AVL_BIN = Set(within=m.PROJECTS)
 
     m.AVL_BIN_OPR_PRDS = Set(
-        dimen=2, within=m.PRJ_OPR_PRDS,
+        dimen=2,
+        within=m.PRJ_OPR_PRDS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS
-            if g in mod.AVL_BIN)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_PRDS if g in mod.AVL_BIN)
+        ),
     )
 
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
     m.AVL_BIN_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.AVL_BIN)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.AVL_BIN)
+        ),
     )
 
     # Required Input Params
     ###########################################################################
 
-    m.avl_bin_unavl_hrs_per_prd = Param(
-        m.AVL_BIN, within=NonNegativeReals
-    )
+    m.avl_bin_unavl_hrs_per_prd = Param(m.AVL_BIN, within=NonNegativeReals)
 
-    m.avl_bin_min_unavl_hrs_per_event = Param(
-        m.AVL_BIN, within=NonNegativeReals
-    )
+    m.avl_bin_min_unavl_hrs_per_event = Param(m.AVL_BIN, within=NonNegativeReals)
 
-    m.avl_bin_min_avl_hrs_between_events = Param(
-        m.AVL_BIN, within=NonNegativeReals
-    )
-
+    m.avl_bin_min_avl_hrs_between_events = Param(m.AVL_BIN, within=NonNegativeReals)
 
     # Variables
     ###########################################################################
 
-    m.AvlBin_Unavailable = Var(
-        m.AVL_BIN_OPR_TMPS,
-        within=Binary
-    )
+    m.AvlBin_Unavailable = Var(m.AVL_BIN_OPR_TMPS, within=Binary)
 
-    m.AvlBin_Start_Unavailability = Var(
-        m.AVL_BIN_OPR_TMPS,
-        within=Binary
-    )
+    m.AvlBin_Start_Unavailability = Var(m.AVL_BIN_OPR_TMPS, within=Binary)
 
-    m.AvlBin_Stop_Unavailability = Var(
-        m.AVL_BIN_OPR_TMPS,
-        within=Binary
-    )
+    m.AvlBin_Stop_Unavailability = Var(m.AVL_BIN_OPR_TMPS, within=Binary)
 
     # Constraints
     ###########################################################################
 
     m.AvlBin_Tot_Sched_Unavl_per_Prd_Constraint = Constraint(
-        m.AVL_BIN_OPR_PRDS,
-        rule=total_scheduled_availability_per_period_rule
+        m.AVL_BIN_OPR_PRDS, rule=total_scheduled_availability_per_period_rule
     )
 
     m.AvlBin_Unavl_Start_and_Stop_Constraint = Constraint(
-        m.AVL_BIN_OPR_TMPS,
-        rule=unavailability_start_and_stop_rule
+        m.AVL_BIN_OPR_TMPS, rule=unavailability_start_and_stop_rule
     )
 
     m.AvlBin_Min_Event_Duration_Constraint = Constraint(
-        m.AVL_BIN_OPR_TMPS,
-        rule=event_min_duration_rule
+        m.AVL_BIN_OPR_TMPS, rule=event_min_duration_rule
     )
 
     m.AvlBin_Min_Time_Between_Events_Constraint = Constraint(
-        m.AVL_BIN_OPR_TMPS,
-        rule=min_time_between_events_rule
+        m.AVL_BIN_OPR_TMPS, rule=min_time_between_events_rule
     )
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def total_scheduled_availability_per_period_rule(mod, g, p):
     """
@@ -241,11 +229,13 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     TODO: it's possible that solve time will be faster if we make this
         constraint >= instead of ==, but then degeneracy could be an issue
     """
-    return sum(
-        mod.AvlBin_Unavailable[g, tmp]
-        * mod.hrs_in_tmp[tmp]
-        for tmp in mod.TMPS_IN_PRD[p]
-    ) == mod.avl_bin_unavl_hrs_per_prd[g]
+    return (
+        sum(
+            mod.AvlBin_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_IN_PRD[p]
+        )
+        == mod.avl_bin_unavl_hrs_per_prd[g]
+    )
 
 
 def unavailability_start_and_stop_rule(mod, g, tmp):
@@ -262,16 +252,21 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
     and AvlBin_Stop_Unavailability must be set to 1.
     """
     if check_if_boundary_type_and_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g],
-        boundary_type="linear"
+        mod=mod,
+        tmp=tmp,
+        balancing_type=mod.balancing_type_project[g],
+        boundary_type="linear",
     ):
         return Constraint.Skip
     else:
-        return mod.AvlBin_Start_Unavailability[g, tmp] \
-            - mod.AvlBin_Stop_Unavailability[g, tmp] \
-            == mod.AvlBin_Unavailable[g, tmp] \
-            - mod.AvlBin_Unavailable[g, mod.prev_tmp[
-                tmp, mod.balancing_type_project[g]]]
+        return (
+            mod.AvlBin_Start_Unavailability[g, tmp]
+            - mod.AvlBin_Stop_Unavailability[g, tmp]
+            == mod.AvlBin_Unavailable[g, tmp]
+            - mod.AvlBin_Unavailable[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+        )
 
 
 def event_min_duration_rule(mod, g, tmp):
@@ -288,10 +283,10 @@ def event_min_duration_rule(mod, g, tmp):
     )
     if relevant_tmps == [tmp]:
         return Constraint.Skip
-    return sum(
-        mod.AvlBin_Start_Unavailability[g, tp]
-        for tp in relevant_tmps
-    ) <= mod.AvlBin_Unavailable[g, tmp]
+    return (
+        sum(mod.AvlBin_Start_Unavailability[g, tp] for tp in relevant_tmps)
+        <= mod.AvlBin_Unavailable[g, tmp]
+    )
 
 
 def min_time_between_events_rule(mod, g, tmp):
@@ -308,27 +303,26 @@ def min_time_between_events_rule(mod, g, tmp):
     )
     if relevant_tmps == [tmp]:
         return Constraint.Skip
-    return sum(
-        mod.AvlBin_Stop_Unavailability[g, tp]
-        for tp in relevant_tmps
-    ) <= 1 - mod.AvlBin_Unavailable[g, tmp]
+    return (
+        sum(mod.AvlBin_Stop_Unavailability[g, tp] for tp in relevant_tmps)
+        <= 1 - mod.AvlBin_Unavailable[g, tmp]
+    )
 
 
 # Availability Type Methods
 ###############################################################################
 
+
 def availability_derate_rule(mod, g, tmp):
-    """
-    """
+    """ """
     return 1 - mod.AvlBin_Unavailable[g, tmp]
 
 
 # Input-Output
 ###############################################################################
 
-def load_model_data(
-    m, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     :param m:
     :param data_portal:
@@ -340,8 +334,11 @@ def load_model_data(
     # Figure out which projects have this availability type
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
-        subproblem=subproblem, stage=stage, column="availability_type",
-        type="binary"
+        subproblem=subproblem,
+        stage=stage,
+        column="availability_type",
+        type="binary",
+        prj_or_tx="project",
     )
 
     data_portal.data()["AVL_BIN"] = {None: project_subset}
@@ -350,9 +347,16 @@ def load_model_data(
     avl_bin_min_unavl_hrs_per_event_dict = {}
     avl_bin_min_avl_hrs_between_events_dict = {}
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage),
-                           "inputs", "project_availability_endogenous.tab"),
-              "r") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_availability_endogenous.tab",
+        ),
+        "r",
+    ) as f:
         reader = csv.reader(f, delimiter="\t", lineterminator="\n")
         next(reader)
 
@@ -362,16 +366,16 @@ def load_model_data(
                 avl_bin_min_unavl_hrs_per_event_dict[row[0]] = float(row[2])
                 avl_bin_min_avl_hrs_between_events_dict[row[0]] = float(row[3])
 
-    data_portal.data()["avl_bin_unavl_hrs_per_prd"] = \
-        avl_bin_unavl_hrs_per_prd_dict
-    data_portal.data()["avl_bin_min_unavl_hrs_per_event"] = \
-        avl_bin_min_unavl_hrs_per_event_dict
-    data_portal.data()["avl_bin_min_avl_hrs_between_events"] = \
-        avl_bin_min_avl_hrs_between_events_dict
+    data_portal.data()["avl_bin_unavl_hrs_per_prd"] = avl_bin_unavl_hrs_per_prd_dict
+    data_portal.data()[
+        "avl_bin_min_unavl_hrs_per_event"
+    ] = avl_bin_min_unavl_hrs_per_event_dict
+    data_portal.data()[
+        "avl_bin_min_avl_hrs_between_events"
+    ] = avl_bin_min_avl_hrs_between_events_dict
 
 
-def export_results(
-        scenario_directory, subproblem, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
@@ -382,37 +386,60 @@ def export_results(
     :return: Nothing
     """
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "project_availability_endogenous_binary.csv"),
-              "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_availability_endogenous_binary.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "subproblem_id", "stage_id",
-                         "availability_type", "timepoint",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
-                         "load_zone", "technology",
-                         "unavailability_decision", "start_unavailability",
-                         "stop_unavailability", "availability_derate"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "subproblem_id",
+                "stage_id",
+                "availability_type",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "load_zone",
+                "technology",
+                "unavailability_decision",
+                "start_unavailability",
+                "stop_unavailability",
+                "availability_derate",
+            ]
+        )
         for (p, tmp) in m.AVL_BIN_OPR_TMPS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                1 if subproblem == "" else subproblem,
-                1 if stage == "" else stage,
-                m.availability_type[p],
-                tmp,
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.AvlBin_Unavailable[p, tmp]),
-                value(m.AvlBin_Start_Unavailability[p, tmp]),
-                value(m.AvlBin_Stop_Unavailability[p, tmp]),
-                1-value(m.AvlBin_Unavailable[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    m.period[tmp],
+                    1 if subproblem == "" else subproblem,
+                    1 if stage == "" else stage,
+                    m.availability_type[p],
+                    tmp,
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    m.load_zone[p],
+                    m.technology[p],
+                    value(m.AvlBin_Unavailable[p, tmp]),
+                    value(m.AvlBin_Start_Unavailability[p, tmp]),
+                    value(m.AvlBin_Stop_Unavailability[p, tmp]),
+                    1 - value(m.AvlBin_Unavailable[p, tmp]),
+                ]
+            )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -425,7 +452,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Get project availability if project_availability_scenario_id is not NUL
     c = conn.cursor()
-    availability_params = c.execute("""
+    availability_params = c.execute(
+        """
             SELECT project, unavailable_hours_per_period, 
             unavailable_hours_per_event_min,
             available_hours_between_events_min
@@ -446,8 +474,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             inputs_project_availability_endogenous
             USING (endogenous_availability_scenario_id, project);
             """.format(
-        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
         )
     )
 
@@ -455,7 +483,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
 
@@ -468,15 +496,21 @@ def write_model_inputs(
     """
 
     endogenous_availability_params = get_inputs_from_database(
-        scenario_id=scenario_id, subscenarios=subscenarios,
-        subproblem=subproblem, stage=stage, conn=conn
+        scenario_id=scenario_id,
+        subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
+        conn=conn,
     )
 
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "project_availability_endogenous.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "project_availability_endogenous.tab",
     )
 
     if not os.path.exists(availability_file):
@@ -484,10 +518,12 @@ def write_model_inputs(
             writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             # Write header
             writer.writerow(
-                ["project",
-                 "unavailable_hours_per_period",
-                 "unavailable_hours_per_event_min",
-                 "available_hours_between_events_min"]
+                [
+                    "project",
+                    "unavailable_hours_per_period",
+                    "unavailable_hours_per_event_min",
+                    "available_hours_between_events_min",
+                ]
             )
 
     with open(availability_file, "a", newline="") as f:
@@ -499,7 +535,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -516,14 +552,17 @@ def import_results_into_database(
         print("project availability binary")
 
     insert_availability_results(
-        db=db, c=c, results_directory=results_directory,
+        db=db,
+        c=c,
+        results_directory=results_directory,
         scenario_id=scenario_id,
-        results_file="project_availability_endogenous_binary.csv"
+        results_file="project_availability_endogenous_binary.csv",
     )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -534,14 +573,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    params = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    params = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     df = cursor_to_df(params)
 
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_availability",
-               "inputs_project_availability_endogenous"])
+        conn, ["inputs_project_availability", "inputs_project_availability_endogenous"]
+    )
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
@@ -551,14 +592,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_availability_endogenous",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check for missing inputs
     msg = ""
-    value_cols = ["unavailable_hours_per_period",
-                  "unavailable_hours_per_event_min",
-                  "available_hours_between_events_min"]
+    value_cols = [
+        "unavailable_hours_per_period",
+        "unavailable_hours_per_event_min",
+        "available_hours_between_events_min",
+    ]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -567,11 +610,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_availability_endogenous",
         severity="Low",
-        errors=validate_missing_inputs(df, value_cols, "project", msg)
+        errors=validate_missing_inputs(df, value_cols, "project", msg),
     )
 
-    cols = ["unavailable_hours_per_event_min",
-            "unavailable_hours_per_period"]
+    cols = ["unavailable_hours_per_event_min", "unavailable_hours_per_period"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -580,9 +622,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_availability_endogenous",
         severity="High",
-        errors=validate_column_monotonicity(
-            df=df,
-            cols=cols,
-            idx_col=["project"]
-        )
+        errors=validate_column_monotonicity(df=df, cols=cols, idx_col=["project"]),
     )
