@@ -24,8 +24,9 @@ from pyomo.environ import Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.transmission.operations.common_functions import \
-    load_tx_operational_type_modules
+from gridpath.transmission.operations.common_functions import (
+    load_tx_operational_type_modules,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -63,18 +64,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "transmission_lines.tab"),
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
-                 "tx_operational_type"]
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
     )
 
     required_tx_operational_modules = df.tx_operational_type.unique()
 
     # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            required_tx_operational_modules
+        required_tx_operational_modules
     )
 
     # TODO: should we add the module specific components here or in
@@ -86,37 +91,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def transmit_power_rule(mod, tx, tmp):
         tx_op_type = mod.tx_operational_type[tx]
-        return imported_tx_operational_modules[tx_op_type].\
-            transmit_power_rule(mod, tx, tmp)
+        return imported_tx_operational_modules[tx_op_type].transmit_power_rule(
+            mod, tx, tmp
+        )
 
-    m.Transmit_Power_MW = Expression(
-        m.TX_OPR_TMPS,
-        rule=transmit_power_rule
-    )
+    m.Transmit_Power_MW = Expression(m.TX_OPR_TMPS, rule=transmit_power_rule)
 
     def transmit_power_losses_lz_from_rule(mod, tx, tmp):
         tx_op_type = mod.tx_operational_type[tx]
-        return imported_tx_operational_modules[tx_op_type].\
-            transmit_power_losses_lz_from_rule(mod, tx, tmp)
+        return imported_tx_operational_modules[
+            tx_op_type
+        ].transmit_power_losses_lz_from_rule(mod, tx, tmp)
 
     m.Tx_Losses_LZ_From_MW = Expression(
-        m.TX_OPR_TMPS,
-        rule=transmit_power_losses_lz_from_rule
+        m.TX_OPR_TMPS, rule=transmit_power_losses_lz_from_rule
     )
 
     def transmit_power_losses_lz_to_rule(mod, tx, tmp):
         tx_op_type = mod.tx_operational_type[tx]
-        return imported_tx_operational_modules[tx_op_type].\
-            transmit_power_losses_lz_to_rule(mod, tx, tmp)
+        return imported_tx_operational_modules[
+            tx_op_type
+        ].transmit_power_losses_lz_to_rule(mod, tx, tmp)
 
     m.Tx_Losses_LZ_To_MW = Expression(
-        m.TX_OPR_TMPS,
-        rule=transmit_power_losses_lz_to_rule
+        m.TX_OPR_TMPS, rule=transmit_power_losses_lz_to_rule
     )
 
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -130,53 +134,77 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Transmission flows for all lines
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "transmission_operations.csv"), "w", newline="") as \
-            tx_op_results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "transmission_operations.csv",
+        ),
+        "w",
+        newline="",
+    ) as tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
-        writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",
-                         "timepoint_weight",
-                         "number_of_hours_in_timepoint",
-                         "transmission_flow_mw",
-                         "transmission_losses_lz_from",
-                         "transmission_losses_lz_to"])
+        writer.writerow(
+            [
+                "tx_line",
+                "lz_from",
+                "lz_to",
+                "timepoint",
+                "period",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "transmission_flow_mw",
+                "transmission_losses_lz_from",
+                "transmission_losses_lz_to",
+            ]
+        )
         for (l, tmp) in m.TX_OPR_TMPS:
-            writer.writerow([
-                l,
-                m.load_zone_from[l],
-                m.load_zone_to[l],
-                tmp,
-                m.period[tmp],
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                value(m.Transmit_Power_MW[l, tmp]),
-                value(m.Tx_Losses_LZ_From_MW[l, tmp]),
-                value(m.Tx_Losses_LZ_To_MW[l, tmp])
-            ])
+            writer.writerow(
+                [
+                    l,
+                    m.load_zone_from[l],
+                    m.load_zone_to[l],
+                    tmp,
+                    m.period[tmp],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    value(m.Transmit_Power_MW[l, tmp]),
+                    value(m.Tx_Losses_LZ_From_MW[l, tmp]),
+                    value(m.Tx_Losses_LZ_To_MW[l, tmp]),
+                ]
+            )
 
     # TODO: does this belong here or in operational_types/__init__.py?
     #  (putting it here to be in line with projects/operations/power.py)
     # Module-specific transmission operational results
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "transmission_lines.tab"),
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "tx_capacity_type",
-                 "tx_operational_type"]
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
     )
 
     required_tx_operational_modules = df.tx_operational_type.unique()
 
     # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
-            required_tx_operational_modules
+        required_tx_operational_modules
     )
     for op_m in required_tx_operational_modules:
-        if hasattr(imported_tx_operational_modules[op_m],
-                   "export_results"):
-            imported_tx_operational_modules[op_m].\
-                export_results(
-                m, d, scenario_directory, subproblem, stage,
+        if hasattr(imported_tx_operational_modules[op_m], "export_results"):
+            imported_tx_operational_modules[op_m].export_results(
+                m,
+                d,
+                scenario_directory,
+                subproblem,
+                stage,
             )
         else:
             pass
@@ -185,8 +213,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -204,15 +233,19 @@ def import_results_into_database(
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_transmission_operations",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory, "transmission_operations.csv"),
-              "r") as tx_op_file:
+    with open(
+        os.path.join(results_directory, "transmission_operations.csv"), "r"
+    ) as tx_op_file:
         reader = csv.reader(tx_op_file)
 
         next(reader)  # skip header
@@ -229,10 +262,21 @@ def import_results_into_database(
             tx_losses_lz_to = row[9]
 
             results.append(
-                (scenario_id, tx_line, period, subproblem, stage,
-                 timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 lz_from, lz_to, tx_sent, tx_losses_lz_from, tx_losses_lz_to)
+                (
+                    scenario_id,
+                    tx_line,
+                    period,
+                    subproblem,
+                    stage,
+                    timepoint,
+                    timepoint_weight,
+                    number_of_hours_in_timepoint,
+                    lz_from,
+                    lz_to,
+                    tx_sent,
+                    tx_losses_lz_from,
+                    tx_losses_lz_to,
+                )
             )
 
     insert_temp_sql = """
@@ -243,7 +287,9 @@ def import_results_into_database(
         load_zone_from, load_zone_to, transmission_flow_mw,
         transmission_losses_lz_from, transmission_losses_lz_to)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -261,9 +307,10 @@ def import_results_into_database(
         FROM temp_results_transmission_operations{}
          ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
         timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -285,9 +332,9 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         DELETE FROM results_transmission_imports_exports_agg
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Aggregate imports/exports by period, load zone, and spinup_or_lookahead
     agg_sql = """
@@ -415,6 +462,4 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         ;"""
 
     scenario_ids = tuple([scenario_id] * 8)
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=scenario_ids,
-                          many=False)
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql, data=scenario_ids, many=False)

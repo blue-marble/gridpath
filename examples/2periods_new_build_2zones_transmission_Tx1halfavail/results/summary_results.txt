@@ -1,0 +1,31 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_2zones_transmission_Tx1halfavail* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Gas        2020                 37.20
+                     2030                 32.67
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                  373,176.00          85.20
+                 Nuclear               52,560.00          12.00
+                 Wind                  12,264.00           2.80
+          2030   Coal                       0.00           0.00
+                 Gas                  373,176.00          85.20
+                 Nuclear               52,560.00          12.00
+                 Wind                  12,264.00           2.80
+Zone2     2020   Coal                  39,420.00          19.74
+                 Gas                   95,484.00          47.81
+                 Nuclear               52,560.00          26.32
+                 Wind                  12,264.00           6.14
+          2030   Coal                  39,420.00          19.74
+                 Gas                   95,484.00          47.81
+                 Nuclear               52,560.00          26.32
+                 Wind                  12,264.00           6.14

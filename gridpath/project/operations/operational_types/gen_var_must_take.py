@@ -19,20 +19,28 @@ not allowed. Second, because the project's output is not controllable, projects
 of this operational type cannot provide operational reserves .
 """
 
-from pyomo.environ import Param, Set, NonNegativeReals, Constraint
+from pyomo.environ import Param, Set, Reals, Constraint
 import warnings
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    get_projects_by_reserve, validate_idxs
-from gridpath.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables
-from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
-from gridpath.project.operations.operational_types.common_functions import \
-    load_var_profile_inputs, get_var_profile_inputs_from_database, \
-    write_tab_file_model_inputs, validate_opchars, validate_var_profiles, \
-    load_optype_model_data
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    get_projects_by_reserve,
+    validate_idxs,
+)
+from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.project.common_functions import (
+    check_if_first_timepoint,
+    check_boundary_type,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    load_var_profile_inputs,
+    get_var_profile_inputs_from_database,
+    write_tab_file_model_inputs,
+    validate_opchars,
+    validate_var_profiles,
+    load_optype_model_data,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -59,7 +67,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`gen_var_must_take_cap_factor`                                  |
     | | *Defined over*: :code:`GEN_VAR_MUST_TAKE`                             |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | The project's power output in each operational timepoint as a fraction  |
     | of its available capacity (i.e. the capacity factor).                   |
@@ -91,25 +99,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "gen_var_must_take"
-        )
+        ),
     )
 
     m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.GEN_VAR_MUST_TAKE)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.GEN_VAR_MUST_TAKE)
+        ),
     )
 
     # Required Params
     ###########################################################################
 
-    # TODO: allow cap factors greater than 1, but throw a warning?
-    m.gen_var_must_take_cap_factor = Param(
-        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.gen_var_must_take_cap_factor = Param(m.GEN_VAR_MUST_TAKE_OPR_TMPS, within=Reals)
 
     # Constraints
     ###########################################################################
@@ -131,16 +135,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 reserve BA for project {} with '.' (no value) in projects.tab. 
                 Model will add  constraint to ensure project {} cannot provide 
                 upward reserves
-                """.format(g, g, g)
+                """.format(
+                    g, g, g
+                )
             )
-            return sum(getattr(mod, c)[g, tmp]
-                       for c in getattr(d, headroom_variables)[g]) == 0
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
+                == 0
+            )
         else:
             return Constraint.Skip
 
     m.GenVarMustTake_No_Upward_Reserves_Constraint = Constraint(
-        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
-        rule=no_upward_reserve_rule
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS, rule=no_upward_reserve_rule
     )
 
     # TODO: remove this constraint once input validation is in place that
@@ -160,21 +167,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 downward reserve BA for project {} with '.' (no value) in 
                 projects.tab. Model will add constraint to ensure project {} 
                 cannot provide downward reserves.
-                """.format(g, g, g)
+                """.format(
+                    g, g, g
+                )
             )
-            return sum(getattr(mod, c)[g, tmp]
-                       for c in getattr(d, footroom_variables)[g]) == 0
+            return (
+                sum(getattr(mod, c)[g, tmp] for c in getattr(d, footroom_variables)[g])
+                == 0
+            )
         else:
             return Constraint.Skip
 
     m.GenVarMustTake_No_Downward_Reserves_Constraint = Constraint(
-        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
-        rule=no_downward_reserve_rule
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS, rule=no_downward_reserve_rule
     )
 
 
 # Operational Type Methods
 ###############################################################################
+
 
 def power_provision_rule(mod, g, tmp):
     """
@@ -182,9 +193,11 @@ def power_provision_rule(mod, g, tmp):
     the capacity factor in each timepoint.
     """
 
-    return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Availability_Derate[g, tmp] \
+    return (
+        mod.Capacity_MW[g, mod.period[tmp]]
+        * mod.Availability_Derate[g, tmp]
         * mod.gen_var_must_take_cap_factor[g, tmp]
+    )
 
 
 def power_delta_rule(mod, g, tmp):
@@ -198,36 +211,42 @@ def power_delta_rule(mod, g, tmp):
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
     ) and (
         check_boundary_type(
-            mod=mod, tmp=tmp,
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[g],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp,
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[g],
-            boundary_type="linked"
+            boundary_type="linked",
         )
     ):
         pass
     else:
-        return \
-            (mod.Capacity_MW[g, mod.period[tmp]]
-             * mod.Availability_Derate[g, tmp]
-             * mod.gen_var_must_take_cap_factor[g, tmp]) \
-            - (mod.Capacity_MW[g, mod.period[mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]]]
-               * mod.Availability_Derate[g, mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]]
-               * mod.gen_var_must_take_cap_factor[g, mod.prev_tmp[
-                    tmp, mod.balancing_type_project[g]]])
+        return (
+            mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * mod.gen_var_must_take_cap_factor[g, tmp]
+        ) - (
+            mod.Capacity_MW[
+                g, mod.period[mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
+            ]
+            * mod.Availability_Derate[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+            * mod.gen_var_must_take_cap_factor[
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+            ]
+        )
 
 
 # Inputs-Outputs
 ###############################################################################
 
-def load_model_data(
-    mod, d, data_portal, scenario_directory, subproblem, stage
-):
+
+def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """
     :param mod:
     :param data_portal:
@@ -239,9 +258,12 @@ def load_model_data(
 
     # Load data from projects.tab and get the list of projects of this type
     projects = load_optype_model_data(
-        mod=mod, data_portal=data_portal,
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, op_type="gen_var_must_take"
+        mod=mod,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        op_type="gen_var_must_take",
     )
 
     load_var_profile_inputs(
@@ -252,9 +274,8 @@ def load_model_data(
 # Database
 ###############################################################################
 
-def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-):
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -268,7 +289,7 @@ def get_model_inputs_from_database(
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -282,16 +303,16 @@ def write_model_inputs(
     """
 
     data = get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
     fname = "variable_generator_profiles.tab"
 
-    write_tab_file_model_inputs(
-        scenario_directory, subproblem, stage, fname, data
-    )
+    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -304,12 +325,21 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Validate operational chars table inputs
-    opchar_df = validate_opchars(scenario_id, subscenarios, subproblem, stage, conn,
-                                 "gen_var_must_take")
+    opchar_df = validate_opchars(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+    )
 
     # Validate var profiles input table
-    validate_var_profiles(scenario_id, subscenarios, subproblem, stage, conn,
-                          "gen_var_must_take")
+    cap_factor_validation_error = validate_var_profiles(
+        scenario_id, subscenarios, subproblem, stage, conn, "gen_var_must_take"
+    )
+    if cap_factor_validation_error:
+        warnings.warn(
+            """
+            Found gen_var_must_take cap factors that are <0 or >1. This is 
+            allowed but this warning is here to make sure it is intended.
+            """
+        )
 
     # Other module specific validations
 
@@ -322,7 +352,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         reserve_errors = validate_idxs(
             actual_idxs=opchar_df["project"],
             invalid_idxs=projects_w_ba,
-            msg="gen_var_must_take cannot provide {}.".format(reserve)
+            msg="gen_var_must_take cannot provide {}.".format(reserve),
         )
 
         write_validation_to_database(
@@ -333,5 +363,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             gridpath_module=__name__,
             db_table=table,
             severity="Mid",
-            errors=reserve_errors
+            errors=reserve_errors,
         )

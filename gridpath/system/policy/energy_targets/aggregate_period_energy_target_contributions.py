@@ -27,6 +27,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+
     def energy_target_contribution_rule(mod, z, p):
         """
         Calculate the delivered energy for each zone and period
@@ -39,20 +40,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return \
-            sum((mod.Scheduled_Energy_Target_Energy_MW[g, tmp]
-                 - mod.Subhourly_Curtailment_MW[g, tmp]
-                 + mod.Subhourly_Energy_Target_Energy_MW[g,tmp])
-                * mod.hrs_in_tmp[tmp]
-                * mod.tmp_weight[tmp]
-                for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
-                if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
-                and tmp in mod.TMPS_IN_PRD[p]
-                )
+        return sum(
+            (
+                mod.Scheduled_Energy_Target_Energy_MW[g, tmp]
+                - mod.Subhourly_Curtailment_MW[g, tmp]
+                + mod.Subhourly_Energy_Target_Energy_MW[g, tmp]
+            )
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
+            if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
+            and tmp in mod.TMPS_IN_PRD[p]
+        )
 
-    m.Total_Delivered_Period_Energy_Target_Energy_MWh = \
-        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-                   rule=energy_target_contribution_rule)
+    m.Total_Delivered_Period_Energy_Target_Energy_MWh = Expression(
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
+        rule=energy_target_contribution_rule,
+    )
 
     def total_curtailed_energy_target_energy_rule(mod, z, p):
         """
@@ -63,18 +67,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
-                    mod.Subhourly_Curtailment_MW[g, tmp] -
-                    mod.Subhourly_Energy_Target_Energy_MW[g, tmp])
-                   * mod.hrs_in_tmp[tmp]
-                   * mod.tmp_weight[tmp]
-                   for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
-                   if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
-                   and tmp in mod.TMPS_IN_PRD[p]
-                   )
+        return sum(
+            (
+                mod.Scheduled_Curtailment_MW[g, tmp]
+                + mod.Subhourly_Curtailment_MW[g, tmp]
+                - mod.Subhourly_Energy_Target_Energy_MW[g, tmp]
+            )
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
+            for (g, tmp) in mod.ENERGY_TARGET_PRJ_OPR_TMPS
+            if g in mod.ENERGY_TARGET_PRJS_BY_ENERGY_TARGET_ZONE[z]
+            and tmp in mod.TMPS_IN_PRD[p]
+        )
+
     # TODO: is this only needed for export and, if so, should it be created on
     # export?
-    m.Total_Curtailed_Period_Energy_Target_Energy_MWh = \
-        Expression(m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
-                   rule=total_curtailed_energy_target_energy_rule)
-
+    m.Total_Curtailed_Period_Energy_Target_Energy_MWh = Expression(
+        m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET,
+        rule=total_curtailed_energy_target_energy_rule,
+    )

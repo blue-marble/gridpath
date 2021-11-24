@@ -22,6 +22,7 @@ class Scenarios(Resource):
     """
     The list of scenarios.
     """
+
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
@@ -39,8 +40,7 @@ class Scenarios(Resource):
         for s in scenarios_query:
             # TODO: make this more robust than relying on column order
             scenarios_api.append(
-                {'id': s[0], 'name': s[1], 'validationStatus': s[2],
-                 'runStatus': s[3]}
+                {"id": s[0], "name": s[1], "validationStatus": s[2], "runStatus": s[3]}
             )
 
         return scenarios_api

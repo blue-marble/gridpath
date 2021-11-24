@@ -28,26 +28,27 @@ def get_executable_path(script_name):
     directory called 'Scripts' inside the directory where the Python
     executable is located.
     """
-    gridpath_executable = os.path.join(
-        os.path.dirname(sys.executable), script_name
-    )
+    gridpath_executable = os.path.join(os.path.dirname(sys.executable), script_name)
 
     # If we can't find the GP script in the same directory as the system
     # executable, we'll try looking for it inside a 'Scripts' directory
     # This is where it is on Windows with an Anaconda environment
     # On Windows, we need to add (.exe), as the file will have a .exe extension
     # On Mac, an extension is not needed
-    if not glob.glob("{}.exe".format(gridpath_executable)) \
-            and not glob.glob(gridpath_executable):
+    if not glob.glob("{}.exe".format(gridpath_executable)) and not glob.glob(
+        gridpath_executable
+    ):
         gridpath_executable = os.path.join(
             os.path.dirname(sys.executable), "Scripts", script_name
         )
         # If we still can't find it, raise an error
-        if not glob.glob("{}.exe".format(gridpath_executable)) \
-                and not glob.glob(gridpath_executable):
+        if not glob.glob("{}.exe".format(gridpath_executable)) and not glob.glob(
+            gridpath_executable
+        ):
             raise OSError(
-                "ERROR! {} is not the correct path for GridPath executable {}."
-                .format(gridpath_executable, script_name)
+                "ERROR! {} is not the correct path for GridPath executable {}.".format(
+                    gridpath_executable, script_name
+                )
             )
 
     return gridpath_executable

@@ -30,8 +30,12 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_colors
+from viz.common_functions import (
+    show_hide_legend,
+    show_plot,
+    get_parent_parser,
+    get_tech_colors,
+)
 
 
 def create_parser():
@@ -40,14 +44,23 @@ def create_parser():
     :return:
     """
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
-                                              "no --scenario is specified.")
-    parser.add_argument("--scenario", help="The scenario name. Required if "
-                                           "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", required=True, type=str,
-                        help="The name of the load zone. Required")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
+    parser.add_argument(
+        "--scenario_id",
+        help="The scenario ID. Required if " "no --scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario name. Required if " "no --scenario_id is specified.",
+    )
+    parser.add_argument(
+        "--load_zone",
+        required=True,
+        type=str,
+        help="The name of the load zone. Required",
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
 
     return parser
 
@@ -127,11 +140,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         WHERE cap_factor IS NOT NULL  -- filter out projects with 0 capacity
         ;"""
 
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(scenario_id, stage, load_zone)
-    )
+    df = pd.read_sql(sql, con=conn, params=(scenario_id, stage, load_zone))
 
     return df
 
@@ -150,10 +159,8 @@ def create_plot(df, title, tech_colors={}):
     technologies = df["technology"].unique()
 
     # Create a map between factor (technology) and color.
-    techs_wo_colors = [t for t in technologies
-                       if t not in tech_colors.keys()]
-    default_cmap = dict(zip(techs_wo_colors,
-                            cividis(len(techs_wo_colors))))
+    techs_wo_colors = [t for t in technologies if t not in tech_colors.keys()]
+    default_cmap = dict(zip(techs_wo_colors, cividis(len(techs_wo_colors))))
     colormap = {}
     for t in technologies:
         if t in tech_colors:
@@ -163,7 +170,8 @@ def create_plot(df, title, tech_colors={}):
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800,
+        plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         # sizing_mode="scale_both"
@@ -185,7 +193,7 @@ def create_plot(df, title, tech_colors={}):
             line_color=colormap[tech],
             fill_color=colormap[tech],
             size=12,
-            alpha=0.4
+            alpha=0.4,
         )
         renderers.append(r)
 
@@ -214,10 +222,11 @@ def create_plot(df, title, tech_colors={}):
                 ("Project", "@project"),
                 ("Technology", "@technology"),
                 ("Period", "@period"),
-                ("Capacity Factor", "@cap_factor{0%}")
+                ("Capacity Factor", "@cap_factor{0%}"),
             ],
             renderers=[r],
-            toggleable=False)
+            toggleable=False,
+        )
         plot.add_tools(hover)
 
     # Alternative, more succinct approach that uses factor_cmap and plots all
@@ -272,37 +281,35 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="capacity_factor_plot"
+        script="capacity_factor_plot",
     )
 
     tech_colors = get_tech_colors(c)
 
     plot_title = "{}Capacity Factors by Period - {} - Stage {}".format(
-        "{} - ".format(scenario)
-        if parsed_args.scenario_name_in_title else "",
-        parsed_args.load_zone, parsed_args.stage)
-    plot_name = "CapFactorPlot-{}-{}".format(
-        parsed_args.load_zone, parsed_args.stage)
+        "{} - ".format(scenario) if parsed_args.scenario_name_in_title else "",
+        parsed_args.load_zone,
+        parsed_args.stage,
+    )
+    plot_name = "CapFactorPlot-{}-{}".format(parsed_args.load_zone, parsed_args.stage)
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
-        stage=parsed_args.stage
+        stage=parsed_args.stage,
     )
 
-    plot = create_plot(
-        df=df,
-        title=plot_title,
-        tech_colors=tech_colors
-    )
+    plot = create_plot(df=df, title=plot_title, tech_colors=tech_colors)
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory,
-                  scenario=scenario)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+            scenario=scenario,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

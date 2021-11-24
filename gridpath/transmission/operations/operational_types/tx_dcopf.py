@@ -57,9 +57,7 @@ import pandas as pd
 from pyomo.environ import Set, Var, Constraint, Reals, Param
 
 
-def add_model_components(
-        m, d, scenario_directory, subproblem, stage
-):
+def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     The following Pyomo model components are defined in this module:
 
@@ -187,102 +185,85 @@ def add_model_components(
     m.TX_DCOPF = Set(
         within=m.TX_LINES,
         initialize=lambda mod: list(
-            set(l for l in mod.TX_LINES
-                if mod.tx_operational_type[l] == "tx_dcopf")
-        )
+            set(l for l in mod.TX_LINES if mod.tx_operational_type[l] == "tx_dcopf")
+        ),
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
-        dimen=2, within=m.TX_OPR_TMPS,
+        dimen=2,
+        within=m.TX_OPR_TMPS,
         initialize=lambda mod: list(
-            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
-                if l in mod.TX_DCOPF))
+            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS if l in mod.TX_DCOPF)
+        ),
     )
 
     # Derived Sets
     ###########################################################################
 
     m.PRDS_CYCLES_ZONES = Set(
-        dimen=3,
-        initialize=periods_cycles_zones_init,
-        ordered=True
+        dimen=3, initialize=periods_cycles_zones_init, ordered=True
     )
 
-    m.PRDS_CYCLES = Set(
-        dimen=2,
-        initialize=period_cycles_init
-    )
+    m.PRDS_CYCLES = Set(dimen=2, initialize=period_cycles_init)
 
     # Note: This assumes timepoints are unique across periods
     m.CYCLES_OPR_TMPS = Set(
         dimen=2,
         initialize=lambda mod: list(
-            set((c, tmp) for (p, c) in mod.PRDS_CYCLES
-                for tmp in  mod.TMPS_IN_PRD[p])
-        )
+            set((c, tmp) for (p, c) in mod.PRDS_CYCLES for tmp in mod.TMPS_IN_PRD[p])
+        ),
     )
 
     m.ZONES_IN_PRD_CYCLE = Set(
-        m.PRDS_CYCLES,
-        initialize=zones_by_period_cycle_init,
-        ordered=True
+        m.PRDS_CYCLES, initialize=zones_by_period_cycle_init, ordered=True
     )
 
     m.PRDS_CYCLES_TX_DCOPF = Set(
         dimen=3,
         within=m.PRDS_CYCLES * m.TX_LINES,
-        initialize=periods_cycles_transmission_lines_init
+        initialize=periods_cycles_transmission_lines_init,
     )
 
     m.TX_DCOPF_IN_PRD_CYCLE = Set(
-        m.PRDS_CYCLES,
-        initialize=tx_lines_by_period_cycle_init
+        m.PRDS_CYCLES, initialize=tx_lines_by_period_cycle_init
     )
 
     # Required Params
     ###########################################################################
 
-    m.tx_dcopf_reactance_ohms = Param(
-        m.TX_DCOPF
-    )
+    m.tx_dcopf_reactance_ohms = Param(m.TX_DCOPF)
 
     # Derived Params
     ###########################################################################
 
     m.tx_dcopf_cycle_direction = Param(
-        m.PRDS_CYCLES_TX_DCOPF,
-        initialize=tx_dcopf_cycle_direction_init
+        m.PRDS_CYCLES_TX_DCOPF, initialize=tx_dcopf_cycle_direction_init
     )
 
     # Variables
     ###########################################################################
 
-    m.TxDcopf_Transmit_Power_MW = Var(
-        m.TX_DCOPF_OPR_TMPS,
-        within=Reals
-    )
+    m.TxDcopf_Transmit_Power_MW = Var(m.TX_DCOPF_OPR_TMPS, within=Reals)
 
     # Constraints
     ###########################################################################
 
     m.TxDcopf_Min_Transmit_Constraint = Constraint(
-        m.TX_DCOPF_OPR_TMPS,
-        rule=min_transmit_rule
+        m.TX_DCOPF_OPR_TMPS, rule=min_transmit_rule
     )
 
     m.TxDcopf_Max_Transmit_Constraint = Constraint(
-        m.TX_DCOPF_OPR_TMPS,
-        rule=max_transmit_rule
+        m.TX_DCOPF_OPR_TMPS, rule=max_transmit_rule
     )
 
     m.TxDcopf_Kirchhoff_Voltage_Law_Constraint = Constraint(
-        m.CYCLES_OPR_TMPS,
-        rule=kirchhoff_voltage_law_rule
+        m.CYCLES_OPR_TMPS, rule=kirchhoff_voltage_law_rule
     )
 
 
 # Set Rules
 ###############################################################################
+
 
 def periods_cycles_zones_init(mod):
     """
@@ -299,14 +280,10 @@ def periods_cycles_zones_init(mod):
     result = list()
     for period in mod.PERIODS:
         # Get the relevant tx_lines (= currently operational & DC OPF)
-        tx_lines = list(
-            mod.TX_DCOPF &
-            mod.TX_LINES_OPR_IN_PRD[period]
-        )
+        tx_lines = list(mod.TX_DCOPF & mod.TX_LINES_OPR_IN_PRD[period])
 
         # Get the edges from the relevant tx_lines
-        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
-                 for tx in tx_lines]
+        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx]) for tx in tx_lines]
         # TODO: make sure there are no parallel edges (or pre-process those)
 
         # Create a network graph from the list of lines (edges) and find
@@ -333,8 +310,7 @@ def zones_by_period_cycle_init(mod, period, cycle):
     Re-arrange the 3-dimensional PRDS_CYCLES_ZONES set into a 1-dimensional
     set of ZONES, indexed by PRD_CYCLES
     """
-    zones = [z for (p, c, z) in mod.PRDS_CYCLES_ZONES
-             if p == period and c == cycle]
+    zones = [z for (p, c, z) in mod.PRDS_CYCLES_ZONES if p == period and c == cycle]
     return zones
 
 
@@ -356,14 +332,10 @@ def periods_cycles_transmission_lines_init(mod):
         zones = list(mod.ZONES_IN_PRD_CYCLE[(p, c)])
 
         # Relevant tx_lines
-        tx_lines = list(
-            mod.TX_DCOPF &
-            mod.TX_LINES_OPR_IN_PRD[p]
-        )
+        tx_lines = list(mod.TX_DCOPF & mod.TX_LINES_OPR_IN_PRD[p])
 
         # Get the edges from the relevant tx_lines
-        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
-                 for tx in tx_lines]
+        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx]) for tx in tx_lines]
 
         # Get the tx lines in this cycle
         for tx_from, tx_to in zip(zones[-1:] + zones[:-1], zones):
@@ -376,9 +348,7 @@ def periods_cycles_transmission_lines_init(mod):
                 except:
                     raise ValueError(
                         "The branch connecting {} and {} is not in the "
-                        "transmission line inputs".format(
-                            tx_from, tx_to
-                        )
+                        "transmission line inputs".format(tx_from, tx_to)
                     )
             tx_line = tx_lines[index]
             result.append((p, c, tx_line))
@@ -390,13 +360,15 @@ def tx_lines_by_period_cycle_init(mod, period, cycle):
     Re-arrange the 3-dimensional PRDS_CYCLES_TX_DCOPF set into a 1-dimensional
     set of TX_DCOPF, indexed by PRD_CYCLES.
     """
-    txs = list(tx for (p, c, tx) in mod.PRDS_CYCLES_TX_DCOPF
-               if c == cycle and p == period)
+    txs = list(
+        tx for (p, c, tx) in mod.PRDS_CYCLES_TX_DCOPF if c == cycle and p == period
+    )
     return txs
 
 
 # Param Rules
 ###############################################################################
+
 
 def tx_dcopf_cycle_direction_init(mod, period, cycle, tx_line):
     """
@@ -436,6 +408,7 @@ def tx_dcopf_cycle_direction_init(mod, period, cycle, tx_line):
 # Constraint Formulations
 ###############################################################################
 
+
 def min_transmit_rule(mod, l, tmp):
     """
     **Constraint Name**: TxDcopf_Min_Transmit_Constraint
@@ -444,8 +417,11 @@ def min_transmit_rule(mod, l, tmp):
     Transmitted power should exceed the minimum transmission flow capacity in
     each operational timepoint.
     """
-    return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
+    return (
+        mod.TxDcopf_Transmit_Power_MW[l, tmp]
         >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
+        * mod.Tx_Availability_Derate[l, tmp]
+    )
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -456,8 +432,11 @@ def max_transmit_rule(mod, l, tmp):
     Transmitted power cannot exceed the maximum transmission flow capacity in
     each operational timepoint.
     """
-    return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
+    return (
+        mod.TxDcopf_Transmit_Power_MW[l, tmp]
         <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
+        * mod.Tx_Availability_Derate[l, tmp]
+    )
 
 
 def kirchhoff_voltage_law_rule(mod, c, tmp):
@@ -492,21 +471,23 @@ def kirchhoff_voltage_law_rule(mod, c, tmp):
     Source: Horsch et al. (2018). Linear Optimal Power Flow Using Cycle Flows
     """
 
-    return sum(
-        mod.TxDcopf_Transmit_Power_MW[l, tmp]
-        * mod.tx_dcopf_cycle_direction[mod.period[tmp], c, l]
-        * mod.tx_dcopf_reactance_ohms[l]
-        for l in mod.TX_DCOPF_IN_PRD_CYCLE[mod.period[tmp], c]
-    ) == 0
+    return (
+        sum(
+            mod.TxDcopf_Transmit_Power_MW[l, tmp]
+            * mod.tx_dcopf_cycle_direction[mod.period[tmp], c, l]
+            * mod.tx_dcopf_reactance_ohms[l]
+            for l in mod.TX_DCOPF_IN_PRD_CYCLE[mod.period[tmp], c]
+        )
+        == 0
+    )
 
 
 # Operational Type Methods
 ###############################################################################
 
-def transmit_power_rule(mod, l, tmp):
-    """
 
-    """
+def transmit_power_rule(mod, l, tmp):
+    """ """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp]
 
 
@@ -527,8 +508,8 @@ def transmit_power_losses_lz_to_rule(mod, line, tmp):
 # Input-Output
 ###############################################################################
 
-def load_model_data(m, d, data_portal, scenario_directory,
-                              subproblem, stage):
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -541,23 +522,28 @@ def load_model_data(m, d, data_portal, scenario_directory,
 
     # Get the DC OPF lines
     df = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "transmission_lines.tab"),
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
         sep="\t",
-        usecols=["TRANSMISSION_LINES", "load_zone_from", "load_zone_to",
-                 "tx_operational_type", "reactance_ohms"]
+        usecols=[
+            "transmission_line",
+            "load_zone_from",
+            "load_zone_to",
+            "tx_operational_type",
+            "reactance_ohms",
+        ],
     )
     df = df[df["tx_operational_type"] == "tx_dcopf"]
 
     # Dict of reactance by tx_dcopf line
-    reactance_ohms = dict(zip(
-        df["TRANSMISSION_LINES"],
-        pd.to_numeric(df["reactance_ohms"])
-    ))
+    reactance_ohms = dict(
+        zip(df["transmission_line"], pd.to_numeric(df["reactance_ohms"]))
+    )
 
     # Load data
     data_portal.data()["tx_dcopf_reactance_ohms"] = reactance_ohms
-
-
-
-

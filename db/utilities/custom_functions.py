@@ -36,8 +36,7 @@ def temporal(conn, subscenario_id):
         WHERE temporal_scenario_id = ?;
         """
     spin_on_database_lock(
-        conn=conn, cursor=c, sql=subproblems_sql,
-        data=(subscenario_id,), many=False
+        conn=conn, cursor=c, sql=subproblems_sql, data=(subscenario_id,), many=False
     )
 
     # Stages
@@ -50,8 +49,9 @@ def temporal(conn, subscenario_id):
         FROM inputs_temporal
         WHERE temporal_scenario_id = ?;
         """
-    spin_on_database_lock(conn=conn, cursor=c, sql=stages_sql,
-                          data=(subscenario_id,), many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=stages_sql, data=(subscenario_id,), many=False
+    )
 
     # TIMEPOINT HORIZONS
     sid_stg_bt_hr_sql = """
@@ -61,9 +61,7 @@ def temporal(conn, subscenario_id):
         USING (temporal_scenario_id, subproblem_id)
         WHERE temporal_scenario_id = ?
         """
-    sid_stg_bt_hr = c.execute(
-        sid_stg_bt_hr_sql, (subscenario_id,)
-    ).fetchall()
+    sid_stg_bt_hr = c.execute(sid_stg_bt_hr_sql, (subscenario_id,)).fetchall()
 
     hor_tmps_tuples_list = list()
     for (sid, stage, bt, hr) in sid_stg_bt_hr:
@@ -75,13 +73,15 @@ def temporal(conn, subscenario_id):
             AND stage_id = ?
             AND balancing_type_horizon = ?
             AND horizon = ?""",
-            (subscenario_id, sid, stage, bt, hr)
+            (subscenario_id, sid, stage, bt, hr),
         ).fetchall()
 
         tmps = []
         for tmp_start, tmp_end in tmp_start_tmp_end:
             tmps += [
-                tmp for tmp in c.execute("""
+                tmp
+                for tmp in c.execute(
+                    """
                 SELECT timepoint
                 FROM inputs_temporal
                 WHERE temporal_scenario_id = ?
@@ -89,7 +89,8 @@ def temporal(conn, subscenario_id):
                 AND stage_id = ?
                 AND timepoint >= ?
                 AND timepoint <= ?
-                """, (subscenario_id, sid, stage, tmp_start, tmp_end)
+                """,
+                    (subscenario_id, sid, stage, tmp_start, tmp_end),
                 ).fetchall()
             ]
 
@@ -105,5 +106,6 @@ def temporal(conn, subscenario_id):
         VALUES (?, ?, ?, ?, ?, ?);
         """
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
-                          data=hor_tmps_tuples_list)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=horizon_timepoints_sql, data=hor_tmps_tuples_list
+    )

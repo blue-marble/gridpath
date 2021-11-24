@@ -61,12 +61,18 @@ import csv
 import os.path
 import pandas as pd
 
-from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
-    PositiveIntegers, NonPositiveIntegers, Any
+from pyomo.environ import (
+    Param,
+    Set,
+    NonNegativeReals,
+    NonNegativeIntegers,
+    PositiveIntegers,
+    NonPositiveIntegers,
+    Any,
+)
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import \
-    determine_table_subset_by_start_and_column
+from gridpath.auxiliary.db_interface import determine_table_subset_by_start_and_column
 from gridpath.auxiliary.validations import write_validation_to_database
 
 
@@ -143,61 +149,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.TMPS = Set(
-        within=PositiveIntegers,
-        ordered=True
-    )
+    m.TMPS = Set(within=PositiveIntegers, ordered=True)
 
-    m.MONTHS = Set(
-        within=PositiveIntegers,
-        initialize=list(range(1, 12 + 1))
-    )
+    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
 
     # These are the timepoints from the previous subproblem for which we'll
     # have parameters to constrain the current subproblem
-    m.LINKED_TMPS = Set(
-        within=NonPositiveIntegers,
-        ordered=True
-    )
+    m.LINKED_TMPS = Set(within=NonPositiveIntegers, ordered=True)
 
     # Required Params
     ###########################################################################
 
-    m.hrs_in_tmp = Param(
-        m.TMPS,
-        within=NonNegativeReals
-    )
+    m.hrs_in_tmp = Param(m.TMPS, within=NonNegativeReals)
 
-    m.tmp_weight = Param(
-        m.TMPS,
-        within=NonNegativeReals
-    )
+    m.tmp_weight = Param(m.TMPS, within=NonNegativeReals)
 
-    m.prev_stage_tmp_map = Param(
-        m.TMPS,
-        within=NonNegativeIntegers
-    )
+    m.prev_stage_tmp_map = Param(m.TMPS, within=NonNegativeIntegers)
 
-    m.month = Param(
-        m.TMPS,
-        within=m.MONTHS
-    )
+    m.month = Param(m.TMPS, within=m.MONTHS)
 
     # Optional Params
     ###########################################################################
 
-    m.hrs_in_linked_tmp = Param(
-        m.LINKED_TMPS,
-        within=NonNegativeReals
-    )
+    m.hrs_in_linked_tmp = Param(m.LINKED_TMPS, within=NonNegativeReals)
 
-    m.furthest_linked_tmp = Param(
-        within=NonPositiveIntegers
-    )
+    m.furthest_linked_tmp = Param(within=NonPositiveIntegers)
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -211,18 +192,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "timepoints.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
+        ),
         index=m.TMPS,
-        param=(m.tmp_weight,
-               m.hrs_in_tmp,
-               m.prev_stage_tmp_map,
-               m.month),
-        select=("timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "previous_stage_timepoint_map",
-                "month")
+        param=(m.tmp_weight, m.hrs_in_tmp, m.prev_stage_tmp_map, m.month),
+        select=(
+            "timepoint",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "previous_stage_timepoint_map",
+            "month",
+        ),
     )
 
     # Load in any timepoints to link to the next subproblem and linked
@@ -230,14 +211,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Try to load in the map CSV
     try:
         map_df = pd.read_csv(
-            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
-            sep=","
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"), sep=","
         )
         # Get the linked timepoints for the current subproblem and stage
         linked_tmps_df = map_df.loc[
-            (map_df["subproblem_to_link"] == int(subproblem)) &
-            (map_df["stage"] == (1 if stage == "" else int(stage)))
-            ]
+            (map_df["subproblem_to_link"] == int(subproblem))
+            & (map_df["stage"] == (1 if stage == "" else int(stage)))
+        ]
         linked_tmps = linked_tmps_df["linked_timepoint"].tolist()
         # Load in the data
         data_portal.data()["LINKED_TMPS"] = {None: linked_tmps}
@@ -246,8 +226,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         )
         data_portal.data()["hrs_in_linked_tmp"] = hrs_in_linked_tmp_dict
         if linked_tmps:
-            data_portal.data()["furthest_linked_tmp"] = \
-                {None: min(linked_tmps)}
+            data_portal.data()["furthest_linked_tmp"] = {None: min(linked_tmps)}
         else:
             pass
 
@@ -260,6 +239,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -280,16 +260,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
            AND stage_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
     )
 
     return timepoints
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     timepoints.tab file.
@@ -302,17 +282,29 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     timepoints = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"),
-              "w", newline="") as timepoints_tab_file:
-        writer = csv.writer(timepoints_tab_file, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
+        ),
+        "w",
+        newline="",
+    ) as timepoints_tab_file:
+        writer = csv.writer(timepoints_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["timepoint", "period", "timepoint_weight",
-                         "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map", "month"])
+        writer.writerow(
+            [
+                "timepoint",
+                "period",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "previous_stage_timepoint_map",
+                "month",
+            ]
+        )
 
         # Write timepoints
         for row in timepoints:
@@ -334,8 +326,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     # Update tables with spinup_or_lookahead_flag
     tables_to_update = determine_table_subset_by_start_and_column(
-        conn=db, tbl_start="results_",
-        cols=["timepoint", "spinup_or_lookahead"]
+        conn=db, tbl_start="results_", cols=["timepoint", "spinup_or_lookahead"]
     )
 
     for tbl in tables_to_update:
@@ -356,16 +347,18 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
             AND {}.stage_id = inputs_temporal.stage_id
             AND {}.timepoint = inputs_temporal.timepoint
             );
-            """.format(tbl, tbl, tbl, tbl)
+            """.format(
+            tbl, tbl, tbl, tbl
+        )
 
         spin_on_database_lock(
-            conn=db, cursor=c, sql=sql, data=(scenario_id, ),
-            many=False
+            conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
         )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -385,7 +378,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     c = conn.cursor()
 
-    validation_data = c.execute("""
+    validation_data = c.execute(
+        """
         SELECT period, sum(number_of_hours_in_timepoint*timepoint_weight)
            as hours_in_period_timepoints
            FROM inputs_temporal
@@ -393,8 +387,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
            AND spinup_or_lookahead = 0
            AND stage_id = {}
            GROUP BY period;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID, stage
         )
     ).fetchall()
 
@@ -424,5 +417,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
                 gridpath_module=__name__,
                 db_table="inputs_temporal",
                 severity="High",
-                errors=[msg]
+                errors=[msg],
             )

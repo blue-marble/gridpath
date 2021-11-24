@@ -19,68 +19,68 @@ from importlib import import_module
 import os.path
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "test_data")
 
 # No prerequisite modules
 NAME_OF_MODULE_BEING_TESTED = "geography.load_zones"
 
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestLoadZones(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=[],
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=[],
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=[],
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=[],
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_zone_data_loads_correctly(self):
         """
         Create LOAD_ZONES set and load data; check resulting set is as expected
         :return:
         """
-        m, data = \
-            add_components_and_load_data(prereq_modules=[],
-                                         module_to_test=MODULE_BEING_TESTED,
-                                         test_data_dir=TEST_DATA_DIRECTORY,
-                                         subproblem="",
-                                         stage="")
+        m, data = add_components_and_load_data(
+            prereq_modules=[],
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
         instance = m.create_instance(data)
         expected = sorted(["Zone1", "Zone2", "Zone3"])
         actual = sorted([z for z in instance.LOAD_ZONES])
-        self.assertListEqual(expected, actual,
-                             msg="LOAD_ZONES set data does not load correctly."
-                             )
+        self.assertListEqual(
+            expected, actual, msg="LOAD_ZONES set data does not load correctly."
+        )
 
         # Param: allow_overgeneration
         expected_allow_overgen = OrderedDict(
@@ -88,21 +88,23 @@ class TestLoadZones(unittest.TestCase):
         )
         actual_allow_overgen = OrderedDict(
             sorted(
-                {z: instance.allow_overgeneration[z]
-                 for z in instance.LOAD_ZONES}.items()
+                {
+                    z: instance.allow_overgeneration[z] for z in instance.LOAD_ZONES
+                }.items()
             )
         )
         self.assertDictEqual(expected_allow_overgen, actual_allow_overgen)
 
         # Param: overgeneration_penalty_per_mw
         expected_overgen_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999,
-                    "Zone3": 99999999}.items())
+            sorted({"Zone1": 99999999, "Zone2": 99999999, "Zone3": 99999999}.items())
         )
         actual_overgen_penalty = OrderedDict(
             sorted(
-                {z: instance.overgeneration_penalty_per_mw[z]
-                 for z in instance.LOAD_ZONES}.items()
+                {
+                    z: instance.overgeneration_penalty_per_mw[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
             )
         )
         self.assertDictEqual(expected_overgen_penalty, actual_overgen_penalty)
@@ -113,26 +115,63 @@ class TestLoadZones(unittest.TestCase):
         )
         actual_allow_unserved_energy = OrderedDict(
             sorted(
-                {z: instance.allow_overgeneration[z]
-                 for z in instance.LOAD_ZONES}.items()
+                {
+                    z: instance.allow_overgeneration[z] for z in instance.LOAD_ZONES
+                }.items()
             )
         )
-        self.assertDictEqual(expected_allow_unserved_energy,
-                             actual_allow_unserved_energy)
+        self.assertDictEqual(
+            expected_allow_unserved_energy, actual_allow_unserved_energy
+        )
 
-        # Param: unserved_energy_penalty_per_mw
+        # Param: unserved_energy_penalty_per_mwh
         expected_unserved_energy_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999,
-                    "Zone3": 99999999}.items())
+            sorted({"Zone1": 99999999, "Zone2": 99999999, "Zone3": 99999999}.items())
         )
         actual_unserved_energy_penalty = OrderedDict(
             sorted(
-                {z: instance.unserved_energy_penalty_per_mw[z]
-                 for z in instance.LOAD_ZONES}.items()
+                {
+                    z: instance.unserved_energy_penalty_per_mwh[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
             )
         )
-        self.assertDictEqual(expected_unserved_energy_penalty,
-                             actual_unserved_energy_penalty)
+        self.assertDictEqual(
+            expected_unserved_energy_penalty, actual_unserved_energy_penalty
+        )
+
+        # Param: max_unserved_load_penalty_per_mw
+        expected_max_unserved_load_penalty_per_mw = OrderedDict(
+            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0}.items())
+        )
+        actual_max_unserved_load_penalty_per_mw = OrderedDict(
+            sorted(
+                {
+                    z: instance.max_unserved_load_penalty_per_mw[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_max_unserved_load_penalty_per_mw,
+            actual_max_unserved_load_penalty_per_mw,
+        )
+
+        # Param: export_penalty_cost_per_mwh
+        expected_export_penalty_cost_per_mwh = OrderedDict(
+            sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0}.items())
+        )
+        actual_export_penalty_cost_per_mwh = OrderedDict(
+            sorted(
+                {
+                    z: instance.export_penalty_cost_per_mwh[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_export_penalty_cost_per_mwh, actual_export_penalty_cost_per_mwh
+        )
 
 
 if __name__ == "__main__":

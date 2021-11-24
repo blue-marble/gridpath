@@ -30,14 +30,11 @@ def determine_scenario_directory(scenario_location, scenario_name):
     working directory).
     """
     if scenario_location is None:
-        main_directory = os.path.join(
-            os.getcwd(), "..", "scenarios")
+        main_directory = os.path.join(os.getcwd(), "..", "scenarios")
     else:
         main_directory = scenario_location
 
-    scenario_directory = os.path.join(
-        main_directory, str(scenario_name)
-    )
+    scenario_directory = os.path.join(main_directory, str(scenario_name))
 
     return scenario_directory
 
@@ -68,12 +65,16 @@ def get_required_e2e_arguments_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--scenario_location", default="../scenarios",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
-    parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print run output.")
+    parser.add_argument(
+        "--scenario_location",
+        default="../scenarios",
+        help="The path to the directory in which to create "
+        "the scenario directory. Defaults to "
+        "'../scenarios' if not specified.",
+    )
+    parser.add_argument(
+        "--quiet", default=False, action="store_true", help="Don't print run output."
+    )
 
     return parser
 
@@ -92,9 +93,13 @@ def get_scenario_name_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    required = parser.add_argument_group('required arguments')
-    required.add_argument("--scenario", required=True, type=str,
-                          help="Name of the scenario problem to solve.")
+    required = parser.add_argument_group("required arguments")
+    required.add_argument(
+        "--scenario",
+        required=True,
+        type=str,
+        help="Name of the scenario problem to solve.",
+    )
 
     return parser
 
@@ -113,37 +118,48 @@ def get_db_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--database", default="../db/io.db",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ../db/io.db ")
-    parser.add_argument("--scenario_id", type=int,
-                        help="The scenario_id from the database. Not needed "
-                             "if scenario is specified.")
-    parser.add_argument("--scenario", type=str,
-                        help="The scenario_name from the database. Not "
-                             "needed if scenario_id is specified.")
+    parser.add_argument(
+        "--database",
+        default="../db/io.db",
+        help="The database file path relative to the current "
+        "working directory. Defaults to ../db/io.db ",
+    )
+    parser.add_argument(
+        "--scenario_id",
+        type=int,
+        help="The scenario_id from the database. Not needed "
+        "if scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        type=str,
+        help="The scenario_name from the database. Not "
+        "needed if scenario_id is specified.",
+    )
 
     return parser
 
 
 def get_parallel_get_inputs_parser():
-    """
-    """
+    """ """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--n_parallel_get_inputs", default=1,
-                        help="Get inputs for n subproblems in parallel.")
+    parser.add_argument(
+        "--n_parallel_get_inputs",
+        default=1,
+        help="Get inputs for n subproblems in parallel.",
+    )
 
     return parser
 
 
 def get_parallel_solve_parser():
-    """
-    """
+    """ """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--n_parallel_solve", default=1,
-                        help="Solve n subproblems in parallel.")
+    parser.add_argument(
+        "--n_parallel_solve", default=1, help="Solve n subproblems in parallel."
+    )
 
     return parser
 
@@ -164,36 +180,62 @@ def get_solve_parser():
     parser = ArgumentParser(add_help=False)
 
     # Output options
-    parser.add_argument("--log", default=False, action="store_true",
-                        help="Log output to a file in the scenario's 'logs' "
-                             "directory as well as the terminal.")
+    parser.add_argument(
+        "--log",
+        default=False,
+        action="store_true",
+        help="Log output to a file in the scenario's 'logs' "
+        "directory as well as the terminal.",
+    )
     # Solver options
-    parser.add_argument("--solver", help="Name of the solver to use. "
-                                         "GridPath will use Cbc if solver is "
-                                         "not specified here and a "
-                                         "'solver_options.csv' file does not "
-                                         "exist in the scenario directory.")
-    parser.add_argument("--solver_executable",
-                        help="The path to the solver executable to use. This "
-                             "is optional; if you don't specify it, "
-                             "Pyomo will look for the solver executable in "
-                             "your PATH. The solver specified with the "
-                             "--solver option must be the same as the solver "
-                             "for which you are providing an executable.")
-    parser.add_argument("--mute_solver_output", default=False,
-                        action="store_true",
-                        help="Don't print solver output.")
-    parser.add_argument("--write_solver_files_to_logs_dir", default=False,
-                        action="store_true", help="Write the temporary "
-                                                  "solver files to the logs "
-                                                  "directory.")
-    parser.add_argument("--keepfiles", default=False, action="store_true",
-                        help="Save temporary solver files.")
-    parser.add_argument("--symbolic", default=False, action="store_true",
-                        help="Use symbolic labels in solver files.")
+    parser.add_argument(
+        "--solver",
+        help="Name of the solver to use. "
+        "GridPath will use Cbc if solver is "
+        "not specified here and a "
+        "'solver_options.csv' file does not "
+        "exist in the scenario directory.",
+    )
+    parser.add_argument(
+        "--solver_executable",
+        help="The path to the solver executable to use. This "
+        "is optional; if you don't specify it, "
+        "Pyomo will look for the solver executable in "
+        "your PATH. The solver specified with the "
+        "--solver option must be the same as the solver "
+        "for which you are providing an executable.",
+    )
+    parser.add_argument(
+        "--mute_solver_output",
+        default=False,
+        action="store_true",
+        help="Don't print solver output.",
+    )
+    parser.add_argument(
+        "--write_solver_files_to_logs_dir",
+        default=False,
+        action="store_true",
+        help="Write the temporary " "solver files to the logs " "directory.",
+    )
+    parser.add_argument(
+        "--keepfiles",
+        default=False,
+        action="store_true",
+        help="Save temporary solver files.",
+    )
+    parser.add_argument(
+        "--symbolic",
+        default=False,
+        action="store_true",
+        help="Use symbolic labels in solver files.",
+    )
     # Flag for test runs (various changes in behavior)
-    parser.add_argument("--testing", default=False, action="store_true",
-                        help="Flag for test suite runs. Results not saved.")
+    parser.add_argument(
+        "--testing",
+        default=False,
+        action="store_true",
+        help="Flag for test suite runs. Results not saved.",
+    )
 
     return parser
 
@@ -206,7 +248,9 @@ def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    logs_directory = os.path.join(scenario_directory, str(subproblem), str(stage), "logs")
+    logs_directory = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "logs"
+    )
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
     return logs_directory
@@ -231,22 +275,16 @@ class Logging(object):
         # If logging run_e2e, print to a file starting with e2e_, with the
         # datetime, and the process ID
         if not e2e:
-            self.log_file_path = \
-                os.path.join(
-                    logs_dir,
-                    "opt_{}.log".format(
-                        string_from_time(start_time)
-                    )
-                )
+            self.log_file_path = os.path.join(
+                logs_dir, "opt_{}.log".format(string_from_time(start_time))
+            )
         else:
-            self.log_file_path = \
-                os.path.join(
-                    logs_dir,
-                    "e2e_{}_pid_{}.log".format(
-                        string_from_time(start_time),
-                        str(process_id)
-                    )
-                )
+            self.log_file_path = os.path.join(
+                logs_dir,
+                "e2e_{}_pid_{}.log".format(
+                    string_from_time(start_time), str(process_id)
+                ),
+            )
 
         self.log_file = open(self.log_file_path, "a", buffering=1)
 
@@ -286,4 +324,4 @@ def string_from_time(datetime_string):
     :param datetime_string: datetime string
     :return: formatted time string
     """
-    return datetime_string.strftime('%Y-%m-%d_%H-%M-%S')
+    return datetime_string.strftime("%Y-%m-%d_%H-%M-%S")

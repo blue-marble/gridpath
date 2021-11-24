@@ -24,9 +24,14 @@ import pandas as pd
 from pyomo.environ import Set, Param, Any
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_dtypes, get_expected_dtypes, validate_values, validate_columns, \
-    validate_missing_inputs
+from gridpath.auxiliary.validations import (
+    write_validation_to_database,
+    validate_dtypes,
+    get_expected_dtypes,
+    validate_values,
+    validate_columns,
+    validate_missing_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -113,20 +118,39 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(
         m.PROJECTS,
-        within=["dr_new", "gen_new_bin", "gen_new_lin", "gen_ret_bin",
-                "gen_ret_lin", "gen_spec", "stor_new_bin", "stor_new_lin",
-                "stor_spec", "gen_stor_hyb_spec"]
+        within=[
+            "dr_new",
+            "gen_new_bin",
+            "gen_new_lin",
+            "gen_ret_bin",
+            "gen_ret_lin",
+            "gen_spec",
+            "stor_new_bin",
+            "stor_new_lin",
+            "stor_spec",
+            "gen_stor_hyb_spec",
+        ],
     )
     m.operational_type = Param(
         m.PROJECTS,
-        within=["dr", "gen_always_on", "gen_commit_bin", "gen_commit_cap",
-                "gen_commit_lin", "gen_hydro", "gen_hydro_must_take",
-                "gen_must_run", "gen_simple", "gen_var",
-                "gen_var_must_take", "stor", "gen_var_stor_hyb"]
+        within=[
+            "dr",
+            "gen_always_on",
+            "gen_commit_bin",
+            "gen_commit_cap",
+            "gen_commit_lin",
+            "gen_hydro",
+            "gen_hydro_must_take",
+            "gen_must_run",
+            "gen_simple",
+            "gen_var",
+            "gen_var_must_take",
+            "stor",
+            "gen_var_stor_hyb",
+        ],
     )
     m.availability_type = Param(
-        m.PROJECTS,
-        within=["binary", "continuous", "exogenous"]
+        m.PROJECTS, within=["binary", "continuous", "exogenous"]
     )
     m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
     m.technology = Param(m.PROJECTS, within=Any, default="unspecified")
@@ -135,38 +159,58 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Input-Output
 ###############################################################################
 
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-    """
+    """ """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "projects.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         index=m.PROJECTS,
-        select=("project", "load_zone", "capacity_type",
-                "availability_type", "operational_type",
-                "balancing_type_project"),
-        param=(m.load_zone, m.capacity_type, m.availability_type,
-               m.operational_type, m.balancing_type_project)
+        select=(
+            "project",
+            "load_zone",
+            "capacity_type",
+            "availability_type",
+            "operational_type",
+            "balancing_type_project",
+        ),
+        param=(
+            m.load_zone,
+            m.capacity_type,
+            m.availability_type,
+            m.operational_type,
+            m.balancing_type_project,
+        ),
     )
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage),
-                     "inputs", "projects.tab"),
-        sep="\t", header=None, nrows=1
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        sep="\t",
+        header=None,
+        nrows=1,
     ).values[0]
 
     if "technology" in header:
         data_portal.load(
-            filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                                  "inputs", "projects.tab"),
+            filename=os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "projects.tab",
+            ),
             select=("project", "technology"),
-            param=m.technology
+            param=m.technology,
         )
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -215,14 +259,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
         )
     )
 
     return projects
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab file.
@@ -234,7 +280,9 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
 
-    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
@@ -243,17 +291,26 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     #   filename = os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab")
     #   projects.to_csv(filename, sep="\t", mode="w", newline="")
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
-              newline="") as projects_tab_file:
-        writer = csv.writer(projects_tab_file,
-                            delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_tab_file:
+        writer = csv.writer(projects_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "availability_type",
-             "operational_type", "balancing_type_project", "technology",
-             "load_zone"]
+            [
+                "project",
+                "capacity_type",
+                "availability_type",
+                "operational_type",
+                "balancing_type_project",
+                "technology",
+                "load_zone",
+            ]
         )
 
         for row in projects:
@@ -263,6 +320,7 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -277,17 +335,22 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     c = conn.cursor()
 
     # Get the project inputs
-    projects = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    projects = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(projects)
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_portfolios",
-               "inputs_project_availability",
-               "inputs_project_load_zones",
-               "inputs_project_operational_chars"]
+        conn,
+        [
+            "inputs_project_portfolios",
+            "inputs_project_availability",
+            "inputs_project_load_zones",
+            "inputs_project_operational_chars",
+        ],
     )
 
     dtype_errors, error_columns = validate_dtypes(df, expected_dtypes)
@@ -299,7 +362,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars, inputs_project_portfolios",
         severity="High",
-        errors=dtype_errors
+        errors=dtype_errors,
     )
 
     # Check valid numeric columns are non-negative
@@ -314,7 +377,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_values(df, valid_numeric_columns, min=0)
+        errors=validate_values(df, valid_numeric_columns, min=0),
     )
 
     # Check that we're not combining incompatible cap-types and op-types
@@ -322,7 +385,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     invalid_combos = c.execute(
         """
         SELECT {} FROM mod_capacity_and_operational_type_invalid_combos
-        """.format(",".join(cols))
+        """.format(
+            ",".join(cols)
+        )
     ).fetchall()
 
     write_validation_to_database(
@@ -333,7 +398,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars, inputs_project_portfolios",
         severity="High",
-        errors=validate_columns(df, cols, invalids=invalid_combos)
+        errors=validate_columns(df, cols, invalids=invalid_combos),
     )
 
     # Check that capacity type is valid
@@ -351,7 +416,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=validate_columns(df, "capacity_type", valids=valid_cap_types)
+        errors=validate_columns(df, "capacity_type", valids=valid_cap_types),
     )
 
     # Check that operational type is valid
@@ -369,12 +434,14 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_portfolios",
         severity="High",
-        errors=validate_columns(df, "operational_type", valids=valid_op_types)
+        errors=validate_columns(df, "operational_type", valids=valid_op_types),
     )
 
     # Check that all portfolio projects are present in the availability inputs
-    msg = "All projects in the portfolio should have an availability type " \
-          "specified in the inputs_project_availability table."
+    msg = (
+        "All projects in the portfolio should have an availability type "
+        "specified in the inputs_project_availability table."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -383,13 +450,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_availability",
         severity="High",
-        errors=validate_missing_inputs(df, "availability_type", msg=msg)
+        errors=validate_missing_inputs(df, "availability_type", msg=msg),
     )
 
     # Check that all portfolio projects are present in the opchar inputs
-    msg = "All projects in the portfolio should have an operational type " \
-          "and balancing type specified in the " \
-          "inputs_project_operational_chars table."
+    msg = (
+        "All projects in the portfolio should have an operational type "
+        "and balancing type specified in the "
+        "inputs_project_operational_chars table."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -398,15 +467,16 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_operational_chars",
         severity="High",
-        errors=validate_missing_inputs(df,
-                                       ["operational_type",
-                                        "balancing_type_project"],
-                                       msg=msg)
+        errors=validate_missing_inputs(
+            df, ["operational_type", "balancing_type_project"], msg=msg
+        ),
     )
 
     # Check that all portfolio projects are present in the load zone inputs
-    msg = "All projects in the portfolio should have a load zone " \
-          "specified in the inputs_project_load_zones table."
+    msg = (
+        "All projects in the portfolio should have a load zone "
+        "specified in the inputs_project_load_zones table."
+    )
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -415,7 +485,5 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_load_zones",
         severity="High",
-        errors=validate_missing_inputs(df, "load_zone", msg=msg)
+        errors=validate_missing_inputs(df, "load_zone", msg=msg),
     )
-
-

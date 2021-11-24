@@ -21,18 +21,21 @@ import pandas as pd
 from pyomo.environ import Param, PercentFraction, Constraint
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import \
-    load_operational_type_modules
+from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type
 
 
 def generic_add_model_components(
-    m, d, scenario_directory, subproblem, stage,
+    m,
+    d,
+    scenario_directory,
+    subproblem,
+    stage,
     reserve_projects_set,
     reserve_project_operational_timepoints_set,
     reserve_provision_variable_name,
     reserve_provision_ramp_rate_limit_param,
-    reserve_provision_ramp_rate_limit_constraint
+    reserve_provision_ramp_rate_limit_constraint,
 ):
     """
     Reserve-related components that will be used by the operational_type
@@ -56,15 +59,18 @@ def generic_add_model_components(
     # reserve product with a 10-minute response requirement \
     # Here, this derate param is specified as a fraction of generator capacity
     # Defaults to 1 if not specified
-    setattr(m, reserve_provision_ramp_rate_limit_param,
-            Param(getattr(m, reserve_projects_set),
-                  within=PercentFraction, default=1)
-            )
+    setattr(
+        m,
+        reserve_provision_ramp_rate_limit_param,
+        Param(getattr(m, reserve_projects_set), within=PercentFraction, default=1),
+    )
 
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -81,31 +87,42 @@ def generic_add_model_components(
         :return:
         """
         gen_op_type = mod.operational_type[g]
-        online_capacity = \
-            imported_operational_modules[gen_op_type]\
-            .online_capacity_rule(mod, g, tmp) \
-            if hasattr(imported_operational_modules[gen_op_type],
-                       "online_capacity_rule") \
+        online_capacity = (
+            imported_operational_modules[gen_op_type].online_capacity_rule(mod, g, tmp)
+            if hasattr(
+                imported_operational_modules[gen_op_type], "online_capacity_rule"
+            )
             else op_type.online_capacity_rule(mod, g, tmp)
+        )
 
         if getattr(m, reserve_provision_ramp_rate_limit_param) == 1:
             return Constraint.Skip
         else:
-            return getattr(mod, reserve_provision_variable_name)[g, tmp] <= \
-                getattr(mod, reserve_provision_ramp_rate_limit_param)[g] \
+            return (
+                getattr(mod, reserve_provision_variable_name)[g, tmp]
+                <= getattr(mod, reserve_provision_ramp_rate_limit_param)[g]
                 * online_capacity
-    setattr(m, reserve_provision_ramp_rate_limit_constraint,
-            Constraint(
-                getattr(m, reserve_project_operational_timepoints_set),
-                rule=reserve_provision_ramp_rate_limit_rule
             )
-            )
+
+    setattr(
+        m,
+        reserve_provision_ramp_rate_limit_constraint,
+        Constraint(
+            getattr(m, reserve_project_operational_timepoints_set),
+            rule=reserve_provision_ramp_rate_limit_rule,
+        ),
+    )
 
 
 def generic_load_model_data(
-        m, d, data_portal, scenario_directory, subproblem, stage,
-        ramp_rate_limit_column_name,
-        reserve_provision_ramp_rate_limit_param
+    m,
+    d,
+    data_portal,
+    scenario_directory,
+    subproblem,
+    stage,
+    ramp_rate_limit_column_name,
+    reserve_provision_ramp_rate_limit_param,
 ):
     """
 
@@ -123,25 +140,28 @@ def generic_load_model_data(
     columns_to_import = ("project",)
     params_to_import = ()
     projects_file_header = pd.read_csv(
-        os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                     "projects.tab"),
-        sep="\t", header=None, nrows=1
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        sep="\t",
+        header=None,
+        nrows=1,
     ).values[0]
 
     # Import reserve provision ramp rate limit parameter only if
     # column is present
     # Otherwise, the ramp rate limit param goes to its default of 1
     if ramp_rate_limit_column_name in projects_file_header:
-        columns_to_import += (ramp_rate_limit_column_name, )
-        params_to_import += (getattr(m,
-                                     reserve_provision_ramp_rate_limit_param),)
+        columns_to_import += (ramp_rate_limit_column_name,)
+        params_to_import += (getattr(m, reserve_provision_ramp_rate_limit_param),)
     else:
         pass
 
     # Load the needed data
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "projects.tab"),
-                     select=columns_to_import,
-                     param=params_to_import
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+        ),
+        select=columns_to_import,
+        param=params_to_import,
+    )

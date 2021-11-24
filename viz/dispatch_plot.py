@@ -40,26 +40,47 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_colors, get_tech_plotting_order, get_unit
+from viz.common_functions import (
+    show_hide_legend,
+    show_plot,
+    get_parent_parser,
+    get_tech_colors,
+    get_tech_plotting_order,
+    get_unit,
+)
 
 
 def create_parser():
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
-                                              "no --scenario is specified.")
-    parser.add_argument("--scenario", help="The scenario name. Required if "
-                                           "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", required=True, type=str,
-                        help="The name of the load zone. Required.")
-    parser.add_argument("--starting_tmp", default=None, type=int,
-                        help="The starting timepoint. Defaults to None ("
-                             "first timepoint)")
-    parser.add_argument("--ending_tmp", default=None, type=int,
-                        help="The ending timepoint. Defaults to None ("
-                             "last timepoint)")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
+    parser.add_argument(
+        "--scenario_id",
+        help="The scenario ID. Required if " "no --scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario name. Required if " "no --scenario_id is specified.",
+    )
+    parser.add_argument(
+        "--load_zone",
+        required=True,
+        type=str,
+        help="The name of the load zone. Required.",
+    )
+    parser.add_argument(
+        "--starting_tmp",
+        default=None,
+        type=int,
+        help="The starting timepoint. Defaults to None (" "first timepoint)",
+    )
+    parser.add_argument(
+        "--ending_tmp",
+        default=None,
+        type=int,
+        help="The ending timepoint. Defaults to None (" "last timepoint)",
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
 
     return parser
 
@@ -75,8 +96,7 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None,
-                   stage_id=1):
+def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_id=1):
     """
     Note: assumes timepoints are ordered!
     :param conn:
@@ -105,7 +125,9 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None,
         WHERE stage_id = {}
         {}
         {}
-        ;""".format(scenario_id, stage_id, start_query, end_query)
+        ;""".format(
+        scenario_id, stage_id, start_query, end_query
+    )
 
     tmps = [i[0] for i in conn.execute(query).fetchall()]
 
@@ -129,7 +151,9 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND timepoint IN ({})
-        ;""".format(scenario_id, load_zone, ",".join(["?"] * len(timepoints)))
+        ;""".format(
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
 
     df = pd.read_sql(query, conn, params=timepoints)
     if not df.empty:
@@ -138,14 +162,11 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
     # If the dataframe was empty, we still need to send the timepoint index
     # downstream
     else:
-        index_only_df = pd.DataFrame(
-            index=timepoints
-        )
+        index_only_df = pd.DataFrame(index=timepoints)
         return index_only_df
 
 
-def get_variable_curtailment_results(
-        c, scenario_id, load_zone, timepoints):
+def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
     """
     Get variable generator curtailment for a given load_zone and set of
     timepoints.
@@ -161,8 +182,8 @@ def get_variable_curtailment_results(
             AND load_zone = '{}'
             AND timepoint IN ({})
             ;""".format(
-                scenario_id, load_zone, ",".join(["?"] * len(timepoints))
-            )
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
@@ -183,8 +204,8 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND timepoint IN ({});""".format(
-                scenario_id, load_zone, ",".join(["?"] * len(timepoints))
-            )
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
 
@@ -205,7 +226,9 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND timepoint IN ({})
-        ;""".format(scenario_id, load_zone, ",".join(["?"] * len(timepoints)))
+        ;""".format(
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
 
     net_imports = c.execute(query, timepoints).fetchall()
 
@@ -230,8 +253,8 @@ def get_load(c, scenario_id, load_zone, timepoints):
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND timepoint IN ({});""".format(
-            scenario_id, load_zone, ",".join(["?"] * len(timepoints))
-        )
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
 
     load_balance = c.execute(query, timepoints).fetchall()
 
@@ -241,8 +264,9 @@ def get_load(c, scenario_id, load_zone, timepoints):
     return load, unserved_energy
 
 
-def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
-                      stage, **kwargs):
+def get_plotting_data(
+    conn, scenario_id, load_zone, starting_tmp, ending_tmp, stage, **kwargs
+):
     """
     Get the dispatch data by timepoint and technology for a given
     scenario/load_zone/set of timepoints/stage.
@@ -261,17 +285,13 @@ def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
     c = conn.cursor()
 
     # Get the relevant timepoints
-    timepoints = get_timepoints(conn, scenario_id, starting_tmp, ending_tmp,
-                                stage)
+    timepoints = get_timepoints(conn, scenario_id, starting_tmp, ending_tmp, stage)
 
     # Get dispatch by technology
     # TODO: Let tech order depend on specified order in database table.
     #  Storage might be tricky because we manipulate it!
     df = get_power_by_tech_results(
-        conn=conn,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
+        conn=conn, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
     )
 
     # Add x axis
@@ -288,30 +308,21 @@ def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
 
     # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
+        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
     )
     if curtailment_variable:
         df["Curtailment_Variable"] = curtailment_variable
 
     # Add hydro curtailment (if any)
     curtailment_hydro = get_hydro_curtailment_results(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
+        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
     )
     if curtailment_hydro:
         df["Curtailment_Hydro"] = curtailment_hydro
 
     # Add imports and exports (if any)
     imports, exports = get_imports_exports_results(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
+        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
     )
     if imports:
         df["Imports"] = imports
@@ -320,10 +331,7 @@ def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
 
     # Add load
     load_balance = get_load(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        timepoints=timepoints
+        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
     )
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
@@ -361,8 +369,9 @@ def get_plotting_data(conn, scenario_id, load_zone, starting_tmp, ending_tmp,
     return df
 
 
-def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
-                ylimit=None):
+def create_plot(
+    df, title, power_unit, tech_colors={}, tech_plotting_order={}, ylimit=None
+):
     """
 
     :param df:
@@ -380,8 +389,7 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
     for col in df.columns:
         if col not in tech_plotting_order:
             tech_plotting_order[col] = max(tech_plotting_order.values()) + 1
-    df = df.reindex(sorted(df.columns, key=lambda x: tech_plotting_order[x]),
-                    axis=1)
+    df = df.reindex(sorted(df.columns, key=lambda x: tech_plotting_order[x]), axis=1)
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -395,10 +403,10 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
     stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
 
     # Set up color scheme. Use cividis palette for unspecified colors
-    unspecified_columns = [c for c in stacked_cols
-                           if c not in tech_colors.keys()]
-    unspecified_tech_colors = dict(zip(unspecified_columns,
-                                        cividis(len(unspecified_columns))))
+    unspecified_columns = [c for c in stacked_cols if c not in tech_colors.keys()]
+    unspecified_tech_colors = dict(
+        zip(unspecified_columns, cividis(len(unspecified_columns)))
+    )
     colors = []
     for tech in stacked_cols:
         if tech in tech_colors:
@@ -408,8 +416,9 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
-#        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
+        plot_width=800,
+        plot_height=500,
+        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         sizing_mode='stretch_width',
     )
@@ -428,16 +437,13 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
 
     # Add load line chart to plot
     load_renderer = plot.line(
-        x=df[x_col],
-        y=df[line_cols[0]],
-        line_color="black",
-        line_width=2,
-        name="Load"
+        x=df[x_col], y=df[line_cols[0]], line_color="black", line_width=2, name="Load"
     )
 
     # Keep track of legend items and load renderers
-    legend_items = [(x, [area_renderers[i]]) for i, x in enumerate(stacked_cols)
-                    if df[x].mean() > 0] + [("Load", [load_renderer])]
+    legend_items = [
+        (x, [area_renderers[i]]) for i, x in enumerate(stacked_cols) if df[x].mean() > 0
+    ] + [("Load", [load_renderer])]
     load_renderers = [load_renderer]
 
     # Add 'Load + ...' lines
@@ -458,7 +464,7 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
             line_color="black",
             line_width=2,
             line_dash="dashed",
-            name=label
+            name=label,
         )
         legend_items.append((label, [exports_renderer]))
         load_renderers.append(exports_renderer)
@@ -472,16 +478,16 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
             line_color="black",
             line_width=2,
             line_dash="dotted",
-            name=label
+            name=label,
         )
         legend_items.append((label, [stor_renderer]))
         load_renderers.append(stor_renderer)
 
     # Add Legend
     legend = Legend(items=legend_items)
-    plot.add_layout(legend, 'right')
+    plot.add_layout(legend, "right")
     plot.legend[0].items.reverse()  # Reverse legend to match stacked order
-    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
+    plot.legend.click_policy = "hide"  # Add interactivity to the legend
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
@@ -500,10 +506,11 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
             tooltips=[
                 ("Hour Ending", "@x"),
                 ("Source", power_source),
-                ("Dispatch", "@%s{0,0} %s" % (power_source, power_unit))
+                ("Dispatch", "@%s{0,0} %s" % (power_source, power_unit)),
             ],
             renderers=[r],
-            toggleable=False)
+            toggleable=False,
+        )
         plot.add_tools(hover)
 
     # Add HoverTools for load lines
@@ -515,7 +522,8 @@ def create_plot(df, title, power_unit, tech_colors={}, tech_plotting_order={},
                 (load_type, "@y{0,0} %s" % power_unit),
             ],
             renderers=[r],
-            toggleable=False)
+            toggleable=False,
+        )
         plot.add_tools(hover)
 
     return plot
@@ -538,7 +546,7 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="dispatch_plot"
+        script="dispatch_plot",
     )
 
     tech_colors = get_tech_colors(c)
@@ -546,13 +554,18 @@ def main(args=None):
     power_unit = get_unit(c, "power")
 
     plot_title = "{}Dispatch Plot - {} - Stage {} - Timepoints {}-{}".format(
-        "{} - ".format(scenario)
-        if parsed_args.scenario_name_in_title else "",
-        parsed_args.load_zone, parsed_args.stage, parsed_args.starting_tmp,
-        parsed_args.ending_tmp)
+        "{} - ".format(scenario) if parsed_args.scenario_name_in_title else "",
+        parsed_args.load_zone,
+        parsed_args.stage,
+        parsed_args.starting_tmp,
+        parsed_args.ending_tmp,
+    )
     plot_name = "dispatchPlot-{}-{}-{}-{}".format(
-        parsed_args.load_zone, parsed_args.stage, parsed_args.starting_tmp,
-        parsed_args.ending_tmp)
+        parsed_args.load_zone,
+        parsed_args.stage,
+        parsed_args.starting_tmp,
+        parsed_args.ending_tmp,
+    )
 
     df = get_plotting_data(
         conn=conn,
@@ -560,7 +573,7 @@ def main(args=None):
         load_zone=parsed_args.load_zone,
         starting_tmp=parsed_args.starting_tmp,
         ending_tmp=parsed_args.ending_tmp,
-        stage=parsed_args.stage
+        stage=parsed_args.stage,
     )
 
     plot = create_plot(
@@ -574,10 +587,12 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory,
-                  scenario=scenario)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+            scenario=scenario,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

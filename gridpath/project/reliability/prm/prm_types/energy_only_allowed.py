@@ -24,30 +24,40 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Expression, value
+from pyomo.environ import (
+    Var,
+    Set,
+    Param,
+    Constraint,
+    NonNegativeReals,
+    Expression,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
-    prm_cost_group_prm_type
+from gridpath.auxiliary.dynamic_components import (
+    prm_cost_group_sets,
+    prm_cost_group_prm_type,
+)
 
 
 # TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
 
+
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
     EOA: Energy-Only Allowed
-    :param m: 
-    :param d: 
-    :return: 
+    :param m:
+    :param d:
+    :return:
     """
 
     m.EOA_PRM_PROJECTS = Set(
         within=m.PRM_PROJECTS,
-        initialize=lambda mod:
-        [p for p in mod.PRM_PROJECTS if mod.prm_type[p] == 
-         "energy_only_allowed"]
+        initialize=lambda mod: [
+            p for p in mod.PRM_PROJECTS if mod.prm_type[p] == "energy_only_allowed"
+        ],
     )
 
     m.EOA_PRM_PRJ_OPR_PRDS = Set(
@@ -57,34 +67,30 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             (project, period)
             for (project, period) in mod.PRM_PRJ_OPR_PRDS
             if project in mod.EOA_PRM_PROJECTS
-        ]
+        ],
     )
 
     # We can allow the 'fully-deliverable' capacity to be different from the
     # total capacity since in some cases full deliverability may require
     # additional costs to be incurred (e.g. for transmission, etc.)
-    m.Deliverable_Capacity_MW = Var(
-        m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals
-    )
-    m.Energy_Only_Capacity_MW = Var(
-        m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals
-    )
+    m.Deliverable_Capacity_MW = Var(m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals)
+    m.Energy_Only_Capacity_MW = Var(m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals)
 
     def max_deliverable_capacity_constraint(mod, g, p):
         """
         The fully deliverable capacity can't exceed the total project capacity
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
-        return mod.Deliverable_Capacity_MW[g, p] + \
-            mod.Energy_Only_Capacity_MW[g, p] \
+        return (
+            mod.Deliverable_Capacity_MW[g, p] + mod.Energy_Only_Capacity_MW[g, p]
             == mod.Capacity_MW[g, p]
+        )
 
     m.Max_Deliverable_Capacity_Constraint = Constraint(
-        m.EOA_PRM_PRJ_OPR_PRDS,
-        rule=max_deliverable_capacity_constraint
+        m.EOA_PRM_PRJ_OPR_PRDS, rule=max_deliverable_capacity_constraint
     )
 
     # Costs for having fully deliverable capacity by project group
@@ -92,9 +98,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # projects, not by individual project
     m.DELIVERABILITY_GROUPS = Set()
     # Add to list of sets we'll join to get the final PRM_COST_GROUPS set
-    getattr(d, prm_cost_group_sets).append("DELIVERABILITY_GROUPS",)
-    getattr(d, prm_cost_group_prm_type)["DELIVERABILITY_GROUPS"] = \
-        "energy_only_allowed"
+    getattr(d, prm_cost_group_sets).append(
+        "DELIVERABILITY_GROUPS",
+    )
+    getattr(d, prm_cost_group_prm_type)["DELIVERABILITY_GROUPS"] = "energy_only_allowed"
 
     # This is the number of MW in the group that can be built without
     # incurring an additional cost for full deliverability
@@ -102,8 +109,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.DELIVERABILITY_GROUPS, within=NonNegativeReals
     )
     m.deliverability_group_deliverability_cost_per_mw = Param(
-        m.DELIVERABILITY_GROUPS, within=NonNegativeReals,
-        default=0
+        m.DELIVERABILITY_GROUPS, within=NonNegativeReals, default=0
     )
 
     # We'll also constrain how much energy-only capacity can be built
@@ -116,192 +122,208 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Limit this to EOA_PRM_PROJECTS; if another project is
     # included, we need to throw an error
     m.DELIVERABILITY_GROUP_PROJECTS = Set(
-        dimen=2,
-        within=m.DELIVERABILITY_GROUPS * m.EOA_PRM_PROJECTS
+        dimen=2, within=m.DELIVERABILITY_GROUPS * m.EOA_PRM_PROJECTS
     )
 
     m.PROJECTS_BY_DELIVERABILITY_GROUP = Set(
         m.DELIVERABILITY_GROUPS,
         within=m.EOA_PRM_PROJECTS,
-        initialize=
-        lambda mod, g: [p for (group, p) in
-                        mod.DELIVERABILITY_GROUP_PROJECTS
-                        if group == g]
+        initialize=lambda mod, g: [
+            p for (group, p) in mod.DELIVERABILITY_GROUP_PROJECTS if group == g
+        ],
     )
 
     def total_capacity_of_deliverability_group_rule(mod, g, p):
         """
         Total capacity of projects in each threshold group
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
-        return sum(mod.Capacity_MW[prj, p]
-                   for prj
-                   in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-                   )
+        return sum(
+            mod.Capacity_MW[prj, p]
+            for prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
+        )
 
     m.Deliverability_Group_Total_Capacity_MW = Expression(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        rule=total_capacity_of_deliverability_group_rule
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        rule=total_capacity_of_deliverability_group_rule,
     )
 
     def deliverable_capacity_of_deliverability_group_rule(mod, g, p):
         """
         ELCC-eligible capacity of projects in each threshold group
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
-        return sum(mod.Deliverable_Capacity_MW[prj, p]
-                   for prj
-                   in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-                   )
+        return sum(
+            mod.Deliverable_Capacity_MW[prj, p]
+            for prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            if (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
+        )
 
     m.Deliverability_Group_Deliverable_Capacity_MW = Expression(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        rule=deliverable_capacity_of_deliverability_group_rule
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        rule=deliverable_capacity_of_deliverability_group_rule,
     )
 
     def energy_only_capacity_of_deliverability_group_rule(mod, g, p):
         """
         Energy-only capacity of projects in each threshold group
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
-        return sum(mod.Energy_Only_Capacity_MW[prj, p]
-                   for prj
-                   in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-                   if (prj, p) in mod.PRJ_OPR_PRDS
-                   )
+        return sum(
+            mod.Energy_Only_Capacity_MW[prj, p]
+            for prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            if (prj, p) in mod.PRJ_OPR_PRDS
+        )
 
     m.Deliverability_Group_Energy_Only_Capacity_MW = Expression(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        rule=energy_only_capacity_of_deliverability_group_rule
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        rule=energy_only_capacity_of_deliverability_group_rule,
     )
 
     # Calculate costs for ELCC-eligibility
     m.Deliverability_Group_Deliverable_Capacity_Cost = Var(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        within=NonNegativeReals
+        m.DELIVERABILITY_GROUPS, m.PERIODS, within=NonNegativeReals
     )
 
     def deliverable_capacity_cost_constraint_rule(mod, g, p):
         """
-        Costs incurred if total capacity built in threshold group is 
-        higher than the threshold; otherwise, the cost can be set to 0 (and 
-        in fact has to be set to 0 since Capacity_Threshold_Cost must be 
+        Costs incurred if total capacity built in threshold group is
+        higher than the threshold; otherwise, the cost can be set to 0 (and
+        in fact has to be set to 0 since Capacity_Threshold_Cost must be
         non-negative)
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
         if mod.deliverability_group_deliverability_cost_per_mw[g] == 0:
             return Constraint.Skip
         else:
-            return mod.Deliverability_Group_Deliverable_Capacity_Cost[g, p] \
-                >= \
-                (mod.Deliverability_Group_Deliverable_Capacity_MW[g, p]
-                 - mod.deliverability_group_no_cost_deliverable_capacity_mw[g]
-                 ) \
+            return (
+                mod.Deliverability_Group_Deliverable_Capacity_Cost[g, p]
+                >= (
+                    mod.Deliverability_Group_Deliverable_Capacity_MW[g, p]
+                    - mod.deliverability_group_no_cost_deliverable_capacity_mw[g]
+                )
                 * mod.deliverability_group_deliverability_cost_per_mw[g]
+            )
 
     m.Deliverability_Group_Deliverable_Capacity_Cost_Constraint = Constraint(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        rule=deliverable_capacity_cost_constraint_rule
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        rule=deliverable_capacity_cost_constraint_rule,
     )
 
     def energy_only_limit_rule(mod, g, p):
         """
         Maximum energy-only capacity that can be built
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        :param mod:
+        :param g:
+        :param p:
+        :return:
         """
-        return mod.Deliverability_Group_Energy_Only_Capacity_MW[g, p] \
+        return (
+            mod.Deliverability_Group_Energy_Only_Capacity_MW[g, p]
             <= mod.deliverability_group_energy_only_capacity_limit_mw[g]
+        )
+
     m.Deliverability_Group_Energy_Only_Capacity_Limit_Constraint = Constraint(
-        m.DELIVERABILITY_GROUPS, m.PERIODS,
-        rule=energy_only_limit_rule
+        m.DELIVERABILITY_GROUPS, m.PERIODS, rule=energy_only_limit_rule
     )
 
 
 def elcc_eligible_capacity_rule(mod, proj, period):
     """
-    
-    :param mod: 
+
+    :param mod:
     :param proj:
     :param period:
-    :return: 
+    :return:
     """
     return mod.Deliverable_Capacity_MW[proj, period]
 
 
 def group_cost_rule(mod, group, period):
     """
-    
-    :param mod: 
-    :param group: 
+
+    :param mod:
+    :param group:
     :param period:
-    :return: 
+    :return:
     """
     return mod.Deliverability_Group_Deliverable_Capacity_Cost[group, period]
 
 
-def load_model_data(
-        m, d, data_portal, scenario_directory, subproblem, stage
-):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
-    Optionally load data for costs incurred only when a capacity threshold 
-    is reached; if file is not found, sets in this modules will be empty and 
+    Optionally load data for costs incurred only when a capacity threshold
+    is reached; if file is not found, sets in this modules will be empty and
     params will have default values of 0
-    :param m: 
-    :param d: 
-    :param data_portal: 
-    :param scenario_directory: 
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
     :param subproblem:
-    :param stage: 
-    :return: 
+    :param stage:
+    :return:
     """
 
     group_threshold_costs_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "deliverability_group_params.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "deliverability_group_params.tab",
     )
     if os.path.exists(group_threshold_costs_file):
         data_portal.load(
             filename=group_threshold_costs_file,
             index=m.DELIVERABILITY_GROUPS,
-            param=(m.deliverability_group_no_cost_deliverable_capacity_mw,
-                   m.deliverability_group_deliverability_cost_per_mw,
-                   m.deliverability_group_energy_only_capacity_limit_mw)
+            param=(
+                m.deliverability_group_no_cost_deliverable_capacity_mw,
+                m.deliverability_group_deliverability_cost_per_mw,
+                m.deliverability_group_energy_only_capacity_limit_mw,
+            ),
         )
     else:
         pass
 
     group_projects_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "deliverability_group_projects.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "deliverability_group_projects.tab",
     )
 
     if os.path.exists(group_projects_file):
         data_portal.load(
-            filename=group_projects_file,
-            set=m.DELIVERABILITY_GROUP_PROJECTS
+            filename=group_projects_file, set=m.DELIVERABILITY_GROUP_PROJECTS
         )
     else:
         pass
 
 
-def export_results(m, d, scenario_directory, subproblem, stage,):
+def export_results(
+    m,
+    d,
+    scenario_directory,
+    subproblem,
+    stage,
+):
     """
 
     :param m:
@@ -313,61 +335,82 @@ def export_results(m, d, scenario_directory, subproblem, stage,):
     """
 
     # Energy-only vs deliverable capacity by project
-    with open(os.path.join(
-            scenario_directory, subproblem, stage, "results",
-            "project_prm_energy_only_and_deliverable_capacity.csv"
-    ), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "results",
+            "project_prm_energy_only_and_deliverable_capacity.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "project", "period", "prm_zone",
-            "total_capacity_mw",
-            "deliverable_capacity_mw",
-            "energy_only_capacity"])
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "prm_zone",
+                "total_capacity_mw",
+                "deliverable_capacity_mw",
+                "energy_only_capacity",
+            ]
+        )
         for (prj, p) in m.EOA_PRM_PRJ_OPR_PRDS:
-            writer.writerow([
-                prj,
-                p,
-                m.prm_zone[prj],
-                value(m.Capacity_MW[prj, p]),
-                value(m.Deliverable_Capacity_MW[prj, p]),
-                value(m.Energy_Only_Capacity_MW[prj, p])
-            ])
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.prm_zone[prj],
+                    value(m.Capacity_MW[prj, p]),
+                    value(m.Deliverable_Capacity_MW[prj, p]),
+                    value(m.Energy_Only_Capacity_MW[prj, p]),
+                ]
+            )
 
     # Total capacity for all projects in group
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "deliverability_group_capacity_and_costs.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "deliverability_group_capacity_and_costs.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "deliverability_group", "period",
-            "deliverability_group_no_cost_deliverable_capacity_mw",
-            "deliverability_group_deliverability_cost_per_mw",
-            "total_capacity_built_mw",
-            "elcc_eligible_capacity_built_mw",
-            "energy_only_capacity_built_mw",
-            "deliverability_cost"])
+        writer.writerow(
+            [
+                "deliverability_group",
+                "period",
+                "deliverability_group_no_cost_deliverable_capacity_mw",
+                "deliverability_group_deliverability_cost_per_mw",
+                "total_capacity_built_mw",
+                "elcc_eligible_capacity_built_mw",
+                "energy_only_capacity_built_mw",
+                "deliverability_cost",
+            ]
+        )
         for g in m.DELIVERABILITY_GROUPS:
             for p in m.PERIODS:
-                writer.writerow([
-                    g,
-                    p,
-                    m.deliverability_group_no_cost_deliverable_capacity_mw[g],
-                    m.deliverability_group_deliverability_cost_per_mw[g],
-                    value(m.Deliverability_Group_Total_Capacity_MW[g, p]),
-                    value(
-                        m.Deliverability_Group_Deliverable_Capacity_MW[g, p]
-                    ),
-                    value(
-                        m.Deliverability_Group_Energy_Only_Capacity_MW[g, p]
-                    ),
-                    value(
-                        m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]
-                    )
-                ])
+                writer.writerow(
+                    [
+                        g,
+                        p,
+                        m.deliverability_group_no_cost_deliverable_capacity_mw[g],
+                        m.deliverability_group_deliverability_cost_per_mw[g],
+                        value(m.Deliverability_Group_Total_Capacity_MW[g, p]),
+                        value(m.Deliverability_Group_Deliverable_Capacity_MW[g, p]),
+                        value(m.Deliverability_Group_Energy_Only_Capacity_MW[g, p]),
+                        value(m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]),
+                    ]
+                )
 
 
-def get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-):
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -411,7 +454,7 @@ def get_model_inputs_from_database(
             USING (project)
             WHERE deliverability_group IS NOT NULL;""".format(
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
             )
         )
 
@@ -435,7 +478,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -449,35 +492,56 @@ def write_model_inputs(
     :return:
     """
 
-    group_threshold_costs, project_deliverability_groups = \
-        get_model_inputs_from_database(
-            scenario_id, subscenarios, subproblem, stage, conn)
+    (
+        group_threshold_costs,
+        project_deliverability_groups,
+    ) = get_model_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     if group_threshold_costs:
-        with open(os.path.join(
-                scenario_directory, subproblem, stage, "inputs",
-                "deliverability_group_params.tab"), "w", newline="") as \
-                elcc_eligibility_thresholds_file:
-            writer = csv.writer(elcc_eligibility_thresholds_file,
-                                delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                subproblem,
+                stage,
+                "inputs",
+                "deliverability_group_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as elcc_eligibility_thresholds_file:
+            writer = csv.writer(
+                elcc_eligibility_thresholds_file, delimiter="\t", lineterminator="\n"
+            )
 
             # Write header
-            writer.writerow([
-                "deliverability_group",
-                "deliverability_group_no_cost_deliverable_capacity_mw",
-                "deliverability_group_deliverability_cost_per_mw",
-                "deliverability_group_energy_only_capacity_limit_mw"
-            ])
+            writer.writerow(
+                [
+                    "deliverability_group",
+                    "deliverability_group_no_cost_deliverable_capacity_mw",
+                    "deliverability_group_deliverability_cost_per_mw",
+                    "deliverability_group_energy_only_capacity_limit_mw",
+                ]
+            )
 
             # Input data
             for row in group_threshold_costs:
                 writer.writerow(row)
 
-        with open(os.path.join(
-                scenario_directory, subproblem, stage, "inputs",
-                "deliverability_group_projects.tab"), "w"
+        with open(
+            os.path.join(
+                scenario_directory,
+                subproblem,
+                stage,
+                "inputs",
+                "deliverability_group_projects.tab",
+            ),
+            "w",
         ) as group_projects_file:
-            writer = csv.writer(group_projects_file, delimiter="\t", lineterminator="\n")
+            writer = csv.writer(
+                group_projects_file, delimiter="\t", lineterminator="\n"
+            )
 
             # Write header
             writer.writerow(["deliverability_group", "project"])
@@ -490,7 +554,7 @@ def write_model_inputs(
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -509,17 +573,22 @@ def import_results_into_database(
         print("project energy-only and deliverable capacities")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_prm_deliverability",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(
-            results_directory,
-            "project_prm_energy_only_and_deliverable_capacity.csv"),
-              "r") as deliv_file:
+    with open(
+        os.path.join(
+            results_directory, "project_prm_energy_only_and_deliverable_capacity.csv"
+        ),
+        "r",
+    ) as deliv_file:
         reader = csv.reader(deliv_file)
 
         next(reader)  # skip header
@@ -530,11 +599,19 @@ def import_results_into_database(
             total_capacity_mw = row[3]
             deliverable_capacity = row[4]
             energy_only_capacity = row[5]
-            
+
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 prm_zone, total_capacity_mw,
-                 deliverable_capacity, energy_only_capacity)
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    prm_zone,
+                    total_capacity_mw,
+                    deliverable_capacity,
+                    energy_only_capacity,
+                )
             )
 
     insert_temp_sql = """
@@ -544,7 +621,9 @@ def import_results_into_database(
         prm_zone, capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -559,9 +638,10 @@ def import_results_into_database(
         deliverable_capacity_mw, energy_only_capacity_mw
         FROM temp_results_project_prm_deliverability{}
          ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Group capacity cost results
     if not quiet:
@@ -569,16 +649,20 @@ def import_results_into_database(
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_prm_deliverability_group_capacity_and_costs",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(
-            results_directory, "deliverability_group_capacity_and_costs.csv"),
-              "r") as capacity_costs_file:
+    with open(
+        os.path.join(results_directory, "deliverability_group_capacity_and_costs.csv"),
+        "r",
+    ) as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
         next(reader)  # skip header
@@ -591,14 +675,21 @@ def import_results_into_database(
             deliverable_capacity = row[5]
             energy_only_capacity_mw = row[6]
             deliverable_capacity_cost = row[7]
-            
+
             results.append(
-                (scenario_id, group, period, subproblem, stage,
-                 deliverability_group_no_cost_deliverable_capacity_mw,
-                 deliverability_group_deliverability_cost_per_mw,
-                 total_capacity_mw,
-                 deliverable_capacity, energy_only_capacity_mw,
-                 deliverable_capacity_cost)
+                (
+                    scenario_id,
+                    group,
+                    period,
+                    subproblem,
+                    stage,
+                    deliverability_group_no_cost_deliverable_capacity_mw,
+                    deliverability_group_deliverability_cost_per_mw,
+                    total_capacity_mw,
+                    deliverable_capacity,
+                    energy_only_capacity_mw,
+                    deliverable_capacity_cost,
+                )
             )
 
     insert_temp_sql = """
@@ -613,7 +704,9 @@ def import_results_into_database(
         energy_only_capacity_mw,
         deliverable_capacity_cost)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -637,9 +730,10 @@ def import_results_into_database(
         temp_results_project_prm_deliverability_group_capacity_and_costs{}
         ORDER BY scenario_id, deliverability_group, period, subproblem_id, 
         stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_model_results(db, c, scenario_id, subscenarios, quiet):
@@ -663,16 +757,11 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         )
     ).fetchall()
 
-    tables_to_update = [
-        "results_project_elcc_simple",
-        "results_project_elcc_surface"
-    ]
+    tables_to_update = ["results_project_elcc_simple", "results_project_elcc_surface"]
 
     results = []
     for row in project_period_eocap:
-        results.append(
-            (row[2], scenario_id, row[0], row[1])
-        )
+        results.append((row[2], scenario_id, row[0], row[1]))
 
     for table in tables_to_update:
         sql = """
@@ -680,7 +769,9 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             SET energy_only_capacity_mw = ?
             WHERE scenario_id = ?
             AND project = ?
-            AND period = ?;""".format(table)
+            AND period = ?;""".format(
+            table
+        )
 
         spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
 
@@ -692,9 +783,9 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         results_project_prm_deliverability_group_capacity_and_costs_agg 
         WHERE scenario_id = ?
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=del_sql, data=(scenario_id,), many=False
+    )
 
     # Insert new results
     agg_sql = """
@@ -723,6 +814,6 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         USING (scenario_id, subproblem_id, stage_id, period)
         ;"""
 
-    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
-                          data=(scenario_id,),
-                          many=False)
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=agg_sql, data=(scenario_id,), many=False
+    )

@@ -27,10 +27,13 @@ Efficiency losses are not currently implemented.
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
-from gridpath.project.common_functions import \
-    check_if_first_timepoint, check_boundary_type
-from gridpath.project.operations.operational_types.common_functions import \
-    validate_opchars
+from gridpath.project.common_functions import (
+    check_if_first_timepoint,
+    check_boundary_type,
+)
+from gridpath.project.operations.operational_types.common_functions import (
+    validate_opchars,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -109,65 +112,50 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.PROJECTS,
         initialize=lambda mod: subset_init_by_param_value(
             mod, "PROJECTS", "operational_type", "dr"
-        )
+        ),
     )
 
     m.DR_OPR_TMPS = Set(
-        dimen=2, within=m.PRJ_OPR_TMPS,
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.DR)
-        )
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.DR)
+        ),
     )
 
     m.DR_OPR_HRZS = Set(
         dimen=2,
         initialize=lambda mod: list(
-            set((g, mod.horizon[tmp, mod.balancing_type_project[g]])
+            set(
+                (g, mod.horizon[tmp, mod.balancing_type_project[g]])
                 for (g, tmp) in mod.PRJ_OPR_TMPS
-                if g in mod.DR)
-        )
+                if g in mod.DR
+            )
+        ),
     )
 
     # Variables
     ###########################################################################
 
-    m.DR_Shift_Up_MW = Var(
-        m.DR_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.DR_Shift_Up_MW = Var(m.DR_OPR_TMPS, within=NonNegativeReals)
 
-    m.DR_Shift_Down_MW = Var(
-        m.DR_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.DR_Shift_Down_MW = Var(m.DR_OPR_TMPS, within=NonNegativeReals)
 
     # Constraints
     ###########################################################################
 
-    m.DR_Max_Shift_Up_Constraint = Constraint(
-        m.DR_OPR_TMPS,
-        rule=max_shift_up_rule
-    )
+    m.DR_Max_Shift_Up_Constraint = Constraint(m.DR_OPR_TMPS, rule=max_shift_up_rule)
 
-    m.DR_Max_Shift_Down_Constraint = Constraint(
-        m.DR_OPR_TMPS,
-        rule=max_shift_down_rule
-    )
+    m.DR_Max_Shift_Down_Constraint = Constraint(m.DR_OPR_TMPS, rule=max_shift_down_rule)
 
-    m.DR_Energy_Balance_Constraint = Constraint(
-        m.DR_OPR_HRZS,
-        rule=energy_balance_rule
-    )
+    m.DR_Energy_Balance_Constraint = Constraint(m.DR_OPR_HRZS, rule=energy_balance_rule)
 
-    m.DR_Energy_Budget_Constraint = Constraint(
-        m.DR_OPR_HRZS,
-        rule=energy_budget_rule
-    )
+    m.DR_Energy_Budget_Constraint = Constraint(m.DR_OPR_HRZS, rule=energy_budget_rule)
 
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 def max_shift_up_rule(mod, p, tmp):
     """
@@ -176,9 +164,10 @@ def max_shift_up_rule(mod, p, tmp):
 
     Limits the added load to the available power capacity.
     """
-    return mod.DR_Shift_Up_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]] \
-        * mod.Availability_Derate[p, tmp]
+    return (
+        mod.DR_Shift_Up_MW[p, tmp]
+        <= mod.Capacity_MW[p, mod.period[tmp]] * mod.Availability_Derate[p, tmp]
+    )
 
 
 def max_shift_down_rule(mod, p, tmp):
@@ -188,9 +177,10 @@ def max_shift_down_rule(mod, p, tmp):
 
     Limits the removed load to the available power capacity.
     """
-    return mod.DR_Shift_Down_MW[p, tmp] <= \
-        mod.Capacity_MW[p, mod.period[tmp]] \
-        * mod.Availability_Derate[p, tmp]
+    return (
+        mod.DR_Shift_Down_MW[p, tmp]
+        <= mod.Capacity_MW[p, mod.period[tmp]] * mod.Availability_Derate[p, tmp]
+    )
 
 
 def energy_balance_rule(mod, p, h):
@@ -201,12 +191,13 @@ def energy_balance_rule(mod, p, h):
     The sum of all shifted load up is equal to the sum of all shifted load
     down within an horizon, i.e. there are no energy losses or gains.
     """
-    return sum(mod.DR_Shift_Up_MW[p, tmp]
-               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
-                   mod.balancing_type_project[p], h]) \
-        == sum(mod.DR_Shift_Down_MW[p, tmp]
-               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
-                   mod.balancing_type_project[p], h])
+    return sum(
+        mod.DR_Shift_Up_MW[p, tmp]
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[p], h]
+    ) == sum(
+        mod.DR_Shift_Down_MW[p, tmp]
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[p], h]
+    )
 
 
 def energy_budget_rule(mod, p, h):
@@ -220,16 +211,20 @@ def energy_budget_rule(mod, p, h):
     Get the period for the total capacity from the first timepoint of the
     horizon.
     """
-    return sum(mod.DR_Shift_Up_MW[p, tmp]
-               * mod.hrs_in_tmp[tmp]
-               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
-                   mod.balancing_type_project[p], h]) \
-        <= mod.Energy_Capacity_MWh[p, mod.period[
-            mod.first_hrz_tmp[mod.balancing_type_project[p], h]]]
+    return (
+        sum(
+            mod.DR_Shift_Up_MW[p, tmp] * mod.hrs_in_tmp[tmp]
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[mod.balancing_type_project[p], h]
+        )
+        <= mod.Energy_Capacity_MWh[
+            p, mod.period[mod.first_hrz_tmp[mod.balancing_type_project[p], h]]
+        ]
+    )
 
 
 # Operational Type Methods
 ###############################################################################
+
 
 def power_provision_rule(mod, p, tmp):
     """
@@ -245,33 +240,32 @@ def power_delta_rule(mod, p, tmp):
     horizon's first timepoint.
     """
     if check_if_first_timepoint(
-            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[p]
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[p]
     ) and (
         check_boundary_type(
-            mod=mod, tmp=tmp,
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[p],
-            boundary_type="linear"
-        ) or
-        check_boundary_type(
-            mod=mod, tmp=tmp,
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
             balancing_type=mod.balancing_type_project[p],
-            boundary_type="linked"
+            boundary_type="linked",
         )
     ):
         pass
     else:
-        return (mod.DR_Shift_Up_MW[p, tmp]
-                - mod.DR_Shift_Down_MW[p, tmp]) - \
-            (mod.DR_Shift_Up_MW[
-                 p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
-             ]
-                - mod.DR_Shift_Down_MW[
-                 p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
-             ])
+        return (mod.DR_Shift_Up_MW[p, tmp] - mod.DR_Shift_Down_MW[p, tmp]) - (
+            mod.DR_Shift_Up_MW[p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]]
+            - mod.DR_Shift_Down_MW[p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]]
+        )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """

@@ -39,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_elcc_tuning_cost_rule(mod):
         """
-        Set dynamic elcc to max available by subtracting a small amount from 
+        Set dynamic elcc to max available by subtracting a small amount from
         the objective function when Dynamic_ELCC is higher
         :param mod:
         :return:
@@ -47,18 +47,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         if mod.dynamic_elcc_tuning_cost_per_mw == 0:
             return 0
         else:
-            return - sum(
+            return -sum(
                 mod.Dynamic_ELCC_MW[z, p]
                 * mod.dynamic_elcc_tuning_cost_per_mw
                 * mod.number_years_represented[p]
                 * mod.discount_factor[p]
-                for (z, p)
-                in mod.PRM_ZONE_PERIODS_WITH_REQUIREMENT
+                for (z, p) in mod.PRM_ZONE_PERIODS_WITH_REQUIREMENT
             )
 
-    m.Total_Dynamic_ELCC_Tuning_Cost = Expression(
-        rule=total_elcc_tuning_cost_rule
-    )
+    m.Total_Dynamic_ELCC_Tuning_Cost = Expression(rule=total_elcc_tuning_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -71,9 +68,10 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Dynamic_ELCC_Tuning_Cost")
+        "Total_Dynamic_ELCC_Tuning_Cost"
+    )
 
-    
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     Get tuning param value from file if file exists
@@ -90,10 +88,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     if os.path.exists(tuning_param_file):
-        data_portal.load(filename=tuning_param_file,
-                         select=("dynamic_elcc_tuning_cost_per_mw",),
-                         param=m.dynamic_elcc_tuning_cost_per_mw
-                         )
+        data_portal.load(
+            filename=tuning_param_file,
+            select=("dynamic_elcc_tuning_cost_per_mw",),
+            param=m.dynamic_elcc_tuning_cost_per_mw,
+        )
     else:
         pass
 
@@ -135,7 +134,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     tuning_params.tab file.
@@ -148,14 +149,33 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     dynamic_elcc_tuning_cost = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value
-    if os.path.isfile(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab")):
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"), "r"
-                  ) as tuning_params_file_in:
-            reader = csv.reader(tuning_params_file_in, delimiter="\t", lineterminator="\n")
+    if os.path.isfile(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "tuning_params.tab",
+        )
+    ):
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "r",
+        ) as tuning_params_file_in:
+            reader = csv.reader(
+                tuning_params_file_in, delimiter="\t", lineterminator="\n"
+            )
 
             new_rows = list()
 
@@ -169,16 +189,36 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
             param_value.append(dynamic_elcc_tuning_cost)
             new_rows.append(param_value)
 
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as \
-                tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerows(new_rows)
 
     else:
-        with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "tuning_params.tab"),
-                  "w", newline="") as \
-                tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "tuning_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as tuning_params_file_out:
+            writer = csv.writer(
+                tuning_params_file_out, delimiter="\t", lineterminator="\n"
+            )
             writer.writerows(["dynamic_elcc_tuning_cost_per_mw"])
             writer.writerows([dynamic_elcc_tuning_cost])
