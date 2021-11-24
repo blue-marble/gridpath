@@ -1,3 +1,9 @@
+[![Build Status](https://app.travis-ci.com/blue-marble/gridpath.svg?branch=main)](https://app.travis-ci.com/blue-marble/gridpath)
+[![Documentation Status](https://readthedocs.org/projects/gridpath/badge/?version=latest)](https://gridpath.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://coveralls.io/repos/github/blue-marble/gridpath/badge.svg?branch=main)](https://coveralls.io/github/blue-marble/gridpath?branch=main)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 # Welcome to GridPath
 
 GridPath is a versatile power-system planning platform capable of a range of
