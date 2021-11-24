@@ -16,8 +16,12 @@ extras_ui = [
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
 ]
 extras_black = ["black"]
-extras_all = extras_ui + extras_doc + extras_black
 
+extras_coverage = [
+    "coverage",  # test coverage
+    "coveralls",  # automated coverage results with Travis CI
+]
+extras_all = extras_ui + extras_doc + extras_black + extras_coverage
 
 setup(
     name="GridPath",
@@ -42,7 +46,12 @@ setup(
         "coverage",  # test coverage
         "coveralls",  # automated coverage results with Travis CI
     ],
-    extras_require={"doc": extras_doc, "ui": extras_ui, "all": extras_all},
+    extras_require={
+        "doc": extras_doc,
+        "ui": extras_ui,
+        "all": extras_all,
+        "travis": extras_coverage
+    },
     include_package_data=True,
     entry_points={
         "console_scripts": [
