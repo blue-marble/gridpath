@@ -420,7 +420,8 @@ def create_plot(
         plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
-        sizing_mode='stretch_width',
+        # this sizing parameter was suggested in issue #822 but not agreed upon
+        # sizing_mode='stretch_width',
     )
 
     # Add stacked area chart to plot
