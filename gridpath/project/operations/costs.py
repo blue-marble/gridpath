@@ -345,7 +345,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
-        **Defined Over**: FUEL_PRJ_OPR_TMPS
+        **Defined Over**: FUEL_PRJS_OPR_TMPS
         """
         return (
             mod.Total_Fuel_Burn_MMBtu[prj, tmp]
