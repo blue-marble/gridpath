@@ -278,13 +278,22 @@ def run_optimization_for_subproblem_pool(pool_datum):
     [scenario_directory, subproblem_structure, subproblem, parsed_arguments,
      objective_values] = pool_datum
 
-    run_optimization_for_subproblem(
-        scenario_directory=scenario_directory,
-        subproblem_structure=subproblem_structure,
-        subproblem=subproblem,
-        parsed_arguments=parsed_arguments,
-        objective_values=objective_values
+    # TODO: how best to handle non-empty results directories?
+    objective_value_file = os.path.join(
+        scenario_directory, str(subproblem), "", "results",
+        "objective_function_value.txt"
     )
+    if not os.path.exists(objective_value_file):
+        run_optimization_for_subproblem(
+            scenario_directory=scenario_directory,
+            subproblem_structure=subproblem_structure,
+            subproblem=subproblem,
+            parsed_arguments=parsed_arguments,
+            objective_values=objective_values
+        )
+    else:
+        print("Subproblem {} results exist.".format(str(subproblem)))
+        pass
 
 
 def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
