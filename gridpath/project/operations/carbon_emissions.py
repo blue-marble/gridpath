@@ -48,6 +48,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
+    # Same as fuel cost
+    # Sum across fuels to get total project carbon emissions
     def carbon_emissions_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type

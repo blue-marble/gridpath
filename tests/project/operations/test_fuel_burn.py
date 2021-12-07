@@ -103,6 +103,11 @@ class TestFuelBurn(unittest.TestCase):
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"), sep="\t"
         )
 
+        prj_fuels_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "project_fuels.tab"),
+            sep="\t",
+        )
+
         hr_curve_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "heat_rate_curves.tab"),
             sep="\t",
@@ -115,9 +120,7 @@ class TestFuelBurn(unittest.TestCase):
         )
 
         # Set: FUEL_PRJ_OPR_TMPS
-        expected_fuel_projects = sorted(
-            projects_df[projects_df["fuel"] != "."]["project"].tolist()
-        )
+        expected_fuel_projects = sorted(prj_fuels_df["project"].unique().tolist())
         expected_fuel_prj_tmps = get_project_operational_timepoints(
             expected_fuel_projects
         )

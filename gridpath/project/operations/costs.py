@@ -342,6 +342,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.VAR_OM_COST_ALL_PRJS_OPR_TMPS, rule=variable_om_cost_rule
     )
 
+    # Constrain sum of all fuels burned to be total fuel burn
+    # Expression below should sum across fuels
+    # Fuel column be removed from projects.tab
+    # Instead, we should have a separate file with fuels for each project
+    # (Alternatively, we could keep fuel column in projects.tab and add some
+    # kind of flag that more fuels are allowed, but that seems overly
+    # complicated)
     def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost

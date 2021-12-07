@@ -470,7 +470,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         select=(
             "project",
             "variable_om_cost_per_mwh",
-            "fuel",
             "startup_fuel_mmbtu_per_mw",
             "startup_cost_per_mw",
             "shutdown_cost_per_mw",
@@ -482,7 +481,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         param=(
             m.variable_om_cost_per_mwh,
-            m.fuel,
             m.startup_fuel_mmbtu_per_mw,
             m.startup_cost_per_mw,
             m.shutdown_cost_per_mw,
@@ -494,11 +492,22 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
     )
 
+    project_fuels_file = os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "project_fuels.tab"
+        )
+    if os.path.exists(project_fuels_file):
+        data_portal.load(
+            filename=project_fuels_file,
+            index=m.FUEL_PRJS,
+            param=m.fuel
+        )
+
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
         None: list(data_portal.data()["variable_om_cost_per_mwh"].keys())
     }
 
-    data_portal.data()["FUEL_PRJS"] = {None: list(data_portal.data()["fuel"].keys())}
+    # data_portal.data()["FUEL_PRJS"] = {None: list(data_portal.data()["fuel"].keys())}
 
     data_portal.data()["STARTUP_FUEL_PRJS"] = {
         None: list(data_portal.data()["startup_fuel_mmbtu_per_mw"].keys())
@@ -603,20 +612,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     periods_file = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
     )
-    projects_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+    project_fuels_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
     )
 
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
-    headers = pd.read_csv(projects_file, nrows=0, sep="\t").columns
-    if os.path.exists(hr_curves_file) and "fuel" in headers:
+    if os.path.exists(hr_curves_file) and os.path.exists(project_fuels_file):
 
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
         periods_df = pd.read_csv(periods_file, sep="\t")
-        pr_df = pd.read_csv(projects_file, sep="\t", usecols=["project", "fuel"])
+        pr_df = pd.read_csv(project_fuels_file, sep="\t", usecols=["project", "fuel"])
         pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
 
         periods = set(periods_df["period"])
@@ -650,7 +658,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     proj_opchar = c.execute(
         """
-        SELECT project, fuel, variable_om_cost_per_mwh,
+        SELECT project, variable_om_cost_per_mwh,
         min_stable_level_fraction, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
@@ -683,6 +691,31 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+        )
+    )
+
+    c5 = conn.cursor()
+    fuels = c5.execute(
+        """
+        SELECT project, fuel
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, project_fuel_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_fuels
+        USING(project, project_fuel_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {}
+        """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
@@ -762,7 +795,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return proj_opchar, heat_rates, vom_curves, startup_chars
+    return proj_opchar, fuels, heat_rates, vom_curves, startup_chars
 
 
 def write_model_inputs(
@@ -777,13 +810,13 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    proj_opchar, heat_rate_curves, vom_curves, startup_chars = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-    )
+    proj_opchar, fuels, heat_rate_curves, vom_curves, startup_chars = \
+        get_inputs_from_database(
+            scenario_id, subscenarios, subproblem, stage, conn
+        )
 
     # Update the projects.tab file
     new_columns = [
-        "fuel",
         "variable_om_cost_per_mwh",
         "min_stable_level_fraction",
         "unit_size_mw",
@@ -820,6 +853,21 @@ def write_model_inputs(
         index_n_columns=1,
         new_column_names=new_columns,
     )
+
+    # TODO: refactor these inputs, we're doing the same thing
+    # Write fuels file
+    fuels_df = cursor_to_df(fuels)
+    if not fuels_df.empty:
+        fuels_df = fuels_df.fillna(".")
+        fpath = os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_fuels.tab",
+        )
+
+        fuels_df.to_csv(fpath, index=False, sep="\t")
 
     # Write heat rates file
     hr_df = cursor_to_df(heat_rate_curves)
@@ -877,9 +925,10 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Get the project input data
-    proj_opchar, heat_rates, vom_curves, startup_chars = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-    )
+    proj_opchar, fuels, heat_rates, vom_curves, startup_chars = \
+        get_inputs_from_database(
+            scenario_id, subscenarios, subproblem, stage, conn
+        )
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
@@ -1072,7 +1121,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # TODO: figure out why we need the df in the validation and refactor this
     cols = [
         "project",
-        "fuel",
         "variable_om_cost_per_mwh",
         "operational_type",
         "min_stable_level_fraction",

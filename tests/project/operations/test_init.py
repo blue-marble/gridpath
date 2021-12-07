@@ -104,6 +104,11 @@ class TestOperationsInit(unittest.TestCase):
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"), sep="\t"
         )
 
+        prj_fuels_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "project_fuels.tab"),
+            sep="\t",
+        )
+
         var_om_curve_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "variable_om_curves.tab"),
             sep="\t",
@@ -251,9 +256,7 @@ class TestOperationsInit(unittest.TestCase):
         )
 
         # Set: FUEL_PRJS
-        expected_fuel_projects = sorted(
-            projects_df[projects_df["fuel"] != "."]["project"].tolist()
-        )
+        expected_fuel_projects = sorted(prj_fuels_df["project"].unique().tolist())
 
         actual_fuel_projects = sorted([p for p in instance.FUEL_PRJS])
 
@@ -559,9 +562,8 @@ class TestOperationsInit(unittest.TestCase):
         self.assertDictEqual(expected_shutdown_cost_by_prj, actual_shutdown_cost_by_prj)
 
         # Param: fuel
-        fuel_df = projects_df[projects_df["fuel"] != "."]
         expected_fuel_by_prj = OrderedDict(
-            sorted(dict(zip(fuel_df["project"], fuel_df["fuel"])).items())
+            sorted(dict(zip(prj_fuels_df["project"], prj_fuels_df["fuel"])).items())
         )
         actual_fuel_by_prj = OrderedDict(
             sorted({p: instance.fuel[p] for p in instance.FUEL_PRJS}.items())
