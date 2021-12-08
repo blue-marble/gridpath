@@ -349,14 +349,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # (Alternatively, we could keep fuel column in projects.tab and add some
     # kind of flag that more fuels are allowed, but that seems overly
     # complicated)
+
     def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
         **Defined Over**: FUEL_PRJS_OPR_TMPS
         """
-        return (
-            mod.Total_Fuel_Burn_MMBtu[prj, tmp]
-            * mod.fuel_price_per_mmbtu[mod.fuel[prj], mod.period[tmp], mod.month[tmp]]
+        return sum(
+            mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+            * mod.fuel_price_per_mmbtu[f, mod.period[tmp], mod.month[tmp]]
+            for f in mod.FUELS_BY_PRJ[prj]
         )
 
     m.Fuel_Cost = Expression(m.FUEL_PRJ_OPR_TMPS, rule=fuel_cost_rule)

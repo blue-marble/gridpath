@@ -321,7 +321,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.SHUTDOWN_COST_PRJS = Set(within=m.PROJECTS)
 
     # Projects that burn fuel
-    m.FUEL_PRJS = Set(within=m.PROJECTS)
+    m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS*m.FUELS)
+    m.FUEL_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: list(
+            set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])
+        )
+    )
+    m.FUELS_BY_PRJ = Set(
+        m.FUEL_PRJS,
+        within=m.FUELS,
+        initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj]
+    )
 
     # Projects with heat rate curves (must be within FUEL_PRJS)
     m.HR_CURVE_PRJS_PRDS_SGMS = Set(dimen=3)
@@ -357,6 +368,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Projects with cost of curtailment
     m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
 
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -379,7 +391,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PRJS, within=NonNegativeReals)
 
-    m.fuel = Param(m.FUEL_PRJS, within=Any)
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
         m.HR_CURVE_PRJS_PRDS_SGMS, within=PositiveReals
@@ -499,8 +510,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     if os.path.exists(project_fuels_file):
         data_portal.load(
             filename=project_fuels_file,
-            index=m.FUEL_PRJS,
-            param=m.fuel
+            set=m.FUEL_PRJ_FUELS
         )
 
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
