@@ -321,17 +321,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.SHUTDOWN_COST_PRJS = Set(within=m.PROJECTS)
 
     # Projects that burn fuel
-    m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS*m.FUELS)
+    m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS * m.FUELS)
     m.FUEL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(
-            set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])
-        )
+        initialize=lambda mod: list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
     )
     m.FUELS_BY_PRJ = Set(
         m.FUEL_PRJS,
         within=m.FUELS,
-        initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj]
+        initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj],
     )
 
     # Projects with heat rate curves (must be within FUEL_PRJS)
@@ -368,7 +366,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Projects with cost of curtailment
     m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
 
-
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -390,7 +387,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PRJS, within=NonNegativeReals)
-
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
         m.HR_CURVE_PRJS_PRDS_SGMS, within=PositiveReals
@@ -504,14 +500,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     project_fuels_file = os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs",
-            "project_fuels.tab"
-        )
+        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+    )
     if os.path.exists(project_fuels_file):
-        data_portal.load(
-            filename=project_fuels_file,
-            set=m.FUEL_PRJ_FUELS
-        )
+        data_portal.load(filename=project_fuels_file, set=m.FUEL_PRJ_FUELS)
 
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
         None: list(data_portal.data()["variable_om_cost_per_mwh"].keys())
@@ -820,10 +812,13 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-    proj_opchar, fuels, heat_rate_curves, vom_curves, startup_chars = \
-        get_inputs_from_database(
-            scenario_id, subscenarios, subproblem, stage, conn
-        )
+    (
+        proj_opchar,
+        fuels,
+        heat_rate_curves,
+        vom_curves,
+        startup_chars,
+    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Update the projects.tab file
     new_columns = [
@@ -935,10 +930,13 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     # Get the project input data
-    proj_opchar, fuels, heat_rates, vom_curves, startup_chars = \
-        get_inputs_from_database(
-            scenario_id, subscenarios, subproblem, stage, conn
-        )
+    (
+        proj_opchar,
+        fuels,
+        heat_rates,
+        vom_curves,
+        startup_chars,
+    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)

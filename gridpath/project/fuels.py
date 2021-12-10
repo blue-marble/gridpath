@@ -19,7 +19,7 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals
+from pyomo.environ import Param, Set, NonNegativeReals, Reals
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -38,7 +38,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     m.FUELS = Set()
-    m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=NonNegativeReals)
+    # Allow negative emissions
+    m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=Reals)
 
     m.fuel_price_per_mmbtu = Param(
         m.FUELS, m.PERIODS, m.MONTHS, within=NonNegativeReals
@@ -246,9 +247,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months for f in fuels]
 
     # Check data types
-    expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_fuels", "inputs_fuel_prices"]
-    )
+    expected_dtypes = get_expected_dtypes(conn, ["inputs_fuels", "inputs_fuel_prices"])
 
     dtype_errors, error_columns = validate_dtypes(fuels_df, expected_dtypes)
     write_validation_to_database(

@@ -57,11 +57,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         and timepoint weight to get the total emissions amount.
         """
 
-        return (
-            sum(mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
-                * mod.co2_intensity_tons_per_mmbtu[f]
-                for f in mod.FUELS_BY_PRJ[prj])
-
+        return sum(
+            mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+            * mod.co2_intensity_tons_per_mmbtu[f]
+            for f in mod.FUELS_BY_PRJ[prj]
         )
 
     m.Project_Carbon_Emissions = Expression(
