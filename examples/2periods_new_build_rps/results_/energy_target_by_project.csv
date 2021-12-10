@@ -1,0 +1,9 @@
+project,load_zone,energy_target_zone,timepoint,period,horizon,timepoint_weight,number_of_hours_in_timepoint,technology,scheduled_energy_target_energy_mw,scheduled_curtailment_mw,subhourly_energy_target_energy_delivered_mw,subhourly_curtailment_mw
+Wind,Zone1,RPSZone1,20200101,2020,202001,4380.0,1,Wind,1.8,0.0,0.0,0.0
+Wind,Zone1,RPSZone1,20200102,2020,202001,4380.0,1,Wind,1.0,0.0,0.0,0.0
+Wind,Zone1,RPSZone1,20300101,2030,203001,4380.0,1,Wind,1.8,0.0,0.0,0.0
+Wind,Zone1,RPSZone1,20300102,2030,203001,4380.0,1,Wind,1.0,0.0,0.0,0.0
+Wind_new,Zone1,RPSZone1,20200101,2020,202001,4380.0,1,Wind,37.533333,6.000000070116585e-07,0.0,0.0
+Wind_new,Zone1,RPSZone1,20200102,2020,202001,4380.0,1,Wind,16.744292,4.107559999999999,0.0,0.0
+Wind_new,Zone1,RPSZone1,20300101,2030,203001,4380.0,1,Wind,20.610959,39.98904160000001,0.0,0.0
+Wind_new,Zone1,RPSZone1,20300102,2030,203001,4380.0,1,Wind,33.666667,7.105427357601002e-15,0.0,0.0

@@ -1,0 +1,9 @@
+project,period,horizon,timepoint,timepoint_weight,number_of_hours_in_timepoint,balancing_area,load_zone,technology,reserve_provision_mw
+Gas_CCGT_new,2030,203001,20300102,4380.0,1,Zone1,Zone1,Gas,0.4
+Gas_CCGT_new,2020,202001,20200101,4380.0,1,Zone1,Zone1,Gas,0.0
+Gas_CCGT,2030,203001,20300102,4380.0,1,Zone1,Zone1,Gas,1.6
+Gas_CCGT_new,2030,203001,20300101,4380.0,1,Zone1,Zone1,Gas,1.0
+Gas_CCGT,2020,202001,20200101,4380.0,1,Zone1,Zone1,Gas,1.0
+Gas_CCGT,2030,203001,20300101,4380.0,1,Zone1,Zone1,Gas,0.0
+Gas_CCGT_new,2020,202001,20200102,4380.0,1,Zone1,Zone1,Gas,0.4
+Gas_CCGT,2020,202001,20200102,4380.0,1,Zone1,Zone1,Gas,1.6

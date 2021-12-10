@@ -1,0 +1,9 @@
+project,period,balancing_type_project,horizon,timepoint,timepoint_weight,number_of_hours_in_timepoint,technology,load_zone,power_mw,scheduled_curtailment_mw,subhourly_curtailment_mw,subhourly_energy_delivered_mw,total_curtailment_mw
+Wind_new,2030,day,203001,20300101,4380.0,1,Wind,Zone1,20.610959,39.98904160000001,0.0,0.0,39.98904160000001
+Wind,2030,day,203001,20300102,4380.0,1,Wind,Zone1,1.0,0.0,0.0,0.0,0.0
+Wind,2020,day,202001,20200101,4380.0,1,Wind,Zone1,1.8,0.0,0.0,0.0,0.0
+Wind_new,2020,day,202001,20200102,4380.0,1,Wind,Zone1,16.744292,4.107559999999999,0.0,0.0,4.107559999999999
+Wind_new,2030,day,203001,20300102,4380.0,1,Wind,Zone1,33.666667,7.105427357601002e-15,0.0,0.0,7.105427357601002e-15
+Wind_new,2020,day,202001,20200101,4380.0,1,Wind,Zone1,37.533333,6.000000070116585e-07,0.0,0.0,6.000000070116585e-07
+Wind,2030,day,203001,20300101,4380.0,1,Wind,Zone1,1.8,0.0,0.0,0.0,0.0
+Wind,2020,day,202001,20200102,4380.0,1,Wind,Zone1,1.0,0.0,0.0,0.0,0.0

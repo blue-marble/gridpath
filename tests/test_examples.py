@@ -979,6 +979,33 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_2zones_transmission_Tx1halfavailmonthly", objective
         )
 
+    def test_example_test_cheap_fuel_blend(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        :return:
+        """
+
+        objective = -3796255594374.1226
+
+        self.check_validation("test_cheap_fuel_blend")
+        self.run_and_check_objective("test_cheap_fuel_blend", objective)
+
+    def test_example_test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend" example
+        :return:
+        """
+
+        self.check_validation(
+            "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend"
+        )
+        self.run_and_check_objective(
+            "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend",
+            -3504399050661.217,
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

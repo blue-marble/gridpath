@@ -1,0 +1,16 @@
+project,period,hours_in_period_timepoints,hours_in_subproblem_period,technology,load_zone,capacity_cost
+Coal,2020,8760.0,8760.0,Coal,Zone1,0.0
+Coal,2030,8760.0,8760.0,Coal,Zone1,0.0
+Gas_CCGT,2020,8760.0,8760.0,Gas,Zone1,0.0
+Gas_CCGT,2030,8760.0,8760.0,Gas,Zone1,0.0
+Gas_CT,2020,8760.0,8760.0,Gas,Zone1,0.0
+Gas_CT,2030,8760.0,8760.0,Gas,Zone1,0.0
+Nuclear,2020,8760.0,8760.0,Nuclear,Zone1,0.0
+Nuclear,2030,8760.0,8760.0,Nuclear,Zone1,0.0
+Wind,2020,8760.0,8760.0,Wind,Zone1,0.0
+Wind,2030,8760.0,8760.0,Wind,Zone1,0.0
+Wind_new,2030,8760.0,8760.0,Wind,Zone1,67333334.0
+Wind_new,2020,8760.0,8760.0,Wind,Zone1,41703704.0
+Gas_CCGT_new,2030,8760.0,8760.0,Gas,Zone1,1466666.66
+Gas_CT_new,2030,8760.0,8760.0,Gas,Zone1,0.0
+Gas_CCGT_new,2020,8760.0,8760.0,Gas,Zone1,1466666.66

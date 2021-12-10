@@ -6,9 +6,9 @@
                               New Capacity (MW)
 load_zone technology vintage                   
 Zone1     Gas        2020                 30.20
-                     2030                 18.33
+                     2030                 22.87
 Zone2     Gas        2020                 34.20
-                     2030                 37.00
+                     2030                 32.47
 
 ### OPERATIONAL RESULTS ###
 

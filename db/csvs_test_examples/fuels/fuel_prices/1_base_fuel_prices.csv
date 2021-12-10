@@ -11,3 +11,11 @@ Uranium,2020,1,2
 Uranium,2020,2,2
 Uranium,2030,1,2
 Uranium,2030,2,2
+Cheap_Fuel,2020,1,1
+Cheap_Fuel,2020,2,1
+Cheap_Fuel,2030,1,1
+Cheap_Fuel,2030,2,1
+Negative_Carbon_Fuel,2020,1,6
+Negative_Carbon_Fuel,2020,2,6
+Negative_Carbon_Fuel,2030,1,6
+Negative_Carbon_Fuel,2030,2,6

@@ -1,0 +1,5 @@
+ba,period,timepoint,discount_factor,number_years_represented,timepoint_weight,number_of_hours_in_timepoint,lf_reserves_down_violation_mw
+Zone1,2020,20200101,1.0,10.0,4380.0,1,0.0
+Zone1,2020,20200102,1.0,10.0,4380.0,1,0.0
+Zone1,2030,20300101,1.0,10.0,4380.0,1,0.0
+Zone1,2030,20300102,1.0,10.0,4380.0,1,0.0

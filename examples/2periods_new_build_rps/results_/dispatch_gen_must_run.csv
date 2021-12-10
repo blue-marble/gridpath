@@ -1,0 +1,5 @@
+project,period,balancing_type_project,horizon,timepoint,timepoint_weight,number_of_hours_in_timepoint,technology,load_zone,power_mw,gross_power_mw,auxiliary_consumption_mw
+Nuclear,2020,day,202001,20200101,4380.0,1,Nuclear,Zone1,6.0,6.0,0.0
+Nuclear,2020,day,202001,20200102,4380.0,1,Nuclear,Zone1,6.0,6.0,0.0
+Nuclear,2030,day,203001,20300101,4380.0,1,Nuclear,Zone1,6.0,6.0,0.0
+Nuclear,2030,day,203001,20300102,4380.0,1,Nuclear,Zone1,6.0,6.0,0.0
