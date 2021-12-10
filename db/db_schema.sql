@@ -985,7 +985,7 @@ CREATE TABLE inputs_project_fuels (
 project VARCHAR(64),
 project_fuel_scenario_id INTEGER,
 fuel VARCHAR(64),
-PRIMARY KEY (project, project_fuel_scenario_id),
+PRIMARY KEY (project, project_fuel_scenario_id, fuel),
 FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (project, project_fuel_scenario_id)
 );
@@ -3226,7 +3226,7 @@ fuel VARCHAR(32),
 operations_fuel_burn_mmbtu FLOAT,
 startup_fuel_burn_mmbtu FLOAT,
 total_fuel_burn_mmbtu FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint, fuel)
 );
 
 DROP TABLE IF EXISTS results_project_carbon_emissions;
