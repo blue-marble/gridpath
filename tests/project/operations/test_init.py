@@ -291,7 +291,9 @@ class TestOperationsInit(unittest.TestCase):
         }
         for p in actual_fuels_by_project.keys():
             actual_fuels_by_project[p] = sorted(actual_fuels_by_project[p])
-        actual_fuels_by_project_od = OrderedDict(sorted(actual_fuels_by_project.items()))
+        actual_fuels_by_project_od = OrderedDict(
+            sorted(actual_fuels_by_project.items())
+        )
 
         self.assertDictEqual(expected_fuels_by_prj_od, actual_fuels_by_project_od)
 

@@ -242,13 +242,17 @@ class TestFuelBurn(unittest.TestCase):
             for f in expected_fuels_by_prj[p]:
                 expected_startup_fuel_prj_fuel_tmps.append((p, f, tmp))
 
-        expected_startup_fuel_prj_fuel_tmps = sorted(expected_startup_fuel_prj_fuel_tmps)
+        expected_startup_fuel_prj_fuel_tmps = sorted(
+            expected_startup_fuel_prj_fuel_tmps
+        )
 
         actual_startup_fuel_prj_fuel_tmps = sorted(
             [(p, f, tmp) for (p, f, tmp) in instance.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS]
         )
 
-        self.assertListEqual(expected_startup_fuel_prj_fuel_tmps, actual_startup_fuel_prj_fuel_tmps)
+        self.assertListEqual(
+            expected_startup_fuel_prj_fuel_tmps, actual_startup_fuel_prj_fuel_tmps
+        )
 
 
 if __name__ == "__main__":
