@@ -353,7 +353,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2periods_new_build_2zones")
-        self.run_and_check_objective("2periods_new_build_2zones", -20171691806.955837)
+        self.run_and_check_objective("2periods_new_build_2zones", -20171691798.193214)
 
     def test_example_2periods_new_build_2zones_new_build_transmission(self):
         """
@@ -377,7 +377,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_2zones_singleBA")
         self.run_and_check_objective(
-            "2periods_new_build_2zones_singleBA", -20171691752.98445
+            "2periods_new_build_2zones_singleBA", -20171691750.059643
         )
 
     def test_example_2periods_new_build_2zones_transmission(self):
@@ -386,7 +386,7 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission" example
         :return:
         """
-        objective = -220771078212324.8 if UBUNTU_16 else -220771078212318.25
+        objective = -220771078212324.8 if UBUNTU_16 else -220771078212311.7
         self.check_validation("2periods_new_build_2zones_transmission")
         self.run_and_check_objective(
             "2periods_new_build_2zones_transmission", objective
@@ -398,7 +398,7 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission_w_losses" example
         :return:
         """
-        objective = -238291078037124.8 if UBUNTU_16 else -238291078037118.25
+        objective = -238291078037124.8 if UBUNTU_16 else -238291078037111.7
 
         self.check_validation("2periods_new_build_2zones_transmission_w_losses")
         self.run_and_check_objective(
@@ -414,7 +414,7 @@ class TestExamples(unittest.TestCase):
         2periods_new_build_2zones_transmission_w_losses
         :return:
         """
-        objective = -238291078037124.8 if UBUNTU_16 else -238291078037118.25
+        objective = -238291078037124.8 if UBUNTU_16 else -238291078037111.7
 
         self.check_validation("2periods_new_build_2zones_transmission_w_losses_opp_dir")
         self.run_and_check_objective(
@@ -429,7 +429,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("2periods_new_build_rps")
-        self.run_and_check_objective("2periods_new_build_rps", -26966855745114.633)
+        self.run_and_check_objective("2periods_new_build_rps", -26966855745108.062)
 
     def test_example_2periods_new_build_rps_percent_target(self):
         """
@@ -443,7 +443,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_rps_percent_target")
         self.run_and_check_objective(
-            "2periods_new_build_rps_percent_target", -26966855745114.633
+            "2periods_new_build_rps_percent_target", -26966855745108.062
         )
 
     def test_example_2periods_new_build_cumulative_min_max(self):
@@ -903,7 +903,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_horizon_energy_target")
         self.run_and_check_objective(
-            "2periods_new_build_horizon_energy_target", -26966855745114.633
+            "2periods_new_build_horizon_energy_target", -26966855745108.062
         )
 
     def test_example_2periods_new_build_horizon_energy_target_halfyear(self):
@@ -915,7 +915,7 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("2periods_new_build_horizon_energy_target_halfyear")
         self.run_and_check_objective(
-            "2periods_new_build_horizon_energy_target_halfyear", -101086984772727.86
+            "2periods_new_build_horizon_energy_target_halfyear", -101086984772721.28
         )
 
     def test_example_test_new_build_gen_var_stor_hyb(self):
@@ -948,7 +948,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_min_max_build_trans")
-        self.run_and_check_objective("test_min_max_build_trans", -7028538202569.945)
+        self.run_and_check_objective("test_min_max_build_trans", -7028538202574.325)
 
     def test_example_2periods_new_build_2zones_transmission_Tx1halfavail(self):
         """
@@ -956,7 +956,7 @@ class TestExamples(unittest.TestCase):
         "2periods_new_build_2zones_transmission_Tx1halfavail" example
         :return:
         """
-        objective = -308370294932310.25 if UBUNTU_16 else -308370294932303.7
+        objective = -308370294932310.25 if UBUNTU_16 else -308370294932297.06
 
         self.check_validation("2periods_new_build_2zones_transmission_Tx1halfavail")
         self.run_and_check_objective(
@@ -970,7 +970,7 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        objective = -308370294932310.25 if UBUNTU_16 else -308370294932303.7
+        objective = -308370294932310.25 if UBUNTU_16 else -308370294932297.06
 
         self.check_validation(
             "2periods_new_build_2zones_transmission_Tx1halfavailmonthly"

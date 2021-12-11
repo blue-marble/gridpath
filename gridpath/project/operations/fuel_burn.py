@@ -183,7 +183,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: set(
             (g, f, tmp)
             for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
-            for _g, f in mod.STARTUP_FUEL_PRJ_FUELS
+            for _g, f in mod.FUEL_PRJ_FUELS
             if g == _g
         ),
     )

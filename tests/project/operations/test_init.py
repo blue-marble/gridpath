@@ -561,16 +561,6 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictEqual(expected_shutdown_cost_by_prj, actual_shutdown_cost_by_prj)
 
-        # Param: fuel
-        expected_fuel_by_prj = OrderedDict(
-            sorted(dict(zip(prj_fuels_df["project"], prj_fuels_df["fuel"])).items())
-        )
-        actual_fuel_by_prj = OrderedDict(
-            sorted({p: instance.fuel[p] for p in instance.FUEL_PRJS}.items())
-        )
-
-        self.assertDictEqual(expected_fuel_by_prj, actual_fuel_by_prj)
-
         # Param: fuel_burn_slope_mmbtu_per_mwh
         expected_fuel_burn_slope = OrderedDict(
             sorted(
