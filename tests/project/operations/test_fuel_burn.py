@@ -130,6 +130,27 @@ class TestFuelBurn(unittest.TestCase):
 
         self.assertListEqual(expected_fuel_prj_tmps, actual_fuel_prj_tmps)
 
+        # Set: FUEL_PRJS_FUEL_OPR_TMPS
+        expected_fuel_project_fuels = list(prj_fuels_df.to_records(index=False))
+        expected_fuels_by_prj = {}
+        for (p, f) in expected_fuel_project_fuels:
+            if p not in expected_fuels_by_prj.keys():
+                expected_fuels_by_prj[p] = [f]
+            else:
+                expected_fuels_by_prj[p].append(f)
+        expected_fuel_prj_fuel_tmps = []
+        for (p, tmp) in expected_fuel_prj_tmps:
+            for f in expected_fuels_by_prj[p]:
+                expected_fuel_prj_fuel_tmps.append((p, f, tmp))
+
+        expected_fuel_prj_fuel_tmps = sorted(expected_fuel_prj_fuel_tmps)
+
+        actual_fuel_prj_fuel_tmps = sorted(
+            [(p, f, tmp) for (p, f, tmp) in instance.FUEL_PRJS_FUEL_OPR_TMPS]
+        )
+
+        self.assertListEqual(expected_fuel_prj_fuel_tmps, actual_fuel_prj_fuel_tmps)
+
         # Set: HR_CURVE_PRJS_OPR_TMPS
         expected_hr_curve_projects = sorted(hr_curve_df["project"].unique().tolist())
 
@@ -214,6 +235,20 @@ class TestFuelBurn(unittest.TestCase):
         self.assertListEqual(
             expected_startup_fuel_prj_tmps, actual_startup_fuel_prj_tmps
         )
+
+        # Set: STARTUP_FUEL_PRJS_FUEL_OPR_TMPS
+        expected_startup_fuel_prj_fuel_tmps = []
+        for (p, tmp) in expected_startup_fuel_prj_tmps:
+            for f in expected_fuels_by_prj[p]:
+                expected_startup_fuel_prj_fuel_tmps.append((p, f, tmp))
+
+        expected_startup_fuel_prj_fuel_tmps = sorted(expected_startup_fuel_prj_fuel_tmps)
+
+        actual_startup_fuel_prj_fuel_tmps = sorted(
+            [(p, f, tmp) for (p, f, tmp) in instance.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS]
+        )
+
+        self.assertListEqual(expected_startup_fuel_prj_fuel_tmps, actual_startup_fuel_prj_fuel_tmps)
 
 
 if __name__ == "__main__":

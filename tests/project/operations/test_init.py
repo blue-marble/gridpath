@@ -255,12 +255,45 @@ class TestOperationsInit(unittest.TestCase):
             expected_shutdown_cost_projects, actual_shutdown_cost_projects
         )
 
+        # Set: FUEL_PRJ_FUELS
+        expected_fuel_project_fuels = list(prj_fuels_df.to_records(index=False))
+
+        # Need to convert to tuples from numpy arrays to allow assert below
+        expected_fuel_project_fuels = sorted(
+            [tuple(i) for i in expected_fuel_project_fuels]
+        )
+
+        actual_fuel_project_fuels = sorted(
+            [(p, f) for (p, f) in instance.FUEL_PRJ_FUELS]
+        )
+
+        self.assertListEqual(expected_fuel_project_fuels, actual_fuel_project_fuels)
+
         # Set: FUEL_PRJS
         expected_fuel_projects = sorted(prj_fuels_df["project"].unique().tolist())
 
         actual_fuel_projects = sorted([p for p in instance.FUEL_PRJS])
 
         self.assertListEqual(expected_fuel_projects, actual_fuel_projects)
+
+        # Set: FUELS_BY_PRJ
+        expected_fuels_by_prj = {}
+        for (p, f) in expected_fuel_project_fuels:
+            if p not in expected_fuels_by_prj.keys():
+                expected_fuels_by_prj[p] = [f]
+            else:
+                expected_fuels_by_prj[p].append(f)
+        expected_fuels_by_prj_od = OrderedDict(sorted(expected_fuels_by_prj.items()))
+
+        actual_fuels_by_project = {
+            p: [f for f in instance.FUELS_BY_PRJ[p]]
+            for p in instance.FUELS_BY_PRJ.keys()
+        }
+        for p in actual_fuels_by_project.keys():
+            actual_fuels_by_project[p] = sorted(actual_fuels_by_project[p])
+        actual_fuels_by_project_od = OrderedDict(sorted(actual_fuels_by_project.items()))
+
+        self.assertDictEqual(expected_fuels_by_prj_od, actual_fuels_by_project_od)
 
         # Set: HR_CURVE_PRJS_PRDS_SGMS
         expected_hr_curve_projects_periods_sgms = sorted(
