@@ -379,9 +379,7 @@ class TestExamples(unittest.TestCase):
         objective = -20171691752.945038 if UBUNTU_16 else -20171691750.059643
 
         self.check_validation("2periods_new_build_2zones_singleBA")
-        self.run_and_check_objective(
-            "2periods_new_build_2zones_singleBA", objective
-        )
+        self.run_and_check_objective("2periods_new_build_2zones_singleBA", objective)
 
     def test_example_2periods_new_build_2zones_transmission(self):
         """
@@ -447,9 +445,7 @@ class TestExamples(unittest.TestCase):
         objective = -26966855745114.633 if UBUNTU_16 else -26966855745108.062
 
         self.check_validation("2periods_new_build_rps_percent_target")
-        self.run_and_check_objective(
-            "2periods_new_build_rps_percent_target", objective
-        )
+        self.run_and_check_objective("2periods_new_build_rps_percent_target", objective)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
