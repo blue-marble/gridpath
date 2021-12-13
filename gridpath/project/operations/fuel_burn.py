@@ -73,17 +73,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Fuel burn in each operational timepoint of projects with a heat rate    |
     | curve.                                                                  |
     +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Constraints                                                             |
-    +=========================================================================+
-    | | :code:`HR_Curve_Prj_Fuel_Burn_Constraint`                             |
-    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                   |
+    | | :code:`Project_Opr_Fuel_Burn_by_Fuel`                                 |
+    | | *Defined over*: :code:`FUEL_PRJS_FUEL_OPR_TMPS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | Determines fuel burn from the project in each timepoint based on its    |
-    | heat rate curve.                                                        |
+    | Fuel burn by fuel in each operational timepoint of each fuel project.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Project_Startup_Fuel_Burn_by_Fuel`                             |
+    | | *Defined over*: :code:`FUEL_PRJS_FUEL_OPR_TMPS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Startup fuel burn by fuel in each operational timepoint of each startup |
+    | fuel project.                                                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -108,11 +109,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Only operational types with commitment variables can have startup fuel  |
     | burn (for others it will always return zero).                           |
     +-------------------------------------------------------------------------+
-    | | :code:`Total_Fuel_Burn_by_Fuel_MMBtu`                                         |
+    | | :code:`Total_Fuel_Burn_by_Fuel_MMBtu`                                 |
     | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
     |                                                                         |
     | Total fuel burn is the sum of operational fuel burn for power           |
-    | production and startup fuel burn.                                       |
+    | production and startup fuel burn (by fuel).                             |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`HR_Curve_Prj_Fuel_Burn_Constraint`                             |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                   |
+    |                                                                         |
+    | Determines fuel burn from the project in each timepoint based on its    |
+    | heat rate curve.                                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Blending_Opr_Fuel_Burn_Constraint`                        |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
+    |                                                                         |
+    | The sum of operations fuel burn across all fuels should equal the total |
+    | operations fuel burn.                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Blending_Startup_Fuel_Burn_Constraint`                    |
+    | | *Defined over*: :code:`STARTUP_FUEL_PRJ_OPR_TMPS`                     |
+    |                                                                         |
+    | The sum of startup fuel burn across all fuels should equal the total    |
+    | operations fuel burn.                                                   |
     +-------------------------------------------------------------------------+
 
     """
@@ -291,7 +316,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def blend_fuel_operations_rule(mod, prj, tmp):
-        """ """
+        """
+        The sum of operations fuel burn across all fuels should equal the total
+        operations fuel burn.
+        """
         return (
             sum(
                 mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
@@ -305,7 +333,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def blend_fuel_startup_rule(mod, prj, tmp):
-        """ """
+        """
+        The sum of startup fuel burn across all fuels should equal the total
+        operations fuel burn.
+        """
         return (
             sum(
                 mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]

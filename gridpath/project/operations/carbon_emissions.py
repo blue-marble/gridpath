@@ -36,7 +36,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Project_Carbon_Emissions`                                      |
-    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                                  |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
     |                                                                         |
     | The project's carbon emissions for each timepoint in which the project  |
     | could be operational. Note that this is an emissions *RATE* (per hour)  |
@@ -48,13 +48,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
-    # Same as fuel cost
-    # Sum across fuels to get total project carbon emissions
     def carbon_emissions_rule(mod, prj, tmp):
         """
         Emissions from each project based on operational type
         (and whether a project burns fuel). Multiply by the timepoint duration
-        and timepoint weight to get the total emissions amount.
+        and timepoint weight to get the total emissions amount. Sum over all fuels
+        times their carbon intensity to get total project carbon emissions
         """
 
         return sum(

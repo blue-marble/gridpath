@@ -111,10 +111,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The set of projects for which a shutdown cost is specified.             |
     +-------------------------------------------------------------------------+
+    | | :code:`FUEL_PRJ_FUELS`                                                |
+    | | *Within*: :code:`m.PROJECTS * m.FUELS                                 |
+    |                                                                         |
+    | Projects that burn fuels along with the fuels they can burn. This will  |
+    | determine emissions (via the fuels' carbon intensity) and fuel cost     |
+    | (via the fuels' price).                                                 |
+    +-------------------------------------------------------------------------+
     | | :code:`FUEL_PRJS`                                                     |
     | | *Within*: :code:`PROJECTS`                                            |
     |                                                                         |
     | The set of projects for which a fuel is specified.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`FUELS_BY_PRJ`                                                  |
+    | | *Defined over*: :code:`FUEL_PRJS`                                     |
+    | | *Within*: :code:`FUELS`                                               |
+    |                                                                         |
+    | The set of fuels that can be used by each fuel project.                 |
     +-------------------------------------------------------------------------+
     | | :code:`HR_CURVE_PRJS_PRDS_SGMS`                                       |
     |                                                                         |
@@ -209,13 +222,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's shutdown cost per MW of capacity that is shut down.       |
-    +-------------------------------------------------------------------------+
-    | | :code:`fuel`                                                          |
-    | | *Defined over*: :code:`FUEL_PRJS`                                     |
-    | | *Within*: :code:`Any`                                                 |
-    |                                                                         |
-    | The project's fuel. This will determine emissions (via the fuel's       |
-    | carbon intensity) and fuel cost (via the fuel's price).                 |
     +-------------------------------------------------------------------------+
     | | :code:`shutdown_cost_per_mw`                                          |
     | | *Defined over*: :code:`HR_CURVE_PRJS_PRDS_SGMS`                       |
@@ -508,8 +514,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
         None: list(data_portal.data()["variable_om_cost_per_mwh"].keys())
     }
-
-    # data_portal.data()["FUEL_PRJS"] = {None: list(data_portal.data()["fuel"].keys())}
 
     data_portal.data()["STARTUP_FUEL_PRJS"] = {
         None: list(data_portal.data()["startup_fuel_mmbtu_per_mw"].keys())

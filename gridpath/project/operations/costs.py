@@ -137,8 +137,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
     |                                                                         |
     | This expression defines the fuel cost of a project in all of its        |
-    | operational timepoints. We obtain the expression by calling the         |
-    | *fuel_cost_rule* method of a project's *operational_type* module.       |
+    | operational timepoints by summing across fuel burn by fuel times each   |
+    | fuel's price.                                                           |
     +-------------------------------------------------------------------------+
     | | :code:`Startup_Cost`                                                  |
     | | *Defined over*: :code:`STARTUP_COST_PRJ_OPR_TMPS`                     |
@@ -342,18 +342,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.VAR_OM_COST_ALL_PRJS_OPR_TMPS, rule=variable_om_cost_rule
     )
 
-    # Constrain sum of all fuels burned to be total fuel burn
-    # Expression below should sum across fuels
-    # Fuel column be removed from projects.tab
-    # Instead, we should have a separate file with fuels for each project
-    # (Alternatively, we could keep fuel column in projects.tab and add some
-    # kind of flag that more fuels are allowed, but that seems overly
-    # complicated)
-
     def fuel_cost_rule(mod, prj, tmp):
         """
         **Expression Name**: Fuel_Cost
         **Defined Over**: FUEL_PRJS_OPR_TMPS
+
+        Fuel cost based on fuels burn and each fuel's price (sum over fuels).
         """
         return sum(
             mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
