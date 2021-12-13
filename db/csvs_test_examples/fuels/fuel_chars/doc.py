@@ -6,9 +6,9 @@
 +--------------------------------+-----------------------------------+
 |:code:`scenarios` table column  |:code:`fuel_scenario_id`           |
 +--------------------------------+-----------------------------------+
-|:code:`subscenario_` table      |:code:`subscenarios_project_fuels` |
+|:code:`subscenario_` table      |:code:`subscenarios_fuels`         |
 +--------------------------------+-----------------------------------+
-|:code:`input_` tables           |:code:`inputs_project_fuels`       |
+|:code:`input_` tables           |:code:`inputs_fuels`               |
 +--------------------------------+-----------------------------------+
 
 """

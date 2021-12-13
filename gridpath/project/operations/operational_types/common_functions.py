@@ -1012,7 +1012,6 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
     #  Also remove min/max duration since not really an opchar?
     cols = [
         "project",
-        "fuel",
         "variable_om_cost_per_mwh",
         "operational_type",
         "min_stable_level_fraction",

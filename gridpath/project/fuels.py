@@ -19,7 +19,7 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals
+from pyomo.environ import Param, Set, NonNegativeReals, Reals
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -38,7 +38,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     m.FUELS = Set()
-    m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=NonNegativeReals)
+    # Allow negative emissions
+    m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=Reals)
 
     m.fuel_price_per_mmbtu = Param(
         m.FUELS, m.PERIODS, m.MONTHS, within=NonNegativeReals
@@ -97,32 +98,37 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     fuels = c1.execute(
         """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu
         FROM (
-        -- Select the projects in the relevant portfolios
-        SELECT project
-        FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {} 
-        ) as prj_portfolio_tbl
-        LEFT OUTER JOIN (
-        -- Get the fuels for those projects
         SELECT project, fuel
+        FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, project_fuel_scenario_id
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        ) AS opchar_tbl
-        USING (project)
+        WHERE project_operational_chars_scenario_id = {opchar_scenario_id}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_fuels
+        USING(project, project_fuel_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {portfolio_scenario_id}
+        ) as project_fuels_tbl
         LEFT OUTER JOIN (
         -- Get the fuel chars for the relevant fuels
         SELECT fuel, co2_intensity_tons_per_mmbtu
-        FROM inputs_project_fuels
-        WHERE fuel_scenario_id = {}
+        FROM inputs_fuels
+        WHERE fuel_scenario_id = {fuel_scenario_id}
         ) AS fuels_tbl
         USING (fuel)
         -- Filter out the NULLs (from projects with no fuels)
         WHERE fuel NOT NULL
         ;
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.FUEL_SCENARIO_ID,
+            opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            fuel_scenario_id=subscenarios.FUEL_SCENARIO_ID,
         )
     )
 
@@ -130,40 +136,45 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     fuel_prices = c2.execute(
         """SELECT DISTINCT fuel, period, month, fuel_price_per_mmbtu
         FROM (
-        -- Select the projects in the relevant portfolios
-        SELECT project
+       SELECT project, fuel
         FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}
-        ) as prj_portfolio_tbl
-        LEFT OUTER JOIN (
-        -- Get the fuels for those projects
-        SELECT project, fuel
+        -- select the correct operational characteristics subscenario
+        INNER JOIN
+        (SELECT project, project_fuel_scenario_id
         FROM inputs_project_operational_chars
-        WHERE project_operational_chars_scenario_id = {}
-        ) AS opchar_tbl
-        USING (project)
+        WHERE project_operational_chars_scenario_id = {opchar_scenario_id}
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_fuels
+        USING(project, project_fuel_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {portfolio_scenario_id}
+        ) as project_fuels_tbl
         LEFT OUTER JOIN (
         -- Get the fuel chars for the relevant fuels
         SELECT fuel, period, month, fuel_price_per_mmbtu
-        FROM inputs_project_fuel_prices
-        WHERE fuel_price_scenario_id = {}
+        FROM inputs_fuel_prices
+        WHERE fuel_price_scenario_id = {fuel_price_scenario_id}
         ) AS fuels_tbl
         USING (fuel)
         -- Only get periods in the relevant temporal_scenario_id
         INNER JOIN (
         SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}
+        WHERE temporal_scenario_id = {temporal_scenario_id}
         ) as periods_tbl
         USING (period)
         -- Filter out the NULLs (from projects with no fuels)
         WHERE fuel NOT NULL
         ;
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.FUEL_PRICE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
+            opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            fuel_price_scenario_id=subscenarios.FUEL_PRICE_SCENARIO_ID,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
@@ -188,15 +199,24 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Get the projects fuels
     c1 = conn.cursor()
     projects = c1.execute(
-        """SELECT project, fuel
+        """
+        SELECT project, fuel
         FROM inputs_project_portfolios
+        -- select the correct operational characteristics subscenario
         INNER JOIN
-        (SELECT project, fuel
+        (SELECT project, project_fuel_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND fuel IS NOT NULL) AS op_char
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}""".format(
+        ) AS op_char
+        USING(project)
+        -- select only heat curves of matching projects
+        INNER JOIN
+        inputs_project_fuels
+        USING(project, project_fuel_scenario_id)
+        -- Get only the subset of projects in the portfolio based on the 
+        -- project_portfolio_scenario_id 
+        WHERE project_portfolio_scenario_id = {}
+        """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
@@ -227,9 +247,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     req_fuel_periods_months = [(f, p, m) for (p, m) in periods_months for f in fuels]
 
     # Check data types
-    expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_fuels", "inputs_project_fuel_prices"]
-    )
+    expected_dtypes = get_expected_dtypes(conn, ["inputs_fuels", "inputs_fuel_prices"])
 
     dtype_errors, error_columns = validate_dtypes(fuels_df, expected_dtypes)
     write_validation_to_database(
@@ -238,7 +256,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_fuels",
+        db_table="inputs_fuels",
         severity="High",
         errors=dtype_errors,
     )
@@ -250,7 +268,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_fuel_prices",
+        db_table="inputs_fuel_prices",
         severity="High",
         errors=dtype_errors,
     )
@@ -276,7 +294,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         subproblem_id=subproblem,
         stage_id=stage,
         gridpath_module=__name__,
-        db_table="inputs_project_fuel_prices",
+        db_table="inputs_fuel_prices",
         severity="High",
         errors=validate_idxs(
             actual_idxs=actual_fuel_periods_months,
