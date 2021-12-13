@@ -1,3 +1,0 @@
-energy_target_zone,period,discount_factor,number_years_represented,energy_target_mwh,delivered_energy_target_energy_mwh,curtailed_energy_target_energy_mwh,total_energy_target_energy_mwh,fraction_of_energy_target_met,fraction_of_energy_target_energy_curtailed,energy_target_shortage_mwh
-RPSZone1,2020,1.0,10.0,250000.0,249999.9975,17991.11542800003,267991.11292800005,0.99999999,0.06713325390321291,0.0
-RPSZone1,2030,1.0,10.0,250000.0,250000.00188,175152.00220800005,425152.00408800005,1.00000000752,0.41197501252221835,0.0
