@@ -39,7 +39,7 @@ HEADROOM_OR_FOOTROOM_DICT_NAME = headroom_variables
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "frequency_response_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "frequency_response_derate"
-RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = "load_following_down_balancing_areas.tab"
+RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = "frequency_response_balancing_areas.tab"
 # Model components
 RESERVE_PROVISION_VARIABLE_NAME = "Provide_Frequency_Response_MW"
 RESERVE_PROVISION_DERATE_PARAM_NAME = "frequency_response_derate"
