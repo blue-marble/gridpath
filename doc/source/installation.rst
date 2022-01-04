@@ -149,38 +149,45 @@ GridPath uses the following Python packages (not exhaustive):
 * `bokeh <https://bokeh.org/>`_ for interactive plotting
 * `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
 
-You can install all needed Python packages, including those for the extra
-features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
-with :code:`cd PATH/TO/GRIDPATH` and running::
+Most users should install GridPath and its graphical user interface by navigating to
+the GridPath directory :code:`PATH/TO/GRIDPATH` with :code:`cd PATH/TO/GRIDPATH` and
+running::
 
-    pip install .[all]
+    pip install .[ui]
 
 Use the editable `-e` flag if you would like to edit the GridPath source code::
 
-    pip install -e .[all]
+    pip install -e .[ui]
 
-Alternatively, if you don't want the extra features, you can install only the
+Alternatively, if you don't want to use the GUI, you can install only the minimum set of
 required packages with::
 
     pip install .
 
-Read below for what the extra features are to determine whether you need them.
 
-Optional packages for extra features
-************************************
+Developer extras
+****************
 
-The extra features are: 1) the GridPath user interface and 2) building/editing
-the documentation.
+You should also install additional packages if you plan to build the documentation
+from source, use the Black code formatter, or check test coverage.
 
-GridPath's extra features can be installed individually as follows.
+To install all packages, run::
+
+    pip install -e .[all]
+
+GridPath's developer extras can be installed individually as follows.
 
 For editing or building documentation from source, run::
 
     pip install -e .[doc]
 
-For using the GridPath user interface, run::
+For using the Black code formatter, run::
 
-    pip install -e .[ui]
+   pip install -e .[black]
+
+For getting code test coverage information run::
+
+    pip install -e .[coverage]
 
 If you would like to edit the user-interface code, you will need Node.js in
 addition to Python and will be required to install various node packages.

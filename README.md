@@ -1,4 +1,4 @@
-[![GridPath Test Suite](https://github.com/blue-marble/gridpath/actions/workflows/test_gridpath.yml/badge.svg?branch=main)](https://github.com/blue-marble/gridpath/actions/workflows/test_gridpath.yml)
+[![GridPath Test Suite Status](https://github.com/blue-marble/gridpath/actions/workflows/test_gridpath.yml/badge.svg?branch=main)](https://github.com/blue-marble/gridpath/actions/workflows/test_gridpath.yml)
 [![Documentation Status](https://readthedocs.org/projects/gridpath/badge/?version=latest)](https://gridpath.readthedocs.io/en/latest/?badge=latest)
 [![Coverage Status](https://coveralls.io/repos/github/blue-marble/gridpath/badge.svg?branch=main)](https://coveralls.io/github/blue-marble/gridpath?branch=main)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -7,9 +7,16 @@
 
 # Welcome to GridPath
 
+<p style="text-align:center;"><img src="https://lh5.googleusercontent.com/vdOTo-MiWgNwRgOfHH252zJ4tHWffo4nlcVCgJoS5ns9JWhrow2v_3Za22kBJMfn4CfcMLKg9NO3DdaGiqhczc4=w16383" alt="drawing" width="20%"/>
+
+![Approaches](https://lh5.googleusercontent.com/IOfwnLoGGhwO0F11aynM1b3dkWB7YvmrpwhAprfPgLfnemEVxbwXA7IAbwGcPsBrubQYIaiIqEoNffJMIrARIt0_oFt20W4e3KF_OM1OkZ9S8FsO=w1280)
+
 GridPath is a versatile power-system planning platform capable of a range of
 planning approaches including production-cost, capacity-expansion, 
 asset-valuation, and reliability modeling.
+
+# Documentation
+GridPath's documentation is hosted on [Read the Docs](https://gridpath.readthedocs.io/en/latest/).
 
 # Installation
 
@@ -17,41 +24,24 @@ asset-valuation, and reliability modeling.
 GridPath is developed and tested on Python 3.8. Get Python 3.8
 [here](https://www.python.org/downloads/ "Python download").
 
-## Packages
-We highly recommend that you create a Python environment for your GridPath
-installation, e.g. via `venv`, [a lightweight environment manager](
-https://docs.python.org/3/library/venv.html, "venv") that is part of the 
-standard Python distribution. You can install all needed Python packages,
-including those for the extra features, by navigating to the GridPath root
+## Python Packages
+You should create a Python environment for your GridPath installation, e.g. via 
+`venv`, [a lightweight environment manager](https://docs.python.org/3/library/venv.html, "venv") 
+that is part of the standard Python distribution. You can install all needed Python 
+packages, including the developer extras, by navigating to the GridPath root 
 directory (which is where this `README.md` file is located) and running:
 ```bash
 pip install -e .[all]
 ```
 
-Alternatively, if you don't want the extra features, you can install only the 
-required packages with:
+For most users, installing GridPath's base set of Python packages and those needed 
+to use the graphical user interface would be sufficient. You can do so by running:
 ```bash
-pip install -e .
+pip install -e .[ui]
 ```
 
 NOTE: if you don't plan to edit the GridPath code, you can install without the 
 `-e` option.
-
-## Extra packages
-The extra features are 1) building/editing documentation and 2) the GridPath
-user interface.
-
-GridPath's optional features can be installed individually as follows.
-
-For editing or building documentation from source, run:
-```bash
-pip install -e .[doc]
-```
-
-For using the GridPath user interface, run:
-```bash
-pip install -e .[ui]
-```
 
 ## Solver
 You will need a solver to use this platform. GridPath assumes you will be 
@@ -92,41 +82,11 @@ in the GridPath root folder):
 source env/bin/activate
 ```
 
-## The run_scenario.py and run_end_to_end.py scripts
-You can also run scenarios via the `run_scenario.py` script in the 
-`./gridpath/` directory (note: "." represents the root directory, i.e. where
-this `README.md` file is located). The scenario name should be specified with 
-the `--scenario` argument. For example, to run a scenario named 'test' (located 
-in the `./scenarios/` directory) navigate to the `./gridpath/` directory and 
-run the following:
+## Help
+In general, you can check usage of GridPath's scripts by calling the `--help` 
+option, e.g.:
 ```bash
-python run_scenario.py --scenario test
-```
-
-Scenario directories are assumed to be located in the `./scenarios/` 
-directory by default. For example, the inputs, results, and logs for a 
-scenario named 'test' would be in `./scenarios/test/`. You can also run
-scenarios located in directories other than `./scenarios` by specifying the 
-path to that directory with (absolute path or path relative to `./gridpath`). 
-For example, to run the 'test' scenario in the examples directory, run the 
-following (from the `./gridpath/` directory):
-```bash
-python run_scenario.py --scenario test --scenario_location ../examples
-``` 
-
-If you are using the database, you can use the `run_end_to_end.py` script to 
-run GridPath end-to-end, i.e. get inputs for the scenario from the database, 
-solve the scenario problem, import the results into the database, and 
-process them.
-
-```bash
-python run_end_to_end.py --scenario test
-```
-
-To see usage and other optional arguments, e.g. how to specify a 
-solver, check the help menu, e.g.:
-```bash
-python run_scenario.py --help
+python get_scenario_inputs.py --help
 ```
 
 # Testing
@@ -136,30 +96,3 @@ root directory:
 ```bash
 python -m unittest discover tests
 ```
-
-
-# Help
-In general, you can check usage of GridPath's scripts by calling the `--help` 
-option, e.g.:
-```bash
-python get_scenario_inputs.py --help
-```
-
-
-# Documentation
-
-To build the documentation from source, navigate to the `./doc` folder in
-your terminal and type the following command:
-```bash
-make html
-```
-
-This will build the documentation in HTML format in the `./doc/build/html`
-folder. You can view the documentation by double clicking any of the .html
-files (we recommend starting at `index.html`). 
-
-Note that you will first need to install 
-[Sphinx](http://www.sphinx-doc.org/en/master/) on your computer (see the 
-Installation section above). In the future, the latest documentation build will
-be hosted online so you don't have to build it from source yourself. 
-

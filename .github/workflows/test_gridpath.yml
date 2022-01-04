@@ -2,7 +2,7 @@
 # It installs Cbc and Python dependencies, runs the GridPath test suite with coverage,
 # and sends coverage results to coveralls
 
-name: GridPath Test Suite
+name: test-suite
 
 on:
   push:
