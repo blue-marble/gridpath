@@ -31,6 +31,7 @@ jobs:
     - name: Test with coverage
       run: |
         coverage run -m unittest discover tests
+        coverage xml
     - name: Send coverage results to coveralls
       uses: coverallsapp/github-action@master
       with:
