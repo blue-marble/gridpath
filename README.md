@@ -7,7 +7,9 @@
 
 # Welcome to GridPath
 
-<p style="text-align:center;"><img src="doc/graphics/gridpath_logo.png" alt="drawing" width="20%"/>
+<p style="text-align:center;">
+    <img src="doc/graphics/gridpath_logo.png" alt="drawing" width="20%"/>
+</p>
 
 ![Approaches](doc/graphics/approaches.png)
 
