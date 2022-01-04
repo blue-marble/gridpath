@@ -1,12 +1,12 @@
 # This the main GridPath CI workflow
-# It installs cbc and Python dependencies, runs tests with coverage, and
-# sends coverage results to coveralls
+# It installs Cbc and Python dependencies, runs the GridPath test suite with coverage,
+# and sends coverage results to coveralls
 
-name: Run GridPath Test Suite
+name: GridPath Test Suite
 
 on:
   push:
-    branches: [ main, develop,  github_actions_ci]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
@@ -21,12 +21,12 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: "3.8"
-    - name: Install cbc and check version
+    - name: Install Cbc and check version
       run: |
         sudo apt-get install coinor-cbc
         sudo apt-get install -y apt-show-versions
         apt-show-versions coinor-cbc
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install .[travis] --upgrade pip
     - name: Test GridPath with coverage
