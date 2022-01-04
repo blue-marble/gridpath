@@ -32,5 +32,6 @@ jobs:
       run: |
         coverage run -m unittest discover tests
     - name: Send coverage results to coveralls
-      run: |
-        coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
