@@ -7,9 +7,10 @@
 
 # Welcome to GridPath
 
-<p style="text-align:center;"><img src="https://lh5.googleusercontent.com/vdOTo-MiWgNwRgOfHH252zJ4tHWffo4nlcVCgJoS5ns9JWhrow2v_3Za22kBJMfn4CfcMLKg9NO3DdaGiqhczc4=w16383" alt="drawing" width="20%"/>
+<p style="text-align:center;"><img src="doc/graphics/gridpath_logo.png" alt="drawing" width="20%"/>
 
-![Approaches](https://lh5.googleusercontent.com/IOfwnLoGGhwO0F11aynM1b3dkWB7YvmrpwhAprfPgLfnemEVxbwXA7IAbwGcPsBrubQYIaiIqEoNffJMIrARIt0_oFt20W4e3KF_OM1OkZ9S8FsO=w1280)
+![Approaches](doc/graphics/approaches.png)
+
 
 GridPath is a versatile power-system planning platform capable of a range of
 planning approaches including production-cost, capacity-expansion, 
