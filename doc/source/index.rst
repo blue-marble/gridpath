@@ -7,11 +7,19 @@
    ^, for subsubsections
    ", for paragraphs
 
+
 ######################
 GridPath Documentation
 ######################
 
-Welcome to the GridPath Documentation.
+
+.. image:: ../graphics/gridpath_logo.png
+   :width: 20 %
+   :align: center
+   :target: https://www.gridpath.io
+
+
+**Table of Contents**
 
 .. toctree::
    :numbered: 3

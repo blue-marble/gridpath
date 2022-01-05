@@ -1,0 +1,7 @@
+project	fuel
+Coal	Coal
+Gas_CCGT	Gas
+Gas_CCGT	Negative_Carbon_Fuel
+Gas_CCGT_z2	Gas
+Gas_CT	Gas
+Nuclear	Uranium

@@ -1,0 +1,6 @@
+project	fuel
+Coal	Coal
+Gas_CCGT	Cheap_Fuel
+Gas_CCGT	Gas
+Gas_CT	Gas
+Nuclear	Uranium

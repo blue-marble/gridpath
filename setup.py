@@ -19,7 +19,7 @@ extras_black = ["black"]
 
 extras_coverage = [
     "coverage",  # test coverage
-    "coveralls",  # automated coverage results with Travis CI
+    "coveralls",  # automated coverage results
 ]
 extras_all = extras_ui + extras_doc + extras_black + extras_coverage
 
@@ -43,14 +43,14 @@ setup(
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF
         "pyutilib==6.0.0",  # used for solver temp file management
-        "coverage",  # test coverage
-        "coveralls",  # automated coverage results with Travis CI
+        "coverage",  # check test coverage
+        "coveralls",  # CI coverage results
     ],
     extras_require={
         "doc": extras_doc,
         "ui": extras_ui,
         "all": extras_all,
-        "travis": extras_coverage,
+        "coverage": extras_coverage,
     },
     include_package_data=True,
     entry_points={

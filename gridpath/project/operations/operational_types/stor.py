@@ -110,6 +110,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The fraction of storage losses that count against the energy target.    |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_losses_factor_curtailment`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The fraction of storage losses that count against curtailment.          |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_charging_capacity_multiplier`                             |
     | | *Defined over*: :code:`STOR`                                          |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -272,6 +278,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     m.stor_losses_factor_in_energy_target = Param(default=1)
+
+    m.stor_losses_factor_curtailment = Param(default=1)
 
     m.stor_charging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
@@ -794,3 +802,20 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "stor")
+
+
+def curtailment_cost_rule(mod, g, tmp):
+    """
+    Apply curtailment cost to round trip storage loss: to balance
+    against curtailment of variable projects.
+    """
+    return (
+        (
+            mod.Stor_Discharge_MW[g, tmp]
+            * (1.0 - mod.stor_discharging_efficiency[g])
+            / mod.stor_discharging_efficiency[g]
+            + mod.Stor_Charge_MW[g, tmp] * (1.0 - mod.stor_charging_efficiency[g])
+        )
+        * mod.curtailment_cost_per_pwh[g]
+        * mod.stor_losses_factor_curtailment
+    )
