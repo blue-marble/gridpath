@@ -985,8 +985,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_cheap_fuel_blend(self):
         """
-        Check validation and objective function value of
-        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        Check validation and objective function value of "test_cheap_fuel_blend" example
         :return:
         """
 
@@ -1009,6 +1008,18 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend",
             -3504399050661.217,
         )
+
+    def test_example_test_cheap_fuel_blend_w_limit(self):
+        """
+        Check validation and objective function value of
+        "test_cheap_fuel_blend_w_limit" example
+        :return:
+        """
+
+        objective = -3796282357926.1226
+
+        self.check_validation("test_cheap_fuel_blend_w_limit")
+        self.run_and_check_objective("test_cheap_fuel_blend_w_limit", objective)
 
     @classmethod
     def tearDownClass(cls):

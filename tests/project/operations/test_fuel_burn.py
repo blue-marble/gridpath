@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -133,7 +134,7 @@ class TestFuelBurn(unittest.TestCase):
         # Set: FUEL_PRJS_FUEL_OPR_TMPS
         expected_fuel_project_fuels = list(prj_fuels_df.to_records(index=False))
         expected_fuels_by_prj = {}
-        for (p, f) in expected_fuel_project_fuels:
+        for (p, f, blend_min, blend_max) in expected_fuel_project_fuels:
             if p not in expected_fuels_by_prj.keys():
                 expected_fuels_by_prj[p] = [f]
             else:
@@ -252,6 +253,51 @@ class TestFuelBurn(unittest.TestCase):
 
         self.assertListEqual(
             expected_startup_fuel_prj_fuel_tmps, actual_startup_fuel_prj_fuel_tmps
+        )
+
+        # Params
+        # Param: min_fraction_in_fuel_blend
+        min_fraction_tuples = []
+        for record in prj_fuels_df.to_dict(orient="records"):
+            min_fraction_tuples.append(
+                (
+                    (record["project"], record["fuel"]),
+                    record["min_fraction_in_fuel_blend"],
+                )
+            )
+        expected_min_fraction_in_fuel_blend = OrderedDict(sorted(min_fraction_tuples))
+        actual_min_fraction_in_fuel_blend = OrderedDict(
+            sorted(
+                {
+                    (p, f): instance.min_fraction_in_fuel_blend[p, f]
+                    for (p, f) in instance.FUEL_PRJ_FUELS
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_min_fraction_in_fuel_blend, actual_min_fraction_in_fuel_blend
+        )
+
+        # Param: max_fraction_in_fuel_blend
+        max_fraction_tuples = []
+        for record in prj_fuels_df.to_dict(orient="records"):
+            max_fraction_tuples.append(
+                (
+                    (record["project"], record["fuel"]),
+                    record["max_fraction_in_fuel_blend"],
+                )
+            )
+        expected_max_fraction_in_fuel_blend = OrderedDict(sorted(max_fraction_tuples))
+        actual_max_fraction_in_fuel_blend = OrderedDict(
+            sorted(
+                {
+                    (p, f): instance.max_fraction_in_fuel_blend[p, f]
+                    for (p, f) in instance.FUEL_PRJ_FUELS
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_max_fraction_in_fuel_blend, actual_max_fraction_in_fuel_blend
         )
 
 

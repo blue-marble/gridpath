@@ -509,7 +509,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
     )
     if os.path.exists(project_fuels_file):
-        data_portal.load(filename=project_fuels_file, set=m.FUEL_PRJ_FUELS)
+        data_portal.load(
+            filename=project_fuels_file,
+            select=("project", "fuel"),
+            index=m.FUEL_PRJ_FUELS,
+            param=(),
+        )
 
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
         None: list(data_portal.data()["variable_om_cost_per_mwh"].keys())
@@ -703,7 +708,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c5 = conn.cursor()
     fuels = c5.execute(
         """
-        SELECT project, fuel
+        SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN

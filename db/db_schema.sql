@@ -985,6 +985,8 @@ CREATE TABLE inputs_project_fuels (
 project VARCHAR(64),
 project_fuel_scenario_id INTEGER,
 fuel VARCHAR(64),
+min_fraction_in_fuel_blend FLOAT DEFAULT 0,
+max_fraction_in_fuel_blend FLOAT DEFAULT 1,
 PRIMARY KEY (project, project_fuel_scenario_id, fuel),
 FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (project, project_fuel_scenario_id)

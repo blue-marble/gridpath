@@ -256,7 +256,9 @@ class TestOperationsInit(unittest.TestCase):
         )
 
         # Set: FUEL_PRJ_FUELS
-        expected_fuel_project_fuels = list(prj_fuels_df.to_records(index=False))
+        expected_fuel_project_fuels = list(
+            prj_fuels_df[["project", "fuel"]].to_records(index=False)
+        )
 
         # Need to convert to tuples from numpy arrays to allow assert below
         expected_fuel_project_fuels = sorted(

@@ -98,7 +98,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     fuels = c1.execute(
         """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu
         FROM (
-        SELECT project, fuel
+        SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN
@@ -136,7 +136,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     fuel_prices = c2.execute(
         """SELECT DISTINCT fuel, period, month, fuel_price_per_mmbtu
         FROM (
-       SELECT project, fuel
+       SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN
@@ -200,7 +200,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     projects = c1.execute(
         """
-        SELECT project, fuel
+        SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN
