@@ -31,17 +31,30 @@ import warnings
 
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
-from gridpath.common_functions import determine_scenario_directory, \
-    create_directory_if_not_exists, get_db_parser, \
-    get_required_e2e_arguments_parser, get_parallel_get_inputs_parser
+from gridpath.common_functions import (
+    determine_scenario_directory,
+    create_directory_if_not_exists,
+    get_db_parser,
+    get_required_e2e_arguments_parser,
+    get_parallel_get_inputs_parser,
+)
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    get_subproblem_structure_from_db, SolverOptions
+from gridpath.auxiliary.scenario_chars import (
+    OptionalFeatures,
+    SubScenarios,
+    get_subproblem_structure_from_db,
+    SolverOptions,
+)
 
 
 def write_model_inputs(
-    scenario_directory, subproblem_structure, modules_to_use, scenario_id,
-    subscenarios, db_path, n_parallel_subproblems
+    scenario_directory,
+    subproblem_structure,
+    modules_to_use,
+    scenario_id,
+    subscenarios,
+    db_path,
+    n_parallel_subproblems,
 ):
     """
     For each module, load the inputs from the database and write out the inputs
@@ -75,14 +88,15 @@ def write_model_inputs(
 
     # Do a few checks on parallelization request
     if n_parallel_subproblems < 1:
-        warnings.warn("n_parallel_subproblem can't be 0. Solving without "
-                      "parallelization.")
+        warnings.warn(
+            "n_parallel_subproblem can't be 0. Solving without " "parallelization."
+        )
         n_parallel_subproblems = 1
 
-    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 \
-            and n_parallel_subproblems > 1:
-        warnings.warn("Only one subproblem in scenario. Parallelization "
-                      "not possible.")
+    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 and n_parallel_subproblems > 1:
+        warnings.warn(
+            "Only one subproblem in scenario. Parallelization " "not possible."
+        )
         n_parallel_subproblems = 1
 
     # If no parallelization requested, loop through the subproblems
@@ -96,15 +110,24 @@ def write_model_inputs(
                 modules_to_use=modules_to_use,
                 scenario_id=scenario_id,
                 subscenarios=subscenarios,
-                db_path=db_path
+                db_path=db_path,
             )
     else:
-        pool_data = tuple([
-            [scenario_directory, subproblem_structure, subproblem,
-             make_subproblem_directories, modules_to_use, scenario_id,
-             subscenarios, db_path]
-            for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
-        ])
+        pool_data = tuple(
+            [
+                [
+                    scenario_directory,
+                    subproblem_structure,
+                    subproblem,
+                    make_subproblem_directories,
+                    modules_to_use,
+                    scenario_id,
+                    subscenarios,
+                    db_path,
+                ]
+                for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
+            ]
+        )
 
         pool = Pool(n_parallel_subproblems)
         pool.map(get_inputs_for_subproblem_pool, pool_data)
@@ -112,9 +135,14 @@ def write_model_inputs(
 
 
 def get_inputs_for_subproblem(
-    scenario_directory, subproblem_structure, subproblem,
-    make_subproblem_directories, modules_to_use, scenario_id,
-    subscenarios, db_path
+    scenario_directory,
+    subproblem_structure,
+    subproblem,
+    make_subproblem_directories,
+    modules_to_use,
+    scenario_id,
+    subscenarios,
+    db_path,
 ):
 
     loaded_modules = load_modules(modules_to_use=modules_to_use)
@@ -162,7 +190,7 @@ def get_inputs_for_subproblem(
                     subscenarios=subscenarios,
                     subproblem=subproblem_str,
                     stage=stage_str,
-                    conn=conn
+                    conn=conn,
                 )
             else:
                 pass
@@ -181,24 +209,28 @@ def get_inputs_for_subproblem(
         # First create the pass-through directory if it doesn't
         # exist
         # TODO: need better handling of deleting prior results?
-        pass_through_directory = \
-            os.path.join(scenario_directory, str(subproblem),
-                         "pass_through_inputs")
+        pass_through_directory = os.path.join(
+            scenario_directory, str(subproblem), "pass_through_inputs"
+        )
         if not os.path.exists(pass_through_directory):
             os.makedirs(pass_through_directory)
         with open(
-                os.path.join(
-                    pass_through_directory,
-                    "fixed_commitment.tab"
-                ), "w", newline=""
+            os.path.join(pass_through_directory, "fixed_commitment.tab"),
+            "w",
+            newline="",
         ) as fixed_commitment_file:
             fixed_commitment_writer = csv.writer(
-                fixed_commitment_file,
-                delimiter="\t", lineterminator="\n"
+                fixed_commitment_file, delimiter="\t", lineterminator="\n"
             )
             fixed_commitment_writer.writerow(
-                ["project", "timepoint", "stage",
-                 "final_commitment_stage", "commitment"])
+                [
+                    "project",
+                    "timepoint",
+                    "stage",
+                    "final_commitment_stage",
+                    "commitment",
+                ]
+            )
 
 
 def get_inputs_for_subproblem_pool(pool_datum):
@@ -206,9 +238,16 @@ def get_inputs_for_subproblem_pool(pool_datum):
     Helper function to easily pass to pool.map if running subproblems in
     parallel
     """
-    [scenario_directory, subproblem_structure, subproblem,
-     make_subproblem_directories, modules_to_use, scenario_id,
-     subscenarios, db_path] = pool_datum
+    [
+        scenario_directory,
+        subproblem_structure,
+        subproblem,
+        make_subproblem_directories,
+        modules_to_use,
+        scenario_id,
+        subscenarios,
+        db_path,
+    ] = pool_datum
 
     get_inputs_for_subproblem(
         scenario_directory=scenario_directory,
@@ -218,7 +257,7 @@ def get_inputs_for_subproblem_pool(pool_datum):
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,
         subscenarios=subscenarios,
-        db_path=db_path
+        db_path=db_path,
     )
 
 
@@ -229,8 +268,10 @@ def delete_prior_aux_files(scenario_directory):
     :return:
     """
     prior_aux_files = [
-        "features.csv", "scenario_description.csv", "solver_options.csv",
-        "linked_subproblems_map.csv"
+        "features.csv",
+        "scenario_description.csv",
+        "solver_options.csv",
+        "linked_subproblems_map.csv",
     ]
 
     for f in prior_aux_files:
@@ -247,7 +288,7 @@ def delete_prior_inputs(inputs_directory):
     :return:
     """
     prior_input_tab_files = [
-        f for f in os.listdir(inputs_directory) if f.endswith('.tab')
+        f for f in os.listdir(inputs_directory) if f.endswith(".tab")
     ]
 
     for f in prior_input_tab_files:
@@ -264,8 +305,11 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_required_e2e_arguments_parser(),
-                 get_parallel_get_inputs_parser()]
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(),
+            get_parallel_get_inputs_parser(),
+        ],
     )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
@@ -279,11 +323,10 @@ def write_features_csv(scenario_directory, feature_list):
     GridPath modules to include
     :return:
     """
-    with open(os.path.join(scenario_directory, "features.csv"), "w", newline="") as \
-            features_csv_file:
-        writer = csv.writer(
-            features_csv_file, delimiter=",", lineterminator="\n"
-        )
+    with open(
+        os.path.join(scenario_directory, "features.csv"), "w", newline=""
+    ) as features_csv_file:
+        writer = csv.writer(features_csv_file, delimiter=",", lineterminator="\n")
 
         # Write header
         writer.writerow(["features"])
@@ -293,8 +336,7 @@ def write_features_csv(scenario_directory, feature_list):
 
 
 def write_scenario_description(
-    scenario_directory, scenario_id, scenario_name,
-    optional_features, subscenarios
+    scenario_directory, scenario_id, scenario_name, optional_features, subscenarios
 ):
     """
 
@@ -308,33 +350,29 @@ def write_scenario_description(
     feature_list = optional_features.get_all_available_features()
     subscenario_list = subscenarios.get_all_available_subscenarios()
 
-    with open(os.path.join(scenario_directory, "scenario_description.csv"),
-              "w", newline="") as \
-            scenario_description_file:
-        writer = csv.writer(scenario_description_file, delimiter=",",
-                            lineterminator="\n")
+    with open(
+        os.path.join(scenario_directory, "scenario_description.csv"), "w", newline=""
+    ) as scenario_description_file:
+        writer = csv.writer(
+            scenario_description_file, delimiter=",", lineterminator="\n"
+        )
 
         # Scenario ID and scenario name
-        writer.writerow(
-            ["scenario_id", scenario_id]
-        )
-        writer.writerow(
-            ["scenario_name", scenario_name]
-        )
+        writer.writerow(["scenario_id", scenario_id])
+        writer.writerow(["scenario_name", scenario_name])
 
         # Optional features
         for feature in feature_list:
-            writer.writerow([
-                "of_{}".format(feature),
-                getattr(optional_features, "OF_{}".format(feature.upper()))
-            ])
+            writer.writerow(
+                [
+                    "of_{}".format(feature),
+                    getattr(optional_features, "OF_{}".format(feature.upper())),
+                ]
+            )
 
         # Subscenarios
         for subscenario in subscenario_list:
-            writer.writerow([
-                subscenario,
-                getattr(subscenarios, subscenario.upper())
-            ])
+            writer.writerow([subscenario, getattr(subscenarios, subscenario.upper())])
 
 
 def write_units_csv(scenario_directory, conn):
@@ -363,8 +401,9 @@ def write_solver_options(scenario_directory, solver_options):
     if solver_options.SOLVER is None and solver_options.SOLVER_OPTIONS is None:
         pass
     else:
-        with open(os.path.join(scenario_directory, "solver_options.csv"),
-                  "w", newline="") as solver_options_file:
+        with open(
+            os.path.join(scenario_directory, "solver_options.csv"), "w", newline=""
+        ) as solver_options_file:
             writer = csv.writer(solver_options_file, delimiter=",")
             writer.writerow(["solver", solver_options.SOLVER])
             for opt in solver_options.SOLVER_OPTIONS.keys():
@@ -381,15 +420,12 @@ def write_linked_subproblems_map(scenario_directory, conn, subscenarios):
         AND temporal_scenario_id = ?;
         """
 
-    df = pd.read_sql(
-        sql=sql, con=conn, params=(subscenarios.TEMPORAL_SCENARIO_ID, )
-    )
+    df = pd.read_sql(sql=sql, con=conn, params=(subscenarios.TEMPORAL_SCENARIO_ID,))
 
     # Only write this file if there are any linked problems
     if not df.empty:
         df.to_csv(
-            os.path.join(scenario_directory, "linked_subproblems_map.csv"),
-            index=False
+            os.path.join(scenario_directory, "linked_subproblems_map.csv"), index=False
         )
 
 
@@ -419,13 +455,12 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg,
         scenario_name_arg=scenario_name_arg,
         c=c,
-        script="get_scenario_inputs"
+        script="get_scenario_inputs",
     )
 
     # Determine scenario directory and create it if needed
     scenario_directory = determine_scenario_directory(
-        scenario_location=scenario_location,
-        scenario_name=scenario_name
+        scenario_location=scenario_location, scenario_name=scenario_name
     )
     create_directory_if_not_exists(directory=scenario_directory)
 
@@ -446,14 +481,15 @@ def main(args=None):
     # the stages_flag to True to pass to determine_modules below
     # This tells the determine_modules function to include the
     # stages-related modules
-    stages_flag = any([
-        len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1 for subp in
-        list(subproblem_structure.SUBPROBLEM_STAGES.keys())
-    ])
+    stages_flag = any(
+        [
+            len(subproblem_structure.SUBPROBLEM_STAGES[subp]) > 1
+            for subp in list(subproblem_structure.SUBPROBLEM_STAGES.keys())
+        ]
+    )
 
     # Figure out which modules to use and load the modules
-    modules_to_use = determine_modules(features=feature_list,
-                                       multi_stage=stages_flag)
+    modules_to_use = determine_modules(features=feature_list, multi_stage=stages_flag)
 
     # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
@@ -463,20 +499,19 @@ def main(args=None):
         scenario_id=scenario_id,
         subscenarios=subscenarios,
         db_path=db_path,
-        n_parallel_subproblems=int(parsed_arguments.n_parallel_get_inputs)
+        n_parallel_subproblems=int(parsed_arguments.n_parallel_get_inputs),
     )
 
     # Save the list of optional features to a file (will be used to determine
     # modules without database connection)
-    write_features_csv(
-        scenario_directory=scenario_directory,
-        feature_list=feature_list
-    )
+    write_features_csv(scenario_directory=scenario_directory, feature_list=feature_list)
     # Write full scenario description
     write_scenario_description(
         scenario_directory=scenario_directory,
-        scenario_id=scenario_id, scenario_name=scenario_name,
-        optional_features=optional_features, subscenarios=subscenarios
+        scenario_id=scenario_id,
+        scenario_name=scenario_name,
+        optional_features=optional_features,
+        subscenarios=subscenarios,
     )
 
     # Write the units used for all metrics
@@ -484,14 +519,11 @@ def main(args=None):
 
     # Write the solver options file if needed
     write_solver_options(
-        scenario_directory=scenario_directory,
-        solver_options=solver_options
+        scenario_directory=scenario_directory, solver_options=solver_options
     )
 
     # Write the subproblem linked timepoints map file if needed
-    write_linked_subproblems_map(
-        scenario_directory, conn, subscenarios
-    )
+    write_linked_subproblems_map(scenario_directory, conn, subscenarios)
 
     # Close the database connection
     conn.close()

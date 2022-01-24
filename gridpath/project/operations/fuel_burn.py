@@ -20,14 +20,12 @@ applicable).
 
 import csv
 import os.path
-from pyomo.environ import Set, Var, Expression, Constraint, \
-    NonNegativeReals, value
+from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import \
-    load_operational_type_modules
+from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
 
 
@@ -123,8 +121,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     required_operational_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
-        stage=stage, which_type="operational_type"
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
     )
 
     imported_operational_modules = load_operational_type_modules(
@@ -137,40 +137,41 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-                          if p in mod.FUEL_PRJS]
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.FUEL_PRJS
+        ],
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
-        initialize=lambda mod:
-        set((g, tmp, s) for (g, tmp) in mod.PRJ_OPR_TMPS
+        initialize=lambda mod: set(
+            (g, tmp, s)
+            for (g, tmp) in mod.PRJ_OPR_TMPS
             for _g, p, s in mod.HR_CURVE_PRJS_PRDS_SGMS
-            if g == _g and mod.period[tmp] == p)
+            if g == _g and mod.period[tmp] == p
+        ),
     )
 
     m.HR_CURVE_PRJS_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        set((g, tmp)
-            for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS)
+        initialize=lambda mod: set(
+            (g, tmp) for (g, tmp, s) in mod.HR_CURVE_PRJS_OPR_TMPS_SGMS
+        ),
     )
 
     m.STARTUP_FUEL_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.FUEL_PRJ_OPR_TMPS,
-        initialize=lambda mod: [(p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS
-                          if p in mod.STARTUP_FUEL_PRJS]
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.FUEL_PRJ_OPR_TMPS if p in mod.STARTUP_FUEL_PRJS
+        ],
     )
 
     # Variables
     ###########################################################################
 
-    m.HR_Curve_Prj_Fuel_Burn = Var(
-        m.HR_CURVE_PRJS_OPR_TMPS,
-        within=NonNegativeReals
-    )
+    m.HR_Curve_Prj_Fuel_Burn = Var(m.HR_CURVE_PRJS_OPR_TMPS, within=NonNegativeReals)
 
     # Constraints
     ###########################################################################
@@ -190,19 +191,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         at very inefficient operating points.
         """
         gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type],
-                   "fuel_burn_by_ll_rule"):
-            fuel_burn_by_ll = imported_operational_modules[gen_op_type]. \
-                fuel_burn_by_ll_rule(mod, prj, tmp, s)
+        if hasattr(imported_operational_modules[gen_op_type], "fuel_burn_by_ll_rule"):
+            fuel_burn_by_ll = imported_operational_modules[
+                gen_op_type
+            ].fuel_burn_by_ll_rule(mod, prj, tmp, s)
         else:
-            fuel_burn_by_ll = \
-                op_type_init.fuel_burn_by_ll_rule(mod, prj, tmp, s)
+            fuel_burn_by_ll = op_type_init.fuel_burn_by_ll_rule(mod, prj, tmp, s)
 
         return mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] >= fuel_burn_by_ll
 
     m.HR_Curve_Prj_Fuel_Burn_Constraint = Constraint(
-        m.HR_CURVE_PRJS_OPR_TMPS_SGMS,
-        rule=fuel_burn_by_ll_constraint_rule
+        m.HR_CURVE_PRJS_OPR_TMPS_SGMS, rule=fuel_burn_by_ll_constraint_rule
     )
 
     # Expressions
@@ -214,21 +213,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         (and whether a project burns fuel)
         """
         op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[op_type],
-                   "fuel_burn_rule"):
-            fuel_burn_simple = imported_operational_modules[op_type]. \
-                fuel_burn_rule(mod, prj, tmp)
+        if hasattr(imported_operational_modules[op_type], "fuel_burn_rule"):
+            fuel_burn_simple = imported_operational_modules[op_type].fuel_burn_rule(
+                mod, prj, tmp
+            )
         else:
             fuel_burn_simple = op_type_init.fuel_burn_rule(mod, prj, tmp)
 
-        return fuel_burn_simple \
-            + (mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] if prj in mod.HR_CURVE_PRJS
-               else 0)
+        return fuel_burn_simple + (
+            mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] if prj in mod.HR_CURVE_PRJS else 0
+        )
 
-    m.Operations_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
-        rule=fuel_burn_rule
-    )
+    m.Operations_Fuel_Burn_MMBtu = Expression(m.FUEL_PRJ_OPR_TMPS, rule=fuel_burn_rule)
 
     def startup_fuel_burn_rule(mod, prj, tmp):
         """
@@ -237,16 +233,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         generator based on its operational type.
         """
         op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[op_type],
-                   "startup_fuel_burn_rule"):
-            return imported_operational_modules[op_type]. \
-                startup_fuel_burn_rule(mod, prj, tmp)
+        if hasattr(imported_operational_modules[op_type], "startup_fuel_burn_rule"):
+            return imported_operational_modules[op_type].startup_fuel_burn_rule(
+                mod, prj, tmp
+            )
         else:
             return op_type_init.startup_fuel_burn_rule(mod, prj, tmp)
 
     m.Startup_Fuel_Burn_MMBtu = Expression(
-        m.STARTUP_FUEL_PRJ_OPR_TMPS,
-        rule=startup_fuel_burn_rule
+        m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=startup_fuel_burn_rule
     )
 
     def total_fuel_burn_rule(mod, g, tmp):
@@ -257,19 +252,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Total fuel burn is the sum of operational fuel burn (power production)
         and startup fuel burn.
         """
-        return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
-            + (mod.Startup_Fuel_Burn_MMBtu[g, tmp]
-               if g in mod.STARTUP_FUEL_PRJS
-               else 0)
+        return mod.Operations_Fuel_Burn_MMBtu[g, tmp] + (
+            mod.Startup_Fuel_Burn_MMBtu[g, tmp] if g in mod.STARTUP_FUEL_PRJS else 0
+        )
 
-    m.Total_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PRJ_OPR_TMPS,
-        rule=total_fuel_burn_rule
-    )
+    m.Total_Fuel_Burn_MMBtu = Expression(m.FUEL_PRJ_OPR_TMPS, rule=total_fuel_burn_rule)
 
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -284,38 +276,57 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-              "fuel_burn.csv"), "w", newline="") as f:
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "results", "fuel_burn.csv"
+        ),
+        "w",
+        newline="",
+    ) as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone", "technology", "fuel",
-             "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
-             "total_fuel_burn_mmbtu"]
+            [
+                "project",
+                "period",
+                "horizon",
+                "timepoint",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "load_zone",
+                "technology",
+                "fuel",
+                "fuel_burn_operations_mmbtu",
+                "fuel_burn_startup_mmbtu",
+                "total_fuel_burn_mmbtu",
+            ]
         )
         for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.tmp_weight[tmp],
-                m.hrs_in_tmp[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                m.fuel[p],
-                value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
-                value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
-                if p in m.STARTUP_FUEL_PRJS else None,
-                value(m.Total_Fuel_Burn_MMBtu[p, tmp])
-            ])
+            writer.writerow(
+                [
+                    p,
+                    m.period[tmp],
+                    m.horizon[tmp, m.balancing_type_project[p]],
+                    tmp,
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    m.load_zone[p],
+                    m.technology[p],
+                    m.fuel[p],
+                    value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
+                    value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
+                    if p in m.STARTUP_FUEL_PRJS
+                    else None,
+                    value(m.Total_Fuel_Burn_MMBtu[p, tmp]),
+                ]
+            )
 
 
 # Database
 ###############################################################################
 
+
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -331,15 +342,17 @@ def import_results_into_database(
         print("project fuel burn")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
-        conn=db, cursor=c,
+        conn=db,
+        cursor=c,
         table="results_project_fuel_burn",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
     )
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory, "fuel_burn.csv"),
-              "r") as fuel_burn_file:
+    with open(os.path.join(results_directory, "fuel_burn.csv"), "r") as fuel_burn_file:
         reader = csv.reader(fuel_burn_file)
 
         next(reader)  # skip header
@@ -358,11 +371,23 @@ def import_results_into_database(
             total_fuel_burn = row[11]
 
             results.append(
-                (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
+                (
+                    scenario_id,
+                    project,
+                    period,
+                    subproblem,
+                    stage,
+                    horizon,
+                    timepoint,
+                    timepoint_weight,
                     number_of_hours_in_timepoint,
-                    load_zone, technology, fuel, opr_fuel_burn_tons,
-                    startup_fuel_burn_tons, total_fuel_burn)
+                    load_zone,
+                    technology,
+                    fuel,
+                    opr_fuel_burn_tons,
+                    startup_fuel_burn_tons,
+                    total_fuel_burn,
+                )
             )
 
     insert_temp_sql = """
@@ -374,7 +399,9 @@ def import_results_into_database(
          load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
          startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-         """.format(scenario_id)
+         """.format(
+        scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
@@ -391,6 +418,7 @@ def import_results_into_database(
          startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu
         FROM temp_results_project_fuel_burn{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-         """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+         """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

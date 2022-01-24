@@ -14,8 +14,10 @@
 
 from pyomo.environ import Expression
 
-from gridpath.auxiliary.auxiliary import \
-    get_required_subtype_modules_from_projects_file, load_subtype_modules
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules_from_projects_file,
+    load_subtype_modules,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -26,22 +28,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     # Import needed availability type modules
-    required_availability_modules = \
-        get_required_subtype_modules_from_projects_file(
-            scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, prj_or_tx="transmission_line",
-            which_type="tx_availability_type"
-        )
-    imported_availability_modules = \
-        load_availability_type_modules(required_availability_modules)
+    required_availability_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        prj_or_tx="transmission_line",
+        which_type="tx_availability_type",
+    )
+    imported_availability_modules = load_availability_type_modules(
+        required_availability_modules
+    )
 
     # First, add any components specific to the availability type modules
     for op_m in required_availability_modules:
         imp_op_m = imported_availability_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
-            imp_op_m.add_model_components(
-                m, d, scenario_directory, subproblem, stage
-            )
+            imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
     def availability_derate_rule(mod, tx, tmp):
         """
@@ -52,12 +54,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         availability_type = mod.tx_availability_type[tx]
-        return imported_availability_modules[availability_type]. \
-            availability_derate_rule(mod, tx, tmp)
+        return imported_availability_modules[
+            availability_type
+        ].availability_derate_rule(mod, tx, tmp)
 
-    m.Tx_Availability_Derate = Expression(
-        m.TX_OPR_TMPS, rule=availability_derate_rule
-    )
+    m.Tx_Availability_Derate = Expression(m.TX_OPR_TMPS, rule=availability_derate_rule)
 
 
 # Input-Output
@@ -76,20 +77,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     required_availability_modules = get_required_subtype_modules_from_projects_file(
-        scenario_directory=scenario_directory, subproblem=subproblem,
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
         stage=stage,
         prj_or_tx="transmission_line",
-        which_type="tx_availability_type"
+        which_type="tx_availability_type",
     )
-    imported_availability_modules = \
-        load_availability_type_modules(
-            required_availability_modules
-        )
+    imported_availability_modules = load_availability_type_modules(
+        required_availability_modules
+    )
     for avl_m in required_availability_modules:
-        if hasattr(imported_availability_modules[avl_m],
-                   "load_model_data"):
+        if hasattr(imported_availability_modules[avl_m], "load_model_data"):
             imported_availability_modules[avl_m].load_model_data(
-                m, d, data_portal, scenario_directory, subproblem, stage)
+                m, d, data_portal, scenario_directory, subproblem, stage
+            )
         else:
             pass
 
@@ -107,21 +108,19 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     # Module-specific capacity results
-    required_availability_modules = \
-        get_required_subtype_modules_from_projects_file(
-            scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, which_type="tx_availability_type",
-            prj_or_tx="transmission_line"
-        )
-    imported_availability_modules = \
-        load_availability_type_modules(
-            required_availability_modules
-        )
+    required_availability_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="tx_availability_type",
+        prj_or_tx="transmission_line",
+    )
+    imported_availability_modules = load_availability_type_modules(
+        required_availability_modules
+    )
     for op_m in required_availability_modules:
-        if hasattr(imported_availability_modules[op_m],
-                   "export_results"):
-            imported_availability_modules[
-                op_m].export_results(
+        if hasattr(imported_availability_modules[op_m], "export_results"):
+            imported_availability_modules[op_m].export_results(
                 scenario_directory, subproblem, stage, m, d
             )
         else:
@@ -130,6 +129,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 # Database
 ###############################################################################
+
 
 def write_model_inputs(
     scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
@@ -147,20 +147,19 @@ def write_model_inputs(
     c = conn.cursor()
     # Load in the required capacity type modules
 
-    required_availability_type_modules = \
-        get_required_availability_type_modules(scenario_id, c)
+    required_availability_type_modules = get_required_availability_type_modules(
+        scenario_id, c
+    )
 
     imported_availability_type_modules = load_availability_type_modules(
-        required_availability_type_modules)
+        required_availability_type_modules
+    )
 
     # Get module-specific inputs
     for op_m in required_availability_type_modules:
-        if hasattr(imported_availability_type_modules[op_m],
-                   "write_model_inputs"):
-            imported_availability_type_modules[op_m]. \
-                write_model_inputs(
-                scenario_directory, scenario_id, subscenarios, subproblem,
-                stage, conn
+        if hasattr(imported_availability_type_modules[op_m], "write_model_inputs"):
+            imported_availability_type_modules[op_m].write_model_inputs(
+                scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
             )
         else:
             pass
@@ -182,17 +181,17 @@ def import_results_into_database(
     """
 
     # Load in the required availability type modules
-    required_availability_type_modules = \
-        get_required_availability_type_modules(scenario_id, c)
-    imported_availability_modules = \
-        load_availability_type_modules(required_availability_type_modules)
+    required_availability_type_modules = get_required_availability_type_modules(
+        scenario_id, c
+    )
+    imported_availability_modules = load_availability_type_modules(
+        required_availability_type_modules
+    )
 
     # Import module-specific results
     for op_m in required_availability_type_modules:
-        if hasattr(imported_availability_modules[op_m],
-                   "import_results_into_database"):
-            imported_availability_modules[op_m]. \
-                import_results_into_database(
+        if hasattr(imported_availability_modules[op_m], "import_results_into_database"):
+            imported_availability_modules[op_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
@@ -223,17 +222,22 @@ def get_required_availability_type_modules(scenario_id, c):
     transmission_portfolio_scenario_id = c.execute(
         """SELECT transmission_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
     ).fetchone()[0]
 
     transmission_availability_scenario_id = c.execute(
         """SELECT transmission_availability_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
     ).fetchone()[0]
 
     required_availability_type_modules = [
-        p[0] for p in c.execute(
+        p[0]
+        for p in c.execute(
             """SELECT DISTINCT availability_type 
             FROM 
             (SELECT transmission_line FROM inputs_transmission_portfolios
@@ -244,7 +248,7 @@ def get_required_availability_type_modules(scenario_id, c):
             WHERE transmission_availability_scenario_id = {}) as av_type_tbl
             USING (transmission_line)""".format(
                 transmission_portfolio_scenario_id,
-                transmission_availability_scenario_id
+                transmission_availability_scenario_id,
             )
         ).fetchall()
     ]
@@ -261,5 +265,5 @@ def load_availability_type_modules(required_availability_types):
     return load_subtype_modules(
         required_subtype_modules=required_availability_types,
         package="gridpath.transmission.availability.availability_types",
-        required_attributes=["availability_derate_rule"]
+        required_attributes=["availability_derate_rule"],
     )

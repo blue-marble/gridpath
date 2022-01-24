@@ -27,9 +27,13 @@ class DataProvider(object):
         self.period_options = get_period_options(conn, self.scenario_options)
         self.stage_options = get_stage_options(conn, self.scenario_options)
         self.zone_options = get_zone_options(conn, self.scenario_options)
-        self.cap_options = ["new_build_capacity", "retired_capacity",
-                            "total_capacity", "cumulative_new_build_capacity",
-                            "cumulative_retired_capacity"]
+        self.cap_options = [
+            "new_build_capacity",
+            "retired_capacity",
+            "total_capacity",
+            "cumulative_new_build_capacity",
+            "cumulative_retired_capacity",
+        ]
         # TODO: ideally dynamically update zone_options based on selected scenarios
 
         # Load data for all scenarios into a set of pandas DataFrames
@@ -44,28 +48,31 @@ class DataProvider(object):
         df = self.objective.copy()
 
         scenario_filter = df["scenario"].isin(scenario)
-        stage_filter = (df["stage_id"] == int(stage))
+        stage_filter = df["stage_id"] == int(stage)
         df = df[scenario_filter & stage_filter]
 
         # 'Unpivot' from wide to long format (move metrics into a col)
         df = pd.melt(
             df,
-            id_vars=['scenario', 'stage_id'],
-            var_name='objective_metric',
-            value_name='value'
+            id_vars=["scenario", "stage_id"],
+            var_name="objective_metric",
+            value_name="value",
         )
         # # Pivot scenarios into columms
-        df = pd.pivot_table(
-            df,
-            index=['stage_id', 'objective_metric'],
-            columns='scenario',
-            values='value'
-        ).reset_index().fillna(0)
+        df = (
+            pd.pivot_table(
+                df,
+                index=["stage_id", "objective_metric"],
+                columns="scenario",
+                values="value",
+            )
+            .reset_index()
+            .fillna(0)
+        )
 
         # Convert to categorical for sorting
-        df['objective_metric'] = pd.Categorical(
-            values=df['objective_metric'],
-            categories=self.objective_metrics
+        df["objective_metric"] = pd.Categorical(
+            values=df["objective_metric"], categories=self.objective_metrics
         )
         df = df.sort_values(by=["objective_metric"])
 
@@ -79,32 +86,44 @@ class DataProvider(object):
 
         scenario_filter = df["scenario"].isin(scenario)
         period_filter = df["period"].isin(period)
-        stage_filter = (df["stage_id"] == int(stage))
-        zone_filter = (df["load_zone"] == zone)
+        stage_filter = df["stage_id"] == int(stage)
+        zone_filter = df["load_zone"] == zone
 
         df = df[period_filter & stage_filter & scenario_filter & zone_filter]
 
         # 'Unpivot' from wide to long format (move metrics into a col)
         df = pd.melt(
             df,
-            id_vars=['scenario', 'stage_id', 'period', 'load_zone'],
-            var_name='summary_metric',
-            value_name='value'
+            id_vars=["scenario", "stage_id", "period", "load_zone"],
+            var_name="summary_metric",
+            value_name="value",
         )
         # Pivot scenarios into columms
-        df = pd.pivot_table(
-            df,
-            index=['load_zone', 'stage_id', 'period', 'summary_metric'],
-            columns='scenario',
-            values='value'
-        ).reset_index().fillna(0)
+        df = (
+            pd.pivot_table(
+                df,
+                index=["load_zone", "stage_id", "period", "summary_metric"],
+                columns="scenario",
+                values="value",
+            )
+            .reset_index()
+            .fillna(0)
+        )
 
         # Convert to categorical for sorting
-        df['summary_metric'] = pd.Categorical(
-            values=df['summary_metric'],
-            categories=["capacity_cost", "operational_cost", "transmission_cost",
-                        "total_cost", "load", "average_cost", "overgeneration",
-                        "unserved_energy", "carbon_emissions"]
+        df["summary_metric"] = pd.Categorical(
+            values=df["summary_metric"],
+            categories=[
+                "capacity_cost",
+                "operational_cost",
+                "transmission_cost",
+                "total_cost",
+                "load",
+                "average_cost",
+                "overgeneration",
+                "unserved_energy",
+                "carbon_emissions",
+            ],
         )
         df = df.sort_values(by=["load_zone", "period", "summary_metric"])
 
@@ -117,9 +136,9 @@ class DataProvider(object):
         df = self.cost.copy()
 
         scenario_filter = df["scenario"].isin(scenario)
-        stage_filter = (df["stage_id"] == int(stage))
+        stage_filter = df["stage_id"] == int(stage)
         period_filter = df["period"].isin(period)
-        zone_filter = (df["load_zone"] == zone)
+        zone_filter = df["load_zone"] == zone
 
         df = df[scenario_filter & stage_filter & period_filter & zone_filter]
         df = df.drop(["load_zone", "stage_id"], axis=1)  # drop bc not stacked
@@ -139,8 +158,8 @@ class DataProvider(object):
 
         scenario_filter = df["scenario"].isin(scenario)
         period_filter = df["period"].isin(period)
-        stage_filter = (df["stage_id"] == int(stage))
-        zone_filter = (df["load_zone"] == zone)
+        stage_filter = df["stage_id"] == int(stage)
+        zone_filter = df["load_zone"] == zone
 
         df = df[scenario_filter & period_filter & stage_filter & zone_filter]
         df = df.drop(["load_zone", "stage_id"], axis=1)  # drop bc not stacked
@@ -160,12 +179,17 @@ class DataProvider(object):
 
         scenario_filter = df["scenario"].isin(scenario)
         period_filter = df["period"].isin(period)
-        stage_filter = (df["stage_id"] == int(stage))
-        zone_filter = (df["load_zone"] == zone)
-        cap_metric_filter = (df["capacity_metric"] == capacity_metric)
+        stage_filter = df["stage_id"] == int(stage)
+        zone_filter = df["load_zone"] == zone
+        cap_metric_filter = df["capacity_metric"] == capacity_metric
 
-        df = df[scenario_filter & period_filter & stage_filter & zone_filter &
-                cap_metric_filter]
+        df = df[
+            scenario_filter
+            & period_filter
+            & stage_filter
+            & zone_filter
+            & cap_metric_filter
+        ]
         df = df.drop(["load_zone", "stage_id", "capacity_metric"], axis=1)
 
         x_col = ["period", "scenario"]
@@ -185,25 +209,33 @@ def get_objective_metrics(conn):
 
 
 def get_scenario_options(conn):
-    scenario_options = [sc[0] for sc in conn.execute(
-        """SELECT scenario_name FROM scenarios
+    scenario_options = [
+        sc[0]
+        for sc in conn.execute(
+            """SELECT scenario_name FROM scenarios
         WHERE run_status_id = 2  --scenarios that have finished;"""
-    ).fetchall()]
+        ).fetchall()
+    ]
     return scenario_options
 
 
 def get_zone_options(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
     # TODO: refactor with ui.server.api.scenario_results
-    load_zone_options = [z[0] for z in conn.execute(
-        """SELECT DISTINCT load_zone FROM inputs_geography_load_zones
+    load_zone_options = [
+        z[0]
+        for z in conn.execute(
+            """SELECT DISTINCT load_zone FROM inputs_geography_load_zones
         WHERE load_zone_scenario_id in (
             SELECT load_zone_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(",".join("?" * len(scenarios)))
-        , scenarios
-    ).fetchall()]
+        );""".format(
+                ",".join("?" * len(scenarios))
+            ),
+            scenarios,
+        ).fetchall()
+    ]
 
     return load_zone_options
 
@@ -211,31 +243,41 @@ def get_zone_options(conn, scenarios):
 def get_period_options(conn, scenarios):
     # TODO: refactor with ui.server.api.scenario_results
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    period_options = [str(p[0]) for p in conn.execute(
-        """SELECT DISTINCT period FROM inputs_temporal_periods
+    period_options = [
+        str(p[0])
+        for p in conn.execute(
+            """SELECT DISTINCT period FROM inputs_temporal_periods
         WHERE temporal_scenario_id in (
             SELECT temporal_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(",".join("?" * len(scenarios)))
-        , scenarios
-      ).fetchall()]
+        );""".format(
+                ",".join("?" * len(scenarios))
+            ),
+            scenarios,
+        ).fetchall()
+    ]
 
     return period_options
 
 
 def get_stage_options(conn, scenarios):
     scenarios = scenarios if isinstance(scenarios, list) else [scenarios]
-    stage_options = [str(s[0]) for s in conn.execute(
-        """SELECT DISTINCT stage_id
+    stage_options = [
+        str(s[0])
+        for s in conn.execute(
+            """SELECT DISTINCT stage_id
         FROM inputs_temporal_subproblems_stages
         WHERE temporal_scenario_id in (
             SELECT temporal_scenario_id
             FROM scenarios
             WHERE scenario_name in ({})
-        );""".format(",".join("?" * len(scenarios)))
-        , scenarios
-    ).fetchall()]
+        );""".format(
+                ",".join("?" * len(scenarios))
+            ),
+            scenarios,
+        ).fetchall()
+    ]
 
     return stage_options
 
@@ -259,9 +301,11 @@ def get_all_cost_data(conn, scenarios):
         USING (scenario_id)
         WHERE spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone
-        ;""".format(",".join(["?"] * len(scenarios)))
+        ;""".format(
+        ",".join(["?"] * len(scenarios))
+    )
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
-    df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
+    df["period"] = df["period"].astype(str)  # for categorical axis in Bokeh
     return df
 
 
@@ -289,7 +333,9 @@ def get_all_capacity_data(conn, scenarios):
         USING (scenario_id)
         
         GROUP BY scenario, stage_id, period, load_zone, technology;
-        """.format(",".join(["?"] * len(scenarios)))
+        """.format(
+        ",".join(["?"] * len(scenarios))
+    )
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
 
     df["cumulative_new_build_capacity"] = df.groupby(
@@ -302,22 +348,25 @@ def get_all_capacity_data(conn, scenarios):
     # 'Unpivot' capacity metrics from wide to long format
     df = pd.melt(
         df,
-        id_vars=['scenario', 'stage_id', 'period', 'load_zone', 'technology'],
-        var_name='capacity_metric',
-        value_name='capacity'
+        id_vars=["scenario", "stage_id", "period", "load_zone", "technology"],
+        var_name="capacity_metric",
+        value_name="capacity",
     )
 
     # Pivot technologies to wide format (for stack chart)
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
-    df = pd.pivot_table(
-        df,
-        index=['scenario', 'stage_id', 'period', 'load_zone',
-               'capacity_metric'],
-        columns='technology',
-        values='capacity'
-    ).fillna(0).reset_index()
+    df = (
+        pd.pivot_table(
+            df,
+            index=["scenario", "stage_id", "period", "load_zone", "capacity_metric"],
+            columns="technology",
+            values="capacity",
+        )
+        .fillna(0)
+        .reset_index()
+    )
 
-    df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
+    df["period"] = df["period"].astype(str)  # for categorical axis in Bokeh
     return df
 
 
@@ -334,18 +383,24 @@ def get_all_energy_data(conn, scenarios):
         USING (scenario_id)
         WHERE spinup_or_lookahead = 0
         GROUP BY scenario, stage_id, period, load_zone, technology;
-        """.format(",".join(["?"] * len(scenarios)))
+        """.format(
+        ",".join(["?"] * len(scenarios))
+    )
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
     # Pivot technologies to wide format (for stack chart)
     # Note: df.pivot does not work with multi-index as of pandas 1.0.5
-    df = pd.pivot_table(
-        df,
-        index=['scenario', 'stage_id', 'period', 'load_zone'],
-        columns='technology',
-        values='energy'
-    ).fillna(0).reset_index()
+    df = (
+        pd.pivot_table(
+            df,
+            index=["scenario", "stage_id", "period", "load_zone"],
+            columns="technology",
+            values="energy",
+        )
+        .fillna(0)
+        .reset_index()
+    )
 
-    df['period'] = df['period'].astype(str)  # for categorical axis in Bokeh
+    df["period"] = df["period"].astype(str)  # for categorical axis in Bokeh
     return df
 
 
@@ -364,7 +419,9 @@ def get_objective_cost_data(conn, scenarios):
         USING (scenario_id)
 
         GROUP BY scenario, stage_id
-        ;""".format(",".join(["?"] * len(scenarios)))
+        ;""".format(
+        ",".join(["?"] * len(scenarios))
+    )
     sql = sql1 + sql2 + sql3
 
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
@@ -426,9 +483,11 @@ def get_all_summary_data(conn, scenarios):
     (SELECT scenario_name, scenario_id FROM scenarios
     WHERE scenario_name in ({}) ) AS scen_table
     USING (scenario_id)
-    ;""".format(",".join(["?"] * len(scenarios)))
+    ;""".format(
+        ",".join(["?"] * len(scenarios))
+    )
 
     df = pd.read_sql(sql, conn, params=scenarios).fillna(0)
-    df['period'] = df['period'].astype(str)  # Bokeh CDS needs string columns
+    df["period"] = df["period"].astype(str)  # Bokeh CDS needs string columns
 
     return df

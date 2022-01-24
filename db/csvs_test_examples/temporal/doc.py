@@ -127,14 +127,10 @@ import webbrowser
 import docutils.core
 
 if __name__ == "__main__":
-    html=docutils.core.publish_string(
-        source=__doc__,
-        writer_name="html")
+    html = docutils.core.publish_string(source=__doc__, writer_name="html")
 
     Html_file = open("html.html", "w")
     Html_file.write(html.decode("utf-8"))
     Html_file.close()
 
-    webbrowser.open('file://' + os.path.join(os.getcwd(), "html.html"))
-
-
+    webbrowser.open("file://" + os.path.join(os.getcwd(), "html.html"))

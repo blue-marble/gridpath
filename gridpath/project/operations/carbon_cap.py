@@ -20,12 +20,12 @@ import csv
 import os.path
 from pyomo.environ import Param, Set
 
-from gridpath.auxiliary.auxiliary import cursor_to_df, \
-    subset_init_by_param_value
-from gridpath.auxiliary.db_interface import update_prj_zone_column, \
-    determine_table_subset_by_start_and_column
-from gridpath.auxiliary.validations import write_validation_to_database, \
-    validate_idxs
+from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
+from gridpath.auxiliary.db_interface import (
+    update_prj_zone_column,
+    determine_table_subset_by_start_and_column,
+)
+from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -77,17 +77,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Sets
     ###########################################################################
 
-    m.CRBN_PRJS = Set(
-        within=m.PROJECTS
-    )
+    m.CRBN_PRJS = Set(within=m.PROJECTS)
 
     # Input Params
     ###########################################################################
 
-    m.carbon_cap_zone = Param(
-        m.CRBN_PRJS,
-        within=m.CARBON_CAP_ZONES
-    )
+    m.carbon_cap_zone = Param(m.CRBN_PRJS, within=m.CARBON_CAP_ZONES)
 
     # Derived Sets
     ###########################################################################
@@ -97,19 +92,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         within=m.CRBN_PRJS,
         initialize=lambda mod, co2_z: subset_init_by_param_value(
             mod, "CRBN_PRJS", "carbon_cap_zone", co2_z
-        )
+        ),
     )
 
     m.CRBN_PRJ_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
-        initialize=lambda mod:
-        [(p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS
-         if p in mod.CRBN_PRJS]
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.CRBN_PRJS
+        ],
     )
 
 
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -123,19 +119,21 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage),
-                              "inputs", "projects.tab"),
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
         select=("project", "carbon_cap_zone"),
-        param=(m.carbon_cap_zone,)
+        param=(m.carbon_cap_zone,),
     )
 
-    data_portal.data()['CRBN_PRJS'] = {
-        None: list(data_portal.data()['carbon_cap_zone'].keys())
+    data_portal.data()["CRBN_PRJS"] = {
+        None: list(data_portal.data()["carbon_cap_zone"].keys())
     }
 
 
 # Database
 ###############################################################################
+
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -173,15 +171,16 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """.format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID,
-            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
         )
     )
 
     return project_zones
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage,
-                       conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -193,17 +192,21 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Make a dict for easy access
     prj_zone_dict = dict()
     for (prj, zone) in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "r"
-              ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "r",
+    ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -223,11 +226,14 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"), "w",
-              newline="") as \
-            projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t",
-                            lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+        ),
+        "w",
+        newline="",
+    ) as projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
@@ -249,15 +255,19 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
 
     for tbl in tables_to_update:
         update_prj_zone_column(
-            conn=db, scenario_id=scenario_id, subscenarios=subscenarios,
+            conn=db,
+            scenario_id=scenario_id,
+            subscenarios=subscenarios,
             subscenario="project_carbon_cap_zone_scenario_id",
             subsc_tbl="inputs_project_carbon_cap_zones",
-            prj_tbl=tbl, col="carbon_cap_zone"
+            prj_tbl=tbl,
+            col="carbon_cap_zone",
         )
 
 
 # Validation
 ###############################################################################
+
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
@@ -270,7 +280,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
 
     project_zones = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
     # Convert input data into pandas DataFrame
     df = cursor_to_df(project_zones)
@@ -283,7 +294,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     zones = c.execute(
         """SELECT carbon_cap_zone FROM inputs_geography_carbon_cap_zones
         WHERE carbon_cap_zone_scenario_id = {}
-        """.format(subscenarios.CARBON_CAP_ZONE_SCENARIO_ID)
+        """.format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
+        )
     )
     zones = [z[0] for z in zones]  # convert to list
 
@@ -296,11 +309,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         gridpath_module=__name__,
         db_table="inputs_project_carbon_cap_zones",
         severity="High",
-        errors=validate_idxs(actual_idxs=zones_w_project,
-                             req_idxs=zones,
-                             idx_label="carbon_cap_zone",
-                             msg="Each carbon cap zone needs at least 1 "
-                                 "project assigned to it.")
+        errors=validate_idxs(
+            actual_idxs=zones_w_project,
+            req_idxs=zones,
+            idx_label="carbon_cap_zone",
+            msg="Each carbon cap zone needs at least 1 " "project assigned to it.",
+        ),
     )
 
     # TODO: need validation that projects with carbon cap zones also have fuels

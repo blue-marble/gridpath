@@ -46,13 +46,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                              "spinning_reserves_balancing_areas.tab"),
-        select=("balancing_area", "allow_violation",
-                "violation_penalty_per_mw"),
+        filename=os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "spinning_reserves_balancing_areas.tab",
+        ),
+        select=("balancing_area", "allow_violation", "violation_penalty_per_mw"),
         index=m.SPINNING_RESERVES_ZONES,
-        param=(m.spinning_reserves_allow_violation,
-               m.spinning_reserves_violation_penalty_per_mw)
+        param=(
+            m.spinning_reserves_allow_violation,
+            m.spinning_reserves_violation_penalty_per_mw,
+        ),
     )
 
 
@@ -94,7 +100,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #     scenario_id, subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     spinning_reserves_balancing_areas.tab file.
@@ -107,17 +115,33 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     """
 
     spinning_reserves_bas = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "inputs",
-                           "spinning_reserves_balancing_areas.tab"), "w", newline="") as \
-            spinning_reserve_bas_tab_file:
-        writer = csv.writer(spinning_reserve_bas_tab_file, delimiter="\t", lineterminator="\n")
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "spinning_reserves_balancing_areas.tab",
+        ),
+        "w",
+        newline="",
+    ) as spinning_reserve_bas_tab_file:
+        writer = csv.writer(
+            spinning_reserve_bas_tab_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
-        writer.writerow(["balancing_area", "allow_violation",
-                         "violation_penalty_per_mw",
-                         "reserve_to_energy_adjustment"])
+        writer.writerow(
+            [
+                "balancing_area",
+                "allow_violation",
+                "violation_penalty_per_mw",
+                "reserve_to_energy_adjustment",
+            ]
+        )
 
         for row in spinning_reserves_bas:
             replace_nulls = ["." if i is None else i for i in row]

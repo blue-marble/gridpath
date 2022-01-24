@@ -21,8 +21,13 @@ from argparse import ArgumentParser
 
 from bokeh import events
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import CustomJS, ColumnDataSource, Legend, FactorRange, \
-    NumeralTickFormatter
+from bokeh.models import (
+    CustomJS,
+    ColumnDataSource,
+    Legend,
+    FactorRange,
+    NumeralTickFormatter,
+)
 from bokeh.models.tools import HoverTool
 from bokeh.palettes import cividis
 import numpy as np
@@ -40,8 +45,8 @@ def show_hide_legend(plot):
     plot.js_on_event(
         events.DoubleTap,
         CustomJS(
-            args=dict(legend=plot.legend[0]),
-            code='legend.visible = !legend.visible')
+            args=dict(legend=plot.legend[0]), code="legend.visible = !legend.visible"
+        ),
     )
 
 
@@ -63,11 +68,13 @@ def show_plot(plot, plot_name, plot_write_directory, scenario=None):
     """
 
     if scenario is None:
-        plot_write_subdir = os.path.join(plot_write_directory,
-                                         "scenario_comparison", "figures")
+        plot_write_subdir = os.path.join(
+            plot_write_directory, "scenario_comparison", "figures"
+        )
     else:
-        plot_write_subdir = os.path.join(plot_write_directory, scenario,
-                                         "results", "figures")
+        plot_write_subdir = os.path.join(
+            plot_write_directory, scenario, "results", "figures"
+        )
 
     create_directory_if_not_exists(plot_write_subdir)
     file_path = os.path.join(plot_write_subdir, plot_name + ".html")
@@ -84,28 +91,42 @@ def get_parent_parser():
 
     Note that 'add_help' is set to 'False' to avoid multiple `-h/--help` options
     (one for parent and one for each child), which will throw an error.
-    :return: 
+    :return:
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--database",
-                        help="The database file path relative to the current "
-                             "working directory. Defaults to ../db/io.db")
-    parser.add_argument("--plot_write_directory", default="../scenarios",
-                        help="The path to the base directory in which to save "
-                             "the plot html file. Note: the file will be saved "
-                             "in a subfolder of this base directory, generally "
-                             "'scenario_name/results/figures'")
-    parser.add_argument("--scenario_name_in_title", default=False,
-                        action="store_true",
-                        help="Include the scenario name in the plot title.")
+    parser.add_argument(
+        "--database",
+        help="The database file path relative to the current "
+        "working directory. Defaults to ../db/io.db",
+    )
+    parser.add_argument(
+        "--plot_write_directory",
+        default="../scenarios",
+        help="The path to the base directory in which to save "
+        "the plot html file. Note: the file will be saved "
+        "in a subfolder of this base directory, generally "
+        "'scenario_name/results/figures'",
+    )
+    parser.add_argument(
+        "--scenario_name_in_title",
+        default=False,
+        action="store_true",
+        help="Include the scenario name in the plot title.",
+    )
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
-    parser.add_argument("--show",
-                        default=False, action="store_true",
-                        help="Show figure and save html file")
-    parser.add_argument("--return_json",
-                        default=False, action="store_true",
-                        help="Return plot as a json file.")
+    parser.add_argument(
+        "--show",
+        default=False,
+        action="store_true",
+        help="Show figure and save html file",
+    )
+    parser.add_argument(
+        "--return_json",
+        default=False,
+        action="store_true",
+        help="Return plot as a json file.",
+    )
 
     return parser
 
@@ -165,14 +186,17 @@ def get_unit(c, metric):
             """
             Error! The metric '{}' does not exists in the mod_units table.
             Please specify an existing metric. 
-            """.format(metric)
+            """.format(
+                metric
+            )
         )
     else:
         return unit.fetchone()[0]
 
 
-def get_capacity_data(conn, subproblem, stage, capacity_col,
-                      scenario_id=None, load_zone=None, period=None):
+def get_capacity_data(
+    conn, subproblem, stage, capacity_col, scenario_id=None, load_zone=None, period=None
+):
     """
     Get capacity results by scenario/period/technology. Users can
     optionally provide a subset of scenarios/load_zones/periods.
@@ -198,26 +222,24 @@ def get_capacity_data(conn, subproblem, stage, capacity_col,
         (SELECT scenario_name, scenario_id FROM scenarios) as scen_table
         USING (scenario_id)
         WHERE subproblem_id = ?
-        AND stage_id = ?""".format(capacity_col)
+        AND stage_id = ?""".format(
+        capacity_col
+    )
     if period is not None:
         period = period if isinstance(period, list) else [period]
-        sql += " AND period in ({})".format(",".join("?"*len(period)))
+        sql += " AND period in ({})".format(",".join("?" * len(period)))
         params += period
     if scenario_id is not None:
         scenario_id = scenario_id if isinstance(scenario_id, list) else [scenario_id]
-        sql += " AND scenario_id in ({})".format(",".join("?"*len(scenario_id)))
+        sql += " AND scenario_id in ({})".format(",".join("?" * len(scenario_id)))
         params += scenario_id
     if load_zone is not None:
         load_zone = load_zone if isinstance(load_zone, list) else [load_zone]
-        sql += " AND load_zone in ({})".format(",".join("?"*len(load_zone)))
+        sql += " AND load_zone in ({})".format(",".join("?" * len(load_zone)))
         params += load_zone
     sql += " GROUP BY scenario, period, technology;"
 
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=params
-    )
+    df = pd.read_sql(sql, con=conn, params=params)
 
     return df
 
@@ -290,13 +312,17 @@ def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
     #   pd.pivot_table doesn't work with non-numeric values so need .fillna(0)
     #      to make sure None values are replaced with zero (e.g. hurdle rates)
     #   pd.pivot_table doesn't work with empty table without aggfunc="first"
-    df = pd.pivot_table(
-        data=df.fillna(0),
-        index=x_col_reordered,  # can be multi-level index!
-        columns=category_col,
-        values=y_col,
-        aggfunc="first"  # take first value if there are duplicates
-    ).fillna(0).sort_index()  # sorting for grouped x-axis format
+    df = (
+        pd.pivot_table(
+            data=df.fillna(0),
+            index=x_col_reordered,  # can be multi-level index!
+            columns=category_col,
+            values=y_col,
+            aggfunc="first",  # take first value if there are duplicates
+        )
+        .fillna(0)
+        .sort_index()
+    )  # sorting for grouped x-axis format
     # Rename columns (optional)
     df.rename(columns=column_mapper, index=column_mapper, inplace=True)
     # Set up Bokeh ColumnDataSource
@@ -305,11 +331,18 @@ def process_stacked_plot_data(df, y_col, x_col, category_col, column_mapper={}):
     return source, x_col_reordered
 
 
-def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
-                            category_label="Category", category_colors={},
-                            category_order={}, title=None, ylimit=None,
-                            sizing_mode="fixed"
-                            ):
+def create_stacked_bar_plot(
+    source,
+    x_col,
+    x_label=None,
+    y_label=None,
+    category_label="Category",
+    category_colors={},
+    category_order={},
+    title=None,
+    ylimit=None,
+    sizing_mode="fixed",
+):
     """
     Create a stacked bar chart from a Bokeh ColumnDataSource (CDS). The CDS
     should have have a "x_col" column where each element is either a string
@@ -343,8 +376,7 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
     stacked_cols = sorted(cols, key=lambda x: category_order[x])
 
     # Set up color scheme. Use cividis palette for unspecified colors
-    unspecified_columns = [c for c in stacked_cols
-                           if c not in category_colors.keys()]
+    unspecified_columns = [c for c in stacked_cols if c not in category_colors.keys()]
     unspecified_category_colors = dict(
         zip(unspecified_columns, cividis(len(unspecified_columns)))
     )
@@ -373,7 +405,8 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800,
+        plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         x_range=FactorRange(*source.data[x_col]) if grouped_x else source.data[x_col],
@@ -387,17 +420,20 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
         source=source,
         color=colors,
         width=0.8,
-        alpha=0.7  # transparency
+        alpha=0.7,  # transparency
     )
 
     # Add Legend
-    legend_items = [(y, [area_renderers[i]]) for i, y in enumerate(stacked_cols)
-                    if np.mean(source.data[y]) > 0]
+    legend_items = [
+        (y, [area_renderers[i]])
+        for i, y in enumerate(stacked_cols)
+        if np.mean(source.data[y]) > 0
+    ]
     legend = Legend(items=legend_items)
-    plot.add_layout(legend, 'right')
+    plot.add_layout(legend, "right")
     plot.legend.title = category_label
     plot.legend[0].items.reverse()  # Reverse legend to match stacked order
-    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
+    plot.legend.click_policy = "hide"  # Add interactivity to the legend
     show_hide_legend(plot=plot)  # Hide legend on double click
 
     # Format Axes (labels, number formatting, range, etc.)
@@ -414,18 +450,17 @@ def create_stacked_bar_plot(source, x_col, x_label=None, y_label=None,
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
         category = r.name
-        tooltips = [("%s" % x_label, "@{%s}" % x_col),
-                    ("%s" % category_label, category)]
+        tooltips = [
+            ("%s" % x_label, "@{%s}" % x_col),
+            ("%s" % category_label, category),
+        ]
         if y_label is None:
             pass
         elif "$" in y_label or "USD" in y_label:
             tooltips.append(("%s" % y_label, "@%s{$0,0}" % category))
         else:
             tooltips.append(("%s" % y_label, "@%s{0,0}" % category))
-        hover = HoverTool(
-            tooltips=tooltips,
-            renderers=[r],
-            toggleable=False)
+        hover = HoverTool(tooltips=tooltips, renderers=[r], toggleable=False)
         plot.add_tools(hover)
 
     return plot

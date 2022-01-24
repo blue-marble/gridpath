@@ -26,33 +26,28 @@ class OptionalFeatures(object):
     def __init__(self, conn, scenario_id):
         """
         :param cursor:
-        :param scenario_id: 
+        :param scenario_id:
         """
         of_column_names = [
-            n for n in get_scenario_table_columns(conn=conn)
-            if n.startswith("of_")
+            n for n in get_scenario_table_columns(conn=conn) if n.startswith("of_")
         ]
 
         for of in of_column_names:
             setattr(
                 self,
                 of.upper(),
-                db_column_to_self(
-                    column=of, conn=conn, scenario_id=scenario_id
-                )
+                db_column_to_self(column=of, conn=conn, scenario_id=scenario_id),
             )
 
     def get_all_available_features(self):
-        all_features = [
-            attr[3:].lower() for attr, value in self.__dict__.items()
-        ]
+        all_features = [attr[3:].lower() for attr, value in self.__dict__.items()]
 
         return all_features
 
     def get_active_features(self):
         """
         Get list of requested features
-        :return: 
+        :return:
         """
         active_features = list()
 
@@ -68,14 +63,16 @@ class SubScenarios(object):
     The subscenario IDs will be used to format SQL queries, so we set them to
     "NULL" (not None) if an ID is not specified for the scenario.
     """
+
     def __init__(self, conn, scenario_id):
         """
-        
-        :param cursor: 
-        :param scenario_id: 
+
+        :param cursor:
+        :param scenario_id:
         """
         subscenario_column_names = [
-            n for n in get_scenario_table_columns(conn=conn)
+            n
+            for n in get_scenario_table_columns(conn=conn)
             if n.endswith("_scenario_id")
         ]
 
@@ -85,12 +82,13 @@ class SubScenarios(object):
                 subscenario.upper(),
                 db_column_to_self(
                     column=subscenario, conn=conn, scenario_id=scenario_id
-                )
+                ),
             )
 
     def get_all_available_subscenarios(self):
         all_subscenarios = [
-            attr.lower() for attr, value in self.__dict__.items()
+            attr.lower()
+            for attr, value in self.__dict__.items()
             if attr != "SCENARIO_ID"
         ]
 
@@ -116,13 +114,15 @@ def get_subproblem_structure_from_db(conn, scenario_id):
     # TODO: make sure there is data integrity between subproblems_stages
     #   and inputs_temporal_horizons and inputs_temporal
     all_subproblems = [
-        subproblem[0] for subproblem in
-        cursor.execute(
+        subproblem[0]
+        for subproblem in cursor.execute(
             """SELECT subproblem_id
                FROM inputs_temporal_subproblems
                INNER JOIN scenarios
                USING (temporal_scenario_id)
-               WHERE scenario_id = {};""".format(scenario_id)
+               WHERE scenario_id = {};""".format(
+                scenario_id
+            )
         ).fetchall()
     ]
 
@@ -135,27 +135,26 @@ def get_subproblem_structure_from_db(conn, scenario_id):
                INNER JOIN scenarios
                USING (temporal_scenario_id)
                WHERE scenario_id = {}
-               AND subproblem_id = {};""".format(scenario_id, s)
+               AND subproblem_id = {};""".format(
+                scenario_id, s
+            )
         ).fetchall()
         stages = [stage[0] for stage in stages]  # convert to simple list
         stages_by_subproblem[s] = stages
 
-    return ScenarioSubproblemStructure(
-        stages_by_subproblem=stages_by_subproblem
-    )
+    return ScenarioSubproblemStructure(stages_by_subproblem=stages_by_subproblem)
 
 
 def get_subproblem_structure_from_disk(scenario_directory):
     # Check if there are subproblem directories
     # Convert to integers
-    subproblem_directories = \
-        [int(i) for i in check_for_integer_subdirectories(scenario_directory)]
+    subproblem_directories = [
+        int(i) for i in check_for_integer_subdirectories(scenario_directory)
+    ]
 
     # Make dictionary for the stages by subproblem, starting with empty
     # list for each subproblem
-    stages_by_subproblem = {
-        subp: [] for subp in subproblem_directories
-    }
+    stages_by_subproblem = {subp: [] for subp in subproblem_directories}
 
     # If we have subproblems, check for stage subdirectories for each
     # subproblem directory
@@ -164,9 +163,7 @@ def get_subproblem_structure_from_disk(scenario_directory):
         for subproblem in subproblem_directories:
             subproblem_dir = os.path.join(scenario_directory, str(subproblem))
             # Convert to integers
-            stages = \
-                [int(i) for i in
-                 check_for_integer_subdirectories(subproblem_dir)]
+            stages = [int(i) for i in check_for_integer_subdirectories(subproblem_dir)]
             if stages:
                 stages_by_subproblem[subproblem] = stages
             else:
@@ -180,9 +177,7 @@ def get_subproblem_structure_from_disk(scenario_directory):
         # Downstream, we need {1: [1]}
         stages_by_subproblem[1] = [1]
 
-    return ScenarioSubproblemStructure(
-        stages_by_subproblem=stages_by_subproblem
-    )
+    return ScenarioSubproblemStructure(stages_by_subproblem=stages_by_subproblem)
 
 
 class SolverOptions(object):
@@ -193,11 +188,14 @@ class SolverOptions(object):
         """
         cursor = conn.cursor()
 
-        self.SOLVER_OPTIONS_ID = cursor.execute("""
+        self.SOLVER_OPTIONS_ID = cursor.execute(
+            """
             SELECT solver_options_id 
             FROM scenarios 
             WHERE scenario_id = {}
-            """.format(scenario_id)
+            """.format(
+                scenario_id
+            )
         ).fetchone()[0]
 
         if self.SOLVER_OPTIONS_ID is None:
@@ -206,28 +204,40 @@ class SolverOptions(object):
             distinct_solvers = cursor.execute(
                 """SELECT DISTINCT solver 
                 FROM inputs_options_solver 
-                WHERE solver_options_id = {}""".format(self.SOLVER_OPTIONS_ID)
+                WHERE solver_options_id = {}""".format(
+                    self.SOLVER_OPTIONS_ID
+                )
             ).fetchall()
             if len(distinct_solvers) > 1:
-                raise ValueError("""
+                raise ValueError(
+                    """
                 ERROR: Solver options include more than one solver! Only a 
                 single solver must be specified for solver_options_id in the 
                 inputs_options_solver table. See solver_options_id {}. 
-                """.format(self.SOLVER_OPTIONS_ID))
+                """.format(
+                        self.SOLVER_OPTIONS_ID
+                    )
+                )
             else:
                 self.SOLVER = distinct_solvers[0][0]
 
-        self.SOLVER_OPTIONS = \
-            None if self.SOLVER_OPTIONS_ID is None \
+        self.SOLVER_OPTIONS = (
+            None
+            if self.SOLVER_OPTIONS_ID is None
             else {
                 row[0]: row[1]
-                for row in cursor.execute("""
+                for row in cursor.execute(
+                    """
                     SELECT solver_option_name, solver_option_value
                     FROM inputs_options_solver
                     WHERE solver_options_id = {};
-                    """.format(self.SOLVER_OPTIONS_ID)
-                ).fetchall() if row[0] is not None and row[0] != ""
+                    """.format(
+                        self.SOLVER_OPTIONS_ID
+                    )
+                ).fetchall()
+                if row[0] is not None and row[0] != ""
             }
+        )
 
 
 def db_column_to_self(column, conn, scenario_id):
@@ -236,8 +246,10 @@ def db_column_to_self(column, conn, scenario_id):
     query = c.execute(
         """SELECT {}
            FROM scenarios
-           WHERE scenario_id = ?;""".format(column),
-        (scenario_id,)
+           WHERE scenario_id = ?;""".format(
+            column
+        ),
+        (scenario_id,),
     ).fetchone()[0]
 
     self = "NULL" if query is None and not of else query
@@ -253,8 +265,6 @@ def get_scenario_table_columns(conn):
         SELECT * FROM scenarios;
         """
     )
-    column_names = [
-        description[0] for description in scenario_query.description
-    ]
+    column_names = [description[0] for description in scenario_query.description]
 
     return column_names

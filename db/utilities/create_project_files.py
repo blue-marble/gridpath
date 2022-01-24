@@ -40,18 +40,22 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    parser.add_argument("--agg_csv_filepath",
-                        help="The path to the file with the data for all "
-                             "project-subscenario IDs. Note that the first "
-                             "three columns of this file should be'project', "
-                             "'subscenario_id', and 'subscenario_name', "
-                             "and those should be followed by the data "
-                             "columns.")
-    parser.add_argument("--project_csv_folder",
-                        help="Path to the folder where the project CSVs "
-                             "should be written.")
-    parser.add_argument("--verbose", default=False, action="store_true",
-                        help="Print output.")
+    parser.add_argument(
+        "--agg_csv_filepath",
+        help="The path to the file with the data for all "
+        "project-subscenario IDs. Note that the first "
+        "three columns of this file should be'project', "
+        "'subscenario_id', and 'subscenario_name', "
+        "and those should be followed by the data "
+        "columns.",
+    )
+    parser.add_argument(
+        "--project_csv_folder",
+        help="Path to the folder where the project CSVs " "should be written.",
+    )
+    parser.add_argument(
+        "--verbose", default=False, action="store_true", help="Print output."
+    )
 
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -59,7 +63,9 @@ def parse_arguments(args):
 
 
 def create_individual_csvs_from_aggregate_csv(
-    agg_csv_filepath, project_csv_folder, verbose,
+    agg_csv_filepath,
+    project_csv_folder,
+    verbose,
 ):
     """
     :param agg_csv_filepath: str; the path to the CSV with aggregated data
@@ -111,10 +117,8 @@ def create_individual_csvs_from_aggregate_csv(
     # create the individual files
     if verbose:
         print("Writing individual files to {}.".format(project_csv_folder))
-    for (project, subscenario_id, subscenario_name) in \
-            unique_prj_id_name.values:
-        ind_csv_name = \
-            "{}-{}-{}.csv".format(project, subscenario_id, subscenario_name)
+    for (project, subscenario_id, subscenario_name) in unique_prj_id_name.values:
+        ind_csv_name = "{}-{}-{}.csv".format(project, subscenario_id, subscenario_name)
 
         if verbose:
             print("... {}".format(ind_csv_name))
@@ -124,7 +128,7 @@ def create_individual_csvs_from_aggregate_csv(
             (agg_csv_df["project"] == project)
             & (agg_csv_df["subscenario_id"] == subscenario_id)
             & (agg_csv_df["subscenario_name"] == subscenario_name)
-            ][header_ind]
+        ][header_ind]
 
         # Write the dataframe to CSV
         ind_filepath = os.path.join(project_csv_folder, ind_csv_name)
@@ -137,5 +141,5 @@ if __name__ == "__main__":
     create_individual_csvs_from_aggregate_csv(
         agg_csv_filepath=parsed_args.agg_csv_filepath,
         project_csv_folder=parsed_args.project_csv_folder,
-        verbose=parsed_args.verbose
+        verbose=parsed_args.verbose,
     )

@@ -27,8 +27,7 @@ Create plot of scheduled curtailment heatmap (by month and hour)
 
 
 from argparse import ArgumentParser
-from bokeh.models import NumeralTickFormatter, LinearColorMapper, ColorBar, \
-    BasicTicker
+from bokeh.models import NumeralTickFormatter, LinearColorMapper, ColorBar, BasicTicker
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
@@ -49,16 +48,29 @@ def create_parser():
     :return:
     """
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
-    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
-                                              "no --scenario is specified.")
-    parser.add_argument("--scenario", help="The scenario name. Required if "
-                                           "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", required=True, type=str,
-                        help="The name of the load zone. Required.")
-    parser.add_argument("--period", required=True, type=int,
-                        help="The desired modeling period to plot. Required.")
-    parser.add_argument("--stage", default=1, type=int,
-                        help="The stage ID. Defaults to 1.")
+    parser.add_argument(
+        "--scenario_id",
+        help="The scenario ID. Required if " "no --scenario is specified.",
+    )
+    parser.add_argument(
+        "--scenario",
+        help="The scenario name. Required if " "no --scenario_id is specified.",
+    )
+    parser.add_argument(
+        "--load_zone",
+        required=True,
+        type=str,
+        help="The name of the load zone. Required.",
+    )
+    parser.add_argument(
+        "--period",
+        required=True,
+        type=int,
+        help="The desired modeling period to plot. Required.",
+    )
+    parser.add_argument(
+        "--stage", default=1, type=int, help="The stage ID. Defaults to 1."
+    )
 
     return parser
 
@@ -121,16 +133,22 @@ def get_plotting_data(conn, scenario_id, load_zone, period, stage, **kwargs):
         ORDER BY month, hour_of_day
         ;"""
 
-    df = pd.read_sql(
-        sql,
-        con=conn,
-        params=(scenario_id, load_zone, period, stage)
-    )
+    df = pd.read_sql(sql, con=conn, params=(scenario_id, load_zone, period, stage))
 
     # Convert month numbers to strings
     mapper = {
-        1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
-        7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
+        1: "Jan",
+        2: "Feb",
+        3: "Mar",
+        4: "Apr",
+        5: "May",
+        6: "Jun",
+        7: "Jul",
+        8: "Aug",
+        9: "Sep",
+        10: "Oct",
+        11: "Nov",
+        12: "Dec",
     }
     df.replace({"month": mapper}, inplace=True)
 
@@ -168,14 +186,13 @@ def create_plot(df, title, energy_unit, ylimit=None):
 
     high = ylimit if ylimit is not None else df.scheduled_curtailment_mwh.max()
     mapper = LinearColorMapper(
-        palette=colors,
-        low=df.scheduled_curtailment_mwh.min(),
-        high=high
+        palette=colors, low=df.scheduled_curtailment_mwh.min(), high=high
     )
 
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800,
+        plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         toolbar_location="below",
         x_axis_location="above",
@@ -188,10 +205,11 @@ def create_plot(df, title, energy_unit, ylimit=None):
     hm = plot.rect(
         x="hour_of_day",
         y="month",
-        width=1, height=1,
+        width=1,
+        height=1,
         source=df,
-        fill_color={'field': 'scheduled_curtailment_mwh', 'transform': mapper},
-        line_color="white"
+        fill_color={"field": "scheduled_curtailment_mwh", "transform": mapper},
+        line_color="white",
     )
 
     # Add color bar legend
@@ -202,9 +220,9 @@ def create_plot(df, title, energy_unit, ylimit=None):
         formatter=NumeralTickFormatter(format="0,0"),
         label_standoff=12,
         border_line_color=None,
-        location=(0, 0)
+        location=(0, 0),
     )
-    plot.add_layout(color_bar, 'right')
+    plot.add_layout(color_bar, "right")
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Hour Ending"
@@ -219,10 +237,11 @@ def create_plot(df, title, energy_unit, ylimit=None):
         tooltips=[
             ("Month", "@month"),
             ("Hour", "@hour_of_day"),
-            ("Curtailment", "@scheduled_curtailment_mwh{0,0} %s" % energy_unit)
+            ("Curtailment", "@scheduled_curtailment_mwh{0,0} %s" % energy_unit),
         ],
         renderers=[hm],
-        toggleable=True)
+        toggleable=True,
+    )
     plot.add_tools(hover)
 
     return plot
@@ -245,40 +264,41 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="curtailment_hydro_heatmap_plot"
+        script="curtailment_hydro_heatmap_plot",
     )
 
     energy_unit = get_unit(c, "energy")
 
     plot_title = "{}Hydro Curtailment by Month-Hour - {} - {} - {}".format(
-        "{} - ".format(scenario)
-        if parsed_args.scenario_name_in_title else "",
-        parsed_args.load_zone, parsed_args.period, parsed_args.stage
+        "{} - ".format(scenario) if parsed_args.scenario_name_in_title else "",
+        parsed_args.load_zone,
+        parsed_args.period,
+        parsed_args.stage,
     )
     plot_name = "HydroCurtailmentPlot-{}-{}-{}".format(
-        parsed_args.load_zone, parsed_args.period, parsed_args.stage)
+        parsed_args.load_zone, parsed_args.period, parsed_args.stage
+    )
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
         period=parsed_args.period,
-        stage=parsed_args.stage
+        stage=parsed_args.stage,
     )
 
     plot = create_plot(
-        df=df,
-        title=plot_title,
-        energy_unit=energy_unit,
-        ylimit=parsed_args.ylimit
+        df=df, title=plot_title, energy_unit=energy_unit, ylimit=parsed_args.ylimit
     )
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(plot=plot,
-                  plot_name=plot_name,
-                  plot_write_directory=parsed_args.plot_write_directory,
-                  scenario=scenario)
+        show_plot(
+            plot=plot,
+            plot_name=plot_name,
+            plot_write_directory=parsed_args.plot_write_directory,
+            scenario=scenario,
+        )
 
     # Return plot in json format if requested
     if parsed_args.return_json:

@@ -23,60 +23,62 @@ import pandas as pd
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones"]
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+]
 NAME_OF_MODULE_BEING_TESTED = "project"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package='gridpath')
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestProjectInit(unittest.TestCase):
-    """
+    """ """
 
-    """
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_initialized_components(self):
         """
@@ -87,53 +89,47 @@ class TestProjectInit(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Load test data
-        projects_df = \
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
-                sep="\t", usecols=[
-                    'project', 'load_zone', "capacity_type",
-                    "availability_type", "operational_type"
-                ]
-            )
+        projects_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
+            sep="\t",
+            usecols=[
+                "project",
+                "load_zone",
+                "capacity_type",
+                "availability_type",
+                "operational_type",
+            ],
+        )
 
         # Check data are as expected
         # PROJECTS
-        expected_projects = sorted(projects_df['project'].tolist())
+        expected_projects = sorted(projects_df["project"].tolist())
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
         self.assertListEqual(expected_projects, actual_projects)
 
         # Params: load_zone
         expected_load_zone = OrderedDict(
-            sorted(
-                projects_df.set_index('project').to_dict()['load_zone'].items()
-            )
+            sorted(projects_df.set_index("project").to_dict()["load_zone"].items())
         )
         actual_load_zone = OrderedDict(
-            sorted(
-                {prj: instance.load_zone[prj] for prj in
-                 instance.PROJECTS}.items()
-            )
+            sorted({prj: instance.load_zone[prj] for prj in instance.PROJECTS}.items())
         )
         self.assertDictEqual(expected_load_zone, actual_load_zone)
 
         # Params: capacity_type
         expected_cap_type = OrderedDict(
-            sorted(
-                projects_df.set_index('project').to_dict()[
-                    'capacity_type'].items()
-            )
+            sorted(projects_df.set_index("project").to_dict()["capacity_type"].items())
         )
 
         actual_cap_type = OrderedDict(
             sorted(
-                {prj: instance.capacity_type[prj] for prj in
-                 instance.PROJECTS}.items()
+                {prj: instance.capacity_type[prj] for prj in instance.PROJECTS}.items()
             )
         )
 
@@ -142,32 +138,31 @@ class TestProjectInit(unittest.TestCase):
         # Params: availability_type
         expected_availability_type = OrderedDict(
             sorted(
-                projects_df.set_index('project').to_dict()['availability_type']
-                .items()
+                projects_df.set_index("project").to_dict()["availability_type"].items()
             )
         )
         actual_availability_type = OrderedDict(
             sorted(
-                {prj: instance.availability_type[prj] for prj in
-                 instance.PROJECTS}.items()
+                {
+                    prj: instance.availability_type[prj] for prj in instance.PROJECTS
+                }.items()
             )
         )
 
-        self.assertDictEqual(expected_availability_type,
-                             actual_availability_type)
+        self.assertDictEqual(expected_availability_type, actual_availability_type)
 
         # Params: operational_type
         expected_op_type = OrderedDict(
             sorted(
-                projects_df.set_index('project').to_dict()[
-                    'operational_type'].items()
+                projects_df.set_index("project").to_dict()["operational_type"].items()
             )
         )
 
         actual_op_type = OrderedDict(
             sorted(
-                {prj: instance.operational_type[prj] for prj in
-                 instance.PROJECTS}.items()
+                {
+                    prj: instance.operational_type[prj] for prj in instance.PROJECTS
+                }.items()
             )
         )
 

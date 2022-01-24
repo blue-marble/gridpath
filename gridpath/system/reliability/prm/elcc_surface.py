@@ -21,12 +21,21 @@ from builtins import next
 from builtins import range
 import csv
 import os.path
-from pyomo.environ import Param, Var, Set, NonNegativeReals, Constraint, \
-    Expression, value
+from pyomo.environ import (
+    Param,
+    Var,
+    Set,
+    NonNegativeReals,
+    Constraint,
+    Expression,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.dynamic_components import \
-    prm_balance_provision_components, cost_components
+from gridpath.auxiliary.dynamic_components import (
+    prm_balance_provision_components,
+    cost_components,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -55,24 +64,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def elcc_surface_rule(mod, prm_zone, period, facet):
         """
-        
-        :param mod: 
-        :param prm_zone: 
-        :param period: 
-        :param facet: 
-        :return: 
+
+        :param mod:
+        :param prm_zone:
+        :param period:
+        :param facet:
+        :return:
         """
-        return mod.Dynamic_ELCC_MW[prm_zone, period] \
-            <= \
-            sum(mod.ELCC_Surface_Contribution_MW[prj, period, facet]
+        return (
+            mod.Dynamic_ELCC_MW[prm_zone, period]
+            <= sum(
+                mod.ELCC_Surface_Contribution_MW[prj, period, facet]
                 for prj in mod.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[prm_zone]
                 # This is redundant since since ELCC_Surface_Contribution_MW
                 # is 0 for non-operational periods, but keep here for
                 # extra safety
                 if period in mod.OPR_PRDS_BY_PRJ[prj]
-                ) \
-            + mod.elcc_surface_intercept[prm_zone, period, facet] \
+            )
+            + mod.elcc_surface_intercept[prm_zone, period, facet]
             * mod.prm_peak_load_mw[prm_zone, period]
+        )
 
     # Dynamic ELCC piecewise constraint
     m.Dynamic_ELCC_Constraint = Constraint(
@@ -80,9 +91,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Add to emission imports to carbon balance
-    getattr(d, prm_balance_provision_components).append(
-        "Dynamic_ELCC_MW"
-    )
+    getattr(d, prm_balance_provision_components).append("Dynamic_ELCC_MW")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -97,15 +106,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # PRM zone-period-facet
-    data_portal.load(filename=os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "prm_zone_surface_facets_and_intercept.tab"
-    ),
-                     index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
-                     param=m.elcc_surface_intercept,
-                     select=("prm_zone", "period", "facet",
-                             "elcc_surface_intercept")
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "prm_zone_surface_facets_and_intercept.tab",
+        ),
+        index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
+        param=m.elcc_surface_intercept,
+        select=("prm_zone", "period", "facet", "elcc_surface_intercept"),
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -118,22 +130,30 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, str(subproblem), str(stage), "results",
-                           "prm_elcc_surface.csv"), "w", newline="") as \
-            results_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "prm_elcc_surface.csv",
+        ),
+        "w",
+        newline="",
+    ) as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([
-                z,
-                p,
-                value(m.Dynamic_ELCC_MW[z, p])
-            ])
+            writer.writerow([z, p, value(m.Dynamic_ELCC_MW[z, p])])
 
 
 def save_duals(m):
-    m.constraint_indices["Dynamic_ELCC_Constraint"] = \
-        ["prm_zone", "period", "facet", "dual"]
+    m.constraint_indices["Dynamic_ELCC_Constraint"] = [
+        "prm_zone",
+        "period",
+        "facet",
+        "dual",
+    ]
 
 
 def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -153,8 +173,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         USING (period)
         WHERE elcc_surface_scenario_id = {}
         AND temporal_scenario_id = {}""".format(
-            subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
+            subscenarios.ELCC_SURFACE_SCENARIO_ID, subscenarios.TEMPORAL_SCENARIO_ID
         )
     )
 
@@ -177,7 +196,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # do stuff here to validate inputs
 
 
-def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     prm_zone_surface_facets_and_intercept.tab file.
@@ -189,25 +210,31 @@ def write_model_inputs(scenario_directory, scenario_id, subscenarios, subproblem
     :return:
     """
     intercepts = get_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn)
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
 
-    with open(os.path.join(
-            scenario_directory, subproblem, stage, "inputs",
-            "prm_zone_surface_facets_and_intercept.tab"
-    ), "w", newline="") as intercepts_file:
+    with open(
+        os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "prm_zone_surface_facets_and_intercept.tab",
+        ),
+        "w",
+        newline="",
+    ) as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
-        writer.writerow(
-            ["prm_zone", "period", "facet", "elcc_surface_intercept"]
-        )
+        writer.writerow(["prm_zone", "period", "facet", "elcc_surface_intercept"])
         # Write data
         for row in intercepts:
             writer.writerow(row)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory, quiet
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -233,14 +260,18 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """
-    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql, 
-                          data=(scenario_id, subproblem, stage),
-                          many=False)
-    
+    spin_on_database_lock(
+        conn=db,
+        cursor=c,
+        sql=nullify_sql,
+        data=(scenario_id, subproblem, stage),
+        many=False,
+    )
+
     results = []
-    with open(os.path.join(results_directory,
-                           "prm_elcc_surface.csv"), "r") as \
-            surface_file:
+    with open(
+        os.path.join(results_directory, "prm_elcc_surface.csv"), "r"
+    ) as surface_file:
         reader = csv.reader(surface_file)
 
         next(reader)  # skip header
@@ -248,10 +279,8 @@ def import_results_into_database(
             prm_zone = row[0]
             period = row[1]
             elcc = row[2]
-            
-            results.append(
-                (elcc, scenario_id, prm_zone, period, subproblem, stage)
-            )
+
+            results.append((elcc, scenario_id, prm_zone, period, subproblem, stage))
 
     update_sql = """
         UPDATE results_system_prm

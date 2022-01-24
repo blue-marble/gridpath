@@ -19,63 +19,66 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones", "project"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.gen_stor_hyb_spec"
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "project",
+]
+NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity_types.gen_stor_hyb_spec"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package='gridpath')
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
         sys.exit(1)
 # Import the module we'll test
 try:
-    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+    MODULE_BEING_TESTED = import_module(
+        "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
+    )
 except ImportError:
-    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
-          " to test.")
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
 class TestGenStorHybSpecCapType(unittest.TestCase):
-    """
-
-    """
+    """ """
 
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
         :return:
         """
-        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
-                              module_to_test=MODULE_BEING_TESTED,
-                              test_data_dir=TEST_DATA_DIRECTORY,
-                              subproblem="",
-                              stage=""
-                              )
+        create_abstract_model(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     subproblem="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage="",
+        )
 
     def test_data_loaded_correctly(self):
         """
@@ -87,35 +90,34 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
-            stage=""
+            stage="",
         )
         instance = m.create_instance(data)
 
         # Set: GEN_STOR_HYB_SPEC_OPR_PRDS
-        expected_proj_period_set = sorted([
-            ("Wind_Battery_Hybrid", 2020),
-            ("Wind_Battery_Hybrid", 2030)
-        ])
-        actual_proj_period_set = sorted([
-            (prj, period) for (prj, period)
-            in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-        ])
+        expected_proj_period_set = sorted(
+            [("Wind_Battery_Hybrid", 2020), ("Wind_Battery_Hybrid", 2030)]
+        )
+        actual_proj_period_set = sorted(
+            [(prj, period) for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS]
+        )
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
         # Params: gen_stor_hyb_spec_capacity_mw
         expected_existing_cap = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 5.0,
-                 ("Wind_Battery_Hybrid", 2030): 6.0}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 5.0,
+                    ("Wind_Battery_Hybrid", 2030): 6.0,
+                }.items()
             )
         )
         actual_existing_cap = OrderedDict(
             sorted(
-                {(prj, period):
-                     instance.gen_stor_hyb_spec_capacity_mw[prj, period]
-                 for (prj, period) in
-                 instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, period): instance.gen_stor_hyb_spec_capacity_mw[prj, period]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
 
@@ -124,36 +126,42 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_hyb_gen_capacity_mw
         expected_gen_cap = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 5.0,
-                 ("Wind_Battery_Hybrid", 2030): 5.0}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 5.0,
+                    ("Wind_Battery_Hybrid", 2030): 5.0,
+                }.items()
             )
         )
         actual_gen_cap = OrderedDict(
             sorted(
-                {(prj, period):
-                     instance.gen_stor_hyb_spec_hyb_gen_capacity_mw[prj, period]
-                 for (prj, period) in
-                 instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, period): instance.gen_stor_hyb_spec_hyb_gen_capacity_mw[
+                        prj, period
+                    ]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
 
         self.assertDictEqual(expected_gen_cap, actual_gen_cap)
-        
+
         # Params: gen_stor_hyb_spec_hyb_stor_capacity_mw
         expected_stor_cap = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 1.0,
-                 ("Wind_Battery_Hybrid", 2030): 1.0}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 1.0,
+                    ("Wind_Battery_Hybrid", 2030): 1.0,
+                }.items()
             )
         )
         actual_stor_cap = OrderedDict(
             sorted(
-                {(prj, prd):
-                     instance.gen_stor_hyb_spec_hyb_stor_capacity_mw[prj, prd]
-                 for (prj, prd) in
-                 instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, prd): instance.gen_stor_hyb_spec_hyb_stor_capacity_mw[
+                        prj, prd
+                    ]
+                    for (prj, prd) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
 
@@ -162,16 +170,18 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_capacity_mwh
         expected_mwh = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 4.0,
-                 ("Wind_Battery_Hybrid", 2030): 4.0}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 4.0,
+                    ("Wind_Battery_Hybrid", 2030): 4.0,
+                }.items()
             )
         )
         actual_mwh = OrderedDict(
             sorted(
-                {(prj, period): instance.gen_stor_hyb_spec_capacity_mwh[
-                    prj, period]
-                 for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, period): instance.gen_stor_hyb_spec_capacity_mwh[prj, period]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
         self.assertDictEqual(expected_mwh, actual_mwh)
@@ -179,16 +189,20 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_fixed_cost_per_mw_yr
         expected_fc_per_mw = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 1.0,
-                 ("Wind_Battery_Hybrid", 2030): 1.0}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 1.0,
+                    ("Wind_Battery_Hybrid", 2030): 1.0,
+                }.items()
             )
         )
         actual_fc_per_mw = OrderedDict(
             sorted(
-                {(prj, period): instance.gen_stor_hyb_spec_fixed_cost_per_mw_yr[
-                    prj, period]
-                 for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, period): instance.gen_stor_hyb_spec_fixed_cost_per_mw_yr[
+                        prj, period
+                    ]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
         self.assertDictEqual(expected_fc_per_mw, actual_fc_per_mw)
@@ -196,16 +210,23 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr
         expected_fc_per_gen_mw = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 0.5,
-                 ("Wind_Battery_Hybrid", 2030): 0.5}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 0.5,
+                    ("Wind_Battery_Hybrid", 2030): 0.5,
+                }.items()
             )
         )
         actual_fc_per_gen_mw = OrderedDict(
             sorted(
-                {(prj, period): instance.gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr[
-                    prj, period]
-                 for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (
+                        prj,
+                        period,
+                    ): instance.gen_stor_hyb_spec_hyb_gen_fixed_cost_per_mw_yr[
+                        prj, period
+                    ]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
         self.assertDictEqual(expected_fc_per_gen_mw, actual_fc_per_gen_mw)
@@ -213,17 +234,23 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr
         expected_fc_per_stor_mw = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 0.3,
-                 ("Wind_Battery_Hybrid", 2030): 0.3}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 0.3,
+                    ("Wind_Battery_Hybrid", 2030): 0.3,
+                }.items()
             )
         )
         actual_fc_per_stor_mw = OrderedDict(
             sorted(
-                {(prj, period):
-                     instance.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr[
-                    prj, period]
-                 for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (
+                        prj,
+                        period,
+                    ): instance.gen_stor_hyb_spec_hyb_stor_fixed_cost_per_mw_yr[
+                        prj, period
+                    ]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
         self.assertDictEqual(expected_fc_per_stor_mw, actual_fc_per_stor_mw)
@@ -231,17 +258,20 @@ class TestGenStorHybSpecCapType(unittest.TestCase):
         # Params: gen_stor_hyb_spec_fixed_cost_per_mwh_yr
         expected_fc_per_gen_mwh = OrderedDict(
             sorted(
-                {("Wind_Battery_Hybrid", 2020): 0.2,
-                 ("Wind_Battery_Hybrid", 2030): 0.2}.items()
+                {
+                    ("Wind_Battery_Hybrid", 2020): 0.2,
+                    ("Wind_Battery_Hybrid", 2030): 0.2,
+                }.items()
             )
         )
         actual_fc_per_gen_mwh = OrderedDict(
             sorted(
-                {(prj, period):
-                    instance.gen_stor_hyb_spec_fixed_cost_per_mwh_yr[
-                    prj, period]
-                 for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
-                 }.items()
+                {
+                    (prj, period): instance.gen_stor_hyb_spec_fixed_cost_per_mwh_yr[
+                        prj, period
+                    ]
+                    for (prj, period) in instance.GEN_STOR_HYB_SPEC_OPR_PRDS
+                }.items()
             )
         )
         self.assertDictEqual(expected_fc_per_gen_mwh, actual_fc_per_gen_mwh)

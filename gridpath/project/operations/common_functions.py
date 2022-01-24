@@ -12,5 +12,5 @@ def load_operational_type_modules(required_operational_modules):
     return load_subtype_modules(
         required_subtype_modules=required_operational_modules,
         package="gridpath.project.operations.operational_types",
-        required_attributes=[]
+        required_attributes=[],
     )
