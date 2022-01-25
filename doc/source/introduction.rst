@@ -10,6 +10,8 @@ iteratively in system planning, the seamless interface among them within the
 same modeling platform reduces the labor-intensive data-translation
 requirements and can speed up insight-generation in the planning process.
 
+.. image:: ../graphics/approaches.png
+
 Motivation
 ==========
 

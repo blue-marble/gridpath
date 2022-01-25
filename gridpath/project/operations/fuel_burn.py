@@ -73,17 +73,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Fuel burn in each operational timepoint of projects with a heat rate    |
     | curve.                                                                  |
     +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Constraints                                                             |
-    +=========================================================================+
-    | | :code:`HR_Curve_Prj_Fuel_Burn_Constraint`                             |
-    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                   |
+    | | :code:`Project_Opr_Fuel_Burn_by_Fuel`                                 |
+    | | *Defined over*: :code:`FUEL_PRJS_FUEL_OPR_TMPS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | Determines fuel burn from the project in each timepoint based on its    |
-    | heat rate curve.                                                        |
+    | Fuel burn by fuel in each operational timepoint of each fuel project.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Project_Startup_Fuel_Burn_by_Fuel`                             |
+    | | *Defined over*: :code:`FUEL_PRJS_FUEL_OPR_TMPS`                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Startup fuel burn by fuel in each operational timepoint of each startup |
+    | fuel project.                                                           |
     +-------------------------------------------------------------------------+
 
     |
@@ -108,11 +109,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Only operational types with commitment variables can have startup fuel  |
     | burn (for others it will always return zero).                           |
     +-------------------------------------------------------------------------+
-    | | :code:`Total_Fuel_Burn_MMBtu`                                         |
+    | | :code:`Total_Fuel_Burn_by_Fuel_MMBtu`                                 |
     | | *Within*: :code:`PRJ_OPR_TMPS`                                        |
     |                                                                         |
     | Total fuel burn is the sum of operational fuel burn for power           |
-    | production and startup fuel burn.                                       |
+    | production and startup fuel burn (by fuel).                             |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`HR_Curve_Prj_Fuel_Burn_Constraint`                             |
+    | | *Defined over*: :code:`HR_CURVE_PRJS_OPR_TMPS_SGMS`                   |
+    |                                                                         |
+    | Determines fuel burn from the project in each timepoint based on its    |
+    | heat rate curve.                                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Blending_Opr_Fuel_Burn_Constraint`                        |
+    | | *Defined over*: :code:`FUEL_PRJ_OPR_TMPS`                             |
+    |                                                                         |
+    | The sum of operations fuel burn across all fuels should equal the total |
+    | operations fuel burn.                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Blending_Startup_Fuel_Burn_Constraint`                    |
+    | | *Defined over*: :code:`STARTUP_FUEL_PRJ_OPR_TMPS`                     |
+    |                                                                         |
+    | The sum of startup fuel burn across all fuels should equal the total    |
+    | operations fuel burn.                                                   |
     +-------------------------------------------------------------------------+
 
     """
@@ -142,6 +167,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.FUEL_PRJS_FUEL_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, f, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, f in mod.FUEL_PRJ_FUELS
+            if g == _g
+        ),
+    )
+
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -168,40 +203,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, f, tmp)
+            for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
+            for _g, f in mod.FUEL_PRJ_FUELS
+            if g == _g
+        ),
+    )
+
     # Variables
     ###########################################################################
 
     m.HR_Curve_Prj_Fuel_Burn = Var(m.HR_CURVE_PRJS_OPR_TMPS, within=NonNegativeReals)
 
-    # Constraints
-    ###########################################################################
+    m.Project_Opr_Fuel_Burn_by_Fuel = Var(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
+    )
 
-    def fuel_burn_by_ll_constraint_rule(mod, prj, tmp, s):
-        """
-        **Constraint Name**: HR_Curve_Prj_Fuel_Burn_Constraint
-        **Enforced Over**: HR_CURVE_PRJS_OPR_TMPS_SGMS
-
-        Fuel burn is set by piecewise linear representation of input/output
-        curve.
-
-        Note: we assume that when projects are de-rated for availability, the
-        input/output curve is de-rated by the same amount. The implicit
-        assumption is that when a generator is de-rated, some of its units
-        are out rather than it being forced to run below minimum stable level
-        at very inefficient operating points.
-        """
-        gen_op_type = mod.operational_type[prj]
-        if hasattr(imported_operational_modules[gen_op_type], "fuel_burn_by_ll_rule"):
-            fuel_burn_by_ll = imported_operational_modules[
-                gen_op_type
-            ].fuel_burn_by_ll_rule(mod, prj, tmp, s)
-        else:
-            fuel_burn_by_ll = op_type_init.fuel_burn_by_ll_rule(mod, prj, tmp, s)
-
-        return mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] >= fuel_burn_by_ll
-
-    m.HR_Curve_Prj_Fuel_Burn_Constraint = Constraint(
-        m.HR_CURVE_PRJS_OPR_TMPS_SGMS, rule=fuel_burn_by_ll_constraint_rule
+    m.Project_Startup_Fuel_Burn_by_Fuel = Var(
+        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
     )
 
     # Expressions
@@ -244,19 +266,88 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=startup_fuel_burn_rule
     )
 
-    def total_fuel_burn_rule(mod, g, tmp):
+    def total_fuel_burn_by_fuel_rule(mod, g, f, tmp):
         """
-        *Expression Name*: :code:`Total_Fuel_Burn_MMBtu`
+        *Expression Name*: :code:`Total_Fuel_Burn_by_Fuel_MMBtu`
         *Defined Over*: :code:`PRJ_OPR_TMPS`
 
         Total fuel burn is the sum of operational fuel burn (power production)
         and startup fuel burn.
         """
-        return mod.Operations_Fuel_Burn_MMBtu[g, tmp] + (
-            mod.Startup_Fuel_Burn_MMBtu[g, tmp] if g in mod.STARTUP_FUEL_PRJS else 0
+        return mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp] + (
+            mod.Project_Startup_Fuel_Burn_by_Fuel[g, f, tmp]
+            if g in mod.STARTUP_FUEL_PRJS
+            else 0
         )
 
-    m.Total_Fuel_Burn_MMBtu = Expression(m.FUEL_PRJ_OPR_TMPS, rule=total_fuel_burn_rule)
+    m.Total_Fuel_Burn_by_Fuel_MMBtu = Expression(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=total_fuel_burn_by_fuel_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    def fuel_burn_by_ll_constraint_rule(mod, prj, tmp, s):
+        """
+        **Constraint Name**: HR_Curve_Prj_Fuel_Burn_Constraint
+        **Enforced Over**: HR_CURVE_PRJS_OPR_TMPS_SGMS
+
+        Fuel burn is set by piecewise linear representation of input/output
+        curve.
+
+        Note: we assume that when projects are de-rated for availability, the
+        input/output curve is de-rated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very inefficient operating points.
+        """
+        gen_op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[gen_op_type], "fuel_burn_by_ll_rule"):
+            fuel_burn_by_ll = imported_operational_modules[
+                gen_op_type
+            ].fuel_burn_by_ll_rule(mod, prj, tmp, s)
+        else:
+            fuel_burn_by_ll = op_type_init.fuel_burn_by_ll_rule(mod, prj, tmp, s)
+
+        return mod.HR_Curve_Prj_Fuel_Burn[prj, tmp] >= fuel_burn_by_ll
+
+    m.HR_Curve_Prj_Fuel_Burn_Constraint = Constraint(
+        m.HR_CURVE_PRJS_OPR_TMPS_SGMS, rule=fuel_burn_by_ll_constraint_rule
+    )
+
+    def blend_fuel_operations_rule(mod, prj, tmp):
+        """
+        The sum of operations fuel burn across all fuels should equal the total
+        operations fuel burn.
+        """
+        return (
+            sum(
+                mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
+                for f in mod.FUELS_BY_PRJ[prj]
+            )
+            == mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Fuel_Blending_Opr_Fuel_Burn_Constraint = Constraint(
+        m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_operations_rule
+    )
+
+    def blend_fuel_startup_rule(mod, prj, tmp):
+        """
+        The sum of startup fuel burn across all fuels should equal the total
+        operations fuel burn.
+        """
+        return (
+            sum(
+                mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
+                for f in mod.FUELS_BY_PRJ[prj]
+            )
+            == mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Fuel_Blending_Startup_Fuel_Burn_Constraint = Constraint(
+        m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=blend_fuel_startup_rule
+    )
 
 
 # Input-Output
@@ -282,8 +373,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ),
         "w",
         newline="",
-    ) as f:
-        writer = csv.writer(f)
+    ) as results_f:
+        writer = csv.writer(results_f)
         writer.writerow(
             [
                 "project",
@@ -300,7 +391,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "total_fuel_burn_mmbtu",
             ]
         )
-        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
+        for (p, f, tmp) in m.FUEL_PRJS_FUEL_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -311,12 +402,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.hrs_in_tmp[tmp],
                     m.load_zone[p],
                     m.technology[p],
-                    m.fuel[p],
-                    value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
-                    value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
+                    f,
+                    value(m.Project_Opr_Fuel_Burn_by_Fuel[p, f, tmp]),
+                    value(m.Project_Startup_Fuel_Burn_by_Fuel[p, f, tmp])
                     if p in m.STARTUP_FUEL_PRJS
                     else None,
-                    value(m.Total_Fuel_Burn_MMBtu[p, tmp]),
+                    value(m.Total_Fuel_Burn_by_Fuel_MMBtu[p, f, tmp]),
                 ]
             )
 

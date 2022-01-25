@@ -904,7 +904,7 @@ technology VARCHAR(32),
 operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
 variable_om_cost_per_mwh FLOAT,
-fuel VARCHAR(32),
+project_fuel_scenario_id INTEGER,
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 variable_om_curves_scenario_id INTEGER,  -- determined variable O&M curve
 startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
@@ -950,7 +950,10 @@ spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
--- Ensure operational characteristics for variable, hydro and heat rates exist
+-- Ensure operational characteristics for fuels, variable, hydro and heat rates exist
+FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
+subscenarios_project_fuels
+(project, project_fuel_scenario_id),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
 (project, heat_rate_curves_scenario_id),
@@ -965,6 +968,26 @@ subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
+);
+
+-- Project fuels
+DROP TABLE IF EXISTS subscenarios_project_fuels;
+CREATE TABLE subscenarios_project_fuels (
+project VARCHAR(64),
+project_fuel_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, project_fuel_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_fuels;
+CREATE TABLE inputs_project_fuels (
+project VARCHAR(64),
+project_fuel_scenario_id INTEGER,
+fuel VARCHAR(64),
+PRIMARY KEY (project, project_fuel_scenario_id, fuel),
+FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
+subscenarios_project_fuels (project, project_fuel_scenario_id)
 );
 
 -- Heat rate curves
@@ -1554,32 +1577,32 @@ subscenarios_project_local_capacity_chars
 );
 
 -- Fuels
-DROP TABLE IF EXISTS subscenarios_project_fuels;
-CREATE TABLE subscenarios_project_fuels (
+DROP TABLE IF EXISTS subscenarios_fuels;
+CREATE TABLE subscenarios_fuels (
 fuel_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_fuels;
-CREATE TABLE inputs_project_fuels (
+DROP TABLE IF EXISTS inputs_fuels;
+CREATE TABLE inputs_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 co2_intensity_tons_per_mmbtu FLOAT,
 PRIMARY KEY (fuel_scenario_id, fuel),
-FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_project_fuels
+FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
 (fuel_scenario_id)
 );
 
-DROP TABLE IF EXISTS subscenarios_project_fuel_prices;
-CREATE TABLE subscenarios_project_fuel_prices (
+DROP TABLE IF EXISTS subscenarios_fuel_prices;
+CREATE TABLE subscenarios_fuel_prices (
 fuel_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_fuel_prices;
-CREATE TABLE inputs_project_fuel_prices (
+DROP TABLE IF EXISTS inputs_fuel_prices;
+CREATE TABLE inputs_fuel_prices (
 fuel_price_scenario_id INTEGER,
 fuel VARCHAR(32),
 period INTEGER,
@@ -1587,7 +1610,7 @@ month INTEGER,
 fuel_price_per_mmbtu FLOAT,
 PRIMARY KEY (fuel_price_scenario_id, fuel, period, month),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
-subscenarios_project_fuel_prices (fuel_price_scenario_id)
+subscenarios_fuel_prices (fuel_price_scenario_id)
 );
 
 
@@ -2551,9 +2574,9 @@ FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
     subscenarios_project_availability (project_availability_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES
-    subscenarios_project_fuels (fuel_scenario_id),
+    subscenarios_fuels (fuel_scenario_id),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
-    subscenarios_project_fuel_prices (fuel_price_scenario_id),
+    subscenarios_fuel_prices (fuel_price_scenario_id),
 FOREIGN KEY (project_load_zone_scenario_id) REFERENCES
     subscenarios_project_load_zones (project_load_zone_scenario_id),
 FOREIGN KEY (project_lf_reserves_up_ba_scenario_id) REFERENCES
@@ -3229,7 +3252,7 @@ fuel VARCHAR(32),
 operations_fuel_burn_mmbtu FLOAT,
 startup_fuel_burn_mmbtu FLOAT,
 total_fuel_burn_mmbtu FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint, fuel)
 );
 
 DROP TABLE IF EXISTS results_project_carbon_emissions;
@@ -3880,8 +3903,8 @@ subscenarios_geography_local_capacity_zones.name AS local_capacity_areas,
 subscenarios_project_portfolios.name AS project_portfolio,
 subscenarios_project_operational_chars.name AS project_operating_chars,
 subscenarios_project_availability.name AS project_availability,
-subscenarios_project_fuels.name AS project_fuels,
-subscenarios_project_fuel_prices.name AS fuel_prices,
+subscenarios_fuels.name AS project_fuels,
+subscenarios_fuel_prices.name AS fuel_prices,
 subscenarios_project_load_zones.name AS project_load_zones,
 subscenarios_project_lf_reserves_up_bas.name AS project_lf_up_bas,
 subscenarios_project_lf_reserves_down_bas.name AS project_lf_down_bas,
@@ -3962,8 +3985,8 @@ LEFT JOIN subscenarios_project_operational_chars
     USING (project_operational_chars_scenario_id)
 LEFT JOIN subscenarios_project_availability
     USING (project_availability_scenario_id)
-LEFT JOIN subscenarios_project_fuels USING (fuel_scenario_id)
-LEFT JOIN subscenarios_project_fuel_prices USING (fuel_price_scenario_id)
+LEFT JOIN subscenarios_fuels USING (fuel_scenario_id)
+LEFT JOIN subscenarios_fuel_prices USING (fuel_price_scenario_id)
 LEFT JOIN subscenarios_project_load_zones
     USING (project_load_zone_scenario_id)
 LEFT JOIN subscenarios_project_lf_reserves_up_bas
