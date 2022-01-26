@@ -30,7 +30,6 @@ import pandas as pd
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -54,7 +53,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defaults to*: :code:`0`                                              |
     |                                                                         |
     | The transmission line's hurdle rate in $ per MWh for its positive       |
-    | flows in each operational period.                                       |
+    | flows in each month of each operational period.                                       |
     +-------------------------------------------------------------------------+
     | | :code:`hurdle_rate_neg_dir_per_mwh`                                   |
     | | *Defined over*: :code:`TX_OPR_PRDS`                                   |
@@ -239,8 +238,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                                       :, "hurdle_rate_negative_direction_per_mwh"].values[0]
                         }
                     )
-            # Hurdle rates available for all months:
-            elif months == expected_months:
+            # Hurdle rates available for all expected months:
+            elif all([m in months for m in expected_months]):
                 for month in expected_months:
                     hrs_df_month_slice = hrs_df_period_slice.loc[hrs_df_period_slice["month"] == month, :]
                     hurdle_rate_pos_dir_per_mwh_dict.update(
