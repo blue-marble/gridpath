@@ -1840,9 +1840,10 @@ CREATE TABLE inputs_transmission_hurdle_rates (
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 period INTEGER,
+month INTEGER,
 hurdle_rate_positive_direction_per_mwh FLOAT,
 hurdle_rate_negative_direction_per_mwh FLOAT,
-PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line, period),
+PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line, period, month),
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
 subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
 );
@@ -3409,6 +3410,7 @@ transmission_line VARCHAR(64),
 load_zone_from VARCHAR(64),
 load_zone_to VARCHAR(64),
 period INTEGER,
+month INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,

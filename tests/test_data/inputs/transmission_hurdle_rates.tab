@@ -1,5 +1,11 @@
-transmission_line	period	hurdle_rate_positive_direction_per_mwh	hurdle_rate_negative_direction_per_mwh
-Tx1	2020	1.0	1.0
-Tx1	2030	1.0	1.0
-Tx_New	2030	0.0	0.0
-Tx_New	2030	0.0	0.0
+transmission_line	period	month	hurdle_rate_positive_direction_per_mwh	hurdle_rate_negative_direction_per_mwh
+Tx1	2020	5	1.5	5.1
+Tx1	2020	9	1.9	9.1
+Tx1	2020	4	1.4	4.4
+Tx1	2020	7	1.7	7.1
+Tx1	2030	5	31.5	35.1
+Tx1	2030	9	31.9	39.1
+Tx1	2030	4	31.4	34.4
+Tx1	2030	7	31.7	37.1
+Tx_New	2020	0	20.20	20.0
+Tx_New	2030	0	30.30	30.0
