@@ -105,23 +105,48 @@ class TestTxAggregateCosts(unittest.TestCase):
         expected_hurdle_rate_pos = OrderedDict(
             sorted(
                 [
-                    (("Tx1", 2020), 1.0),
-                    (("Tx1", 2030), 1.0),
-                    (("Tx2", 2020), 0),
-                    (("Tx2", 2030), 0),
-                    (("Tx3", 2020), 0),
-                    (("Tx3", 2030), 0),
-                    (("Tx_New", 2020), 0.0),
-                    (("Tx_New", 2030), 0.0),
+                    (("Tx1", 2020, 5), 1.5),
+                    (("Tx1", 2020, 9), 1.9),
+                    (("Tx1", 2020, 4), 1.4),
+                    (("Tx1", 2020, 7), 1.7),
+                    (("Tx1", 2030, 5), 31.5),
+                    (("Tx1", 2030, 9), 31.9),
+                    (("Tx1", 2030, 4), 31.4),
+                    (("Tx1", 2030, 7), 31.7),
+                    (("Tx2", 2020, 5), 0),
+                    (("Tx2", 2020, 9), 0),
+                    (("Tx2", 2020, 4), 0),
+                    (("Tx2", 2020, 7), 0),
+                    (("Tx2", 2030, 5), 0),
+                    (("Tx2", 2030, 9), 0),
+                    (("Tx2", 2030, 4), 0),
+                    (("Tx2", 2030, 7), 0),
+                    (("Tx3", 2020, 5), 0),
+                    (("Tx3", 2020, 9), 0),
+                    (("Tx3", 2020, 4), 0),
+                    (("Tx3", 2020, 7), 0),
+                    (("Tx3", 2030, 5), 0),
+                    (("Tx3", 2030, 9), 0),
+                    (("Tx3", 2030, 4), 0),
+                    (("Tx3", 2030, 7), 0),
+                    (("Tx_New", 2020, 5), 20.20),
+                    (("Tx_New", 2020, 9), 20.20),
+                    (("Tx_New", 2020, 4), 20.20),
+                    (("Tx_New", 2020, 7), 20.20),
+                    (("Tx_New", 2030, 5), 30.30),
+                    (("Tx_New", 2030, 9), 30.30),
+                    (("Tx_New", 2030, 4), 30.30),
+                    (("Tx_New", 2030, 7), 30.30),
                 ]
             )
         )
         actual_hurdle_rate_pos = OrderedDict(
             sorted(
                 [
-                    ((tx, p), instance.hurdle_rate_pos_dir_per_mwh[tx, p])
+                    ((tx, p, m), instance.hurdle_rate_pos_dir_per_mwh[tx, p, m])
                     for tx in instance.TX_LINES
                     for p in instance.PERIODS
+                    for m in instance.MONTHS
                 ]
             )
         )
@@ -131,23 +156,48 @@ class TestTxAggregateCosts(unittest.TestCase):
         expected_hurdle_rate_neg = OrderedDict(
             sorted(
                 [
-                    (("Tx1", 2020), 1.0),
-                    (("Tx1", 2030), 1.0),
-                    (("Tx2", 2020), 0),
-                    (("Tx2", 2030), 0),
-                    (("Tx3", 2020), 0),
-                    (("Tx3", 2030), 0),
-                    (("Tx_New", 2020), 0.0),
-                    (("Tx_New", 2030), 0.0),
+                    (("Tx1", 2020, 5), 5.1),
+                    (("Tx1", 2020, 9), 9.1),
+                    (("Tx1", 2020, 4), 4.1),
+                    (("Tx1", 2020, 7), 7.1),
+                    (("Tx1", 2030, 5), 35.1),
+                    (("Tx1", 2030, 9), 39.1),
+                    (("Tx1", 2030, 4), 34.1),
+                    (("Tx1", 2030, 7), 37.1),
+                    (("Tx2", 2020, 5), 0),
+                    (("Tx2", 2020, 9), 0),
+                    (("Tx2", 2020, 4), 0),
+                    (("Tx2", 2020, 7), 0),
+                    (("Tx2", 2030, 5), 0),
+                    (("Tx2", 2030, 9), 0),
+                    (("Tx2", 2030, 4), 0),
+                    (("Tx2", 2030, 7), 0),
+                    (("Tx3", 2020, 5), 0),
+                    (("Tx3", 2020, 9), 0),
+                    (("Tx3", 2020, 4), 0),
+                    (("Tx3", 2020, 7), 0),
+                    (("Tx3", 2030, 5), 0),
+                    (("Tx3", 2030, 9), 0),
+                    (("Tx3", 2030, 4), 0),
+                    (("Tx3", 2030, 7), 0),
+                    (("Tx_New", 2020, 5), 20.0),
+                    (("Tx_New", 2020, 9), 20.0),
+                    (("Tx_New", 2020, 4), 20.0),
+                    (("Tx_New", 2020, 7), 20.0),
+                    (("Tx_New", 2030, 5), 30.0),
+                    (("Tx_New", 2030, 9), 30.0),
+                    (("Tx_New", 2030, 4), 30.0),
+                    (("Tx_New", 2030, 7), 30.0),
                 ]
             )
         )
         actual_hurdle_rate_neg = OrderedDict(
             sorted(
                 [
-                    ((tx, p), instance.hurdle_rate_neg_dir_per_mwh[tx, p])
+                    ((tx, p, m), instance.hurdle_rate_neg_dir_per_mwh[tx, p, m])
                     for tx in instance.TX_LINES
                     for p in instance.PERIODS
+                    for m in instance.MONTHS
                 ]
             )
         )

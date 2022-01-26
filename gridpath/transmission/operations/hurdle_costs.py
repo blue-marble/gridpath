@@ -25,6 +25,8 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
+
+import pandas as pd
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
@@ -37,7 +39,7 @@ from gridpath.auxiliary.validations import (
     validate_values,
     validate_missing_inputs,
 )
-
+from gridpath.auxiliary.auxiliary import cursor_to_df
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -115,14 +117,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.hurdle_rate_pos_dir_per_mwh = Param(
         m.TX_LINES,
-        m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        m.PERIODS,
+        m.MONTHS, # TODO: chanage to TX_OPR_PRDS?
         within=NonNegativeReals,
         default=0,
     )
 
     m.hurdle_rate_neg_dir_per_mwh = Param(
         m.TX_LINES,
-        m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        m.PERIODS,
+        m.MONTHS,# TODO: chanage to TX_OPR_PRDS?
         within=NonNegativeReals,
         default=0,
     )
@@ -157,13 +161,13 @@ def hurdle_cost_pos_dir_rule(mod, tx, tmp):
     Hurdle_Cost_Pos_Dir must be non-negative, so will be 0
     when Transmit_Power is negative (flow in the negative direction).
     """
-    if mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp]] == 0:
+    if mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp], mod.month[tmp]] == 0:
         return Constraint.Skip
     else:
         return (
             mod.Hurdle_Cost_Pos_Dir[tx, tmp]
             >= mod.Transmit_Power_MW[tx, tmp]
-            * mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp]]
+            * mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp], mod.month[tmp]]
         )
 
 
@@ -175,13 +179,13 @@ def hurdle_cost_neg_dir_rule(mod, tx, tmp):
     Hurdle_Cost_Neg_Dir must be non-negative, so will be 0
     when Transmit_Power is positive (flow in the positive direction).
     """
-    if mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp]] == 0:
+    if mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp], mod.month[tmp]] == 0:
         return Constraint.Skip
     else:
         return (
             mod.Hurdle_Cost_Neg_Dir[tx, tmp]
             >= -mod.Transmit_Power_MW[tx, tmp]
-            * mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp]]
+            * mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp], mod.month[tmp]]
         )
 
 
@@ -200,22 +204,69 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_hurdle_rates.tab",
-        ),
-        select=(
-            "transmission_line",
-            "period",
-            "hurdle_rate_positive_direction_per_mwh",
-            "hurdle_rate_negative_direction_per_mwh",
-        ),
-        param=(m.hurdle_rate_pos_dir_per_mwh, m.hurdle_rate_neg_dir_per_mwh),
+
+    hurdle_rate_pos_dir_per_mwh_dict = {}
+    hurdle_rate_neg_dir_per_mwh_dict = {}
+
+    hrs_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "transmission_hurdle_rates.tab",
     )
+    # The timepoints.tab file indicates what periods have months
+    timepoints_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
+    )
+
+    hrs_df = pd.read_csv(hrs_file, sep="\t")
+    timepoints_df = pd.read_csv(timepoints_file, sep="\t")
+
+    for tx_line, hrs_df_tx_slice in hrs_df.groupby("transmission_line"):
+        for period, hrs_df_period_slice in hrs_df_tx_slice.groupby("period"):
+            expected_months = set(timepoints_df.loc[timepoints_df["period"]==period, "month"].unique())
+            months = set(hrs_df_period_slice["month"].unique())
+            # Hurdle rates months all 0, must apply the same hurdle rate to all months
+            if months == set([0]):
+                for month in expected_months:
+                    hrs_df_month_slice = hrs_df_period_slice.loc[hrs_df_period_slice["month"] == 0, :]
+                    hurdle_rate_pos_dir_per_mwh_dict.update(
+                        {
+                            (tx_line, period, month): hrs_df_month_slice.loc[
+                                                      :, "hurdle_rate_positive_direction_per_mwh"].values[0]
+                        }
+                    )
+                    hurdle_rate_neg_dir_per_mwh_dict.update(
+                        {
+                            (tx_line, period, month): hrs_df_month_slice.loc[
+                                                      :, "hurdle_rate_negative_direction_per_mwh"].values[0]
+                        }
+                    )
+            # Hurdle rates available for all months:
+            elif months == expected_months:
+                for month in expected_months:
+                    hrs_df_month_slice = hrs_df_period_slice.loc[hrs_df_period_slice["month"] == month, :]
+                    hurdle_rate_pos_dir_per_mwh_dict.update(
+                        {
+                            (tx_line, period, month): hrs_df_month_slice.loc[
+                                                      :, "hurdle_rate_positive_direction_per_mwh"].values[0]
+                        }
+                    )
+                    hurdle_rate_neg_dir_per_mwh_dict.update(
+                        {
+                            (tx_line, period, month): hrs_df_month_slice.loc[
+                                                      :, "hurdle_rate_negative_direction_per_mwh"].values[0]
+                        }
+                    )
+            # Hurdle rates months not 0 nor available for all months
+            else:
+                raise ValueError(
+                    """Hurdle rates for period '{}' isn't specified for all 
+                    months (got {}, expected {} or 0). Set month to 0 if inputs are the 
+                    same for each month or make sure all modelled months 
+                    are included.""".format(
+                        period, months, expected_months
+                    )
+                )
+    data_portal.data()["hurdle_rate_pos_dir_per_mwh"] = hurdle_rate_pos_dir_per_mwh_dict
+    data_portal.data()["hurdle_rate_neg_dir_per_mwh"] = hurdle_rate_neg_dir_per_mwh_dict
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -244,6 +295,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             [
                 "tx_line",
                 "period",
+                "month",
                 "timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
@@ -258,6 +310,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 [
                     tx,
                     m.period[tmp],
+                    m.month[tmp],
                     tmp,
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
@@ -285,21 +338,21 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     hurdle_rates = c.execute(
-        """SELECT transmission_line, period, 
+        """SELECT transmission_line, period, month,
         hurdle_rate_positive_direction_per_mwh,
         hurdle_rate_negative_direction_per_mwh
         FROM inputs_transmission_portfolios
         CROSS JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
+            (SELECT period, month
+            FROM inputs_temporal
             WHERE temporal_scenario_id = {}) AS relevant_periods 
         LEFT OUTER JOIN
-            (SELECT transmission_line, period, 
+            (SELECT transmission_line, period, month,
             hurdle_rate_positive_direction_per_mwh,
             hurdle_rate_negative_direction_per_mwh
             FROM inputs_transmission_hurdle_rates
             WHERE transmission_hurdle_rate_scenario_id = {}) AS relevant_hrs
-        USING (transmission_line, period)
+        USING (transmission_line, period, month)
         WHERE transmission_portfolio_scenario_id = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
@@ -307,7 +360,6 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
     )
-
     return hurdle_rates
 
 
@@ -324,11 +376,9 @@ def write_model_inputs(
     :param conn: database connection
     :return:
     """
-
     hurdle_rates = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
-
     with open(
         os.path.join(
             scenario_directory,
@@ -347,6 +397,7 @@ def write_model_inputs(
             [
                 "transmission_line",
                 "period",
+                "month",
                 "hurdle_rate_positive_direction_per_mwh",
                 "hurdle_rate_negative_direction_per_mwh",
             ]
@@ -394,19 +445,21 @@ def import_results_into_database(
         for row in reader:
             tx_line = row[0]
             period = row[1]
-            timepoint = row[2]
-            timepoint_weight = row[3]
-            number_of_hours_in_timepoint = row[4]
-            lz_from = row[5]
-            lz_to = row[6]
-            hurdle_cost_positve_direction = row[7]
-            hurdle_cost_negative_direction = row[8]
+            month = row[2]
+            timepoint = row[3]
+            timepoint_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            lz_from = row[6]
+            lz_to = row[7]
+            hurdle_cost_positve_direction = row[8]
+            hurdle_cost_negative_direction = row[9]
 
             results.append(
                 (
                     scenario_id,
                     tx_line,
                     period,
+                    month,
                     subproblem,
                     stage,
                     timepoint,
@@ -420,12 +473,12 @@ def import_results_into_database(
             )
     insert_temp_sql = """
         INSERT INTO temp_results_transmission_hurdle_costs{}
-        (scenario_id, transmission_line, period, subproblem_id, stage_id,
+        (scenario_id, transmission_line, period, month, subproblem_id, stage_id,
         timepoint, timepoint_weight,
         number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, 
         hurdle_cost_positive_direction, hurdle_cost_negative_direction)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
         scenario_id
     )
@@ -434,12 +487,12 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     insert_sql = """
         INSERT INTO results_transmission_hurdle_costs
-        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
+        (scenario_id, transmission_line, period, month, subproblem_id, stage_id, 
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction)
         SELECT
-        scenario_id, transmission_line, period, subproblem_id, stage_id,
+        scenario_id, transmission_line, period, month, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction
