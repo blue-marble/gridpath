@@ -1362,7 +1362,7 @@ CREATE TABLE inputs_project_carbon_cap_zones (
 project_carbon_cap_zone_scenario_id INTEGER,
 project VARCHAR(64),
 carbon_cap_zone VARCHAR(32),
-PRIMARY KEY (project_carbon_cap_zone_scenario_id, project),
+PRIMARY KEY (project_carbon_cap_zone_scenario_id, project, carbon_cap_zone),
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
