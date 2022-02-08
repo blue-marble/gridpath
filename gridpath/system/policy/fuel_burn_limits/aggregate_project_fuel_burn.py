@@ -37,13 +37,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    m.PRJ_FUEL_BAS = Set(dimen=3)
+    m.PRJ_FUEL_BURN_LIMIT_BAS = Set(dimen=3)
 
     m.PRJS_BY_FUEL_BA = Set(
-        m.FUEL_BAS,
+        m.FUEL_BURN_LIMIT_BAS,
         within=m.FUEL_PRJS,
         initialize=lambda mod, f, ba: [
-            prj for (prj, fuel, bln_a) in mod.PRJ_FUEL_BAS if f == fuel and ba == bln_a
+            prj for (prj, fuel, bln_a) in mod.PRJ_FUEL_BURN_LIMIT_BAS if f == fuel and ba == bln_a
         ],
     )
 

@@ -293,7 +293,7 @@ def optional_modules_list():
             "geography.fuel_balancing_areas",
             "system.policy.fuel_burn_limits.fuel_burn_limits",
             "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
-            "system.policy.fuel_burn_limits.fuel_burn_limits_balance",
+            "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
             "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         ],
         "prm": [

@@ -32,7 +32,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT = Set(
-        dimen=3, within=m.FUEL_BAS * m.BLN_TYPE_HRZS
+        dimen=4, within=m.FUEL_BURN_LIMIT_BAS * m.BLN_TYPE_HRZS
     )
     m.fuel_burn_limit_unit = Param(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT, within=NonNegativeReals
@@ -58,9 +58,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "fuel_burn_limits.tab",
         ),
-        index=m.FUEL_FUEL_BA_PERIODS_WITH_FUEL_BURN_LIMIT,
+        index=m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         param=m.fuel_burn_limit_unit,
-        select=("fuel", "fuel_ba", "balancing_type", "horizon", "fuel_burn_limit_unit"),
+        select=("fuel", "fuel_burn_limit_ba", "balancing_type_horizon", "horizon",
+                "fuel_burn_limit_unit"),
     )
 
 
@@ -76,7 +77,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     fuel_burn_limits = c.execute(
-        """SELECT fuel, fuel_ba, balancing_type_horizon, horizon, fuel_burn_limit_unit
+        """SELECT fuel, fuel_burn_limit_ba, balancing_type_horizon, horizon, fuel_burn_limit_unit
         FROM inputs_system_fuel_burn_limits
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -84,9 +85,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
         USING (balancing_type_horizon, horizon)
         JOIN
-        (SELECT fuel_ba
-        FROM inputs_geography_fuel_bas
-        WHERE fuel_ba_scenario_id = {fuel_ba_scenario_id}) as 
+        (SELECT fuel_burn_limit_ba
+        FROM inputs_geography_fuel_burn_limit_balancing_areas
+        WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}) as 
         relevant_zones
         USING (energy_target_zone)
         WHERE fuel_burn_limit_scenario_id = {fuel_burn_limit_scenario_id}
@@ -94,7 +95,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         AND stage_id = {stage_id};
         """.format(
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            fuel_ba_scenario_id=subscenarios.FUEL_BA_SCENARIO_ID,
+            fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BA_SCENARIO_ID,
             fuel_burn_limit_scenario_id=subscenarios.FUEL_BURN_LIMIT_SCENARIO_ID,
             subproblem_id=subproblem,
             stage_id=stage,
@@ -152,7 +153,7 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["fuel", "fuel_ba", "balancing_type", "horizon", "fuel_burn_limit_unit"]
+            ["fuel", "fuel_burn_limit_ba", "balancing_type", "horizon", "fuel_burn_limit_unit"]
         )
 
         for row in fuel_burn_limits:

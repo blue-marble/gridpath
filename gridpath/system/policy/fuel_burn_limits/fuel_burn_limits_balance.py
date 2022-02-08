@@ -91,8 +91,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         ),
         "w",
         newline="",
-    ) as fuel_burn_limits_results_file:
-        writer = csv.writer(fuel_burn_limits_results_file)
+    ) as fuel_burn_limit_results_file:
+        writer = csv.writer(fuel_burn_limit_results_file)
         writer.writerow(
             [
                 "fuel",

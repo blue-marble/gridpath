@@ -30,12 +30,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    m.FUEL_BAS = Set(dimen=2)  # fuel and area
+    m.FUEL_BURN_LIMIT_BAS = Set(dimen=2)  # fuel and BA
 
-    # TODO: violations
-    m.fuel_burn_limit_allow_violation = Param(m.FUEL_BAS, within=Boolean, default=0)
+    m.fuel_burn_limit_allow_violation = Param(
+        m.FUEL_BURN_LIMIT_BAS, within=Boolean, default=0
+    )
     m.fuel_burn_limit_violation_penalty_per_unit = Param(
-        m.FUEL_BAS, within=NonNegativeReals, default=0
+        m.FUEL_BURN_LIMIT_BAS, within=NonNegativeReals, default=0
     )
 
 
@@ -47,9 +48,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "inputs",
-            "fuel_balancing_areas.tab",
+            "fuel_burn_limit_balancing_areas.tab",
         ),
-        index=m.FUEL_BAS,
+        index=m.FUEL_BURN_LIMIT_BAS,
         param=(
             m.fuel_burn_limit_allow_violation,
             m.fuel_burn_limit_violation_penalty_per_unit,
@@ -68,17 +69,17 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
     c = conn.cursor()
-    fuel_bas = c.execute(
-        """SELECT fuel, fuel_ba, allow_violation, 
+    fuel_burn_limit_bas = c.execute(
+        """SELECT fuel, fuel_burn_limit_ba, allow_violation, 
         violation_penalty_per_unit
-        FROM inputs_geography_fuel_bas
-        WHERE fuel_ba_scenario_id = {};
+        FROM inputs_geography_fuel_burn_limit_bas
+        WHERE fuel_burn_limit_ba_scenario_id = {};
         """.format(
-            subscenarios.FUEL_BA_SCENARIO_ID
+            subscenarios.fuel_burn_limit_ba_SCENARIO_ID
         )
     )
 
-    return fuel_bas
+    return fuel_burn_limit_bas
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -108,7 +109,7 @@ def write_model_inputs(
     :return:
     """
 
-    fuel_bas = get_inputs_from_database(
+    fuel_burn_limit_bas = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -118,7 +119,7 @@ def write_model_inputs(
             str(subproblem),
             str(stage),
             "inputs",
-            "fuel_balancing_areas.tab",
+            "fuel_burn_limit_balancing_areas.tab",
         ),
         "w",
         newline="",
@@ -127,8 +128,13 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["fuel", "fuel_ba", "allow_violation", "violation_penalty_per_unit"]
+            [
+                "fuel",
+                "fuel_burn_limit_ba",
+                "allow_violation",
+                "violation_penalty_per_unit",
+            ]
         )
 
-        for row in fuel_bas:
+        for row in fuel_burn_limit_bas:
             writer.writerow(row)
