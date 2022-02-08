@@ -1,0 +1,3 @@
+fuel,fuel_burn_limit_ba,subproblem_id,stage_id,balancing_type_horizon,horizon,fuel_burn_limit_unit
+Gas,Zone1,1,1,year,202001,1.29086224
+Coal,Zone1,1,1,year,202001,0

@@ -55,6 +55,7 @@ def all_modules_list():
         "geography.energy_target_zones",
         "geography.carbon_cap_zones",
         "geography.carbon_tax_zones",
+        "geography.fuel_balancing_areas",
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
@@ -287,6 +288,13 @@ def optional_modules_list():
             "system.policy.carbon_tax.aggregate_project_carbon_emissions",
             "system.policy.carbon_tax.carbon_tax_costs",
             "objective.system.policy.aggregate_carbon_tax_costs",
+        ],
+        "fuel_burn_limit": [
+            "geography.fuel_balancing_areas",
+            "system.policy.fuel_burn_limits.fuel_burn_limits",
+            "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
+            "system.policy.fuel_burn_limits.fuel_burn_limits_balance",
+            "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         ],
         "prm": [
             "geography.prm_zones",

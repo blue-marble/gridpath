@@ -1,0 +1,6 @@
+project,fuel,fuel_burn_limit_ba
+Coal,Coal,Zone1
+Gas_CCGT,Gas,Zone1
+Gas_CT,Gas,Zone1
+Gas_CCGT_new,Gas,Zone1
+Gas_CT_new,Gas,Zone1

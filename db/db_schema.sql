@@ -675,6 +675,27 @@ subscenarios_market_volume (market_volume_scenario_id)
 );
 
 
+-- Fuel balancing areas
+DROP TABLE IF EXISTS subscenarios_geography_fuel_burn_limit_balancing_areas;
+CREATE TABLE subscenarios_geography_fuel_burn_limit_balancing_areas (
+fuel_burn_limit_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_fuel_burn_limit_balancing_areas;
+CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas (
+fuel_burn_limit_ba_scenario_id INTEGER,
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_unit FLOAT DEFAULT 0,
+PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
+FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
+subscenarios_geography_fuel_burn_limit_balancing_areas (fuel_burn_limit_ba_scenario_id)
+);
+
+
 -------------------
 -- -- PROJECT -- --
 -------------------
@@ -1406,6 +1427,28 @@ carbon_tax_allowance_tco2_per_mwh FLOAT,
 PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
+);
+
+-- Project fuel burn limit balancing areas
+-- Which projects contribute to the fuel / fuel BA limit
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_fuel_burn_limit_balancing_areas;
+CREATE TABLE subscenarios_project_fuel_burn_limit_balancing_areas (
+project_fuel_burn_limit_ba_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_fuel_burn_limit_balancing_areas;
+CREATE TABLE inputs_project_fuel_burn_limit_balancing_areas (
+project_fuel_burn_limit_ba_scenario_id INTEGER,
+project VARCHAR(64),
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+PRIMARY KEY (project_fuel_burn_limit_ba_scenario_id, project, fuel, fuel_burn_limit_ba),
+FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
+ subscenarios_project_fuel_burn_limit_balancing_areas (project_fuel_burn_limit_ba_scenario_id)
 );
 
 -- Project PRM zones
@@ -2378,6 +2421,32 @@ PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
 period)
 );
 
+-- Fuel burn limits
+DROP TABLE IF EXISTS subscenarios_system_fuel_burn_limits;
+CREATE TABLE subscenarios_system_fuel_burn_limits (
+fuel_burn_limit_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include horizons and BAs other than the ones in a scenario, as correct
+-- horizons and zones will be pulled depending on temporal_scenario_id and
+-- fuel_burn_limit_ba_scenario_id
+DROP TABLE IF EXISTS inputs_system_fuel_burn_limits;
+CREATE TABLE inputs_system_fuel_burn_limits (
+fuel_burn_limit_scenario_id INTEGER,
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+fuel_burn_limit_unit FLOAT,
+PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
+             subproblem_id, stage_id, balancing_type_horizon, horizon)
+);
+
+
 -- Case tuning
 -- We can apply additional costs in the model to prevent degeneracy
 -- Currently this includes:
@@ -2436,6 +2505,7 @@ of_horizon_energy_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
+of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2452,6 +2522,7 @@ spinning_reserves_ba_scenario_id INTEGER,
 energy_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 carbon_tax_zone_scenario_id INTEGER,
+fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
@@ -2470,6 +2541,7 @@ project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
 project_carbon_tax_allowance_scenario_id INTEGER,
+project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2506,6 +2578,7 @@ period_energy_target_scenario_id INTEGER,
 horizon_energy_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
+fuel_burn_limit_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -2539,6 +2612,9 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
+FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
+    subscenarios_geography_fuel_burn_limit_balancing_areas
+        (fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
@@ -2587,6 +2663,9 @@ FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_allowance
         (project_carbon_tax_allowance_scenario_id),
+FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
+    subscenarios_project_fuel_burn_limit_balancing_areas
+        (project_fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2675,6 +2754,8 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
     subscenarios_system_carbon_tax (carbon_tax_scenario_id),
+FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
+    subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
