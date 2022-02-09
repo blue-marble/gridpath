@@ -25,6 +25,7 @@ from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -50,6 +51,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=violation_expression_rule,
     )
 
+    m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression = (
+        Expression(
+            m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+            rule=lambda mod, f, ba, bt, h: sum(
+                getattr(mod, component)[f, ba, bt, h]
+                for component in getattr(d, fuel_burn_balance_components)
+            ),
+        )
+    )
+
     def fuel_burn_limit_balance_rule(mod, f, ba, bt, h):
         """
         Total delivered energy-target-eligible energy must exceed target
@@ -60,7 +71,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return (
-            mod.Total_Period_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
+            mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
+                f, ba, bt, h
+            ]
             - mod.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]
             <= mod.fuel_burn_limit_unit[f, ba, bt, h]
         )
@@ -113,7 +126,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     h,
                     m.fuel_burn_limit_unit[f, ba, bt, h],
                     value(
-                        m.Total_Period_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
+                        m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
                     ),
                     value(m.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]),
                 ]
