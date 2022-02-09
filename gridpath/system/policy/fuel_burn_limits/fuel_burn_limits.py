@@ -95,7 +95,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         AND stage_id = {stage_id};
         """.format(
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BA_SCENARIO_ID,
+            fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID,
             fuel_burn_limit_scenario_id=subscenarios.FUEL_BURN_LIMIT_SCENARIO_ID,
             subproblem_id=subproblem,
             stage_id=stage,
