@@ -72,10 +72,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     fuel_burn_limit_bas = c.execute(
         """SELECT fuel, fuel_burn_limit_ba, allow_violation, 
         violation_penalty_per_unit
-        FROM inputs_geography_fuel_burn_limit_bas
-        WHERE fuel_burn_limit_ba_scenario_id = {};
+        FROM inputs_geography_fuel_burn_limit_balancing_areas
+        WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id};
         """.format(
-            subscenarios.fuel_burn_limit_ba_SCENARIO_ID
+            fuel_burn_limit_ba_scenario_id=subscenarios.FUEL_BURN_LIMIT_BA_SCENARIO_ID
         )
     )
 

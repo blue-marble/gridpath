@@ -132,53 +132,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
-    """
-
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "fuel_burn_by_fuel_and_fuel_burn_limit_ba.csv",
-        ),
-        "w",
-        newline="",
-    ) as carbon_results_file:
-        writer = csv.writer(carbon_results_file)
-        writer.writerow(
-            [
-                "fuel",
-                "fuel_burn_limit_ba",
-                "period",
-                "discount_factor",
-                "number_years_represented",
-                "fuel_burn_limit_unit",
-                "fuel_burn_unit",
-            ]
-        )
-        for (f, ba, p) in m.FUEL_FUEL_BA_PERIODS_WITH_FUEL_BURN_LIMIT:
-            writer.writerow(
-                [
-                    f,
-                    ba,
-                    p,
-                    m.discount_factor[p],
-                    m.number_years_represented[p],
-                    float(m.fuel_burn_limit[f, ba, p]),
-                    value(m.Total_Period_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, p]),
-                ]
-            )
-
-
 # Database
 ###############################################################################
 
@@ -202,22 +155,22 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- Get projects from portfolio only
         (SELECT project
             FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
+            WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
         ) as prj_tbl
         LEFT OUTER JOIN 
         -- Get fuels and BAs for those projects
         (SELECT project, fuel, fuel_burn_limit_ba
             FROM inputs_project_fuel_burn_limit_balancing_areas
-            WHERE project_fuel_burn_limit_ba_scenario_id = {}
+            WHERE project_fuel_burn_limit_ba_scenario_id = {project_fuel_burn_limit_ba_scenario_id}
         ) as prj_cc_zone_tbl
         USING (project)
         -- Filter out projects whose fuel and BA is not one included in 
         -- our fuel_burn_limit_ba_scenario_id
-        WHERE (fuel, fuel_burn_limit_ba) in (
-                SELECT (fuel, fuel_burn_limit_ba)
-                    FROM inputs_geography_fuel_burn_limit_balancing_areas
-                    WHERE fuel_burn_limit_ba_scenario_id = {}
-        );
+        INNER JOIN (
+            SELECT fuel, fuel_burn_limit_ba
+                FROM inputs_geography_fuel_burn_limit_balancing_areas
+                WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id})
+        USING (fuel, fuel_burn_limit_ba);
         """.format(
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             project_fuel_burn_limit_ba_scenario_id=subscenarios.PROJECT_FUEL_BURN_LIMIT_BA_SCENARIO_ID,
@@ -261,7 +214,7 @@ def write_model_inputs(
         writer.writerow(["project", "fuel", "fuel_burn_limit_ba"])
 
         for row in project_fuel_bas:
-            writer.writerows(row)
+            writer.writerow(row)
 
 
 def import_results_into_database(
@@ -280,15 +233,15 @@ def import_results_into_database(
     if not quiet:
         print("system fuel burn")
 
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_fuel_burn",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
+    # # Delete prior results and create temporary import table for ordering
+    # setup_results_import(
+    #     conn=db,
+    #     cursor=c,
+    #     table="results_system_fuel_burn",
+    #     scenario_id=scenario_id,
+    #     subproblem=subproblem,
+    #     stage=stage,
+    # )
 
     # # Load results into the temporary table
     # results = []

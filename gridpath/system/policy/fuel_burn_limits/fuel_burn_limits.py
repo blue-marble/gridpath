@@ -60,7 +60,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         param=m.fuel_burn_limit_unit,
-        select=("fuel", "fuel_burn_limit_ba", "balancing_type_horizon", "horizon",
+        select=("fuel", "fuel_burn_limit_ba", "balancing_type", "horizon",
                 "fuel_burn_limit_unit"),
     )
 
@@ -89,7 +89,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         FROM inputs_geography_fuel_burn_limit_balancing_areas
         WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}) as 
         relevant_zones
-        USING (energy_target_zone)
+        USING (fuel_burn_limit_ba)
         WHERE fuel_burn_limit_scenario_id = {fuel_burn_limit_scenario_id}
         AND subproblem_id = {subproblem_id}
         AND stage_id = {stage_id};

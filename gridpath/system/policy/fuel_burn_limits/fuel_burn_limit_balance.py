@@ -61,8 +61,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return (
             mod.Total_Period_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
-            + mod.Fuel_Burn_Limit_Overage_Unit[f, ba, bt, h]
-            >= mod.fuel_burn_limit_unit[f, ba, bt, h]
+            - mod.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]
+            <= mod.fuel_burn_limit_unit[f, ba, bt, h]
         )
 
     m.Fuel_Burn_Limit_Constraint = Constraint(
@@ -107,6 +107,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         for (f, ba, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT:
             writer.writerow(
                 [
+                    f,
                     ba,
                     bt,
                     h,
@@ -114,7 +115,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(
                         m.Total_Period_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
                     ),
-                    value(m.Fuel_Burn_Limit_Overage_Unit[ba, bt, h]),
+                    value(m.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]),
                 ]
             )
 
@@ -142,14 +143,14 @@ def import_results_into_database(
     :return:
     """
     # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_system_fuel_limits",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
+    # setup_results_import(
+    #     conn=db,
+    #     cursor=c,
+    #     table="results_system_fuel_limits",
+    #     scenario_id=scenario_id,
+    #     subproblem=subproblem,
+    #     stage=stage,
+    # )
 
     # # Load results into the temporary table
     # results = []

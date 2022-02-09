@@ -3880,6 +3880,7 @@ Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
 Total_Export_Penalty_Cost FLOAT,
+Total_Horizon_Fuel_Burn_Limit_Penalty_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
