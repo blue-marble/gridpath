@@ -52,6 +52,8 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
+Infinity = float("inf")
+
 class TestSystemFuelBurnLimits(unittest.TestCase):
     """ """
 
@@ -95,7 +97,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
         expected_fuel_ba_bt_horizons = sorted(
             [
                 ("Gas", "Zone1", "year", 2020),
@@ -104,6 +106,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                 ("Coal", "Zone2", "year", 2020),
                 ("Coal", "Zone1", "year", 2030),
                 ("Coal", "Zone2", "year", 2030),
+                ("Nuclear", "Zone1", "year", 2020),
             ]
         )
         actual_fuel_ba_bt_horizons = sorted(
@@ -114,12 +117,12 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                     ba,
                     bt,
                     h,
-                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
             ]
         )
         self.assertListEqual(expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons)
 
-        # Param: horizon_energy_target_mwh
+        # Param: fuel_burn_limit_unit
         expected_limit = OrderedDict(
             sorted(
                 {
@@ -129,6 +132,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                     ("Coal", "Zone2", "year", 2020): 10,
                     ("Coal", "Zone1", "year", 2030): 10,
                     ("Coal", "Zone2", "year", 2030): 100,
+                    ("Nuclear", "Zone1", "year", 2020): Infinity,
                 }.items()
             )
         )
@@ -141,12 +145,148 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                         ba,
                         bt,
                         h,
-                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
                 }.items()
             )
         )
 
         self.assertDictEqual(expected_limit, actual_limit)
+
+        # Param: relative_fuel_burn_limit_fuel
+        expected_relative_fuel = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1", "year", 2020): "undefined",
+                    ("Gas", "Zone1", "year", 2030): "undefined",
+                    ("Coal", "Zone1", "year", 2020): "Gas",
+                    ("Coal", "Zone2", "year", 2020): "undefined",
+                    ("Coal", "Zone1", "year", 2030): "undefined",
+                    ("Coal", "Zone2", "year", 2030): "undefined",
+                    ("Nuclear", "Zone1", "year", 2020): "Coal",
+                }.items()
+            )
+        )
+        actual_relative_fuel = OrderedDict(
+            sorted(
+                {
+                    (f, ba, bt, h): instance.relative_fuel_burn_limit_fuel[f, ba, bt, h]
+                    for (
+                        f,
+                        ba,
+                        bt,
+                        h,
+                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_relative_fuel, actual_relative_fuel)
+
+        # Param: relative_fuel_burn_limit_ba
+        expected_relative_ba = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1", "year", 2020): "undefined",
+                    ("Gas", "Zone1", "year", 2030): "undefined",
+                    ("Coal", "Zone1", "year", 2020): "Zone1",
+                    ("Coal", "Zone2", "year", 2020): "undefined",
+                    ("Coal", "Zone1", "year", 2030): "undefined",
+                    ("Coal", "Zone2", "year", 2030): "undefined",
+                    ("Nuclear", "Zone1", "year", 2020): "Zone1",
+                }.items()
+            )
+        )
+        actual_relative_ba = OrderedDict(
+            sorted(
+                {
+                    (f, ba, bt, h): instance.relative_fuel_burn_limit_ba[f, ba, bt, h]
+                    for (
+                        f,
+                        ba,
+                        bt,
+                        h,
+                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_relative_ba, actual_relative_ba)
+
+        # Param: fraction_of_relative_fuel_burn_limit_fuel_ba
+        expected_relative_ba = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1", "year", 2020): Infinity,
+                    ("Gas", "Zone1", "year", 2030): Infinity,
+                    ("Coal", "Zone1", "year", 2020): 0.5,
+                    ("Coal", "Zone2", "year", 2020): Infinity,
+                    ("Coal", "Zone1", "year", 2030): Infinity,
+                    ("Coal", "Zone2", "year", 2030): Infinity,
+                    ("Nuclear", "Zone1", "year", 2020): 2.0,
+                }.items()
+            )
+        )
+        actual_relative_ba = OrderedDict(
+            sorted(
+                {
+                    (f, ba, bt, h): instance.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h]
+                    for (
+                        f,
+                        ba,
+                        bt,
+                        h,
+                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_relative_ba, actual_relative_ba)
+
+        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+        expected_fuel_ba_bt_horizons_abs = sorted(
+            [
+                ("Gas", "Zone1", "year", 2020),
+                ("Gas", "Zone1", "year", 2030),
+                ("Coal", "Zone1", "year", 2020),
+                ("Coal", "Zone2", "year", 2020),
+                ("Coal", "Zone1", "year", 2030),
+                ("Coal", "Zone2", "year", 2030),
+            ]
+        )
+        actual_fuel_ba_bt_horizons_abs = sorted(
+            [
+                (f, ba, bt, h)
+                for (
+                    f,
+                    ba,
+                    bt,
+                    h,
+                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+            ]
+        )
+        self.assertListEqual(expected_fuel_ba_bt_horizons_abs,
+                             actual_fuel_ba_bt_horizons_abs)
+
+        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
+        expected_fuel_ba_bt_horizons_rel = sorted(
+            [
+                ("Coal", "Zone1", "year", 2020),
+                ("Nuclear", "Zone1", "year", 2020),
+            ]
+        )
+        actual_fuel_ba_bt_horizons_rel = sorted(
+            [
+                (f, ba, bt, h)
+                for (
+                    f,
+                    ba,
+                    bt,
+                    h,
+                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
+            ]
+        )
+        self.assertListEqual(expected_fuel_ba_bt_horizons_rel,
+                             actual_fuel_ba_bt_horizons_rel)
 
 
 if __name__ == "__main__":

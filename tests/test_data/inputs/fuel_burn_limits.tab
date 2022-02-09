@@ -1,7 +1,8 @@
-fuel	fuel_burn_limit_ba	balancing_type_horizon	horizon	fuel_burn_limit_unit
-Gas	Zone1	year	2020	50
-Gas	Zone1	year	2030	5
-Coal	Zone1	year	2020	100
-Coal	Zone2	year	2020	10
-Coal	Zone1	year	2030	10
-Coal	Zone2	year	2030	100
+fuel	fuel_burn_limit_ba	balancing_type_horizon	horizon	fuel_burn_limit_unit	relative_fuel_burn_limit_fuel	relative_fuel_burn_limit_ba	fraction_of_relative_fuel_burn_limit_fuel_ba
+Gas	Zone1	year	2020	50	.	.	.
+Gas	Zone1	year	2030	5	.	.	.
+Coal	Zone1	year	2020	100	Gas	Zone1	0.5
+Coal	Zone2	year	2020	10	.	.	.
+Coal	Zone1	year	2030	10	.	.	.
+Coal	Zone2	year	2030	100	.	.	.
+Nuclear	Zone1	year	2020	.	Coal	Zone1	2.0

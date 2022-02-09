@@ -93,7 +93,14 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: FUEL_BURN_LIMIT_BAS
-        expected_bas = sorted([("Gas", "Zone1"), ("Coal", "Zone1"), ("Coal", "Zone2")])
+        expected_bas = sorted(
+            [
+                ("Gas", "Zone1"),
+                ("Coal", "Zone1"),
+                ("Coal", "Zone2"),
+                ("Nuclear", "Zone1"),
+            ]
+        )
         actual_bas = sorted([(f, ba) for (f, ba) in instance.FUEL_BURN_LIMIT_BAS])
         self.assertListEqual(expected_bas, actual_bas)
 
@@ -104,6 +111,7 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
                     ("Gas", "Zone1"): 0,
                     ("Coal", "Zone1"): 0,
                     ("Coal", "Zone2"): 0,
+                    ("Nuclear", "Zone1"): 1,
                 }.items()
             )
         )
@@ -124,6 +132,7 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
                     ("Gas", "Zone1"): 99999,
                     ("Coal", "Zone1"): 99999,
                     ("Coal", "Zone2"): 99999,
+                    ("Nuclear", "Zone1"): 10,
                 }.items()
             )
         )

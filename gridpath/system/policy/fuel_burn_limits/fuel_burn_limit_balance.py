@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-MMBtu [fuel burn unit] limit by horizon.
+MMBtu [fuel burn unit] limit by horizon. Limits can be absolute or relative to fuel
+burn in another fuel - BA.
 """
 
 import csv
@@ -24,8 +25,6 @@ from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
-
-Infinity = float("inf")
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
