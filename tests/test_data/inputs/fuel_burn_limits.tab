@@ -1,0 +1,7 @@
+fuel	fuel_burn_limit_ba	balancing_type_horizon	horizon	fuel_burn_limit_unit
+Gas	Zone1	year	2020	50
+Gas	Zone1	year	2030	5
+Coal	Zone1	year	2020	100
+Coal	Zone2	year	2020	10
+Coal	Zone1	year	2030	10
+Coal	Zone2	year	2030	100

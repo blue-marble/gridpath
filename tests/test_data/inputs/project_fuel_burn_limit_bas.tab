@@ -1,0 +1,8 @@
+project	fuel	fuel_burn_limit_ba
+Gas_CCGT	Gas	Zone1
+Coal	Coal	Zone1
+Gas_CT	Gas	Zone1
+Gas_CCGT_New	Gas	Zone1
+Gas_CCGT_New_Binary	Gas	Zone1
+Gas_CT_New	Gas	Zone1
+Coal_z2	Coal	Zone2

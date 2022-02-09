@@ -1021,6 +1021,19 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_cheap_fuel_blend_w_limit")
         self.run_and_check_objective("test_cheap_fuel_blend_w_limit", objective)
 
+    def test_example_test_new_solar_fuel_burn_limit(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_fuel_burn_limit" example. Inputs set up so that this should
+        be the same as the "test_new_solar_carbon_cap" example.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_fuel_burn_limit")
+        self.run_and_check_objective(
+            "test_new_solar_fuel_burn_limit", -58282515304521.79
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
