@@ -78,7 +78,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             <= mod.fuel_burn_limit_unit[f, ba, bt, h]
         )
 
-    m.Fuel_Burn_Limit_Constraint = Constraint(
+    m.Meet_Fuel_Burn_Limit_Constraint = Constraint(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         rule=fuel_burn_limit_balance_rule,
     )
@@ -108,25 +108,31 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(fuel_burn_limit_results_file)
         writer.writerow(
             [
-                "fuel",
-                "fuel_ba",
                 "balancing_type",
                 "horizon",
+                "number_years_represented",
+                "discount_factor",
+                "fuel",
+                "fuel_ba",
                 "fuel_burn_limit_unit",
-                "fuel_burn_unit",
+                "total_fuel_burn_unit",
                 "fuel_burn_overage_unit",
             ]
         )
         for (f, ba, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT:
             writer.writerow(
                 [
-                    f,
-                    ba,
                     bt,
                     h,
+                    m.number_years_represented[m.period[m.last_hrz_tmp[bt, h]]],
+                    m.discount_factor[m.period[m.last_hrz_tmp[bt, h]]],
+                    f,
+                    ba,
                     m.fuel_burn_limit_unit[f, ba, bt, h],
                     value(
-                        m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_Unit[f, ba, bt, h]
+                        m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
+                            f, ba, bt, h
+                        ]
                     ),
                     value(m.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]),
                 ]
@@ -134,7 +140,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def save_duals(m):
-    m.constraint_indices["Fuel_Burn_Limit_Constraint"] = [
+    m.constraint_indices["Meet_Fuel_Burn_Limit_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -155,127 +161,160 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    # Delete prior results and create temporary import table for ordering
-    # setup_results_import(
-    #     conn=db,
-    #     cursor=c,
-    #     table="results_system_fuel_limits",
-    #     scenario_id=scenario_id,
-    #     subproblem=subproblem,
-    #     stage=stage,
-    # )
+    if not quiet:
+        print("system fuel burn limit balance")
 
-    # # Load results into the temporary table
-    # results = []
-    # with open(
-    #     os.path.join(results_directory, "horizon_energy_target.csv"), "r"
-    # ) as energy_target_file:
-    #     reader = csv.reader(energy_target_file)
-    #
-    #     next(reader)  # skip header
-    #     for row in reader:
-    #         energy_target_zone = row[0]
-    #         balancing_type = row[1]
-    #         horizon = row[2]
-    #         energy_target = row[3]
-    #         energy_target_provision = row[4]
-    #         curtailment = row[5]
-    #         total = row[6]
-    #         fraction_met = row[7]
-    #         fraction_curtailed = row[8]
-    #         shortage = row[9]
-    #
-    #         results.append(
-    #             (
-    #                 scenario_id,
-    #                 energy_target_zone,
-    #                 balancing_type,
-    #                 horizon,
-    #                 subproblem,
-    #                 stage,
-    #                 energy_target,
-    #                 energy_target_provision,
-    #                 curtailment,
-    #                 total,
-    #                 fraction_met,
-    #                 fraction_curtailed,
-    #                 shortage,
-    #             )
-    #         )
-    #
-    # insert_temp_sql = """
-    #     INSERT INTO temp_results_system_horizon_energy_target{}
-    #      (scenario_id, energy_target_zone, balancing_type_horizon, horizon,
-    #      subproblem_id, stage_id, energy_target_mwh,
-    #      delivered_energy_target_energy_mwh,
-    #      curtailed_energy_target_energy_mwh, total_energy_target_energy_mwh,
-    #      fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
-    #      energy_target_shortage_mwh)
-    #      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-    #      """.format(
-    #     scenario_id
-    # )
-    # spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-    #
-    # # Insert sorted results into permanent results table
-    # insert_sql = """
-    #     INSERT INTO results_system_horizon_energy_target
-    #     (scenario_id, energy_target_zone, balancing_type_horizon, horizon,
-    #     subproblem_id, stage_id, energy_target_mwh,
-    #     delivered_energy_target_energy_mwh,
-    #     curtailed_energy_target_energy_mwh, total_energy_target_energy_mwh,
-    #     fraction_of_energy_target_met,
-    #     fraction_of_energy_target_energy_curtailed,
-    #     energy_target_shortage_mwh)
-    #     SELECT scenario_id, energy_target_zone, balancing_type_horizon,
-    #     horizon, subproblem_id, stage_id, energy_target_mwh,
-    #     delivered_energy_target_energy_mwh, curtailed_energy_target_energy_mwh,
-    #     total_energy_target_energy_mwh,
-    #     fraction_of_energy_target_met, fraction_of_energy_target_energy_curtailed,
-    #     energy_target_shortage_mwh
-    #     FROM temp_results_system_horizon_energy_target{}
-    #     ORDER BY scenario_id, energy_target_zone, balancing_type_horizon,
-    #     horizon, subproblem_id, stage_id;
-    #     """.format(
-    #     scenario_id
-    # )
-    # spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-    #
-    # # Update duals
-    # duals_results = []
-    # with open(
-    #     os.path.join(results_directory, "Horizon_Energy_Target_Constraint.csv"), "r"
-    # ) as energy_target_duals_file:
-    #     reader = csv.reader(energy_target_duals_file)
-    #
-    #     next(reader)  # skip header
-    #
-    #     for row in reader:
-    #         duals_results.append(
-    #             (row[3], row[0], row[1], row[2], scenario_id, subproblem, stage)
-    #         )
-    #
-    # duals_sql = """
-    #     UPDATE results_system_horizon_energy_target
-    #     SET dual = ?
-    #     WHERE energy_target_zone = ?
-    #     AND balancing_type_horizon = ?
-    #     AND horizon = ?
-    #     AND scenario_id = ?
-    #     AND subproblem_id = ?
-    #     AND stage_id = ?;
-    #     """
-    # spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
-    #
-    # # # Calculate marginal energy-target cost per MWh
-    # # mc_sql = """
-    # #     UPDATE results_system_horizon_energy_target
-    # #     SET energy_target_marginal_cost_per_mwh =
-    # #     dual / (discount_factor * number_years_represented)
-    # #     WHERE scenario_id = ?
-    # #     AND subproblem_id = ?
-    # #     and stage_id = ?;
-    # #     """
-    # # spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
-    # #                       data=(scenario_id, subproblem, stage),
-    # #                       many=False)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_system_fuel_burn_limits",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(
+        os.path.join(results_directory, "fuel_burn_limits.csv"), "r"
+    ) as energy_target_file:
+        reader = csv.reader(energy_target_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            [
+                balancing_type,
+                horizon,
+                number_years_represented,
+                discount_factor,
+                fuel,
+                fuel_burn_limit_ba,
+                fuel_burn_limit_unit,
+                total_fuel_burn_unit,
+                fuel_burn_overage_unit,
+            ] = row
+
+            results.append(
+                (
+                    scenario_id,
+                    subproblem,
+                    stage,
+                    balancing_type,
+                    horizon,
+                    number_years_represented,
+                    discount_factor,
+                    fuel,
+                    fuel_burn_limit_ba,
+                    fuel_burn_limit_unit,
+                    total_fuel_burn_unit,
+                    fuel_burn_overage_unit,
+                )
+            )
+
+    insert_temp_sql = """
+        INSERT INTO temp_results_system_fuel_burn_limits{scenario_id} (
+            scenario_id,
+            subproblem_id,
+            stage_id,
+            balancing_type_horizon,
+            horizon,
+            number_years_represented,
+            discount_factor,
+            fuel,
+            fuel_burn_limit_ba,
+            fuel_burn_limit_unit,
+            total_fuel_burn_unit,
+            fuel_burn_overage_unit
+        )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         """.format(
+        scenario_id=scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_system_fuel_burn_limits (
+            scenario_id,
+            subproblem_id,
+            stage_id,
+            balancing_type_horizon,
+            horizon,
+            number_years_represented,
+            discount_factor,
+            fuel,
+            fuel_burn_limit_ba,
+            fuel_burn_limit_unit,
+            total_fuel_burn_unit,
+            fuel_burn_overage_unit
+        )
+        SELECT scenario_id,
+            subproblem_id,
+            stage_id,
+            balancing_type_horizon,
+            horizon,
+            number_years_represented,
+            discount_factor,
+            fuel,
+            fuel_burn_limit_ba,
+            fuel_burn_limit_unit,
+            total_fuel_burn_unit,
+            fuel_burn_overage_unit
+        FROM temp_results_system_fuel_burn_limits{scenario_id}
+        ORDER BY scenario_id, fuel, fuel_burn_limit_ba, balancing_type_horizon,
+        horizon, subproblem_id, stage_id;
+        """.format(
+        scenario_id=scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+
+    # Update duals
+    duals_results = []
+    with open(
+        os.path.join(results_directory, "Meet_Fuel_Burn_Limit_Constraint.csv"), "r"
+    ) as duals_file:
+        reader = csv.reader(duals_file)
+
+        next(reader)  # skip header
+
+        for row in reader:
+            [fuel, fuel_burn_limit_ba, balancing_type, horizon, dual] = row
+            duals_results.append(
+                (
+                    dual,
+                    scenario_id,
+                    subproblem,
+                    stage,
+                    balancing_type,
+                    horizon,
+                    fuel,
+                    fuel_burn_limit_ba,
+                )
+            )
+
+    duals_sql = """
+        UPDATE results_system_fuel_burn_limits
+        SET dual = ?
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+        AND balancing_type_horizon = ?
+        AND horizon = ?
+        AND fuel = ?
+        AND fuel_burn_limit_ba = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
+
+    # Calculate marginal energy-target cost per MWh
+    mc_sql = """
+        UPDATE results_system_fuel_burn_limits
+        SET fuel_burn_limit_marginal_cost_per_unit =
+        dual / (discount_factor * number_years_represented)
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        and stage_id = ?;
+        """
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+    )

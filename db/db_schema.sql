@@ -3805,6 +3805,27 @@ PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
              balancing_type_horizon, horizon)
 );
 
+-- Fuel burn limits
+DROP TABLE IF EXISTS results_system_fuel_burn_limits;
+CREATE TABLE  results_system_fuel_burn_limits (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+number_years_represented FLOAT,  -- based on period of last horizon timepoint
+discount_factor FLOAT, -- based on period of last horizon timepoint
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+fuel_burn_limit_unit FLOAT,
+total_fuel_burn_unit FLOAT,
+fuel_burn_overage_unit FLOAT,
+dual FLOAT,
+fuel_burn_limit_marginal_cost_per_unit FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
+            fuel, fuel_burn_limit_ba)
+);
+
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;
 CREATE TABLE  results_system_prm (
