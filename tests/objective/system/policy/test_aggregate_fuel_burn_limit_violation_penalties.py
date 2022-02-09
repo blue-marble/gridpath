@@ -32,9 +32,23 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
-    "geography.fuel_burn_limit_balancing_areas"
+    "geography.load_zones",
+    "geography.fuel_burn_limit_balancing_areas",
+    "system.policy.fuel_burn_limits.fuel_burn_limits",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
+    "project.operations.operational_types",
+    "project.operations.power",
+    "project.operations.fuel_burn",
+    "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
+    "system.policy.fuel_burn_limits.fuel_burn_limit_balance"
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.fuel_burn_limits.fuel_burn_limits"
+NAME_OF_MODULE_BEING_TESTED = (
+    "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -52,7 +66,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestSystemFuelBurnLimits(unittest.TestCase):
+class TestObjectiveFuelBurnLimitViolationPenalties(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -83,7 +97,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with data as expected
+        Test components initialized with expected data
         :return:
         """
         m, data = add_components_and_load_data(
@@ -94,61 +108,6 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-
-        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-        expected_fuel_ba_bt_horizons = sorted(
-            [
-                ("Gas", "Zone1", "year", 2020),
-                ("Gas", "Zone1", "year", 2030),
-                ("Coal", "Zone1", "year", 2020),
-                ("Coal", "Zone2", "year", 2020),
-                ("Coal", "Zone1", "year", 2030),
-                ("Coal", "Zone2", "year", 2030),
-            ]
-        )
-        actual_fuel_ba_bt_horizons = sorted(
-            [
-                (f, ba, bt, h)
-                for (
-                    f,
-                    ba,
-                    bt,
-                    h,
-                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-            ]
-        )
-        self.assertListEqual(
-            expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons
-        )
-
-        # Param: horizon_energy_target_mwh
-        expected_limit = OrderedDict(
-            sorted(
-                {
-                    ("Gas", "Zone1", "year", 2020): 50,
-                    ("Gas", "Zone1", "year", 2030): 5,
-                    ("Coal", "Zone1", "year", 2020): 100,
-                    ("Coal", "Zone2", "year", 2020): 10,
-                    ("Coal", "Zone1", "year", 2030): 10,
-                    ("Coal", "Zone2", "year", 2030): 100
-                }.items()
-            )
-        )
-        actual_limit = OrderedDict(
-            sorted(
-                {
-                    (f, ba, bt, h): instance.fuel_burn_limit_unit[f, ba, bt, h]
-                    for (
-                        f,
-                        ba,
-                        bt,
-                        h,
-                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_limit, actual_limit)
 
 
 if __name__ == "__main__":

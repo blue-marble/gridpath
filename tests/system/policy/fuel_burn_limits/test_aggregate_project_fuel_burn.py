@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 from __future__ import print_function
 
 from builtins import str
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -32,9 +31,21 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
-    "geography.fuel_burn_limit_balancing_areas"
+    "geography.load_zones",
+    "geography.fuel_burn_limit_balancing_areas",
+    "system.policy.fuel_burn_limits.fuel_burn_limits",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
+    "project.operations.operational_types",
+    "project.operations.power",
+    "project.operations.fuel_burn",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.fuel_burn_limits.fuel_burn_limits"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.fuel_burn_limits.aggregate_project_fuel_burn"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -52,7 +63,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestSystemFuelBurnLimits(unittest.TestCase):
+class TestAggregateProjectFuelBurn(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -95,60 +106,60 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-        expected_fuel_ba_bt_horizons = sorted(
+        # Set: PRJ_FUEL_BURN_LIMIT_BAS
+        expected_prj_fuel_ba = sorted(
             [
-                ("Gas", "Zone1", "year", 2020),
-                ("Gas", "Zone1", "year", 2030),
-                ("Coal", "Zone1", "year", 2020),
-                ("Coal", "Zone2", "year", 2020),
-                ("Coal", "Zone1", "year", 2030),
-                ("Coal", "Zone2", "year", 2030),
+                ("Gas_CCGT", "Gas", "Zone1"),
+                ("Coal", "Coal", "Zone1"),
+                ("Gas_CT", "Gas", "Zone1"),
+                ("Gas_CCGT_New", "Gas", "Zone1"),
+                ("Gas_CCGT_New_Binary", "Gas", "Zone1"),
+                ("Gas_CT_New", "Gas", "Zone1"),
+                ("Coal_z2", "Coal", "Zone2")
             ]
         )
-        actual_fuel_ba_bt_horizons = sorted(
+        actual_prj_fuel_ba = sorted(
+            [(prj, f, ba) for (prj, f, ba) in instance.PRJ_FUEL_BURN_LIMIT_BAS]
+        )
+        self.assertListEqual(expected_prj_fuel_ba, actual_prj_fuel_ba)
+
+        # Set: PRJ_FUELS_WITH_LIMITS
+        expected_prj_fuel_w_limits = sorted(
             [
-                (f, ba, bt, h)
-                for (
-                    f,
-                    ba,
-                    bt,
-                    h,
-                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                ("Gas_CCGT", "Gas"),
+                ("Coal", "Coal"),
+                ("Gas_CT", "Gas"),
+                ("Gas_CCGT_New", "Gas"),
+                ("Gas_CCGT_New_Binary", "Gas"),
+                ("Gas_CT_New", "Gas"),
+                ("Coal_z2", "Coal")
             ]
         )
-        self.assertListEqual(
-            expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons
+        actual_prj_fuel_w_limits = sorted(
+            [(prj, f) for (prj, f) in instance.PRJ_FUELS_WITH_LIMITS]
         )
+        self.assertListEqual(expected_prj_fuel_w_limits, actual_prj_fuel_w_limits)
 
-        # Param: horizon_energy_target_mwh
-        expected_limit = OrderedDict(
-            sorted(
-                {
-                    ("Gas", "Zone1", "year", 2020): 50,
-                    ("Gas", "Zone1", "year", 2030): 5,
-                    ("Coal", "Zone1", "year", 2020): 100,
-                    ("Coal", "Zone2", "year", 2020): 10,
-                    ("Coal", "Zone1", "year", 2030): 10,
-                    ("Coal", "Zone2", "year", 2030): 100
-                }.items()
-            )
-        )
-        actual_limit = OrderedDict(
-            sorted(
-                {
-                    (f, ba, bt, h): instance.fuel_burn_limit_unit[f, ba, bt, h]
-                    for (
-                        f,
-                        ba,
-                        bt,
-                        h,
-                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-                }.items()
-            )
-        )
+        # Set: PRJS_BY_FUEL_BA
+        expected_prj_by_fuel_ba = {
+            ("Gas", "Zone1"): sorted(
+                [
+                    "Gas_CCGT",
+                    "Gas_CT",
+                    "Gas_CCGT_New",
+                    "Gas_CCGT_New_Binary",
+                    "Gas_CT_New",
+                ]
+            ),
+            ("Coal", "Zone1"): sorted(["Coal"]),
+            ("Coal", "Zone2"): sorted(["Coal_z2"]),
+        }
+        actual_prj_by_fuel_ba = {
+            (f, ba): sorted([prj for prj in instance.PRJS_BY_FUEL_BA[f, ba]])
+            for (f, ba) in instance.PRJS_BY_FUEL_BA
+        }
 
-        self.assertDictEqual(expected_limit, actual_limit)
+        self.assertDictEqual(expected_prj_by_fuel_ba, actual_prj_by_fuel_ba)
 
 
 if __name__ == "__main__":
