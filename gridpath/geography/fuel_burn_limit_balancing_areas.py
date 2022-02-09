@@ -14,7 +14,7 @@
 
 """
 Balancing areas where fuel constraints are enforced; these can be different from the
-load zones and other balancing areas.
+load zones and other balancing areas. Note that these are also differentiated by fuel.
 """
 
 import csv

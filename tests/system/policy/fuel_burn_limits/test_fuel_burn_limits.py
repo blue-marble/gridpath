@@ -54,6 +54,7 @@ except ImportError:
 
 Infinity = float("inf")
 
+
 class TestSystemFuelBurnLimits(unittest.TestCase):
     """ """
 
@@ -229,7 +230,14 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         actual_relative_ba = OrderedDict(
             sorted(
                 {
-                    (f, ba, bt, h): instance.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h]
+                    (
+                        f,
+                        ba,
+                        bt,
+                        h,
+                    ): instance.fraction_of_relative_fuel_burn_limit_fuel_ba[
+                        f, ba, bt, h
+                    ]
                     for (
                         f,
                         ba,
@@ -264,8 +272,9 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                 ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
             ]
         )
-        self.assertListEqual(expected_fuel_ba_bt_horizons_abs,
-                             actual_fuel_ba_bt_horizons_abs)
+        self.assertListEqual(
+            expected_fuel_ba_bt_horizons_abs, actual_fuel_ba_bt_horizons_abs
+        )
 
         # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
         expected_fuel_ba_bt_horizons_rel = sorted(
@@ -285,8 +294,9 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                 ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
             ]
         )
-        self.assertListEqual(expected_fuel_ba_bt_horizons_rel,
-                             actual_fuel_ba_bt_horizons_rel)
+        self.assertListEqual(
+            expected_fuel_ba_bt_horizons_rel, actual_fuel_ba_bt_horizons_rel
+        )
 
 
 if __name__ == "__main__":
