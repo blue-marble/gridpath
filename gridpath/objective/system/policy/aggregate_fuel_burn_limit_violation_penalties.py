@@ -36,7 +36,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.fuel_burn_limit_violation_penalty_per_unit[f, ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
-            for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            for (
+                f,
+                ba,
+                bt,
+                h,
+            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
         )
 
     m.Total_Horizon_Fuel_Burn_Limit_Penalty_Costs = Expression(

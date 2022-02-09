@@ -25,6 +25,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
+Infinity = float("inf")
+
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -59,9 +61,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
     )
 
-    def fuel_burn_limit_balance_rule(mod, f, ba, bt, h):
+    def fuel_burn_limit_balance_abs_rule(mod, f, ba, bt, h):
         """
-        Total delivered energy-target-eligible energy must exceed target
+        Total fuel burn in a fuel / ba / bt-horizon must be below a pre-defined value.
+
         :param mod:
         :param z:
         :param bt:
@@ -76,9 +79,39 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             <= mod.fuel_burn_limit_unit[f, ba, bt, h]
         )
 
-    m.Meet_Fuel_Burn_Limit_Constraint = Constraint(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
-        rule=fuel_burn_limit_balance_rule,
+    m.Meet_Fuel_Burn_Limit_Abs_Constraint = Constraint(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT,
+        rule=fuel_burn_limit_balance_abs_rule,
+    )
+
+    def fuel_burn_limit_balance_rel_rule(mod, f, ba, bt, h):
+        """
+        Total fuel burn in a fuel / ba / bt-horizon must be below a pre-defined
+        fraction of the fuel burn in another fuel / ba.
+
+        :param mod:
+        :param z:
+        :param bt:
+        :param h:
+        :return:
+        """
+        return (
+            mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
+                f, ba, bt, h
+            ]
+            - mod.Fuel_Burn_Limit_Overage_Unit_Expression[f, ba, bt, h]
+            <= mod.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h]
+            * mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
+                mod.relative_fuel_burn_limit_fuel[f, ba, bt, h],
+                mod.relative_fuel_burn_limit_ba[f, ba, bt, h],
+                bt,
+                h,
+            ]
+        )
+
+    m.Meet_Fuel_Burn_Limit_Rel_Constraint = Constraint(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT,
+        rule=fuel_burn_limit_balance_rel_rule,
     )
 
 
@@ -138,7 +171,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 def save_duals(m):
-    m.constraint_indices["Meet_Fuel_Burn_Limit_Constraint"] = [
+    m.constraint_indices["Meet_Fuel_Burn_Limit_Abs_Constraint"] = [
+        "fuel",
+        "fuel_ba",
+        "balancing_type",
+        "horizon",
+        "dual",
+    ]
+
+    m.constraint_indices["Meet_Fuel_Burn_Limit_Rel_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -270,7 +311,7 @@ def import_results_into_database(
     # Update duals
     duals_results = []
     with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Limit_Constraint.csv"), "r"
+        os.path.join(results_directory, "Meet_Fuel_Burn_Limit_Abs_Constraint.csv"), "r"
     ) as duals_file:
         reader = csv.reader(duals_file)
 

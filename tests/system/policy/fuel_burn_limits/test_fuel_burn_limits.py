@@ -95,7 +95,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+        # Set: FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
         expected_fuel_ba_bt_horizons = sorted(
             [
                 ("Gas", "Zone1", "year", 2020),
@@ -114,7 +114,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                     ba,
                     bt,
                     h,
-                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
             ]
         )
         self.assertListEqual(expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons)
@@ -141,7 +141,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                         ba,
                         bt,
                         h,
-                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+                    ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
                 }.items()
             )
         )

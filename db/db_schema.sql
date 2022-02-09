@@ -2442,6 +2442,9 @@ stage_id INTEGER,
 balancing_type_horizon VARCHAR(64),
 horizon INTEGER,
 fuel_burn_limit_unit FLOAT,
+relative_fuel_burn_limit_fuel VARCHAR(32),
+relative_fuel_burn_limit_ba VARCHAR(32),
+fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
 PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
