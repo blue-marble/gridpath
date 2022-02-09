@@ -51,9 +51,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"GridPath"
-copyright = u"2019, Blue Marble Analytics LLC"
-author = u"Blue Marble Analytics LLC"
+project = "GridPath"
+copyright = "2019, Blue Marble Analytics LLC"
+author = "Blue Marble Analytics LLC"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -139,8 +139,8 @@ latex_documents = [
     (
         master_doc,
         "GridPath.tex",
-        u"GridPath Documentation",
-        u"Blue Marble Analytics",
+        "GridPath Documentation",
+        "Blue Marble Analytics",
         "manual",
     ),
 ]
@@ -150,7 +150,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "gridpath", u"GridPath Documentation", [author], 1)]
+man_pages = [(master_doc, "gridpath", "GridPath Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -162,7 +162,7 @@ texinfo_documents = [
     (
         master_doc,
         "GridPath",
-        u"GridPath Documentation",
+        "GridPath Documentation",
         author,
         "GridPath",
         "Advanced power-system analytics.",

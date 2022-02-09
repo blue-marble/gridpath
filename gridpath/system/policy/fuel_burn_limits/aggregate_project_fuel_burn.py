@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
 Aggregate fuel burn from the project-timepoint level to fuel / fuel balancing area -
 period level.
 """
-from __future__ import division
-from __future__ import print_function
 
-from builtins import next
-from builtins import str
 import csv
 import os.path
-from pyomo.environ import Param, Set, Expression, value
+from pyomo.environ import Param, Set, Expression
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import fuel_burn_balance_components
 
 

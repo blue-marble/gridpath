@@ -115,7 +115,7 @@ class TestAggregateProjectFuelBurn(unittest.TestCase):
                 ("Gas_CCGT_New", "Gas", "Zone1"),
                 ("Gas_CCGT_New_Binary", "Gas", "Zone1"),
                 ("Gas_CT_New", "Gas", "Zone1"),
-                ("Coal_z2", "Coal", "Zone2")
+                ("Coal_z2", "Coal", "Zone2"),
             ]
         )
         actual_prj_fuel_ba = sorted(
@@ -132,7 +132,7 @@ class TestAggregateProjectFuelBurn(unittest.TestCase):
                 ("Gas_CCGT_New", "Gas"),
                 ("Gas_CCGT_New_Binary", "Gas"),
                 ("Gas_CT_New", "Gas"),
-                ("Coal_z2", "Coal")
+                ("Coal_z2", "Coal"),
             ]
         )
         actual_prj_fuel_w_limits = sorted(

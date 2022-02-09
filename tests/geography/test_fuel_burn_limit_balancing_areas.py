@@ -93,18 +93,18 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: FUEL_BURN_LIMIT_BAS
-        expected_bas = sorted(
-            [("Gas", "Zone1"), ("Coal", "Zone1"), ("Coal", "Zone2")]
-        )
+        expected_bas = sorted([("Gas", "Zone1"), ("Coal", "Zone1"), ("Coal", "Zone2")])
         actual_bas = sorted([(f, ba) for (f, ba) in instance.FUEL_BURN_LIMIT_BAS])
         self.assertListEqual(expected_bas, actual_bas)
 
         # Param: allow_violation
         expected_allow_violation = OrderedDict(
             sorted(
-                {("Gas", "Zone1"): 0,
-                 ("Coal", "Zone1"): 0,
-                 ("Coal", "Zone2"): 0}.items()
+                {
+                    ("Gas", "Zone1"): 0,
+                    ("Coal", "Zone1"): 0,
+                    ("Coal", "Zone2"): 0,
+                }.items()
             )
         )
         actual_allow_violation = OrderedDict(
@@ -118,11 +118,13 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         self.assertDictEqual(expected_allow_violation, actual_allow_violation)
 
         # Param: violation penalty
-        expected_penalty =  OrderedDict(
+        expected_penalty = OrderedDict(
             sorted(
-                {("Gas", "Zone1"): 99999,
-                 ("Coal", "Zone1"): 99999,
-                 ("Coal", "Zone2"): 99999}.items()
+                {
+                    ("Gas", "Zone1"): 99999,
+                    ("Coal", "Zone1"): 99999,
+                    ("Coal", "Zone2"): 99999,
+                }.items()
             )
         )
         actual_penalty = OrderedDict(

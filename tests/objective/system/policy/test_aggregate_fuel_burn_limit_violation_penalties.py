@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.power",
     "project.operations.fuel_burn",
     "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
-    "system.policy.fuel_burn_limits.fuel_burn_limit_balance"
+    "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
 ]
 NAME_OF_MODULE_BEING_TESTED = (
     "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties"

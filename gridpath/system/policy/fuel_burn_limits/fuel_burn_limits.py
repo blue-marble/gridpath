@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import csv
 import os.path
 
 
-from pyomo.environ import Set, Param, NonNegativeReals, value
+from pyomo.environ import Set, Param, NonNegativeReals
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -60,8 +60,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         param=m.fuel_burn_limit_unit,
-        select=("fuel", "fuel_burn_limit_ba", "balancing_type", "horizon",
-                "fuel_burn_limit_unit"),
+        select=(
+            "fuel",
+            "fuel_burn_limit_ba",
+            "balancing_type_horizon",
+            "horizon",
+            "fuel_burn_limit_unit",
+        ),
     )
 
 
@@ -153,7 +158,13 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["fuel", "fuel_burn_limit_ba", "balancing_type", "horizon", "fuel_burn_limit_unit"]
+            [
+                "fuel",
+                "fuel_burn_limit_ba",
+                "balancing_type_horizon",
+                "horizon",
+                "fuel_burn_limit_unit",
+            ]
         )
 
         for row in fuel_burn_limits:

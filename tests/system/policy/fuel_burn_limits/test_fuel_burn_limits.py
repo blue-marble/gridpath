@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints",
     "temporal.operations.horizons",
     "temporal.investment.periods",
-    "geography.fuel_burn_limit_balancing_areas"
+    "geography.fuel_burn_limit_balancing_areas",
 ]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.fuel_burn_limits.fuel_burn_limits"
 IMPORTED_PREREQ_MODULES = list()
@@ -117,9 +117,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                 ) in instance.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
             ]
         )
-        self.assertListEqual(
-            expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons
-        )
+        self.assertListEqual(expected_fuel_ba_bt_horizons, actual_fuel_ba_bt_horizons)
 
         # Param: horizon_energy_target_mwh
         expected_limit = OrderedDict(
@@ -130,7 +128,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                     ("Coal", "Zone1", "year", 2020): 100,
                     ("Coal", "Zone2", "year", 2020): 10,
                     ("Coal", "Zone1", "year", 2030): 10,
-                    ("Coal", "Zone2", "year", 2030): 100
+                    ("Coal", "Zone2", "year", 2030): 100,
                 }.items()
             )
         )
