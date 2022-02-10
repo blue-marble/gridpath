@@ -153,6 +153,7 @@ class TestAggregateProjectFuelBurn(unittest.TestCase):
             ),
             ("Coal", "Zone1"): sorted(["Coal"]),
             ("Coal", "Zone2"): sorted(["Coal_z2"]),
+            ("Nuclear", "Zone1"): sorted([]),
         }
         actual_prj_by_fuel_ba = {
             (f, ba): sorted([prj for prj in instance.PRJS_BY_FUEL_BA[f, ba]])
