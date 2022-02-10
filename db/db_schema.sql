@@ -3821,10 +3821,16 @@ discount_factor FLOAT, -- based on period of last horizon timepoint
 fuel VARCHAR(32),
 fuel_burn_limit_ba VARCHAR(32),
 fuel_burn_limit_unit FLOAT,
+relative_fuel_burn_limit_fuel FLOAT,
+relative_fuel_burn_limit_ba FLOAT,
+fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
 total_fuel_burn_unit FLOAT,
-fuel_burn_overage_unit FLOAT,
-dual FLOAT,
-fuel_burn_limit_marginal_cost_per_unit FLOAT,
+fuel_burn_limit_abs_overage_unit FLOAT,
+abs_dual FLOAT,
+abs_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+fuel_burn_limit_rel_overage_unit FLOAT,
+rel_dual FLOAT,
+rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
             fuel, fuel_burn_limit_ba)
 );
@@ -3904,7 +3910,8 @@ Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
 Total_Export_Penalty_Cost FLOAT,
-Total_Horizon_Fuel_Burn_Limit_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
