@@ -255,9 +255,15 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
-    # If we only have a single subproblem, set the subproblem_string to an
-    # empty string (no directory created)
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+
+    # If we only have a single subproblem AND it does not have stages, set the
+    # subproblem_string to an empty string (the subproblem directory should not
+    # have been created)
+    # If we have multiple subproblems or a single subproblems with stages,
+    # we're expecting a subproblem directory
+    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [
+        1
+    ] and subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
         subproblem_directory = ""
     else:
         subproblem_directory = str(subproblem)
