@@ -401,14 +401,14 @@ def write_solver_options(scenario_directory, solver_options):
     If a solver_options_id is specified, writer the solver options to the
     scenario directory.
     """
-    if solver_options.SOLVER is None and solver_options.SOLVER_OPTIONS is None:
+    if solver_options.SOLVER_NAME is None and solver_options.SOLVER_OPTIONS is None:
         pass
     else:
         with open(
             os.path.join(scenario_directory, "solver_options.csv"), "w", newline=""
         ) as solver_options_file:
             writer = csv.writer(solver_options_file, delimiter=",")
-            writer.writerow(["solver", solver_options.SOLVER])
+            writer.writerow(["solver_name", solver_options.SOLVER_NAME])
             for opt in solver_options.SOLVER_OPTIONS.keys():
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
 

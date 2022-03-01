@@ -198,10 +198,10 @@ class SolverOptions(object):
         ).fetchone()[0]
 
         if self.SOLVER_OPTIONS_ID is None:
-            self.SOLVER = None
+            self.SOLVER_NAME = None
         else:
             distinct_solvers = cursor.execute(
-                """SELECT DISTINCT solver 
+                """SELECT DISTINCT solver_name 
                 FROM inputs_options_solver 
                 WHERE solver_options_id = {}""".format(
                     self.SOLVER_OPTIONS_ID
@@ -210,15 +210,15 @@ class SolverOptions(object):
             if len(distinct_solvers) > 1:
                 raise ValueError(
                     """
-                ERROR: Solver options include more than one solver! Only a 
-                single solver must be specified for solver_options_id in the 
+                ERROR: Solver options include more than one solver name! Only a 
+                single solver name must be specified for solver_options_id in the 
                 inputs_options_solver table. See solver_options_id {}. 
                 """.format(
                         self.SOLVER_OPTIONS_ID
                     )
                 )
             else:
-                self.SOLVER = distinct_solvers[0][0]
+                self.SOLVER_NAME = distinct_solvers[0][0]
 
         self.SOLVER_OPTIONS = (
             None
