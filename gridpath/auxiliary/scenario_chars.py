@@ -159,7 +159,6 @@ def get_subproblem_structure_from_disk(scenario_directory):
     # If we have subproblems, check for stage subdirectories for each
     # subproblem directory
     if subproblem_directories:
-        all_subproblems = subproblem_directories
         for subproblem in subproblem_directories:
             subproblem_dir = os.path.join(scenario_directory, str(subproblem))
             # Convert to integers
