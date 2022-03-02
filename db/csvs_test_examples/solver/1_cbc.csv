@@ -1,2 +1,2 @@
 solver_name,solver_option_name,solver_option_value
-cplex,lpmethod,4
+cbc,threads,4

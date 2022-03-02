@@ -1047,6 +1047,15 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_fuel_burn_limit_relative", -58282515304521.79
         )
 
+    def test_test_w_solver_options(self):
+        """
+        Check validation and objective function value of "test_w_solver_options" example
+        :return:
+        """
+
+        self.check_validation("test_w_solver_options")
+        self.run_and_check_objective("test_w_solver_options", -3796309121478.12)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
