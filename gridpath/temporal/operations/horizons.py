@@ -214,11 +214,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1],
     )
 
-    m.prev_tmp = Param(m.TMPS_BLN_TYPES, within=m.TMPS | {"."},
-                       initialize=prev_tmp_init)
+    m.prev_tmp = Param(
+        m.TMPS_BLN_TYPES, within=m.TMPS | {"."}, initialize=prev_tmp_init
+    )
 
-    m.next_tmp = Param(m.TMPS_BLN_TYPES, within=m.TMPS | {"."},
-                       initialize=next_tmp_init)
+    m.next_tmp = Param(
+        m.TMPS_BLN_TYPES, within=m.TMPS | {"."}, initialize=next_tmp_init
+    )
 
 
 # Set Rules
