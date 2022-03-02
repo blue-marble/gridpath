@@ -41,7 +41,7 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==5.7.3",  # Optimization modeling language (required due to
+        "Pyomo==6.3.0",  # Optimization modeling language (required due to
         # Pyomo/Cbc issue with UI on Mac)
         "pandas==1.2.5",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)

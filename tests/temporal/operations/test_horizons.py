@@ -154,6 +154,20 @@ class TestHorizons(unittest.TestCase):
             actual_horizon_by_balancing_type_horizon,
         )
 
+        # TMPS_BLN_TYPES
+        expected_tmps_bln_types = sorted(
+            timepoints_on_balancing_type_horizon_df[
+                ["timepoint", "balancing_type_horizon"]
+            ]
+            .drop_duplicates()
+            .to_records(index=False)
+            .tolist()
+        )
+        actual_tmps_bln_types = sorted(
+            (tmp, bt) for (tmp, bt) in instance.TMPS_BLN_TYPES
+        )
+        self.assertListEqual(expected_tmps_bln_types, actual_tmps_bln_types)
+
         # Set TMPS_BY_BLN_TYPE_HRZ
         expected_tmps_on_horizon = {
             (balancing_type, horizon): timepoints["timepoint"].tolist()
@@ -233,7 +247,7 @@ class TestHorizons(unittest.TestCase):
                         balancing_type, horizon
                     ]
                 elif expected_boundary_param[balancing_type, horizon] == "linear":
-                    expected_prev_tmp[tmp, balancing_type] = None
+                    expected_prev_tmp[tmp, balancing_type] = "."
                 else:
                     raise (
                         ValueError,
@@ -245,16 +259,16 @@ class TestHorizons(unittest.TestCase):
             prev_tmp = tmp
 
         actual_prev_tmp = {
-            (tmp, balancing_type_horizon): instance.prev_tmp[
-                tmp, balancing_type_horizon
-            ]
-            for tmp in instance.TMPS
-            for balancing_type_horizon in instance.BLN_TYPES
+            (tmp, bt): instance.prev_tmp[tmp, bt]
+            for (tmp, bt) in instance.TMPS_BLN_TYPES
         }
 
+        expected_prev_tmp_ordered = OrderedDict(sorted(expected_prev_tmp.items()))
+        actual_prev_tmp_ordered = OrderedDict(sorted(actual_prev_tmp.items()))
+
         self.assertDictEqual(
-            expected_prev_tmp,
-            actual_prev_tmp,
+            expected_prev_tmp_ordered,
+            actual_prev_tmp_ordered,
             msg="Data for param prev_tmp do " "not match expected.",
         )
 
@@ -273,7 +287,7 @@ class TestHorizons(unittest.TestCase):
                 elif expected_boundary_param[balancing_type, horizon] == "linear":
                     expected_next_tmp[
                         expected_last_hrz_tmp[balancing_type, horizon], balancing_type
-                    ] = None
+                    ] = "."
                 else:
                     raise (
                         ValueError,
@@ -292,11 +306,8 @@ class TestHorizons(unittest.TestCase):
         expected_next_tmp_ordered = OrderedDict(sorted(expected_next_tmp.items()))
 
         actual_next_tmp = {
-            (tmp, balancing_type_horizon): instance.next_tmp[
-                tmp, balancing_type_horizon
-            ]
-            for tmp in instance.TMPS
-            for balancing_type_horizon in instance.BLN_TYPES
+            (tmp, bt): instance.next_tmp[tmp, bt]
+            for (tmp, bt) in instance.TMPS_BLN_TYPES
         }
         actual_next_tmp_ordered = OrderedDict(sorted(actual_next_tmp.items()))
 

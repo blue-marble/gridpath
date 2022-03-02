@@ -94,6 +94,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Ordered, indexed set that describes the horizons associated with        |
     | each balancing type. The horizons within a balancing type are ordered.  |
     +-------------------------------------------------------------------------+
+    | | :code:`TMPS_BLN_TYPES`                                                |
+    |                                                                         |
+    | Two-dimensional set of all timepoints along with the balancing types    |
+    | each timepoint belongs to.                                              |
+    +-------------------------------------------------------------------------+
+
 
     |
 
@@ -154,7 +160,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
 
 
-
     """
 
     # Sets
@@ -171,6 +176,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.HRZS_BY_BLN_TYPE = Set(
         m.BLN_TYPES, within=PositiveIntegers, initialize=horizons_by_balancing_type_init
+    )
+
+    m.TMPS_BLN_TYPES = Set(
+        dimen=2,
+        within=m.TMPS * m.BLN_TYPES,
+        initialize=lambda mod: set(
+            [
+                (tmp, bt)
+                for (bt, h) in mod.BLN_TYPE_HRZS
+                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, h]
+            ]
+        ),
     )
 
     # Required Params
@@ -197,13 +214,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, b, h: list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1],
     )
 
-    m.prev_tmp = Param(
-        m.TMPS, m.BLN_TYPES, within=m.TMPS | {None}, initialize=prev_tmp_init
-    )
+    m.prev_tmp = Param(m.TMPS_BLN_TYPES, within=m.TMPS | {"."},
+                       initialize=prev_tmp_init)
 
-    m.next_tmp = Param(
-        m.TMPS, m.BLN_TYPES, within=m.TMPS | {None}, initialize=next_tmp_init
-    )
+    m.next_tmp = Param(m.TMPS_BLN_TYPES, within=m.TMPS | {"."},
+                       initialize=next_tmp_init)
 
 
 # Set Rules
@@ -247,7 +262,7 @@ def horizons_by_balancing_type_init(mod, bt):
 ###############################################################################
 
 
-def prev_tmp_init(mod, tmp, balancing_type_horizon):
+def prev_tmp_init(mod, tmp, bt):
     """
     **Param Name**: prev_tmp
     **Defined Over**: TMPS x BLN_TYPES
@@ -260,31 +275,30 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
     timepoint is defined. In all other cases, the previous timepoints is the
     one with an index of tmp-1.
     """
-    prev_tmp_dict = {}
-    for (bt, hrz) in mod.BLN_TYPE_HRZS:
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-            if tmp == mod.first_hrz_tmp[bt, hrz]:
-                if mod.boundary[bt, hrz] == "circular":
-                    prev_tmp_dict[tmp, bt] = mod.last_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
-                    prev_tmp_dict[tmp, bt] = None
-                else:
-                    raise ValueError(
-                        "Invalid boundary value '{}' for balancing type "
-                        "horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
-                        + "\n"
-                        + "Horizon boundary must be 'circular,' 'linear,' "
-                        "or 'linked.'"
-                    )
-            else:
-                prev_tmp_dict[tmp, bt] = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
-                    list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) - 1
-                ]
+    hrz = mod.horizon[tmp, bt]
 
-    return prev_tmp_dict
+    if tmp == mod.first_hrz_tmp[bt, hrz]:
+        if mod.boundary[bt, hrz] == "circular":
+            prev_tmp = mod.last_hrz_tmp[bt, hrz]
+        elif mod.boundary[bt, hrz] in ["linear", "linked"]:
+            prev_tmp = "."
+        else:
+            raise ValueError(
+                "Invalid boundary value '{}' for balancing type "
+                "horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
+                + "\n"
+                + "Horizon boundary must be 'circular,' 'linear,' "
+                "or 'linked.'"
+            )
+    else:
+        prev_tmp = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
+            list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) - 1
+        ]
+
+    return prev_tmp
 
 
-def next_tmp_init(mod, tmp, balancing_type_horizon):
+def next_tmp_init(mod, tmp, bt):
     """
     **Param Name**: next_tmp
     **Defined Over**: TMPS x BLN_TYPES
@@ -296,28 +310,27 @@ def next_tmp_init(mod, tmp, balancing_type_horizon):
     horizon boundary is linear, then no next timepoint is defined. In all
     other cases, the next timepoint is the one with an index of tmp+1.
     """
-    next_tmp_dict = {}
-    for (bt, hrz) in mod.BLN_TYPE_HRZS:
-        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
-            if tmp == mod.last_hrz_tmp[bt, hrz]:
-                if mod.boundary[bt, hrz] == "circular":
-                    next_tmp_dict[tmp, bt] = mod.first_hrz_tmp[bt, hrz]
-                elif mod.boundary[bt, hrz] in ["linear", "linked"]:
-                    next_tmp_dict[tmp, bt] = None
-                else:
-                    raise ValueError(
-                        "Invalid boundary value '{}' for balancing "
-                        "type horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
-                        + "\n"
-                        + "Horizon boundary must be 'circular,' 'linear,' "
-                        "or 'linked.'"
-                    )
-            else:
-                next_tmp_dict[tmp, bt] = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
-                    list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) + 1
-                ]
+    hrz = mod.horizon[tmp, bt]
 
-    return next_tmp_dict
+    if tmp == mod.last_hrz_tmp[bt, hrz]:
+        if mod.boundary[bt, hrz] == "circular":
+            next_tmp = mod.first_hrz_tmp[bt, hrz]
+        elif mod.boundary[bt, hrz] in ["linear", "linked"]:
+            next_tmp = "."
+        else:
+            raise ValueError(
+                "Invalid boundary value '{}' for balancing "
+                "type horizon '{} {}'".format(mod.boundary[bt, hrz], bt, hrz)
+                + "\n"
+                + "Horizon boundary must be 'circular,' 'linear,' "
+                "or 'linked.'"
+            )
+    else:
+        next_tmp = list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz])[
+            list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) + 1
+        ]
+
+    return next_tmp
 
 
 # Input-Output
