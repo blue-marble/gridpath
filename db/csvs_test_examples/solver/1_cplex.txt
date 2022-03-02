@@ -1,1 +1,0 @@
-cplex, barrier, 4 threads
