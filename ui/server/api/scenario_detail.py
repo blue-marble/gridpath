@@ -86,8 +86,8 @@ class ScenarioDetailAPI(Resource):
         #  code and use that parameter here
         scenario_detail_api["solver"] = (
             "cbc"
-            if SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER is None
-            else SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER
+            if SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER_NAME is None
+            else SolverOptions(conn=conn, scenario_id=scenario_id).SOLVER_NAME
         )
 
         # Get the UI table structure and make a dictionary of scenarios_view

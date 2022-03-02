@@ -3926,13 +3926,16 @@ CREATE TABLE subscenarios_options_solver (
     description VARCHAR(128)
 );
 
+-- Note that with shell solvers such as GAMS and AMPL, you also need to specify
+-- "solver" as a solver_option_name and give it the appropriate value depending on
+-- which solver you want to use (e.g. cplex, gurobi)
 DROP TABLE IF EXISTS inputs_options_solver;
 CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
-    solver VARCHAR(32),
+    solver_name VARCHAR(32),
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
-    PRIMARY KEY (solver_options_id, solver, solver_option_name),
+    PRIMARY KEY (solver_options_id, solver_name, solver_option_name),
     FOREIGN KEY (solver_options_id)
         REFERENCES subscenarios_options_solver (solver_options_id)
 );
