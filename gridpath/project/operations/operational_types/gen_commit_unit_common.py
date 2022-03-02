@@ -2428,9 +2428,8 @@ def add_model_components(
         """
 
         # Coldest startup type is un-constrained
-        if (
-            s
-            == getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[g][-1]
+        if s == getattr(mod, "GEN_COMMIT_{}_STR_TYPES_BY_PRJ".format(BIN_OR_LIN))[g].at(
+            -1
         ):
             return Constraint.Skip
 
