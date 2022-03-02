@@ -186,6 +186,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=4,
+        initialize=lambda mod: set(
+            (g, f, fg, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
+    m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -222,6 +242,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.STARTUP_FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=4,
+        initialize=lambda mod: set(
+            (g, f, fg, tmp)
+            for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
+            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     # Params
     m.min_fraction_in_fuel_blend = Param(
         m.FUEL_PRJ_FUELS, within=PercentFraction, default=0
@@ -240,8 +270,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
     )
 
+    m.Project_Opr_Fuel_Burn_by_Fuel_and_Fuel_Group = Var(
+        m.FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS, within=NonNegativeReals
+    )
+
     m.Project_Startup_Fuel_Burn_by_Fuel = Var(
         m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
+    )
+
+    m.Project_Startup_Fuel_Burn_by_Fuel_and_Fuel_Group = Var(
+        m.STARTUP_FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS, within=NonNegativeReals
     )
 
     # Expressions
@@ -300,6 +338,56 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Fuel_Burn_by_Fuel_MMBtu = Expression(
         m.FUEL_PRJS_FUEL_OPR_TMPS, rule=total_fuel_burn_by_fuel_rule
+    )
+
+    def total_fuel_burn_by_fuel_and_fuel_group_rule(mod, g, f, fg, tmp):
+        """
+        *Expression Name*: :code:`Total_Fuel_Burn_by_Fuel_and_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS`
+
+        Total fuel burn is the sum of operational fuel burn (power production)
+        and startup fuel burn.
+        """
+        return mod.Project_Opr_Fuel_Burn_by_Fuel_and_Fuel_Group[g, f, fg, tmp] + (
+            mod.Project_Startup_Fuel_Burn_by_Fuel_and_Fuel_Group[g, f, fg, tmp]
+            if g in mod.STARTUP_FUEL_PRJS
+            else 0
+        )
+
+    m.Total_Fuel_Burn_by_Fuel_and_Fuel_Group_MMBtu = Expression(
+        m.FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS, rule=total_fuel_burn_by_fuel_and_fuel_group_rule
+    )
+
+    def total_fuel_burn_by_fuel_group_rule(mod, g, fg, tmp):
+        """
+        *Expression Name*: :code:`Total_Fuel_Burn_by_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS`
+
+        Total fuel burn per fuel group is the sum of total fuel burn by fuel group.
+        """
+        return sum(
+            mod.Total_Fuel_Burn_by_Fuel_and_Fuel_Group_MMBtu[g, f, fg, tmp]
+            for f in m.FUEL_GROUP_FUEL_BY_PRJ[g]
+        )
+
+    m.Total_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(
+        m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS, rule=total_fuel_burn_by_fuel_group_rule
+    )
+
+    def total_fuel_burn_by_project_rule(mod, g, tmp):
+        """
+        *Expression Name*: :code:`Total_Fuel_Burn_by_Project_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJ_OPR_TMPS`
+
+        Total fuel burn per project is the sum of total fuel burn by fuel.
+        """
+        return sum(
+            mod.Total_Fuel_Burn_by_Fuel_MMBtu[g, f, tmp]
+            for f in mod.FUELS_BY_PRJ[g]
+        )
+
+    m.Total_Fuel_Burn_by_Project_MMBtu = Expression(
+        m.FUEL_PRJ_OPR_TMPS, rule=total_fuel_burn_by_project_rule
     )
 
     # Constraints

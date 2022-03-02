@@ -338,6 +338,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj],
     )
 
+    m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, f, fg)
+            for (fg, f) in mod.FUEL_GROUPS_FUELS
+            for g, _f in mod.FUEL_PRJ_FUELS
+            if f == _f
+        ),
+    )
+
+    m.FUEL_PRJ_FUEL_GROUP = Set(
+        m.FUEL_PRJS,
+        within=m.FUEL_GROUPS,
+        initialize=lambda mod, prj: [fg for (p, f, fg) in mod.FUEL_PRJ_FUELS_FUEL_GROUP if p == prj],
+    )
+
+    m.FUEL_GROUP_FUEL_BY_PRJ = Set(
+        m.FUEL_PRJS,
+        within=m.FUEL_GROUPS_FUELS,
+        initialize=lambda mod, prj: [(fg, f) for (p, f, fg) in mod.FUEL_PRJ_FUELS_FUEL_GROUP if p == prj],
+    )
+
     # Projects with heat rate curves (must be within FUEL_PRJS)
     m.HR_CURVE_PRJS_PRDS_SGMS = Set(dimen=3)
 

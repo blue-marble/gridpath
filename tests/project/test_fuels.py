@@ -102,7 +102,7 @@ class TestFuels(unittest.TestCase):
         )
 
         # Set: FUELS
-        expected_fuels = sorted(fuels_df["FUELS"].tolist())
+        expected_fuels = sorted(fuels_df["fuel"].tolist())
         actual_fuels = sorted([fuel for fuel in instance.FUELS])
         self.assertListEqual(expected_fuels, actual_fuels)
 
@@ -111,7 +111,7 @@ class TestFuels(unittest.TestCase):
         expected_co2 = OrderedDict(
             sorted(
                 fuels_df.round(5)
-                .set_index("FUELS")
+                .set_index("fuel")
                 .to_dict()["co2_intensity_tons_per_mmbtu"]
                 .items()
             )

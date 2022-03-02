@@ -99,6 +99,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.CARBON_TAX_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod: [
@@ -112,7 +122,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.carbon_tax_zone = Param(m.CARBON_TAX_PRJS, within=m.CARBON_TAX_ZONES)
 
     m.carbon_tax_allowance = Param(
-        m.CARBON_TAX_PRJS, m.PERIODS, within=NonNegativeReals, default=0
+        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS,  within=NonNegativeReals, default=0
     )
 
     # Derived Sets
@@ -129,7 +139,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
-    def carbon_tax_allowance_rule(mod, prj, tmp):
+    def carbon_tax_allowance_rule(mod, prj, fg, tmp):
         """
         Allowance from each project. Multiply by the timepoint duration,
         timepoint weight and power to get the total emissions allowance.
@@ -137,11 +147,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
         return (
             mod.Power_Provision_MW[prj, tmp]
-            * mod.carbon_tax_allowance[prj, mod.period[tmp]]
+            * mod.carbon_tax_allowance[prj, mod.period[tmp], fg]
+            * mod.Total_Fuel_Burn_by_Fuel_Group_MMBtu[prj, fg, tmp]
+            / mod.Total_Fuel_Burn_by_Project_MMBtu[prj, tmp]
         )
 
     m.Project_Carbon_Tax_Allowance = Expression(
-        m.CARBON_TAX_PRJ_OPR_TMPS, rule=carbon_tax_allowance_rule
+        m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS, rule=carbon_tax_allowance_rule
     )
 
 
@@ -180,7 +192,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "project_carbon_tax_allowance.tab",
         ),
-        select=("project", "period", "carbon_tax_allowance_tco2_per_mwh"),
+        select=("project", "period", "carbon_tax_allowance_tco2_per_mwh"), # "fuel_group",
         param=m.carbon_tax_allowance,
     )
 
@@ -231,7 +243,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     c2 = conn.cursor()
     project_carbon_tax_allowance = c2.execute(
-        """SELECT project, period, 
+        """SELECT project, period, fuel_group,
         carbon_tax_allowance_tco2_per_mwh
         FROM
         -- Get projects from portfolio only
@@ -245,7 +257,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             WHERE temporal_scenario_id = {}) as relevant_periods 
         LEFT OUTER JOIN
         -- Get carbon tax allowance for those projects
-            (SELECT project, period, 
+            (SELECT project, period, fuel_group,
             carbon_tax_allowance_tco2_per_mwh
             FROM inputs_project_carbon_tax_allowance
             WHERE project_carbon_tax_allowance_scenario_id = {}) as prj_ct_allowance_tbl
