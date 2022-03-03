@@ -1010,15 +1010,15 @@ class TestExamples(unittest.TestCase):
             -3504399050661.217,
         )
 
-    def test_tx_min_transmit_power(self):
+    def test_tx_flow(self):
         """
         Check validation and objective function value of
-        "test_tx_min_transmit_power" example
+        "test_tx_flow" example
         :return:
         """
 
-        self.check_validation("test_tx_min_transmit_power")
-        self.run_and_check_objective("test_tx_min_transmit_power", -58467336323371.43)
+        self.check_validation("test_tx_flow")
+        self.run_and_check_objective("test_tx_flow", -59124336744013.484)
 
     @classmethod
     def tearDownClass(cls):

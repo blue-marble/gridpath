@@ -211,17 +211,29 @@ class TestTxOperations(unittest.TestCase):
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
-        # Set: TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT
-        expect_tx_bln_type_hrzs = sorted(
+        # Set: TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
+        expect_tx_opr_tmps = sorted(
             [
-                ("Tx_New", "day", 202001), ("Tx_New", "day", 202002)
+                ("Tx_New", 20200101), ("Tx_New", 20200102)
             ]
         )
-        actual_tx_bln_type_hrzs = sorted(
-            [(tx, bt, h) for (tx, bt, h)
-             in instance.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT]
+        actual_tx_opr_tmps = sorted(
+            [(tx, tmp) for (tx, tmp)
+             in instance.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT]
         )
-        self.assertListEqual(expect_tx_bln_type_hrzs, actual_tx_bln_type_hrzs)
+        self.assertListEqual(expect_tx_opr_tmps, actual_tx_opr_tmps)
+
+        # Set: TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT
+        expect_tx_opr_tmps = sorted(
+            [
+                ("Tx_New", 20200101), ("Tx_New", 20200102)
+            ]
+        )
+        actual_tx_opr_tmps = sorted(
+            [(tx, tmp) for (tx, tmp)
+             in instance.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT]
+        )
+        self.assertListEqual(expect_tx_opr_tmps, actual_tx_opr_tmps)
 
         # Param: tx_simple_loss_factor
         expected_lf = OrderedDict(sorted({"Tx_New": 0.1}.items()))
@@ -234,16 +246,27 @@ class TestTxOperations(unittest.TestCase):
         )
         self.assertDictEqual(expected_lf, actual_lf)
 
-        # Param: tx_simple_min_transmit_power_mw
-        expected_min_transmit_power = OrderedDict(sorted({("Tx_New", "day", 202001): -0.1,
-                                                          ("Tx_New", "day", 202002): -5.5}.items()))
-        actual_min_transmit_power = OrderedDict(
+        # Param: tx_simple_min_flow_mw
+        expected_min_flow = OrderedDict(sorted({("Tx_New", 20200101): -0.1,
+                                                          ("Tx_New", 20200102): -5.5}.items()))
+        actual_min_flow = OrderedDict(
             sorted(
-                {(tx, bt, h): instance.tx_simple_min_transmit_power_mw[tx, bt, h]
-                 for (tx, bt, h) in instance.TX_SIMPLE_BLN_TYPE_HRZS_W_MIN_CONSTRAINT}.items()
+                {(tx, tmp): instance.tx_simple_min_flow_mw[tx, tmp]
+                 for (tx, tmp) in instance.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT}.items()
             )
         )
-        self.assertDictEqual(expected_min_transmit_power, actual_min_transmit_power)
+        self.assertDictEqual(expected_min_flow, actual_min_flow)
+
+        # Param: tx_simple_max_flow_mw
+        expected_max_flow = OrderedDict(sorted({("Tx_New", 20200101): 2,
+                                                ("Tx_New", 20200102): 2.5}.items()))
+        actual_max_flow = OrderedDict(
+            sorted(
+                {(tx, tmp): instance.tx_simple_max_flow_mw[tx, tmp]
+                 for (tx, tmp) in instance.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT}.items()
+            )
+        )
+        self.assertDictEqual(expected_max_flow, actual_max_flow)
 
 
 if __name__ == "__main__":

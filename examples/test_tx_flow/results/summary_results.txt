@@ -1,4 +1,4 @@
-##### SUMMARY RESULTS FOR SCENARIO *test_tx_min_transmit_power* #####
+##### SUMMARY RESULTS FOR SCENARIO *test_tx_flow* #####
 
 ### CAPACITY RESULTS ###
 
@@ -17,5 +17,5 @@ Zone1     2020   Coal                       0.00           0.00
                  Nuclear               52,560.00          71.01
                  Solar                  9,198.00          12.43
                  Wind                  12,264.00          16.57
-Zone2     2020   Gas                   42,110.00         100.00
-Zone3     2020   Gas                  306,600.00         100.00
+Zone2     2020   Gas                   66,138.00         100.00
+Zone3     2020   Gas                  276,002.00         100.00
