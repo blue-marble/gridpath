@@ -1,0 +1,485 @@
+# Copyright 2022 (c) Crown Copyright, GC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import csv
+import os.path
+from pyomo.environ import Param, Set, Expression, value, Var, NonNegativeReals, Constraint
+
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import (
+    cursor_to_df,
+)
+from gridpath.auxiliary.db_interface import (
+    update_prj_zone_column,
+    determine_table_subset_by_start_and_column,
+)
+from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.validations import write_validation_to_database, validate_idxs
+
+
+def add_model_components(m, d, scenario_directory, subproblem, stage):
+    """
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`TRANSMISSION_TARGET_TX_LINES`                                  |
+    | | *Within*: :code:`TX_LINES`                                            |
+    |                                                                         |
+    | The set of all transmission-target-eligible tx lines.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`TRANSMISSION_TARGET_TX_OPR_TMPS`                               |
+    |                                                                         |
+    | Two-dimensional set that defines all tx_line-timepoint combinations     |
+    | when an transmission-target-elgible tx_line can be operational.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE`      |
+    | | *Defined over*: :code:`TRANSMISSION_TARGET_ZONES`                     |
+    | | *Within*: :code:`TRANSMISSION_TARGET_TX_LINES                         |
+    |                                                                         |
+    | Indexed set that describes the transmission-target tx_lines for each    |
+    | transmission-target zone.                                               |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Input Params                                                            |
+    +=========================================================================+
+    | | :code:`transmission_target_zone`                                      |
+    | | *Defined over*: :code:`TRANSMISSION_TARGET_TX_LINES`                  |
+    | | *Within*: :code:`TRANSMISSION_TARGET_ZONES`                           |
+    |                                                                         |
+    | This param describes the transmission-target zone for each              |
+    | transmission-target tx_line.                                            |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Transmission_Target_Energy_MW`                                 |
+    | | *Defined over*: :code:`TRANSMISSION_TARGET_TX_OPR_TMPS`               |
+    |                                                                         |
+    | Describes how many energy transferred for each                          |
+    | transmission-target-eligible tx line in each timepoint.                 |
+    +-------------------------------------------------------------------------+
+
+    """
+    # Sets
+    ###########################################################################
+
+    m.TRANSMISSION_TARGET_TX_LINES = Set(within=m.TX_LINES)
+
+    m.TRANSMISSION_TARGET_TX_OPR_TMPS = Set(
+        within=m.TX_OPR_TMPS,
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.TX_OPR_TMPS if p in mod.TRANSMISSION_TARGET_TX_LINES
+        ],
+    )
+
+    # Input Params
+    ###########################################################################
+
+    m.transmission_target_zone = Param(m.TRANSMISSION_TARGET_TX_LINES, within=m.TRANSMISSION_TARGET_ZONES)
+
+    # Variables
+    ###########################################################################
+    m.Transmission_Target_Energy_MW_Pos_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
+    m.Transmission_Target_Energy_MW_Neg_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
+
+    # Derived Sets (requires input params)
+    ###########################################################################
+
+    m.TRANSMISSION_TARGET_TX_LINES_BY_TRANSMISSION_TARGET_ZONE = Set(
+        m.TRANSMISSION_TARGET_ZONES,
+        within=m.TRANSMISSION_TARGET_TX_LINES,
+        initialize=determine_transmission_target_tx_lines_by_transmission_target_zone,
+    )
+
+    # Constraints
+    ###########################################################################
+
+    def transmit_power_pos_dir_rule(mod, tx, tmp):
+        """
+
+        """
+        return (
+            mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
+            == mod.Transmit_Power_MW[tx, tmp]
+        )
+
+    m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_pos_dir_rule
+    )
+
+    def transmit_power_neg_dir_rule(mod, tx, tmp):
+        """
+
+        """
+        return (
+            mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
+            == -mod.Transmit_Power_MW[tx, tmp]
+        )
+
+    m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
+        m.TRANSMISSION_TARGET_TX_OPR_TMPS, rule=transmit_power_neg_dir_rule
+    )
+
+
+# Set Rules
+###############################################################################
+
+
+def determine_transmission_target_tx_lines_by_transmission_target_zone(mod, transmission_target_z):
+    return [
+        p
+        for p in mod.TRANSMISSION_TARGET_TX_LINES
+        if mod.transmission_target_zone[p] == transmission_target_z
+    ]
+
+
+# Input-Output
+###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+        ),
+        select=("transmission_line", "transmission_target_zone"),
+        param=(m.transmission_target_zone,),
+    )
+
+    data_portal.data()["TRANSMISSION_TARGET_TX_LINES"] = {
+        None: list(data_portal.data()["transmission_target_zone"].keys())
+    }
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "transmission_target_by_tx_line.csv",
+        ),
+        "w",
+        newline="",
+    ) as transmission_target_results_file:
+        writer = csv.writer(transmission_target_results_file)
+        writer.writerow(
+            [
+                "transmission_line",
+                "transmission_target_zone",
+                "timepoint",
+                "period",
+                "timepoint_weight",
+                "number_of_hours_in_timepoint",
+                "transmission_target_energy_positive_direction_mw",
+                "transmission_target_energy_negative_direction_mw",
+            ]
+        )
+        for (tx, tmp) in m.TRANSMISSION_TARGET_TX_OPR_TMPS:
+            writer.writerow(
+                [
+                    tx,
+                    m.transmission_target_zone[tx],
+                    tmp,
+                    m.period[tmp],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
+                    value(m.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]),
+                    value(m.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]),
+                ]
+            )
+
+
+# Database
+###############################################################################
+
+
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+    c = conn.cursor()
+
+    # Get the transmission-target zones for transmission lines in our portfolio and with zones in our
+    # Transmission target zone
+    tx_lines_zones = c.execute(
+        """SELECT transmission_line, transmission_target_zone
+        FROM
+        -- Get transmission lines from portfolio only
+        (SELECT transmission_line
+            FROM inputs_transmission_portfolios
+            WHERE transmission_portfolio_scenario_id = {}
+        ) as tx_tbl
+        LEFT OUTER JOIN 
+        -- Get transmission_target zones for those transmission lines
+        (SELECT transmission_line, transmission_target_zone
+            FROM inputs_tx_line_transmission_target_zones
+            WHERE tx_line_transmission_target_zone_scenario_id = {}
+        ) as tx_line_transmission_target_zone_tbl
+        USING (transmission_line)
+        -- Filter out transmission lines whose transmission-target zone is not one included in our 
+        -- transmission_target_zone_scenario_id
+        WHERE transmission_target_zone in (
+                SELECT transmission_target_zone
+                    FROM inputs_geography_transmission_target_zones
+                    WHERE transmission_target_zone_scenario_id = {}
+        );
+        """.format(
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TX_LINE_TRANSMISSION_TARGET_ZONE_SCENARIO_ID,
+            subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID,
+        )
+    )
+
+    return tx_lines_zones
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    transmission_lines.tab file (to be precise, amend it).
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    tx_lines_zones = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    # Make a dict for easy access
+    tx_line_zone_dict = dict()
+    for (tx, zone) in tx_lines_zones:
+        tx_line_zone_dict[str(tx)] = "." if zone is None else str(zone)
+
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+        ),
+        "r",
+    ) as tx_lines_file_in:
+        reader = csv.reader(tx_lines_file_in, delimiter="\t", lineterminator="\n")
+
+        new_rows = list()
+
+        # Append column header
+        header = next(reader)
+        header.append("transmission_target_zone")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If tx line specified, check if BA specified or not
+            if row[0] in list(tx_line_zone_dict.keys()):
+                row.append(tx_line_zone_dict[row[0]])
+                new_rows.append(row)
+            # If tx line not specified, specify no BA
+            else:
+                row.append(".")
+                new_rows.append(row)
+
+    with open(
+        os.path.join(
+            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+        ),
+        "w",
+        newline="",
+    ) as tx_lines_file_out:
+        writer = csv.writer(tx_lines_file_out, delimiter="\t", lineterminator="\n")
+        writer.writerows(new_rows)
+
+
+def import_results_into_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    # REC provision by tx_line and timepoint
+    if not quiet:
+        print("transmission recs")
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_tx_line_period_transmission_target",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(
+        os.path.join(results_directory, "transmission_target_by_tx_line.csv"), "r"
+    ) as transmission_target_file:
+        reader = csv.reader(transmission_target_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            transmission_line = row[0]
+            transmission_target_zone = row[1]
+            timepoint = row[2]
+            period = row[3]
+            timepoint_weight = row[4]
+            hours_in_tmp = row[5]
+            transmission_energy_pos_dir = row[6]
+            transmission_energy_neg_dir = row[7]
+            results.append(
+                (
+                    scenario_id,
+                    transmission_line,
+                    period,
+                    subproblem,
+                    stage,
+                    timepoint,
+                    timepoint_weight,
+                    hours_in_tmp,
+                    transmission_target_zone,
+                    transmission_energy_pos_dir,
+                    transmission_energy_neg_dir,
+                )
+            )
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_tx_line_period_transmission_target{}
+         (scenario_id, transmission_line, period, subproblem_id, stage_id, 
+         timepoint, timepoint_weight, 
+         number_of_hours_in_timepoint, 
+         transmission_target_zone,  
+         transmission_target_energy_positive_direction_mw,
+         transmission_target_energy_negative_direction_mw)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_tx_line_period_transmission_target
+        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        transmission_target_zone,
+        transmission_target_energy_positive_direction_mw,
+        transmission_target_energy_negative_direction_mw)
+        SELECT
+        scenario_id, transmission_line, period, subproblem_id, stage_id,
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        transmission_target_zone, 
+        transmission_target_energy_positive_direction_mw,
+        transmission_target_energy_negative_direction_mw
+        FROM temp_results_tx_line_period_transmission_target{}
+         ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, timepoint;
+         """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+
+
+# Validation
+###############################################################################
+
+
+def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Get the transmission lines and transmission-target zones
+    tx_lines_zones = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    # Convert input data into pandas DataFrame
+    df = cursor_to_df(tx_lines_zones)
+    zones_w_tx_line = df["transmission_target_zone"].unique()
+
+    # Get the required transmission-target zones
+    c = conn.cursor()
+    zones = c.execute(
+        """SELECT transmission_target_zone FROM inputs_geography_transmission_target_zones
+        WHERE transmission_target_zone_scenario_id = {}
+        """.format(
+            subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID
+        )
+    )
+    zones = [z[0] for z in zones]  # convert to list
+
+    # Check that each transmission-target zone has at least one transmission line assigned to it
+    write_validation_to_database(
+        conn=conn,
+        scenario_id=scenario_id,
+        subproblem_id=subproblem,
+        stage_id=stage,
+        gridpath_module=__name__,
+        db_table="inputs_tx_line_transmission_target_zones",
+        severity="High",
+        errors=validate_idxs(
+            actual_idxs=zones_w_tx_line,
+            req_idxs=zones,
+            idx_label="transmission_target_zone",
+            msg="Each transmission target zone needs at least 1 " "transmission line assigned to it.",
+        ),
+    )
