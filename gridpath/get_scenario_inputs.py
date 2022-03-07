@@ -50,6 +50,7 @@ from gridpath.auxiliary.scenario_chars import (
 def write_model_inputs(
     scenario_directory,
     subproblem_structure,
+    multi_stage,
     modules_to_use,
     scenario_id,
     subscenarios,
@@ -81,7 +82,9 @@ def write_model_inputs(
     delete_prior_aux_files(scenario_directory=scenario_directory)
 
     # Determine whether we will have subproblem directories
-    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1:
+    # We write the subproblem directories if we have multiple subproblems or if we
+    # have a single subroblem with stages (the multi_stage flag will be True)
+    if len(subproblem_structure.SUBPROBLEM_STAGES) == 1 and multi_stage is False:
         make_subproblem_directories = False
     else:
         make_subproblem_directories = True
@@ -398,14 +401,14 @@ def write_solver_options(scenario_directory, solver_options):
     If a solver_options_id is specified, writer the solver options to the
     scenario directory.
     """
-    if solver_options.SOLVER is None and solver_options.SOLVER_OPTIONS is None:
+    if solver_options.SOLVER_NAME is None and solver_options.SOLVER_OPTIONS is None:
         pass
     else:
         with open(
             os.path.join(scenario_directory, "solver_options.csv"), "w", newline=""
         ) as solver_options_file:
             writer = csv.writer(solver_options_file, delimiter=",")
-            writer.writerow(["solver", solver_options.SOLVER])
+            writer.writerow(["solver_name", solver_options.SOLVER_NAME])
             for opt in solver_options.SOLVER_OPTIONS.keys():
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
 
@@ -495,6 +498,7 @@ def main(args=None):
     write_model_inputs(
         scenario_directory=scenario_directory,
         subproblem_structure=subproblem_structure,
+        multi_stage=stages_flag,
         modules_to_use=modules_to_use,
         scenario_id=scenario_id,
         subscenarios=subscenarios,
