@@ -104,7 +104,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: set(
             (g, fg, tmp)
             for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
-            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
             if g == _g
         ),
     )

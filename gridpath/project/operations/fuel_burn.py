@@ -191,7 +191,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: set(
             (g, f, fg, tmp)
             for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
             if g == _g
         ),
     )
@@ -201,7 +201,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: set(
             (g, fg, tmp)
             for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
-            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
             if g == _g
         ),
     )
@@ -247,7 +247,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: set(
             (g, f, fg, tmp)
             for (g, tmp) in mod.STARTUP_FUEL_PRJ_OPR_TMPS
-            for _g, f, fg in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
             if g == _g
         ),
     )
@@ -367,7 +367,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return sum(
             mod.Total_Fuel_Burn_by_Fuel_and_Fuel_Group_MMBtu[g, f, fg, tmp]
-            for f in m.FUEL_GROUP_FUEL_BY_PRJ[g]
+            for (_g, _fg, f) in m.FUEL_PRJ_FUELS_FUEL_GROUP
+            if f in m.FUELS_BY_FUEL_GROUP[fg]
+            and fg == _fg
+            and g == _g
         )
 
     m.Total_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(
