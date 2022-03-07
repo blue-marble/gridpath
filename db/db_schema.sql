@@ -575,6 +575,27 @@ FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
 );
 
+-- Performance standard
+-- This is the unit at which the performance standard is applied in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_performance_standard_zones;
+CREATE TABLE subscenarios_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_performance_standard_zones;
+CREATE TABLE inputs_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_emission FLOAT DEFAULT 0,
+PRIMARY KEY (performance_standard_zone_scenario_id, performance_standard_zone),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -1427,6 +1448,28 @@ carbon_tax_allowance_tco2_per_mwh FLOAT,
 PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
+);
+
+-- Project performance standard zones
+-- Which projects count toward the performance standard
+-- Depends on performance standard zone geography
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_performance_standard_zones;
+CREATE TABLE subscenarios_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_performance_standard_zones;
+CREATE TABLE inputs_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER,
+project VARCHAR(64),
+performance_standard_zone VARCHAR(32),
+PRIMARY KEY (project_performance_standard_zone_scenario_id, project),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+ subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
 );
 
 -- Project fuel burn limit balancing areas
@@ -2378,6 +2421,31 @@ FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
 subscenarios_system_carbon_tax (carbon_tax_scenario_id)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS subscenarios_system_performance_standard;
+CREATE TABLE subscenarios_system_performance_standard (
+performance_standard_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- performance_standard_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_performance_standard;
+CREATE TABLE inputs_system_performance_standard (
+performance_standard_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+performance_standard_tco2_per_mwh FLOAT,
+PRIMARY KEY (performance_standard_scenario_id, performance_standard_zone, period,
+subproblem_id, stage_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+subscenarios_system_performance_standard (performance_standard_scenario_id)
+);
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement (
@@ -2508,6 +2576,7 @@ of_horizon_energy_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
+of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
@@ -2525,6 +2594,7 @@ spinning_reserves_ba_scenario_id INTEGER,
 energy_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 carbon_tax_zone_scenario_id INTEGER,
+performance_standard_zone_scenario_id INTEGER,
 fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
@@ -2544,6 +2614,7 @@ project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
 project_carbon_tax_allowance_scenario_id INTEGER,
+project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
@@ -2581,6 +2652,7 @@ period_energy_target_scenario_id INTEGER,
 horizon_energy_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
+performance_standard_scenario_id INTEGER,
 fuel_burn_limit_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
@@ -2615,6 +2687,8 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id),
 FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
     subscenarios_geography_fuel_burn_limit_balancing_areas
         (fuel_burn_limit_ba_scenario_id),
@@ -2666,6 +2740,9 @@ FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_allowance
         (project_carbon_tax_allowance_scenario_id),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_project_performance_standard_zones
+        (project_performance_standard_zone_scenario_id),
 FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
     subscenarios_project_fuel_burn_limit_balancing_areas
         (project_fuel_burn_limit_ba_scenario_id),
@@ -2757,6 +2834,8 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
     subscenarios_system_carbon_tax (carbon_tax_scenario_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+    subscenarios_system_performance_standard (performance_standard_scenario_id),
 FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
     subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
@@ -3765,6 +3844,23 @@ dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS results_system_performance_standard;
+CREATE TABLE results_system_performance_standard (
+scenario_id INTEGER,
+performance_standard_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+performance_standard_tco2_per_mwh FLOAT,
+project_performance_standard_total_carbon_emissions_tco2 FLOAT,
+project_performance_standard_total_energy_mwh FLOAT,
+performance_standard_overage FLOAT,
+PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id, stage_id, period)
+);
+
 -- Energy target balance
 DROP TABLE IF EXISTS results_system_period_energy_target;
 CREATE TABLE  results_system_period_energy_target (
@@ -3903,6 +3999,7 @@ Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_Carbon_Tax_Cost FLOAT,
+Total_Performance_Standard_Balance_Penalty_Costs Float,
 Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
