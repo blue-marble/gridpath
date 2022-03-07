@@ -121,7 +121,7 @@ class TestProjectPerformanceStandard(unittest.TestCase):
             sorted(
                 {
                     "Gas_CCGT": "PS_Zone1",
-                    "Gas_CT": "PS_Zone1",
+                    "Gas_CT": "PS_Zone2",
                 }.items()
             )
         )
