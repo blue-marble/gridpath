@@ -147,9 +147,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
         return (
             mod.Power_Provision_MW[prj, tmp]
-            * mod.carbon_tax_allowance[prj, mod.period[tmp], fg]
-            * mod.Total_Fuel_Burn_by_Fuel_Group_MMBtu[prj, fg, tmp]
-            / mod.Total_Fuel_Burn_by_Project_MMBtu[prj, tmp]
+            * mod.carbon_tax_allowance[prj, fg, mod.period[tmp]]
+            * mod.Opr_Fuel_Burn_by_Fuel_Group_MMBtu[prj, fg, tmp]
+            / mod.Opr_Fuel_Burn_by_Project_MMBtu[prj, tmp]
         )
 
     m.Project_Carbon_Tax_Allowance = Expression(
@@ -192,7 +192,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "project_carbon_tax_allowance.tab",
         ),
-        select=("project", "period", "carbon_tax_allowance_tco2_per_mwh"), # "fuel_group",
+        select=("project", "fuel_group", "period", "carbon_tax_allowance_tco2_per_mwh"),
         param=m.carbon_tax_allowance,
     )
 
