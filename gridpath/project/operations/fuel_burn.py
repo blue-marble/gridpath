@@ -342,10 +342,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def opr_fuel_burn_by_fuel_group_rule(mod, g, fg, tmp):
         """
-        *Expression Name*: :code:`Total_Fuel_Burn_by_Fuel_Group_MMBtu`
-        *Defined Over*: :code:`FUEL_PRJS_FUELS_FUEL_GROUP_OPR_TMPS`
+        *Expression Name*: :code:`Opr_Fuel_Burn_by_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUEL_GROUP_OPR_TMPS`
 
-        Total fuel burn per fuel group is the sum of total fuel burn by fuel group.
+        Operating fuel burn per fuel group is the sum of operating fuel burn by fuel group.
         """
         return sum(
             mod.Project_Opr_Fuel_Burn_by_Fuel_and_Fuel_Group[g, f, fg, tmp]
@@ -361,10 +361,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def opr_fuel_burn_by_project_rule(mod, g, tmp):
         """
-        *Expression Name*: :code:`Total_Fuel_Burn_by_Project_MMBtu`
+        *Expression Name*: :code:`Opr_Fuel_Burn_by_Project_MMBtu`
         *Defined Over*: :code:`FUEL_PRJ_OPR_TMPS`
 
-        Total fuel burn per project is the sum of total fuel burn by fuel.
+        Operating fuel burn per project is the sum of operating fuel burn by project.
         """
         return sum(
             mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp]
