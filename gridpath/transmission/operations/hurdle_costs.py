@@ -39,6 +39,7 @@ from gridpath.auxiliary.validations import (
     validate_missing_inputs,
 )
 from gridpath.auxiliary.auxiliary import cursor_to_df
+from gridpath.temporal.operations.timepoints import get_inputs_from_database as get_temporal_inputs_from_database
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
@@ -191,6 +192,40 @@ def hurdle_cost_neg_dir_rule(mod, tx, tmp):
 # Input-Output
 ###############################################################################
 
+def format_monthly_hurdle_data(hrs_df_unformatted, timepoints_df):
+    """ Fill monthly hurdle rates with default values where applicable
+
+    :param hrs_df_unformatted: DataFrame with hurdle rates
+    :param timepoints_df: DataFrame with period and month columns
+    :return:
+    pandas.DataFrame with monthly hurdle rates for all relevant months
+    """
+    period_months_dict = {
+        period: timepoints_df[timepoints_df["period"]==period]["month"].unique().tolist()
+        for period in timepoints_df["period"].unique()
+    }
+    hrs_df_formatted = pd.DataFrame(columns=hrs_df_unformatted.columns)
+    for tx_line, df_per_tx_line in hrs_df_unformatted.groupby("transmission_line"):
+        for period, df_per_tx_line_per_period in df_per_tx_line.groupby("period"):
+            months = df_per_tx_line_per_period.month.unique().tolist()
+            expected_months = period_months_dict[period]
+            if set(months) == set(expected_months):
+                hrs_df_formatted = pd.concat([hrs_df_formatted, df_per_tx_line_per_period], axis=0, ignore_index=True)
+            elif months == [0]:
+                df_expanded = df_per_tx_line_per_period.loc[df_per_tx_line_per_period.index.repeat(len(expected_months))]
+                df_expanded["month"] = expected_months
+                hrs_df_formatted = pd.concat([hrs_df_formatted, df_expanded], axis=0, ignore_index=True)
+            else:
+                raise ValueError(
+                    """Hurdle rates for transmission line {} and period {} aren't specified for all relevant months
+                    (got {}, expected {} or 0). 
+                    Set month to 0 if inputs are the same for each month 
+                    or make sure all modelled months are included.""".format(
+                        tx_line, period, months, expected_months
+                    ),
+                )
+    return hrs_df_formatted
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -210,59 +245,30 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     hrs_file = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs", "transmission_hurdle_rates.tab",
     )
+    hrs_df_unformatted = pd.read_csv(hrs_file, sep="\t")
+
     # The timepoints.tab file indicates what periods have months
     timepoints_file = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs", "timepoints.tab"
     )
-
-    hrs_df = pd.read_csv(hrs_file, sep="\t")
     timepoints_df = pd.read_csv(timepoints_file, sep="\t")
+
+    hrs_df = format_monthly_hurdle_data(hrs_df_unformatted, timepoints_df)
 
     for tx_line, hrs_df_tx_slice in hrs_df.groupby("transmission_line"):
         for period, hrs_df_period_slice in hrs_df_tx_slice.groupby("period"):
-            expected_months = set(timepoints_df.loc[timepoints_df["period"]==period, "month"].unique())
-            months = set(hrs_df_period_slice["month"].unique())
-            # Hurdle rates months all 0, must apply the same hurdle rate to all months
-            if months == set([0]):
-                for month in expected_months:
-                    hrs_df_month_slice = hrs_df_period_slice.loc[hrs_df_period_slice["month"] == 0, :]
-                    hurdle_rate_pos_dir_per_mwh_dict.update(
-                        {
-                            (tx_line, period, month): hrs_df_month_slice.loc[
-                                                      :, "hurdle_rate_positive_direction_per_mwh"].values[0]
-                        }
-                    )
-                    hurdle_rate_neg_dir_per_mwh_dict.update(
-                        {
-                            (tx_line, period, month): hrs_df_month_slice.loc[
-                                                      :, "hurdle_rate_negative_direction_per_mwh"].values[0]
-                        }
-                    )
-            # Hurdle rates available for all expected months:
-            elif all([m in months for m in expected_months]):
-                for month in expected_months:
-                    hrs_df_month_slice = hrs_df_period_slice.loc[hrs_df_period_slice["month"] == month, :]
-                    hurdle_rate_pos_dir_per_mwh_dict.update(
-                        {
-                            (tx_line, period, month): hrs_df_month_slice.loc[
-                                                      :, "hurdle_rate_positive_direction_per_mwh"].values[0]
-                        }
-                    )
-                    hurdle_rate_neg_dir_per_mwh_dict.update(
-                        {
-                            (tx_line, period, month): hrs_df_month_slice.loc[
-                                                      :, "hurdle_rate_negative_direction_per_mwh"].values[0]
-                        }
-                    )
-            # Hurdle rates months not 0 nor available for all months
-            else:
-                raise ValueError(
-                    """Hurdle rates for period '{}' isn't specified for all 
-                    months (got {}, expected {} or 0). Set month to 0 if inputs are the 
-                    same for each month or make sure all modelled months 
-                    are included.""".format(
-                        period, months, expected_months
-                    )
+            for month, hrs_df_month_slice in hrs_df_period_slice.groupby("month"):
+                hurdle_rate_pos_dir_per_mwh_dict.update(
+                    {
+                        (tx_line, period, month): hrs_df_month_slice.loc[
+                                                  :, "hurdle_rate_positive_direction_per_mwh"].values[0]
+                    }
+                )
+                hurdle_rate_neg_dir_per_mwh_dict.update(
+                    {
+                        (tx_line, period, month): hrs_df_month_slice.loc[
+                                                  :, "hurdle_rate_negative_direction_per_mwh"].values[0]
+                    }
                 )
     data_portal.data()["hurdle_rate_pos_dir_per_mwh"] = hurdle_rate_pos_dir_per_mwh_dict
     data_portal.data()["hurdle_rate_neg_dir_per_mwh"] = hurdle_rate_neg_dir_per_mwh_dict
@@ -340,23 +346,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """SELECT transmission_line, period, month,
         hurdle_rate_positive_direction_per_mwh,
         hurdle_rate_negative_direction_per_mwh
-        FROM inputs_transmission_portfolios
-        CROSS JOIN
-            (SELECT period, month
-            FROM inputs_temporal
-            WHERE temporal_scenario_id = {}) AS relevant_periods 
-        LEFT OUTER JOIN
-            (SELECT transmission_line, period, month,
-            hurdle_rate_positive_direction_per_mwh,
-            hurdle_rate_negative_direction_per_mwh
-            FROM inputs_transmission_hurdle_rates
-            WHERE transmission_hurdle_rate_scenario_id = {}) AS relevant_hrs
-        USING (transmission_line, period, month)
-        WHERE transmission_portfolio_scenario_id = {};
+        FROM inputs_transmission_hurdle_rates 		
+        WHERE transmission_hurdle_rate_scenario_id = {};
         """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID,
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
     )
     return hurdle_rates
@@ -587,8 +580,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     hurdle_rates = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
-
-    df = cursor_to_df(hurdle_rates)
+    hrs_df_unformatted = cursor_to_df(hurdle_rates)
+    timepoints = get_temporal_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+    timepoints_df = cursor_to_df(timepoints)
+    df = format_monthly_hurdle_data(hrs_df_unformatted, timepoints_df)
 
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
