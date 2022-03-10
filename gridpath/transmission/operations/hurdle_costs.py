@@ -192,17 +192,17 @@ def hurdle_cost_neg_dir_rule(mod, tx, tmp):
 # Input-Output
 ###############################################################################
 
-def format_monthly_hurdle_data(hrs_df_unformatted, timepoints_df):
+def format_monthly_hurdle_data(hrs_df_unformatted, periods_months_df):
     """ Fill monthly hurdle rates with default values where applicable
 
     :param hrs_df_unformatted: DataFrame with hurdle rates
-    :param timepoints_df: DataFrame with period and month columns
+    :param periods_months_df: DataFrame with period and month columns
     :return:
     pandas.DataFrame with monthly hurdle rates for all relevant months
     """
     period_months_dict = {
-        period: timepoints_df[timepoints_df["period"]==period]["month"].unique().tolist()
-        for period in timepoints_df["period"].unique()
+        period: periods_months_df[periods_months_df["period"]==period]["month"].unique().tolist()
+        for period in periods_months_df["period"].unique()
     }
     hrs_df_formatted = pd.DataFrame(columns=hrs_df_unformatted.columns)
     for tx_line, df_per_tx_line in hrs_df_unformatted.groupby("transmission_line"):
@@ -581,11 +581,17 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         scenario_id, subscenarios, subproblem, stage, conn
     )
     hrs_df_unformatted = cursor_to_df(hurdle_rates)
-    timepoints = get_temporal_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
+    periods_months = conn.execute(
+        """SELECT DISTINCT period, month
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+        )
     )
-    timepoints_df = cursor_to_df(timepoints)
-    df = format_monthly_hurdle_data(hrs_df_unformatted, timepoints_df)
+    periods_months_df = cursor_to_df(periods_months)
+    df = format_monthly_hurdle_data(hrs_df_unformatted, periods_months_df)
 
     # Get expected dtypes
     expected_dtypes = get_expected_dtypes(
