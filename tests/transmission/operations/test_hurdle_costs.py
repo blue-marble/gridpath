@@ -99,47 +99,27 @@ class TestTxAggregateCosts(unittest.TestCase):
             subproblem="",
             stage="",
         )
+        print("actual data")
+        print(data.data()["hurdle_rate_pos_dir_per_mwh"])
         instance = m.create_instance(data)
-
+        print("instance.hurdle_rate_pos_dir_per_mwh.keys()")
+        print([k for k in instance.hurdle_rate_pos_dir_per_mwh.keys()])
         # Param: hurdle_rate_pos_dir_per_mwh
         expected_hurdle_rate_pos = OrderedDict(
             sorted(
                 [
                     (("Tx1", 2020, 5), 1.5),
                     (("Tx1", 2020, 9), 1.9),
-                    (("Tx1", 2020, 4), 1.4),
-                    (("Tx1", 2020, 7), 1.7),
-                    (("Tx1", 2030, 5), 31.5),
-                    (("Tx1", 2030, 9), 31.9),
                     (("Tx1", 2030, 4), 31.4),
                     (("Tx1", 2030, 7), 31.7),
-                    (("Tx2", 2020, 5), 0),
-                    (("Tx2", 2020, 9), 0),
-                    (("Tx2", 2020, 4), 0),
-                    (("Tx2", 2020, 7), 0),
-                    (("Tx2", 2030, 5), 0),
-                    (("Tx2", 2030, 9), 0),
-                    (("Tx2", 2030, 4), 0),
-                    (("Tx2", 2030, 7), 0),
-                    (("Tx3", 2020, 5), 0),
-                    (("Tx3", 2020, 9), 0),
-                    (("Tx3", 2020, 4), 0),
-                    (("Tx3", 2020, 7), 0),
-                    (("Tx3", 2030, 5), 0),
-                    (("Tx3", 2030, 9), 0),
-                    (("Tx3", 2030, 4), 0),
-                    (("Tx3", 2030, 7), 0),
                     (("Tx_New", 2020, 5), 20.20),
                     (("Tx_New", 2020, 9), 20.20),
-                    (("Tx_New", 2020, 4), 20.20),
-                    (("Tx_New", 2020, 7), 20.20),
-                    (("Tx_New", 2030, 5), 30.30),
-                    (("Tx_New", 2030, 9), 30.30),
                     (("Tx_New", 2030, 4), 30.30),
                     (("Tx_New", 2030, 7), 30.30),
                 ]
             )
         )
+        print(expected_hurdle_rate_pos)
         actual_hurdle_rate_pos = OrderedDict(
             sorted(
                 [
@@ -147,9 +127,11 @@ class TestTxAggregateCosts(unittest.TestCase):
                     for tx in instance.TX_LINES
                     for p in instance.PERIODS
                     for m in instance.MONTHS
+                    if (tx, p, m) in instance.hurdle_rate_pos_dir_per_mwh.keys()
                 ]
             )
         )
+        print(actual_hurdle_rate_pos)
         self.assertDictEqual(expected_hurdle_rate_pos, actual_hurdle_rate_pos)
 
         # Param: hurdle_rate_neg_dir_per_mwh
@@ -158,34 +140,10 @@ class TestTxAggregateCosts(unittest.TestCase):
                 [
                     (("Tx1", 2020, 5), 5.1),
                     (("Tx1", 2020, 9), 9.1),
-                    (("Tx1", 2020, 4), 4.1),
-                    (("Tx1", 2020, 7), 7.1),
-                    (("Tx1", 2030, 5), 35.1),
-                    (("Tx1", 2030, 9), 39.1),
                     (("Tx1", 2030, 4), 34.1),
                     (("Tx1", 2030, 7), 37.1),
-                    (("Tx2", 2020, 5), 0),
-                    (("Tx2", 2020, 9), 0),
-                    (("Tx2", 2020, 4), 0),
-                    (("Tx2", 2020, 7), 0),
-                    (("Tx2", 2030, 5), 0),
-                    (("Tx2", 2030, 9), 0),
-                    (("Tx2", 2030, 4), 0),
-                    (("Tx2", 2030, 7), 0),
-                    (("Tx3", 2020, 5), 0),
-                    (("Tx3", 2020, 9), 0),
-                    (("Tx3", 2020, 4), 0),
-                    (("Tx3", 2020, 7), 0),
-                    (("Tx3", 2030, 5), 0),
-                    (("Tx3", 2030, 9), 0),
-                    (("Tx3", 2030, 4), 0),
-                    (("Tx3", 2030, 7), 0),
                     (("Tx_New", 2020, 5), 20.0),
                     (("Tx_New", 2020, 9), 20.0),
-                    (("Tx_New", 2020, 4), 20.0),
-                    (("Tx_New", 2020, 7), 20.0),
-                    (("Tx_New", 2030, 5), 30.0),
-                    (("Tx_New", 2030, 9), 30.0),
                     (("Tx_New", 2030, 4), 30.0),
                     (("Tx_New", 2030, 7), 30.0),
                 ]
@@ -198,6 +156,7 @@ class TestTxAggregateCosts(unittest.TestCase):
                     for tx in instance.TX_LINES
                     for p in instance.PERIODS
                     for m in instance.MONTHS
+                    if (tx, p, m) in instance.hurdle_rate_pos_dir_per_mwh.keys()
                 ]
             )
         )
