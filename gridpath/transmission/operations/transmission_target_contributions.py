@@ -119,7 +119,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return (
             mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-            == mod.Transmit_Power_MW[tx, tmp]
+            >= mod.Transmit_Power_MW[tx, tmp]
         )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -132,7 +132,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return (
             mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-            == -mod.Transmit_Power_MW[tx, tmp]
+            >= -mod.Transmit_Power_MW[tx, tmp]
         )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(

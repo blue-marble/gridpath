@@ -74,11 +74,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return (
-            mod.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]
-            + mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
-            >= mod.Period_Transmission_Target_Pos_Dir[z, p]
-        )
+        if mod.period_transmission_target_pos_dir_mwh[z, p] == 0:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]
+                + mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
+                >= mod.Period_Transmission_Target_Pos_Dir[z, p]
+            )
 
     m.Period_Transmission_Target_Pos_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_pos_dir_rule
@@ -92,11 +95,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return (
-            mod.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]
-            + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]
-            >= mod.Period_Transmission_Target_Neg_Dir[z, p]
-        )
+        if mod.period_transmission_target_neg_dir_mwh[z, p] == 0:
+            return Constraint.Skip
+        else:
+            return (
+                mod.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]
+                + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]
+                >= mod.Period_Transmission_Target_Neg_Dir[z, p]
+            )
 
     m.Period_Transmission_Target_Neg_Dir_Constraint = Constraint(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_neg_dir_rule
