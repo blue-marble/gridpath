@@ -723,7 +723,7 @@ def solve(instance, parsed_arguments):
                 if opt == "solver":
                     pass
                 else:
-                    opt_string = "{option} {value};".format(
+                    opt_string = "{option} {value}".format(
                         option=opt,
                         value=solver_options[opt]
                     )
