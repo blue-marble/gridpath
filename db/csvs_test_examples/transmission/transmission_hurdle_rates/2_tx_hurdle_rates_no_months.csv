@@ -1,0 +1,3 @@
+transmission_line,period,month,hurdle_rate_positive_direction_per_mwh,hurdle_rate_negative_direction_per_mwh
+Tx1,2020,0,5,5
+Tx_new,2020,0,5,5
