@@ -714,22 +714,28 @@ def solve(instance, parsed_arguments):
         #  logic to write options files for the selected solver; see
         #  https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
         # This is GAMS-specific, may also work for AMPL
-        add_options = []
-        for opt in solver_options.keys():
-            opt_string = "{option} {value};".format(
-                option=optimizer.options[opt],
-                value=solver_options[opt]
-            )
-            add_options.append(opt_string)
+        if solver_name == 'gams':
+            add_options = [
+                "GAMS_MODEL.optfile = 1;",
+                "$onecho > {solver}.opt".format(solver=solver_options["solver"])
+            ]
+            for opt in solver_options.keys():
+                opt_string = "{option} {value};".format(
+                    option=optimizer.options[opt],
+                    value=solver_options[opt]
+                )
+                add_options.append(opt_string)
 
-        results = optimizer.solve(
-            instance,
-            solver=solver_options["solver"],
-            add_options=add_options,
-            tee=not parsed_arguments.mute_solver_output,
-            keepfiles=parsed_arguments.keepfiles,
-            symbolic_solver_labels=parsed_arguments.symbolic,
-        )
+            add_options.append("$offecho")
+
+            results = optimizer.solve(
+                instance,
+                solver=solver_options["solver"],
+                add_options=add_options,
+                tee=not parsed_arguments.mute_solver_output,
+                keepfiles=parsed_arguments.keepfiles,
+                symbolic_solver_labels=parsed_arguments.symbolic,
+            )
     else:
         for opt in solver_options.keys():
             optimizer.options[opt] = solver_options[opt]
