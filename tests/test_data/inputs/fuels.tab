@@ -2,4 +2,4 @@ fuel	co2_intensity_tons_per_mmbtu	fuel_group
 Gas	0.05306	Gas
 Coal	0.09552	Solid
 Uranium	0	Other
-Blend_Fuel	-0.1	Other
+Blend_Fuel	-0.1	Blended
