@@ -720,13 +720,18 @@ def solve(instance, parsed_arguments):
                 "$onecho > {solver}.opt".format(solver=solver_options["solver"])
             ]
             for opt in solver_options.keys():
-                opt_string = "{option} {value};".format(
-                    option=optimizer.options[opt],
-                    value=solver_options[opt]
-                )
-                add_options.append(opt_string)
+                if opt == "solver":
+                    pass
+                else:
+                    opt_string = "{option} {value};".format(
+                        option=opt,
+                        value=solver_options[opt]
+                    )
+                    add_options.append(opt_string)
 
             add_options.append("$offecho")
+
+            print(add_options)
 
             results = optimizer.solve(
                 instance,
