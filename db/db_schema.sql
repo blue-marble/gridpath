@@ -1423,8 +1423,9 @@ CREATE TABLE inputs_project_carbon_tax_allowance (
 project_carbon_tax_allowance_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+fuel_group VARCHAR(32),
 carbon_tax_allowance_tco2_per_mwh FLOAT,
-PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period, fuel_group),
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
 );
@@ -1634,6 +1635,7 @@ CREATE TABLE inputs_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 co2_intensity_tons_per_mmbtu FLOAT,
+fuel_group VARCHAR(32),
 PRIMARY KEY (fuel_scenario_id, fuel),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
 (fuel_scenario_id)

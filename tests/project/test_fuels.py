@@ -102,16 +102,58 @@ class TestFuels(unittest.TestCase):
         )
 
         # Set: FUELS
-        expected_fuels = sorted(fuels_df["FUELS"].tolist())
+        expected_fuels = sorted(fuels_df["fuel"].tolist())
         actual_fuels = sorted([fuel for fuel in instance.FUELS])
         self.assertListEqual(expected_fuels, actual_fuels)
+
+        # Set: FUEL_GROUPS
+        expected_fuel_groups = sorted(fuels_df["fuel_group"].tolist())
+        actual_fuel_groups = sorted([fuel_group for fuel_group in instance.FUEL_GROUPS])
+        self.assertListEqual(expected_fuel_groups, actual_fuel_groups)
+
+        # Set: FUEL_GROUPS_FUELS
+        expected_fuel_groups_fuels = list(
+            fuels_df[["fuel_group", "fuel"]].to_records(index=False)
+        )
+
+        # Need to convert to tuples from numpy arrays to allow assert below
+        expected_fuel_groups_fuels = sorted(
+            [tuple(i) for i in expected_fuel_groups_fuels]
+        )
+
+        actual_fuel_groups_fuels = sorted(
+            [(fg, f) for (fg, f) in instance.FUEL_GROUPS_FUELS]
+        )
+
+        self.assertListEqual(expected_fuel_groups_fuels, actual_fuel_groups_fuels)
+
+        # Set: FUELS_BY_FUEL_GROUP
+        expected_fuels_by_fg = {}
+        for (fg, f) in expected_fuel_groups_fuels:
+            if fg not in expected_fuels_by_fg.keys():
+                expected_fuels_by_fg[fg] = [f]
+            else:
+                expected_fuels_by_fg[fg].append(f)
+        expected_fuels_by_fg_od = OrderedDict(sorted(expected_fuels_by_fg.items()))
+
+        actual_fuels_by_fg = {
+            fg: [f for f in instance.FUELS_BY_FUEL_GROUP[fg]]
+            for fg in instance.FUELS_BY_FUEL_GROUP.keys()
+        }
+        for fg in actual_fuels_by_fg.keys():
+            actual_fuels_by_fg[fg] = sorted(actual_fuels_by_fg[fg])
+        actual_fuels_by_fg_od = OrderedDict(
+            sorted(actual_fuels_by_fg.items())
+        )
+
+        self.assertDictEqual(expected_fuels_by_fg_od, actual_fuels_by_fg_od)
 
         # Param: co2_intensity_tons_per_mmbtu
         # Rounding to 5 digits here to avoid precision-related error
         expected_co2 = OrderedDict(
             sorted(
                 fuels_df.round(5)
-                .set_index("FUELS")
+                .set_index("fuel")
                 .to_dict()["co2_intensity_tons_per_mmbtu"]
                 .items()
             )

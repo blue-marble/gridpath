@@ -186,6 +186,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -300,6 +310,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_Fuel_Burn_by_Fuel_MMBtu = Expression(
         m.FUEL_PRJS_FUEL_OPR_TMPS, rule=total_fuel_burn_by_fuel_rule
+    )
+
+    def opr_fuel_burn_by_fuel_group_rule(mod, g, fg, tmp):
+        """
+        *Expression Name*: :code:`Opr_Fuel_Burn_by_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUEL_GROUP_OPR_TMPS`
+
+        Operating fuel burn per fuel group is the sum of operating fuel burn by fuel group.
+        """
+        return sum(
+            mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp]
+            for (_g, _fg, f) in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if f in mod.FUELS_BY_FUEL_GROUP[fg]
+            and fg == _fg
+            and g == _g
+        )
+
+    m.Opr_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(
+        m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS, rule=opr_fuel_burn_by_fuel_group_rule
     )
 
     # Constraints
