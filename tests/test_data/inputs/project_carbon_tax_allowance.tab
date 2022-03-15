@@ -1,29 +1,31 @@
-project	period	carbon_tax_allowance_tco2_per_mwh
-Gas_CCGT	2020	10
-Coal	2020	8
-Gas_CT	2020	10
-Gas_CCGT_New	2020	10
-Gas_CCGT_New_Binary	2020	10
-Gas_CT_New	2020	10
-Gas_CCGT_z2	2020	10
-Coal_z2	2020	8
-Gas_CT_z2	2020	10
-Disp_Binary_Commit	2020	10
-Disp_Cont_Commit	2020	10
-Disp_No_Commit	2020	10
-Clunky_Old_Gen	2020	8
-Clunky_Old_Gen2	2020	8
-Gas_CCGT	2030	5
-Coal	2030	3
-Gas_CT	2030	5
-Gas_CCGT_New	2030	5
-Gas_CCGT_New_Binary	2030	5
-Gas_CT_New	2030	5
-Gas_CCGT_z2	2030	5
-Coal_z2	2030	3
-Gas_CT_z2	2030	5
-Disp_Binary_Commit	2030	5
-Disp_Cont_Commit	2030	5
-Disp_No_Commit	2030	5
-Clunky_Old_Gen	2030	3
-Clunky_Old_Gen2	2030	3
+project	period	fuel_group	carbon_tax_allowance_tco2_per_mwh
+Gas_CCGT	2020	Gas	10
+Gas_CCGT	2020	Blended	3
+Coal	2020	Solid	8
+Gas_CT	2020	Gas	10
+Gas_CCGT_New	2020	Gas	10
+Gas_CCGT_New_Binary	2020	Gas	10
+Gas_CT_New	2020	Gas	10
+Gas_CCGT_z2	2020	Gas	10
+Coal_z2	2020	Solid	8
+Gas_CT_z2	2020	Gas	10
+Disp_Binary_Commit	2020	Gas	10
+Disp_Cont_Commit	2020	Gas	10
+Disp_No_Commit	2020	Gas	10
+Clunky_Old_Gen	2020	Solid	8
+Clunky_Old_Gen2	2020	Solid	8
+Gas_CCGT	2030	Gas	5
+Gas_CCGT	2030	Blended	1
+Coal	2030	Solid	3
+Gas_CT	2030	Gas	5
+Gas_CCGT_New	2030	Gas	5
+Gas_CCGT_New_Binary	2030	Gas	5
+Gas_CT_New	2030	Gas	5
+Gas_CCGT_z2	2030	Gas	5
+Coal_z2	2030	Solid	3
+Gas_CT_z2	2030	Gas	5
+Disp_Binary_Commit	2030	Gas	5
+Disp_Cont_Commit	2030	Gas	5
+Disp_No_Commit	2030	Gas	5
+Clunky_Old_Gen	2030	Solid	3
+Clunky_Old_Gen2	2030	Solid	3
