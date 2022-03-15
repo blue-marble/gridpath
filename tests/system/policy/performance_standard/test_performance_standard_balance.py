@@ -55,7 +55,9 @@ PREREQUISITE_MODULE_NAMES = [
     "system.policy.performance_standard.aggregate_project_performance_standard",
     "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
 ]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.performance_standard.performance_standard_balance"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.performance_standard.performance_standard_balance"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

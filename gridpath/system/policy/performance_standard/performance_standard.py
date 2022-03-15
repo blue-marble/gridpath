@@ -35,7 +35,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=2, within=m.PERFORMANCE_STANDARD_ZONES * m.PERIODS
     )
     m.performance_standard = Param(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, within=NonNegativeReals
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        within=NonNegativeReals,
     )
 
 
@@ -52,11 +53,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "performance_standard.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "performance_standard.tab",
         ),
         index=m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
         param=m.performance_standard,
-        select=("performance_standard_zone", "period", "performance_standard_tco2_per_mwh"),
+        select=(
+            "performance_standard_zone",
+            "period",
+            "performance_standard_tco2_per_mwh",
+        ),
     )
 
 
@@ -131,15 +140,23 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "performance_standard.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "performance_standard.tab",
         ),
         "w",
         newline="",
     ) as performance_standard_file:
-        writer = csv.writer(performance_standard_file, delimiter="\t", lineterminator="\n")
+        writer = csv.writer(
+            performance_standard_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
-        writer.writerow(["performance_standard_zone", "period", "performance_standard_tco2_per_mwh"])
+        writer.writerow(
+            ["performance_standard_zone", "period", "performance_standard_tco2_per_mwh"]
+        )
 
         for row in performance_standard:
             writer.writerow(row)

@@ -322,9 +322,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return sum(
             mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp]
             for (_g, _fg, f) in mod.FUEL_PRJ_FUELS_FUEL_GROUP
-            if f in mod.FUELS_BY_FUEL_GROUP[fg]
-            and fg == _fg
-            and g == _g
+            if f in mod.FUELS_BY_FUEL_GROUP[fg] and fg == _fg and g == _g
         )
 
     m.Opr_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(

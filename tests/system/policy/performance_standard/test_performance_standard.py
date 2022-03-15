@@ -105,7 +105,13 @@ class TestPerformanceStandard(unittest.TestCase):
             ]
         )
         actual_ps_zone_periods = sorted(
-            [(z, p) for (z, p) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD]
+            [
+                (z, p)
+                for (
+                    z,
+                    p
+                ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+            ]
         )
         self.assertListEqual(expected_ps_zone_periods, actual_ps_zone_periods)
 
@@ -124,7 +130,10 @@ class TestPerformanceStandard(unittest.TestCase):
             sorted(
                 {
                     (z, p): instance.performance_standard[z, p]
-                    for (z, p) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+                    for (
+                        z,
+                        p
+                    ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
                 }.items()
             )
         )

@@ -142,9 +142,7 @@ class TestFuels(unittest.TestCase):
         }
         for fg in actual_fuels_by_fg.keys():
             actual_fuels_by_fg[fg] = sorted(actual_fuels_by_fg[fg])
-        actual_fuels_by_fg_od = OrderedDict(
-            sorted(actual_fuels_by_fg.items())
-        )
+        actual_fuels_by_fg_od = OrderedDict(sorted(actual_fuels_by_fg.items()))
 
         self.assertDictEqual(expected_fuels_by_fg_od, actual_fuels_by_fg_od)
 

@@ -111,7 +111,9 @@ class TestProjectPerformanceStandard(unittest.TestCase):
                 "Gas_CT",
             ]
         )
-        actual_performance_standard_projects = sorted([p for p in instance.PERFORMANCE_STANDARD_PRJS])
+        actual_performance_standard_projects = sorted(
+            [p for p in instance.PERFORMANCE_STANDARD_PRJS]
+        )
         self.assertListEqual(
             expected_performance_standard_projects, actual_performance_standard_projects
         )
@@ -126,7 +128,12 @@ class TestProjectPerformanceStandard(unittest.TestCase):
             )
         )
         actual_ps_zone_by_prj = OrderedDict(
-            sorted({p: instance.performance_standard_zone[p] for p in instance.PERFORMANCE_STANDARD_PRJS}.items())
+            sorted(
+                {
+                    p: instance.performance_standard_zone[p]
+                    for p in instance.PERFORMANCE_STANDARD_PRJS
+                }.items()
+            )
         )
         self.assertDictEqual(expected_ps_zone_by_prj, actual_ps_zone_by_prj)
 
@@ -146,7 +153,14 @@ class TestProjectPerformanceStandard(unittest.TestCase):
         actual_prj_by_zone = OrderedDict(
             sorted(
                 {
-                    z: sorted([p for p in instance.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[z]])
+                    z: sorted(
+                        [
+                            p
+                            for p in instance.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[
+                                z
+                            ]
+                        ]
+                    )
                     for z in instance.PERFORMANCE_STANDARD_ZONES
                 }.items()
             )

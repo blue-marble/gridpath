@@ -37,10 +37,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.performance_standard_violation_penalty_per_emission[z]
             * mod.number_years_represented[p]
             * mod.discount_factor[p]
-            for (z, p) in mod.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
+            for (
+                z,
+                p
+            ) in mod.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
         )
 
-    m.Total_Performance_Standard_Balance_Penalty_Costs = Expression(rule=total_penalty_costs_rule)
+    m.Total_Performance_Standard_Balance_Penalty_Costs = Expression(
+        rule=total_penalty_costs_rule
+    )
 
     record_dynamic_components(dynamic_components=d)
 

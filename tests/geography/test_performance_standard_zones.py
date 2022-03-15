@@ -94,8 +94,12 @@ class TestPerformanceStandardZones(unittest.TestCase):
 
         # Set: PERFORMANCE_STANDARD_ZONES
         expected_performance_standard_zones = sorted(["PS_Zone1", "PS_Zone2"])
-        actual_performance_standard_zones = sorted([z for z in instance.PERFORMANCE_STANDARD_ZONES])
-        self.assertListEqual(expected_performance_standard_zones, actual_performance_standard_zones)
+        actual_performance_standard_zones = sorted(
+            [z for z in instance.PERFORMANCE_STANDARD_ZONES]
+        )
+        self.assertListEqual(
+            expected_performance_standard_zones, actual_performance_standard_zones
+        )
 
         # Param: performance_standard_allow_violation
         expected_allow_violation = OrderedDict(
@@ -112,9 +116,7 @@ class TestPerformanceStandardZones(unittest.TestCase):
         self.assertDictEqual(expected_allow_violation, actual_allow_violation)
 
         # Param: performance_standard_violation_penalty_per_emission
-        expected_penalty = OrderedDict(
-            sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items())
-        )
+        expected_penalty = OrderedDict(sorted({"PS_Zone1": 0, "PS_Zone2": 0}.items()))
         actual_penalty = OrderedDict(
             sorted(
                 {

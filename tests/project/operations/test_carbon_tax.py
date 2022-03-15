@@ -331,8 +331,10 @@ class TestCarbonTaxEmissions(unittest.TestCase):
                 }.items()
             )
         )
-        self.assertDictEqual(expected_carbon_tax_allowance_average_heat_rate,
-                             actual_carbon_tax_allowance_average_heat_rate)
+        self.assertDictEqual(
+            expected_carbon_tax_allowance_average_heat_rate,
+            actual_carbon_tax_allowance_average_heat_rate,
+        )
 
         # Set: CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS
         fuels_df = pd.read_csv(
@@ -346,47 +348,60 @@ class TestCarbonTaxEmissions(unittest.TestCase):
         fuel_group_fuels = list(
             fuels_df[["fuel_group", "fuel"]].to_records(index=False)
         )
-        fuel_group_fuels = sorted(
-            [tuple(i) for i in fuel_group_fuels]
-        )
+        fuel_group_fuels = sorted([tuple(i) for i in fuel_group_fuels])
         fuel_project_fuels = list(
             prj_fuels_df[["project", "fuel"]].to_records(index=False)
         )
-        fuel_project_fuels = sorted(
-            [tuple(i) for i in fuel_project_fuels]
-        )
+        fuel_project_fuels = sorted([tuple(i) for i in fuel_project_fuels])
         fuel_prj_fuels_fuel_group = sorted(
-            [(prj, fg, f)
-             for (prj, f) in fuel_project_fuels
-             for (fg, _f) in fuel_group_fuels
-             if f == _f]
+            [
+                (prj, fg, f)
+                for (prj, f) in fuel_project_fuels
+                for (fg, _f) in fuel_group_fuels
+                if f == _f
+            ]
         )
         expected_carb_tax_prj_fuel_group_op_tmp = sorted(
-            [(prj, fg, tmp)
-             for (prj, tmp) in expected_carb_tax_prj_op_tmp
-             for (_prj, fg, f) in fuel_prj_fuels_fuel_group
-             if prj == _prj]
+            [
+                (prj, fg, tmp)
+                for (prj, tmp) in expected_carb_tax_prj_op_tmp
+                for (_prj, fg, f) in fuel_prj_fuels_fuel_group
+                if prj == _prj
+            ]
         )
 
         actual_carb_tax_prj_fuel_group_op_tmp = sorted(
-            [(p, fg, tmp) for (p, fg, tmp) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS]
+            [
+                (p, fg, tmp)
+                for (p, fg, tmp) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS
+            ]
         )
 
-        self.assertListEqual(expected_carb_tax_prj_fuel_group_op_tmp, actual_carb_tax_prj_fuel_group_op_tmp)
+        self.assertListEqual(
+            expected_carb_tax_prj_fuel_group_op_tmp,
+            actual_carb_tax_prj_fuel_group_op_tmp,
+        )
 
         # Set: CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS
         expected_carb_tax_prj_fuel_group_op_p = sorted(
-            [(prj, fg, p)
-             for (prj, p) in expected_carbon_tax_prj_op_p
-             for (_prj, fg, f) in fuel_prj_fuels_fuel_group
-             if prj == _prj]
+            [
+                (prj, fg, p)
+                for (prj, p) in expected_carbon_tax_prj_op_p
+                for (_prj, fg, f) in fuel_prj_fuels_fuel_group
+                if prj == _prj
+            ]
         )
 
         actual_carb_tax_prj_fuel_group_op_p = sorted(
-            [(prj, fg, p) for (prj, fg, p) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS]
+            [
+                (prj, fg, p)
+                for (prj, fg, p) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS
+            ]
         )
 
-        self.assertListEqual(expected_carb_tax_prj_fuel_group_op_p, actual_carb_tax_prj_fuel_group_op_p)
+        self.assertListEqual(
+            expected_carb_tax_prj_fuel_group_op_p, actual_carb_tax_prj_fuel_group_op_p
+        )
 
 
 if __name__ == "__main__":

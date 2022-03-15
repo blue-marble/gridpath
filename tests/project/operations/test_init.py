@@ -308,21 +308,23 @@ class TestOperationsInit(unittest.TestCase):
         fuel_group_fuels = list(
             fuels_df[["fuel_group", "fuel"]].to_records(index=False)
         )
-        fuel_group_fuels = sorted(
-            [tuple(i) for i in fuel_group_fuels]
-        )
+        fuel_group_fuels = sorted([tuple(i) for i in fuel_group_fuels])
         expected_fuel_project_fuels_fuel_group = sorted(
-            [(prj, fg, f)
-             for (prj, f) in expected_fuel_project_fuels
-             for (fg, _f) in fuel_group_fuels
-             if f == _f]
+            [
+                (prj, fg, f)
+                for (prj, f) in expected_fuel_project_fuels
+                for (fg, _f) in fuel_group_fuels
+                if f == _f
+            ]
         )
 
         actual_fuel_project_fuels_fuel_group = sorted(
             [(p, fg, f) for (p, fg, f) in instance.FUEL_PRJ_FUELS_FUEL_GROUP]
         )
 
-        self.assertListEqual(expected_fuel_project_fuels_fuel_group, actual_fuel_project_fuels_fuel_group)
+        self.assertListEqual(
+            expected_fuel_project_fuels_fuel_group, actual_fuel_project_fuels_fuel_group
+        )
 
         # Set: HR_CURVE_PRJS_PRDS_SGMS
         expected_hr_curve_projects_periods_sgms = sorted(

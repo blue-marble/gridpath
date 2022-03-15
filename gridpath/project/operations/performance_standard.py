@@ -83,7 +83,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Input Params
     ###########################################################################
 
-    m.performance_standard_zone = Param(m.PERFORMANCE_STANDARD_PRJS, within=m.PERFORMANCE_STANDARD_ZONES)
+    m.performance_standard_zone = Param(
+        m.PERFORMANCE_STANDARD_PRJS, within=m.PERFORMANCE_STANDARD_ZONES
+    )
 
     # Derived Sets
     ###########################################################################
@@ -99,7 +101,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.PERFORMANCE_STANDARD_OPR_TMPS = Set(
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.PERFORMANCE_STANDARD_PRJS
+            (p, tmp)
+            for (p, tmp) in mod.PRJ_OPR_TMPS
+            if p in mod.PERFORMANCE_STANDARD_PRJS
         ],
     )
 
@@ -312,6 +316,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             actual_idxs=zones_w_project,
             req_idxs=zones,
             idx_label="performance_standard_zone",
-            msg="Each performance standard zone needs at least 1 " "project assigned to it.",
+            msg="Each performance standard zone needs at least 1 " 
+                "project assigned to it.",
         ),
     )

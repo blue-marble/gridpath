@@ -56,7 +56,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
     m.Total_Performance_Standard_Project_Emissions = Expression(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, rule=total_performance_standard_emissions_rule
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=total_performance_standard_emissions_rule,
     )
 
     def total_performance_standard_energy_rule(mod, z, p):
@@ -69,16 +70,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Power_Provision_MW[g, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
+            mod.Power_Provision_MW[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
             for (g, tmp) in mod.PERFORMANCE_STANDARD_OPR_TMPS
             if g in mod.PERFORMANCE_STANDARD_PRJS_BY_PERFORMANCE_STANDARD_ZONE[z]
             and tmp in mod.TMPS_IN_PRD[p]
         )
 
     m.Total_Performance_Standard_Project_Energy = Expression(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, rule=total_performance_standard_energy_rule
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=total_performance_standard_energy_rule,
     )
 
 

@@ -37,14 +37,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.Performance_Standard_Overage = Var(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, within=NonNegativeReals
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        within=NonNegativeReals,
     )
 
     def violation_expression_rule(mod, z, p):
-        return mod.Performance_Standard_Overage[z, p] * mod.performance_standard_allow_violation[z]
+        return (
+            mod.Performance_Standard_Overage[z, p]
+            * mod.performance_standard_allow_violation[z]
+        )
 
     m.Performance_Standard_Overage_Expression = Expression(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, rule=violation_expression_rule
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=violation_expression_rule,
     )
 
     def performance_standard_rule(mod, z, p):
@@ -55,15 +60,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return (
-            mod.Total_Performance_Standard_Project_Emissions[z, p]
-            - mod.Performance_Standard_Overage_Expression[z, p]
-            <= (mod.Total_Performance_Standard_Project_Energy[z, p]
-                * mod.performance_standard[z, p])
+        return mod.Total_Performance_Standard_Project_Emissions[
+            z, p
+        ] - mod.Performance_Standard_Overage_Expression[z, p] <= (
+                mod.Total_Performance_Standard_Project_Energy[z, p]
+                * mod.performance_standard[z, p]
         )
 
     m.Performance_Standard_Constraint = Constraint(
-        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD, rule=performance_standard_rule
+        m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD,
+        rule=performance_standard_rule,
     )
 
 
@@ -79,7 +85,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", "performance_standard.csv"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "performance_standard.csv",
         ),
         "w",
         newline="",
@@ -142,7 +152,9 @@ def import_results_into_database(
     )
 
     results = []
-    with open(os.path.join(results_directory, "performance_standard.csv"), "r") as performance_standard_file:
+    with open(
+            os.path.join(results_directory, "performance_standard.csv"), "r"
+    ) as performance_standard_file:
         reader = csv.reader(performance_standard_file)
 
         next(reader)  # skip header

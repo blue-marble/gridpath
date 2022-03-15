@@ -32,7 +32,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.PERFORMANCE_STANDARD_ZONES = Set()
 
-    m.performance_standard_allow_violation = Param(m.PERFORMANCE_STANDARD_ZONES, within=Boolean, default=0)
+    m.performance_standard_allow_violation = Param(
+        m.PERFORMANCE_STANDARD_ZONES, within=Boolean, default=0
+    )
     m.performance_standard_violation_penalty_per_emission = Param(
         m.PERFORMANCE_STANDARD_ZONES, within=NonNegativeReals, default=0
     )
@@ -121,11 +123,17 @@ def write_model_inputs(
         "w",
         newline="",
     ) as performance_standard_zones_file:
-        writer = csv.writer(performance_standard_zones_file, delimiter="\t", lineterminator="\n")
+        writer = csv.writer(
+            performance_standard_zones_file, delimiter="\t", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(
-            ["performance_standard_zone", "allow_violation", "violation_penalty_per_emission"]
+            [
+                "performance_standard_zone",
+                "allow_violation",
+                "violation_penalty_per_emission"
+            ]
         )
 
         for row in performance_standard_zone:
