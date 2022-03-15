@@ -1064,7 +1064,18 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_carbon_tax_allowance_with_different_fuel_groups")
-        self.run_and_check_objective("test_carbon_tax_allowance_with_different_fuel_groups", -3796325179179.2686)
+        self.run_and_check_objective(
+            "test_carbon_tax_allowance_with_different_fuel_groups", -3796325179179.2686
+        )
+
+    def test_performance_standard(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard")
+        self.run_and_check_objective("test_performance_standard", -3592014754469.9077)
 
     @classmethod
     def tearDownClass(cls):

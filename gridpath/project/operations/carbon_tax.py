@@ -150,7 +150,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.carbon_tax_zone = Param(m.CARBON_TAX_PRJS, within=m.CARBON_TAX_ZONES)
 
     m.carbon_tax_allowance = Param(
-        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS,  within=NonNegativeReals, default=0
+        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS, within=NonNegativeReals, default=0
     )
 
     m.carbon_tax_allowance_average_heat_rate = Param(
@@ -239,7 +239,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
     )
     carbon_tax_allowance_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_carbon_tax_allowance.tab"
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "project_carbon_tax_allowance.tab",
     )
 
     if os.path.exists(hr_curves_file) and os.path.exists(carbon_tax_allowance_file):
@@ -284,20 +288,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 # If period is 0, create same inputs for all periods
                 if period == 0:
                     average_heat_rate_curves_dict.update(
-                        {
-                            (project, p): average_heat_rate
-                            for p in periods
-                        }
+                        {(project, p): average_heat_rate for p in periods}
                     )
                 # If not, create inputs for just this period
                 else:
                     average_heat_rate_curves_dict.update(
-                        {
-                            (project, period): average_heat_rate
-                        }
+                        {(project, period): average_heat_rate}
                     )
 
-        data_portal.data()["carbon_tax_allowance_average_heat_rate"] = average_heat_rate_curves_dict
+        data_portal.data()[
+            "carbon_tax_allowance_average_heat_rate"
+        ] = average_heat_rate_curves_dict
 
 
 # Database

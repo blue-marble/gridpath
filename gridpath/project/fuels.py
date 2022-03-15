@@ -43,7 +43,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUELS_BY_FUEL_GROUP = Set(
         m.FUEL_GROUPS,
         within=m.FUELS,
-        initialize=lambda mod, fg: [f for (group, f) in mod.FUEL_GROUPS_FUELS if group == fg],
+        initialize=lambda mod, fg: [
+            f for (group, f) in mod.FUEL_GROUPS_FUELS if group == fg
+        ],
     )
 
     # Allow negative emissions
@@ -81,7 +83,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             filename=fuels_file,
             index=m.FUELS,
             select=("fuel", "co2_intensity_tons_per_mmbtu"),
-            param=m.co2_intensity_tons_per_mmbtu
+            param=m.co2_intensity_tons_per_mmbtu,
         )
 
         header = pd.read_csv(

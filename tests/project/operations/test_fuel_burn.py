@@ -161,21 +161,23 @@ class TestFuelBurn(unittest.TestCase):
         fuel_group_fuels = list(
             fuels_df[["fuel_group", "fuel"]].to_records(index=False)
         )
-        fuel_group_fuels = sorted(
-            [tuple(i) for i in fuel_group_fuels]
-        )
+        fuel_group_fuels = sorted([tuple(i) for i in fuel_group_fuels])
         expected_fuel_project_fuel_group_tmps = sorted(
-            [(prj, fg, tmp)
-             for (prj, f, tmp) in expected_fuel_prj_fuel_tmps
-             for (fg, _f) in fuel_group_fuels
-             if f == _f]
+            [
+                (prj, fg, tmp)
+                for (prj, f, tmp) in expected_fuel_prj_fuel_tmps
+                for (fg, _f) in fuel_group_fuels
+                if f == _f
+            ]
         )
 
         actual_fuel_project_fuel_group_tmps = sorted(
             [(p, fg, tmp) for (p, fg, tmp) in instance.FUEL_PRJS_FUEL_GROUP_OPR_TMPS]
         )
 
-        self.assertListEqual(expected_fuel_project_fuel_group_tmps, actual_fuel_project_fuel_group_tmps)
+        self.assertListEqual(
+            expected_fuel_project_fuel_group_tmps, actual_fuel_project_fuel_group_tmps
+        )
 
         # Set: HR_CURVE_PRJS_OPR_TMPS
         expected_hr_curve_projects = sorted(hr_curve_df["project"].unique().tolist())
