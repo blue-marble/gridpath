@@ -155,3 +155,26 @@ def new_capacity_rule(mod, prj, prd):
     New capacity built at project g in period p.
     """
     return 0
+
+
+def fuel_prod_capacity_rule(mod, prj, prd):
+    """
+    Fuel production capacity.
+    """
+    return 0
+
+
+def fuel_release_capacity_rule(mod, prj, prd):
+    """
+    Fuel release capacity.
+    """
+    return 0
+
+
+def fuel_storage_capacity_rule(mod, prj, prd):
+    """
+    Fuel storage capacity.
+    """
+    return 0
+
+# TODO: do we need rules for new "fuel" capacity
