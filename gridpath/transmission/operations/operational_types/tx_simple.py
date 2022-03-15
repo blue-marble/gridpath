@@ -34,7 +34,7 @@ from pyomo.environ import (
     PercentFraction,
 )
 
-Negative_Infinity = float('-inf')
+Negative_Infinity = float("-inf")
 Infinity = float("inf")
 
 
