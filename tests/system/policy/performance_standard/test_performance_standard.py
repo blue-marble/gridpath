@@ -109,7 +109,7 @@ class TestPerformanceStandard(unittest.TestCase):
                 (z, p)
                 for (
                     z,
-                    p
+                    p,
                 ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
             ]
         )
@@ -132,7 +132,7 @@ class TestPerformanceStandard(unittest.TestCase):
                     (z, p): instance.performance_standard[z, p]
                     for (
                         z,
-                        p
+                        p,
                     ) in instance.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
                 }.items()
             )

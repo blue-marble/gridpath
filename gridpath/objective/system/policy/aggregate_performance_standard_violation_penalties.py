@@ -39,7 +39,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.discount_factor[p]
             for (
                 z,
-                p
+                p,
             ) in mod.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD
         )
 

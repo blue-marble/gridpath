@@ -63,8 +63,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return mod.Total_Performance_Standard_Project_Emissions[
             z, p
         ] - mod.Performance_Standard_Overage_Expression[z, p] <= (
-                mod.Total_Performance_Standard_Project_Energy[z, p]
-                * mod.performance_standard[z, p]
+            mod.Total_Performance_Standard_Project_Energy[z, p]
+            * mod.performance_standard[z, p]
         )
 
     m.Performance_Standard_Constraint = Constraint(
@@ -153,7 +153,7 @@ def import_results_into_database(
 
     results = []
     with open(
-            os.path.join(results_directory, "performance_standard.csv"), "r"
+        os.path.join(results_directory, "performance_standard.csv"), "r"
     ) as performance_standard_file:
         reader = csv.reader(performance_standard_file)
 

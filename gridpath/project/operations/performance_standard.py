@@ -317,6 +317,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             req_idxs=zones,
             idx_label="performance_standard_zone",
             msg="Each performance standard zone needs at least 1 " 
-                "project assigned to it.",
+            "project assigned to it.",
         ),
     )

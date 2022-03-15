@@ -132,7 +132,7 @@ def write_model_inputs(
             [
                 "performance_standard_zone",
                 "allow_violation",
-                "violation_penalty_per_emission"
+                "violation_penalty_per_emission",
             ]
         )
 
