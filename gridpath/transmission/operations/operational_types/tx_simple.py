@@ -33,6 +33,7 @@ from pyomo.environ import (
     Reals,
     PercentFraction,
 )
+
 Negative_Infinity = float('-inf')
 Infinity = float("inf")
 
@@ -273,6 +274,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.TxSimple_Max_Flow_Constraint = Constraint(
         m.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT, rule=max_flow_rule
     )
+
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -654,7 +656,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
 
 def write_model_inputs(
-        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -680,7 +682,7 @@ def write_model_inputs(
             "transmission_flow.tab",
         ),
         "w",
-            newline=""
+        newline="",
     ) as tx_flow_tab_file:
         writer = csv.writer(tx_flow_tab_file, delimiter="\t", lineterminator="\n")
 
