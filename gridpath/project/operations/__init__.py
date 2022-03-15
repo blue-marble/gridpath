@@ -338,6 +338,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj],
     )
 
+    m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
+        dimen=3,
+        within=m.FUEL_PRJS * m.FUEL_GROUPS_FUELS,
+        initialize=lambda mod: set(
+            (g, fg, f)
+            for (fg, f) in mod.FUEL_GROUPS_FUELS
+            for (g, _f) in mod.FUEL_PRJ_FUELS
+            if f == _f
+        ),
+    )
+
     # Projects with heat rate curves (must be within FUEL_PRJS)
     m.HR_CURVE_PRJS_PRDS_SGMS = Set(dimen=3)
 
@@ -509,7 +520,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
     )
     if os.path.exists(project_fuels_file):
-        data_portal.load(filename=project_fuels_file, set=m.FUEL_PRJ_FUELS)
+        data_portal.load(
+            filename=project_fuels_file,
+            select=("project", "fuel"),
+            index=m.FUEL_PRJ_FUELS,
+            param=(),
+        )
 
     data_portal.data()["VAR_OM_COST_SIMPLE_PRJS"] = {
         None: list(data_portal.data()["variable_om_cost_per_mwh"].keys())
@@ -703,7 +719,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c5 = conn.cursor()
     fuels = c5.execute(
         """
-        SELECT project, fuel
+        SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
         -- select the correct operational characteristics subscenario
         INNER JOIN

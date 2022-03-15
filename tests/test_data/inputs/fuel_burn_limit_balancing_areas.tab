@@ -1,0 +1,5 @@
+fuel	fuel_burn_limit_ba	allow_violation	violation_penalty_per_unit
+Gas	Zone1	0	99999
+Coal	Zone1	0	99999
+Coal	Zone2	0	99999
+Nuclear	Zone1	1	10

@@ -255,9 +255,15 @@ def run_optimization_for_subproblem(
     Check if there are stages in the subproblem; if not solve subproblem;
     if, yes, solve each stage sequentially
     """
-    # If we only have a single subproblem, set the subproblem_string to an
-    # empty string (no directory created)
-    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [1]:
+
+    # If we only have a single subproblem AND it does not have stages, set the
+    # subproblem_string to an empty string (the subproblem directory should not
+    # have been created)
+    # If we have multiple subproblems or a single subproblems with stages,
+    # we're expecting a subproblem directory
+    if list(subproblem_structure.SUBPROBLEM_STAGES.keys()) == [
+        1
+    ] and subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
         subproblem_directory = ""
     else:
         subproblem_directory = str(subproblem)
@@ -642,28 +648,40 @@ def solve(instance, parsed_arguments):
     )
     solver_options = dict()
     solver_options_file = os.path.join(scenario_directory, "solver_options.csv")
+
+    # First, figure out which solver or shell solver (solver_name) we are using and do
+    # some checks
+    # The solver_name is simply the chosen "optimizer," e.g. Cbc, Gurobi, CPLEX,
+    # or a shell solver such as GAMS and AMPL
+    # This is separate from a "solver" option, which is the solver to use if using a
+    # shell solver such as GAMS
     if os.path.exists(solver_options_file):
         with open(solver_options_file) as f:
             _reader = reader(f, delimiter=",")
             for row in _reader:
                 solver_options[row[0]] = row[1]
 
-        # Check the the solver specified is the same as that given from the
+        # Check the the solver name specified is the same as that given from the
         # command line (if any)
         if parsed_arguments.solver is not None:
-            if parsed_arguments.solver == solver_options["solver"]:
+            if parsed_arguments.solver == solver_options["solver_name"]:
                 pass
             else:
                 raise UserWarning(
-                    "ERROR! Solver specified on command line ({}) and solver "
+                    "ERROR! Solver specified on command line ({}) and solver name "
                     "in solver_options.csv ({}) do not match.".format(
-                        parsed_arguments.solver, solver_options["solver"]
+                        parsed_arguments.solver, solver_options["solver_name"]
                     )
                 )
 
         # If we make it here, set the solver name from the
         # solver_options.csv file
-        solver_name = solver_options["solver"]
+        solver_name = solver_options["solver_name"]
+        # remove "solver_name" from the solver_options object, as it is not actually
+        # an "option" and we can iterate over options later without worrying about
+        # skipping this
+        del solver_options["solver_name"]
+
     else:
         if parsed_arguments.solver is None:
             solver_name = "cbc"
@@ -671,33 +689,50 @@ def solve(instance, parsed_arguments):
     # Get solver
     # If a solver executable is specified, pass it to Pyomo
     if parsed_arguments.solver_executable is not None:
-        solver = SolverFactory(
+        optimizer = SolverFactory(
             solver_name, executable=parsed_arguments.solver_executable
         )
     # Otherwise, only pass the solver name; Pyomo will look for the
     # executable in the PATH
     else:
-        solver = SolverFactory(solver_name)
+        optimizer = SolverFactory(solver_name)
 
     # Apply the solver options (if any)
-    for opt in solver_options.keys():
-        if opt == "solver":
-            pass  # this is just the solver name, not actually an 'option'
-        else:
-            solver.options[opt] = solver_options[opt]
+    if "solver" in solver_options.keys():
+        # The "solver" needs to be specified if using a "shell solver" -- e.g. we
+        # could be using CPLEX through GAMS
+        # TODO: these should be passed differently for shell solvers; we need
+        #  logic to write options files for the selected solver; see
+        #  https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
+        pass
+    else:
+        for opt in solver_options.keys():
+            optimizer.options[opt] = solver_options[opt]
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.
     # If you want the results to stay into a results object, set the
     # load_solutions argument to False:
     # >>> results = solver.solve(instance, load_solutions=False)
-
-    results = solver.solve(
-        instance,
-        tee=not parsed_arguments.mute_solver_output,
-        keepfiles=parsed_arguments.keepfiles,
-        symbolic_solver_labels=parsed_arguments.symbolic,
-    )
+    # With "shell solvers" (e.g. GAMS, AMPL), we need to specify which solver to
+    # actually use
+    # If "solver" is not specified, the "optimizer" object solve method does not have
+    # the "solver" argument
+    if "solver" in solver_options.keys():
+        results = optimizer.solve(
+            instance,
+            solver=solver_options["solver"],
+            tee=not parsed_arguments.mute_solver_output,
+            keepfiles=parsed_arguments.keepfiles,
+            symbolic_solver_labels=parsed_arguments.symbolic,
+        )
+    else:
+        results = optimizer.solve(
+            instance,
+            tee=not parsed_arguments.mute_solver_output,
+            keepfiles=parsed_arguments.keepfiles,
+            symbolic_solver_labels=parsed_arguments.symbolic,
+        )
 
     # Can optionally log infeasibilities but this has resulted in false
     # positives due to rounding errors larger than the default tolerance

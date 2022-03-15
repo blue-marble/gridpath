@@ -20,7 +20,16 @@ applicable).
 
 import csv
 import os.path
-from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Expression,
+    Constraint,
+    NonNegativeReals,
+    PercentFraction,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
@@ -177,6 +186,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -211,6 +230,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             for _g, f in mod.FUEL_PRJ_FUELS
             if g == _g
         ),
+    )
+
+    # Params
+    m.min_fraction_in_fuel_blend = Param(
+        m.FUEL_PRJ_FUELS, within=PercentFraction, default=0
+    )
+
+    m.max_fraction_in_fuel_blend = Param(
+        m.FUEL_PRJ_FUELS, within=PercentFraction, default=1
     )
 
     # Variables
@@ -284,6 +312,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJS_FUEL_OPR_TMPS, rule=total_fuel_burn_by_fuel_rule
     )
 
+    def opr_fuel_burn_by_fuel_group_rule(mod, g, fg, tmp):
+        """
+        *Expression Name*: :code:`Opr_Fuel_Burn_by_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUEL_GROUP_OPR_TMPS`
+
+        Operating fuel burn per fuel group is the sum of operating fuel burn by fuel group.
+        """
+        return sum(
+            mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp]
+            for (_g, _fg, f) in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if f in mod.FUELS_BY_FUEL_GROUP[fg] and fg == _fg and g == _g
+        )
+
+    m.Opr_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(
+        m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS, rule=opr_fuel_burn_by_fuel_group_rule
+    )
+
     # Constraints
     ###########################################################################
 
@@ -332,6 +377,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_operations_rule
     )
 
+    def min_fraction_of_fuel_blend_opr_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a minimum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
+            >= mod.min_fraction_in_fuel_blend[prj, f]
+            * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Min_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_opr_rule
+    )
+
+    def max_fraction_of_fuel_blend_opr_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a maximum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
+            <= mod.max_fraction_in_fuel_blend[prj, f]
+            * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Max_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_opr_rule
+    )
+
     def blend_fuel_startup_rule(mod, prj, tmp):
         """
         The sum of startup fuel burn across all fuels should equal the total
@@ -349,9 +424,64 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=blend_fuel_startup_rule
     )
 
+    def min_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a minimum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
+            >= mod.min_fraction_in_fuel_blend[prj, f]
+            * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Min_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_startup_rule
+    )
+
+    def max_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a maximum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
+            <= mod.max_fraction_in_fuel_blend[prj, f]
+            * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Max_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_startup_rule
+    )
+
 
 # Input-Output
 ###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    project_fuels_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+    )
+    if os.path.exists(project_fuels_file):
+        data_portal.load(
+            filename=project_fuels_file,
+            index=m.FUEL_PRJ_FUELS,
+            param=(
+                m.min_fraction_in_fuel_blend,
+                m.max_fraction_in_fuel_blend,
+            ),
+        )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

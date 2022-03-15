@@ -1,0 +1,5 @@
+FUELS	co2_intensity_tons_per_mmbtu
+Coal	0.09552
+Gas	0.05306
+Negative_Carbon_Fuel	-0.1
+Uranium	0.0

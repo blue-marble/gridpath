@@ -18,7 +18,8 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, NonNegativeReals, Expression, value
+import pandas as pd
+from pyomo.environ import Param, Set, NonNegativeReals, Expression, value, PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df, subset_init_by_param_value
 from gridpath.auxiliary.db_interface import (
@@ -53,11 +54,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | This param describes the carbon tax zone for each carbon tax project.   |
     +-------------------------------------------------------------------------+
     | | :code:`carbon_tax_allowance`                                          |
-    | | *Defined over*: :code:`CARBON_TAX_PRJS`, `CARBON_TAX_PRJ_OPR_PRDS`    |
+    | | *Defined over*: :code:`CARBON_TAX_PRJS`, `FUEL_GROUPS`, `PERIODS`     |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | This param describes the carbon tax allowance for each carbon tax       |
-    | project.                                                                |
+    | project and fuel group.                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`carbon_tax_allowance_average_heat_rate`                        |
+    | | *Defined over*: :code:`CARBON_TAX_PRJS`, `PERIODS`                    |
+    | | *Within*: :code:`PositiveReals`                                       |
+    |                                                                         |
+    | This param describes the average heat rate for each carbon tax          |
+    | project used to calculate the carbon tax allowance.                     |
     +-------------------------------------------------------------------------+
 
     |
@@ -84,6 +92,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Two-dimensional set that defines all project-period combinations        |
     | when a carbon tax project can be operational.                           |
     +-------------------------------------------------------------------------+
+    | | :code:`CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS`                            |
+    |                                                                         |
+    | Two-dimensional set that defines all project-fuel_group-timepoint       |
+    | combinations when a carbon tax project can be operational.              |
+    +-------------------------------------------------------------------------+
+    | | :code:`CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS`                            |
+    |                                                                         |
+    | Two-dimensional set that defines all project-fuel_group-period          |
+    | combinations when a carbon tax project can be operational.              |
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -99,11 +117,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.CARBON_TAX_PRJ_OPR_PRDS = Set(
         within=m.PRJ_OPR_PRDS,
         initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.PRJ_OPR_PRDS if p in mod.CARBON_TAX_PRJS
+            (prj, p) for (prj, p) in mod.PRJ_OPR_PRDS if prj in mod.CARBON_TAX_PRJS
         ],
+    )
+
+    m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, p)
+            for (g, p) in mod.CARBON_TAX_PRJ_OPR_PRDS
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
     )
 
     # Input Params
@@ -112,7 +150,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.carbon_tax_zone = Param(m.CARBON_TAX_PRJS, within=m.CARBON_TAX_ZONES)
 
     m.carbon_tax_allowance = Param(
-        m.CARBON_TAX_PRJS, m.PERIODS, within=NonNegativeReals, default=0
+        m.CARBON_TAX_PRJS, m.FUEL_GROUPS, m.PERIODS, within=NonNegativeReals, default=0
+    )
+
+    m.carbon_tax_allowance_average_heat_rate = Param(
+        m.CARBON_TAX_PRJS, m.PERIODS, within=PositiveReals
     )
 
     # Derived Sets
@@ -129,19 +171,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     ###########################################################################
 
-    def carbon_tax_allowance_rule(mod, prj, tmp):
+    def carbon_tax_allowance_rule(mod, prj, fg, tmp):
         """
         Allowance from each project. Multiply by the timepoint duration,
         timepoint weight and power to get the total emissions allowance.
         """
 
         return (
-            mod.Power_Provision_MW[prj, tmp]
-            * mod.carbon_tax_allowance[prj, mod.period[tmp]]
+            mod.carbon_tax_allowance[prj, fg, mod.period[tmp]]
+            * mod.Opr_Fuel_Burn_by_Fuel_Group_MMBtu[prj, fg, tmp]
+            / mod.carbon_tax_allowance_average_heat_rate[prj, mod.period[tmp]]
         )
 
     m.Project_Carbon_Tax_Allowance = Expression(
-        m.CARBON_TAX_PRJ_OPR_TMPS, rule=carbon_tax_allowance_rule
+        m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS, rule=carbon_tax_allowance_rule
     )
 
 
@@ -180,9 +223,82 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "project_carbon_tax_allowance.tab",
         ),
-        select=("project", "period", "carbon_tax_allowance_tco2_per_mwh"),
+        select=("project", "fuel_group", "period", "carbon_tax_allowance_tco2_per_mwh"),
         param=m.carbon_tax_allowance,
     )
+
+    # Average heat rate
+    hr_curves_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "heat_rate_curves.tab",
+    )
+    periods_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
+    )
+    carbon_tax_allowance_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "project_carbon_tax_allowance.tab",
+    )
+
+    if os.path.exists(hr_curves_file) and os.path.exists(carbon_tax_allowance_file):
+
+        hr_df = pd.read_csv(hr_curves_file, sep="\t")
+        projects = set(hr_df["project"].unique())
+
+        input_col = "average_heat_rate_mmbtu_per_mwh"
+
+        periods_df = pd.read_csv(periods_file, sep="\t")
+        cta_df = pd.read_csv(carbon_tax_allowance_file, sep="\t")
+        cta_df = cta_df[cta_df["project"].isin(projects)]
+
+        periods = set(periods_df["period"])
+        cta_projects = cta_df["project"].unique()
+
+        average_heat_rate_curves_dict = {}
+
+        for project in cta_projects:
+            df_slice = hr_df[hr_df["project"] == project]
+            slice_periods = set(df_slice["period"])
+
+            if slice_periods == set([0]):
+                p_iterable = [0]
+            elif periods.issubset(slice_periods):
+                p_iterable = periods
+            else:
+                raise ValueError(
+                    """{} for project '{}' isn't specified for all 
+                    modelled periods. Set period to 0 if inputs are the 
+                    same for each period or make sure all modelled periods 
+                    are included.""".format(
+                        input_col, project
+                    )
+                )
+
+            for period in p_iterable:
+                df_slice_p = df_slice[df_slice["period"] == period]
+                df_slice_p = df_slice_p.sort_values(by=["load_point_fraction"])
+                average_heat_rate = df_slice_p[input_col].values[-1]
+
+                # If period is 0, create same inputs for all periods
+                if period == 0:
+                    average_heat_rate_curves_dict.update(
+                        {(project, p): average_heat_rate for p in periods}
+                    )
+                # If not, create inputs for just this period
+                else:
+                    average_heat_rate_curves_dict.update(
+                        {(project, period): average_heat_rate}
+                    )
+
+        data_portal.data()[
+            "carbon_tax_allowance_average_heat_rate"
+        ] = average_heat_rate_curves_dict
 
 
 # Database
@@ -231,31 +347,48 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     c2 = conn.cursor()
     project_carbon_tax_allowance = c2.execute(
-        """SELECT project, period, 
+        """SELECT project, period, fuel_group,
         carbon_tax_allowance_tco2_per_mwh
         FROM
         -- Get projects from portfolio only
-        (SELECT project
+        (SELECT project, fuel, fuel_group
             FROM inputs_project_portfolios
+            INNER JOIN
+                (SELECT project, project_fuel_scenario_id
+                    FROM inputs_project_operational_chars
+                    WHERE project_operational_chars_scenario_id = {}
+                ) AS op_char
+                USING(project)
+            INNER JOIN
+                inputs_project_fuels
+                USING(project, project_fuel_scenario_id)
+            INNER JOIN
+                (SELECT fuel, fuel_group
+                    FROM inputs_fuels
+                    WHERE fuel_scenario_id = {}
+                ) AS fuel_chars
+                USING(fuel) 
             WHERE project_portfolio_scenario_id = {}
-        ) as prj_tbl
+        ) as prj_fuels_tbl
         CROSS JOIN
             (SELECT period
             FROM inputs_temporal_periods
             WHERE temporal_scenario_id = {}) as relevant_periods 
         LEFT OUTER JOIN
         -- Get carbon tax allowance for those projects
-            (SELECT project, period, 
+            (SELECT project, period, fuel_group,
             carbon_tax_allowance_tco2_per_mwh
             FROM inputs_project_carbon_tax_allowance
             WHERE project_carbon_tax_allowance_scenario_id = {}) as prj_ct_allowance_tbl
-        USING (project, period)
+        USING (project, fuel_group, period)
         WHERE project in (
                 SELECT project
                     FROM inputs_project_carbon_tax_zones
                     WHERE project_carbon_tax_zone_scenario_id = {}
         );
         """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.FUEL_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_CARBON_TAX_ALLOWANCE_SCENARIO_ID,
@@ -392,28 +525,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             [
                 "project",
+                "fuel_group",
                 "period",
                 "horizon",
                 "timepoint",
                 "timepoint_weight",
                 "number_of_hours_in_timepoint",
                 "carbon_tax_zone",
-                "technology",
+                "carbon_tax_allowance_tco2_per_mwh",
+                "carbon_tax_allowance_average_heat_rate_mmbtu_per_mwh",
+                "opr_fuel_burn_by_fuel_group_mmbtu",
                 "carbon_tax_allowance_tons",
             ]
         )
-        for (p, tmp) in m.CARBON_TAX_PRJ_OPR_TMPS:
+        for (p, fg, tmp) in m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS:
             writer.writerow(
                 [
                     p,
+                    fg,
                     m.period[tmp],
                     m.horizon[tmp, m.balancing_type_project[p]],
                     tmp,
                     m.tmp_weight[tmp],
                     m.hrs_in_tmp[tmp],
                     m.carbon_tax_zone[p],
-                    m.technology[p],
-                    value(m.Project_Carbon_Tax_Allowance[p, tmp]),
+                    m.carbon_tax_allowance[p, fg, m.period[tmp]],
+                    m.carbon_tax_allowance_average_heat_rate[p, m.period[tmp]],
+                    value(m.Opr_Fuel_Burn_by_Fuel_Group_MMBtu[p, fg, tmp]),
+                    value(m.Project_Carbon_Tax_Allowance[p, fg, tmp]),
                 ]
             )
 

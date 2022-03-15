@@ -575,6 +575,27 @@ FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
 );
 
+-- Performance standard
+-- This is the unit at which the performance standard is applied in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_performance_standard_zones;
+CREATE TABLE subscenarios_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_performance_standard_zones;
+CREATE TABLE inputs_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_emission FLOAT DEFAULT 0,
+PRIMARY KEY (performance_standard_zone_scenario_id, performance_standard_zone),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -672,6 +693,27 @@ max_market_purchases FLOAT,
 PRIMARY KEY (market_volume_scenario_id, market, timepoint),
 FOREIGN KEY (market_volume_scenario_id) REFERENCES
 subscenarios_market_volume (market_volume_scenario_id)
+);
+
+
+-- Fuel balancing areas
+DROP TABLE IF EXISTS subscenarios_geography_fuel_burn_limit_balancing_areas;
+CREATE TABLE subscenarios_geography_fuel_burn_limit_balancing_areas (
+fuel_burn_limit_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_fuel_burn_limit_balancing_areas;
+CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas (
+fuel_burn_limit_ba_scenario_id INTEGER,
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_unit FLOAT DEFAULT 0,
+PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
+FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
+subscenarios_geography_fuel_burn_limit_balancing_areas (fuel_burn_limit_ba_scenario_id)
 );
 
 
@@ -985,6 +1027,8 @@ CREATE TABLE inputs_project_fuels (
 project VARCHAR(64),
 project_fuel_scenario_id INTEGER,
 fuel VARCHAR(64),
+min_fraction_in_fuel_blend FLOAT DEFAULT 0,
+max_fraction_in_fuel_blend FLOAT DEFAULT 1,
 PRIMARY KEY (project, project_fuel_scenario_id, fuel),
 FOREIGN KEY (project, project_fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (project, project_fuel_scenario_id)
@@ -1400,10 +1444,55 @@ CREATE TABLE inputs_project_carbon_tax_allowance (
 project_carbon_tax_allowance_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+fuel_group VARCHAR(32),
 carbon_tax_allowance_tco2_per_mwh FLOAT,
-PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period, fuel_group),
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
+);
+
+-- Project performance standard zones
+-- Which projects count toward the performance standard
+-- Depends on performance standard zone geography
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_performance_standard_zones;
+CREATE TABLE subscenarios_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_performance_standard_zones;
+CREATE TABLE inputs_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER,
+project VARCHAR(64),
+performance_standard_zone VARCHAR(32),
+PRIMARY KEY (project_performance_standard_zone_scenario_id, project),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+ subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
+);
+
+-- Project fuel burn limit balancing areas
+-- Which projects contribute to the fuel / fuel BA limit
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_fuel_burn_limit_balancing_areas;
+CREATE TABLE subscenarios_project_fuel_burn_limit_balancing_areas (
+project_fuel_burn_limit_ba_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_fuel_burn_limit_balancing_areas;
+CREATE TABLE inputs_project_fuel_burn_limit_balancing_areas (
+project_fuel_burn_limit_ba_scenario_id INTEGER,
+project VARCHAR(64),
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+PRIMARY KEY (project_fuel_burn_limit_ba_scenario_id, project, fuel, fuel_burn_limit_ba),
+FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
+ subscenarios_project_fuel_burn_limit_balancing_areas (project_fuel_burn_limit_ba_scenario_id)
 );
 
 -- Project PRM zones
@@ -1589,6 +1678,7 @@ CREATE TABLE inputs_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 co2_intensity_tons_per_mmbtu FLOAT,
+fuel_group VARCHAR(32),
 PRIMARY KEY (fuel_scenario_id, fuel),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
 (fuel_scenario_id)
@@ -2354,6 +2444,31 @@ FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
 subscenarios_system_carbon_tax (carbon_tax_scenario_id)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS subscenarios_system_performance_standard;
+CREATE TABLE subscenarios_system_performance_standard (
+performance_standard_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- performance_standard_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_performance_standard;
+CREATE TABLE inputs_system_performance_standard (
+performance_standard_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+performance_standard_tco2_per_mwh FLOAT,
+PRIMARY KEY (performance_standard_scenario_id, performance_standard_zone, period,
+subproblem_id, stage_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+subscenarios_system_performance_standard (performance_standard_scenario_id)
+);
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement (
@@ -2396,6 +2511,35 @@ local_capacity_requirement_mw FLOAT,
 PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
 period)
 );
+
+-- Fuel burn limits
+DROP TABLE IF EXISTS subscenarios_system_fuel_burn_limits;
+CREATE TABLE subscenarios_system_fuel_burn_limits (
+fuel_burn_limit_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include horizons and BAs other than the ones in a scenario, as correct
+-- horizons and zones will be pulled depending on temporal_scenario_id and
+-- fuel_burn_limit_ba_scenario_id
+DROP TABLE IF EXISTS inputs_system_fuel_burn_limits;
+CREATE TABLE inputs_system_fuel_burn_limits (
+fuel_burn_limit_scenario_id INTEGER,
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+fuel_burn_limit_unit FLOAT,
+relative_fuel_burn_limit_fuel VARCHAR(32),
+relative_fuel_burn_limit_ba VARCHAR(32),
+fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
+             subproblem_id, stage_id, balancing_type_horizon, horizon)
+);
+
 
 -- Case tuning
 -- We can apply additional costs in the model to prevent degeneracy
@@ -2455,6 +2599,8 @@ of_horizon_energy_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
+of_performance_standard INTEGER,
+of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2471,6 +2617,8 @@ spinning_reserves_ba_scenario_id INTEGER,
 energy_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 carbon_tax_zone_scenario_id INTEGER,
+performance_standard_zone_scenario_id INTEGER,
+fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
@@ -2489,6 +2637,8 @@ project_energy_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
 project_carbon_tax_allowance_scenario_id INTEGER,
+project_performance_standard_zone_scenario_id INTEGER,
+project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
@@ -2526,6 +2676,8 @@ period_energy_target_scenario_id INTEGER,
 horizon_energy_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
+performance_standard_scenario_id INTEGER,
+fuel_burn_limit_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -2559,6 +2711,11 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id),
+FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
+    subscenarios_geography_fuel_burn_limit_balancing_areas
+        (fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
     subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
@@ -2607,6 +2764,12 @@ FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_allowance
         (project_carbon_tax_allowance_scenario_id),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_project_performance_standard_zones
+        (project_performance_standard_zone_scenario_id),
+FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
+    subscenarios_project_fuel_burn_limit_balancing_areas
+        (project_fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2697,6 +2860,10 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
     subscenarios_system_carbon_tax (carbon_tax_scenario_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+    subscenarios_system_performance_standard (performance_standard_scenario_id),
+FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
+    subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
@@ -3703,6 +3870,23 @@ dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS results_system_performance_standard;
+CREATE TABLE results_system_performance_standard (
+scenario_id INTEGER,
+performance_standard_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+performance_standard_tco2_per_mwh FLOAT,
+project_performance_standard_total_carbon_emissions_tco2 FLOAT,
+project_performance_standard_total_energy_mwh FLOAT,
+performance_standard_overage FLOAT,
+PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id, stage_id, period)
+);
+
 -- Energy target balance
 DROP TABLE IF EXISTS results_system_period_energy_target;
 CREATE TABLE  results_system_period_energy_target (
@@ -3744,6 +3928,33 @@ dual FLOAT,
 energy_target_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
              balancing_type_horizon, horizon)
+);
+
+-- Fuel burn limits
+DROP TABLE IF EXISTS results_system_fuel_burn_limits;
+CREATE TABLE  results_system_fuel_burn_limits (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_horizon VARCHAR(64),
+horizon INTEGER,
+number_years_represented FLOAT,  -- based on period of last horizon timepoint
+discount_factor FLOAT, -- based on period of last horizon timepoint
+fuel VARCHAR(32),
+fuel_burn_limit_ba VARCHAR(32),
+fuel_burn_limit_unit FLOAT,
+relative_fuel_burn_limit_fuel FLOAT,
+relative_fuel_burn_limit_ba FLOAT,
+fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+total_fuel_burn_unit FLOAT,
+fuel_burn_limit_abs_overage_unit FLOAT,
+abs_dual FLOAT,
+abs_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+fuel_burn_limit_rel_overage_unit FLOAT,
+rel_dual FLOAT,
+rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
+            fuel, fuel_burn_limit_ba)
 );
 
 -- PRM balance
@@ -3814,6 +4025,7 @@ Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_Carbon_Tax_Cost FLOAT,
+Total_Performance_Standard_Balance_Penalty_Costs Float,
 Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
@@ -3821,6 +4033,8 @@ Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
 Total_Export_Penalty_Cost FLOAT,
+Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
@@ -3835,13 +4049,16 @@ CREATE TABLE subscenarios_options_solver (
     description VARCHAR(128)
 );
 
+-- Note that with shell solvers such as GAMS and AMPL, you also need to specify
+-- "solver" as a solver_option_name and give it the appropriate value depending on
+-- which solver you want to use (e.g. cplex, gurobi)
 DROP TABLE IF EXISTS inputs_options_solver;
 CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
-    solver VARCHAR(32),
+    solver_name VARCHAR(32),
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
-    PRIMARY KEY (solver_options_id, solver, solver_option_name),
+    PRIMARY KEY (solver_options_id, solver_name, solver_option_name),
     FOREIGN KEY (solver_options_id)
         REFERENCES subscenarios_options_solver (solver_options_id)
 );

@@ -68,7 +68,7 @@ def manage_queue(db_path):
                     else:
                         solver_query = c.execute(
                             """
-                              SELECT DISTINCT solver
+                              SELECT DISTINCT solver_name
                               FROM inputs_options_solver
                               WHERE solver_options_id = {};
                               """.format(
@@ -81,7 +81,7 @@ def manage_queue(db_path):
                             """
                               SELECT COUNT()
                               FROM (
-                                  SELECT DISTINCT solver
+                                  SELECT DISTINCT solver_name
                                   FROM inputs_options_solver
                                   WHERE solver_options_id = {}
                                   )
@@ -93,7 +93,7 @@ def manage_queue(db_path):
                         if one_solver_check > 1:
                             raise ValueError(
                                 """
-                              Only one solver can be specified per
+                              Only one solver name can be specified per
                               solver_options_id. Check the solver_options_id {}
                               in the the inputs_options_solver table.
                             """.format(

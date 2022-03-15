@@ -933,7 +933,7 @@ class TestExamples(unittest.TestCase):
             "test_new_build_gen_var_stor_hyb", -5797066114.34292
         )
 
-    def test_carbon_tax_allowance(self):
+    def test_example_test_carbon_tax_allowance(self):
         """
         Check validation and objective function value of
         "test_carbon_tax_allowance" example
@@ -941,9 +941,9 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_carbon_tax_allowance")
-        self.run_and_check_objective("test_carbon_tax_allowance", -3796356403371.2686)
+        self.run_and_check_objective("test_carbon_tax_allowance", -3796303120157.2686)
 
-    def test_min_max_build_trans(self):
+    def test_example_test_min_max_build_trans(self):
         """
         Check validation and objective function value of
         "test_min_max_build_trans" example
@@ -985,8 +985,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_cheap_fuel_blend(self):
         """
-        Check validation and objective function value of
-        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        Check validation and objective function value of "test_cheap_fuel_blend" example
         :return:
         """
 
@@ -1009,6 +1008,74 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend",
             -3504399050661.217,
         )
+
+    def test_example_test_cheap_fuel_blend_w_limit(self):
+        """
+        Check validation and objective function value of
+        "test_cheap_fuel_blend_w_limit" example
+        :return:
+        """
+
+        objective = -3796282357926.1226
+
+        self.check_validation("test_cheap_fuel_blend_w_limit")
+        self.run_and_check_objective("test_cheap_fuel_blend_w_limit", objective)
+
+    def test_example_test_new_solar_fuel_burn_limit(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_fuel_burn_limit" example. Inputs set up so that this should
+        be the same as the "test_new_solar_carbon_cap" example.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_fuel_burn_limit")
+        self.run_and_check_objective(
+            "test_new_solar_fuel_burn_limit", -58282515304521.79
+        )
+
+    def test_example_test_new_solar_fuel_burn_limit_relative(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_fuel_burn_limit_relative" example. Inputs set up so that this
+        should be the same as the "test_new_solar_fuel_burn_limit" example.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_fuel_burn_limit_relative")
+        self.run_and_check_objective(
+            "test_new_solar_fuel_burn_limit_relative", -58282515304521.79
+        )
+
+    def test_test_w_solver_options(self):
+        """
+        Check validation and objective function value of "test_w_solver_options" example
+        :return:
+        """
+
+        self.check_validation("test_w_solver_options")
+        self.run_and_check_objective("test_w_solver_options", -3796309121478.12)
+
+    def test_example_test_carbon_tax_allowance_with_different_fuel_groups(self):
+        """
+        Check validation and objective function value of
+        "test_carbon_tax_allowance_with_different_fuel_groups" example
+        :return:
+        """
+
+        self.check_validation("test_carbon_tax_allowance_with_different_fuel_groups")
+        self.run_and_check_objective(
+            "test_carbon_tax_allowance_with_different_fuel_groups", -3796325179179.2686
+        )
+
+    def test_performance_standard(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard")
+        self.run_and_check_objective("test_performance_standard", -3592014754469.9077)
 
     def test_tx_flow(self):
         """
