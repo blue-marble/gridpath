@@ -3928,7 +3928,9 @@ CREATE TABLE subscenarios_options_solver (
 
 -- Note that with shell solvers such as GAMS and AMPL, you also need to specify
 -- "solver" as a solver_option_name and give it the appropriate value depending on
--- which solver you want to use (e.g. cplex, gurobi)
+-- which solver you want to use (e.g. CPLEX, Gurobi) in order to pass options to that
+-- solver
+-- Currently, only GAMS is supported; AMPL may work
 DROP TABLE IF EXISTS inputs_options_solver;
 CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
