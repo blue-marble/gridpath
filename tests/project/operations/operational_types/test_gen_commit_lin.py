@@ -205,6 +205,18 @@ class TestGenCommitLin(unittest.TestCase):
 
         self.assertListEqual(expected_opr_tmps_str_types, actual_opr_tmps_str_types)
 
+        # Set: GEN_CYCLE_SELECT_BY_GEN_COMMIT_LIN
+        expected_select_cycle_by_prj = {
+            "Disp_Cont_Commit": [],
+            "Clunky_Old_Gen": ["Clunky_Old_Gen2"],
+            "Clunky_Old_Gen2": [],
+        }
+        actual_select_cycle_by_prj = {
+            g: [g_c for g_c in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_LIN[g]]
+            for g in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_LIN.keys()
+        }
+        self.assertDictEqual(expected_select_cycle_by_prj, actual_select_cycle_by_prj)
+
         # Param: gen_commit_lin_min_stable_level_fraction
         expected_min_stable_fraction = {
             "Disp_Cont_Commit": 0.4,

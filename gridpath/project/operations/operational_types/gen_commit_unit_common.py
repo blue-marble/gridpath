@@ -1093,7 +1093,8 @@ def add_model_components(
         "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN),
         Set(
             getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-            within=m.GEN_COMMIT_BIN | m.GEN_COMMIT_LIN,
+            within=(m.GEN_COMMIT_BIN if hasattr(m, "GEN_COMMIT_BIN") else set())
+            | (m.GEN_COMMIT_LIN if hasattr(m, "GEN_COMMIT_LIN") else set()),
         ),
     )
 
@@ -3044,6 +3045,8 @@ def add_model_components(
 
     def select_cycle_constraint_rule(mod, g, g_cycle_select, tmp):
         """ """
+
+        # Find the optype for g_cycle_select (this may be different from g's optype)
         if mod.operational_type[g_cycle_select] == "gen_commit_bin":
             g_cycle_optype = "Bin"
         elif mod.operational_type[g_cycle_select] == "gen_commit_lin":
@@ -3056,24 +3059,28 @@ def add_model_components(
                     g_cycle_select, mod.operational_type[g_cycle_select]
                 )
             )
-        return (
-            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
-            + getattr(mod, "GenCommit{}_Synced".format(g_cycle_optype))[
-                g_cycle_select, tmp
-            ]
-            <= 1
-        )
 
-        setattr(
-            m,
-            "GenCommit{}_Select_Cycle_Constraint".format(Bin_or_Lin),
-            Constraint(
-                getattr(
-                    m, "GEN_COMMIT_{}_GEN_CYCLE_SELECT_OPR_TMPS".format(BIN_OR_LIN)
-                ),
-                rule=select_cycle_constraint_rule,
-            ),
-        )
+        # If there are cycle selection projects for g, apply constraint; if the list
+        # is empty skip the constraint
+        if getattr(mod, "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN))[g]:
+            return (
+                getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
+                + getattr(mod, "GenCommit{}_Synced".format(g_cycle_optype))[
+                    g_cycle_select, tmp
+                ]
+                <= 1
+            )
+        else:
+            return Constraint.Skip
+
+    setattr(
+        m,
+        "GenCommit{}_Select_Cycle_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_GEN_CYCLE_SELECT_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=select_cycle_constraint_rule,
+        ),
+    )
 
 
 # Operational Type Methods
@@ -3381,6 +3388,7 @@ def load_model_data(
     cycle_selection_tab_file = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs", "cycle_selection.tab"
     )
+
     cycle_selection_by_project = {}
     if os.path.exists(cycle_selection_tab_file):
         with open(cycle_selection_tab_file) as f:
@@ -3388,12 +3396,17 @@ def load_model_data(
             next(reader)  # skip header
             for row in reader:
                 [g, cycle_select_g] = row
-                if g in cycle_selection_by_project.keys():
-                    cycle_selection_by_project[g].append(cycle_select_g)
+                if g in projects:  # only load projects of this optype
+                    if g in cycle_selection_by_project.keys():
+                        cycle_selection_by_project[g].append(cycle_select_g)
+                    else:
+                        cycle_selection_by_project[g] = [cycle_select_g]
                 else:
-                    cycle_selection_by_project[g] = [cycle_select_g]
+                    pass
 
-        data_portal.data()["GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN)] = {}
+        data_portal.data()[
+            "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN)
+        ] = cycle_selection_by_project
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(

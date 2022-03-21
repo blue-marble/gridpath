@@ -513,6 +513,21 @@ class TestExamples(unittest.TestCase):
             },
         )
 
+    def test_example_single_stage_prod_cost_cycle_select(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_cycle_select" example
+        :return:
+        """
+
+        self.check_validation("single_stage_prod_cost_cycle_select")
+        self.run_and_check_objective(
+            "single_stage_prod_cost_cycle_select",
+            {1: -7154084662888.654,
+             2: -7154084662888.654,
+             3: -7154084662888.654},
+        )
+
     def test_example_multi_stage_prod_cost_parallel(self):
         """
         Check validation and objective function values of

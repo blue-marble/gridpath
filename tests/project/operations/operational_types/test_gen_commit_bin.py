@@ -194,6 +194,14 @@ class TestGenCommitBin(unittest.TestCase):
         )
         self.assertListEqual(expected_opr_tmps_str_types, actual_opr_tmps_str_types)
 
+        # Set: GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN
+        expected_select_cycle_by_prj = {"Disp_Binary_Commit": []}
+        actual_select_cycle_by_prj = {
+            g: [g_c for g_c in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN[g]]
+            for g in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN.keys()
+        }
+        self.assertDictEqual(expected_select_cycle_by_prj, actual_select_cycle_by_prj)
+
         # Param: gen_commit_bin_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
         actual_min_stable_fraction = {
