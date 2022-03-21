@@ -909,7 +909,7 @@ def write_model_inputs(
     write_additional_opchar_file(
         opchar_df=fuels_df,
         inputs_directory=inputs_directory,
-        filename="project_fuels.tab"
+        filename="project_fuels.tab",
     )
 
     # Write heat rates file
@@ -917,7 +917,7 @@ def write_model_inputs(
     write_additional_opchar_file(
         opchar_df=hr_df,
         inputs_directory=inputs_directory,
-        filename="heat_rate_curves.tab"
+        filename="heat_rate_curves.tab",
     )
 
     # Write VOM file
@@ -925,15 +925,13 @@ def write_model_inputs(
     write_additional_opchar_file(
         opchar_df=vom_df,
         inputs_directory=inputs_directory,
-        filename="variable_om_curves.tab"
+        filename="variable_om_curves.tab",
     )
 
     # Write startup chars file
     su_df = cursor_to_df(startup_chars)
     write_additional_opchar_file(
-        opchar_df=su_df,
-        inputs_directory=inputs_directory,
-        filename="startup_chars.tab"
+        opchar_df=su_df, inputs_directory=inputs_directory, filename="startup_chars.tab"
     )
 
     # Write the cycle selection file
@@ -941,7 +939,7 @@ def write_model_inputs(
     write_additional_opchar_file(
         opchar_df=cs_df,
         inputs_directory=inputs_directory,
-        filename="cycle_selection.tab"
+        filename="cycle_selection.tab",
     )
 
 
@@ -1394,9 +1392,7 @@ def calculate_slope_intercept(project, load_points, heat_rates):
     return slopes, intercepts
 
 
-def write_additional_opchar_file(
-    opchar_df, inputs_directory, filename
-):
+def write_additional_opchar_file(opchar_df, inputs_directory, filename):
     """
     Write input tab file to the multi-dimensional operating characterstics from a
     dataframe.
