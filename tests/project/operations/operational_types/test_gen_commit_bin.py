@@ -194,41 +194,6 @@ class TestGenCommitBin(unittest.TestCase):
         )
         self.assertListEqual(expected_opr_tmps_str_types, actual_opr_tmps_str_types)
 
-        # Set: GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN
-        expected_select_cycle_by_prj = {"Disp_Binary_Commit": []}
-        actual_select_cycle_by_prj = {
-            g: [g_c for g_c in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN[g]]
-            for g in instance.GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN.keys()
-        }
-        self.assertDictEqual(expected_select_cycle_by_prj, actual_select_cycle_by_prj)
-
-        # Set: GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS
-        expected_cycle_select_opr_tmps = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
-            cycle_select_prj_list = expected_select_cycle_by_prj[p]
-            # Only expecting the timepoints for projects that do have cycle-select
-            # projects
-            if cycle_select_prj_list:
-                for g_cycle in cycle_select_prj_list:
-                    expected_cycle_select_opr_tmps.append((p, g_cycle, tmp))
-            else:
-                pass
-        expected_cycle_select_opr_tmps = sorted(expected_cycle_select_opr_tmps)
-
-        actual_cycle_select_opr_tmps = sorted(
-            [
-                (g, g_cycle, tmp)
-                for (
-                    g,
-                    g_cycle,
-                    tmp,
-                ) in instance.GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS
-            ]
-        )
-        self.assertListEqual(
-            expected_cycle_select_opr_tmps, actual_cycle_select_opr_tmps
-        )
-
         # Param: gen_commit_bin_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
         actual_min_stable_fraction = {

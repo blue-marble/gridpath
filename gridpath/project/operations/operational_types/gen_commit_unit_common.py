@@ -140,25 +140,6 @@ def add_model_components(
     | Indexed set that describes the startup types for each project of the    |
     | respective operational type.                                            |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
-    |                                                                         |
-    | | :code:`GEN_CYCLE_SELECT_BY_GEN_COMMIT_LIN`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
-    |                                                                         |
-    | Indexed set that describes each project's list of "cycle select" --     |
-    | projects that cannot be 'synced' when this project is synced, e.g. when |
-    | choosing simple-cycle vs. combined cycle operational model.             |
-    +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS`                      |
-    |                                                                         |
-    | | :code:`GEN_COMMIT_LIN__GEN_CYCLE_SELECT_OPR_TMPS`                     |
-    |                                                                         |
-    | Three-dimensional set with generators of the respective operational     |
-    | type, their "cycle select" projects, and their their operational        |
-    | timepoints. Note that projects that don't have "cycle select" projects  |
-    | are not included in this set.                                           |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_LINKED_TMPS`                                    |
     |                                                                         |
     | | :code:`GEN_COMMIT_LIN_LINKED_TMPS`                                    |
@@ -966,16 +947,6 @@ def add_model_components(
     |                                                                         |
     | Forces the synced to 0 when the project is unavailable                  |
     +-------------------------------------------------------------------------+
-    | Cycle Selection                                                         |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Select_Cycle_Constraint`                          |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS`      |
-    |                                                                         |
-    | This generator can only be synced if the "cycle select" generator is    |
-    | not synced (the sum of the Sync variables of the two must be less than  |
-    | or equal to 1.                                                          |
-    +-------------------------------------------------------------------------+
-
 
     """
     if bin_or_lin_optype == "gen_commit_bin":
@@ -1114,47 +1085,6 @@ def add_model_components(
                 if g == _g
             ),
         ),
-    )
-
-    setattr(
-        m,
-        "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN),
-        Set(
-            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
-            within=(m.GEN_COMMIT_BIN if hasattr(m, "GEN_COMMIT_BIN") else set())
-            | (m.GEN_COMMIT_LIN if hasattr(m, "GEN_COMMIT_LIN") else set()),
-        ),
-    )
-
-    def generator_gen_cycle_opr_tmps_init_rule(mod):
-        """
-        Find the operational timepoints of generators g with commitment limited by
-        cycle selection and the respective projects for cycle selection (g_cycle).
-        This is a three-dimensional set (g, g_cycle, tmp).
-        """
-        gen_with_gen_cycle = [
-            g
-            for g in getattr(
-                mod, "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN)
-            ).keys()
-            if getattr(mod, "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN))[g]
-        ]
-
-        gen_with_gen_cycle_tmps = [
-            (g, g_cycle, tmp)
-            for (g, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
-            for g_cycle in getattr(
-                mod, "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN)
-            )[g]
-            if g in gen_with_gen_cycle
-        ]
-
-        return gen_with_gen_cycle_tmps
-
-    setattr(
-        m,
-        "GEN_COMMIT_{}_GEN_CYCLE_SELECT_OPR_TMPS".format(BIN_OR_LIN),
-        Set(dimen=3, initialize=generator_gen_cycle_opr_tmps_init_rule),
     )
 
     # Required Params
@@ -3085,45 +3015,6 @@ def add_model_components(
         ),
     )
 
-    def select_cycle_constraint_rule(mod, g, g_cycle_select, tmp):
-        """ """
-
-        # Find the optype for g_cycle_select (this may be different from g's optype)
-        if mod.operational_type[g_cycle_select] == "gen_commit_bin":
-            g_cycle_optype = "Bin"
-        elif mod.operational_type[g_cycle_select] == "gen_commit_lin":
-            g_cycle_optype = "Lin"
-        else:
-            raise ValueError(
-                "Cycle selection can only apply to projects of the "
-                "gen_commit_bin and gen_commit_lin operational types. "
-                "The operational type of {} is {}.".format(
-                    g_cycle_select, mod.operational_type[g_cycle_select]
-                )
-            )
-
-        # If there are cycle selection projects for g, apply constraint; if the list
-        # is empty skip the constraint
-        if getattr(mod, "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN))[g]:
-            return (
-                getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
-                + getattr(mod, "GenCommit{}_Synced".format(g_cycle_optype))[
-                    g_cycle_select, tmp
-                ]
-                <= 1
-            )
-        else:
-            return Constraint.Skip
-
-    setattr(
-        m,
-        "GenCommit{}_Select_Cycle_Constraint".format(Bin_or_Lin),
-        Constraint(
-            getattr(m, "GEN_COMMIT_{}_GEN_CYCLE_SELECT_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=select_cycle_constraint_rule,
-        ),
-    )
-
 
 # Operational Type Methods
 ###############################################################################
@@ -3425,30 +3316,6 @@ def load_model_data(
         op_type=bin_or_lin_optype,
         projects=projects,
     )
-
-    # Load any projects for cycle selection
-    cycle_selection_tab_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "cycle_selection.tab"
-    )
-
-    cycle_selection_by_project = {}
-    if os.path.exists(cycle_selection_tab_file):
-        with open(cycle_selection_tab_file) as f:
-            reader = csv.reader(f, delimiter="\t")
-            next(reader)  # skip header
-            for row in reader:
-                [g, cycle_select_g] = row
-                if g in projects:  # only load projects of this optype
-                    if g in cycle_selection_by_project.keys():
-                        cycle_selection_by_project[g].append(cycle_select_g)
-                    else:
-                        cycle_selection_by_project[g] = [cycle_select_g]
-                else:
-                    pass
-
-        data_portal.data()[
-            "GEN_CYCLE_SELECT_BY_GEN_COMMIT_{}".format(BIN_OR_LIN)
-        ] = cycle_selection_by_project
 
     # Linked timepoint params
     linked_inputs_filename = os.path.join(
