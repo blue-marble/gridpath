@@ -35,19 +35,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_CYCLE_SELECT_BY_GEN_COMMIT_BIN`                            |
+    | | :code:`GEN_COMMIT_BINLIN`                                             |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
     |                                                                         |
-    | | :code:`GEN_CYCLE_SELECT_BY_GEN_COMMIT_LIN`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | Union of the GEN_COMMIT_BIN and GEN_COMMIT_LIN sets if they exist. We   |
+    | use this set to limit membership in the GEN_W_CYCLE_SELECT set to these |
+    | operational types.                                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_W_CYCLE_SELECT`                                            |
+    | | *Within*: :code:`GEN_COMMIT_BINLIN`                                   |
+    |                                                                         |
+    | Projects that have "cycle select" constraints.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_CYCLE_SELECT_BY_GEN`                                       |
+    | | *Defined over*: :code:`GEN_W_CYCLE_SELECT`                            |
+    | | *Within*: :code:`GEN_COMMIT_BINLIN`                                   |
     |                                                                         |
     | Indexed set that describes each project's list of "cycle select" --     |
     | projects that cannot be 'synced' when this project is synced, e.g. when |
     | choosing simple-cycle vs. combined cycle operational model.             |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS`                      |
-    |                                                                         |
-    | | :code:`GEN_COMMIT_LIN__GEN_CYCLE_SELECT_OPR_TMPS`                     |
+    | | :code:`GEN_W_GEN_CYCLE_SELECT_OPR_TMPS`                               |
     |                                                                         |
     | Three-dimensional set with generators of the respective operational     |
     | type, their "cycle select" projects, and their their operational        |
@@ -58,8 +66,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Select_Cycle_Constraint`                          |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_GEN_CYCLE_SELECT_OPR_TMPS`      |
+    | | :code:`Gen_Commit_BinLin_Select_Cycle_Constraint`                     |
+    | | *Defined over*: :code:`GEN_W_GEN_CYCLE_SELECT_OPR_TMPS`               |
     |                                                                         |
     | This generator can only be synced if the "cycle select" generator is    |
     | not synced (the sum of the Sync variables of the two must be less than  |
