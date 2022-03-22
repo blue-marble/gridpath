@@ -407,7 +407,7 @@ def min_flow_rule(mod, l, tmp):
     each operational timepoint.
     """
     var = mod.tx_simple_min_flow_mw[l, tmp]
-    if var == 0:
+    if var == Negative_Infinity:
         return Constraint.Skip
     else:
         return mod.TxSimple_Transmit_Power_MW[l, tmp] >= var
@@ -422,7 +422,7 @@ def max_flow_rule(mod, l, tmp):
     each operational timepoint.
     """
     var = mod.tx_simple_max_flow_mw[l, tmp]
-    if var == 0:
+    if var == Infinity:
         return Constraint.Skip
     else:
         return mod.TxSimple_Transmit_Power_MW[l, tmp] <= var
