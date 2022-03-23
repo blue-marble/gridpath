@@ -99,6 +99,7 @@ def all_modules_list():
         "project.operations.reserves.op_type_dependent.frequency_response",
         "project.operations.reserves.op_type_dependent.spinning_reserves",
         "project.operations.power",
+        "project.operations.cycle_select",
         "project.operations.fix_commitment",
         "project.operations.fuel_burn",
         "project.operations.costs",

@@ -965,6 +965,7 @@ min_up_time_hours INTEGER,
 min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
+cycle_selection_scenario_id INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -1002,6 +1003,9 @@ subscenarios_project_heat_rate_curves
 FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
 subscenarios_project_variable_om_curves
 (project, variable_om_curves_scenario_id),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection
+(project, cycle_selection_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1105,6 +1109,29 @@ PRIMARY KEY (project, startup_chars_scenario_id, down_time_cutoff_hours),
 FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
 subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
+
+-- Cycle selection (e.g. plants that can operate in simple cycle or combined cycle mode)
+DROP TABLE IF EXISTS subscenarios_project_cycle_selection;
+CREATE TABLE subscenarios_project_cycle_selection (
+project VARCHAR(32),
+cycle_selection_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, cycle_selection_scenario_id)
+);
+
+-- If project is on, cycle_selection_project must be off
+DROP TABLE IF EXISTS inputs_project_cycle_selection;
+CREATE TABLE inputs_project_cycle_selection (
+project VARCHAR(64),
+cycle_selection_scenario_id INTEGER,
+cycle_selection_project VARCHAR(64),
+PRIMARY KEY (project, cycle_selection_scenario_id, cycle_selection_project),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection (project, cycle_selection_scenario_id)
+);
+
+
 
 -- Variable generator profiles
 -- TODO: this is not exactly a subscenario, as a variable profile will be
