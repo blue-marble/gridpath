@@ -1091,6 +1091,16 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_performance_standard")
         self.run_and_check_objective("test_performance_standard", -3592014754469.9077)
 
+    def test_tx_flow(self):
+        """
+        Check validation and objective function value of
+        "test_tx_flow" example
+        :return:
+        """
+
+        self.check_validation("test_tx_flow")
+        self.run_and_check_objective("test_tx_flow", -59124336744013.484)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
