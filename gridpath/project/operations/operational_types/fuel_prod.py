@@ -1,4 +1,4 @@
-# Copyright 2016-2021 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-This operational type describes fuel production facilities.
+This operational type describes the operational constraints on fuel production
+facilities.
 
 The type is associated with three main variables in each timepoint when the
 project is available: the fuel production level, the fuel release level, and the
@@ -21,7 +22,7 @@ fuel available in storage. The first two are constrained to be less than
 or equal to the project's fuel production and fuel release capacity respectively. The
 third is constrained to be less than or equal to the project's fuel storage capacity.
 The model tracks the amount of fuel available in storage in each timepoint based on the
-fuel production and fuel release decisions decisions in the previous timepoint. Fuel
+fuel production and fuel release decisions in the previous timepoint. Fuel
 production projects do not provide reserves or other system services.
 
 Costs for this operational type include variable O&M costs. (?)
@@ -38,9 +39,7 @@ from gridpath.project.common_functions import (
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
-    """
-
-    """
+    """ """
     # Sets
     ###########################################################################
 
@@ -73,16 +72,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variables
     ###########################################################################
 
-    m.Produce_Fuel_FuelUnit = Var(m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals)
+    m.Produce_Fuel_FuelUnitPerHour = Var(m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals)
 
-    m.Release_Fuel_FuelUnit = Var(m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals)
+    m.Release_Fuel_FuelUnitPerHour = Var(m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals)
 
-    m.Fuel_Prod_Fuel_in_Storage_FuelUnit = Var(
+    m.Fuel_Prod_Starting_Fuel_in_Storage_FuelUnit = Var(
         m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals
     )
-    
-    m.Fuel_Prod_Consume_Power_PowerUnit = Var(m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals)
-    
+
+    m.Fuel_Prod_Consume_Power_PowerUnit = Var(
+        m.FUEL_PROD_OPR_TMPS, within=NonNegativeReals
+    )
+
     # Constraints
     ###########################################################################
 
@@ -101,12 +102,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Fuel_Prod_Max_Fuel_in_Storage_Constraint = Constraint(
         m.FUEL_PROD_OPR_TMPS, rule=max_fuel_in_storage_rule
     )
-    
+
     # Fuel produced
     m.Fuel_Production_in_Timepoint = Constraint(
         m.FUEL_PROD_OPR_TMPS, rule=fuel_production_rule
     )
-
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -120,8 +120,8 @@ def max_production_rule(mod, prj, tmp):
     Fuel production can't exceed available production capacity.
     """
     return (
-        mod.Produce_Fuel_FuelUnit[prj, tmp]
-        <= mod.Fuel_Production_Capacity_FuelUnitHour[prj, mod.period[tmp]]
+        mod.Produce_Fuel_FuelUnitPerHour[prj, tmp]
+        <= mod.Fuel_Production_Capacity_FuelUnitPerHour[prj, mod.period[tmp]]
         * mod.Availability_Derate[prj, tmp]
     )
 
@@ -134,8 +134,8 @@ def max_release_rule(mod, prj, tmp):
     Fuel production can't exceed available production capacity.
     """
     return (
-        mod.Release_Fuel_FuelUnit[prj, tmp]
-        <= mod.Fuel_Release_Capacity_FuelUnitHour[prj, mod.period[tmp]]
+        mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
+        <= mod.Fuel_Release_Capacity_FuelUnitPerHour[prj, mod.period[tmp]]
         * mod.Availability_Derate[prj, tmp]
     )
 
@@ -147,7 +147,7 @@ def fuel_in_storage_tracking_rule(mod, prj, tmp):
 
     The fuel in storage in each timepoint is equal to the fuel in storage in the
     previous timepoint plus fuel production in the previous timepoint (adjusted for
-    timepoint duration) minus fuel release in the previous timepoint (adjusted for 
+    timepoint duration) minus fuel release in the previous timepoint (adjusted for
     timepoint duration).
     """
     # No constraint enforced if this is the first timepoint of a linear horizon type
@@ -161,7 +161,7 @@ def fuel_in_storage_tracking_rule(mod, prj, tmp):
     ):
         return Constraint.Skip
     else:
-        # If the boundary type is linked, we need find the linked params; otherwise, 
+        # If the boundary type is linked, we need find the linked params; otherwise,
         # we look at the previous timepoint
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
@@ -177,31 +177,33 @@ def fuel_in_storage_tracking_rule(mod, prj, tmp):
             # )
             # prev_tmp_discharge = mod.stor_linked_discharge[prj, 0]
             # prev_tmp_charge = mod.stor_linked_charge[prj, 0]
-            raise("Linked horizons are not implemented yet for fuel production "
-                  "facilities.")
+            raise (
+                "Linked horizons are not implemented yet for fuel production "
+                "facilities."
+            )
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
-            prev_tmp_starting_fuel_in_storage = (
-                mod.Fuel_Prod_Fuel_in_Storage_FuelUnit[
-                    prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
-                ]
-            )
-            prev_tmp_production = mod.Produce_Fuel_FuelUnit[
+            prev_tmp_starting_fuel_in_storage = mod.Fuel_Prod_Starting_Fuel_in_Storage_FuelUnit[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
-            prev_tmp_release = mod.Release_Fuel_FuelUnit[
+            prev_tmp_production = mod.Produce_Fuel_FuelUnitPerHour[
+                prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
+            ]
+            prev_tmp_release = mod.Release_Fuel_FuelUnitPerHour[
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
 
         return (
-            mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
+            mod.Fuel_Prod_Starting_Fuel_in_Storage_FuelUnit[prj, tmp]
             == prev_tmp_starting_fuel_in_storage
-            + prev_tmp_production * prev_tmp_hrs_in_tmp * mod.stor_charging_efficiency[prj]
+            + prev_tmp_production
+            * prev_tmp_hrs_in_tmp
+            # * mod.fuel_production_efficiency[prj]
             - prev_tmp_release
             * prev_tmp_hrs_in_tmp
-            / mod.stor_discharging_efficiency[prj]
+            # / mod.fuel_relesase_efficiency[prj]
         )
 
 
@@ -214,29 +216,31 @@ def max_fuel_in_storage_rule(mod, prj, tmp):
     the available fuel storage capacity.
     """
     return (
-        mod.Fuel_Prod_Fuel_in_Storage_FuelUnit[prj, tmp]
-        <= mod.Fuel_Storage_Capacity_FuelUnit[prj, mod.period[tmp]] *
-        mod.Availability_Derate[prj, tmp]
+        mod.Fuel_Prod_Starting_Fuel_in_Storage_FuelUnit[prj, tmp]
+        <= mod.Fuel_Storage_Capacity_FuelUnit[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
     )
 
 
 def fuel_production_rule(mod, prj, tmp):
-    """
-
-    """
-    return mod.Produce_Fuel_FuelUnit[prj, tmp] <= \
-        mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp] * mod.fuel_prod_fuelunit_per_mwh[prj]
+    """ """
+    return (
+        mod.Produce_Fuel_FuelUnitPerHour[prj, tmp]
+        <= mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
+        * mod.fuel_prod_fuelunit_per_mwh[prj]
+    )
 
 
 # Operational Type Methods
 ###############################################################################
+
 
 def power_provision_rule(mod, prj, tmp):
     """
     Power provision is a load, so a negative number is return here whenever fuel is
     being produced.
     """
-    return - mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
+    return -mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
 
 
 # # TODO: confirm how to apply variable costs
@@ -253,8 +257,9 @@ def power_provision_rule(mod, prj, tmp):
 #     """
 #     return
 
+
 def fuel_burn_rule(mod, prj, tmp):
     """
     Fuel burn returned is negative (i.e. added to the fuel availability)
     """
-    return -mod.Release_Fuel_FuelUnit[prj, tmp]
+    return -mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
