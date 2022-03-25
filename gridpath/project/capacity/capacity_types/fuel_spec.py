@@ -20,6 +20,11 @@ capacity characteristics.
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.project.capacity.capacity_types.common_methods import (
+    spec_get_inputs_from_database,
+    spec_write_tab_file,
+    spec_determine_inputs,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -107,3 +112,42 @@ def capacity_cost_rule(mod, prj, prd):
         + mod.fuel_spec_fuel_storage_capacity_fuelunit[prj, prd]
         * mod.fuel_spec_fuel_storage_capacity_fixed_cost_per_fuelunit_yr[prj, prd]
     )
+
+
+# Input-Output
+###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    project_period_list, spec_params_dict = spec_determine_inputs(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        capacity_type="fuel_spec",
+    )
+
+    data_portal.data()["FUEL_SPEC_OPR_PRDS"] = {None: project_period_list}
+
+    data_portal.data()["fuel_spec_fuel_production_capacity_fuelunitperhour"] = spec_params_dict[
+        "fuel_production_capacity_fuelunitperhour"
+    ]
+
+    data_portal.data()["fuel_spec_fuel_release_capacity_fuelunitperhour"] = spec_params_dict[
+        "fuel_release_capacity_fuelunitperhour"
+    ]
+
+    data_portal.data()["fuel_spec_fuel_storage_capacity_fuelunit"] = spec_params_dict[
+        "fuel_storage_capacity_fuelunit"
+    ]
+
+    data_portal.data()["fuel_spec_fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = spec_params_dict[
+        "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
+    ]
+
+    data_portal.data()["fuel_spec_fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = spec_params_dict[
+        "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
+    ]
+
+    data_portal.data()["fuel_spec_fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = spec_params_dict[
+        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
+    ]

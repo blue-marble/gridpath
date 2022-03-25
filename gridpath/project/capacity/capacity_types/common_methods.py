@@ -325,6 +325,12 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
     hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
     spec_fixed_cost_per_mwh_yr_dict = dict()
+    spec_fuel_prod_cap_dict = dict()
+    spec_fuel_rel_cap_dict = dict()
+    spec_fuel_stor_cap_dict = dict()
+    spec_fuel_prod_fixed_cost_dict = dict()
+    spec_fuel_rel_fixed_cost_dict = dict()
+    spec_fuel_stor_fixed_cost_dict = dict()
 
     df = pd.read_csv(
         os.path.join(
@@ -348,6 +354,12 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
         df["hyb_gen_fixed_cost_per_mw_yr"],
         df["hyb_stor_fixed_cost_per_mw_yr"],
         df["fixed_cost_per_mwh_yr"],
+        df["fuel_production_capacity_fuelunitperhour"],
+        df["fuel_release_capacity_fuelunitperhour"],
+        df["fuel_storage_capacity_fuelunit"],
+        df["fuel_production_fixed_cost_fuelunitperhour_yr"],
+        df["fuel_release_fixed_cost_fuelunitperhour_yr"],
+        df["fuel_storage_fixed_cost_fuelunit_yr"],
     ):
         if row[0] in project_list:
             project_period_list.append((row[0], row[1]))
@@ -359,6 +371,12 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[7])
             hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[8])
             spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = float(row[9])
+            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[10])
+            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[11])
+            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[12])
+            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
+            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
+            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
         else:
             pass
 
@@ -381,5 +399,16 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
+
+    main_dict["fuel_production_capacity_fuelunitperhour"] = spec_fuel_prod_cap_dict
+    main_dict["fuel_release_capacity_fuelunitperhour"] = spec_fuel_rel_cap_dict
+    main_dict["fuel_storage_capacity_fuelunit"] = spec_fuel_stor_cap_dict
+    main_dict[
+        "fuel_production_fixed_cost_fuelunitperhour_yr"
+    ] = spec_fuel_prod_fixed_cost_dict
+    main_dict[
+        "fuel_release_fixed_cost_fuelunitperhour_yr"
+    ] = spec_fuel_rel_fixed_cost_dict
+    main_dict["fuel_storage_fixed_cost_fuelunit_yr"] = spec_fuel_stor_fixed_cost_dict
 
     return project_period_list, main_dict
