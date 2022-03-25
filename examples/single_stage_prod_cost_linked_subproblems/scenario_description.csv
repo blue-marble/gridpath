@@ -1,4 +1,4 @@
-scenario_id,50
+scenario_id,51
 scenario_name,single_stage_prod_cost_linked_subproblems
 of_transmission,
 of_transmission_hurdle_rates,
@@ -76,6 +76,7 @@ transmission_availability_scenario_id,NULL
 transmission_operational_chars_scenario_id,NULL
 transmission_hurdle_rate_scenario_id,NULL
 transmission_new_potential_scenario_id,NULL
+transmission_flow_scenario_id,NULL
 transmission_carbon_cap_zone_scenario_id,NULL
 transmission_simultaneous_flow_limit_scenario_id,NULL
 transmission_simultaneous_flow_limit_line_group_scenario_id,NULL

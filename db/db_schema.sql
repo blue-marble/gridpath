@@ -965,6 +965,7 @@ min_up_time_hours INTEGER,
 min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
+cycle_selection_scenario_id INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -1002,6 +1003,9 @@ subscenarios_project_heat_rate_curves
 FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
 subscenarios_project_variable_om_curves
 (project, variable_om_curves_scenario_id),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection
+(project, cycle_selection_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1105,6 +1109,29 @@ PRIMARY KEY (project, startup_chars_scenario_id, down_time_cutoff_hours),
 FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
 subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
+
+-- Cycle selection (e.g. plants that can operate in simple cycle or combined cycle mode)
+DROP TABLE IF EXISTS subscenarios_project_cycle_selection;
+CREATE TABLE subscenarios_project_cycle_selection (
+project VARCHAR(32),
+cycle_selection_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, cycle_selection_scenario_id)
+);
+
+-- If project is on, cycle_selection_project must be off
+DROP TABLE IF EXISTS inputs_project_cycle_selection;
+CREATE TABLE inputs_project_cycle_selection (
+project VARCHAR(64),
+cycle_selection_scenario_id INTEGER,
+cycle_selection_project VARCHAR(64),
+PRIMARY KEY (project, cycle_selection_scenario_id, cycle_selection_project),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection (project, cycle_selection_scenario_id)
+);
+
+
 
 -- Variable generator profiles
 -- TODO: this is not exactly a subscenario, as a variable profile will be
@@ -1891,6 +1918,27 @@ FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
         (transmission_line, exogenous_availability_scenario_id)
 );
 
+-- Transmission flow
+DROP TABLE IF EXISTS subscenarios_transmission_flow;
+CREATE TABLE subscenarios_transmission_flow (
+transmission_flow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_flow;
+CREATE TABLE inputs_transmission_flow (
+transmission_flow_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+stage_id INTEGER,
+timepoint INTEGER,
+min_flow_mw FLOAT,
+max_flow_mw FLOAT,
+PRIMARY KEY (transmission_flow_scenario_id, transmission_line, stage_id, timepoint),
+FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
+subscenarios_transmission_flow (transmission_flow_scenario_id)
+);
+
 
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
@@ -2640,6 +2688,7 @@ transmission_availability_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
+transmission_flow_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2803,6 +2852,8 @@ FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
         (transmission_hurdle_rate_scenario_id),
 FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
     subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
+FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
+    subscenarios_transmission_flow (transmission_flow_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -4125,6 +4176,7 @@ subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
 subscenarios_transmission_new_potential.name AS transmission_new_potential,
+subscenarios_transmission_flow.name AS transmission_flow,
 subscenarios_transmission_carbon_cap_zones.name
     AS transmission_carbon_cap_zones,
 subscenarios_transmission_simultaneous_flow_limits.name
@@ -4228,6 +4280,8 @@ LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
 LEFT JOIN subscenarios_transmission_new_potential
     USING (transmission_new_potential_scenario_id)
+LEFT JOIN subscenarios_transmission_flow
+    USING (transmission_flow_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
     USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
