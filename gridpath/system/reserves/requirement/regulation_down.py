@@ -35,9 +35,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_requirement_tmp_param="regulation_down_requirement_mw",
         reserve_requirement_percent_param="reg_down_per_req",
         reserve_zone_load_zone_set="REG_DOWN_BA_LZ",
-        ba_prj_power_contribution_set="REG_DOWN_BA_PRJ_PWR_CONTRIBUTION",
+        ba_prj_req_contribution_set="REG_DOWN_BA_PRJ_PWR_CONTRIBUTION",
         prj_power_param="reg_down_prj_pwr_contribution",
-        ba_prj_capacity_contribution_set="REG_DOWN_BA_PRJ_CAP_CONTRIBUTION",
         prj_capacity_param="reg_down_prj_cap_contribution",
         reserve_requirement_expression="Reg_Down_Requirement",
     )
@@ -54,6 +53,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_requirement_param="regulation_down_requirement_mw",
         reserve_zone_load_zone_set="REG_DOWN_BA_LZ",
         reserve_requirement_percent_param="reg_down_per_req",
+        ba_prj_req_contribution_set="REG_DOWN_BA_PRJ_PWR_CONTRIBUTION",
+        prj_power_param="reg_down_prj_pwr_contribution",
+        prj_capacity_param="reg_down_prj_cap_contribution",
         reserve_type="regulation_down",
     )
 

@@ -1101,6 +1101,18 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_tx_flow")
         self.run_and_check_objective("test_tx_flow", -59124336744013.484)
 
+    def test_example_test_new_solar_reserve_prj_contribution(self):
+        """
+        Check validation and objective function value of
+        "test_reserve_prj_contribution" example.
+        This example is based on "test_new_solar" with the only difference, the LF UP
+        requirement ID
+        :return:
+        """
+
+        self.check_validation("test_new_solar_reserve_prj_contribution")
+        self.run_and_check_objective("test_new_solar_reserve_prj_contribution", -3796301348838.3267)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

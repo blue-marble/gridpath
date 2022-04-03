@@ -35,9 +35,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_requirement_tmp_param="spinning_reserves_requirement_mw",
         reserve_requirement_percent_param="spin_per_req",
         reserve_zone_load_zone_set="SPIN_BA_LZ",
-        ba_prj_power_contribution_set="SPIN_BA_PRJ_PWR_CONTRIBUTION",
+        ba_prj_req_contribution_set="SPIN_BA_PRJ_PWR_CONTRIBUTION",
         prj_power_param="spin_prj_pwr_contribution",
-        ba_prj_capacity_contribution_set="SPIN_BA_PRJ_CAP_CONTRIBUTION",
         prj_capacity_param="spin_prj_cap_contribution",
         reserve_requirement_expression="Spin_Requirement",
     )
@@ -54,6 +53,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_requirement_param="spinning_reserves_requirement_mw",
         reserve_zone_load_zone_set="SPIN_BA_LZ",
         reserve_requirement_percent_param="spin_per_req",
+        ba_prj_req_contribution_set="SPIN_BA_PRJ_PWR_CONTRIBUTION",
+        prj_power_param="spin_prj_pwr_contribution",
+        prj_capacity_param="spin_prj_cap_contribution",
         reserve_type="spinning_reserves",
     )
 
