@@ -35,6 +35,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_requirement_tmp_param="regulation_down_requirement_mw",
         reserve_requirement_percent_param="reg_down_per_req",
         reserve_zone_load_zone_set="REG_DOWN_BA_LZ",
+        ba_prj_power_contribution_set="REG_DOWN_BA_PRJ_PWR_CONTRIBUTION",
+        prj_power_param="reg_down_prj_pwr_contribution",
+        ba_prj_capacity_contribution_set="REG_DOWN_BA_PRJ_CAP_CONTRIBUTION",
+        prj_capacity_param="reg_down_prj_cap_contribution",
         reserve_requirement_expression="Reg_Down_Requirement",
     )
 
@@ -103,7 +107,7 @@ def write_model_inputs(
     :return:
     """
 
-    tmp_req, percent_req, percent_map = get_inputs_from_database(
+    tmp_req, percent_req, percent_map, project_contributions = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -114,5 +118,6 @@ def write_model_inputs(
         timepoint_req=tmp_req,
         percent_req=percent_req,
         percent_map=percent_map,
+        project_contributions=project_contributions,
         reserve_type="regulation_down",
     )
