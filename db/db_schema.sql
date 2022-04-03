@@ -2108,6 +2108,7 @@ subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 -- need to specify which load, i.e. specify a mapping between the reserve BA
 -- and the load zones whose load should be part of the requirement
 -- calculation (mapping should be one-to-many)
+-- Note that the by-timepoint requirement and the percent requirement are additive
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
 CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
@@ -2122,6 +2123,19 @@ lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_project;
+CREATE TABLE inputs_system_lf_reserves_up_project (
+lf_reserves_up_scenario_id INTEGER,
+lf_reserves_up_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, project)
 );
 
 -- LF reserves down
@@ -2168,6 +2182,19 @@ load_zone VARCHAR(32),
 PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, load_zone)
 );
 
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_project;
+CREATE TABLE inputs_system_lf_reserves_down_project (
+lf_reserves_down_scenario_id INTEGER,
+lf_reserves_down_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, project)
+);
+
 -- Regulation up
 DROP TABLE IF EXISTS subscenarios_system_regulation_up;
 CREATE TABLE subscenarios_system_regulation_up (
@@ -2209,6 +2236,19 @@ regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_regulation_down_project;
+CREATE TABLE inputs_system_regulation_down_project (
+regulation_down_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, project)
 );
 
 -- Regulation down
@@ -2255,6 +2295,20 @@ load_zone VARCHAR(32),
 PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, load_zone)
 );
 
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_regulation_up_project;
+CREATE TABLE inputs_system_regulation_up_project (
+regulation_up_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, project)
+);
+
+
 -- Frequency response
 DROP TABLE IF EXISTS subscenarios_system_frequency_response;
 CREATE TABLE subscenarios_system_frequency_response (
@@ -2300,6 +2354,19 @@ load_zone VARCHAR(32),
 PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, load_zone)
 );
 
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_frequency_response_project;
+CREATE TABLE inputs_system_frequency_response_project (
+frequency_response_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, project)
+);
+
 -- Spinning reserves
 DROP TABLE IF EXISTS subscenarios_system_spinning_reserves;
 CREATE TABLE subscenarios_system_spinning_reserves (
@@ -2342,6 +2409,19 @@ spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_project;
+CREATE TABLE inputs_system_spinning_reserves_project (
+spinning_reserves_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, project)
 );
 
 -- -- Policy -- --
