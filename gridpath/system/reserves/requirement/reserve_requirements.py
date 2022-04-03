@@ -112,7 +112,6 @@ def generic_add_model_components(
         else:
             percentage_target = 0
 
-
         # Project contributions, if any projects in the respective set
         if getattr(mod, ba_prj_req_contribution_set):
             # Project contributions to requirement based on power output
@@ -129,8 +128,7 @@ def generic_add_model_components(
                 getattr(mod, prj_capacity_param)[reserve_zone, prj]
                 * mod.Capacity_MW[prj, mod.period[tmp]]
                 * mod.Availability_Derate[prj, tmp]
-                for (_reserve_zone, prj) in
-                getattr(mod, ba_prj_req_contribution_set)
+                for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
                 if _reserve_zone == reserve_zone
             )
         else:
