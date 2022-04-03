@@ -1111,8 +1111,9 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_new_solar_reserve_prj_contribution")
-        self.run_and_check_objective("test_new_solar_reserve_prj_contribution", -3796311064738.0493)
-
+        self.run_and_check_objective(
+            "test_new_solar_reserve_prj_contribution", -3796311064738.0493
+        )
 
     @classmethod
     def tearDownClass(cls):

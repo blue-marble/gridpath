@@ -138,9 +138,7 @@ class TestCosts(unittest.TestCase):
         self.assertDictEqual(expected_req, actual_req)
 
         # Set: LF_UP_BA_PRJ_PWR_CONTRIBUTION
-        expected_prj_contr_set = sorted(
-            [("Zone1", "Wind"), ("Zone1", "Customer_PV")]
-        )
+        expected_prj_contr_set = sorted([("Zone1", "Wind"), ("Zone1", "Customer_PV")])
 
         actual_prj_contr_set = sorted(
             [(ba, prj) for (ba, prj) in instance.LF_UP_BA_PRJ_CONTRIBUTION]
@@ -148,22 +146,18 @@ class TestCosts(unittest.TestCase):
         self.assertListEqual(expected_prj_contr_set, actual_prj_contr_set)
 
         # Param: lf_up_prj_pwr_contribution
-        expected_pwr_contr = {
-            ("Zone1", "Wind"): 0.05, ("Zone1", "Customer_PV"): 0
-        }
+        expected_pwr_contr = {("Zone1", "Wind"): 0.05, ("Zone1", "Customer_PV"): 0}
         actual_pwr_contr = {
-            (ba, prj): instance.lf_up_prj_pwr_contribution[ba, prj] for (ba, prj) in
-            instance.LF_UP_BA_PRJ_CONTRIBUTION
+            (ba, prj): instance.lf_up_prj_pwr_contribution[ba, prj]
+            for (ba, prj) in instance.LF_UP_BA_PRJ_CONTRIBUTION
         }
         self.assertDictEqual(expected_pwr_contr, actual_pwr_contr)
 
         # Param: lf_up_prj_cap_contribution
-        expected_cap_contr = {
-            ("Zone1", "Wind"): 0, ("Zone1", "Customer_PV"): 0.03
-        }
+        expected_cap_contr = {("Zone1", "Wind"): 0, ("Zone1", "Customer_PV"): 0.03}
         actual_cap_contr = {
-            (ba, prj): instance.lf_up_prj_cap_contribution[ba, prj] for (ba, prj) in
-            instance.LF_UP_BA_PRJ_CONTRIBUTION
+            (ba, prj): instance.lf_up_prj_cap_contribution[ba, prj]
+            for (ba, prj) in instance.LF_UP_BA_PRJ_CONTRIBUTION
         }
         self.assertDictEqual(expected_cap_contr, actual_cap_contr)
 
