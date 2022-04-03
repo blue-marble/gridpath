@@ -1,0 +1,3 @@
+﻿lf_reserves_up_ba,project,percent_power_req,percent_capacity_req
+Zone1,Wind,0.05,
+Zone1,Solar,,0.03

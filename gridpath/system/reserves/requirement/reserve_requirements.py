@@ -24,6 +24,9 @@ def generic_add_model_components(
     reserve_requirement_tmp_param,
     reserve_requirement_percent_param,
     reserve_zone_load_zone_set,
+    ba_prj_req_contribution_set,
+    prj_power_param,
+    prj_capacity_param,
     reserve_requirement_expression,
 ):
     """
@@ -33,6 +36,9 @@ def generic_add_model_components(
     :param reserve_requirement_tmp_param:
     :param reserve_requirement_percent_param:
     :param reserve_zone_load_zone_set:
+    :param ba_prj_req_contribution_set:
+    :param prj_power_param:
+    :param prj_capacity_param:
     :param reserve_requirement_expression:
     :return:
 
@@ -40,7 +46,10 @@ def generic_add_model_components(
     related to a particular reserve requirement, including
     1) the reserve requirement by zone and timepoint, if any
     2) the reserve requirement as a percent of load and map for which load
-    zones' load to consider.
+    zones' load to consider
+    3) the contributions to the reserve requirement from projects: there are two
+    types of these contributions, those based on the power output in the timepoint
+    and those based on the project capacity.
     """
 
     # Magnitude of the requirement by reserve zone and timepoint
@@ -66,6 +75,30 @@ def generic_add_model_components(
         Set(dimen=2, within=getattr(m, reserve_zone_set) * m.LOAD_ZONES),
     )
 
+    # Projects contributing to BA requirement based on power output in the timepoint
+    # and on capacity in the period
+    setattr(
+        m,
+        ba_prj_req_contribution_set,
+        Set(dimen=2, within=getattr(m, reserve_zone_set) * m.PROJECTS),
+    )
+
+    setattr(
+        m,
+        prj_power_param,
+        Param(
+            getattr(m, ba_prj_req_contribution_set), within=PercentFraction, default=0
+        ),
+    )
+
+    setattr(
+        m,
+        prj_capacity_param,
+        Param(
+            getattr(m, ba_prj_req_contribution_set), within=PercentFraction, default=0
+        ),
+    )
+
     def reserve_requirement_rule(mod, reserve_zone, tmp):
         # If we have a map of reserve zones to load zones, apply the percentage
         # target; if no map provided, the percentage_target is 0
@@ -79,9 +112,34 @@ def generic_add_model_components(
         else:
             percentage_target = 0
 
+        # Project contributions, if any projects in the respective set
+        if getattr(mod, ba_prj_req_contribution_set):
+            # Project contributions to requirement based on power output
+            prj_pwr_contribution = sum(
+                getattr(mod, prj_power_param)[reserve_zone, prj]
+                * mod.Power_Provision_MW[prj, tmp]
+                for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
+                if _reserve_zone == reserve_zone
+            )
+
+            # Project contributions to requirement based on (available) capacity
+            # We are not holding the extra reserves when projects are unavailable
+            prj_cap_contribution = sum(
+                getattr(mod, prj_capacity_param)[reserve_zone, prj]
+                * mod.Capacity_MW[prj, mod.period[tmp]]
+                * mod.Availability_Derate[prj, tmp]
+                for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
+                if _reserve_zone == reserve_zone
+            )
+        else:
+            prj_pwr_contribution = 0
+            prj_cap_contribution = 0
+
         return (
             getattr(mod, reserve_requirement_tmp_param)[reserve_zone, tmp]
             + percentage_target
+            + prj_pwr_contribution
+            + prj_cap_contribution
         )
 
     setattr(
@@ -103,6 +161,9 @@ def generic_load_model_data(
     reserve_requirement_param,
     reserve_zone_load_zone_set,
     reserve_requirement_percent_param,
+    ba_prj_req_contribution_set,
+    prj_power_param,
+    prj_capacity_param,
     reserve_type,
 ):
     """
@@ -116,6 +177,9 @@ def generic_load_model_data(
     :param reserve_requirement_param:
     :param reserve_zone_load_zone_set:
     :param reserve_requirement_percent_param
+    :param ba_prj_req_contribution_set
+    :param prj_power_param
+    :param prj_capacity_param
     :param reserve_type:
     :return:
     """
@@ -152,6 +216,19 @@ def generic_load_model_data(
         )
     else:
         data_portal.data()[reserve_zone_load_zone_set] = {None: []}
+
+    # If we have a project contributions file, load it into the respective
+    prj_contr_filename = os.path.join(
+        input_dir, "{}_requirement_project_contributions.tab".format(reserve_type)
+    )
+    if os.path.exists(prj_contr_filename):
+        data_portal.load(
+            filename=prj_contr_filename,
+            index=getattr(m, ba_prj_req_contribution_set),
+            param=(getattr(m, prj_power_param), getattr(m, prj_capacity_param)),
+        )
+    else:
+        data_portal.data()[ba_prj_req_contribution_set] = {None: []}
 
 
 def generic_get_inputs_from_database(
@@ -257,7 +334,38 @@ def generic_get_inputs_from_database(
         )
     )
 
-    return tmp_req, percentage_req, lz_mapping
+    # Get any project contributions to the magnitude of the reserve requirement
+    c4 = conn.cursor()
+    project_contributions = c4.execute(
+        """
+        SELECT {reserve_type}_ba, project, percent_power_req, percent_capacity_req
+        FROM inputs_system_{reserve_type}_project
+        JOIN (
+        SELECT {reserve_type}_ba
+        FROM inputs_geography_{reserve_type}_bas
+        WHERE {reserve_type}_ba_scenario_id = {reserve_type_ba_subscenario_id}
+        ) as relevant_bas
+        USING ({reserve_type}_ba)
+        JOIN (
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = (
+                SELECT project_portfolio_scenario_id
+                FROM scenarios
+                WHERE scenario_id = {scenario_id}
+            )
+        ) as relevant_prj
+        USING (project)
+        WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
+        """.format(
+            reserve_type=reserve_type,
+            reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
+            scenario_id=scenario_id,
+            reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
+        )
+    )
+
+    return tmp_req, percentage_req, lz_mapping, project_contributions
 
 
 def generic_write_model_inputs(
@@ -267,6 +375,7 @@ def generic_write_model_inputs(
     timepoint_req,
     percent_req,
     percent_map,
+    project_contributions,
     reserve_type,
 ):
     """
@@ -278,6 +387,7 @@ def generic_write_model_inputs(
     :param timepoint_req:
     :param percent_req:
     :param percent_map:
+    :param project_contributions:
     :param reserve_type:
     :return:
     """
@@ -333,3 +443,33 @@ def generic_write_model_inputs(
                 writer.writerow(row)
     else:
         pass
+
+    # Project contributions to the magnitude requirement
+    project_contributions = project_contributions.fetchall()
+
+    prj_contributions = False
+    for (ba, prj, pwr, cap) in project_contributions:
+        if pwr is not None or cap is not None:
+            prj_contributions = True
+
+    if prj_contributions:
+        with open(
+            os.path.join(
+                inputs_dir,
+                "{}_requirement_project_contributions.tab".format(reserve_type),
+            ),
+            "w",
+            newline="",
+        ) as prj_file:
+            writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                ["ba", "project", "percent_power_req", "percent_capacity_req"]
+            )
+            for (ba, prj, pwr, cap) in project_contributions:
+                if pwr is None:
+                    pwr = "."
+                if cap is None:
+                    cap = "."
+                writer.writerow([ba, prj, pwr, cap])

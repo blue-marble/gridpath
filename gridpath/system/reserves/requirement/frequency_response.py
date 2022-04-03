@@ -37,6 +37,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_requirement_tmp_param="frequency_response_requirement_mw",
         reserve_requirement_percent_param="fr_per_req",
         reserve_zone_load_zone_set="FR_BA_LZ",
+        ba_prj_req_contribution_set="FR_BA_PRJ_CONTRIBUTION",
+        prj_power_param="fr_prj_pwr_contribution",
+        prj_capacity_param="fr_prj_cap_contribution",
         reserve_requirement_expression="Frequency_Response_Requirement",
     )
 
@@ -69,6 +72,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_requirement_param="frequency_response_requirement_mw",
         reserve_zone_load_zone_set="FR_BA_LZ",
         reserve_requirement_percent_param="fr_per_req",
+        ba_prj_req_contribution_set="FR_BA_PRJ_CONTRIBUTION",
+        prj_power_param="fr_prj_pwr_contribution",
+        prj_capacity_param="fr_prj_cap_contribution",
         reserve_type="frequency_response",
     )
 
@@ -122,7 +128,7 @@ def write_model_inputs(
     :return:
     """
 
-    tmp_req, percent_req, percent_map = get_inputs_from_database(
+    tmp_req, percent_req, percent_map, project_contributions = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -133,5 +139,6 @@ def write_model_inputs(
         timepoint_req=tmp_req,
         percent_req=percent_req,
         percent_map=percent_map,
+        project_contributions=project_contributions,
         reserve_type="frequency_response",
     )

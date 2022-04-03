@@ -1,0 +1,3 @@
+ba	project	percent_power_req	percent_capacity_req
+Zone1	Customer_PV	.	0.03
+Zone1	Wind	0.05	.
