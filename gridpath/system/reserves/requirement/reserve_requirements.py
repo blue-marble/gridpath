@@ -47,8 +47,8 @@ def generic_add_model_components(
     1) the reserve requirement by zone and timepoint, if any
     2) the reserve requirement as a percent of load and map for which load
     zones' load to consider
-    3) the contributions to the reserve requirement from projects: there are two 
-    types of these contributions, those based on the power output in the timepoint 
+    3) the contributions to the reserve requirement from projects: there are two
+    types of these contributions, those based on the power output in the timepoint
     and those based on the project capacity.
     """
 
@@ -76,26 +76,28 @@ def generic_add_model_components(
     )
 
     # Projects contributing to BA requirement based on power output in the timepoint
+    # and on capacity in the period
     setattr(
         m,
         ba_prj_req_contribution_set,
-        Set(dimen=2, within=getattr(m, reserve_zone_set)*m.PROJECTS)
+        Set(dimen=2, within=getattr(m, reserve_zone_set) * m.PROJECTS),
     )
 
     setattr(
         m,
         prj_power_param,
-        Param(getattr(m, ba_prj_req_contribution_set), within=PercentFraction, default=0),
+        Param(
+            getattr(m, ba_prj_req_contribution_set), within=PercentFraction, default=0
+        ),
     )
 
     setattr(
         m,
         prj_capacity_param,
-        Param(getattr(m, ba_prj_req_contribution_set), within=PercentFraction,
-              default=0),
+        Param(
+            getattr(m, ba_prj_req_contribution_set), within=PercentFraction, default=0
+        ),
     )
-
-    # Project contributions based on capacity in the period
 
     def reserve_requirement_rule(mod, reserve_zone, tmp):
         # If we have a map of reserve zones to load zones, apply the percentage
@@ -110,9 +112,36 @@ def generic_add_model_components(
         else:
             percentage_target = 0
 
+
+        # Project contributions, if any projects in the respective set
+        if getattr(mod, ba_prj_req_contribution_set):
+            # Project contributions to requirement based on power output
+            prj_pwr_contribution = sum(
+                getattr(mod, prj_power_param)[reserve_zone, prj]
+                * mod.Power_Provision_MW[prj, tmp]
+                for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
+                if _reserve_zone == reserve_zone
+            )
+
+            # Project contributions to requirement based on (available) capacity
+            # We are not holding the extra reserves when projects are unavailable
+            prj_cap_contribution = sum(
+                getattr(mod, prj_capacity_param)[reserve_zone, prj]
+                * mod.Capacity_MW[prj, mod.period[tmp]]
+                * mod.Availability_Derate[prj, tmp]
+                for (_reserve_zone, prj) in
+                getattr(mod, ba_prj_req_contribution_set)
+                if _reserve_zone == reserve_zone
+            )
+        else:
+            prj_pwr_contribution = 0
+            prj_cap_contribution = 0
+
         return (
             getattr(mod, reserve_requirement_tmp_param)[reserve_zone, tmp]
             + percentage_target
+            + prj_pwr_contribution
+            + prj_cap_contribution
         )
 
     setattr(
@@ -198,7 +227,7 @@ def generic_load_model_data(
         data_portal.load(
             filename=prj_contr_filename,
             index=getattr(m, ba_prj_req_contribution_set),
-            param=(getattr(m, prj_power_param), getattr(m, prj_capacity_param))
+            param=(getattr(m, prj_power_param), getattr(m, prj_capacity_param)),
         )
     else:
         data_portal.data()[ba_prj_req_contribution_set] = {None: []}
@@ -334,7 +363,7 @@ def generic_get_inputs_from_database(
             reserve_type=reserve_type,
             reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
             scenario_id=scenario_id,
-            reserve_type_req_subscenario_id=reserve_type_req_subscenario_id
+            reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
         )
     )
 
@@ -427,25 +456,22 @@ def generic_write_model_inputs(
 
     if prj_contributions:
         with open(
-            os.path.join(inputs_dir,
-                         "{}_requirement_project_contributions.tab".format(
-                             reserve_type)),
+            os.path.join(
+                inputs_dir,
+                "{}_requirement_project_contributions.tab".format(reserve_type),
+            ),
             "w",
             newline="",
         ) as prj_file:
             writer = csv.writer(prj_file, delimiter="\t", lineterminator="\n")
 
             # Write header
-            writer.writerow(["ba", "project", "percent_power_req", "percent_capacity_req"])
+            writer.writerow(
+                ["ba", "project", "percent_power_req", "percent_capacity_req"]
+            )
             for (ba, prj, pwr, cap) in project_contributions:
                 if pwr is None:
                     pwr = "."
                 if cap is None:
                     cap = "."
-                writer.writerow(
-                    [ba, prj, pwr, cap])
-
-
-
-
-
+                writer.writerow([ba, prj, pwr, cap])
