@@ -35,22 +35,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`CRBN_PRJS`                                                     |
-    | | *Within*: :code:`PROJECTS`                                            |
+    | | :code:`CRBN_PRJS_CRBN_CAP_ZONES`                                      |
+    | | *Within*: :code:`m.PROJECTS * m.CARBON_CAP_ZONES`                     |                        |
     |                                                                         |
-    | Two set of carbonaceous projects we need to track for the carbon cap.   |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
-    +=========================================================================+
-    | | :code:`carbon_cap_zone`                                               |
-    | | *Defined over*: :code:`CRBN_PRJS`                                     |
-    | | *Within*: :code:`CARBON_CAP_ZONES`                                    |
-    |                                                                         |
-    | This param describes the carbon cap zone for each carbonaceous project. |
+    | Two-dimensional set of carbonaceous projects and the carbon cap zones   |
+    | they contribute to. Projects can contribute to multiple carbon cap      |
+    | zones.                                                                  |
     +-------------------------------------------------------------------------+
 
     |
@@ -58,6 +48,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
     +=========================================================================+
+    | | :code:`CRBN_PRJS`                                                     |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | Two set of carbonaceous projects we need to track for the carbon cap.   |
+    +-------------------------------------------------------------------------+
     | | :code:`CRBN_PRJS_BY_CARBON_CAP_ZONE`                                  |
     | | *Defined over*: :code:`CARBON_CAP_ZONES`                              |
     | | *Within*: :code:`CRBN_PRJS`                                           |
@@ -76,23 +71,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Sets
     ###########################################################################
-
-    m.CRBN_PRJS = Set(within=m.PROJECTS)
-
-    # Input Params
-    ###########################################################################
-
-    m.carbon_cap_zone = Param(m.CRBN_PRJS, within=m.CARBON_CAP_ZONES)
+    m.CRBN_PRJS_CRBN_CAP_ZONES = Set(dimen=2, within=m.PROJECTS * m.CARBON_CAP_ZONES)
 
     # Derived Sets
     ###########################################################################
 
+    m.CRBN_PRJS = Set(
+        within=m.PROJECTS,
+        initialize=lambda mod: list(
+            set([prj for (prj, z) in mod.CRBN_PRJS_CRBN_CAP_ZONES])
+        ),
+    )
     m.CRBN_PRJS_BY_CARBON_CAP_ZONE = Set(
         m.CARBON_CAP_ZONES,
-        within=m.CRBN_PRJS,
-        initialize=lambda mod, co2_z: subset_init_by_param_value(
-            mod, "CRBN_PRJS", "carbon_cap_zone", co2_z
-        ),
+        within=m.PROJECTS,
+        initialize=lambda mod, co2_z: [
+            prj for (prj, z) in mod.CRBN_PRJS_CRBN_CAP_ZONES if co2_z == z
+        ],
     )
 
     m.CRBN_PRJ_OPR_TMPS = Set(
@@ -120,15 +115,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_cap_zones.tab",
         ),
-        select=("project", "carbon_cap_zone"),
-        param=(m.carbon_cap_zone,),
+        set=m.CRBN_PRJS_CRBN_CAP_ZONES,
     )
-
-    data_portal.data()["CRBN_PRJS"] = {
-        None: list(data_portal.data()["carbon_cap_zone"].keys())
-    }
 
 
 # Database
@@ -195,46 +189,21 @@ def write_model_inputs(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
-    # Make a dict for easy access
-    prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
-        prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
-
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
-        ),
-        "r",
-    ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
-
-        new_rows = list()
-
-        # Append column header
-        header = next(reader)
-        header.append("carbon_cap_zone")
-        new_rows.append(header)
-
-        # Append correct values
-        for row in reader:
-            # If project specified, check if BA specified or not
-            if row[0] in list(prj_zone_dict.keys()):
-                row.append(prj_zone_dict[row[0]])
-                new_rows.append(row)
-            # If project not specified, specify no BA
-            else:
-                row.append(".")
-                new_rows.append(row)
-
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "project_carbon_cap_zones.tab",
         ),
         "w",
         newline="",
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
-        writer.writerows(new_rows)
+        writer.writerow(["project", "carbon_cap_zone"])
+        for row in project_zones.fetchall():
+            writer.writerow(list(row))
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):

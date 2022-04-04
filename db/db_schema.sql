@@ -1419,6 +1419,7 @@ FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
 -- Depends on carbon cap zone geography
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
+-- Projects can contribute to multiple carbon cap zones
 DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
 CREATE TABLE subscenarios_project_carbon_cap_zones (
 project_carbon_cap_zone_scenario_id INTEGER PRIMARY KEY,
@@ -1431,7 +1432,7 @@ CREATE TABLE inputs_project_carbon_cap_zones (
 project_carbon_cap_zone_scenario_id INTEGER,
 project VARCHAR(64),
 carbon_cap_zone VARCHAR(32),
-PRIMARY KEY (project_carbon_cap_zone_scenario_id, project),
+PRIMARY KEY (project_carbon_cap_zone_scenario_id, project, carbon_cap_zone),
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
