@@ -20,11 +20,8 @@ capacity characteristics.
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
-from gridpath.project.capacity.capacity_types.common_methods import (
-    spec_get_inputs_from_database,
-    spec_write_tab_file,
-    spec_determine_inputs,
-)
+from gridpath.project.capacity.capacity_types.common_methods import \
+    spec_determine_inputs
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
