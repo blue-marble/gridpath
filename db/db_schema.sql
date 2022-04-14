@@ -767,6 +767,9 @@ specified_capacity_mw FLOAT, -- grid-facing nameplate capacity
 hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
 hyb_stor_specified_capacity_mw FLOAT, -- e.g. battery tightly-coupled with PV
 specified_capacity_mwh FLOAT, -- storage energy capacity
+fuel_production_capacity_fuelunitperhour FLOAT, -- fuel production capacity (e.g. electrolyzer)
+fuel_release_capacity_fuelunitperhour FLOAT, -- fuel release capacity
+fuel_storage_capacity_fuelunit FLOAT, -- fuel storage capacity
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
@@ -788,6 +791,9 @@ fixed_cost_per_mw_year FLOAT,
 hyb_gen_fixed_cost_per_mw_yr FLOAT,
 hyb_stor_fixed_cost_per_mw_yr FLOAT,
 fixed_cost_per_mwh_year FLOAT,
+fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_storage_capacity_fixed_cost_per_fuelunit_yr FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
@@ -990,6 +996,7 @@ regulation_up_ramp_rate FLOAT,
 regulation_down_ramp_rate FLOAT,
 frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
+fuel_prod_powerunithour_per_fuelunit FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
