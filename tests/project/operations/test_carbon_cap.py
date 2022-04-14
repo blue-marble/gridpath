@@ -104,6 +104,33 @@ class TestCarbonEmissions(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Set: CRBN_PRJS_CRBN_CAP_ZONES
+        expected_prj_zones = sorted(
+            [
+                ("Gas_CCGT", "Carbon_Cap_Zone1"),
+                ("Coal", "Carbon_Cap_Zone1"),
+                ("Gas_CT", "Carbon_Cap_Zone1"),
+                ("Gas_CCGT_New", "Carbon_Cap_Zone1"),
+                ("Gas_CCGT_New_Binary", "Carbon_Cap_Zone1"),
+                ("Gas_CT_New", "Carbon_Cap_Zone1"),
+                ("Gas_CCGT_z2", "Carbon_Cap_Zone2"),
+                ("Coal_z2", "Carbon_Cap_Zone2"),
+                ("Gas_CT_z2", "Carbon_Cap_Zone2"),
+                ("Disp_Binary_Commit", "Carbon_Cap_Zone1"),
+                ("Disp_Cont_Commit", "Carbon_Cap_Zone1"),
+                ("Disp_No_Commit", "Carbon_Cap_Zone1"),
+                ("Clunky_Old_Gen", "Carbon_Cap_Zone1"),
+                ("Clunky_Old_Gen2", "Carbon_Cap_Zone1"),
+                ("Gas_CCGT", "Carbon_Cap_Zone2"),
+            ]
+        )
+
+        actual_prj_zones = sorted(
+            [(prj, z) for (prj, z) in instance.CRBN_PRJS_CRBN_CAP_ZONES]
+        )
+
+        self.assertListEqual(expected_prj_zones, actual_prj_zones)
+
         # Set: CRBN_PRJS
         expected_carbonaceous_projects = sorted(
             [
@@ -128,32 +155,6 @@ class TestCarbonEmissions(unittest.TestCase):
             expected_carbonaceous_projects, actual_carbonaceous_projects
         )
 
-        # Param: carbon_cap_zone
-        expected_cc_zone_by_prj = OrderedDict(
-            sorted(
-                {
-                    "Gas_CCGT": "Carbon_Cap_Zone1",
-                    "Coal": "Carbon_Cap_Zone1",
-                    "Gas_CT": "Carbon_Cap_Zone1",
-                    "Gas_CCGT_New": "Carbon_Cap_Zone1",
-                    "Gas_CCGT_New_Binary": "Carbon_Cap_Zone1",
-                    "Gas_CT_New": "Carbon_Cap_Zone1",
-                    "Gas_CCGT_z2": "Carbon_Cap_Zone2",
-                    "Coal_z2": "Carbon_Cap_Zone2",
-                    "Gas_CT_z2": "Carbon_Cap_Zone2",
-                    "Disp_Binary_Commit": "Carbon_Cap_Zone1",
-                    "Disp_Cont_Commit": "Carbon_Cap_Zone1",
-                    "Disp_No_Commit": "Carbon_Cap_Zone1",
-                    "Clunky_Old_Gen": "Carbon_Cap_Zone1",
-                    "Clunky_Old_Gen2": "Carbon_Cap_Zone1",
-                }.items()
-            )
-        )
-        actual_cc_zone_by_prj = OrderedDict(
-            sorted({p: instance.carbon_cap_zone[p] for p in instance.CRBN_PRJS}.items())
-        )
-        self.assertDictEqual(expected_cc_zone_by_prj, actual_cc_zone_by_prj)
-
         # Set: CRBN_PRJS_BY_CARBON_CAP_ZONE
         expected_prj_by_zone = OrderedDict(
             sorted(
@@ -173,7 +174,9 @@ class TestCarbonEmissions(unittest.TestCase):
                             "Clunky_Old_Gen2",
                         ]
                     ),
-                    "Carbon_Cap_Zone2": sorted(["Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2"]),
+                    "Carbon_Cap_Zone2": sorted(
+                        ["Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Gas_CCGT"]
+                    ),
                 }.items()
             )
         )

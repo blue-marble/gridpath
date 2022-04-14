@@ -1,0 +1,16 @@
+project	carbon_cap_zone
+Gas_CCGT	Carbon_Cap_Zone1
+Coal	Carbon_Cap_Zone1
+Gas_CT	Carbon_Cap_Zone1
+Gas_CCGT_New	Carbon_Cap_Zone1
+Gas_CCGT_New_Binary	Carbon_Cap_Zone1
+Gas_CT_New	Carbon_Cap_Zone1
+Gas_CCGT_z2	Carbon_Cap_Zone2
+Coal_z2	Carbon_Cap_Zone2
+Gas_CT_z2	Carbon_Cap_Zone2
+Disp_Binary_Commit	Carbon_Cap_Zone1
+Disp_Cont_Commit	Carbon_Cap_Zone1
+Disp_No_Commit	Carbon_Cap_Zone1
+Clunky_Old_Gen	Carbon_Cap_Zone1
+Clunky_Old_Gen2	Carbon_Cap_Zone1
+Gas_CCGT	Carbon_Cap_Zone2
