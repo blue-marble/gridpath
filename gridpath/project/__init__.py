@@ -129,6 +129,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             "stor_new_lin",
             "stor_spec",
             "gen_stor_hyb_spec",
+            "fuel_prod_spec",
+            "fuel_prod_new",
         ],
     )
     m.operational_type = Param(
@@ -147,6 +149,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             "gen_var_must_take",
             "stor",
             "gen_var_stor_hyb",
+            "fuel_prod",
         ],
     )
     m.availability_type = Param(
