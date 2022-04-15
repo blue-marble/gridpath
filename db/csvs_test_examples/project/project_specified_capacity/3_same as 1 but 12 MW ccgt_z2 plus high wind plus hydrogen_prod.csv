@@ -3,7 +3,7 @@ Nuclear,2020,6,,,,,,
 Coal,2020,6,,,,,,
 Gas_CCGT,2020,6,,,,,,
 Gas_CT,2020,6,,,,,,
-Wind,2020,2,,,,,,
+Wind,2020,200,,,,,,
 Battery,2020,6,,,6,,,
 Hydro,2020,6,,,,,,
 Nuclear_z2,2020,6,,,,,,
@@ -29,5 +29,6 @@ Clunky_Old_Gen,2020,10,,,,,,
 Clunky_Old_Gen,2030,10,,,,,,
 Gas_CCGT_z3,2020,35,,,,,,
 Gas_CCGT_z3,2030,35,,,,,,
-Hydrogen_Prod,2020,,,,,1,5,3
-Hydrogen_Prod,2030,,,,,1,5,3
+Hydrogen_Prod,2020,,,,,100000,100000,250000
+Hydrogen_Prod,2030,,,,,100000,100000,250000
+Hydrogen_Plant,2020,20,,,,,,

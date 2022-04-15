@@ -70,7 +70,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, fuel, tmp]
+            (mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, fuel, tmp] -
+             mod.Project_Fuel_Contribution_by_Fuel[prj, fuel, tmp])
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             for (prj, fuel, tmp) in mod.FUEL_PRJS_FUEL_WITH_LIMITS_OPR_TMPS

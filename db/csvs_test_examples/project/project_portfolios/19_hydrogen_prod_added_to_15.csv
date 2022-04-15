@@ -7,3 +7,4 @@ Wind,,,gen_spec
 Solar,,,gen_new_lin
 Gas_CCGT_z2,,,gen_spec
 Hydrogen_Prod,,,fuel_prod_spec
+Hydrogen_Plant,,,gen_spec

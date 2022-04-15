@@ -23,3 +23,4 @@ Wind_new,Zone1
 Gas_CCGT_z3,Zone3
 Wind_Battery_Hybrid,Zone1
 Hydrogen_Prod,Zone1
+Hydrogen_Plant,Zone1

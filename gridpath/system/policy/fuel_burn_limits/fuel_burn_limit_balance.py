@@ -76,7 +76,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 f, ba, bt, h
             ]
             - mod.Fuel_Burn_Limit_Overage_Abs_Unit_Expression[f, ba, bt, h]
-            <= mod.fuel_burn_limit_unit[f, ba, bt, h]
+            == mod.fuel_burn_limit_unit[f, ba, bt, h]
         )
 
     m.Meet_Fuel_Burn_Limit_Abs_Constraint = Constraint(

@@ -3532,6 +3532,8 @@ fuel VARCHAR(32),
 operations_fuel_burn_mmbtu FLOAT,
 startup_fuel_burn_mmbtu FLOAT,
 total_fuel_burn_mmbtu FLOAT,
+fuel_contribution_fuelunit FLOAT,
+net_fuel_burn_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint, fuel)
 );
 

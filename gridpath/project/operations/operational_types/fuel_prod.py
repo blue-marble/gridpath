@@ -350,7 +350,6 @@ def power_provision_rule(mod, prj, tmp):
     """
     return -mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
 
-
 def variable_om_cost_rule(mod, prj, tmp):
     """ """
     return (
@@ -358,13 +357,11 @@ def variable_om_cost_rule(mod, prj, tmp):
         * mod.variable_om_cost_per_mwh[prj]
     )
 
-
-def fuel_burn_rule(mod, prj, tmp):
+def fuel_contribution_rule(mod, prj, tmp):
     """
     Fuel burn returned is negative (i.e. added to the fuel availability)
     """
-    return -mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
-
+    return mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
 
 # Validations
 # TODO: validate that a fuel is specified for these projects
@@ -451,7 +448,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 "fuel_in_storage_fuelunit",
                 "produce_fuel_fuelunitperhour",
                 "release_fuel_fuelunitperhour",
-                "fuel_prod_power_consumption_powerunit"
+                "fuel_prod_power_consumption_powerunit",
             ]
         )
         for (p, tmp) in mod.FUEL_PROD_OPR_TMPS:
@@ -536,3 +533,6 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     # Validate operational chars table inputs
     validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, "fuel_prod")
+
+
+# TODO: validate that these projects have only a single fuel specified

@@ -445,5 +445,4 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     ] = spec_fuel_rel_fixed_cost_dict
     main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = spec_fuel_stor_fixed_cost_dict
 
-    print(main_dict)
     return project_period_list, main_dict

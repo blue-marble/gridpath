@@ -467,7 +467,6 @@ def load_optype_model_data(
     # This requires that the param name consist of the operational type
     # name, an underscore, and the column name
     for req in required_columns_types.keys():
-        print(op_type, req)
         type_method = types_dict[required_columns_types[req]]
         data_portal.data()["{}_{}".format(op_type, req)] = get_param_dict(
             df=op_type_df, column_name=req, cast_as_type=type_method

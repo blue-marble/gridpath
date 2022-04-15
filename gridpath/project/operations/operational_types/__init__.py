@@ -518,3 +518,9 @@ def curtailment_cost_rule(mod, prj, tmp):
     is 0.
     """
     return 0
+
+
+def fuel_contribution_rule(mod, prj, tmp):
+    """
+    """
+    return 0
