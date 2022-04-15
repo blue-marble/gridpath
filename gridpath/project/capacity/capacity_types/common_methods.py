@@ -401,13 +401,13 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = float(row[3])
             hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = float(row[4])
             spec_capacity_mwh_dict[(row[0], row[1])] = float(row[5])
-            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[10])
-            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[11])
-            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[12])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[6])
-            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[7])
-            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[8])
-            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = float(row[9])
+            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[6])
+            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[7])
+            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[8])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[9])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[10])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[11])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = float(row[12])
             spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
             spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
             spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
@@ -445,4 +445,5 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     ] = spec_fuel_rel_fixed_cost_dict
     main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = spec_fuel_stor_fixed_cost_dict
 
+    print(main_dict)
     return project_period_list, main_dict

@@ -996,7 +996,7 @@ regulation_up_ramp_rate FLOAT,
 regulation_down_ramp_rate FLOAT,
 frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
-fuel_prod_powerunithour_per_fuelunit FLOAT,
+powerunithour_per_fuelunit FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),

@@ -167,7 +167,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: list(
-            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.STOR)
+            set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS if g in mod.FUEL_PROD)
         ),
     )
 
@@ -404,7 +404,7 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     # if os.path.exists(linked_inputs_filename):
     #     data_portal.load(
     #         filename=linked_inputs_filename,
-    #         index=mod.STOR_LINKED_TMPS,
+    #         index=mod.FUEL_PROD_LINKED_TMPS,
     #         param=(
     #             mod.stor_linked_starting_energy_in_storage,
     #             mod.stor_linked_discharge,
@@ -431,7 +431,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "dispatch_stor.csv",
+            "dispatch_fuel_prod.csv",
         ),
         "w",
         newline="",
@@ -454,7 +454,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 "fuel_prod_power_consumption_powerunit"
             ]
         )
-        for (p, tmp) in mod.STOR_OPR_TMPS:
+        for (p, tmp) in mod.FUEL_PROD_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -508,7 +508,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     #                 "linked_charge",
     #             ]
     #         )
-    #         for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+    #         for (p, tmp) in sorted(mod.FUEL_PROD_OPR_TMPS):
     #             if tmp in tmps_to_link:
     #                 writer.writerow(
     #                     [
