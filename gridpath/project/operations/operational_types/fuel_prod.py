@@ -26,7 +26,7 @@ fuel production and fuel release decisions in the previous timepoint. Fuel
 production projects do not provide reserves or other system services.
 
 Costs for this operational type include variable O&M costs, currently based on the
-project's power consumption (note that this is applied through the
+project's power consumption (note that this is applied through the generic
 variable_om_cost_per_mwh parameter, which is specified in project.operatons.__init__.
 
 """

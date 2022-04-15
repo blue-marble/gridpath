@@ -245,6 +245,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     spec_params = spec_get_inputs_from_database(
         conn=conn, subscenarios=subscenarios, capacity_type="fuel_prod_spec"
     )
+
     return spec_params
 
 
