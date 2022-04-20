@@ -213,7 +213,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return cap_type_init.fuel_prod_capacity_rule(mod, prj, prd)
 
-    m.Fuel_Production_Capacity_FuelUnitPerHour = Expression(m.PRJ_OPR_PRDS, rule=fuel_prod_capacity_rule)
+    m.Fuel_Production_Capacity_FuelUnitPerHour = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_prod_capacity_rule
+    )
 
     def fuel_release_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
@@ -224,8 +226,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return cap_type_init.fuel_release_capacity_rule(mod, prj, prd)
 
-    m.Fuel_Release_Capacity_FuelUnitPerHour = Expression(m.PRJ_OPR_PRDS,
-                                                   rule=fuel_release_capacity_rule)
+    m.Fuel_Release_Capacity_FuelUnitPerHour = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_release_capacity_rule
+    )
 
     def fuel_storage_capacity_rule(mod, prj, prd):
         cap_type = mod.capacity_type[prj]
@@ -236,8 +239,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return cap_type_init.fuel_storage_capacity_rule(mod, prj, prd)
 
-    m.Fuel_Storage_Capacity_FuelUnit = Expression(m.PRJ_OPR_PRDS,
-                                                   rule=fuel_storage_capacity_rule)
+    m.Fuel_Storage_Capacity_FuelUnit = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_storage_capacity_rule
+    )
 
 
 # Set Rules

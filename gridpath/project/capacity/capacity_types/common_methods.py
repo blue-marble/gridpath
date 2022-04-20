@@ -226,10 +226,8 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         AND capacity_type = '{capacity_type}'
         ;""".format(
             temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
-            project_specified_capacity_scenario_id=subscenarios
-                .PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            project_specified_fixed_cost_scenario_id=subscenarios
-                .PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
+            project_specified_capacity_scenario_id=subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            project_specified_fixed_cost_scenario_id=subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
             project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             capacity_type=capacity_type,
         )
@@ -376,7 +374,7 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
         ),
         sep="\t",
     )
-    
+
     for row in zip(
         df["project"],
         df["period"],
@@ -443,6 +441,8 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     main_dict[
         "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
     ] = spec_fuel_rel_fixed_cost_dict
-    main_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = spec_fuel_stor_fixed_cost_dict
+    main_dict[
+        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
+    ] = spec_fuel_stor_fixed_cost_dict
 
     return project_period_list, main_dict

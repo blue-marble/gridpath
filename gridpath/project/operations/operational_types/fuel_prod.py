@@ -350,6 +350,7 @@ def power_provision_rule(mod, prj, tmp):
     """
     return -mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
 
+
 def variable_om_cost_rule(mod, prj, tmp):
     """ """
     return (
@@ -357,19 +358,21 @@ def variable_om_cost_rule(mod, prj, tmp):
         * mod.variable_om_cost_per_mwh[prj]
     )
 
+
 def fuel_contribution_rule(mod, prj, tmp):
     """
     Fuel burn returned is negative (i.e. added to the fuel availability)
     """
     return mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
 
+
 # Validations
 # TODO: validate that a fuel is specified for these projects
 
 
-
 # Input-Output
 ###############################################################################
+
 
 def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     """

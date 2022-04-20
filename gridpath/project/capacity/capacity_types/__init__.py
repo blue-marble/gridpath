@@ -177,4 +177,5 @@ def fuel_storage_capacity_rule(mod, prj, prd):
     """
     return 0
 
+
 # TODO: do we need rules for new "fuel" capacity

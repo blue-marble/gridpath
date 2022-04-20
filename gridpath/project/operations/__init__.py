@@ -896,7 +896,7 @@ def write_model_inputs(
         "aux_consumption_frac_power",
         "last_commitment_stage",
         "curtailment_cost_per_pwh",
-        "powerunithour_per_fuelunit"
+        "powerunithour_per_fuelunit",
     ]
     append_to_input_file(
         inputs_directory=inputs_directory,

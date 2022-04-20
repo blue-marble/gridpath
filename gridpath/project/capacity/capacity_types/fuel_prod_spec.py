@@ -179,13 +179,9 @@ def capacity_cost_rule(mod, prj, prd):
     """
     return (
         mod.fuel_production_capacity_fuelunitperhour[prj, prd]
-        * mod.fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr[
-            prj, prd
-        ]
+        * mod.fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr[prj, prd]
         + mod.fuel_release_capacity_fuelunitperhour[prj, prd]
-        * mod.fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr[
-            prj, prd
-        ]
+        * mod.fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr[prj, prd]
         + mod.fuel_storage_capacity_fuelunit[prj, prd]
         * mod.fuel_storage_capacity_fixed_cost_per_fuelunit_yr[prj, prd]
     )
@@ -217,17 +213,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         "fuel_storage_capacity_fuelunit"
     ]
 
-    data_portal.data()["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"] = spec_params_dict[
+    data_portal.data()[
         "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ]
+    ] = spec_params_dict["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"]
 
-    data_portal.data()["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"] = spec_params_dict[
+    data_portal.data()[
         "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
-    ]
+    ] = spec_params_dict["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"]
 
-    data_portal.data()["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"] = spec_params_dict[
+    data_portal.data()[
         "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
-    ]
+    ] = spec_params_dict["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"]
 
 
 # Database
