@@ -366,6 +366,37 @@ def fuel_contribution_rule(mod, prj, tmp):
     return mod.Release_Fuel_FuelUnitPerHour[prj, tmp]
 
 
+def power_delta_rule(mod, prj, tmp):
+    """
+    This isn't used downstream for now.
+    """
+
+    if check_if_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
+    ) and (
+        check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[prj],
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        )
+    ):
+        pass
+    else:
+        return (
+            mod.Fuel_Prod_Consume_Power_PowerUnit[prj, tmp]
+            - mod.Fuel_Prod_Consume_Power_PowerUnit[
+                prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
+            ]
+        )
+
+
 # Validations
 # TODO: validate that a fuel is specified for these projects
 
