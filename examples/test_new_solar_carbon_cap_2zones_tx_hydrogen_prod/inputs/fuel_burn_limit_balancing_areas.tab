@@ -1,0 +1,4 @@
+fuel	fuel_burn_limit_ba	allow_violation	violation_penalty_per_unit
+Coal	Coal_Burn_BA	0	0.0
+Gas	Gas_Burn_BA	0	0.0
+Hydrogen	Hydrogen_Burn_BA	0	0.0
