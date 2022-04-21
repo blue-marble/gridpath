@@ -133,11 +133,11 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_horizons
         USING (balancing_type_horizon, horizon)
         JOIN
-        (SELECT fuel_burn_limit_ba
+        (SELECT fuel, fuel_burn_limit_ba
         FROM inputs_geography_fuel_burn_limit_balancing_areas
         WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}) as 
         relevant_zones
-        USING (fuel_burn_limit_ba)
+        USING (fuel, fuel_burn_limit_ba)
         WHERE fuel_burn_limit_scenario_id = {fuel_burn_limit_scenario_id}
         AND subproblem_id = {subproblem_id}
         AND stage_id = {stage_id};
