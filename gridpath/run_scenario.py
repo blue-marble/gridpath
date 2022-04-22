@@ -697,36 +697,54 @@ def solve(instance, parsed_arguments):
     else:
         optimizer = SolverFactory(solver_name)
 
-    # Apply the solver options (if any)
-    if "solver" in solver_options.keys():
-        # The "solver" needs to be specified if using a "shell solver" -- e.g. we
-        # could be using CPLEX through GAMS
-        # TODO: these should be passed differently for shell solvers; we need
-        #  logic to write options files for the selected solver; see
-        #  https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
-        pass
-    else:
-        for opt in solver_options.keys():
-            optimizer.options[opt] = solver_options[opt]
-
     # Solve
+    # Apply the solver options (if any)
     # Note: Pyomo moves the results to the instance object by default.
     # If you want the results to stay into a results object, set the
     # load_solutions argument to False:
     # >>> results = solver.solve(instance, load_solutions=False)
-    # With "shell solvers" (e.g. GAMS, AMPL), we need to specify which solver to
-    # actually use
-    # If "solver" is not specified, the "optimizer" object solve method does not have
-    # the "solver" argument
-    if "solver" in solver_options.keys():
-        results = optimizer.solve(
-            instance,
-            solver=solver_options["solver"],
-            tee=not parsed_arguments.mute_solver_output,
-            keepfiles=parsed_arguments.keepfiles,
-            symbolic_solver_labels=parsed_arguments.symbolic,
-        )
+    # With "shell solvers" (e.g. GAMS, AMPL), we can specify which solver (e.g.
+    # CPLEX, Gurobi) to use
+    # No access to AMPL, so not supported at this pont
+    if solver_name == "gams":
+        # Specify which "solver" to use if using GAMS as a "shell solver" --
+        # e.g. we could be using CPLEX through GAMS
+        # The following way to pass options to the solver is GAMS-specific, may also
+        # work for AMPL but not supported at this point
+        # Based on: https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
+        if "solver" in solver_options.keys():
+            add_options = [
+                "GAMS_MODEL.optfile = 1;",
+                "$onecho > {solver}.opt".format(solver=solver_options["solver"]),
+            ]
+            for opt in solver_options.keys():
+                if opt == "solver":
+                    pass
+                else:
+                    opt_string = "{option} {value}".format(
+                        option=opt, value=solver_options[opt]
+                    )
+                    add_options.append(opt_string)
+
+            add_options.append("$offecho")
+
+            results = optimizer.solve(
+                instance,
+                solver=solver_options["solver"],
+                add_options=add_options,
+                tee=not parsed_arguments.mute_solver_output,
+                keepfiles=parsed_arguments.keepfiles,
+                symbolic_solver_labels=parsed_arguments.symbolic,
+            )
+        else:
+            warnings.warn(
+                "A solver must be specified in the solver settings if you "
+                "want to pass settings through GAMS."
+            )
     else:
+        for opt in solver_options.keys():
+            optimizer.options[opt] = solver_options[opt]
+
         results = optimizer.solve(
             instance,
             tee=not parsed_arguments.mute_solver_output,
