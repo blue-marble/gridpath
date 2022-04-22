@@ -1032,6 +1032,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "maximum_duration_hours",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "powerunithour_per_fuelunit",
     ]
 
     sql = """SELECT {}

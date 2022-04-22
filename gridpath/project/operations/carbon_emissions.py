@@ -57,7 +57,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
 
         return sum(
-            mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+            (
+                mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+                - mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+            )
             * mod.co2_intensity_tons_per_mmbtu[f]
             for f in mod.FUELS_BY_PRJ[prj]
         )

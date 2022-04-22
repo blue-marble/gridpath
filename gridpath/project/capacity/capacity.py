@@ -204,6 +204,45 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Energy_Capacity_MWh = Expression(m.PRJ_OPR_PRDS, rule=energy_capacity_rule)
 
+    def fuel_prod_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "fuel_prod_capacity_rule"):
+            return imported_capacity_modules[cap_type].fuel_prod_capacity_rule(
+                mod, prj, prd
+            )
+        else:
+            return cap_type_init.fuel_prod_capacity_rule(mod, prj, prd)
+
+    m.Fuel_Production_Capacity_FuelUnitPerHour = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_prod_capacity_rule
+    )
+
+    def fuel_release_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "fuel_release_capacity_rule"):
+            return imported_capacity_modules[cap_type].fuel_release_capacity_rule(
+                mod, prj, prd
+            )
+        else:
+            return cap_type_init.fuel_release_capacity_rule(mod, prj, prd)
+
+    m.Fuel_Release_Capacity_FuelUnitPerHour = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_release_capacity_rule
+    )
+
+    def fuel_storage_capacity_rule(mod, prj, prd):
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "fuel_storage_capacity_rule"):
+            return imported_capacity_modules[cap_type].fuel_storage_capacity_rule(
+                mod, prj, prd
+            )
+        else:
+            return cap_type_init.fuel_storage_capacity_rule(mod, prj, prd)
+
+    m.Fuel_Storage_Capacity_FuelUnit = Expression(
+        m.PRJ_OPR_PRDS, rule=fuel_storage_capacity_rule
+    )
+
 
 # Set Rules
 ###############################################################################

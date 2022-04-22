@@ -19,3 +19,7 @@ Negative_Carbon_Fuel,2020,1,6
 Negative_Carbon_Fuel,2020,2,6
 Negative_Carbon_Fuel,2030,1,6
 Negative_Carbon_Fuel,2030,2,6
+Hydrogen,2020,1,0.1
+Hydrogen,2020,2,0.1
+Hydrogen,2030,1,0.1
+Hydrogen,2030,2,0.1
