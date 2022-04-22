@@ -392,7 +392,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_CARBON_TAX_ALLOWANCE_SCENARIO_ID,
-            subscenarios.CARBON_TAX_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_CARBON_TAX_ZONE_SCENARIO_ID,
         )
     )
 
