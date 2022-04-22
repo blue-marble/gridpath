@@ -314,6 +314,10 @@ Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new
 
+Specified Fuel Production Facilities (*fuel_prod_spec*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.capacity_types.fuel_prod_spec
+
 .. _project-availability-type-section-ref:
 
 Project Availability Types
@@ -393,6 +397,10 @@ Curtailable Variable Generation-Storage Hybrid (*gen_var_stor_hyb*)
 Shiftable Load (*dr*)
 ^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dr
+
+Fuel Production (*fuel_prod*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.fuel_prod
 
 .. _load-balance-section-ref:
 
