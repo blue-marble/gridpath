@@ -15,6 +15,10 @@
 """
 This capacity type describes fuel production facilities with exogenously specified
 capacity characteristics.
+
+Note that it is usually the case that you also need to enforce fuel burn limits to
+ensure that only fuel produced by projects of this type (and potentially
+'fuel_prod_new') can be used by other projects.
 """
 
 from pyomo.environ import Set, Param, NonNegativeReals

@@ -29,6 +29,9 @@ Costs for this operational type include variable O&M costs, currently based on t
 project's power consumption (note that this is applied through the generic
 variable_om_cost_per_mwh parameter, which is specified in project.operatons.__init__.
 
+Note that it is usually the case that you also need to enforce fuel burn limits to
+ensure that only fuel produced by projects of this type can be used by other projects.
+
 """
 
 import csv
