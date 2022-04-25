@@ -334,6 +334,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "hyb_gen_capacity_mw",
                 "hyb_stor_capacity_mw",
                 "capacity_mwh",
+                "fuel_prod_capacity_fuelunitperhour",
+                "fuel_rel_capacity_fuelunitperhour",
+                "fuel_stor_capacity_fuelunit",
             ]
         )
         for (prj, p) in m.PRJ_OPR_PRDS:
@@ -348,6 +351,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Hyb_Gen_Capacity_MW[prj, p]),
                     value(m.Hyb_Stor_Capacity_MW[prj, p]),
                     value(m.Energy_Capacity_MWh[prj, p]),
+                    value(m.Fuel_Production_Capacity_FuelUnitPerHour[prj, p]),
+                    value(m.Fuel_Release_Capacity_FuelUnitPerHour[prj, p]),
+                    value(m.Fuel_Storage_Capacity_FuelUnit[prj, p]),
                 ]
             )
 

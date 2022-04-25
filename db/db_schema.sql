@@ -3040,11 +3040,17 @@ capacity_mw FLOAT,
 hyb_gen_capacity_mw FLOAT,
 hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
+fuel_prod_capacity_fuelunitperhour FLOAT,
+fuel_rel_capacity_fuelunitperhour FLOAT,
+fuel_stor_capacity_fuelunit FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
 new_build_binary INTEGER,
 retired_mw FLOAT,
 retired_binary INTEGER,
+new_fuel_prod_capacity_fuelunitperhour FLOAT,
+new_fuel_rel_capacity_fuelunitperhour FLOAT,
+new_fuel_stor_capacity_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 

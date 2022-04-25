@@ -134,6 +134,14 @@ def update_capacity_results_table(
             new_build_binary = get_column_row_value(header, "new_build_binary", row)
             retired_mw = get_column_row_value(header, "retired_mw", row)
             retired_binary = get_column_row_value(header, "retired_binary", row)
+            fuel_prod = get_column_row_value(header,
+                                             "new_fuel_prod_capacity_fuelunitperhour", row)
+            fuel_rel = get_column_row_value(header,
+                                             "new_fuel_rel_capacity_fuelunitperhour",
+                                            row)
+            fuel_stor = get_column_row_value(header,
+                                             "new_fuel_stor_capacity_fuelunitperhour",
+                                             row)
 
             results.append(
                 (
@@ -142,6 +150,9 @@ def update_capacity_results_table(
                     new_build_binary,
                     retired_mw,
                     retired_binary,
+                    fuel_prod,
+                    fuel_rel,
+                    fuel_stor,
                     scenario_id,
                     project,
                     period,
@@ -157,7 +168,10 @@ def update_capacity_results_table(
         new_build_mwh = ?,
         new_build_binary = ?,
         retired_mw = ?,
-        retired_binary = ?
+        retired_binary = ?,
+        new_fuel_prod_capacity_fuelunitperhour = ?,
+        new_fuel_rel_capacity_fuelunitperhour = ?,
+        new_fuel_stor_capacity_fuelunit = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?

@@ -512,9 +512,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "vintage",
                 "technology",
                 "load_zone",
-                "new_fuel_production_capacity_fuelunitperhour",
-                "new_fuel_release_capacity_fuelunitperhour",
-                "new_fuel_storage_capacity_fuelunitperhour",
+                "new_fuel_prod_capacity_fuelunitperhour",
+                "new_fuel_rel_capacity_fuelunitperhour",
+                "new_fuel_stor_capacity_fuelunitperhour",
             ]
         )
         for (prj, v) in m.FUEL_PROD_NEW_VNTS:
@@ -560,16 +560,16 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
             (
-                capacity_results_agg_df["new_fuel_production_capacity_fuelunitperhour"]
+                capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"]
                 > 0
             )
-            | (capacity_results_agg_df["new_fuel_release_capacity_fuelunitperhour"] > 0)
-            | (capacity_results_agg_df["new_fuel_storage_capacity_fuelunitperhour"] > 0)
+            | (capacity_results_agg_df["new_fuel_rel_capacity_fuelunitperhour"] > 0)
+            | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunitperhour"] > 0)
         ][
             [
-                "new_fuel_production_capacity_fuelunitperhour",
-                "new_fuel_release_capacity_fuelunitperhour",
-                "new_fuel_storage_capacity_fuelunitperhour",
+                "new_fuel_prod_capacity_fuelunitperhour",
+                "new_fuel_rel_capacity_fuelunitperhour",
+                "new_fuel_stor_capacity_fuelunitperhour",
             ]
         ]
     )
