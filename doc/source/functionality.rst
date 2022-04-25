@@ -318,6 +318,10 @@ Specified Fuel Production Facilities (*fuel_prod_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.fuel_prod_spec
 
+Candidate Fuel Production Facilities (*fuel_prod_new*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.capacity_types.fuel_prod_new
+
 .. _project-availability-type-section-ref:
 
 Project Availability Types

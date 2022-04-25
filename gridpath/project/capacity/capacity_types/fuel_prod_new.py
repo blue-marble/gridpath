@@ -13,15 +13,11 @@
 # limitations under the License.
 
 """
-This capacity type describes storage projects that can be built by the
+This capacity type describes fuel production projects that can be built by the
 optimization at a cost. Investment decisions are made separately for the
-project's power capacity and its energy capacity, therefore endogenously
-determining the duration sizing of the storage. The decisions are linearized,
-i.e. the model decides how much power capacity and how much energy capacity
-to build at a project, not whether or not to built a project of pre-defined
-capacity. Once built, these storage projects remain available for the duration
-of their pre-specified lifetime. Minimum and maximum power capacity and
-duration constraints can be optionally implemented.
+project's fuel production, fuel release, and fuel storage capacity, therefore
+endogenously determining the sizing of the facility. The decisions are
+linearized.
 
 Like with new-build generation, capacity costs added to the objective
 function include the annualized capital cost and the annual fixed O&M cost.
