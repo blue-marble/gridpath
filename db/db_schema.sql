@@ -812,6 +812,7 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
+-- These currently include annualized capital costs and annual fixed O&M
 DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
@@ -822,6 +823,9 @@ annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
+fuel_production_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel prod cost
+fuel_release_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel release cost
+fuel_storage_capacity_cost_per_fuelunit_yr FLOAT, -- annualized fuel storage cost
 PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
