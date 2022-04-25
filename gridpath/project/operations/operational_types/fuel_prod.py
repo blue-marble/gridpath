@@ -386,7 +386,7 @@ def power_delta_rule(mod, prj, tmp):
         or check_boundary_type(
             mod=mod,
             tmp=tmp,
-            balancing_type=mod.balancing_type_project[g],
+            balancing_type=mod.balancing_type_project[prj],
             boundary_type="linked",
         )
     ):

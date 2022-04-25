@@ -157,10 +157,19 @@ class TestCapacity(unittest.TestCase):
         )
         nsb = [tuple(x) for x in nsb_df.values]
 
+        fp_df = pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs", "fuel_prod_new_vintage_costs.tab"
+            ),
+            usecols=["project", "vintage"],
+            sep="\t",
+        )
+        fp = [tuple(x) for x in fp_df.values]
+
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + dr)
+        expected_proj_period_set = sorted(eg + ng + ngb + ns + nsb + fp + dr)
         actual_proj_period_set = sorted(
             [(prj, period) for (prj, period) in instance.PRJ_OPR_PRDS]
         )
