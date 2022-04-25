@@ -381,6 +381,7 @@ def storage_rule(mod, prj, prd):
         if project == prj
     )
 
+
 # Capacity Type Methods
 ###############################################################################
 
@@ -559,10 +560,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
     # Get all technologies with new build production OR release OR energy capacity
     new_build_df = pd.DataFrame(
         capacity_results_agg_df[
-            (
-                capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"]
-                > 0
-            )
+            (capacity_results_agg_df["new_fuel_prod_capacity_fuelunitperhour"] > 0)
             | (capacity_results_agg_df["new_fuel_rel_capacity_fuelunitperhour"] > 0)
             | (capacity_results_agg_df["new_fuel_stor_capacity_fuelunitperhour"] > 0)
         ][

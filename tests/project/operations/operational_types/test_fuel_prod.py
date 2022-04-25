@@ -112,8 +112,10 @@ class TestFuelProd(unittest.TestCase):
         self.assertListEqual(expected_tmps, actual_tmps)
 
         # Param: fuel_prod_powerunithour_per_fuelunit
-        expected_fuel_prod_powerunithour_per_fuelunit = {"Fuel_Prod": 10,
-                                                         "Fuel_Prod_New": 10}
+        expected_fuel_prod_powerunithour_per_fuelunit = {
+            "Fuel_Prod": 10,
+            "Fuel_Prod_New": 10,
+        }
         actual_fuel_prod_powerunithour_per_fuelunit = {
             prj: instance.fuel_prod_powerunithour_per_fuelunit[prj]
             for prj in instance.FUEL_PROD

@@ -73,9 +73,7 @@ def get_project_operational_timepoints(project_list):
     nsb = [tuple(x) for x in nsb_df.values if x[0] in project_list]
 
     fp_df = pd.read_csv(
-        os.path.join(
-            TEST_DATA_DIRECTORY, "inputs", "fuel_prod_new_vintage_costs.tab"
-        ),
+        os.path.join(TEST_DATA_DIRECTORY, "inputs", "fuel_prod_new_vintage_costs.tab"),
         usecols=["project", "vintage"],
         sep="\t",
     )

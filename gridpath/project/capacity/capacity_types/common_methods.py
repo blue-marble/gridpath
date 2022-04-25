@@ -134,14 +134,15 @@ def update_capacity_results_table(
             new_build_binary = get_column_row_value(header, "new_build_binary", row)
             retired_mw = get_column_row_value(header, "retired_mw", row)
             retired_binary = get_column_row_value(header, "retired_binary", row)
-            fuel_prod = get_column_row_value(header,
-                                             "new_fuel_prod_capacity_fuelunitperhour", row)
-            fuel_rel = get_column_row_value(header,
-                                             "new_fuel_rel_capacity_fuelunitperhour",
-                                            row)
-            fuel_stor = get_column_row_value(header,
-                                             "new_fuel_stor_capacity_fuelunitperhour",
-                                             row)
+            fuel_prod = get_column_row_value(
+                header, "new_fuel_prod_capacity_fuelunitperhour", row
+            )
+            fuel_rel = get_column_row_value(
+                header, "new_fuel_rel_capacity_fuelunitperhour", row
+            )
+            fuel_stor = get_column_row_value(
+                header, "new_fuel_stor_capacity_fuelunitperhour", row
+            )
 
             results.append(
                 (
