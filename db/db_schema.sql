@@ -812,6 +812,7 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
+-- These currently include annualized capital costs and annual fixed O&M
 DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
@@ -822,6 +823,9 @@ annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
 supply_curve_scenario_id INTEGER,
+fuel_production_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel prod cost
+fuel_release_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel release cost
+fuel_storage_capacity_cost_per_fuelunit_yr FLOAT, -- annualized fuel storage cost
 PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
@@ -3036,11 +3040,17 @@ capacity_mw FLOAT,
 hyb_gen_capacity_mw FLOAT,
 hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
+fuel_prod_capacity_fuelunitperhour FLOAT,
+fuel_rel_capacity_fuelunitperhour FLOAT,
+fuel_stor_capacity_fuelunit FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
 new_build_binary INTEGER,
 retired_mw FLOAT,
 retired_binary INTEGER,
+new_fuel_prod_capacity_fuelunitperhour FLOAT,
+new_fuel_rel_capacity_fuelunitperhour FLOAT,
+new_fuel_stor_capacity_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 

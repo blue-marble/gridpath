@@ -127,6 +127,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Shift_DR",
                 "Wind_Battery_Hybrid",
                 "Fuel_Prod",
+                "Fuel_Prod_New",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])

@@ -27,3 +27,4 @@ Nuclear_Flexible	Zone1	gen_spec	exogenous	1	gen_always_on	day	.	.	.	.	0.72	.	.	5
 Shift_DR	Zone1	dr_new	exogenous	0	dr	day	.	.	.	.	.	.	.	.	.	.	.	.	.	6	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Local_Capacity_Zone2	0.2	.	.	.
 Wind_Battery_Hybrid	Zone1	gen_stor_hyb_spec	exogenous	0	gen_var_stor_hyb	day	.	.	.	.	.	.	.	.	0.8	0.8	.	10	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Fuel_Prod	Zone1	fuel_prod_spec	exogenous	1	fuel_prod	year	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	10
+Fuel_Prod_New	Zone1	fuel_prod_new	exogenous	1	fuel_prod	year	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	10

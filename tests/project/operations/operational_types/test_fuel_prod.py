@@ -101,17 +101,21 @@ class TestFuelProd(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Sets: FUEL_PROD
-        expected_projects = ["Fuel_Prod"]
+        expected_projects = ["Fuel_Prod", "Fuel_Prod_New"]
         actual_projects = sorted([p for p in instance.FUEL_PROD])
         self.assertListEqual(expected_projects, actual_projects)
 
         # FUEL_PROD_OPR_TMPS
         expected_tmps = sorted(get_project_operational_timepoints(expected_projects))
         actual_tmps = sorted([tmp for tmp in instance.FUEL_PROD_OPR_TMPS])
+
         self.assertListEqual(expected_tmps, actual_tmps)
 
         # Param: fuel_prod_powerunithour_per_fuelunit
-        expected_fuel_prod_powerunithour_per_fuelunit = {"Fuel_Prod": 10}
+        expected_fuel_prod_powerunithour_per_fuelunit = {
+            "Fuel_Prod": 10,
+            "Fuel_Prod_New": 10,
+        }
         actual_fuel_prod_powerunithour_per_fuelunit = {
             prj: instance.fuel_prod_powerunithour_per_fuelunit[prj]
             for prj in instance.FUEL_PROD
