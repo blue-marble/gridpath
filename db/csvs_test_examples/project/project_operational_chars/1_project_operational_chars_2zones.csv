@@ -23,3 +23,4 @@ Gas_CCGT_z3,Gas,gen_commit_cap,day,2,1,1,,,0.4,6,1,2,,,,,,,,,,,,,,,,,,,,,1,,,,,,
 Wind_Battery_Hybrid,Wind_Battery_Hybrid,gen_var_stor_hyb,day,0,,,,,,,,,,,,,,,,,,,,,0.8,0.8,,,,,,,,1,,,,,,,,,,,,,,,
 Hydrogen_Prod,Hydrogen_Prod,fuel_prod,day,0.5,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0.1
 Hydrogen_Plant,Hydrogen,gen_commit_cap,day,2,1,1,,,0.4,6,1,2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+DAC,DAC,dac,day,0.01,1,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

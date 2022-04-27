@@ -40,3 +40,5 @@ Battery_Specified	2020	6			6				10000			5000
 Wind_Battery_Hybrid	2020	5	5	1	4				1	0.5	0.3	0.2			
 Wind_Battery_Hybrid	2030	6	5	1	4				1	0.5	0.3	0.2			
 Fuel_Prod	2030					100	1000	10000					10	100	1000
+DAC	2020	1000							10						
+DAC	2030	1000							10						

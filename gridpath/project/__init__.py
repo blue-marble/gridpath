@@ -60,7 +60,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`PROJECTS`                                      |
     | | *Within*: :code:`["dr_new", "gen_new_bin", "gen_new_lin",`            |
     | | :code:`"gen_ret_bin", "gen_ret_lin", "gen_spec", "stor_new_bin",`     |
-    | | :code:`"stor_new_lin", "stor_spec"]`                                  |
+    | | :code:`"stor_new_lin", "stor_spec", "fuel_prod_spec", "fuel_prod_new]`|
     |                                                                         |
     | This param describes each project's capacity type, which determines how |
     | the available capacity of the project is defined (depending on the      |
@@ -71,7 +71,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Within*: :code:`["dr", "gen_always_on", "gen_commit_bin",`           |
     | | :code:`"gen_commit_cap", "gen_commit_lin", "gen_hydro",`              |
     | | :code:`"gen_hydro_must_take", "gen_must_run", "gen_simple",`          |
-    | | :code:`"gen_var", "gen_var_must_take", "stor"]`                       |
+    | | :code:`"gen_var", "gen_var_must_take", "stor", "fuel_prod", "dac"]`   |
     |                                                                         |
     | This param describes each project's operational type, which determines  |
     | how the project operates, e.g. whether it is fuel-based dispatchable    |
@@ -150,6 +150,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             "stor",
             "gen_var_stor_hyb",
             "fuel_prod",
+            "dac",
         ],
     )
     m.availability_type = Param(

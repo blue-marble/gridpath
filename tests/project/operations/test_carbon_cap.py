@@ -61,7 +61,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestCarbonEmissions(unittest.TestCase):
+class TestCarbonCap(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -122,6 +122,7 @@ class TestCarbonEmissions(unittest.TestCase):
                 ("Clunky_Old_Gen", "Carbon_Cap_Zone1"),
                 ("Clunky_Old_Gen2", "Carbon_Cap_Zone1"),
                 ("Gas_CCGT", "Carbon_Cap_Zone2"),
+                ("DAC", "Carbon_Cap_Zone1"),
             ]
         )
 
@@ -148,6 +149,7 @@ class TestCarbonEmissions(unittest.TestCase):
                 "Disp_No_Commit",
                 "Clunky_Old_Gen",
                 "Clunky_Old_Gen2",
+                "DAC",
             ]
         )
         actual_carbonaceous_projects = sorted([p for p in instance.CRBN_PRJS])
@@ -172,6 +174,7 @@ class TestCarbonEmissions(unittest.TestCase):
                             "Disp_No_Commit",
                             "Clunky_Old_Gen",
                             "Clunky_Old_Gen2",
+                            "DAC",
                         ]
                     ),
                     "Carbon_Cap_Zone2": sorted(

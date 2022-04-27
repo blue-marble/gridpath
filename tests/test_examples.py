@@ -1143,6 +1143,18 @@ class TestExamples(unittest.TestCase):
             "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new", -186998077.6
         )
 
+    def test_example_test_new_solar_carbon_cap_dac(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_cap_dac" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_cap_dac")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_cap_dac", -3504434601570.9893
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

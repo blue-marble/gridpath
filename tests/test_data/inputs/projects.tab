@@ -28,3 +28,4 @@ Shift_DR	Zone1	dr_new	exogenous	0	dr	day	.	.	.	.	.	.	.	.	.	.	.	.	.	6	.	.	.	.	.	.
 Wind_Battery_Hybrid	Zone1	gen_stor_hyb_spec	exogenous	0	gen_var_stor_hyb	day	.	.	.	.	.	.	.	.	0.8	0.8	.	10	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Fuel_Prod	Zone1	fuel_prod_spec	exogenous	1	fuel_prod	year	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	10
 Fuel_Prod_New	Zone1	fuel_prod_new	exogenous	1	fuel_prod	year	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	10
+DAC	Zone1	gen_spec	exogenous	1	dac	day	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
