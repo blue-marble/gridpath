@@ -709,8 +709,12 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas (
 fuel_burn_limit_ba_scenario_id INTEGER,
 fuel VARCHAR(32),
 fuel_burn_limit_ba VARCHAR(32),
-allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
-violation_penalty_per_unit FLOAT DEFAULT 0,
+min_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+min_violation_penalty_per_unit FLOAT DEFAULT 0,
+max_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+max_violation_penalty_per_unit FLOAT DEFAULT 0,
+relative_max_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+relative_max_violation_penalty_per_unit FLOAT DEFAULT 0,
 PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
 FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
 subscenarios_geography_fuel_burn_limit_balancing_areas (fuel_burn_limit_ba_scenario_id)
@@ -2651,10 +2655,11 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 balancing_type_horizon VARCHAR(64),
 horizon INTEGER,
-fuel_burn_limit_unit FLOAT,
-relative_fuel_burn_limit_fuel VARCHAR(32),
-relative_fuel_burn_limit_ba VARCHAR(32),
-fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+fuel_burn_min_unit FLOAT,
+fuel_burn_max_unit FLOAT,
+relative_fuel_burn_max_fuel VARCHAR(32),
+relative_fuel_burn_max_ba VARCHAR(32),
+fraction_of_relative_fuel_burn_max_fuel_ba FLOAT,
 PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
@@ -4069,15 +4074,19 @@ number_years_represented FLOAT,  -- based on period of last horizon timepoint
 discount_factor FLOAT, -- based on period of last horizon timepoint
 fuel VARCHAR(32),
 fuel_burn_limit_ba VARCHAR(32),
-fuel_burn_limit_unit FLOAT,
-relative_fuel_burn_limit_fuel FLOAT,
-relative_fuel_burn_limit_ba FLOAT,
-fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+fuel_burn_min_unit FLOAT,
+fuel_burn_max_unit FLOAT,
+relative_fuel_burn_max_fuel FLOAT,
+relative_fuel_burn_max_ba FLOAT,
+fraction_of_relative_fuel_burn_max_fuel_ba FLOAT,
 total_fuel_burn_unit FLOAT,
-fuel_burn_limit_abs_overage_unit FLOAT,
-abs_dual FLOAT,
-abs_fuel_burn_limit_marginal_cost_per_unit FLOAT,
-fuel_burn_limit_rel_overage_unit FLOAT,
+fuel_burn_min_abs_shortage_unit,
+fuel_burn_max_abs_overage_unit FLOAT,
+abs_min_dual FLOAT,
+abs_min_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+abs_max_dual FLOAT,
+abs_max_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+fuel_burn_max_rel_overage_unit FLOAT,
 rel_dual FLOAT,
 rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
@@ -4160,8 +4169,9 @@ Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Cost FLOAT,
 Total_Market_Revenue FLOAT,
 Total_Export_Penalty_Cost FLOAT,
-Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs FLOAT,
-Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

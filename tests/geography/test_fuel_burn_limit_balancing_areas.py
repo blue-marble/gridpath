@@ -104,7 +104,49 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         actual_bas = sorted([(f, ba) for (f, ba) in instance.FUEL_BURN_LIMIT_BAS])
         self.assertListEqual(expected_bas, actual_bas)
 
-        # Param: allow_violation
+        # Param: min_allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1"): 0,
+                    ("Coal", "Zone1"): 0,
+                    ("Coal", "Zone2"): 1,
+                    ("Nuclear", "Zone1"): 0,
+                }.items()
+            )
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {
+                    (f, ba): instance.fuel_burn_min_allow_violation[f, ba]
+                    for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation, actual_allow_violation)
+
+        # Param: min_violation penalty
+        expected_penalty = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1"): 10,
+                    ("Coal", "Zone1"): 10,
+                    ("Coal", "Zone2"): 15,
+                    ("Nuclear", "Zone1"): 15,
+                }.items()
+            )
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {
+                    (f, ba): instance.fuel_burn_min_violation_penalty_per_unit[f, ba]
+                    for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty, actual_penalty)
+
+        # Param: max_allow_violation
         expected_allow_violation = OrderedDict(
             sorted(
                 {
@@ -118,14 +160,14 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         actual_allow_violation = OrderedDict(
             sorted(
                 {
-                    (f, ba): instance.fuel_burn_limit_allow_violation[f, ba]
+                    (f, ba): instance.fuel_burn_max_allow_violation[f, ba]
                     for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
                 }.items()
             )
         )
         self.assertDictEqual(expected_allow_violation, actual_allow_violation)
 
-        # Param: violation penalty
+        # Param: max_violation penalty
         expected_penalty = OrderedDict(
             sorted(
                 {
@@ -139,7 +181,51 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         actual_penalty = OrderedDict(
             sorted(
                 {
-                    (f, ba): instance.fuel_burn_limit_violation_penalty_per_unit[f, ba]
+                    (f, ba): instance.fuel_burn_max_violation_penalty_per_unit[f, ba]
+                    for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty, actual_penalty)
+
+        # Param: relative_max_allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1"): 0,
+                    ("Coal", "Zone1"): 0,
+                    ("Coal", "Zone2"): 0,
+                    ("Nuclear", "Zone1"): 1,
+                }.items()
+            )
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {
+                    (f, ba): instance.fuel_burn_relative_max_allow_violation[f, ba]
+                    for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation, actual_allow_violation)
+
+        # Param: relative_max_violation penalty
+        expected_penalty = OrderedDict(
+            sorted(
+                {
+                    ("Gas", "Zone1"): 10,
+                    ("Coal", "Zone1"): 99999,
+                    ("Coal", "Zone2"): 99999,
+                    ("Nuclear", "Zone1"): 10,
+                }.items()
+            )
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {
+                    (f, ba): instance.fuel_burn_relative_max_violation_penalty_per_unit[
+                        f, ba
+                    ]
                     for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
                 }.items()
             )

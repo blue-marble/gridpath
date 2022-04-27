@@ -32,10 +32,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FUEL_BURN_LIMIT_BAS = Set(dimen=2)  # fuel and BA
 
-    m.fuel_burn_limit_allow_violation = Param(
+    m.fuel_burn_min_allow_violation = Param(
         m.FUEL_BURN_LIMIT_BAS, within=Boolean, default=0
     )
-    m.fuel_burn_limit_violation_penalty_per_unit = Param(
+    m.fuel_burn_min_violation_penalty_per_unit = Param(
+        m.FUEL_BURN_LIMIT_BAS, within=NonNegativeReals, default=0
+    )
+
+    m.fuel_burn_max_allow_violation = Param(
+        m.FUEL_BURN_LIMIT_BAS, within=Boolean, default=0
+    )
+    m.fuel_burn_max_violation_penalty_per_unit = Param(
+        m.FUEL_BURN_LIMIT_BAS, within=NonNegativeReals, default=0
+    )
+
+    m.fuel_burn_relative_max_allow_violation = Param(
+        m.FUEL_BURN_LIMIT_BAS, within=Boolean, default=0
+    )
+    m.fuel_burn_relative_max_violation_penalty_per_unit = Param(
         m.FUEL_BURN_LIMIT_BAS, within=NonNegativeReals, default=0
     )
 
@@ -52,8 +66,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.FUEL_BURN_LIMIT_BAS,
         param=(
-            m.fuel_burn_limit_allow_violation,
-            m.fuel_burn_limit_violation_penalty_per_unit,
+            m.fuel_burn_min_allow_violation,
+            m.fuel_burn_min_violation_penalty_per_unit,
+            m.fuel_burn_max_allow_violation,
+            m.fuel_burn_max_violation_penalty_per_unit,
+            m.fuel_burn_relative_max_allow_violation,
+            m.fuel_burn_relative_max_violation_penalty_per_unit,
         ),
     )
 
@@ -70,8 +88,10 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     fuel_burn_limit_bas = c.execute(
-        """SELECT fuel, fuel_burn_limit_ba, allow_violation, 
-        violation_penalty_per_unit
+        """SELECT fuel, fuel_burn_limit_ba, min_allow_violation, 
+        min_violation_penalty_per_unit, max_allow_violation, 
+        max_violation_penalty_per_unit, relative_max_allow_violation, 
+        relative_max_violation_penalty_per_unit
         FROM inputs_geography_fuel_burn_limit_balancing_areas
         WHERE fuel_burn_limit_ba_scenario_id = {fuel_burn_limit_ba_scenario_id}
         AND fuel in (
@@ -147,8 +167,12 @@ def write_model_inputs(
             [
                 "fuel",
                 "fuel_burn_limit_ba",
-                "allow_violation",
-                "violation_penalty_per_unit",
+                "min_allow_violation",
+                "min_violation_penalty_per_unit",
+                "max_allow_violation",
+                "max_violation_penalty_per_unit",
+                "relative_max_allow_violation",
+                "relative_max_violation_penalty_per_unit",
             ]
         )
 
