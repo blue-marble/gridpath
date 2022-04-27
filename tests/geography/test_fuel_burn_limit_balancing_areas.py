@@ -103,7 +103,7 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         )
         actual_bas = sorted([(f, ba) for (f, ba) in instance.FUEL_BURN_LIMIT_BAS])
         self.assertListEqual(expected_bas, actual_bas)
-        
+
         # Param: min_allow_violation
         expected_allow_violation = OrderedDict(
             sorted(
@@ -145,7 +145,7 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_penalty, actual_penalty)
-        
+
         # Param: max_allow_violation
         expected_allow_violation = OrderedDict(
             sorted(
@@ -188,7 +188,6 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         )
         self.assertDictEqual(expected_penalty, actual_penalty)
 
-
         # Param: relative_max_allow_violation
         expected_allow_violation = OrderedDict(
             sorted(
@@ -224,7 +223,9 @@ class TestFuelBurnLimitBalancingAreas(unittest.TestCase):
         actual_penalty = OrderedDict(
             sorted(
                 {
-                    (f, ba): instance.fuel_burn_relative_max_violation_penalty_per_unit[f, ba]
+                    (f, ba): instance.fuel_burn_relative_max_violation_penalty_per_unit[
+                        f, ba
+                    ]
                     for (f, ba) in instance.FUEL_BURN_LIMIT_BAS
                 }.items()
             )

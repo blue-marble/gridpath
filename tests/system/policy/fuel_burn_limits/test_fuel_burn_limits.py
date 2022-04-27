@@ -266,9 +266,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                         ba,
                         bt,
                         h,
-                    ): instance.fraction_of_relative_fuel_burn_max_fuel_ba[
-                        f, ba, bt, h
-                    ]
+                    ): instance.fraction_of_relative_fuel_burn_max_fuel_ba[f, ba, bt, h]
                     for (
                         f,
                         ba,

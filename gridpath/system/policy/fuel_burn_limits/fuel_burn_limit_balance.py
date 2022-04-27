@@ -48,7 +48,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Min fuel burn
     m.Fuel_Burn_Min_Shortage_Abs_Unit = Var(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT,
-        within=NonNegativeReals
+        within=NonNegativeReals,
     )
 
     def violation_expression_min_abs_rule(mod, f, ba, bt, h):
@@ -87,7 +87,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Max fuel burn
     m.Fuel_Burn_Max_Overage_Abs_Unit = Var(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT, within=NonNegativeReals
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT,
+        within=NonNegativeReals,
     )
 
     def violation_expression_max_abs_rule(mod, f, ba, bt, h):
@@ -126,7 +127,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Relative to fuel burn in other fuel - BA
     m.Fuel_Burn_Limit_Overage_Rel_Unit = Var(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT, within=NonNegativeReals
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT,
+        within=NonNegativeReals,
     )
 
     def violation_expression_rel_rule(mod, f, ba, bt, h):
@@ -233,7 +235,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     ),
                     value(m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, ba, bt, h])
                     if (f, ba, bt, h)
-                       in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
+                    in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
                     else None,
                     value(m.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, ba, bt, h])
                     if (f, ba, bt, h)
