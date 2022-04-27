@@ -153,7 +153,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
 
         self.assertDictEqual(expected_limit, actual_limit)
 
-        # Param: relative_fuel_burn_limit_fuel
+        # Param: relative_fuel_burn_max_fuel
         expected_relative_fuel = OrderedDict(
             sorted(
                 {
@@ -170,7 +170,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         actual_relative_fuel = OrderedDict(
             sorted(
                 {
-                    (f, ba, bt, h): instance.relative_fuel_burn_limit_fuel[f, ba, bt, h]
+                    (f, ba, bt, h): instance.relative_fuel_burn_max_fuel[f, ba, bt, h]
                     for (
                         f,
                         ba,
@@ -183,7 +183,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
 
         self.assertDictEqual(expected_relative_fuel, actual_relative_fuel)
 
-        # Param: relative_fuel_burn_limit_ba
+        # Param: relative_fuel_burn_max_ba
         expected_relative_ba = OrderedDict(
             sorted(
                 {
@@ -200,7 +200,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
         actual_relative_ba = OrderedDict(
             sorted(
                 {
-                    (f, ba, bt, h): instance.relative_fuel_burn_limit_ba[f, ba, bt, h]
+                    (f, ba, bt, h): instance.relative_fuel_burn_max_ba[f, ba, bt, h]
                     for (
                         f,
                         ba,
@@ -213,7 +213,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
 
         self.assertDictEqual(expected_relative_ba, actual_relative_ba)
 
-        # Param: fraction_of_relative_fuel_burn_limit_fuel_ba
+        # Param: fraction_of_relative_fuel_burn_max_fuel_ba
         expected_relative_ba = OrderedDict(
             sorted(
                 {
@@ -235,7 +235,7 @@ class TestSystemFuelBurnLimits(unittest.TestCase):
                         ba,
                         bt,
                         h,
-                    ): instance.fraction_of_relative_fuel_burn_limit_fuel_ba[
+                    ): instance.fraction_of_relative_fuel_burn_max_fuel_ba[
                         f, ba, bt, h
                     ]
                     for (

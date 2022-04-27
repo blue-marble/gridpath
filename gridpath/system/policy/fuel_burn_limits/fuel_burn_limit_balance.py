@@ -45,25 +45,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     # Absolute constraints on fuel burn
-
-    m.Fuel_Burn_Limit_Overage_Abs_Unit = Var(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT, within=NonNegativeReals
+    # Min fuel burn
+    m.Fuel_Burn_Min_Shortage_Abs_Unit = Var(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT,
+        within=NonNegativeReals
     )
 
-    def violation_expression_abs_rule(mod, f, ba, bt, h):
+    def violation_expression_min_abs_rule(mod, f, ba, bt, h):
         return (
-            mod.Fuel_Burn_Limit_Overage_Abs_Unit[f, ba, bt, h]
-            * mod.fuel_burn_limit_allow_violation[f, ba]
+            mod.Fuel_Burn_Min_Shortage_Abs_Unit[f, ba, bt, h]
+            * mod.fuel_burn_min_allow_violation[f, ba]
         )
 
-    m.Fuel_Burn_Limit_Overage_Abs_Unit_Expression = Expression(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT,
-        rule=violation_expression_abs_rule,
+    m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression = Expression(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT,
+        rule=violation_expression_min_abs_rule,
     )
 
-    def fuel_burn_limit_balance_abs_rule(mod, f, ba, bt, h):
+    def fuel_burn_min_balance_abs_rule(mod, f, ba, bt, h):
         """
-        Total fuel burn in a fuel / ba / bt-horizon must be below a pre-defined value.
+        Total fuel burn in a fuel / ba / bt-horizon must be >= a pre-defined value.
 
         :param mod:
         :param z:
@@ -75,29 +76,67 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
                 f, ba, bt, h
             ]
-            - mod.Fuel_Burn_Limit_Overage_Abs_Unit_Expression[f, ba, bt, h]
-            == mod.fuel_burn_limit_unit[f, ba, bt, h]
+            + mod.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, ba, bt, h]
+            >= mod.fuel_burn_min_unit[f, ba, bt, h]
         )
 
-    m.Meet_Fuel_Burn_Limit_Abs_Constraint = Constraint(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT,
-        rule=fuel_burn_limit_balance_abs_rule,
+    m.Meet_Fuel_Burn_Min_Abs_Constraint = Constraint(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT,
+        rule=fuel_burn_min_balance_abs_rule,
+    )
+
+    # Max fuel burn
+    m.Fuel_Burn_Max_Overage_Abs_Unit = Var(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT, within=NonNegativeReals
+    )
+
+    def violation_expression_max_abs_rule(mod, f, ba, bt, h):
+        return (
+            mod.Fuel_Burn_Max_Overage_Abs_Unit[f, ba, bt, h]
+            * mod.fuel_burn_max_allow_violation[f, ba]
+        )
+
+    m.Fuel_Burn_Max_Overage_Abs_Unit_Expression = Expression(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT,
+        rule=violation_expression_max_abs_rule,
+    )
+
+    def fuel_burn_max_balance_abs_rule(mod, f, ba, bt, h):
+        """
+        Total fuel burn in a fuel / ba / bt-horizon must be <= a pre-defined value.
+
+        :param mod:
+        :param z:
+        :param bt:
+        :param h:
+        :return:
+        """
+        return (
+            mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
+                f, ba, bt, h
+            ]
+            - mod.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, ba, bt, h]
+            <= mod.fuel_burn_max_unit[f, ba, bt, h]
+        )
+
+    m.Meet_Fuel_Burn_Max_Abs_Constraint = Constraint(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT,
+        rule=fuel_burn_max_balance_abs_rule,
     )
 
     # Relative to fuel burn in other fuel - BA
-
     m.Fuel_Burn_Limit_Overage_Rel_Unit = Var(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT, within=NonNegativeReals
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT, within=NonNegativeReals
     )
 
     def violation_expression_rel_rule(mod, f, ba, bt, h):
         return (
             mod.Fuel_Burn_Limit_Overage_Rel_Unit[f, ba, bt, h]
-            * mod.fuel_burn_limit_allow_violation[f, ba]
+            * mod.fuel_burn_relative_max_allow_violation[f, ba]
         )
 
-    m.Fuel_Burn_Limit_Overage_Rel_Unit_Expression = Expression(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT,
+    m.Fuel_Burn_Max_Overage_Rel_Unit_Expression = Expression(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT,
         rule=violation_expression_rel_rule,
     )
 
@@ -116,18 +155,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
                 f, ba, bt, h
             ]
-            - mod.Fuel_Burn_Limit_Overage_Rel_Unit_Expression[f, ba, bt, h]
-            <= mod.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h]
+            - mod.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, ba, bt, h]
+            <= mod.fraction_of_relative_fuel_burn_max_fuel_ba[f, ba, bt, h]
             * mod.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
-                mod.relative_fuel_burn_limit_fuel[f, ba, bt, h],
-                mod.relative_fuel_burn_limit_ba[f, ba, bt, h],
+                mod.relative_fuel_burn_max_fuel[f, ba, bt, h],
+                mod.relative_fuel_burn_max_ba[f, ba, bt, h],
                 bt,
                 h,
             ]
         )
 
-    m.Meet_Fuel_Burn_Limit_Rel_Constraint = Constraint(
-        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT,
+    m.Meet_Fuel_Burn_Max_Rel_Constraint = Constraint(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT,
         rule=fuel_burn_limit_balance_rel_rule,
     )
 
@@ -162,13 +201,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "discount_factor",
                 "fuel",
                 "fuel_ba",
-                "fuel_burn_limit_unit",
-                "relative_fuel_burn_limit_fuel",
-                "relative_fuel_burn_limit_ba",
-                "fraction_of_relative_fuel_burn_limit_fuel_ba",
+                "fuel_burn_min_unit",
+                "fuel_burn_max_unit",
+                "relative_fuel_burn_max_fuel",
+                "relative_fuel_burn_max_ba",
+                "fraction_of_relative_fuel_burn_max_fuel_ba",
                 "total_fuel_burn_unit",
-                "fuel_burn_limit_abs_overage_unit",
-                "fuel_burn_limit_rel_overage_unit",
+                "fuel_burn_min_abs_shortage_unit",
+                "fuel_burn_max_abs_overage_unit",
+                "fuel_burn_max_rel_overage_unit",
             ]
         )
         for (f, ba, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT:
@@ -180,29 +221,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.discount_factor[m.period[m.last_hrz_tmp[bt, h]]],
                     f,
                     ba,
-                    m.fuel_burn_limit_unit[f, ba, bt, h],
-                    m.relative_fuel_burn_limit_fuel[f, ba, bt, h],
-                    m.relative_fuel_burn_limit_ba[f, ba, bt, h],
-                    m.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h],
+                    m.fuel_burn_min_unit[f, ba, bt, h],
+                    m.fuel_burn_max_unit[f, ba, bt, h],
+                    m.relative_fuel_burn_max_fuel[f, ba, bt, h],
+                    m.relative_fuel_burn_max_ba[f, ba, bt, h],
+                    m.fraction_of_relative_fuel_burn_max_fuel_ba[f, ba, bt, h],
                     value(
                         m.Total_Horizon_Fuel_Burn_By_Fuel_and_Fuel_BA_from_All_Sources_Expression[
                             f, ba, bt, h
                         ]
                     ),
-                    value(m.Fuel_Burn_Limit_Overage_Abs_Unit_Expression[f, ba, bt, h])
+                    value(m.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, ba, bt, h])
                     if (f, ba, bt, h)
-                    in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+                       in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
                     else None,
-                    value(m.Fuel_Burn_Limit_Overage_Rel_Unit_Expression[f, ba, bt, h])
+                    value(m.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, ba, bt, h])
                     if (f, ba, bt, h)
-                    in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
+                    in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
+                    else None,
+                    value(m.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, ba, bt, h])
+                    if (f, ba, bt, h)
+                    in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
                     else None,
                 ]
             )
 
 
 def save_duals(m):
-    m.constraint_indices["Meet_Fuel_Burn_Limit_Abs_Constraint"] = [
+    m.constraint_indices["Meet_Fuel_Burn_Min_Abs_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -210,7 +256,15 @@ def save_duals(m):
         "dual",
     ]
 
-    m.constraint_indices["Meet_Fuel_Burn_Limit_Rel_Constraint"] = [
+    m.constraint_indices["Meet_Fuel_Burn_Max_Abs_Constraint"] = [
+        "fuel",
+        "fuel_ba",
+        "balancing_type",
+        "horizon",
+        "dual",
+    ]
+
+    m.constraint_indices["Meet_Fuel_Burn_Max_Rel_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -260,13 +314,15 @@ def import_results_into_database(
                 discount_factor,
                 fuel,
                 fuel_burn_limit_ba,
-                fuel_burn_limit_unit,
-                relative_fuel_burn_limit_fuel,
-                relative_fuel_burn_limit_ba,
-                fraction_of_relative_fuel_burn_limit_fuel_ba,
+                fuel_burn_min_unit,
+                fuel_burn_max_unit,
+                relative_fuel_burn_max_fuel,
+                relative_fuel_burn_max_ba,
+                fraction_of_relative_fuel_burn_max_fuel_ba,
                 total_fuel_burn_unit,
-                fuel_burn_limit_abs_overage_unit,
-                fuel_burn_limit_rel_overage_unit,
+                fuel_burn_min_abs_shortage_unit,
+                fuel_burn_max_abs_overage_unit,
+                fuel_burn_max_rel_overage_unit,
             ] = row
 
             results.append(
@@ -280,13 +336,15 @@ def import_results_into_database(
                     discount_factor,
                     fuel,
                     fuel_burn_limit_ba,
-                    fuel_burn_limit_unit,
-                    relative_fuel_burn_limit_fuel,
-                    relative_fuel_burn_limit_ba,
-                    fraction_of_relative_fuel_burn_limit_fuel_ba,
+                    fuel_burn_min_unit,
+                    fuel_burn_max_unit,
+                    relative_fuel_burn_max_fuel,
+                    relative_fuel_burn_max_ba,
+                    fraction_of_relative_fuel_burn_max_fuel_ba,
                     total_fuel_burn_unit,
-                    fuel_burn_limit_abs_overage_unit,
-                    fuel_burn_limit_rel_overage_unit,
+                    fuel_burn_min_abs_shortage_unit,
+                    fuel_burn_max_abs_overage_unit,
+                    fuel_burn_max_rel_overage_unit,
                 )
             )
 
@@ -301,15 +359,17 @@ def import_results_into_database(
             discount_factor,
             fuel,
             fuel_burn_limit_ba,
-            fuel_burn_limit_unit,
-            relative_fuel_burn_limit_fuel,
-            relative_fuel_burn_limit_ba,
-            fraction_of_relative_fuel_burn_limit_fuel_ba,
+            fuel_burn_min_unit,
+            fuel_burn_max_unit,
+            relative_fuel_burn_max_fuel,
+            relative_fuel_burn_max_ba,
+            fraction_of_relative_fuel_burn_max_fuel_ba,
             total_fuel_burn_unit,
-            fuel_burn_limit_abs_overage_unit,
-            fuel_burn_limit_rel_overage_unit
+            fuel_burn_min_abs_shortage_unit,
+            fuel_burn_max_abs_overage_unit,
+            fuel_burn_max_rel_overage_unit
         )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(
         scenario_id=scenario_id
     )
@@ -327,13 +387,15 @@ def import_results_into_database(
             discount_factor,
             fuel,
             fuel_burn_limit_ba,
-            fuel_burn_limit_unit,
-            relative_fuel_burn_limit_fuel,
-            relative_fuel_burn_limit_ba,
-            fraction_of_relative_fuel_burn_limit_fuel_ba,
+            fuel_burn_min_unit,
+            fuel_burn_max_unit,
+            relative_fuel_burn_max_fuel,
+            relative_fuel_burn_max_ba,
+            fraction_of_relative_fuel_burn_max_fuel_ba,
             total_fuel_burn_unit,
-            fuel_burn_limit_abs_overage_unit,
-            fuel_burn_limit_rel_overage_unit
+            fuel_burn_min_abs_shortage_unit,
+            fuel_burn_max_abs_overage_unit,
+            fuel_burn_max_rel_overage_unit
         )
         SELECT scenario_id,
             subproblem_id,
@@ -344,13 +406,15 @@ def import_results_into_database(
             discount_factor,
             fuel,
             fuel_burn_limit_ba,
-            fuel_burn_limit_unit,
-            relative_fuel_burn_limit_fuel,
-            relative_fuel_burn_limit_ba,
-            fraction_of_relative_fuel_burn_limit_fuel_ba,
+            fuel_burn_min_unit,
+            fuel_burn_max_unit,
+            relative_fuel_burn_max_fuel,
+            relative_fuel_burn_max_ba,
+            fraction_of_relative_fuel_burn_max_fuel_ba,
             total_fuel_burn_unit,
-            fuel_burn_limit_abs_overage_unit,
-            fuel_burn_limit_rel_overage_unit
+            fuel_burn_min_abs_shortage_unit,
+            fuel_burn_max_abs_overage_unit,
+            fuel_burn_max_rel_overage_unit
         FROM temp_results_system_fuel_burn_limits{scenario_id}
         ORDER BY scenario_id, fuel, fuel_burn_limit_ba, balancing_type_horizon,
         horizon, subproblem_id, stage_id;
@@ -360,9 +424,10 @@ def import_results_into_database(
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
     # Update duals for absolute fuel burn limit constraint
+    # Min
     duals_results = []
     with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Limit_Abs_Constraint.csv"), "r"
+        os.path.join(results_directory, "Meet_Fuel_Burn_Min_Abs_Constraint.csv"), "r"
     ) as duals_file:
         reader = csv.reader(duals_file)
 
@@ -385,7 +450,7 @@ def import_results_into_database(
 
     duals_sql = """
         UPDATE results_system_fuel_burn_limits
-        SET abs_dual = ?
+        SET abs_min_dual = ?
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?
@@ -399,8 +464,58 @@ def import_results_into_database(
     # Calculate marginal energy-target cost per MWh
     mc_sql = """
         UPDATE results_system_fuel_burn_limits
-        SET abs_fuel_burn_limit_marginal_cost_per_unit =
-        abs_dual / (discount_factor * number_years_represented)
+        SET abs_min_fuel_burn_limit_marginal_cost_per_unit =
+        abs_min_dual / (discount_factor * number_years_represented)
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        and stage_id = ?;
+        """
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
+    )
+
+    # Max
+    duals_results = []
+    with open(
+        os.path.join(results_directory, "Meet_Fuel_Burn_Max_Abs_Constraint.csv"), "r"
+    ) as duals_file:
+        reader = csv.reader(duals_file)
+
+        next(reader)  # skip header
+
+        for row in reader:
+            [fuel, fuel_burn_limit_ba, balancing_type, horizon, dual] = row
+            duals_results.append(
+                (
+                    dual,
+                    scenario_id,
+                    subproblem,
+                    stage,
+                    balancing_type,
+                    horizon,
+                    fuel,
+                    fuel_burn_limit_ba,
+                )
+            )
+
+    duals_sql = """
+        UPDATE results_system_fuel_burn_limits
+        SET abs_max_dual = ?
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+        AND balancing_type_horizon = ?
+        AND horizon = ?
+        AND fuel = ?
+        AND fuel_burn_limit_ba = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
+
+    # Calculate marginal energy-target cost per MWh
+    mc_sql = """
+        UPDATE results_system_fuel_burn_limits
+        SET abs_max_fuel_burn_limit_marginal_cost_per_unit =
+        abs_max_dual / (discount_factor * number_years_represented)
         WHERE scenario_id = ?
         AND subproblem_id = ?
         and stage_id = ?;
@@ -412,7 +527,7 @@ def import_results_into_database(
     # Update duals for relative fuel burn limit constraint
     duals_results = []
     with open(
-        os.path.join(results_directory, "Meet_Fuel_Burn_Limit_Rel_Constraint.csv"), "r"
+        os.path.join(results_directory, "Meet_Fuel_Burn_Max_Rel_Constraint.csv"), "r"
     ) as duals_file:
         reader = csv.reader(duals_file)
 

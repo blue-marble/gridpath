@@ -30,10 +30,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     Here, we aggregate total penalty costs for not meeting the energy-target constraint.
     """
 
-    def total_penalty_costs_abs_rule(mod):
+    def total_penalty_costs_min_abs_rule(mod):
         return sum(
-            mod.Fuel_Burn_Limit_Overage_Abs_Unit_Expression[f, ba, bt, h]
-            * mod.fuel_burn_limit_violation_penalty_per_unit[f, ba]
+            mod.Fuel_Burn_Min_Shortage_Abs_Unit_Expression[f, ba, bt, h]
+            * mod.fuel_burn_min_violation_penalty_per_unit[f, ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
             for (
@@ -41,17 +41,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 ba,
                 bt,
                 h,
-            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT
+            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT
         )
 
-    m.Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs = Expression(
-        rule=total_penalty_costs_abs_rule
+    m.Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs = Expression(
+        rule=total_penalty_costs_min_abs_rule
+    )
+
+    def total_penalty_costs_max_abs_rule(mod):
+        return sum(
+            mod.Fuel_Burn_Max_Overage_Abs_Unit_Expression[f, ba, bt, h]
+            * mod.fuel_burn_max_violation_penalty_per_unit[f, ba]
+            * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
+            * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
+            for (
+                f,
+                ba,
+                bt,
+                h,
+            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT
+        )
+
+    m.Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs = Expression(
+        rule=total_penalty_costs_max_abs_rule
     )
 
     def total_penalty_costs_rel_rule(mod):
         return sum(
-            mod.Fuel_Burn_Limit_Overage_Rel_Unit_Expression[f, ba, bt, h]
-            * mod.fuel_burn_limit_violation_penalty_per_unit[f, ba]
+            mod.Fuel_Burn_Max_Overage_Rel_Unit_Expression[f, ba, bt, h]
+            * mod.fuel_burn_relative_max_violation_penalty_per_unit[f, ba]
             * mod.number_years_represented[mod.period[mod.last_hrz_tmp[bt, h]]]
             * mod.discount_factor[mod.period[mod.last_hrz_tmp[bt, h]]]
             for (
@@ -59,10 +77,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 ba,
                 bt,
                 h,
-            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT
+            ) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT
         )
 
-    m.Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs = Expression(
+    m.Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs = Expression(
         rule=total_penalty_costs_rel_rule
     )
 
@@ -78,9 +96,13 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs"
+        "Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs"
     )
 
     getattr(dynamic_components, cost_components).append(
-        "Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs"
+        "Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs"
+    )
+
+    getattr(dynamic_components, cost_components).append(
+        "Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs"
     )

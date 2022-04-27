@@ -20,9 +20,10 @@ import csv
 import os.path
 
 
-from pyomo.environ import Set, Param, NonNegativeReals, Any
+from pyomo.environ import Set, Param, NonNegativeReals, Any, Reals
 
 Infinity = float("inf")
+Negative_Infinity = float("-inf")
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -36,46 +37,60 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT = Set(
         dimen=4, within=m.FUEL_BURN_LIMIT_BAS * m.BLN_TYPE_HRZS
     )
-    m.fuel_burn_limit_unit = Param(
+    m.fuel_burn_min_unit = Param(
+        m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
+        within=Reals,
+        default=Negative_Infinity,
+    )
+    m.fuel_burn_max_unit = Param(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=NonNegativeReals,
         default=Infinity,
     )
-    m.relative_fuel_burn_limit_fuel = Param(
+    m.relative_fuel_burn_max_fuel = Param(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=Any,
         default="undefined",
     )
-    m.relative_fuel_burn_limit_ba = Param(
+    m.relative_fuel_burn_max_ba = Param(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=Any,
         default="undefined",
     )
 
-    m.fraction_of_relative_fuel_burn_limit_fuel_ba = Param(
+    m.fraction_of_relative_fuel_burn_max_fuel_ba = Param(
         m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         within=NonNegativeReals,
         default=Infinity,
     )
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_ABS_LIMIT = Set(
+    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MIN_ABS_LIMIT = Set(
         dimen=4,
         initialize=lambda mod: [
             (f, ba, bt, h)
             for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
-            if mod.fuel_burn_limit_unit[f, ba, bt, h] != Infinity
+            if mod.fuel_burn_min_unit[f, ba, bt, h] != Negative_Infinity
         ],
     )
 
-    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_REL_LIMIT = Set(
+    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_ABS_LIMIT = Set(
+        dimen=4,
+        initialize=lambda mod: [
+            (f, ba, bt, h)
+            for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
+            if mod.fuel_burn_max_unit[f, ba, bt, h] != Infinity
+        ],
+    )
+
+    m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_MAX_REL_LIMIT = Set(
         dimen=4,
         initialize=lambda mod: [
             (f, ba, bt, h)
             for (f, ba, bt, h) in mod.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT
             if (
-                mod.relative_fuel_burn_limit_fuel[f, ba, bt, h] != "undefined"
-                and mod.relative_fuel_burn_limit_ba[f, ba, bt, h] != "undefined"
-                and mod.fraction_of_relative_fuel_burn_limit_fuel_ba[f, ba, bt, h]
+                mod.relative_fuel_burn_max_fuel[f, ba, bt, h] != "undefined"
+                and mod.relative_fuel_burn_max_ba[f, ba, bt, h] != "undefined"
+                and mod.fraction_of_relative_fuel_burn_max_fuel_ba[f, ba, bt, h]
                 != Infinity
             )
         ],
@@ -103,10 +118,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT,
         param=(
-            m.fuel_burn_limit_unit,
-            m.relative_fuel_burn_limit_fuel,
-            m.relative_fuel_burn_limit_ba,
-            m.fraction_of_relative_fuel_burn_limit_fuel_ba,
+            m.fuel_burn_min_unit,
+            m.fuel_burn_max_unit,
+            m.relative_fuel_burn_max_fuel,
+            m.relative_fuel_burn_max_ba,
+            m.fraction_of_relative_fuel_burn_max_fuel_ba,
         ),
     )
 
@@ -124,8 +140,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     fuel_burn_limits = c.execute(
         """SELECT fuel, fuel_burn_limit_ba, balancing_type_horizon, horizon, 
-        fuel_burn_limit_unit, relative_fuel_burn_limit_fuel, 
-        relative_fuel_burn_limit_ba, fraction_of_relative_fuel_burn_limit_fuel_ba
+        fuel_burn_min_unit, fuel_burn_max_unit, relative_fuel_burn_max_fuel, 
+        relative_fuel_burn_max_ba, fraction_of_relative_fuel_burn_max_fuel_ba
         FROM inputs_system_fuel_burn_limits
         JOIN
         (SELECT balancing_type_horizon, horizon
@@ -206,10 +222,11 @@ def write_model_inputs(
                 "fuel_burn_limit_ba",
                 "balancing_type_horizon",
                 "horizon",
-                "fuel_burn_limit_unit",
-                "relative_fuel_burn_limit_fuel",
-                "relative_fuel_burn_limit_ba",
-                "fraction_of_relative_fuel_burn_limit_fuel_ba",
+                "fuel_burn_min_unit",
+                "fuel_burn_max_unit",
+                "relative_fuel_burn_max_fuel",
+                "relative_fuel_burn_max_ba",
+                "fraction_of_relative_fuel_burn_max_fuel_ba",
             ]
         )
 
