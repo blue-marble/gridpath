@@ -41,25 +41,48 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                                   |
     | | *Within*: :code:`PROJECTS*BLN_TYPE_HRZS`                              |
     |                                                                         |
+    | Three-dimensional set with the project, horizon balancing type, and     |
+    | horizon over which cap factor limits should be enforced.                |
     +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
-    | Params                                                                  |
+    | Input Params                                                            |
     +=========================================================================+
-    | | :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                                   |
-    | | *Within*: :code:`PROJECTS*BLN_TYPE_HRZS`                              |
+    | | :code:`min_cap_factor`                                                |
+    | | *Defined over*: :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                   |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`Negative_Infinity`                                  |
     |                                                                         |
+    | The project's minimum cap factor for this horizon balancing type and    |
+    | horizon. It can be negative to allow us to limit storage (which is a    |
+    | net load over the course of the horizon due to losses.                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`max_cap_factor`                                                |
+    | | *Defined over*: :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                   |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`Infinity`                                           |
+    |                                                                         |
+    | The project's maximum cap factor for this horizon balancing type and    |
+    | horizon. It can be negative to allow us to limit storage (which is a    |
+    | net load over the course of the horizon due to losses.                  |
     +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +-------------------------------------------------------------------------+
-    | | :code:`Gen_Commit_BinLin_Select_Cycle_Constraint`                     |
+    | | :code:`Min_Cap_Factor_Constraint`                                     |
     | | *Defined over*: :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                   |
     |                                                                         |
-    | This generator can only be synced if the "cycle select" generator is    |
-    | not synced (the sum of the Sync variables of the two must be less than  |
-    | or equal to 1.                                                          |
+    | Energy output from this project over this balancing type and horizon    |
+    | must equal or exceed the minimum capacity factor multiplied by the      |
+    | maximum possible output over this balancing type and horizon.           |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Cap_Factor_Constraint`                                     |
+    | | *Defined over*: :code:`CAP_FACTOR_LIMIT_PRJ_BT_HRZ`                   |
+    |                                                                         |
+    | Energy output from this project over this balancing type and horizon    |
+    | must be less than or equal to the maximum capacity factor multiplied    |
+    | by the maximum possible output over this balancing type and horizon.    |
     +-------------------------------------------------------------------------+
 
     """
