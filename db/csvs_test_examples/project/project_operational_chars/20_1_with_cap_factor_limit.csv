@@ -2,7 +2,7 @@ project,technology,operational_type,balancing_type_project,variable_om_cost_per_
 Nuclear,Nuclear,gen_must_run,day,1,1,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Coal,Coal,gen_commit_cap,day,1,1,1,,,0.4,6,1,0,,,,,,,,,,,,,,,,,,,,,2,,,,,,,,,,,,,,,,,
 Gas_CCGT,Gas,gen_commit_cap,day,2,1,1,,,0.4,6,1,2,,,,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,,,,
-Gas_CT,Gas,gen_commit_cap,day,2,1,1,,,0.4,6,0,1,,,,,,,,,,,,,,,,,,,,,3,,,,,,,,,,,,,,,,,
+Gas_CT,Gas,gen_commit_cap,day,2,1,1,,,0.4,6,0,1,,,,,,,,,,,,,,,,,,,,,3,,,,,,,,,,,,,,,,,1
 Wind,Wind,gen_var,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,,,
 Battery,Storage,stor,day,0,,,,,,,,,,,,,,,,,,,,,0.8,0.8,,,1,99,,,,,,,,,,,,,,,,,,,,
 Hydro,Hydro,gen_hydro,day,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,
