@@ -78,28 +78,26 @@ def import_scenario_results_into_database(
 
     subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
-        for stage in stages:
-            # if there are subproblems/stages, input directory will be nested
-            if len(subproblems_list) > 1 and len(stages) > 1:
+        stages_list = subproblems.SUBPROBLEM_STAGES[subproblem]
+        for stage in stages_list:
+            # if there are stages, input directory will be nested regardless of
+            # number of subproblems
+            if len(stages_list) > 1:
                 results_directory = os.path.join(
                     scenario_directory, str(subproblem), str(stage), "results"
                 )
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.SUBPROBLEM_STAGES.keys()) > 1:
+            # If no stages but more than one subproblem, we need a subproblem directory
+            elif len(subproblems_list) > 1:
                 results_directory = os.path.join(
                     scenario_directory, str(subproblem), "results"
                 )
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
-            elif len(stages) > 1:
-                results_directory = os.path.join(
-                    scenario_directory, str(stage), "results"
-                )
-                if not quiet:
-                    print("--- stage {}".format(str(stage)))
+            # If single subproblem and single stage, we skip the subproblem and stage
+            # directories
             else:
                 results_directory = os.path.join(scenario_directory, "results")
 
