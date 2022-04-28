@@ -94,6 +94,7 @@ def all_modules_list():
         "project.operations.reserves.op_type_dependent.spinning_reserves",
         "project.operations.power",
         "project.operations.cycle_select",
+        "project.operations.cap_factor_limits",
         "project.operations.fix_commitment",
         "project.operations.fuel_burn",
         "project.operations.costs",

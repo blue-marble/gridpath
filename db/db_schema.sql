@@ -1005,6 +1005,7 @@ regulation_down_ramp_rate FLOAT,
 frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
 powerunithour_per_fuelunit FLOAT,
+cap_factor_limits_scenario_id INTEGER,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -1027,6 +1028,8 @@ subscenarios_project_variable_generator_profiles
 FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id),
+FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
+    subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
@@ -1202,6 +1205,31 @@ FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id)
 );
+
+-- Cap factor limits
+DROP TABLE IF EXISTS subscenarios_project_cap_factor_limits;
+CREATE TABLE subscenarios_project_cap_factor_limits (
+    project VARCHAR(64),
+    cap_factor_limits_scenario_id INTEGER,
+    name VARCHAR(32),
+    description VARCHAR(128),
+    PRIMARY KEY (project, cap_factor_limits_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_cap_factor_limits;
+CREATE TABLE inputs_project_cap_factor_limits (
+    project VARCHAR(64),
+    cap_factor_limits_scenario_id INTEGER,
+    balancing_type_horizon VARCHAR(64),
+    horizon INTEGER,
+    min_cap_factor FLOAT,
+    max_cap_factor FLOAT,
+    PRIMARY KEY (project, cap_factor_limits_scenario_id, balancing_type_horizon,
+                 horizon),
+    FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
+        subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id)
+);
+
 
 -- Project availability (e.g. due to planned outages/availability)
 -- Subscenarios
@@ -3171,6 +3199,22 @@ hour_of_day FLOAT,
 load_zone VARCHAR(32),
 scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
+);
+
+DROP TABLE IF EXISTS results_project_cap_factor_limits;
+CREATE TABLE results_project_cap_factor_limits (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    project VARCHAR(64),
+    balancing_type_horizon VARCHAR(64),
+    horizon INTEGER,
+    min_cap_factor FLOAT,
+    max_cap_factor FLOAT,
+    actual_power_provision_mwh,
+    possible_power_provision_mwh,
+    PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
+                 balancing_type_horizon, horizon)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_by_technology;
