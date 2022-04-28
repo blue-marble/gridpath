@@ -228,6 +228,8 @@ class TestFuelBurn(unittest.TestCase):
             ("Clunky_Old_Gen2", 2030): [0],
             ("Nuclear_Flexible", 2020): [0],
             ("Nuclear_Flexible", 2030): [0],
+            ("DAC", 2020): [0],
+            ("DAC", 2030): [0],
         }
         expected_hr_curve_prj_tmp_sgms = list()
         for (prj, tmp) in expected_hr_curve_prj_tmps:

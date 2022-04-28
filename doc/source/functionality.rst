@@ -406,6 +406,10 @@ Fuel Production (*fuel_prod*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.fuel_prod
 
+Direct Air Capture (*dac*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.dac
+
 .. _load-balance-section-ref:
 
 Load Balance

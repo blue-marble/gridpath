@@ -363,6 +363,8 @@ class TestOperationsInit(unittest.TestCase):
                 ("Clunky_Old_Gen2", 2030, 0),
                 ("Nuclear_Flexible", 2020, 0),
                 ("Nuclear_Flexible", 2030, 0),
+                ("DAC", 2020, 0),
+                ("DAC", 2030, 0),
             ]
         )
 
@@ -663,6 +665,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_Flexible", 2030, 0): 9.0,
                     ("Nuclear_z2", 2020, 0): 1666.67,
                     ("Nuclear_z2", 2030, 0): 1666.67,
+                    ("DAC", 2020, 0): 1000.0,
+                    ("DAC", 2030, 0): 1000.0,
                 }.items()
             )
         )
@@ -717,6 +721,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_Flexible", 2030, 0): 0,
                     ("Nuclear_z2", 2020, 0): 0,
                     ("Nuclear_z2", 2030, 0): 0,
+                    ("DAC", 2020, 0): 0,
+                    ("DAC", 2030, 0): 0,
                 }.items()
             )
         )

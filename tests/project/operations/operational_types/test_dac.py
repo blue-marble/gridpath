@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
-import pandas as pd
 import sys
 import unittest
 
@@ -36,8 +36,11 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "project",
     "project.capacity.capacity",
+    "project.availability.availability",
+    "project.fuels",
+    "project.operations",
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.availability.availability_types.exogenous"
+NAME_OF_MODULE_BEING_TESTED = "project.operations.operational_types.dac"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -55,8 +58,24 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestExogenousAvailabilityType(unittest.TestCase):
+class TestDAC(unittest.TestCase):
     """ """
+
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, "First argument is not a dictionary")
+        self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
 
     def test_add_model_components(self):
         """
@@ -86,7 +105,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with data as expected
+        Test that the data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -98,82 +117,22 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: AVL_EXOG
-        expected_project_subset = sorted(
-            [
-                "Nuclear",
-                "Coal",
-                "Wind",
-                "Gas_CCGT_New",
-                "Gas_CCGT_New_Binary",
-                "Gas_CT_New",
-                "Nuclear_z2",
-                "Gas_CCGT_z2",
-                "Coal_z2",
-                "Gas_CT_z2",
-                "Wind_z2",
-                "Battery",
-                "Battery_Binary",
-                "Battery_Specified",
-                "Hydro",
-                "Hydro_NonCurtailable",
-                "Disp_Binary_Commit",
-                "Disp_Cont_Commit",
-                "Disp_No_Commit",
-                "Clunky_Old_Gen",
-                "Clunky_Old_Gen2",
-                "Customer_PV",
-                "Nuclear_Flexible",
-                "Shift_DR",
-                "Wind_Battery_Hybrid",
-                "Fuel_Prod",
-                "Fuel_Prod_New",
-                "DAC",
-            ]
-        )
-        actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])
-        self.assertListEqual(expected_project_subset, actual_project_subset)
+        # Set: DAC
+        expected_dac_set = sorted(["DAC"])
+        actual_dac_set = sorted([prj for prj in instance.DAC])
+        self.assertListEqual(expected_dac_set, actual_dac_set)
 
-        # Set: AVL_EXOG_OPR_TMPS
-        expected_operational_timepoints_by_project = sorted(
-            get_project_operational_timepoints(expected_project_subset)
+        # Set: DAC_OPR_TMPS
+        expected_operational_timpoints_by_project = sorted(
+            get_project_operational_timepoints(expected_dac_set)
         )
         actual_operational_timepoints_by_project = sorted(
-            [(g, tmp) for (g, tmp) in instance.AVL_EXOG_OPR_TMPS]
+            [(g, tmp) for (g, tmp) in instance.DAC_OPR_TMPS]
         )
         self.assertListEqual(
-            expected_operational_timepoints_by_project,
+            expected_operational_timpoints_by_project,
             actual_operational_timepoints_by_project,
         )
-
-        # Param: availability_derate
-        availability_df = pd.read_csv(
-            os.path.join(
-                TEST_DATA_DIRECTORY, "inputs", "project_availability_exogenous.tab"
-            ),
-            sep="\t",
-        )
-        defaults = {(p, tmp): 1 for (p, tmp) in instance.AVL_EXOG_OPR_TMPS}
-        derates = {
-            (p, tmp): avail
-            for p, tmp, avail in zip(
-                availability_df.project,
-                availability_df.timepoint,
-                availability_df.availability_derate,
-            )
-        }
-        expected_availability_derate = dict()
-        for (p, tmp) in defaults.keys():
-            if (p, tmp) in derates.keys():
-                expected_availability_derate[p, tmp] = derates[p, tmp]
-            else:
-                expected_availability_derate[p, tmp] = defaults[p, tmp]
-        actual_availability_derate = {
-            (prj, tmp): instance.avl_exog_derate[prj, tmp]
-            for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
-        }
-
-        self.assertDictEqual(expected_availability_derate, actual_availability_derate)
 
 
 if __name__ == "__main__":
