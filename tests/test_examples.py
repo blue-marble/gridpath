@@ -1162,7 +1162,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_cap_factor_limits")
-        self.run_and_check_objective("test_cap_factor_limits", -3796309121478.12)
+        self.run_and_check_objective("test_cap_factor_limits", -5373102109974.298)
 
     @classmethod
     def tearDownClass(cls):

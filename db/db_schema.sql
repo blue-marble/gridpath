@@ -3201,6 +3201,22 @@ scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
 );
 
+DROP TABLE IF EXISTS results_project_cap_factor_limits;
+CREATE TABLE results_project_cap_factor_limits (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    project VARCHAR(64),
+    balancing_type_horizon VARCHAR(64),
+    horizon INTEGER,
+    min_cap_factor FLOAT,
+    max_cap_factor FLOAT,
+    actual_power_provision_mwh,
+    possible_power_provision_mwh,
+    PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
+                 balancing_type_horizon, horizon)
+);
+
 DROP TABLE IF EXISTS results_project_dispatch_by_technology;
 CREATE TABLE results_project_dispatch_by_technology (
 scenario_id INTEGER,

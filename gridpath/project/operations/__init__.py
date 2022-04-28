@@ -840,7 +840,37 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return proj_opchar, fuels, heat_rates, vom_curves, startup_chars, cycle_selection
+    c7 = conn.cursor()
+    cap_factor_limits = c7.execute(
+        """
+        SELECT project, balancing_type_horizon, horizon, min_cap_factor, max_cap_factor
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, cap_factor_limits_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {project_opchar_scenario_id}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_cap_factor_limits
+        USING(project, cap_factor_limits_scenario_id)
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND cap_factor_limits_scenario_id IS NOT NULL
+        """.format(
+            project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    return (
+        proj_opchar,
+        fuels,
+        heat_rates,
+        vom_curves,
+        startup_chars,
+        cycle_selection,
+        cap_factor_limits,
+    )
 
 
 def write_model_inputs(
@@ -862,6 +892,7 @@ def write_model_inputs(
         vom_curves,
         startup_chars,
         cycle_selection,
+        cap_factor_limits,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     inputs_directory = os.path.join(
@@ -944,6 +975,14 @@ def write_model_inputs(
         filename="cycle_selection.tab",
     )
 
+    # Write the cap_factor_limits file
+    cfl_df = cursor_to_df(cap_factor_limits)
+    write_additional_opchar_file(
+        opchar_df=cfl_df,
+        inputs_directory=inputs_directory,
+        filename="cap_factor_limits.tab",
+    )
+
 
 # Validation
 ###############################################################################
@@ -967,6 +1006,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         vom_curves,
         startup_chars,
         cycle_select,
+        cap_factor_limits,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
