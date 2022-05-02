@@ -3868,7 +3868,7 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 sell_power FLOAT,
 buy_power FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;

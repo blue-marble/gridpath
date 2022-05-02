@@ -64,6 +64,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         CROSS JOIN (
             SELECT timepoint from inputs_temporal
             WHERE temporal_scenario_id = ?
+            AND subproblem_id = ?
+            AND stage_id = ?
         ) as tmp_tbl
         LEFT OUTER JOIN (
             SELECT market, timepoint, market_price
@@ -76,6 +78,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         (
             subscenarios.MARKET_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
             subscenarios.MARKET_PRICE_SCENARIO_ID,
         ),
     )
