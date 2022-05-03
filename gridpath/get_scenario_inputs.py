@@ -217,23 +217,14 @@ def get_inputs_for_subproblem(
         )
         if not os.path.exists(pass_through_directory):
             os.makedirs(pass_through_directory)
-        with open(
-            os.path.join(pass_through_directory, "fixed_commitment.tab"),
-            "w",
-            newline="",
-        ) as fixed_commitment_file:
-            fixed_commitment_writer = csv.writer(
-                fixed_commitment_file, delimiter="\t", lineterminator="\n"
-            )
-            fixed_commitment_writer.writerow(
-                [
-                    "project",
-                    "timepoint",
-                    "stage",
-                    "final_commitment_stage",
-                    "commitment",
-                ]
-            )
+        # Write the headers of the pass through files
+        for m in loaded_modules:
+            if hasattr(m, "write_pass_through_file_headers"):
+                m.write_pass_through_file_headers(
+                    pass_through_directory=pass_through_directory
+                )
+            else:
+                pass
 
 
 def get_inputs_for_subproblem_pool(pool_datum):

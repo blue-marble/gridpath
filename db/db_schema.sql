@@ -669,9 +669,10 @@ DROP TABLE IF EXISTS inputs_market_prices;
 CREATE TABLE inputs_market_prices (
 market_price_scenario_id INTEGER,
 market VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 market_price FLOAT,
-PRIMARY KEY (market_price_scenario_id, market, timepoint),
+PRIMARY KEY (market_price_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_price_scenario_id) REFERENCES
 subscenarios_market_prices (market_price_scenario_id)
 );
@@ -687,10 +688,11 @@ DROP TABLE IF EXISTS inputs_market_volume;
 CREATE TABLE inputs_market_volume (
 market_volume_scenario_id INTEGER,
 market VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 max_market_sales FLOAT,
 max_market_purchases FLOAT,
-PRIMARY KEY (market_volume_scenario_id, market, timepoint),
+PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_volume_scenario_id) REFERENCES
 subscenarios_market_volume (market_volume_scenario_id)
 );
@@ -2116,6 +2118,7 @@ CREATE TABLE inputs_load_zone_markets (
 load_zone_market_scenario_id INTEGER,
 load_zone VARCHAR(64),
 market VARCHAR(32),
+final_participation_stage INTEGER,  -- can leave NULL, defaults to 1 in model
 PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
 FOREIGN KEY (load_zone_market_scenario_id)
 REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)

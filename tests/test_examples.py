@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1163,6 +1163,35 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_cap_factor_limits")
         self.run_and_check_objective("test_cap_factor_limits", -5373102109974.298)
+
+    def test_example_multi_stage_prod_cost_w_markets(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost_w_markets" example
+        :return:
+        """
+
+        self.check_validation("multi_stage_prod_cost_w_markets")
+        self.run_and_check_objective(
+            "multi_stage_prod_cost_w_markets",
+            {
+                1: {
+                    1: -1168100020726.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+                2: {
+                    1: -1168100035326.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+                3: {
+                    1: -1168100020726.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+            },
+        )
 
     @classmethod
     def tearDownClass(cls):
