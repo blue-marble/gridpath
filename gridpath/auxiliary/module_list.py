@@ -130,6 +130,7 @@ def all_modules_list():
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.export_penalty_costs",
         "system.load_balance.market_participation",
+        "system.load_balance.fix_market_participation",
         "system.load_balance.load_balance",
         "system.reserves.aggregation.lf_reserves_up",
         "system.reserves.aggregation.regulation_up",
@@ -389,6 +390,18 @@ def cross_feature_modules_list():
     return cross_modules
 
 
+def stage_feature_module_list():
+    """
+    :return: dictionary with a features as keys and a list of modules to be included
+    if those features are selected AND there are stages as values
+    """
+    stage_feature_modules = {
+        "markets": ["system.load_balance.fix_market_participation"]
+    }
+
+    return stage_feature_modules
+
+
 def feature_shared_modules_list():
     """
     :return: dictionary with a tuple of features as keys and a list of
@@ -418,10 +431,10 @@ def determine_modules(
         for the list of requested features. Optional input; if not specified,
         function will look for the 'features' input parameter
     :param multi_stage: Boolean. Optional input that determines whether the
-        fix_commitment module is used (yes if True, no if False); if not
+        modules that fix variables are used (yes if True, no if False); if not
         specified, this function will check the scenario_directory to
         determine whether there are stage subdirectories (if there are not,
-        the fix_commitment module is removed).
+        the 'fix variables' modules are removed).
     :return: the list of modules -- a subset of all GridPath modules -- needed
         for a scenario. These are the module names, not the actual modules.
 
@@ -466,9 +479,10 @@ def determine_modules(
 
     # If we haven't explicitly specified whether this is a multi-stages
     # scenario, check the scenario directory to determine whether we have
-    # multiple stages and remove the fix_commitment module from the
+    # multiple stages and remove the "fix variables" modules from the
     # modules_to_use list if not
-    # Also remove the fix_commitment if the multi_stage argument is False
+    # Also remove the "fix variables modules" if the multi_stage argument is False
+    remove_fix_variable_modules = False
     if multi_stage is None:
         subproblems = check_for_integer_subdirectories(scenario_directory)
         # Check if we have subproblems
@@ -479,21 +493,25 @@ def determine_modules(
                     os.path.join(scenario_directory, subproblem)
                 )
                 # If we find stages in any subproblem, break out of the loop
-                # and keep the fix_commitment module
+                # and keep the "fix variables" modules
                 if stages:
                     break
             else:
-                modules_to_use.remove("project.operations.fix_commitment")
+                remove_fix_variable_modules = True
         # If we make it here, we didn't find subproblems so we'll remove the
-        # fix_commitment module
+        # "fix variables" modules
         else:
-            modules_to_use.remove("project.operations.fix_commitment")
+            remove_fix_variable_modules = True
     # If multi_stages has been specified explicitly, decide whether to
-    # remove the fix_commitment module based on the value specified
+    # remove the "fix variables" modules based on the value specified
     elif multi_stage is False:
-        modules_to_use.remove("project.operations.fix_commitment")
+        remove_fix_variable_modules = True
     else:
         pass
+
+    if remove_fix_variable_modules:
+        modules_to_use.remove("project.operations.fix_commitment")
+        modules_to_use.remove("system.load_balance.fix_market_participation")
 
     # Remove modules associated with features that are not requested
     optional_modules = optional_modules_list()
@@ -525,6 +543,14 @@ def determine_modules(
             for m in cross_feature_modules[feature_group]:
                 modules_to_use.remove(m)
 
+    # Remove "fix variables" modules, which should not be included when the feature is
+    # not included even when there are stages
+    stage_feature_modules = stage_feature_module_list()
+    for feature in stage_feature_modules:
+        if feature not in requested_features and not remove_fix_variable_modules:
+            for m in stage_feature_modules[feature]:
+                modules_to_use.remove(m)
+            
     return modules_to_use
 
 

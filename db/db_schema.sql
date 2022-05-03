@@ -2116,6 +2116,7 @@ CREATE TABLE inputs_load_zone_markets (
 load_zone_market_scenario_id INTEGER,
 load_zone VARCHAR(64),
 market VARCHAR(32),
+final_participation_stage INTEGER,  -- can leave NULL, defaults to 1 in model
 PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
 FOREIGN KEY (load_zone_market_scenario_id)
 REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)
