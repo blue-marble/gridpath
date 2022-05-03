@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,28 +33,28 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_market_revenue_rule(mod):
         return sum(
-            mod.Total_Market_Sales[market, tmp]
+            mod.Sell_Power[lz, market, tmp]
             * mod.market_price[market, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for market in mod.MARKETS
-            for tmp in mod.TMPS
+            for (lz, market, tmp) in mod.LZ_MARKETS * mod.TMPS
+            if not mod.no_market_participation_in_stage[lz, market]
         )
 
     m.Total_Market_Revenue = Expression(rule=total_market_revenue_rule)
 
     def total_market_cost_rule(mod):
         return sum(
-            mod.Total_Market_Purchases[market, tmp]
+            mod.Buy_Power[lz, market, tmp]
             * mod.market_price[market, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for market in mod.MARKETS
-            for tmp in mod.TMPS
+            for (lz, market, tmp) in mod.LZ_MARKETS * mod.TMPS
+            if not mod.no_market_participation_in_stage[lz, market]
         )
 
     m.Total_Market_Cost = Expression(rule=total_market_cost_rule)

@@ -1,5 +1,20 @@
+# Copyright 2016-2022 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import csv
 import os.path
+from pyomo.environ import value
 
 
 def fix_variables(m, d, scenario_directory, subproblem, stage):
@@ -31,7 +46,8 @@ def write_pass_through_file_headers(pass_through_directory):
         writer.writerow(
             [
                 "load_zone",
-                "market" "timepoint",
+                "market",
+                "timepoint",
                 "stage",
                 "final_sell_power_position",
                 "final_buy_power_position",
@@ -63,14 +79,14 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
         fixed_commitment_writer = csv.writer(
             market_positions_file, delimiter="\t", lineterminator="\n"
         )
-        for (lz, m, tmp) in m.LZ_MARKETS * m.TMPS:
+        for (lz, hub, tmp) in m.LZ_MARKETS * m.TMPS:
             fixed_commitment_writer.writerow(
                 [
                     lz,
-                    m,
+                    hub,
                     tmp,
                     stage,
-                    m.Final_Sell_Power_Position[lz, m, tmp].expr.value,
-                    m.Final_Buy_Power_Position[lz, m, tmp].expr.value,
+                    value(m.Final_Sell_Power_Position[lz, hub, tmp]),
+                    value(m.Final_Buy_Power_Position[lz, hub, tmp]),
                 ]
             )

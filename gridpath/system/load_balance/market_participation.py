@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.final_participation_stage = Param(
         m.LZ_MARKETS, within=PositiveIntegers, default=1
     )
+
     # Determine whether there is market participation in this stage
     # If no stages, we're using empty string as the stage, so convert that back to 1
     # If there are stages, convert the string to an integer for the comparison
@@ -174,50 +175,55 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         # First check if we are in the first stage and set the first_stage_flag to
         # True if so; this is we'll know whether to look for previous stage positions
         # (an avoid errors when we are in the first stage)
-        if int(stage) == stages[0]:
+        if int(stage) == int(stages[0]):
             first_stage_flag = {None: True}
         else:
             first_stage_flag = {None: False}
 
-        starting_market_positions_df = pd.read_csv(
-            os.path.join(
-                scenario_directory,
-                subproblem,
-                "pass_through_inputs",
-                "market_positions.tab",
-            ),
-            sep="\t",
-        )
-        starting_market_positions_df[
-            "stage_index"
-        ] = starting_market_positions_df.apply(
-            lambda row: stages.index(row["stage"]), axis=1
-        )
-        prev_stage_market_positions_df = starting_market_positions_df[
-            starting_market_positions_df["stage_index"] == stages.index(stage) - 1
-        ]
-        lz_market_timepoints = list(
-            zip(
-                prev_stage_market_positions_df["load_zone"],
-                prev_stage_market_positions_df["market"],
-                prev_stage_market_positions_df["timepoint"],
+            starting_market_positions_df = pd.read_csv(
+                os.path.join(
+                    scenario_directory,
+                    subproblem,
+                    "pass_through_inputs",
+                    "market_positions.tab",
+                ),
+                sep="\t",
+                dtype={"stage": str},
             )
-        )
-        sell_positions_dict = dict(
-            zip(
-                lz_market_timepoints,
-                prev_stage_market_positions_df["final_sell_power_position"],
+
+            starting_market_positions_df[
+                "stage_index"
+            ] = starting_market_positions_df.apply(
+                lambda row: stages.index(row["stage"]), axis=1
             )
-        )
-        buy_positions_dict = dict(
-            zip(
-                lz_market_timepoints,
-                prev_stage_market_positions_df["final_buy_power_position"],
+            prev_stage_market_positions_df = starting_market_positions_df[
+                starting_market_positions_df["stage_index"] == stages.index(stage) - 1
+            ]
+            lz_market_timepoints = list(
+                zip(
+                    prev_stage_market_positions_df["load_zone"],
+                    prev_stage_market_positions_df["market"],
+                    prev_stage_market_positions_df["timepoint"],
+                )
             )
-        )
-        data_portal.data()["LZ_MARKETS_PREV_STAGE_TMPS"] = {None: lz_market_timepoints}
-        data_portal.data()["prev_stage_sell_power_position"] = sell_positions_dict
-        data_portal.data()["prev_stage_buy_power_position"] = buy_positions_dict
+            sell_positions_dict = dict(
+                zip(
+                    lz_market_timepoints,
+                    prev_stage_market_positions_df["final_sell_power_position"],
+                )
+            )
+            buy_positions_dict = dict(
+                zip(
+                    lz_market_timepoints,
+                    prev_stage_market_positions_df["final_buy_power_position"],
+                )
+            )
+
+            data_portal.data()["LZ_MARKETS_PREV_STAGE_TMPS"] = {
+                None: lz_market_timepoints
+            }
+            data_portal.data()["prev_stage_sell_power_position"] = sell_positions_dict
+            data_portal.data()["prev_stage_buy_power_position"] = buy_positions_dict
     else:
         first_stage_flag = {None: True}
 

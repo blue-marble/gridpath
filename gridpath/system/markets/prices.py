@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,17 +62,17 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ) as market_tbl
         -- Get prices for included timepoints only
         CROSS JOIN (
-            SELECT timepoint from inputs_temporal
+            SELECT stage_id, timepoint from inputs_temporal
             WHERE temporal_scenario_id = ?
             AND subproblem_id = ?
             AND stage_id = ?
         ) as tmp_tbl
         LEFT OUTER JOIN (
-            SELECT market, timepoint, market_price
+            SELECT market, stage_id, timepoint, market_price
             FROM inputs_market_prices
             WHERE market_price_scenario_id = ?
         ) as price_tbl
-        USING (market, timepoint)
+        USING (market, stage_id, timepoint)
         ;
         """,
         (
@@ -120,4 +120,5 @@ def write_model_inputs(
 
         writer.writerow(["market", "timepoint", "price"])
         for row in prices:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

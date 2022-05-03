@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -550,7 +550,7 @@ def determine_modules(
         if feature not in requested_features and not remove_fix_variable_modules:
             for m in stage_feature_modules[feature]:
                 modules_to_use.remove(m)
-            
+
     return modules_to_use
 
 
