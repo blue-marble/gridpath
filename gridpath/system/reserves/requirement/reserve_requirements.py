@@ -120,6 +120,7 @@ def generic_add_model_components(
                 * mod.Power_Provision_MW[prj, tmp]
                 for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
                 if _reserve_zone == reserve_zone
+                if (prj, tmp) in mod.PRJ_OPR_TMPS
             )
 
             # Project contributions to requirement based on (available) capacity
@@ -130,6 +131,7 @@ def generic_add_model_components(
                 * mod.Availability_Derate[prj, tmp]
                 for (_reserve_zone, prj) in getattr(mod, ba_prj_req_contribution_set)
                 if _reserve_zone == reserve_zone
+                if (prj, tmp) in mod.PRJ_OPR_TMPS
             )
         else:
             prj_pwr_contribution = 0
