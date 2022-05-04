@@ -48,6 +48,7 @@ setup(
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF
         "pyutilib==6.0.0",  # used for solver temp file management
+        "Jinja2==3.0.3",  # bokeh dependency; see #904
     ],
     extras_require={
         "doc": extras_doc,
