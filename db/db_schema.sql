@@ -4335,7 +4335,6 @@ subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
 subscenarios_transmission_new_potential.name AS transmission_new_potential,
-subscenarios_transmission_flow.name AS transmission_flow,
 subscenarios_transmission_carbon_cap_zones.name
     AS transmission_carbon_cap_zones,
 subscenarios_transmission_simultaneous_flow_limits.name
@@ -4439,8 +4438,6 @@ LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
 LEFT JOIN subscenarios_transmission_new_potential
     USING (transmission_new_potential_scenario_id)
-LEFT JOIN subscenarios_transmission_flow
-    USING (transmission_flow_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
     USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
