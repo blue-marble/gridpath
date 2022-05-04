@@ -154,10 +154,6 @@ def update_scenario_single_column(io, c, scenario_name, column_name, column_valu
     :param column_value:
     :return:
     """
-    # If no value specified, update to NULL
-    if column_value is None:
-        column_value = "NULL"
-
     # Update the column value for the scenario
     update_sql = """
         UPDATE scenarios
