@@ -16,9 +16,10 @@ extras_ui = [
     "eventlet==0.31.0",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
-    "Flask-SocketIO==4.3.2",  # Flask client-server communication
+    "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
     "psutil==5.8.0",  # Process management
-    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
+    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
+    "Werkzeug==2.0.2",  # See #903
 ]
 extras_black = ["black"]
 
