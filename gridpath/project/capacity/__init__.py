@@ -75,6 +75,9 @@ def import_results_into_database(
             hyb_gen_capacity_mw = None if row[6] == "" else row[6]
             hyb_stor_capacity_mw = None if row[7] == "" else row[7]
             energy_capacity_mwh = None if row[8] == "" else row[8]
+            fuel_prod_cap = None if row[9] == "" else row[9]
+            fuel_rel_cap = None if row[10] == "" else row[10]
+            fuel_stor_cap = None if row[11] == "" else row[11]
 
             results.append(
                 (
@@ -90,6 +93,9 @@ def import_results_into_database(
                     hyb_gen_capacity_mw,
                     hyb_stor_capacity_mw,
                     energy_capacity_mwh,
+                    fuel_prod_cap,
+                    fuel_rel_cap,
+                    fuel_stor_cap,
                 )
             )
 
@@ -97,8 +103,9 @@ def import_results_into_database(
         INSERT INTO temp_results_project_capacity{}
         (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
         technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
-        hyb_stor_capacity_mw, energy_capacity_mwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        hyb_stor_capacity_mw, energy_capacity_mwh, fuel_prod_capacity_fuelunitperhour, 
+        fuel_rel_capacity_fuelunitperhour, fuel_stor_capacity_fuelunit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
         scenario_id
     )
@@ -109,11 +116,13 @@ def import_results_into_database(
         INSERT INTO results_project_capacity
         (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
         technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
-        hyb_stor_capacity_mw, energy_capacity_mwh)
+        hyb_stor_capacity_mw, energy_capacity_mwh, fuel_prod_capacity_fuelunitperhour, 
+        fuel_rel_capacity_fuelunitperhour, fuel_stor_capacity_fuelunit)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, capacity_type,
         technology, load_zone, capacity_mw, hyb_gen_capacity_mw, 
-        hyb_stor_capacity_mw, energy_capacity_mwh
+        hyb_stor_capacity_mw, energy_capacity_mwh, fuel_prod_capacity_fuelunitperhour, 
+        fuel_rel_capacity_fuelunitperhour, fuel_stor_capacity_fuelunit
         FROM temp_results_project_capacity{}
         ORDER BY scenario_id, project, period, subproblem_id, 
         stage_id;""".format(

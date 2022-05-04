@@ -69,10 +69,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.Project_Carbon_Tax_Allowance[g, tmp]
+            mod.Project_Carbon_Tax_Allowance[g, fg, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
-            for (g, tmp) in mod.CARBON_TAX_PRJ_OPR_TMPS
+            for (g, fg, tmp) in mod.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS
             if g in mod.CARBON_TAX_PRJS_BY_CARBON_TAX_ZONE[z]
             and tmp in mod.TMPS_IN_PRD[p]
         )

@@ -16,9 +16,10 @@ extras_ui = [
     "eventlet==0.31.0",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
-    "Flask-SocketIO==4.3.2",  # Flask client-server communication
+    "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
     "psutil==5.8.0",  # Process management
-    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client
+    "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
+    "Werkzeug==2.0.2",  # See #903
 ]
 extras_black = ["black"]
 
@@ -41,13 +42,13 @@ setup(
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==5.7.3",  # Optimization modeling language (required due to
-        # Pyomo/Cbc issue with UI on Mac)
+        "Pyomo==6.3.0",  # Optimization modeling language
         "pandas==1.2.5",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF
         "pyutilib==6.0.0",  # used for solver temp file management
+        "Jinja2==3.0.3",  # bokeh dependency; see #904
     ],
     extras_require={
         "doc": extras_doc,

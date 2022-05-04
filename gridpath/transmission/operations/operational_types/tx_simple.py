@@ -21,6 +21,7 @@ of line flow.
 
 """
 
+import csv
 import os
 import pandas as pd
 from pyomo.environ import (
@@ -32,6 +33,9 @@ from pyomo.environ import (
     Reals,
     PercentFraction,
 )
+
+Negative_Infinity = float("-inf")
+Infinity = float("inf")
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -51,6 +55,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+    | | :code:`TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT`                           |
+    |                                                                         |
+    | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
+    | operational type and their operational timepoints to describe all       |
+    | possible transmission-timepoint combinations for transmission lines     |
+    | with a minimum flow specified.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT`                           |
+    |                                                                         |
+    | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
+    | operational type and their operational timepoints to describe all       |
+    | possible transmission-timepoint combinations for transmission lines     |
+    | with a maximum flow specified.                                          |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Params                                                                  |
@@ -61,6 +79,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
     | The fraction of power that is lost when transmitted over this line.     |
+    +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Optional Params                                                         |
+    +=========================================================================+
+    | | :code:`tx_simple_min_flow_mw`                                         |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT            |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`Negative_Infinity`                                  |
+    |                                                                         |
+    | The minimum flow (in MW) that must be transmitted in a                  |
+    | transmission line in each timepoint.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_simple_max_flow_mw`                                         |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT            |
+    | | *Within*: :code:`Reals`                                               |
+    | | *Default*: :code:`Infinity`                                           |
+    |                                                                         |
+    | The maximum flow (in MW) that can be transmitted in a                   |
+    | transmission line in each timepoint.                                    |
     +-------------------------------------------------------------------------+
 
 
@@ -141,6 +179,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | loss factor in each operational timepoint. Provides upper bound on      |
     | losses.                                                                 |
     +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Min_Flow_Constraint`                                  |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT`           |
+    |                                                                         |
+    | Transmitted power should exceed the minimum transmitted power in each   |
+    | operational timepoint.                                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Max_Flow_Constraint`                                  |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT`           |
+    |                                                                         |
+    | Transmitted power should not exceed the maximum transmitted power in    |
+    | each operational timepoint.                                             |
+    +-------------------------------------------------------------------------+
 
     """
 
@@ -162,9 +212,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT = Set(dimen=2, within=m.TX_SIMPLE_OPR_TMPS)
+
+    m.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT = Set(dimen=2, within=m.TX_SIMPLE_OPR_TMPS)
+
     # Params
     ###########################################################################
     m.tx_simple_loss_factor = Param(m.TX_SIMPLE, within=PercentFraction, default=0)
+
+    # Optional Params
+    ###########################################################################
+
+    m.tx_simple_min_flow_mw = Param(
+        m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT, within=Reals, default=Negative_Infinity
+    )
+
+    m.tx_simple_max_flow_mw = Param(
+        m.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT, within=Reals, default=Infinity
+    )
 
     # Variables
     ###########################################################################
@@ -200,6 +265,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.TxSimple_Max_Losses_To_Constraint = Constraint(
         m.TX_SIMPLE_OPR_TMPS, rule=max_losses_to_rule
+    )
+
+    m.TxSimple_Min_Flow_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT, rule=min_flow_rule
+    )
+
+    m.TxSimple_Max_Flow_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT, rule=max_flow_rule
     )
 
 
@@ -325,6 +398,36 @@ def max_losses_to_rule(mod, l, tmp):
         )
 
 
+def min_flow_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxSimple_Min_Flow_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
+
+    Transmitted power should exceed the defined minimum flow in
+    each operational timepoint.
+    """
+    var = mod.tx_simple_min_flow_mw[l, tmp]
+    if var == Negative_Infinity:
+        return Constraint.Skip
+    else:
+        return mod.TxSimple_Transmit_Power_MW[l, tmp] >= var
+
+
+def max_flow_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxSimple_Max_Flow_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT
+
+    Transmitted power should not exceed the defined maximum flow in
+    each operational timepoint.
+    """
+    var = mod.tx_simple_max_flow_mw[l, tmp]
+    if var == Infinity:
+        return Constraint.Skip
+    else:
+        return mod.TxSimple_Transmit_Power_MW[l, tmp] <= var
+
+
 # Transmission Operational Type Methods
 ###############################################################################
 
@@ -400,3 +503,196 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Load data
     data_portal.data()["tx_simple_loss_factor"] = loss_factor
+
+    # Min Flow
+    transmission_tmps_with_min = list()
+    min_flow_mw = dict()
+
+    header = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_flow.tab",
+        ),
+        sep="\t",
+        header=None,
+        nrows=1,
+    ).values[0]
+
+    optional_columns = ["min_flow_mw"]
+    used_columns = [c for c in optional_columns if c in header]
+
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_flow.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "timepoint"] + used_columns,
+    )
+
+    # min_flow_mw is optional,
+    # so TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
+    # and min_flow_mw simply won't be initialized if
+    # min_flow_mw does not exist in the input file
+    if "min_flow_mw" in df.columns:
+        for row in zip(df["transmission_line"], df["timepoint"], df["min_flow_mw"]):
+            if row[2] != ".":
+                transmission_tmps_with_min.append((row[0], row[1]))
+                min_flow_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # Load min flow data
+    if not transmission_tmps_with_min:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT"] = {
+            None: transmission_tmps_with_min
+        }
+
+    data_portal.data()["tx_simple_min_flow_mw"] = min_flow_mw
+
+    # Max Flow
+    transmission_tmps_with_max = list()
+    max_flow_mw = dict()
+
+    header = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_flow.tab",
+        ),
+        sep="\t",
+        header=None,
+        nrows=1,
+    ).values[0]
+
+    optional_columns = ["max_flow_mw"]
+    used_columns = [c for c in optional_columns if c in header]
+
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_flow.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "timepoint"] + used_columns,
+    )
+
+    # max_flow_mw is optional,
+    # so TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT
+    # and max_flow_mw simply won't be initialized if
+    # max_flow_mw does not exist in the input file
+    if "max_flow_mw" in df.columns:
+        for row in zip(df["transmission_line"], df["timepoint"], df["max_flow_mw"]):
+            if row[2] != ".":
+                transmission_tmps_with_max.append((row[0], row[1]))
+                max_flow_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # Load max flow data
+    if not transmission_tmps_with_max:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT"] = {
+            None: transmission_tmps_with_max
+        }
+
+    data_portal.data()["tx_simple_max_flow_mw"] = max_flow_mw
+
+
+def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    tx_flow = c.execute(
+        """SELECT transmission_line, timepoint, min_flow_mw, max_flow_mw
+        FROM inputs_transmission_flow
+        JOIN
+        (SELECT timepoint
+        FROM inputs_temporal
+        WHERE temporal_scenario_id = {}) as relevant_timepoints
+        USING (timepoint)        
+        JOIN
+        (SELECT transmission_line
+        FROM inputs_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id = {}) as relevant_tx
+        USING (transmission_line)
+        WHERE transmission_flow_scenario_id = {}
+        AND stage_ID = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TRANSMISSION_FLOW_SCENARIO_ID,
+            stage,
+        )
+    )
+
+    return tx_flow
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    transmission_lines.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    tx_flow = get_model_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_flow.tab",
+        ),
+        "w",
+        newline="",
+    ) as tx_flow_tab_file:
+        writer = csv.writer(tx_flow_tab_file, delimiter="\t", lineterminator="\n")
+
+        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
+        #  same as database
+        # Write header
+        writer.writerow(
+            ["transmission_line", "timepoint", "min_flow_mw", "max_flow_mw"]
+        )
+
+        for row in tx_flow:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

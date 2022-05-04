@@ -20,7 +20,16 @@ applicable).
 
 import csv
 import os.path
-from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Expression,
+    Constraint,
+    NonNegativeReals,
+    PercentFraction,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
@@ -177,6 +186,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS = Set(
+        dimen=3,
+        initialize=lambda mod: set(
+            (g, fg, tmp)
+            for (g, tmp) in mod.FUEL_PRJ_OPR_TMPS
+            for _g, fg, f in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if g == _g
+        ),
+    )
+
     m.HR_CURVE_PRJS_OPR_TMPS_SGMS = Set(
         dimen=3,
         initialize=lambda mod: set(
@@ -213,6 +232,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ),
     )
 
+    # Params
+    m.min_fraction_in_fuel_blend = Param(
+        m.FUEL_PRJ_FUELS, within=PercentFraction, default=0
+    )
+
+    m.max_fraction_in_fuel_blend = Param(
+        m.FUEL_PRJ_FUELS, within=PercentFraction, default=1
+    )
+
     # Variables
     ###########################################################################
 
@@ -224,6 +252,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Project_Startup_Fuel_Burn_by_Fuel = Var(
         m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
+    )
+
+    m.Project_Fuel_Contribution_by_Fuel = Var(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, within=NonNegativeReals
     )
 
     # Expressions
@@ -284,6 +316,42 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJS_FUEL_OPR_TMPS, rule=total_fuel_burn_by_fuel_rule
     )
 
+    def fuel_contribution_rule(mod, prj, tmp):
+        """
+        Fuel contribution from each fuel project based on operational type.
+        """
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type], "fuel_contribution_rule"):
+            fuel_contribution = imported_operational_modules[
+                op_type
+            ].fuel_contribution_rule(mod, prj, tmp)
+        else:
+            fuel_contribution = op_type_init.fuel_contribution_rule(mod, prj, tmp)
+
+        return fuel_contribution
+
+    m.Fuel_Contribution_FuelUnit = Expression(
+        m.FUEL_PRJ_OPR_TMPS, rule=fuel_contribution_rule
+    )
+
+    # Fuel groups by project; we put limits on total fuel burn for grouped fuels
+    def opr_fuel_burn_by_fuel_group_rule(mod, g, fg, tmp):
+        """
+        *Expression Name*: :code:`Opr_Fuel_Burn_by_Fuel_Group_MMBtu`
+        *Defined Over*: :code:`FUEL_PRJS_FUEL_GROUP_OPR_TMPS`
+
+        Operating fuel burn per fuel group is the sum of operating fuel burn by fuel group.
+        """
+        return sum(
+            mod.Project_Opr_Fuel_Burn_by_Fuel[g, f, tmp]
+            for (_g, _fg, f) in mod.FUEL_PRJ_FUELS_FUEL_GROUP
+            if f in mod.FUELS_BY_FUEL_GROUP[fg] and fg == _fg and g == _g
+        )
+
+    m.Opr_Fuel_Burn_by_Fuel_Group_MMBtu = Expression(
+        m.FUEL_PRJS_FUEL_GROUP_OPR_TMPS, rule=opr_fuel_burn_by_fuel_group_rule
+    )
+
     # Constraints
     ###########################################################################
 
@@ -332,6 +400,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_operations_rule
     )
 
+    def min_fraction_of_fuel_blend_opr_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a minimum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
+            >= mod.min_fraction_in_fuel_blend[prj, f]
+            * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Min_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_opr_rule
+    )
+
+    def max_fraction_of_fuel_blend_opr_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a maximum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Opr_Fuel_Burn_by_Fuel[prj, f, tmp]
+            <= mod.max_fraction_in_fuel_blend[prj, f]
+            * mod.Operations_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Max_Fuel_Fraction_of_Blend_Opr_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_opr_rule
+    )
+
     def blend_fuel_startup_rule(mod, prj, tmp):
         """
         The sum of startup fuel burn across all fuels should equal the total
@@ -349,9 +447,112 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STARTUP_FUEL_PRJ_OPR_TMPS, rule=blend_fuel_startup_rule
     )
 
+    def min_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a minimum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
+            >= mod.min_fraction_in_fuel_blend[prj, f]
+            * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Min_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_startup_rule
+    )
+
+    def max_fraction_of_fuel_blend_startup_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a maximum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Startup_Fuel_Burn_by_Fuel[prj, f, tmp]
+            <= mod.max_fraction_in_fuel_blend[prj, f]
+            * mod.Startup_Fuel_Burn_MMBtu[prj, tmp]
+        )
+
+    m.Max_Fuel_Fraction_of_Blend_Startup_Constraint = Constraint(
+        m.STARTUP_FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_startup_rule
+    )
+
+    # Constrain blending for fuel contributions
+    def blend_fuel_contributions_rule(mod, prj, tmp):
+        """
+        The sum of operations fuel contributions across all fuels should equal the total
+        operations fuel contribution.
+        """
+        return (
+            sum(
+                mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+                for f in mod.FUELS_BY_PRJ[prj]
+            )
+            == mod.Fuel_Contribution_FuelUnit[prj, tmp]
+        )
+
+    m.Fuel_Blending_Opr_Fuel_Contribution_Constraint = Constraint(
+        m.FUEL_PRJ_OPR_TMPS, rule=blend_fuel_contributions_rule
+    )
+
+    def min_fraction_of_fuel_blend_contribution_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a minimum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+            >= mod.min_fraction_in_fuel_blend[prj, f]
+            * mod.Fuel_Contribution_FuelUnit[prj, tmp]
+        )
+
+    m.Min_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=min_fraction_of_fuel_blend_contribution_rule
+    )
+
+    def max_fraction_of_fuel_blend_contribution_rule(mod, prj, f, tmp):
+        """
+        In each timepoint, enforce a maximum on the proportion in the blend of each
+        fuel.
+        """
+        return (
+            mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+            <= mod.max_fraction_in_fuel_blend[prj, f]
+            * mod.Fuel_Contribution_FuelUnit[prj, tmp]
+        )
+
+    m.Max_Fuel_Fraction_of_Blend_Contribution_Constraint = Constraint(
+        m.FUEL_PRJS_FUEL_OPR_TMPS, rule=max_fraction_of_fuel_blend_contribution_rule
+    )
+
 
 # Input-Output
 ###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    project_fuels_file = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+    )
+    if os.path.exists(project_fuels_file):
+        data_portal.load(
+            filename=project_fuels_file,
+            index=m.FUEL_PRJ_FUELS,
+            param=(
+                m.min_fraction_in_fuel_blend,
+                m.max_fraction_in_fuel_blend,
+            ),
+        )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -389,6 +590,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "fuel_burn_operations_mmbtu",
                 "fuel_burn_startup_mmbtu",
                 "total_fuel_burn_mmbtu",
+                "fuel_contribution_fuelunit",
+                "net_fuel_burn_fuelunit",
             ]
         )
         for (p, f, tmp) in m.FUEL_PRJS_FUEL_OPR_TMPS:
@@ -408,6 +611,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     if p in m.STARTUP_FUEL_PRJS
                     else None,
                     value(m.Total_Fuel_Burn_by_Fuel_MMBtu[p, f, tmp]),
+                    value(m.Project_Fuel_Contribution_by_Fuel[p, f, tmp]),
+                    (
+                        value(m.Total_Fuel_Burn_by_Fuel_MMBtu[p, f, tmp])
+                        - value(m.Project_Fuel_Contribution_by_Fuel[p, f, tmp])
+                    ),
                 ]
             )
 
@@ -460,6 +668,8 @@ def import_results_into_database(
             opr_fuel_burn_tons = row[9]
             startup_fuel_burn_tons = row[10]
             total_fuel_burn = row[11]
+            fuel_contribution = row[12]
+            net_fuel_burn = row[13]
 
             results.append(
                 (
@@ -478,6 +688,8 @@ def import_results_into_database(
                     opr_fuel_burn_tons,
                     startup_fuel_burn_tons,
                     total_fuel_burn,
+                    fuel_contribution,
+                    net_fuel_burn,
                 )
             )
 
@@ -488,8 +700,9 @@ def import_results_into_database(
          horizon, timepoint, timepoint_weight,
          number_of_hours_in_timepoint,
          load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
+         net_fuel_burn_fuelunit)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(
         scenario_id
     )
@@ -501,12 +714,14 @@ def import_results_into_database(
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu)
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
+         net_fuel_burn_fuelunit)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel, operations_fuel_burn_mmbtu, 
-         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu
+         startup_fuel_burn_mmbtu, total_fuel_burn_mmbtu, fuel_contribution_fuelunit, 
+         net_fuel_burn_fuelunit
         FROM temp_results_project_fuel_burn{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(

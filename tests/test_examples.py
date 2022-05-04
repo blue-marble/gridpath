@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -513,6 +513,20 @@ class TestExamples(unittest.TestCase):
             },
         )
 
+    def test_example_single_stage_prod_cost_cycle_select(self):
+        """
+        Check validation and objective function values of
+        "single_stage_prod_cost_cycle_select" example. This example is the same as
+        single_stage_prod_cost but the Coal and Gas_CCGT plants have mutually
+        exclusive commitment in this example.
+        """
+
+        self.check_validation("single_stage_prod_cost_cycle_select")
+        self.run_and_check_objective(
+            "single_stage_prod_cost_cycle_select",
+            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
+        )
+
     def test_example_multi_stage_prod_cost_parallel(self):
         """
         Check validation and objective function values of
@@ -933,7 +947,7 @@ class TestExamples(unittest.TestCase):
             "test_new_build_gen_var_stor_hyb", -5797066114.34292
         )
 
-    def test_carbon_tax_allowance(self):
+    def test_example_test_carbon_tax_allowance(self):
         """
         Check validation and objective function value of
         "test_carbon_tax_allowance" example
@@ -941,9 +955,9 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_carbon_tax_allowance")
-        self.run_and_check_objective("test_carbon_tax_allowance", -3796356403371.2686)
+        self.run_and_check_objective("test_carbon_tax_allowance", -3796303120157.2686)
 
-    def test_min_max_build_trans(self):
+    def test_example_test_min_max_build_trans(self):
         """
         Check validation and objective function value of
         "test_min_max_build_trans" example
@@ -985,8 +999,7 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_cheap_fuel_blend(self):
         """
-        Check validation and objective function value of
-        "2periods_new_build_2zones_transmission_Tx1halfavail" example
+        Check validation and objective function value of "test_cheap_fuel_blend" example
         :return:
         """
 
@@ -1008,6 +1021,176 @@ class TestExamples(unittest.TestCase):
         self.run_and_check_objective(
             "test_new_solar_carbon_cap_2zones_tx_low_carbon_fuel_blend",
             -3504399050661.217,
+        )
+
+    def test_example_test_cheap_fuel_blend_w_limit(self):
+        """
+        Check validation and objective function value of
+        "test_cheap_fuel_blend_w_limit" example
+        :return:
+        """
+
+        objective = -3796282357926.1226
+
+        self.check_validation("test_cheap_fuel_blend_w_limit")
+        self.run_and_check_objective("test_cheap_fuel_blend_w_limit", objective)
+
+    def test_example_test_new_solar_fuel_burn_limit(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_fuel_burn_limit" example. Inputs set up so that this should
+        be the same as the "test_new_solar_carbon_cap" example.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_fuel_burn_limit")
+        self.run_and_check_objective(
+            "test_new_solar_fuel_burn_limit", -58282515304521.79
+        )
+
+    def test_example_test_new_solar_fuel_burn_limit_relative(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_fuel_burn_limit_relative" example. Inputs set up so that this
+        should be the same as the "test_new_solar_fuel_burn_limit" example.
+        :return:
+        """
+
+        self.check_validation("test_new_solar_fuel_burn_limit_relative")
+        self.run_and_check_objective(
+            "test_new_solar_fuel_burn_limit_relative", -58282515304521.79
+        )
+
+    def test_test_w_solver_options(self):
+        """
+        Check validation and objective function value of "test_w_solver_options" example
+        :return:
+        """
+
+        self.check_validation("test_w_solver_options")
+        self.run_and_check_objective("test_w_solver_options", -3796309121478.12)
+
+    def test_example_test_carbon_tax_allowance_with_different_fuel_groups(self):
+        """
+        Check validation and objective function value of
+        "test_carbon_tax_allowance_with_different_fuel_groups" example
+        :return:
+        """
+
+        self.check_validation("test_carbon_tax_allowance_with_different_fuel_groups")
+        self.run_and_check_objective(
+            "test_carbon_tax_allowance_with_different_fuel_groups", -3796325179179.2686
+        )
+
+    def test_performance_standard(self):
+        """
+        Check validation and objective function value of "test_performance_standard" example
+        :return:
+        """
+
+        self.check_validation("test_performance_standard")
+        self.run_and_check_objective("test_performance_standard", -3592014754469.9077)
+
+    def test_tx_flow(self):
+        """
+        Check validation and objective function value of
+        "test_tx_flow" example
+        :return:
+        """
+
+        self.check_validation("test_tx_flow")
+        self.run_and_check_objective("test_tx_flow", -59124336744013.484)
+
+    def test_example_test_new_solar_reserve_prj_contribution(self):
+        """
+        Check validation and objective function value of
+        "test_reserve_prj_contribution" example.
+        This example is based on "test_new_solar" with the only difference, the LF UP
+        requirement ID
+        :return:
+        """
+
+        self.check_validation("test_new_solar_reserve_prj_contribution")
+        self.run_and_check_objective(
+            "test_new_solar_reserve_prj_contribution", -3796311064738.0493
+        )
+
+    def test_test_new_solar_carbon_cap_2zones_tx_hydrogen_prod(self):
+        """
+        Check validation and objective function value of
+        "test_reserve_prj_contribution" example.
+        This example is based on "test_new_solar" with the only difference, the LF UP
+        requirement ID
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_cap_2zones_tx_hydrogen_prod")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod", -186977669.6
+        )
+
+    def test_test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new(self):
+        """
+        Check validation and objective function value of
+        "test_reserve_prj_contribution" example.
+        This example is based on "test_new_solar" with the only difference, the LF UP
+        requirement ID
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new", -186998077.6
+        )
+
+    def test_example_test_new_solar_carbon_cap_dac(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_carbon_cap_dac" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_carbon_cap_dac")
+        self.run_and_check_objective(
+            "test_new_solar_carbon_cap_dac", -3504434601570.9893
+        )
+
+    def test_example_test_cap_factor_limits(self):
+        """
+        Check validation and objective function value of "test" example
+        :return:
+        """
+
+        self.check_validation("test_cap_factor_limits")
+        self.run_and_check_objective("test_cap_factor_limits", -5373102109974.298)
+
+    def test_example_multi_stage_prod_cost_w_markets(self):
+        """
+        Check validation and objective function values of
+        "multi_stage_prod_cost_w_markets" example
+        :return:
+        """
+
+        self.check_validation("multi_stage_prod_cost_w_markets")
+        self.run_and_check_objective(
+            "multi_stage_prod_cost_w_markets",
+            {
+                1: {
+                    1: -1168100020726.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+                2: {
+                    1: -1168100035326.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+                3: {
+                    1: -1168100020726.1135,
+                    2: -1168100283039.4688,
+                    3: -1168100283039.5056,
+                },
+            },
         )
 
     @classmethod

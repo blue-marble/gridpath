@@ -132,6 +132,8 @@ class TestGenSpec(unittest.TestCase):
                 ("Customer_PV", 2020),
                 ("Customer_PV", 2030),
                 ("Nuclear_Flexible", 2030),
+                ("DAC", 2020),
+                ("DAC", 2030),
             ]
         )
         actual_proj_period_set = sorted(
@@ -176,6 +178,8 @@ class TestGenSpec(unittest.TestCase):
                     ("Customer_PV", 2020): 1,
                     ("Customer_PV", 2030): 1,
                     ("Nuclear_Flexible", 2030): 1000,
+                    ("DAC", 2020): 1000,
+                    ("DAC", 2030): 1000,
                 }.items()
             )
         )
@@ -193,39 +197,41 @@ class TestGenSpec(unittest.TestCase):
         expected_fixed_cost = OrderedDict(
             sorted(
                 {
-                    ("Nuclear", 2020): 0,
-                    ("Gas_CCGT", 2020): 0,
-                    ("Coal", 2020): 0,
-                    ("Gas_CT", 2020): 0,
-                    ("Wind", 2020): 0,
-                    ("Nuclear", 2030): 0,
-                    ("Gas_CCGT", 2030): 0,
-                    ("Coal", 2030): 0,
-                    ("Gas_CT", 2030): 0,
-                    ("Wind", 2030): 0,
-                    ("Nuclear_z2", 2020): 0,
-                    ("Gas_CCGT_z2", 2020): 0,
-                    ("Coal_z2", 2020): 0,
-                    ("Gas_CT_z2", 2020): 0,
-                    ("Wind_z2", 2020): 0,
-                    ("Nuclear_z2", 2030): 0,
-                    ("Gas_CCGT_z2", 2030): 0,
-                    ("Coal_z2", 2030): 0,
-                    ("Gas_CT_z2", 2030): 0,
-                    ("Wind_z2", 2030): 0,
-                    ("Hydro", 2020): 0,
-                    ("Hydro", 2030): 0,
-                    ("Hydro_NonCurtailable", 2020): 0,
-                    ("Hydro_NonCurtailable", 2030): 0,
-                    ("Disp_Binary_Commit", 2020): 0,
-                    ("Disp_Binary_Commit", 2030): 0,
-                    ("Disp_Cont_Commit", 2020): 0,
-                    ("Disp_Cont_Commit", 2030): 0,
-                    ("Disp_No_Commit", 2020): 0,
-                    ("Disp_No_Commit", 2030): 0,
-                    ("Customer_PV", 2020): 0,
-                    ("Customer_PV", 2030): 0,
-                    ("Nuclear_Flexible", 2030): 1,
+                    ("Nuclear", 2020): 0.0,
+                    ("Gas_CCGT", 2020): 0.0,
+                    ("Coal", 2020): 0.0,
+                    ("Gas_CT", 2020): 0.0,
+                    ("Wind", 2020): 0.0,
+                    ("Nuclear", 2030): 0.0,
+                    ("Gas_CCGT", 2030): 0.0,
+                    ("Coal", 2030): 0.0,
+                    ("Gas_CT", 2030): 0.0,
+                    ("Wind", 2030): 0.0,
+                    ("Nuclear_z2", 2020): 0.0,
+                    ("Gas_CCGT_z2", 2020): 0.0,
+                    ("Coal_z2", 2020): 0.0,
+                    ("Gas_CT_z2", 2020): 0.0,
+                    ("Wind_z2", 2020): 0.0,
+                    ("Nuclear_z2", 2030): 0.0,
+                    ("Gas_CCGT_z2", 2030): 0.0,
+                    ("Coal_z2", 2030): 0.0,
+                    ("Gas_CT_z2", 2030): 0.0,
+                    ("Wind_z2", 2030): 0.0,
+                    ("Hydro", 2020): 0.0,
+                    ("Hydro", 2030): 0.0,
+                    ("Hydro_NonCurtailable", 2020): 0.0,
+                    ("Hydro_NonCurtailable", 2030): 0.0,
+                    ("Disp_Binary_Commit", 2020): 0.0,
+                    ("Disp_Binary_Commit", 2030): 0.0,
+                    ("Disp_Cont_Commit", 2020): 0.0,
+                    ("Disp_Cont_Commit", 2030): 0.0,
+                    ("Disp_No_Commit", 2020): 0.0,
+                    ("Disp_No_Commit", 2030): 0.0,
+                    ("Customer_PV", 2020): 0.0,
+                    ("Customer_PV", 2030): 0.0,
+                    ("Nuclear_Flexible", 2030): 1.0,
+                    ("DAC", 2020): 10.0,
+                    ("DAC", 2030): 10.0,
                 }.items()
             )
         )
@@ -237,6 +243,7 @@ class TestGenSpec(unittest.TestCase):
                 }.items()
             )
         )
+
         self.assertDictEqual(expected_fixed_cost, actual_fixed_cost)
 
 

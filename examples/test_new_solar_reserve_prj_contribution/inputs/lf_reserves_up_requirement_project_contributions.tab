@@ -1,0 +1,3 @@
+ba	project	percent_power_req	percent_capacity_req
+Zone1	Solar	.	0.03
+Zone1	Wind	0.05	.

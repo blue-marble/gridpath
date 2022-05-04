@@ -20,6 +20,7 @@ from importlib import import_module
 import os.path
 import sys
 import unittest
+import pandas as pd
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 from tests.project.operations.common_functions import get_project_operational_timepoints
@@ -63,6 +64,8 @@ except ImportError:
 
 class TestCarbonTaxEmissions(unittest.TestCase):
     """ """
+
+    maxDiff = None
 
     def test_add_model_components(self):
         """
@@ -205,47 +208,47 @@ class TestCarbonTaxEmissions(unittest.TestCase):
         expected_carbon_tax_allowance = OrderedDict(
             sorted(
                 {
-                    ("Gas_CCGT", 2020): 10,
-                    ("Coal", 2020): 8,
-                    ("Gas_CT", 2020): 10,
-                    ("Gas_CCGT_New", 2020): 10,
-                    ("Gas_CCGT_New_Binary", 2020): 10,
-                    ("Gas_CT_New", 2020): 10,
-                    ("Gas_CCGT_z2", 2020): 10,
-                    ("Coal_z2", 2020): 8,
-                    ("Gas_CT_z2", 2020): 10,
-                    ("Disp_Binary_Commit", 2020): 10,
-                    ("Disp_Cont_Commit", 2020): 10,
-                    ("Disp_No_Commit", 2020): 10,
-                    ("Clunky_Old_Gen", 2020): 8,
-                    ("Clunky_Old_Gen2", 2020): 8,
-                    ("Gas_CCGT", 2030): 5,
-                    ("Coal", 2030): 3,
-                    ("Gas_CT", 2030): 5,
-                    ("Gas_CCGT_New", 2030): 5,
-                    ("Gas_CCGT_New_Binary", 2030): 5,
-                    ("Gas_CT_New", 2030): 5,
-                    ("Gas_CCGT_z2", 2030): 5,
-                    ("Coal_z2", 2030): 3,
-                    ("Gas_CT_z2", 2030): 5,
-                    ("Disp_Binary_Commit", 2030): 5,
-                    ("Disp_Cont_Commit", 2030): 5,
-                    ("Disp_No_Commit", 2030): 5,
-                    ("Clunky_Old_Gen", 2030): 3,
-                    ("Clunky_Old_Gen2", 2030): 3,
+                    ("Gas_CCGT", "Gas", 2020): 10,
+                    ("Gas_CCGT", "Blended", 2020): 3,
+                    ("Coal", "Solid", 2020): 8,
+                    ("Gas_CT", "Gas", 2020): 10,
+                    ("Gas_CCGT_New", "Gas", 2020): 10,
+                    ("Gas_CCGT_New_Binary", "Gas", 2020): 10,
+                    ("Gas_CCGT_z2", "Gas", 2020): 10,
+                    ("Coal_z2", "Solid", 2020): 8,
+                    ("Gas_CT_z2", "Gas", 2020): 10,
+                    ("Disp_Binary_Commit", "Gas", 2020): 10,
+                    ("Disp_Cont_Commit", "Gas", 2020): 10,
+                    ("Disp_No_Commit", "Gas", 2020): 10,
+                    ("Clunky_Old_Gen", "Solid", 2020): 8,
+                    ("Clunky_Old_Gen2", "Solid", 2020): 8,
+                    ("Gas_CCGT", "Gas", 2030): 5,
+                    ("Gas_CCGT", "Blended", 2030): 1,
+                    ("Coal", "Solid", 2030): 3,
+                    ("Gas_CT", "Gas", 2030): 5,
+                    ("Gas_CCGT_New", "Gas", 2030): 5,
+                    ("Gas_CCGT_New_Binary", "Gas", 2030): 5,
+                    ("Gas_CT_New", "Gas", 2030): 5,
+                    ("Gas_CCGT_z2", "Gas", 2030): 5,
+                    ("Coal_z2", "Solid", 2030): 3,
+                    ("Gas_CT_z2", "Gas", 2030): 5,
+                    ("Disp_Binary_Commit", "Gas", 2030): 5,
+                    ("Disp_Cont_Commit", "Gas", 2030): 5,
+                    ("Disp_No_Commit", "Gas", 2030): 5,
+                    ("Clunky_Old_Gen", "Solid", 2030): 3,
+                    ("Clunky_Old_Gen2", "Solid", 2030): 3,
                 }.items()
             )
         )
-        actual_carbon_tax = OrderedDict(
+        actual_carbon_tax_allowance = OrderedDict(
             sorted(
                 {
-                    (prj, p): instance.carbon_tax_allowance[prj, p]
-                    for prj in instance.CARBON_TAX_PRJS
-                    for p in instance.PERIODS
+                    (prj, fg, p): instance.carbon_tax_allowance[prj, fg, p]
+                    for (prj, fg, p) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS
                 }.items()
             )
         )
-        self.assertDictEqual(expected_carbon_tax_allowance, actual_carbon_tax)
+        self.assertDictEqual(expected_carbon_tax_allowance, actual_carbon_tax_allowance)
 
         # Set: CARBON_TAX_PRJ_OPR_PRDS
         expected_carbon_tax_prj_op_p = sorted(
@@ -283,6 +286,122 @@ class TestCarbonTaxEmissions(unittest.TestCase):
             [(prj, p) for (prj, p) in instance.CARBON_TAX_PRJ_OPR_PRDS]
         )
         self.assertListEqual(expected_carbon_tax_prj_op_p, actual_carbon_tax_prj_op_p)
+
+        # Param: carbon_tax_allowance_average_heat_rate
+        expected_carbon_tax_allowance_average_heat_rate = OrderedDict(
+            sorted(
+                {
+                    ("Gas_CCGT", 2020): 256,
+                    ("Coal", 2020): 506,
+                    ("Gas_CT", 2020): 88.13333,
+                    ("Gas_CCGT_New", 2020): 256,
+                    ("Gas_CCGT_New_Binary", 2020): 256,
+                    ("Gas_CT_New", 2020): 88.13333,
+                    ("Gas_CCGT_z2", 2020): 256,
+                    ("Coal_z2", 2020): 506,
+                    ("Gas_CT_z2", 2020): 88.13333,
+                    ("Disp_Binary_Commit", 2020): 88.13333,
+                    ("Disp_Cont_Commit", 2020): 88.13333,
+                    ("Disp_No_Commit", 2020): 8,
+                    ("Clunky_Old_Gen", 2020): 842.33333,
+                    ("Clunky_Old_Gen2", 2020): 842.33333,
+                    ("Gas_CCGT", 2030): 256,
+                    ("Coal", 2030): 506,
+                    ("Gas_CT", 2030): 88.13333,
+                    ("Gas_CCGT_New", 2030): 256,
+                    ("Gas_CCGT_New_Binary", 2030): 256,
+                    ("Gas_CT_New", 2030): 88.13333,
+                    ("Gas_CCGT_z2", 2030): 256,
+                    ("Coal_z2", 2030): 506,
+                    ("Gas_CT_z2", 2030): 88.13333,
+                    ("Disp_Binary_Commit", 2030): 88.13333,
+                    ("Disp_Cont_Commit", 2030): 88.13333,
+                    ("Disp_No_Commit", 2030): 8,
+                    ("Clunky_Old_Gen", 2030): 842.33333,
+                    ("Clunky_Old_Gen2", 2030): 842.33333,
+                }.items()
+            )
+        )
+        actual_carbon_tax_allowance_average_heat_rate = OrderedDict(
+            sorted(
+                {
+                    (prj, p): instance.carbon_tax_allowance_average_heat_rate[prj, p]
+                    for prj in instance.CARBON_TAX_PRJS
+                    for p in instance.PERIODS
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_carbon_tax_allowance_average_heat_rate,
+            actual_carbon_tax_allowance_average_heat_rate,
+        )
+
+        # Set: CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS
+        fuels_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "fuels.tab"),
+            sep="\t",
+        )
+        prj_fuels_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "project_fuels.tab"),
+            sep="\t",
+        )
+        fuel_group_fuels = list(
+            fuels_df[["fuel_group", "fuel"]].to_records(index=False)
+        )
+        fuel_group_fuels = sorted([tuple(i) for i in fuel_group_fuels])
+        fuel_project_fuels = list(
+            prj_fuels_df[["project", "fuel"]].to_records(index=False)
+        )
+        fuel_project_fuels = sorted([tuple(i) for i in fuel_project_fuels])
+        fuel_prj_fuels_fuel_group = sorted(
+            [
+                (prj, fg, f)
+                for (prj, f) in fuel_project_fuels
+                for (fg, _f) in fuel_group_fuels
+                if f == _f
+            ]
+        )
+        expected_carb_tax_prj_fuel_group_op_tmp = sorted(
+            [
+                (prj, fg, tmp)
+                for (prj, tmp) in expected_carb_tax_prj_op_tmp
+                for (_prj, fg, f) in fuel_prj_fuels_fuel_group
+                if prj == _prj
+            ]
+        )
+
+        actual_carb_tax_prj_fuel_group_op_tmp = sorted(
+            [
+                (p, fg, tmp)
+                for (p, fg, tmp) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS
+            ]
+        )
+
+        self.assertListEqual(
+            expected_carb_tax_prj_fuel_group_op_tmp,
+            actual_carb_tax_prj_fuel_group_op_tmp,
+        )
+
+        # Set: CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS
+        expected_carb_tax_prj_fuel_group_op_p = sorted(
+            [
+                (prj, fg, p)
+                for (prj, p) in expected_carbon_tax_prj_op_p
+                for (_prj, fg, f) in fuel_prj_fuels_fuel_group
+                if prj == _prj
+            ]
+        )
+
+        actual_carb_tax_prj_fuel_group_op_p = sorted(
+            [
+                (prj, fg, p)
+                for (prj, fg, p) in instance.CARBON_TAX_PRJ_FUEL_GROUP_OPR_PRDS
+            ]
+        )
+
+        self.assertListEqual(
+            expected_carb_tax_prj_fuel_group_op_p, actual_carb_tax_prj_fuel_group_op_p
+        )
 
 
 if __name__ == "__main__":

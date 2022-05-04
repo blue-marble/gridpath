@@ -350,7 +350,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         Fuel cost based on fuels burn and each fuel's price (sum over fuels).
         """
         return sum(
-            mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+            (
+                mod.Total_Fuel_Burn_by_Fuel_MMBtu[prj, f, tmp]
+                - mod.Project_Fuel_Contribution_by_Fuel[prj, f, tmp]
+            )
             * mod.fuel_price_per_mmbtu[f, mod.period[tmp], mod.month[tmp]]
             for f in mod.FUELS_BY_PRJ[prj]
         )

@@ -134,6 +134,15 @@ def update_capacity_results_table(
             new_build_binary = get_column_row_value(header, "new_build_binary", row)
             retired_mw = get_column_row_value(header, "retired_mw", row)
             retired_binary = get_column_row_value(header, "retired_binary", row)
+            fuel_prod = get_column_row_value(
+                header, "new_fuel_prod_capacity_fuelunitperhour", row
+            )
+            fuel_rel = get_column_row_value(
+                header, "new_fuel_rel_capacity_fuelunitperhour", row
+            )
+            fuel_stor = get_column_row_value(
+                header, "new_fuel_stor_capacity_fuelunitperhour", row
+            )
 
             results.append(
                 (
@@ -142,6 +151,9 @@ def update_capacity_results_table(
                     new_build_binary,
                     retired_mw,
                     retired_binary,
+                    fuel_prod,
+                    fuel_rel,
+                    fuel_stor,
                     scenario_id,
                     project,
                     period,
@@ -157,7 +169,10 @@ def update_capacity_results_table(
         new_build_mwh = ?,
         new_build_binary = ?,
         retired_mw = ?,
-        retired_binary = ?
+        retired_binary = ?,
+        new_fuel_prod_capacity_fuelunitperhour = ?,
+        new_fuel_rel_capacity_fuelunitperhour = ?,
+        new_fuel_stor_capacity_fuelunit = ?
         WHERE scenario_id = ?
         AND project = ?
         AND period = ?
@@ -177,48 +192,62 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
     c = conn.cursor()
     spec_project_params = c.execute(
         """
-        SELECT project, period,
+        SELECT project,
+        period,
         specified_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
         specified_capacity_mwh,
+        fuel_production_capacity_fuelunitperhour,
+        fuel_release_capacity_fuelunitperhour,
+        fuel_storage_capacity_fuelunit,
         fixed_cost_per_mw_year,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
-        fixed_cost_per_mwh_year
+        fixed_cost_per_mwh_year,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr
         FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_periods
         INNER JOIN
         (SELECT project, period,
         specified_capacity_mw,
         hyb_gen_specified_capacity_mw,
         hyb_stor_specified_capacity_mw,
-        specified_capacity_mwh
+        specified_capacity_mwh,
+        fuel_production_capacity_fuelunitperhour,
+        fuel_release_capacity_fuelunitperhour,
+        fuel_storage_capacity_fuelunit
         FROM inputs_project_specified_capacity
-        WHERE project_specified_capacity_scenario_id = {}) as capacity
+        WHERE project_specified_capacity_scenario_id = {project_specified_capacity_scenario_id}) as capacity
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
         fixed_cost_per_mw_year,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
-        fixed_cost_per_mwh_year
+        fixed_cost_per_mwh_year,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr
         FROM inputs_project_specified_fixed_cost
-        WHERE project_specified_fixed_cost_scenario_id = {}) as fixed_om
+        WHERE project_specified_fixed_cost_scenario_id = {project_specified_fixed_cost_scenario_id}) as fixed_om
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = '{}'
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND capacity_type = '{capacity_type}'
         ;""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
-            subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            capacity_type,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            project_specified_capacity_scenario_id=subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID,
+            project_specified_fixed_cost_scenario_id=subscenarios.PROJECT_SPECIFIED_FIXED_COST_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            capacity_type=capacity_type,
         )
     )
+
     return spec_project_params
 
 
@@ -251,10 +280,16 @@ def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_para
                     "hyb_gen_specified_capacity_mw",
                     "hyb_stor_specified_capacity_mw",
                     "specified_capacity_mwh",
+                    "fuel_production_capacity_fuelunitperhour",
+                    "fuel_release_capacity_fuelunitperhour",
+                    "fuel_storage_capacity_fuelunit",
                     "fixed_cost_per_mw_yr",
                     "hyb_gen_fixed_cost_per_mw_yr",
                     "hyb_stor_fixed_cost_per_mw_yr",
                     "fixed_cost_per_mwh_yr",
+                    "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr",
+                    "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr",
+                    "fuel_storage_capacity_fixed_cost_per_fuelunit_yr",
                 ]
             )
 
@@ -275,10 +310,16 @@ def write_from_query(spec_project_params, writer):
             hyb_gen_specified_capacity_mw,
             hyb_stor_specified_capacity_mw,
             specified_capacity_mwh,
+            fuel_prod_cap,
+            fuel_rel_cap,
+            fuel_stor_cap,
             fixed_cost_per_mw_year,
             hyb_gen_fixed_cost_per_mw_yr,
             hyb_stor_fixed_cost_per_mw_yr,
             fixed_cost_per_mwh_year,
+            fuel_prod_fom,
+            fuel_rel_fom,
+            fuel_stor_fom,
         ] = row
         writer.writerow(
             [
@@ -288,10 +329,16 @@ def write_from_query(spec_project_params, writer):
                 hyb_gen_specified_capacity_mw,
                 hyb_stor_specified_capacity_mw,
                 specified_capacity_mwh,
+                fuel_prod_cap,
+                fuel_rel_cap,
+                fuel_stor_cap,
                 fixed_cost_per_mw_year,
                 hyb_gen_fixed_cost_per_mw_yr,
                 hyb_stor_fixed_cost_per_mw_yr,
                 fixed_cost_per_mwh_year,
+                fuel_prod_fom,
+                fuel_rel_fom,
+                fuel_stor_fom,
             ]
         )
 
@@ -321,10 +368,16 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     hyb_gen_spec_capacity_mw_dict = dict()
     hyb_stor_spec_capacity_mw_dict = dict()
     spec_capacity_mwh_dict = dict()
+    spec_fuel_prod_cap_dict = dict()
+    spec_fuel_rel_cap_dict = dict()
+    spec_fuel_stor_cap_dict = dict()
     spec_fixed_cost_per_mw_yr_dict = dict()
     hyb_gen_spec_fixed_cost_per_mw_yr_dict = dict()
     hyb_stor_spec_fixed_cost_per_mw_yr_dict = dict()
     spec_fixed_cost_per_mwh_yr_dict = dict()
+    spec_fuel_prod_fixed_cost_dict = dict()
+    spec_fuel_rel_fixed_cost_dict = dict()
+    spec_fuel_stor_fixed_cost_dict = dict()
 
     df = pd.read_csv(
         os.path.join(
@@ -344,10 +397,16 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
         df["hyb_gen_specified_capacity_mw"],
         df["hyb_stor_specified_capacity_mw"],
         df["specified_capacity_mwh"],
+        df["fuel_production_capacity_fuelunitperhour"],
+        df["fuel_release_capacity_fuelunitperhour"],
+        df["fuel_storage_capacity_fuelunit"],
         df["fixed_cost_per_mw_yr"],
         df["hyb_gen_fixed_cost_per_mw_yr"],
         df["hyb_stor_fixed_cost_per_mw_yr"],
         df["fixed_cost_per_mwh_yr"],
+        df["fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"],
+        df["fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"],
+        df["fuel_storage_capacity_fixed_cost_per_fuelunit_yr"],
     ):
         if row[0] in project_list:
             project_period_list.append((row[0], row[1]))
@@ -355,10 +414,16 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
             hyb_gen_spec_capacity_mw_dict[(row[0], row[1])] = float(row[3])
             hyb_stor_spec_capacity_mw_dict[(row[0], row[1])] = float(row[4])
             spec_capacity_mwh_dict[(row[0], row[1])] = float(row[5])
-            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[6])
-            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[7])
-            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[8])
-            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = float(row[9])
+            spec_fuel_prod_cap_dict[(row[0], row[1])] = float(row[6])
+            spec_fuel_rel_cap_dict[(row[0], row[1])] = float(row[7])
+            spec_fuel_stor_cap_dict[(row[0], row[1])] = float(row[8])
+            spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[9])
+            hyb_gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[10])
+            hyb_stor_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = float(row[11])
+            spec_fixed_cost_per_mwh_yr_dict[(row[0], row[1])] = float(row[12])
+            spec_fuel_prod_fixed_cost_dict[(row[0], row[1])] = float(row[13])
+            spec_fuel_rel_fixed_cost_dict[(row[0], row[1])] = float(row[14])
+            spec_fuel_stor_fixed_cost_dict[(row[0], row[1])] = float(row[15])
         else:
             pass
 
@@ -366,6 +431,7 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     # params specified
     projects_w_params = [gp[0] for gp in project_period_list]
     diff = list(set(project_list) - set(projects_w_params))
+
     if diff:
         raise ValueError(
             "Missing capacity/fixed cost inputs for the "
@@ -377,9 +443,21 @@ def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
     main_dict["hyb_gen_specified_capacity_mw"] = hyb_gen_spec_capacity_mw_dict
     main_dict["hyb_stor_specified_capacity_mw"] = hyb_stor_spec_capacity_mw_dict
     main_dict["specified_capacity_mwh"] = spec_capacity_mwh_dict
+    main_dict["fuel_production_capacity_fuelunitperhour"] = spec_fuel_prod_cap_dict
+    main_dict["fuel_release_capacity_fuelunitperhour"] = spec_fuel_rel_cap_dict
+    main_dict["fuel_storage_capacity_fuelunit"] = spec_fuel_stor_cap_dict
     main_dict["fixed_cost_per_mw_yr"] = spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_gen_fixed_cost_per_mw_yr"] = hyb_gen_spec_fixed_cost_per_mw_yr_dict
     main_dict["hyb_stor_fixed_cost_per_mw_yr"] = hyb_stor_spec_fixed_cost_per_mw_yr_dict
     main_dict["fixed_cost_per_mwh_yr"] = spec_fixed_cost_per_mwh_yr_dict
+    main_dict[
+        "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr"
+    ] = spec_fuel_prod_fixed_cost_dict
+    main_dict[
+        "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr"
+    ] = spec_fuel_rel_fixed_cost_dict
+    main_dict[
+        "fuel_storage_capacity_fixed_cost_per_fuelunit_yr"
+    ] = spec_fuel_stor_fixed_cost_dict
 
     return project_period_list, main_dict
