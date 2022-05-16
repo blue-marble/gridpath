@@ -25,7 +25,9 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.transmission.capacity.capacity_types as cap_type_init
-from gridpath.transmission.capacity.common_functions import load_tx_capacity_type_modules
+from gridpath.transmission.capacity.common_functions import (
+    load_tx_capacity_type_modules,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -104,7 +106,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.TX_CAPACITY_GROUP_PERIODS = Set(dimen=2)
 
     m.TX_CAPACITY_GROUPS = Set(
-        initialize=lambda mod: list(set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS]))
+        initialize=lambda mod: list(
+            set([g for (g, p) in mod.TX_CAPACITY_GROUP_PERIODS])
+        )
     )
 
     m.TX_IN_TX_CAPACITY_GROUP = Set(m.TX_CAPACITY_GROUPS, within=m.TX_LINES)
@@ -144,8 +148,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Expressions
     def tx_group_new_capacity_rule(mod, grp, prd):
         return sum(
-            new_capacity_rule(mod, tx, prd)
-            for tx in mod.TX_IN_TX_CAPACITY_GROUP[grp]
+            new_capacity_rule(mod, tx, prd) for tx in mod.TX_IN_TX_CAPACITY_GROUP[grp]
         )
 
     m.Tx_Group_New_Capacity_in_Period = Expression(
@@ -208,7 +211,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
     tx_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "transmission_capacity_group_transmission_lines.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "transmission_capacity_group_transmission_lines.tab",
     )
     if os.path.exists(tx_file):
         tx_groups_df = pd.read_csv(tx_file, delimiter="\t")
@@ -231,7 +238,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "transmission_capacity_group_requirements.tab",
     )
     tx_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "transmission_capacity_group_transmission_lines.tab"
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "transmission_capacity_group_transmission_lines.tab",
     )
 
     if os.path.exists(req_file) and os.path.exists(tx_file):

@@ -130,6 +130,7 @@ def write_model_inputs(
         else:
             pass
 
+
 # Capacity Type Module Method Defaults
 ###############################################################################
 def new_capacity_rule(mod, prj, prd):

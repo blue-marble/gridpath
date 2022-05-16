@@ -113,9 +113,7 @@ class TestCapacityGroups(unittest.TestCase):
         self.assertListEqual(expected_cap_group_periods, actual_cap_group_periods)
 
         # Set: TX_IN_TX_CAPACITY_GROUP
-        expected_prj_in_cap_group = {
-            "Tx_Capacity_Group1": ["Tx_New", "Tx1"]
-        }
+        expected_prj_in_cap_group = {"Tx_Capacity_Group1": ["Tx_New", "Tx1"]}
         actual_prj_in_cap_group = {
             g: [p for p in instance.TX_IN_TX_CAPACITY_GROUP[g]]
             for g in instance.TX_CAPACITY_GROUPS

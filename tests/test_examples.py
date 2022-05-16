@@ -1201,9 +1201,7 @@ class TestExamples(unittest.TestCase):
         """
 
         self.check_validation("test_tx_capacity_groups")
-        self.run_and_check_objective(
-            "test_tx_capacity_groups", -12284573611936.518
-        )
+        self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
 
     @classmethod
     def tearDownClass(cls):
