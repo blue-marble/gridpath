@@ -1008,7 +1008,7 @@ def write_model_inputs(
     )
 
     # Write the supplemental firing file
-    sf_df = cursor_to_df(cycle_selection)
+    sf_df = cursor_to_df(supplemental_firing)
     write_additional_opchar_file(
         opchar_df=sf_df,
         inputs_directory=inputs_directory,

@@ -116,7 +116,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             g_supplemental_optype = "Lin"
         else:
             raise ValueError(
-                "Cycle selection can only apply to projects of the "
+                "Supplemental firing can only apply to projects of the "
                 "gen_commit_bin and gen_commit_lin operational types. "
                 "The operational type of {} is {}.".format(
                     g_supplemental_firing, mod.operational_type[g_supplemental_firing]
@@ -124,10 +124,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
 
         return (
-            getattr(mod, "GenCommit{}_Synced".format(g_supplemental_optype))[
+            getattr(mod, "GenCommit{}_Commit".format(g_supplemental_optype))[
                 g_supplemental_firing, tmp
             ]
-            <= getattr(mod, "GenCommit{}_Synced".format(g_optype))[g, tmp]
+            <= getattr(mod, "GenCommit{}_Commit".format(g_optype))[g, tmp]
         )
 
     m.Gen_Commit_BinLin_Supplemental_Firing_Constraint = Constraint(

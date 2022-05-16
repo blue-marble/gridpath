@@ -84,6 +84,19 @@ class TestOperationalTypes(unittest.TestCase):
             stage="",
         )
 
+        # Set: GEN_COMMIT_BINLIN
+        expected_gen_commit_binlin = sorted(
+            [
+                "Disp_Binary_Commit",
+                "Disp_Cont_Commit",
+                "Clunky_Old_Gen",
+                "Clunky_Old_Gen2",
+            ]
+        )
+        actual_gen_commit_binlin = sorted([prj for prj in instance.GEN_COMMIT_BINLIN])
+
+        self.assertListEqual(expected_gen_commit_binlin, actual_gen_commit_binlin)
+
 
 if __name__ == "__main__":
     unittest.main()
