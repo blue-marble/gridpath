@@ -119,8 +119,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
 
         return (
-            getattr(mod, "GenCommit{}_Synced".format(g_optype))[g, tmp]
-            + getattr(mod, "GenCommit{}_Synced".format(g_cycle_optype))[
+            getattr(mod, "GenCommit{}_Commit".format(g_optype))[g, tmp]
+            + getattr(mod, "GenCommit{}_Commit".format(g_cycle_optype))[
                 g_cycle_select, tmp
             ]
             <= 1
