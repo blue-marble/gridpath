@@ -35,13 +35,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_COMMIT_BINLIN`                                             |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
-    |                                                                         |
-    | Union of the GEN_COMMIT_BIN and GEN_COMMIT_LIN sets if they exist. We   |
-    | use this set to limit membership in the GEN_W_CYCLE_SELECT set to these |
-    | operational types.                                                      |
-    +-------------------------------------------------------------------------+
     | | :code:`GEN_W_CYCLE_SELECT`                                            |
     | | *Within*: :code:`GEN_COMMIT_BINLIN`                                   |
     |                                                                         |
@@ -77,17 +70,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     # Sets
-    def gen_commit_binlin_set_init(mod):
-        if hasattr(mod, "GEN_COMMIT_BIN") and hasattr(m, "GEN_COMMIT_LIN"):
-            return mod.GEN_COMMIT_BIN | mod.GEN_COMMIT_LIN
-        elif hasattr(mod, "GEN_COMMIT_BIN"):
-            return mod.GEN_COMMIT_BIN
-        elif hasattr(mod, "GEN_COMMIT_LIN"):
-            return mod.GEN_COMMIT_LIN
-        else:
-            return []
-
-    m.GEN_COMMIT_BINLIN = Set(initialize=gen_commit_binlin_set_init)
 
     m.GEN_W_CYCLE_SELECT = Set(within=m.GEN_COMMIT_BINLIN)
 
