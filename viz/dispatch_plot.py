@@ -434,8 +434,15 @@ def create_plot(
     all_cols = list(df.columns)
     x_col = "x"
     # TODO: remove hard-coding?
-    line_cols_storage_sum_track = ["Load", "Exports", "Storage_Charging", "Market_Sales"]
-    stacked_cols = [c for c in all_cols if c not in line_cols_storage_sum_track + [x_col]]
+    line_cols_storage_sum_track = [
+        "Load",
+        "Exports",
+        "Storage_Charging",
+        "Market_Sales",
+    ]
+    stacked_cols = [
+        c for c in all_cols if c not in line_cols_storage_sum_track + [x_col]
+    ]
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols if c not in tech_colors.keys()]
@@ -511,7 +518,12 @@ def create_plot(
         legend_items.append((label, [exports_renderer]))
         load_renderers.append(exports_renderer)
     if not inactive_exports and not inactive_markets:
-        line_cols_storage_sum_track = ["Load", "Exports", "Market_Sales", "Storage_Charging"]
+        line_cols_storage_sum_track = [
+            "Load",
+            "Exports",
+            "Market_Sales",
+            "Storage_Charging",
+        ]
         # Add export and market lines to plot
         label = "Load + Exports + Market Sales"
         exports_renderer = plot.line(
