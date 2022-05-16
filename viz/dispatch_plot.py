@@ -238,6 +238,32 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
     return imports, exports
 
 
+def get_market_participation_results(c, scenario_id, load_zone, timepoints):
+    """
+    Get market participation results for a given load_zone and set of timepoints.
+    :param c:
+    :param scenario_id:
+    :param load_zone:
+    :param timepoints:
+    :return:
+    """
+    query = """SELECT sell_power, buy_power
+        FROM results_system_market_participation
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
+        AND timepoint IN ({})
+        ;""".format(
+        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+    )
+
+    market_participation = c.execute(query, timepoints).fetchall()
+
+    sales = [i[0] for i in market_participation]
+    purchases = [i[1] for i in market_participation]
+
+    return sales, purchases
+
+
 def get_load(c, scenario_id, load_zone, timepoints):
     """
 
@@ -329,6 +355,15 @@ def get_plotting_data(
     if exports:
         df["Exports"] = exports
 
+    # Add market participation (if any)
+    market_sales, market_purchases = get_market_participation_results(
+        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+    )
+    if market_sales:
+        df["Market_Sales"] = market_sales
+    if market_purchases:
+        df["Market_Purchases"] = market_purchases
+
     # Add load
     load_balance = get_load(
         c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
@@ -399,8 +434,8 @@ def create_plot(
     all_cols = list(df.columns)
     x_col = "x"
     # TODO: remove hard-coding?
-    line_cols = ["Load", "Exports", "Storage_Charging"]
-    stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
+    line_cols_storage_sum_track = ["Load", "Exports", "Storage_Charging", "Market_Sales"]
+    stacked_cols = [c for c in all_cols if c not in line_cols_storage_sum_track + [x_col]]
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols if c not in tech_colors.keys()]
@@ -437,7 +472,7 @@ def create_plot(
 
     # Add load line chart to plot
     load_renderer = plot.line(
-        x=df[x_col], y=df[line_cols[0]], line_color="black", line_width=2, name="Load"
+        x=df[x_col], y=df["Load"], line_color="black", line_width=2, name="Load"
     )
 
     # Keep track of legend items and load renderers
@@ -447,20 +482,55 @@ def create_plot(
     load_renderers = [load_renderer]
 
     # Add 'Load + ...' lines
-    if line_cols[1] not in df.columns:
+    if "Exports" not in df.columns:
         inactive_exports = True
     else:
-        inactive_exports = (df[line_cols[1]] == 0).all()
-    inactive_storage = (df[line_cols[2]] == 0).all()
+        inactive_exports = (df["Exports"] == 0).all()
 
-    if inactive_exports:
-        line_cols = [line_cols[0], line_cols[2]]
+    if "Market_Sales" not in df.columns:
+        inactive_markets = True
     else:
+        inactive_markets = (df["Market_Sales"] == 0).all()
+
+    inactive_storage = (df["Storage_Charging"] == 0).all()
+
+    if inactive_exports and inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Storage_Charging"]
+    if not inactive_exports and inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Exports", "Storage_Charging"]
         # Add export line to plot
         label = "Load + Exports"
         exports_renderer = plot.line(
             x=df[x_col],
-            y=df[line_cols[0:2]].sum(axis=1),
+            y=df[["Load", "Exports"]].sum(axis=1),
+            line_color="black",
+            line_width=2,
+            line_dash="dashed",
+            name=label,
+        )
+        legend_items.append((label, [exports_renderer]))
+        load_renderers.append(exports_renderer)
+    if not inactive_exports and not inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Exports", "Market_Sales", "Storage_Charging"]
+        # Add export and market lines to plot
+        label = "Load + Exports + Market Sales"
+        exports_renderer = plot.line(
+            x=df[x_col],
+            y=df[["Load", "Exports", "Market_Sales"]].sum(axis=1),
+            line_color="black",
+            line_width=3,
+            line_dash="dashed",
+            name=label,
+        )
+        legend_items.append((label, [exports_renderer]))
+        load_renderers.append(exports_renderer)
+    if inactive_exports and not inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Storage_Charging", "Market_Sales"]
+        # Add export line to plot
+        label = "Load + Market Sales"
+        exports_renderer = plot.line(
+            x=df[x_col],
+            y=df[["Load", "Market_Sales"]].sum(axis=1),
             line_color="black",
             line_width=2,
             line_dash="dashed",
@@ -474,7 +544,7 @@ def create_plot(
         label = legend_items[-1][0] + " + Storage Charging"
         stor_renderer = plot.line(
             x=df[x_col],
-            y=df[line_cols].sum(axis=1),
+            y=df[line_cols_storage_sum_track].sum(axis=1),
             line_color="black",
             line_width=2,
             line_dash="dotted",
