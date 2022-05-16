@@ -141,7 +141,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         # The tx capacity type modules check if this period is a "vintage" for
         # this project and return 0 if not
         if hasattr(imported_tx_capacity_modules[cap_type], "new_capacity_rule"):
-            return imported_tx_capacity_modules[cap_type].new_capacity_rule(mod, tx, prd)
+            return imported_tx_capacity_modules[cap_type].new_capacity_rule(
+                mod, tx, prd
+            )
         else:
             return cap_type_init.new_capacity_rule(mod, tx, prd)
 
