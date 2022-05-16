@@ -14,10 +14,10 @@
 
 """
 The **gridpath.project.operations.cycle_select** module is a project-level
-module that adds to the formulation components that describe cycle selection 
-constraints, i.e. mutually exclusive syncing of projects. An example might be a plant 
-that can be operated in either simple cycle or combined cycle mode. This plant would 
-be described by multiple projects with mutually exclusive Sync variables, i.e. only 
+module that adds to the formulation components that describe cycle selection
+constraints, i.e. mutually exclusive syncing of projects. An example might be a plant
+that can be operated in either simple cycle or combined cycle mode. This plant would
+be described by multiple projects with mutually exclusive Sync variables, i.e. only
 one of the projects can be synced at any time.
 """
 
@@ -35,32 +35,32 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Sets                                                                    |
     +=========================================================================+
-    | | :code:`GEN_W_CYCLE_SELECT`                                            |
+    | | :code:`GEN_W_SUPPLEMENTAL_FIRING`                                     |
     | | *Within*: :code:`GEN_COMMIT_BINLIN`                                   |
     |                                                                         |
     | Projects that have "cycle select" constraints.                          |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_CYCLE_SELECT_BY_GEN`                                       |
-    | | *Defined over*: :code:`GEN_W_CYCLE_SELECT`                            |
+    | | :code:`GEN_SUPPLEMENTAL_FIRING_BY_GEN`                                |
+    | | *Defined over*: :code:`GEN_W_SUPPLEMENTAL_FIRING`                     |
     | | *Within*: :code:`GEN_COMMIT_BINLIN`                                   |
     |                                                                         |
     | Indexed set that describes each project's list of "cycle select" --     |
     | projects that cannot be 'synced' when this project is synced, e.g. when |
     | choosing simple-cycle vs. combined cycle operational model.             |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_W_GEN_CYCLE_SELECT_OPR_TMPS`                               |
+    | | :code:`GEN_W_GEN_SUPPLEMENTAL_FIRING_OPR_TMPS`                        |
     |                                                                         |
     | Three-dimensional set with generators of the respective operational     |
-    | type, their "cycle select" projects, and their their operational        |
-    | timepoints. Note that projects that don't have "cycle select" projects  |
-    | are not included in this set.                                           |
+    | type, their "supplemental firing" projects, and their their operational |
+    | timepoints. Note that projects that don't have "supplemental firing"    |
+    | projects are not included in this set.                                  |
     +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +-------------------------------------------------------------------------+
     | | :code:`Gen_Commit_BinLin_Select_Cycle_Constraint`                     |
-    | | *Defined over*: :code:`GEN_W_GEN_CYCLE_SELECT_OPR_TMPS`               |
+    | | *Defined over*: :code:`GEN_W_GEN_SUPPLEMENTAL_FIRING_OPR_TMPS`        |
     |                                                                         |
     | This generator can only be synced if the "cycle select" generator is    |
     | not synced (the sum of the Sync variables of the two must be less than  |
@@ -71,25 +71,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Sets
 
-    m.GEN_W_CYCLE_SELECT = Set(within=m.GEN_COMMIT_BINLIN)
+    m.GEN_W_SUPPLEMENTAL_FIRING = Set(within=m.GEN_COMMIT_BINLIN)
 
-    m.GEN_CYCLE_SELECT_BY_GEN = Set(m.GEN_W_CYCLE_SELECT, within=m.GEN_COMMIT_BINLIN)
+    m.GEN_SUPPLEMENTAL_FIRING_BY_GEN = Set(
+        m.GEN_W_SUPPLEMENTAL_FIRING, within=m.GEN_COMMIT_BINLIN
+    )
 
-    m.GEN_W_GEN_CYCLE_SELECT_OPR_TMPS = Set(
+    m.GEN_W_GEN_SUPPLEMENTAL_FIRING_OPR_TMPS = Set(
         dimen=3,
         initialize=lambda mod: [
-            (g, g_cycle, tmp)
-            for g in mod.GEN_W_CYCLE_SELECT
+            (g, g_supplemental, tmp)
+            for g in mod.GEN_W_SUPPLEMENTAL_FIRING
             for p in mod.OPR_PRDS_BY_PRJ[g]
             for tmp in mod.TMPS_IN_PRD[p]
-            for g_cycle in mod.GEN_CYCLE_SELECT_BY_GEN[g]
+            for g_supplemental in mod.GEN_SUPPLEMENTAL_FIRING_BY_GEN[g]
         ],
     )
 
     # Constraints
-    def select_cycle_constraint_rule(mod, g, g_cycle_select, tmp):
-        """ """
-        # Find the optye for g
+    def supplemental_firing_constraint_rule(mod, g, g_supplemental_firing, tmp):
+        """
+        The supplemental generator can only be on if the "main" generator is on.
+        """
+        # Find the optype for g
         bin_or_lin_optype = mod.operational_type[g]
         if bin_or_lin_optype == "gen_commit_bin":
             g_optype = "Bin"
@@ -104,30 +108,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 )
             )
 
-        # Find the optype for g_cycle_select (this may be different from g's optype)
-        if mod.operational_type[g_cycle_select] == "gen_commit_bin":
-            g_cycle_optype = "Bin"
-        elif mod.operational_type[g_cycle_select] == "gen_commit_lin":
-            g_cycle_optype = "Lin"
+        # Find the optype for g_supplemental_firing (this may be different from g's
+        # optype)
+        if mod.operational_type[g_supplemental_firing] == "gen_commit_bin":
+            g_supplemental_optype = "Bin"
+        elif mod.operational_type[g_supplemental_firing] == "gen_commit_lin":
+            g_supplemental_optype = "Lin"
         else:
             raise ValueError(
                 "Cycle selection can only apply to projects of the "
                 "gen_commit_bin and gen_commit_lin operational types. "
                 "The operational type of {} is {}.".format(
-                    g_cycle_select, mod.operational_type[g_cycle_select]
+                    g_supplemental_firing, mod.operational_type[g_supplemental_firing]
                 )
             )
 
         return (
-            getattr(mod, "GenCommit{}_Synced".format(g_optype))[g, tmp]
-            + getattr(mod, "GenCommit{}_Synced".format(g_cycle_optype))[
-                g_cycle_select, tmp
+            getattr(mod, "GenCommit{}_Synced".format(g_supplemental_optype))[
+                g_supplemental_firing, tmp
             ]
-            <= 1
+            <= getattr(mod, "GenCommit{}_Synced".format(g_optype))[g, tmp]
         )
 
-    m.Gen_Commit_BinLin_Select_Cycle_Constraint = Constraint(
-        m.GEN_W_GEN_CYCLE_SELECT_OPR_TMPS, rule=select_cycle_constraint_rule
+    m.Gen_Commit_BinLin_Supplemental_Firing_Constraint = Constraint(
+        m.GEN_W_GEN_SUPPLEMENTAL_FIRING_OPR_TMPS,
+        rule=supplemental_firing_constraint_rule,
     )
 
 
@@ -141,24 +146,30 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Load any projects for cycle selection
-    cycle_selection_tab_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "cycle_selection.tab"
+    supplemental_firing_tab_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "supplemental_firing.tab",
     )
 
-    cycle_selection_by_project = {}
-    if os.path.exists(cycle_selection_tab_file):
-        with open(cycle_selection_tab_file) as f:
+    supplemental_firing_by_project = {}
+    if os.path.exists(supplemental_firing_tab_file):
+        with open(supplemental_firing_tab_file) as f:
             reader = csv.reader(f, delimiter="\t")
             next(reader)  # skip header
             for row in reader:
-                [g, cycle_select_g] = row
-                if g in cycle_selection_by_project.keys():
-                    cycle_selection_by_project[g].append(cycle_select_g)
+                [g, supplemental_firing_g] = row
+                if g in supplemental_firing_by_project.keys():
+                    supplemental_firing_by_project[g].append(supplemental_firing_g)
                 else:
-                    cycle_selection_by_project[g] = [cycle_select_g]
+                    supplemental_firing_by_project[g] = [supplemental_firing_g]
 
-        data_portal.data()["GEN_W_CYCLE_SELECT"] = list(
-            set(cycle_selection_by_project.keys())
+        data_portal.data()["GEN_W_SUPPLEMENTAL_FIRING"] = list(
+            set(supplemental_firing_by_project.keys())
         )
 
-        data_portal.data()["GEN_CYCLE_SELECT_BY_GEN"] = cycle_selection_by_project
+        data_portal.data()[
+            "GEN_SUPPLEMENTAL_FIRING_BY_GEN"
+        ] = supplemental_firing_by_project
