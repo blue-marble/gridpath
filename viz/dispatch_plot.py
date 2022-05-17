@@ -134,13 +134,14 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
     return tmps
 
 
-def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
+def get_power_by_tech_results(conn, scenario_id, load_zone, stage, timepoints):
     """
     Get results for power by technology for a given load_zone and set of
     points.
     :param conn:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints
     :return:
     """
@@ -150,9 +151,10 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({})
         ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     df = pd.read_sql(query, conn, params=timepoints)
@@ -166,13 +168,14 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
         return index_only_df
 
 
-def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
+def get_variable_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get variable generator curtailment for a given load_zone and set of
     timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -180,9 +183,10 @@ def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
             FROM results_project_curtailment_variable
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND stage_id = {}
             AND timepoint IN ({})
             ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
@@ -190,12 +194,13 @@ def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
     return curtailment
 
 
-def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
+def get_hydro_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get conventional hydro curtailment for a given load_zone and set of
     timepoints.
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -203,8 +208,9 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
             FROM results_project_curtailment_hydro
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND stage_id = {}
             AND timepoint IN ({});""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
@@ -212,12 +218,13 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
     return curtailment
 
 
-def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
+def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get imports/exports results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -225,9 +232,10 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
         FROM results_transmission_imports_exports
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({})
         ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     net_imports = c.execute(query, timepoints).fetchall()
@@ -238,22 +246,35 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
     return imports, exports
 
 
-def get_market_participation_results(c, scenario_id, load_zone, timepoints):
+def get_market_participation_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get market participation results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
-    query = """SELECT sell_power, buy_power
+    print("""SELECT sum(sell_power) as sell_power, sum(buy_power) as buy_power
         FROM results_system_market_participation
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({})
+        GROUP BY load_zone, stage_id, timepoint
         ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
+    ))
+    query = """SELECT sum(sell_power) as sell_power, sum(buy_power) as buy_power
+        FROM results_system_market_participation
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
+        AND stage_id = {}
+        AND timepoint IN ({})
+        GROUP BY load_zone, stage_id, timepoint
+        ;""".format(
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     market_participation = c.execute(query, timepoints).fetchall()
@@ -264,12 +285,13 @@ def get_market_participation_results(c, scenario_id, load_zone, timepoints):
     return sales, purchases
 
 
-def get_load(c, scenario_id, load_zone, timepoints):
+def get_load(c, scenario_id, load_zone, stage, timepoints):
     """
 
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints
     :return:
     """
@@ -278,8 +300,9 @@ def get_load(c, scenario_id, load_zone, timepoints):
         FROM results_system_load_balance
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({});""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     load_balance = c.execute(query, timepoints).fetchall()
@@ -305,6 +328,7 @@ def get_plotting_data(
     :param load_zone:
     :param starting_tmp:
     :param ending_tmp:
+    :param stage:
     :return:
     """
 
@@ -317,7 +341,11 @@ def get_plotting_data(
     # TODO: Let tech order depend on specified order in database table.
     #  Storage might be tricky because we manipulate it!
     df = get_power_by_tech_results(
-        conn=conn, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        conn=conn,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
 
     # Add x axis
@@ -334,21 +362,33 @@ def get_plotting_data(
 
     # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if curtailment_variable:
         df["Curtailment_Variable"] = curtailment_variable
 
     # Add hydro curtailment (if any)
     curtailment_hydro = get_hydro_curtailment_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if curtailment_hydro:
         df["Curtailment_Hydro"] = curtailment_hydro
 
     # Add imports and exports (if any)
     imports, exports = get_imports_exports_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if imports:
         df["Imports"] = imports
@@ -357,7 +397,11 @@ def get_plotting_data(
 
     # Add market participation (if any)
     market_sales, market_purchases = get_market_participation_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if market_sales:
         df["Market_Sales"] = market_sales
@@ -366,7 +410,11 @@ def get_plotting_data(
 
     # Add load
     load_balance = get_load(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
