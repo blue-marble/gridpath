@@ -256,7 +256,8 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     :param timepoints:
     :return:
     """
-    query = """SELECT sum(sell_power) as sell_power, sum(buy_power) as buy_power
+    query = """SELECT sum(final_sell_power) as sell_power, sum(final_buy_power) as 
+    buy_power
         FROM results_system_market_participation
         WHERE scenario_id = {}
         AND load_zone = '{}'
