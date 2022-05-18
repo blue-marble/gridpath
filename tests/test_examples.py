@@ -524,7 +524,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("single_stage_prod_cost_cycle_select")
         self.run_and_check_objective(
             "single_stage_prod_cost_cycle_select",
-            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
+            {1: -7008092000118.654, 2: -7008092000118.654, 3: -7008092000118.654},
         )
 
     def test_example_multi_stage_prod_cost_parallel(self):
@@ -1192,6 +1192,15 @@ class TestExamples(unittest.TestCase):
                 },
             },
         )
+
+    def test_example_test_supplemental_firing(self):
+        """
+        Check validation and objective function value of "test_supplemental_firing" example
+        :return:
+        """
+
+        self.check_validation("test_supplemental_firing")
+        self.run_and_check_objective("test_supplemental_firing", -4380327039279.8545)
 
     def test_example_test_tx_capacity_groups(self):
         """

@@ -134,13 +134,14 @@ def get_timepoints(conn, scenario_id, starting_tmp=None, ending_tmp=None, stage_
     return tmps
 
 
-def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
+def get_power_by_tech_results(conn, scenario_id, load_zone, stage, timepoints):
     """
     Get results for power by technology for a given load_zone and set of
     points.
     :param conn:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints
     :return:
     """
@@ -150,9 +151,10 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({})
         ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     df = pd.read_sql(query, conn, params=timepoints)
@@ -166,13 +168,14 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, timepoints):
         return index_only_df
 
 
-def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
+def get_variable_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get variable generator curtailment for a given load_zone and set of
     timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -180,9 +183,10 @@ def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
             FROM results_project_curtailment_variable
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND stage_id = {}
             AND timepoint IN ({})
             ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
@@ -190,12 +194,13 @@ def get_variable_curtailment_results(c, scenario_id, load_zone, timepoints):
     return curtailment
 
 
-def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
+def get_hydro_curtailment_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get conventional hydro curtailment for a given load_zone and set of
     timepoints.
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -203,8 +208,9 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
             FROM results_project_curtailment_hydro
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND stage_id = {}
             AND timepoint IN ({});""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     curtailment = [i[0] for i in c.execute(query, timepoints).fetchall()]
@@ -212,12 +218,13 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, timepoints):
     return curtailment
 
 
-def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
+def get_imports_exports_results(c, scenario_id, load_zone, stage, timepoints):
     """
     Get imports/exports results for a given load_zone and set of timepoints.
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints:
     :return:
     """
@@ -225,9 +232,10 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
         FROM results_transmission_imports_exports
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({})
         ;""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     net_imports = c.execute(query, timepoints).fetchall()
@@ -238,12 +246,43 @@ def get_imports_exports_results(c, scenario_id, load_zone, timepoints):
     return imports, exports
 
 
-def get_load(c, scenario_id, load_zone, timepoints):
+def get_market_participation_results(c, scenario_id, load_zone, stage, timepoints):
+    """
+    Get market participation results for a given load_zone and set of timepoints.
+    :param c:
+    :param scenario_id:
+    :param load_zone:
+    :param stage:
+    :param timepoints:
+    :return:
+    """
+    query = """SELECT sum(final_sell_power) as sell_power, sum(final_buy_power) as 
+    buy_power
+        FROM results_system_market_participation
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
+        AND stage_id = {}
+        AND timepoint IN ({})
+        GROUP BY load_zone, stage_id, timepoint
+        ;""".format(
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
+    )
+
+    market_participation = c.execute(query, timepoints).fetchall()
+
+    sales = [i[0] for i in market_participation]
+    purchases = [i[1] for i in market_participation]
+
+    return sales, purchases
+
+
+def get_load(c, scenario_id, load_zone, stage, timepoints):
     """
 
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param stage:
     :param timepoints
     :return:
     """
@@ -252,8 +291,9 @@ def get_load(c, scenario_id, load_zone, timepoints):
         FROM results_system_load_balance
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND stage_id = {}
         AND timepoint IN ({});""".format(
-        scenario_id, load_zone, ",".join(["?"] * len(timepoints))
+        scenario_id, load_zone, stage, ",".join(["?"] * len(timepoints))
     )
 
     load_balance = c.execute(query, timepoints).fetchall()
@@ -279,6 +319,7 @@ def get_plotting_data(
     :param load_zone:
     :param starting_tmp:
     :param ending_tmp:
+    :param stage:
     :return:
     """
 
@@ -291,7 +332,11 @@ def get_plotting_data(
     # TODO: Let tech order depend on specified order in database table.
     #  Storage might be tricky because we manipulate it!
     df = get_power_by_tech_results(
-        conn=conn, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        conn=conn,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
 
     # Add x axis
@@ -308,30 +353,59 @@ def get_plotting_data(
 
     # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if curtailment_variable:
         df["Curtailment_Variable"] = curtailment_variable
 
     # Add hydro curtailment (if any)
     curtailment_hydro = get_hydro_curtailment_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if curtailment_hydro:
         df["Curtailment_Hydro"] = curtailment_hydro
 
     # Add imports and exports (if any)
     imports, exports = get_imports_exports_results(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     if imports:
         df["Imports"] = imports
     if exports:
         df["Exports"] = exports
 
+    # Add market participation (if any)
+    market_sales, market_purchases = get_market_participation_results(
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
+    )
+    if market_sales:
+        df["Market_Sales"] = market_sales
+    if market_purchases:
+        df["Market_Purchases"] = market_purchases
+
     # Add load
     load_balance = get_load(
-        c=c, scenario_id=scenario_id, load_zone=load_zone, timepoints=timepoints
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=load_zone,
+        stage=stage,
+        timepoints=timepoints,
     )
     df["Load"] = load_balance[0]
     df["Unserved_Energy"] = load_balance[1]
@@ -399,8 +473,15 @@ def create_plot(
     all_cols = list(df.columns)
     x_col = "x"
     # TODO: remove hard-coding?
-    line_cols = ["Load", "Exports", "Storage_Charging"]
-    stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
+    line_cols_storage_sum_track = [
+        "Load",
+        "Exports",
+        "Storage_Charging",
+        "Market_Sales",
+    ]
+    stacked_cols = [
+        c for c in all_cols if c not in line_cols_storage_sum_track + [x_col]
+    ]
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols if c not in tech_colors.keys()]
@@ -437,7 +518,7 @@ def create_plot(
 
     # Add load line chart to plot
     load_renderer = plot.line(
-        x=df[x_col], y=df[line_cols[0]], line_color="black", line_width=2, name="Load"
+        x=df[x_col], y=df["Load"], line_color="black", line_width=2, name="Load"
     )
 
     # Keep track of legend items and load renderers
@@ -447,20 +528,60 @@ def create_plot(
     load_renderers = [load_renderer]
 
     # Add 'Load + ...' lines
-    if line_cols[1] not in df.columns:
+    if "Exports" not in df.columns:
         inactive_exports = True
     else:
-        inactive_exports = (df[line_cols[1]] == 0).all()
-    inactive_storage = (df[line_cols[2]] == 0).all()
+        inactive_exports = (df["Exports"] == 0).all()
 
-    if inactive_exports:
-        line_cols = [line_cols[0], line_cols[2]]
+    if "Market_Sales" not in df.columns:
+        inactive_markets = True
     else:
+        inactive_markets = (df["Market_Sales"] == 0).all()
+
+    inactive_storage = (df["Storage_Charging"] == 0).all()
+
+    if inactive_exports and inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Storage_Charging"]
+    if not inactive_exports and inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Exports", "Storage_Charging"]
         # Add export line to plot
         label = "Load + Exports"
         exports_renderer = plot.line(
             x=df[x_col],
-            y=df[line_cols[0:2]].sum(axis=1),
+            y=df[["Load", "Exports"]].sum(axis=1),
+            line_color="black",
+            line_width=2,
+            line_dash="dashed",
+            name=label,
+        )
+        legend_items.append((label, [exports_renderer]))
+        load_renderers.append(exports_renderer)
+    if not inactive_exports and not inactive_markets:
+        line_cols_storage_sum_track = [
+            "Load",
+            "Exports",
+            "Market_Sales",
+            "Storage_Charging",
+        ]
+        # Add export and market lines to plot
+        label = "Load + Exports + Market Sales"
+        exports_renderer = plot.line(
+            x=df[x_col],
+            y=df[["Load", "Exports", "Market_Sales"]].sum(axis=1),
+            line_color="black",
+            line_width=3,
+            line_dash="dashed",
+            name=label,
+        )
+        legend_items.append((label, [exports_renderer]))
+        load_renderers.append(exports_renderer)
+    if inactive_exports and not inactive_markets:
+        line_cols_storage_sum_track = ["Load", "Storage_Charging", "Market_Sales"]
+        # Add export line to plot
+        label = "Load + Market Sales"
+        exports_renderer = plot.line(
+            x=df[x_col],
+            y=df[["Load", "Market_Sales"]].sum(axis=1),
             line_color="black",
             line_width=2,
             line_dash="dashed",
@@ -474,7 +595,7 @@ def create_plot(
         label = legend_items[-1][0] + " + Storage Charging"
         stor_renderer = plot.line(
             x=df[x_col],
-            y=df[line_cols].sum(axis=1),
+            y=df[line_cols_storage_sum_track].sum(axis=1),
             line_color="black",
             line_width=2,
             line_dash="dotted",

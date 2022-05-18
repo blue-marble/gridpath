@@ -862,6 +862,28 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
+    c8 = conn.cursor()
+    supplemental_firing = c8.execute(
+        """
+        SELECT project, supplemental_firing_project
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, supplemental_firing_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {project_opchar_scenario_id}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_supplemental_firing
+        USING(project, supplemental_firing_scenario_id)
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND supplemental_firing_scenario_id IS NOT NULL
+        """.format(
+            project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
     return (
         proj_opchar,
         fuels,
@@ -870,6 +892,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         startup_chars,
         cycle_selection,
         cap_factor_limits,
+        supplemental_firing,
     )
 
 
@@ -893,6 +916,7 @@ def write_model_inputs(
         startup_chars,
         cycle_selection,
         cap_factor_limits,
+        supplemental_firing,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     inputs_directory = os.path.join(
@@ -983,6 +1007,14 @@ def write_model_inputs(
         filename="cap_factor_limits.tab",
     )
 
+    # Write the supplemental firing file
+    sf_df = cursor_to_df(supplemental_firing)
+    write_additional_opchar_file(
+        opchar_df=sf_df,
+        inputs_directory=inputs_directory,
+        filename="supplemental_firing.tab",
+    )
+
 
 # Validation
 ###############################################################################
@@ -1007,6 +1039,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         startup_chars,
         cycle_select,
         cap_factor_limits,
+        supplemental_firing,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame

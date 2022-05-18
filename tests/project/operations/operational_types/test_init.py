@@ -34,6 +34,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.load_zones",
     "project",
     "project.capacity.capacity",
+    "project.availability.availability",
     "project.fuels",
     "project.operations",
 ]
@@ -76,13 +77,27 @@ class TestOperationalTypes(unittest.TestCase):
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(
+        m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
             stage="",
         )
+        instance = m.create_instance(data)
+
+        # Set: GEN_COMMIT_BINLIN
+        expected_gen_commit_binlin = sorted(
+            [
+                "Disp_Binary_Commit",
+                "Disp_Cont_Commit",
+                "Clunky_Old_Gen",
+                "Clunky_Old_Gen2",
+            ]
+        )
+        actual_gen_commit_binlin = sorted([prj for prj in instance.GEN_COMMIT_BINLIN])
+
+        self.assertListEqual(expected_gen_commit_binlin, actual_gen_commit_binlin)
 
 
 if __name__ == "__main__":

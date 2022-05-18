@@ -982,6 +982,7 @@ min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 cycle_selection_scenario_id INTEGER,
+supplemental_firing_scenario_id INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -1024,6 +1025,9 @@ subscenarios_project_variable_om_curves
 FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
 subscenarios_project_cycle_selection
 (project, cycle_selection_scenario_id),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing
+(project, supplemental_firing_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1149,6 +1153,27 @@ cycle_selection_project VARCHAR(64),
 PRIMARY KEY (project, cycle_selection_scenario_id, cycle_selection_project),
 FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
 subscenarios_project_cycle_selection (project, cycle_selection_scenario_id)
+);
+
+
+-- Supplemental firing
+DROP TABLE IF EXISTS subscenarios_project_supplemental_firing;
+CREATE TABLE subscenarios_project_supplemental_firing (
+project VARCHAR(32),
+supplemental_firing_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, supplemental_firing_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_supplemental_firing;
+CREATE TABLE inputs_project_supplemental_firing (
+project VARCHAR(64),
+supplemental_firing_scenario_id INTEGER,
+supplemental_firing_project VARCHAR(64),
+PRIMARY KEY (project, supplemental_firing_scenario_id, supplemental_firing_project),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
 );
 
 
@@ -3935,6 +3960,8 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 sell_power FLOAT,
 buy_power FLOAT,
+final_sell_power FLOAT,
+final_buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
