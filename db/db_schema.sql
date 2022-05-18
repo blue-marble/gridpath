@@ -2054,6 +2054,49 @@ FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
 subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
 );
 
+-- Group capacity requirements
+-- Requirements
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_group_requirements;
+CREATE TABLE subscenarios_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER PRIMARY KEY
+    AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_group_requirements;
+CREATE TABLE inputs_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (transmission_capacity_group_requirement_scenario_id,
+            transmission_capacity_group, period),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id)
+);
+
+
+-- Group transmission lines mapping
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_groups;
+CREATE TABLE subscenarios_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_groups;
+CREATE TABLE inputs_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+transmission_line VARCHAR(64),
+PRIMARY KEY (transmission_capacity_group_scenario_id, transmission_capacity_group, transmission_line),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+subscenarios_transmission_capacity_groups (transmission_capacity_group_scenario_id)
+);
+
 -- Simultaneous flows
 -- Limits on net flows on groups of lines (e.g. all lines connected to a zone)
 DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_limits;
@@ -2842,6 +2885,8 @@ transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
 transmission_flow_scenario_id INTEGER,
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -3007,6 +3052,12 @@ FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
     subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
 FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
     subscenarios_transmission_flow (transmission_flow_scenario_id),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_groups
+    (transmission_capacity_group_scenario_id),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -3708,6 +3759,19 @@ load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 new_build_transmission_capacity_mw FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_transmission_group_capacity;
+CREATE TABLE results_transmission_group_capacity (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+group_new_capacity FLOAT,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_capacity_group, period)
 );
 
 -- TODO: add table for costs new build?

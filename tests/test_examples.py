@@ -1202,6 +1202,16 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_supplemental_firing")
         self.run_and_check_objective("test_supplemental_firing", -4380327039279.8545)
 
+    def test_example_test_tx_capacity_groups(self):
+        """
+        Check validation and objective function value of
+        "test_tx_capacity_groups" example
+        :return:
+        """
+
+        self.check_validation("test_tx_capacity_groups")
+        self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

@@ -1,3 +1,5 @@
 transmission_line,vintage,tx_lifetime_yrs,tx_annualized_real_cost_per_mw_yr
 Tx_new,2020,35,10
 Tx_new,2030,35,10
+Tx2_new,2020,35,11
+Tx2_new,2030,35,11
