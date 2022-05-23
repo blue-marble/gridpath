@@ -264,38 +264,30 @@ def generic_get_inputs_from_database(
     )
 
     tmp_req = c.execute(
-        """SELECT {}_ba, timepoint, {}_mw{}
-        FROM inputs_system_{}
+        """SELECT {reserve_type}_ba, timepoint, {reserve_type}_mw{partial_freq_resp_extra_column}
+        FROM inputs_system_{reserve_type}
         INNER JOIN
-        (SELECT timepoint
+        (SELECT stage_id, timepoint
         FROM inputs_temporal
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {}) as relevant_timepoints
-        USING (timepoint)
+        WHERE temporal_scenario_id = {temporal_scenario_id}
+        AND subproblem_id = {subproblem}
+        AND stage_id = {stage}) as relevant_timepoints
+        USING (stage_id, timepoint)
         INNER JOIN
-        (SELECT {}_ba
-        FROM inputs_geography_{}_bas
-        WHERE {}_ba_scenario_id = {}) as relevant_bas
-        USING ({}_ba)
-        WHERE {}_scenario_id = {}
-        AND stage_id = {}
+        (SELECT {reserve_type}_ba
+        FROM inputs_geography_{reserve_type}_bas
+        WHERE {reserve_type}_ba_scenario_id = {reserve_type_ba_subscenario_id}) as relevant_bas
+        USING ({reserve_type}_ba)
+        WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
+        AND stage_id = {stage}
         """.format(
-            reserve_type,
-            reserve_type,
-            partial_freq_resp_extra_column,
-            reserve_type,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subproblem,
-            stage,
-            reserve_type,
-            reserve_type,
-            reserve_type,
-            reserve_type_ba_subscenario_id,
-            reserve_type,
-            reserve_type,
-            reserve_type_req_subscenario_id,
-            stage,
+            reserve_type=reserve_type,
+            partial_freq_resp_extra_column=partial_freq_resp_extra_column,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem=subproblem,
+            stage=stage,
+            reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
+            reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
         )
     )
 
@@ -303,11 +295,14 @@ def generic_get_inputs_from_database(
     # Get any percentage requirement
     percentage_req = c2.execute(
         """
-        SELECT {}_ba, percent_load_req
-        FROM inputs_system_{}_percent
-        WHERE {}_scenario_id = {}
+        SELECT {reserve_type}_ba, percent_load_req
+        FROM inputs_system_{reserve_type}_percent
+        WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
+        AND stage_id = {stage}
         """.format(
-            reserve_type, reserve_type, reserve_type, reserve_type_req_subscenario_id
+            reserve_type=reserve_type,
+            reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
+            stage=stage,
         )
     )
 
@@ -340,7 +335,8 @@ def generic_get_inputs_from_database(
     c4 = conn.cursor()
     project_contributions = c4.execute(
         """
-        SELECT {reserve_type}_ba, project, percent_power_req, percent_capacity_req
+        SELECT {reserve_type}_ba, project, percent_power_req, 
+        percent_capacity_req
         FROM inputs_system_{reserve_type}_project
         JOIN (
         SELECT {reserve_type}_ba
@@ -359,11 +355,13 @@ def generic_get_inputs_from_database(
         ) as relevant_prj
         USING (project)
         WHERE {reserve_type}_scenario_id = {reserve_type_req_subscenario_id}
+        AND stage_id = {stage}
         """.format(
             reserve_type=reserve_type,
             reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
             scenario_id=scenario_id,
             reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
+            stage=stage,
         )
     )
 

@@ -2228,8 +2228,9 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
 CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba)
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent_lz_map;
@@ -2247,10 +2248,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_up_project;
 CREATE TABLE inputs_system_lf_reserves_up_project (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, project)
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id, project)
 );
 
 -- LF reserves down
@@ -2285,8 +2287,9 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
 CREATE TABLE inputs_system_lf_reserves_down_percent (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba)
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent_lz_map;
@@ -2304,10 +2307,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down_project;
 CREATE TABLE inputs_system_lf_reserves_down_project (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, project)
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id, project)
 );
 
 -- Regulation up
@@ -2341,8 +2345,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
 CREATE TABLE inputs_system_regulation_down_percent (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba)
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_down_percent_lz_map;
@@ -2360,10 +2365,11 @@ DROP TABLE IF EXISTS inputs_system_regulation_down_project;
 CREATE TABLE inputs_system_regulation_down_project (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, project)
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id, project)
 );
 
 -- Regulation down
@@ -2398,8 +2404,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
 CREATE TABLE inputs_system_regulation_up_percent (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_up_percent_lz_map;
@@ -2417,10 +2424,11 @@ DROP TABLE IF EXISTS inputs_system_regulation_up_project;
 CREATE TABLE inputs_system_regulation_up_project (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, project)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, project)
 );
 
 
@@ -2457,8 +2465,9 @@ DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
 CREATE TABLE inputs_system_frequency_response_percent (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba)
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_frequency_response_percent_lz_map;
@@ -2476,10 +2485,11 @@ DROP TABLE IF EXISTS inputs_system_frequency_response_project;
 CREATE TABLE inputs_system_frequency_response_project (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, project)
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id, project)
 );
 
 -- Spinning reserves
@@ -2514,8 +2524,9 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
 CREATE TABLE inputs_system_spinning_reserves_percent (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba)
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent_lz_map;
@@ -2533,10 +2544,11 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves_project;
 CREATE TABLE inputs_system_spinning_reserves_project (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, project)
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id, project)
 );
 
 -- -- Policy -- --
