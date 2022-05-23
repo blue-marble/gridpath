@@ -302,7 +302,7 @@ def generic_get_inputs_from_database(
         """.format(
             reserve_type=reserve_type,
             reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
-            stage=stage
+            stage=stage,
         )
     )
 
@@ -361,7 +361,7 @@ def generic_get_inputs_from_database(
             reserve_type_ba_subscenario_id=reserve_type_ba_subscenario_id,
             scenario_id=scenario_id,
             reserve_type_req_subscenario_id=reserve_type_req_subscenario_id,
-            stage=stage
+            stage=stage,
         )
     )
 
