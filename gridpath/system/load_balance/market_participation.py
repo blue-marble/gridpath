@@ -349,8 +349,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "number_of_hours_in_timepoint",
                 "sell_power",
                 "buy_power",
+                "net_buy_power",
                 "final_sell_power_position",
                 "final_buy_power_position",
+                "final_net_buy_power_position",
             ]
         )
         for (z, mrkt) in getattr(m, "LZ_MARKETS"):
@@ -367,8 +369,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.hrs_in_tmp[tmp],
                         value(m.Sell_Power[z, mrkt, tmp]),
                         value(m.Buy_Power[z, mrkt, tmp]),
+                        value(m.Buy_Power[z, mrkt, tmp])
+                        - value(m.Sell_Power[z, mrkt, tmp]),
                         value(m.Final_Sell_Power_Position[z, mrkt, tmp]),
                         value(m.Final_Buy_Power_Position[z, mrkt, tmp]),
+                        value(m.Final_Buy_Power_Position[z, mrkt, tmp])
+                        - value(m.Final_Sell_Power_Position[z, mrkt, tmp]),
                     ]
                 )
 
@@ -417,8 +423,10 @@ def import_results_into_database(
             number_of_hours_in_timepoint = row[7]
             sell_power = row[8]
             buy_power = row[9]
-            final_sell_power = row[10]
-            final_buy_power = row[11]
+            net_buy_power = row[10]
+            final_sell_power = row[11]
+            final_buy_power = row[12]
+            final_net_buy_power = row[13]
 
             results.append(
                 (
@@ -435,8 +443,10 @@ def import_results_into_database(
                     number_of_hours_in_timepoint,
                     sell_power,
                     buy_power,
+                    net_buy_power,
                     final_sell_power,
                     final_buy_power,
+                    final_net_buy_power,
                 )
             )
     insert_temp_sql = """
@@ -445,8 +455,9 @@ def import_results_into_database(
         (scenario_id, load_zone, market, subproblem_id, stage_id,
         timepoint, period, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, final_sell_power, final_buy_power)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
+        final_net_buy_power)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
         scenario_id
     )
