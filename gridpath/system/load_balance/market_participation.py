@@ -469,12 +469,14 @@ def import_results_into_database(
         (scenario_id, load_zone, market, subproblem_id, stage_id,
         timepoint, period, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, final_sell_power, final_buy_power)
+        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
+        final_net_buy_power)
         SELECT
         scenario_id, load_zone, market, subproblem_id, stage_id,
         timepoint, period, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
-        sell_power, buy_power, final_sell_power, final_buy_power
+        sell_power, buy_power, net_buy_power, final_sell_power, final_buy_power, 
+        final_net_buy_power
         FROM temp_results_system_market_participation{}
         ORDER BY scenario_id, load_zone, market, subproblem_id, stage_id, 
         timepoint;
