@@ -256,8 +256,7 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
     :param timepoints:
     :return:
     """
-    query = """SELECT sum(final_sell_power) as sell_power, sum(final_buy_power) as 
-    buy_power
+    query = """SELECT sum(final_net_buy_power) as buy_power
         FROM results_system_market_participation
         WHERE scenario_id = {}
         AND load_zone = '{}'
@@ -270,8 +269,18 @@ def get_market_participation_results(c, scenario_id, load_zone, stage, timepoint
 
     market_participation = c.execute(query, timepoints).fetchall()
 
-    sales = [i[0] for i in market_participation]
-    purchases = [i[1] for i in market_participation]
+    sales = []
+    purchases = []
+    for i in market_participation:
+        if i[0] < 0:
+            sales.append(-i[0])
+            purchases.append(0)
+        elif i[0] > 0:
+            sales.append(0)
+            purchases.append(i[0])
+        else:
+            sales.append(0)
+            purchases.append(0)
 
     return sales, purchases
 

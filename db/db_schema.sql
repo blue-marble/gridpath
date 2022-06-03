@@ -3972,8 +3972,10 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 sell_power FLOAT,
 buy_power FLOAT,
+net_buy_power FLOAT,
 final_sell_power FLOAT,
 final_buy_power FLOAT,
+final_net_buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
