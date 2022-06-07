@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -235,7 +235,7 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     """
     return (
         sum(
-            mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp]
+            mod.AvlCont_Unavailable[g, tmp] * mod.hrs_in_tmp[tmp] * mod.tmp_weight[tmp]
             for tmp in mod.TMPS_IN_PRD[p]
         )
         == mod.avl_cont_unavl_hrs_per_prd[g]
