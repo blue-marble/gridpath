@@ -321,39 +321,53 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("add spinup_or_lookahead flag")
-
-    # Update tables with spinup_or_lookahead_flag
-    tables_to_update = determine_table_subset_by_start_and_column(
-        conn=db, tbl_start="results_", cols=["timepoint", "spinup_or_lookahead"]
-    )
-
-    for tbl in tables_to_update:
+    # Check if there are any spinup or lookahead timepoints
+    spinup_or_lookahead_sql = """
+    SELECT spinup_or_lookahead
+    FROM inputs_temporal
+    WHERE spinup_or_lookahead = 1
+    AND temporal_scenario_id = (
+        SELECT temporal_scenario_id
+        FROM scenarios
+        WHERE scenario_id = ?)
+    """
+    spinup_or_lookahead = c.execute(spinup_or_lookahead_sql, (scenario_id,)).fetchall()
+    if spinup_or_lookahead:
         if not quiet:
-            print("... {}".format(tbl))
-        sql = """
-            UPDATE {}
-            SET spinup_or_lookahead = (
-            SELECT spinup_or_lookahead
-            FROM inputs_temporal
-            WHERE temporal_scenario_id = (
-                SELECT temporal_scenario_id 
-                FROM scenarios 
-                WHERE scenario_id = ?
-                )
-            AND {}.subproblem_id = 
-            inputs_temporal.subproblem_id
-            AND {}.stage_id = inputs_temporal.stage_id
-            AND {}.timepoint = inputs_temporal.timepoint
-            );
-            """.format(
-            tbl, tbl, tbl, tbl
+            print("add spinup_or_lookahead flag")
+
+        # Update tables with spinup_or_lookahead_flag
+        tables_to_update = determine_table_subset_by_start_and_column(
+            conn=db, tbl_start="results_", cols=["timepoint", "spinup_or_lookahead"]
         )
 
-        spin_on_database_lock(
-            conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
-        )
+        for tbl in tables_to_update:
+            if not quiet:
+                print("... {}".format(tbl))
+            sql = """
+                UPDATE {}
+                SET spinup_or_lookahead = (
+                SELECT spinup_or_lookahead
+                FROM inputs_temporal
+                WHERE temporal_scenario_id = (
+                    SELECT temporal_scenario_id 
+                    FROM scenarios 
+                    WHERE scenario_id = ?
+                    )
+                AND {}.subproblem_id = 
+                inputs_temporal.subproblem_id
+                AND {}.stage_id = inputs_temporal.stage_id
+                AND {}.timepoint = inputs_temporal.timepoint
+                );
+                """.format(
+                tbl, tbl, tbl, tbl
+            )
+
+            spin_on_database_lock(
+                conn=db, cursor=c, sql=sql, data=(scenario_id,), many=False
+            )
+    else:
+        pass
 
 
 # Validation
