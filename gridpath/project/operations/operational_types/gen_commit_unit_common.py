@@ -1801,7 +1801,7 @@ def add_model_components(
             )
             or (
                 mod.availability_type[g] == "exogenous"
-                and mod.avl_exog_derate[g, tmp] == 0
+                and mod.avl_exog_cap_derate[g, tmp] == 0
             )
             or getattr(
                 mod, "gen_commit_{}_min_stable_level_fraction".format(bin_or_lin)

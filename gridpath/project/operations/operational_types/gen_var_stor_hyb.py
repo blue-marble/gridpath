@@ -538,7 +538,7 @@ def max_discharge_rule(mod, s, tmp):
     return (
         mod.GenVarStorHyb_Discharge_MW[s, tmp]
         <= mod.Hyb_Stor_Capacity_MW[s, mod.period[tmp]]
-        * mod.Availability_Derate[s, tmp]
+        * mod.Availability_Hyb_Stor_Cap_Derate[s, tmp]
     )
 
 
@@ -553,7 +553,7 @@ def max_charge_rule(mod, s, tmp):
     return (
         mod.GenVarStorHyb_Charge_MW[s, tmp]
         <= mod.Hyb_Stor_Capacity_MW[s, mod.period[tmp]]
-        * mod.Availability_Derate[s, tmp]
+        * mod.Availability_Hyb_Stor_Cap_Derate[s, tmp]
     )
 
 
