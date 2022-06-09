@@ -1,0 +1,2 @@
+Sphinx==4.0.2
+sphinx-argparse==0.2.5
