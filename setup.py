@@ -9,6 +9,7 @@ with open("./version.py") as fp:
 extras_doc = [
     "Sphinx==5.0.1",
     "sphinx-argparse==0.3.1",
+    "docutils<0.18",
 ]
 extras_ui = [
     "eventlet==0.31.0",  # Async mode for SocketIO
