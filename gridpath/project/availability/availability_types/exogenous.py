@@ -59,7 +59,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`avl_exog_cap_derate`                                               |
+    | | :code:`avl_exog_cap_derate`                                           |
     | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`1`                                                  |

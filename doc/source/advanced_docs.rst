@@ -163,9 +163,9 @@ gridpath.project.operations.fuel_burn
 .. automodule:: gridpath.project.operations.fuel_burn
     :members: add_model_components
 
-gridpath.project.operations.recs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.recs
+gridpath.project.operations.energy_target_contributions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.energy_target_contributions
     :members: add_model_components
 
 gridpath.project.operations.tuning_costs
@@ -343,9 +343,13 @@ Transmission Hurdle Rates
 If the transmission hurdle rates feature is enabled, the following modules
 are also included:
 
-gridpath.transmission.operations.costs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.transmission.operations.costs
+gridpath.transmission.operations.hurdle_costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.transmission.operations.hurdle_costs
+
+gridpath.transmission.operations.export_penalty_costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.transmission.operations.export_penalty_costs
 
 gridpath.objective.transmission.aggregate_operational_costs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
