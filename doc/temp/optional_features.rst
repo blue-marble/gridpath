@@ -47,9 +47,9 @@ Transmission Hurdle Rates
 Whether or not to apply hurdle rates on transmission line flows.
 
 Feature modules include:
-.. automodule:: gridpath.transmission.operations.costs
+.. automodule:: gridpath.transmission.operations.hurdle_costs
     :members:
-.. automodule:: gridpath.objective.transmission.aggregate_operational_costs
+.. automodule:: gridpath.objective.transmission.aggregate_hurdle_costs
     :members:
 
 

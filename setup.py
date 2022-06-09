@@ -7,10 +7,8 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx==4.0.2",
-    "sphinx-argparse==0.2.5",
-    "numpy==1.21.5"  # temporarily require v1.21.5 because v1.22 is not available on
-    # readthedocs and build fails otherwise
+    "Sphinx==5.0.1",
+    "sphinx-argparse==0.3.1",
 ]
 extras_ui = [
     "eventlet==0.31.0",  # Async mode for SocketIO
