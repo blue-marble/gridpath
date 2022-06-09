@@ -6,7 +6,7 @@ name: test-suite
 
 on:
   push:
-    branches: [ main, develop, test_on_multiple_python_versions ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
   schedule:
