@@ -1,2 +1,2 @@
-Sphinx==4.0.2
-sphinx-argparse==0.2.5
+Sphinx==5.0.1
+sphinx-argparse==0.3.1
