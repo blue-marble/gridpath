@@ -347,13 +347,9 @@ gridpath.transmission.operations.hurdle_costs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.transmission.operations.hurdle_costs
 
-gridpath.transmission.operations.export_penalty_costs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.transmission.operations.export_penalty_costs
-
-gridpath.objective.transmission.aggregate_operational_costs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.objective.transmission.aggregate_operational_costs
+gridpath.objective.transmission.aggregate_hurdle_costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.objective.transmission.aggregate_hurdle_costs
 
 
 
