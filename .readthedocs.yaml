@@ -14,3 +14,12 @@ build:
 # Build documentation in the doc/ directory with Sphinx
 sphinx:
    configuration: doc/source/conf.py
+
+# Optionally declare the Python requirements required to build your docs
+python:
+  version: "3.10"
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - doc
