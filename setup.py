@@ -41,7 +41,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "Pyomo==6.3.0",  # Optimization modeling language
-        "pandas==1.2.5",  # Data-processing
+        "pandas==1.4.2",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF
