@@ -39,13 +39,13 @@ from pyomo.common.tempfiles import TempfileManager
 import sys
 import warnings
 
+from gridpath.auxiliary.import_export_rules import import_export_rules
 from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_disk
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_scenario_name_parser,
     get_required_e2e_arguments_parser,
-    get_solve_parser,
-    get_parallel_solve_parser,
+    get_run_scenario_parser,
     create_logs_directory_if_not_exists,
     Logging,
 )
@@ -140,16 +140,12 @@ def run_optimization_for_subproblem_stage(
     subproblem_directory,
     stage_directory,
     parsed_arguments,
-    export_rule,
-    summarize_rule,
 ):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem_directory: if there are horizon subproblems, the horizon
     :param stage_directory: if there are stage subproblems, the stage
     :param parsed_arguments: the parsed script arguments
-    :param export_rule:
-    :param summarize_rule:
     :return: return the objective function value (Total_Cost); only used in
         testing
 
@@ -227,7 +223,6 @@ def run_optimization_for_subproblem_stage(
         results,
         dynamic_components,
         parsed_arguments,
-        export_rule,
     )
 
     # Summarize results
@@ -236,7 +231,6 @@ def run_optimization_for_subproblem_stage(
         subproblem_directory,
         stage_directory,
         parsed_arguments,
-        summarize_rule,
     )
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
@@ -261,8 +255,6 @@ def run_optimization_for_subproblem(
     subproblem_structure,
     subproblem,
     parsed_arguments,
-    export_rule,
-    summarize_rule,
     objective_values,
 ):
     """
@@ -291,8 +283,6 @@ def run_optimization_for_subproblem(
             subproblem_directory,
             stage_directory,
             parsed_arguments,
-            export_rule,
-            summarize_rule,
         )
     # Otherwise, run the stage problem
     else:
@@ -303,8 +293,6 @@ def run_optimization_for_subproblem(
                 subproblem_directory,
                 stage_directory,
                 parsed_arguments,
-                export_rule,
-                summarize_rule,
             )
 
 
@@ -318,8 +306,6 @@ def run_optimization_for_subproblem_pool(pool_datum):
         subproblem_structure,
         subproblem,
         parsed_arguments,
-        export_rule,
-        summarize_rule,
         objective_values,
     ] = pool_datum
 
@@ -328,8 +314,6 @@ def run_optimization_for_subproblem_pool(pool_datum):
         subproblem_structure=subproblem_structure,
         subproblem=subproblem,
         parsed_arguments=parsed_arguments,
-        export_rule=export_rule,
-        summarize_rule=summarize_rule,
         objective_values=objective_values,
     )
 
@@ -338,8 +322,6 @@ def run_scenario(
     scenario_directory,
     subproblem_structure,
     parsed_arguments,
-    export_rule,
-    summarize_rule,
 ):
     """
     Check the scenario structure, iterate over all subproblems if they
@@ -351,8 +333,6 @@ def run_scenario(
     :param scenario_directory: scenario directory path
     :param subproblem_structure: the subproblem structure object
     :param parsed_arguments:
-    :param export_rule:
-    :param summarize_rule:
     :return: the objective function value (NPV); only used in
      'testing' mode.
     """
@@ -390,8 +370,6 @@ def run_scenario(
                 subproblem=subproblem,
                 parsed_arguments=parsed_arguments,
                 objective_values=objective_values,
-                export_rule=export_rule,
-                summarize_rule=summarize_rule,
             )
 
         # Should probably just remove this logic here and have a dictionary
@@ -423,8 +401,6 @@ def run_scenario(
                     subproblem=subproblem,
                     parsed_arguments=parsed_arguments,
                     objective_values=objective_values,
-                    export_rule=export_rule,
-                    summarize_rule=summarize_rule,
                 )
 
             if len(objective_values.keys()) == 1:
@@ -451,8 +427,6 @@ def run_scenario(
                         subproblem_structure,
                         subproblem,
                         parsed_arguments,
-                        export_rule,
-                        summarize_rule,
                         objective_values,
                     ]
                     for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys()
@@ -473,7 +447,6 @@ def save_results(
     results,
     dynamic_components,
     parsed_arguments,
-    export_rule,
 ):
     """
     :param scenario_directory:
@@ -524,6 +497,14 @@ def save_results(
             else:
                 print("Solution is not optimal.")
         # Continue with results export
+        # Parse arguments to see if we're following a special rule for whether to
+        # export results
+        if parsed_arguments.results_export_rule is None:
+            export_rule = _export_rule(instance=instance)
+        else:
+            export_rule = import_export_rules[parsed_arguments.results_export_rule][
+                "export"
+            ](instance=instance)
         export_results(
             scenario_directory,
             subproblem,
@@ -818,9 +799,7 @@ def export_results(
 
     Export results for each loaded module (if applicable)
     """
-    export_results = export_rule(instance=instance)
-
-    if export_results:
+    if export_rule:
         # Determine/load modules and dynamic components
         modules_to_use, loaded_modules = set_up_gridpath_modules(
             scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
@@ -945,9 +924,7 @@ def save_duals(scenario_directory, subproblem, stage, instance):
                     pass
 
 
-def summarize_results(
-    scenario_directory, subproblem, stage, parsed_arguments, summarize_rule
-):
+def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory:
     :param subproblem:
@@ -957,46 +934,58 @@ def summarize_results(
 
     Summarize results (after results export)
     """
-    # Only summarize results if solver status was "optimal"
-    with open(
-        os.path.join(
-            scenario_directory, subproblem, stage, "results", "solver_status.txt"
-        ),
-        "r",
-    ) as f:
-        solver_status = f.read()
-
-    if solver_status == "ok":
-        if not parsed_arguments.quiet:
-            print("Summarizing results...")
-
-        # Determine/load modules and dynamic components
-        modules_to_use, loaded_modules = set_up_gridpath_modules(
+    if parsed_arguments.results_export_rule is None:
+        summarize_rule = _summarize_rule(
             scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
         )
+    else:
+        summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
+            "summarize"
+        ](scenario_directory=scenario_directory, subproblem=subproblem, stage=stage)
 
-        # Make the summary results file
-        summary_results_file = os.path.join(
-            scenario_directory, subproblem, stage, "results", "summary_results.txt"
-        )
+    if summarize_rule:
+        # Only summarize results if solver status was "optimal"
+        with open(
+            os.path.join(
+                scenario_directory, subproblem, stage, "results", "solver_status.txt"
+            ),
+            "r",
+        ) as f:
+            solver_status = f.read()
 
-        # TODO: how to handle results from previous runs
-        # Overwrite prior results
-        with open(summary_results_file, "w", newline="") as outfile:
-            outfile.write(
-                "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-                    parsed_arguments.scenario
-                )
+        if solver_status == "ok":
+            if not parsed_arguments.quiet:
+                print("Summarizing results...")
+
+            # Determine/load modules and dynamic components
+            modules_to_use, loaded_modules = set_up_gridpath_modules(
+                scenario_directory=scenario_directory,
+                subproblem=subproblem,
+                stage=stage,
             )
 
-        # Go through the modules and get the appropriate results
-        for m in loaded_modules:
-            if hasattr(m, "summarize_results"):
-                m.summarize_results(scenario_directory, subproblem, stage)
+            # Make the summary results file
+            summary_results_file = os.path.join(
+                scenario_directory, subproblem, stage, "results", "summary_results.txt"
+            )
+
+            # TODO: how to handle results from previous runs
+            # Overwrite prior results
+            with open(summary_results_file, "w", newline="") as outfile:
+                outfile.write(
+                    "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
+                        parsed_arguments.scenario
+                    )
+                )
+
+            # Go through the modules and get the appropriate results
+            for m in loaded_modules:
+                if hasattr(m, "summarize_results"):
+                    m.summarize_results(scenario_directory, subproblem, stage)
+            else:
+                pass
         else:
             pass
-    else:
-        pass
 
 
 def set_up_gridpath_modules(scenario_directory, subproblem, stage):
@@ -1032,8 +1021,7 @@ def parse_arguments(args):
         parents=[
             get_scenario_name_parser(),
             get_required_e2e_arguments_parser(),
-            get_solve_parser(),
-            get_parallel_solve_parser(),
+            get_run_scenario_parser(),
         ],
     )
 
@@ -1052,7 +1040,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def main(export_rule, summarize_rule, args=None):
+def main(args=None):
     """
     This is the 'main' method that runs a scenario. It takes in and parses the
     script arguments, determines the scenario structure (i.e. whether it is a
@@ -1088,8 +1076,6 @@ def main(export_rule, summarize_rule, args=None):
         scenario_directory=scenario_directory,
         subproblem_structure=subproblem_structure,
         parsed_arguments=parsed_args,
-        export_rule=export_rule,
-        summarize_rule=summarize_rule,
     )
 
     # Return the objective function values (used in testing)
@@ -1121,4 +1107,4 @@ def _summarize_rule(scenario_directory, subproblem, stage):
 
 
 if __name__ == "__main__":
-    main(export_rule=_export_rule, summarize_rule=_summarize_rule)
+    main()

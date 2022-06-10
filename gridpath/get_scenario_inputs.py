@@ -36,7 +36,7 @@ from gridpath.common_functions import (
     create_directory_if_not_exists,
     get_db_parser,
     get_required_e2e_arguments_parser,
-    get_parallel_get_inputs_parser,
+    get_get_inputs_parser,
 )
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
@@ -302,7 +302,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
-            get_parallel_get_inputs_parser(),
+            get_get_inputs_parser(),
         ],
     )
 

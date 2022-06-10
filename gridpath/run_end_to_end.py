@@ -34,10 +34,9 @@ import sys
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import (
     get_db_parser,
-    get_solve_parser,
+    get_run_scenario_parser,
     get_required_e2e_arguments_parser,
-    get_parallel_get_inputs_parser,
-    get_parallel_solve_parser,
+    get_get_inputs_parser,
     create_logs_directory_if_not_exists,
     Logging,
     determine_scenario_directory,
@@ -67,9 +66,8 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
-            get_solve_parser(),
-            get_parallel_get_inputs_parser(),
-            get_parallel_solve_parser(),
+            get_run_scenario_parser(),
+            get_get_inputs_parser(),
         ],
     )
 
@@ -376,8 +374,6 @@ def main(args=None):
             # make sure run_scenario.py gets the required --scenario argument
             run_scenario_args = args + ["--scenario", scenario]
             expected_objective_values = run_scenario.main(
-                export_rule=_export_rule,
-                summarize_rule=_summarize_rule,
                 args=run_scenario_args,
             )
         except Exception as e:
@@ -400,7 +396,7 @@ def main(args=None):
 
     if not skip_import_results and not parsed_args.skip_import_results:
         try:
-            import_scenario_results.main(import_rule=_import_rule, args=args)
+            import_scenario_results.main(args=args)
         except Exception as e:
             logging.exception(e)
             end_time = update_db_for_run_end(
