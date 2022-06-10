@@ -23,7 +23,7 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
-from multiprocessing import Pool, Manager
+from multiprocessing import get_context, Manager
 import os.path
 from pyomo.environ import (
     AbstractModel,
@@ -406,7 +406,7 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
             for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
                 objective_values[subproblem] = manager.dict()
 
-            pool = Pool(n_parallel_subproblems)
+            pool = get_context("spawn").Pool(n_parallel_subproblems)
             pool_data = tuple(
                 [
                     [

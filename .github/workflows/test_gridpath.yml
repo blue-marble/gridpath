@@ -6,7 +6,7 @@ name: test-suite
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, linux_multiprocessing ]
   pull_request:
     branches: [ main, develop ]
   schedule:
