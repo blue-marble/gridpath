@@ -530,38 +530,30 @@ class TestExamples(unittest.TestCase):
     def test_example_multi_stage_prod_cost_parallel(self):
         """
         Check validation and objective function values of
-        "multi_stage_prod_cost" example
+        "multi_stage_prod_cost" example running subproblems in parallel
         :return:
         """
-        # TODO: figure why run_e2e processed gets terminated on linux when
-        #  using parallel processing; skip test on linux for the time being
-        if platform.system() == "Linux":
-            print(
-                "Skipping test_example_multi_stage_prod_cost_parallel on ",
-                platform.system(),
-            )
-        else:
-            self.run_and_check_objective(
-                "multi_stage_prod_cost",
-                {
-                    1: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
-                    2: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
-                    3: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
+        self.run_and_check_objective(
+            "multi_stage_prod_cost",
+            {
+                1: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
                 },
-                parallel=3,
-            )
+                2: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
+                },
+                3: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
+                },
+            },
+            parallel=3,
+        )
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """

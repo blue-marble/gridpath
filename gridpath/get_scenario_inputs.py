@@ -23,7 +23,7 @@ The main() function of this script can also be called with the
 
 from argparse import ArgumentParser
 import csv
-from multiprocessing import Pool
+from multiprocessing import get_context
 import os.path
 import pandas as pd
 import sys
@@ -132,7 +132,8 @@ def write_model_inputs(
             ]
         )
 
-        pool = Pool(n_parallel_subproblems)
+        # Pool must use spawn to work properly on Linux
+        pool = get_context("spawn").Pool(n_parallel_subproblems)
         pool.map(get_inputs_for_subproblem_pool, pool_data)
         pool.close()
 
