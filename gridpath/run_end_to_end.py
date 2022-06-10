@@ -48,6 +48,7 @@ from gridpath import (
     import_scenario_results,
     process_results,
 )
+from gridpath.run_scenario import _export_rule, _summarize_rule
 from gridpath.import_scenario_results import _import_rule
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 
@@ -374,7 +375,11 @@ def main(args=None):
         try:
             # make sure run_scenario.py gets the required --scenario argument
             run_scenario_args = args + ["--scenario", scenario]
-            expected_objective_values = run_scenario.main(args=run_scenario_args)
+            expected_objective_values = run_scenario.main(
+                export_rule=_export_rule,
+                summarize_rule=_summarize_rule,
+                args=run_scenario_args,
+            )
         except Exception as e:
             logging.exception(e)
             end_time = update_db_for_run_end(
