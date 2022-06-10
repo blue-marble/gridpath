@@ -500,11 +500,11 @@ def save_results(
         # Parse arguments to see if we're following a special rule for whether to
         # export results
         if parsed_arguments.results_export_rule is None:
-            export_rule = _export_rule(instance=instance)
+            export_rule = _export_rule(instance=instance, quiet=parsed_arguments.quiet)
         else:
             export_rule = import_export_rules[parsed_arguments.results_export_rule][
                 "export"
-            ](instance=instance)
+            ](instance=instance, quiet=parsed_arguments.quiet)
         export_results(
             scenario_directory,
             subproblem,
@@ -936,12 +936,14 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     """
     if parsed_arguments.results_export_rule is None:
         summarize_rule = _summarize_rule(
-            scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+            scenario_directory=scenario_directory, subproblem=subproblem,
+            stage=stage, quiet=parsed_arguments.quiet
         )
     else:
         summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
             "summarize"
-        ](scenario_directory=scenario_directory, subproblem=subproblem, stage=stage)
+        ](scenario_directory=scenario_directory, subproblem=subproblem, stage=stage,
+          quiet=parsed_arguments.quiet)
 
     if summarize_rule:
         # Only summarize results if solver status was "optimal"
@@ -1082,7 +1084,7 @@ def main(args=None):
     return expected_objective_values
 
 
-def _export_rule(instance):
+def _export_rule(instance, quiet):
     """
     :return: boolean
 
@@ -1094,7 +1096,7 @@ def _export_rule(instance):
     return export_results
 
 
-def _summarize_rule(scenario_directory, subproblem, stage):
+def _summarize_rule(scenario_directory, subproblem, stage, quiet):
     """
     :return: boolean
 

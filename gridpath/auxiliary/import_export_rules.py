@@ -19,7 +19,7 @@ from pyomo.environ import value
 # Import-export rules
 
 # Export & import if USE is found only
-def export_rule_use(instance):
+def export_rule_use(instance, quiet):
     unserved_energy_found = any(
         [
             value(instance.Unserved_Energy_MW_Expression[z, tmp])
@@ -29,12 +29,14 @@ def export_rule_use(instance):
     )
 
     if unserved_energy_found:
-        print("unserved energy found; exporting results")
+        if not quiet:
+            print("unserved energy found; exporting results")
 
     return unserved_energy_found
 
 
-def summarize_results_use(scenario_directory, subproblem_directory, stage_directory):
+def summarize_results_use(scenario_directory, subproblem_directory, stage_directory,
+                          quiet):
     if os.path.exists(
         os.path.join(
             scenario_directory,
@@ -46,19 +48,21 @@ def summarize_results_use(scenario_directory, subproblem_directory, stage_direct
     ):
         return True
     else:
-        print("skipping results summary")
+        if not quiet:
+            print("skipping results summary")
         return False
 
 
-def import_rule_use(results_directory):
+def import_rule_use(results_directory, quiet):
     if os.path.exists(os.path.join(results_directory, "load_balance.csv")):
         import_results = True
-        print("unserved energy found -- importing")
+        if not quiet:
+            print("unserved energy found -- importing")
     else:
         import_results = False
-        print("no unserved energy -- skipping")
+        if not quiet:
+            print("no unserved energy -- skipping")
 
-    print("Import results is ", import_results)
     return import_results
 
 

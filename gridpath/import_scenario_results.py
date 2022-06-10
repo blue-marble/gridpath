@@ -40,7 +40,7 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_db
 
 
-def _import_rule(results_directory):
+def _import_rule(results_directory, quiet):
     """
     :return: boolean
 
@@ -216,9 +216,11 @@ def import_subproblem_stage_results_into_database(
     determine whether to import.
     """
     if import_rule is None:
-        import_results = _import_rule(results_directory)
+        import_results = _import_rule(results_directory=results_directory, quiet=quiet)
     else:
-        import_results = import_export_rules[import_rule]["import"](results_directory)
+        import_results = import_export_rules[import_rule]["import"](
+            results_directory=results_directory, quiet=quiet
+        )
 
     if import_results:
         c = db.cursor()
