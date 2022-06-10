@@ -132,6 +132,7 @@ def write_model_inputs(
             ]
         )
 
+        # Pool must use spawn to work properly on Linux
         pool = get_context("spawn").Pool(n_parallel_subproblems)
         pool.map(get_inputs_for_subproblem_pool, pool_data)
         pool.close()

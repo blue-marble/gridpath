@@ -406,6 +406,7 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
             for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
                 objective_values[subproblem] = manager.dict()
 
+            # Pool must use spawn to work properly on Linux
             pool = get_context("spawn").Pool(n_parallel_subproblems)
             pool_data = tuple(
                 [
