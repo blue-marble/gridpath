@@ -7,7 +7,9 @@ Welcome to the GridPath user interface!
 ## Python
 See the `README.md` file in the root GridPath directory for Python 
 installation instructions. Python is required for the GridPath UI server and
- core engine that builds the optimization problems.
+ core engine that builds the optimization problems. The UI will not work 
+with Python 3.10, as some libraries it uses are not fully compatible with 
+Python 3.10 yet.
  
 ## Python packages
 You will also need to install the required Python packages to run GridPath
@@ -19,10 +21,11 @@ pip install -e .[ui]
 
 ## NodeJS
 To edit the UI code, or build and compile the app from source, you will
-need NodeJS. Install [here](https://nodejs.org/en/).
+need NodeJS v14.15. Install [here](https://nodejs.org/en/).
 
 ## Node packages
 To install the required node packages, run the following from this directory.
+We use v7.6.3 of npm.
 ```bash
 npm install
 ``` 
@@ -47,3 +50,6 @@ To compile the project for distribution, run:
 ```bash
 npm run dist
 ```
+
+# Support
+We do not currently have resources to provide support for the UI.

@@ -11,7 +11,7 @@ extras_doc = [
     "sphinx-argparse==0.3.1",
 ]
 extras_ui = [
-    "eventlet==0.31.0",  # Async mode for SocketIO
+    "eventlet==0.33.1",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
