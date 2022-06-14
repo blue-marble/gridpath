@@ -504,117 +504,102 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Load data
     data_portal.data()["tx_simple_loss_factor"] = loss_factor
 
-    # Min Flow
-    transmission_tmps_with_min = list()
-    min_flow_mw = dict()
-
-    header = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow.tab",
-        ),
-        sep="\t",
-        header=None,
-        nrows=1,
-    ).values[0]
-
-    optional_columns = ["min_flow_mw"]
-    used_columns = [c for c in optional_columns if c in header]
-
-    df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow.tab",
-        ),
-        sep="\t",
-        usecols=["transmission_line", "timepoint"] + used_columns,
+    transmission_flow_limits_file = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "transmission_flow_limits.tab",
     )
 
-    # min_flow_mw is optional,
-    # so TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
-    # and min_flow_mw simply won't be initialized if
-    # min_flow_mw does not exist in the input file
-    if "min_flow_mw" in df.columns:
-        for row in zip(df["transmission_line"], df["timepoint"], df["min_flow_mw"]):
-            if row[2] != ".":
-                transmission_tmps_with_min.append((row[0], row[1]))
-                min_flow_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
+    if os.path.exists(transmission_flow_limits_file):
+        # Min Flow
+        transmission_tmps_with_min = list()
+        min_flow_mw = dict()
 
-    # Load min flow data
-    if not transmission_tmps_with_min:
-        pass  # if the list is empty, don't initialize the set
-    else:
-        data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT"] = {
-            None: transmission_tmps_with_min
-        }
+        header = pd.read_csv(
+            transmission_flow_limits_file,
+            sep="\t",
+            header=None,
+            nrows=1,
+        ).values[0]
 
-    data_portal.data()["tx_simple_min_flow_mw"] = min_flow_mw
+        optional_columns = ["min_flow_mw"]
+        used_columns = [c for c in optional_columns if c in header]
 
-    # Max Flow
-    transmission_tmps_with_max = list()
-    max_flow_mw = dict()
+        df = pd.read_csv(
+            transmission_flow_limits_file,
+            sep="\t",
+            usecols=["transmission_line", "timepoint"] + used_columns,
+        )
 
-    header = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow.tab",
-        ),
-        sep="\t",
-        header=None,
-        nrows=1,
-    ).values[0]
+        # min_flow_mw is optional,
+        # so TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT
+        # and min_flow_mw simply won't be initialized if
+        # min_flow_mw does not exist in the input file
+        if "min_flow_mw" in df.columns:
+            for row in zip(df["transmission_line"], df["timepoint"], df["min_flow_mw"]):
+                if row[2] != ".":
+                    transmission_tmps_with_min.append((row[0], row[1]))
+                    min_flow_mw[(row[0], row[1])] = float(row[2])
+                else:
+                    pass
+        else:
+            pass
 
-    optional_columns = ["max_flow_mw"]
-    used_columns = [c for c in optional_columns if c in header]
+        # Load min flow data
+        if not transmission_tmps_with_min:
+            pass  # if the list is empty, don't initialize the set
+        else:
+            data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MIN_CONSTRAINT"] = {
+                None: transmission_tmps_with_min
+            }
 
-    df = pd.read_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow.tab",
-        ),
-        sep="\t",
-        usecols=["transmission_line", "timepoint"] + used_columns,
-    )
+        data_portal.data()["tx_simple_min_flow_mw"] = min_flow_mw
 
-    # max_flow_mw is optional,
-    # so TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT
-    # and max_flow_mw simply won't be initialized if
-    # max_flow_mw does not exist in the input file
-    if "max_flow_mw" in df.columns:
-        for row in zip(df["transmission_line"], df["timepoint"], df["max_flow_mw"]):
-            if row[2] != ".":
-                transmission_tmps_with_max.append((row[0], row[1]))
-                max_flow_mw[(row[0], row[1])] = float(row[2])
-            else:
-                pass
-    else:
-        pass
+        # Max Flow
+        transmission_tmps_with_max = list()
+        max_flow_mw = dict()
 
-    # Load max flow data
-    if not transmission_tmps_with_max:
-        pass  # if the list is empty, don't initialize the set
-    else:
-        data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT"] = {
-            None: transmission_tmps_with_max
-        }
+        header = pd.read_csv(
+            transmission_flow_limits_file,
+            sep="\t",
+            header=None,
+            nrows=1,
+        ).values[0]
 
-    data_portal.data()["tx_simple_max_flow_mw"] = max_flow_mw
+        optional_columns = ["max_flow_mw"]
+        used_columns = [c for c in optional_columns if c in header]
+
+        df = pd.read_csv(
+            transmission_flow_limits_file,
+            sep="\t",
+            usecols=["transmission_line", "timepoint"] + used_columns,
+        )
+
+        # max_flow_mw is optional,
+        # so TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT
+        # and max_flow_mw simply won't be initialized if
+        # max_flow_mw does not exist in the input file
+        if "max_flow_mw" in df.columns:
+            for row in zip(df["transmission_line"], df["timepoint"], df["max_flow_mw"]):
+                if row[2] != ".":
+                    transmission_tmps_with_max.append((row[0], row[1]))
+                    max_flow_mw[(row[0], row[1])] = float(row[2])
+                else:
+                    pass
+        else:
+            pass
+
+        # Load max flow data
+        if not transmission_tmps_with_max:
+            pass  # if the list is empty, don't initialize the set
+        else:
+            data_portal.data()["TX_SIMPLE_OPR_TMPS_W_MAX_CONSTRAINT"] = {
+                None: transmission_tmps_with_max
+            }
+
+        data_portal.data()["tx_simple_max_flow_mw"] = max_flow_mw
 
 
 def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -671,28 +656,32 @@ def write_model_inputs(
 
     tx_flow = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
-    )
+    ).fetchall()
 
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "transmission_flow.tab",
-        ),
-        "w",
-        newline="",
-    ) as tx_flow_tab_file:
-        writer = csv.writer(tx_flow_tab_file, delimiter="\t", lineterminator="\n")
+    # Only write tab file if we have data to limit flows
+    if len(tx_flow) > 0:
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "transmission_flow_limits.tab",
+            ),
+            "w",
+            newline="",
+        ) as tx_flow_tab_file:
+            writer = csv.writer(tx_flow_tab_file, delimiter="\t", lineterminator="\n")
 
-        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
-        #  same as database
-        # Write header
-        writer.writerow(
-            ["transmission_line", "timepoint", "min_flow_mw", "max_flow_mw"]
-        )
+            # TODO: remove all_caps for TRANSMISSION_LINES and make columns
+            #  same as database
+            # Write header
+            writer.writerow(
+                ["transmission_line", "timepoint", "min_flow_mw", "max_flow_mw"]
+            )
 
-        for row in tx_flow:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
+            for row in tx_flow:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+    else:
+        pass

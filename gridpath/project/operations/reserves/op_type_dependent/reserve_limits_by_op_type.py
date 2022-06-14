@@ -79,10 +79,8 @@ def generic_add_model_components(
 
     def reserve_provision_ramp_rate_limit_rule(mod, g, tmp):
         """
-        Don't create constraint if the project can ramp its full capacity in
-        the timepoint
         :param mod:
-        :param p:
+        :param g:
         :param tmp:
         :return:
         """
@@ -95,14 +93,11 @@ def generic_add_model_components(
             else op_type.online_capacity_rule(mod, g, tmp)
         )
 
-        if getattr(m, reserve_provision_ramp_rate_limit_param) == 1:
-            return Constraint.Skip
-        else:
-            return (
-                getattr(mod, reserve_provision_variable_name)[g, tmp]
-                <= getattr(mod, reserve_provision_ramp_rate_limit_param)[g]
-                * online_capacity
-            )
+        return (
+            getattr(mod, reserve_provision_variable_name)[g, tmp]
+            <= getattr(mod, reserve_provision_ramp_rate_limit_param)[g]
+            * online_capacity
+        )
 
     setattr(
         m,

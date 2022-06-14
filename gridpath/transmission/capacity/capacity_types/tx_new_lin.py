@@ -414,6 +414,13 @@ def tx_capacity_cost_rule(mod, g, p):
     )
 
 
+def new_capacity_rule(mod, g, p):
+    """
+    New capacity built at transmission line tx in period p.
+    """
+    return mod.TxNewLin_Build_MW[g, p] if (g, p) in mod.TX_NEW_LIN_VNTS else 0
+
+
 # Input-Output
 ###############################################################################
 

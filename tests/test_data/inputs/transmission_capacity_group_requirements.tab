@@ -1,0 +1,3 @@
+transmission_capacity_group	period	transmission_capacity_group_new_capacity_min	transmission_capacity_group_new_capacity_max
+Tx_Capacity_Group1	2020	1	10
+Tx_Capacity_Group1	2030	1	10

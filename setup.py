@@ -7,13 +7,11 @@ with open("./version.py") as fp:
 
 # Set up extras
 extras_doc = [
-    "Sphinx==4.0.2",
-    "sphinx-argparse==0.2.5",
-    "numpy==1.21.5"  # temporarily require v1.21.5 because v1.22 is not available on
-    # readthedocs and build fails otherwise
+    "Sphinx==5.0.1",
+    "sphinx-argparse==0.3.1",
 ]
 extras_ui = [
-    "eventlet==0.31.0",  # Async mode for SocketIO
+    "eventlet==0.33.1",  # Async mode for SocketIO
     "Flask==2.0.1",  # Local API server for UI
     "Flask-RESTful==0.3.9",  # Flask extension for building REST APIs
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
@@ -43,7 +41,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "Pyomo==6.3.0",  # Optimization modeling language
-        "pandas==1.2.5",  # Data-processing
+        "pandas==1.4.2",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
         "networkx==2.5.1",  # network package for DC OPF

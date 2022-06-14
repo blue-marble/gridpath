@@ -35,9 +35,8 @@ Running a Scenario
 gridpath.run_scenario
 =====================
 .. automodule:: gridpath.run_scenario
-    :members: main, parse_arguments, ScenarioStructure, run_scenario,
-        run_optimization, create_and_solve_problem,
-        create_abstract_model,
+    :members: main, parse_arguments, run_scenario, run_optimization_for_subproblem,
+        create_and_solve_problem, create_abstract_model,
         load_scenario_data, create_problem_instance, fix_variables, solve
 
 

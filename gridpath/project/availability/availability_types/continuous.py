@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -317,9 +317,14 @@ def min_time_between_events_rule(mod, g, tmp):
 ###############################################################################
 
 
-def availability_derate_rule(mod, g, tmp):
+def availability_derate_cap_rule(mod, g, tmp):
     """ """
     return 1 - mod.AvlCont_Unavailable[g, tmp]
+
+
+def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
+    """ """
+    return 1
 
 
 # Input-Output

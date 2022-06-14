@@ -982,6 +982,7 @@ min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 cycle_selection_scenario_id INTEGER,
+supplemental_firing_scenario_id INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -1024,6 +1025,9 @@ subscenarios_project_variable_om_curves
 FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
 subscenarios_project_cycle_selection
 (project, cycle_selection_scenario_id),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing
+(project, supplemental_firing_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1152,6 +1156,27 @@ subscenarios_project_cycle_selection (project, cycle_selection_scenario_id)
 );
 
 
+-- Supplemental firing
+DROP TABLE IF EXISTS subscenarios_project_supplemental_firing;
+CREATE TABLE subscenarios_project_supplemental_firing (
+project VARCHAR(32),
+supplemental_firing_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, supplemental_firing_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_supplemental_firing;
+CREATE TABLE inputs_project_supplemental_firing (
+project VARCHAR(64),
+supplemental_firing_scenario_id INTEGER,
+supplemental_firing_project VARCHAR(64),
+PRIMARY KEY (project, supplemental_firing_scenario_id, supplemental_firing_project),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
+);
+
+
 
 -- Variable generator profiles
 -- TODO: this is not exactly a subscenario, as a variable profile will be
@@ -1271,6 +1296,7 @@ exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
 availability_derate FLOAT,
+hyb_stor_cap_availability_derate FLOAT,
 PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id, timepoint),
 FOREIGN KEY (project, exogenous_availability_scenario_id)
     REFERENCES subscenarios_project_availability_exogenous
@@ -2029,6 +2055,49 @@ FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
 subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
 );
 
+-- Group capacity requirements
+-- Requirements
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_group_requirements;
+CREATE TABLE subscenarios_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER PRIMARY KEY
+    AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_group_requirements;
+CREATE TABLE inputs_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (transmission_capacity_group_requirement_scenario_id,
+            transmission_capacity_group, period),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id)
+);
+
+
+-- Group transmission lines mapping
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_groups;
+CREATE TABLE subscenarios_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_groups;
+CREATE TABLE inputs_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+transmission_line VARCHAR(64),
+PRIMARY KEY (transmission_capacity_group_scenario_id, transmission_capacity_group, transmission_line),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+subscenarios_transmission_capacity_groups (transmission_capacity_group_scenario_id)
+);
+
 -- Simultaneous flows
 -- Limits on net flows on groups of lines (e.g. all lines connected to a zone)
 DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_limits;
@@ -2160,8 +2229,9 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
 CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba)
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent_lz_map;
@@ -2179,10 +2249,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_up_project;
 CREATE TABLE inputs_system_lf_reserves_up_project (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, project)
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id, project)
 );
 
 -- LF reserves down
@@ -2217,8 +2288,9 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
 CREATE TABLE inputs_system_lf_reserves_down_percent (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba)
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent_lz_map;
@@ -2236,10 +2308,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down_project;
 CREATE TABLE inputs_system_lf_reserves_down_project (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, project)
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id, project)
 );
 
 -- Regulation up
@@ -2273,8 +2346,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
 CREATE TABLE inputs_system_regulation_down_percent (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba)
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_down_percent_lz_map;
@@ -2292,10 +2366,11 @@ DROP TABLE IF EXISTS inputs_system_regulation_down_project;
 CREATE TABLE inputs_system_regulation_down_project (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, project)
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id, project)
 );
 
 -- Regulation down
@@ -2330,8 +2405,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
 CREATE TABLE inputs_system_regulation_up_percent (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_up_percent_lz_map;
@@ -2349,10 +2425,11 @@ DROP TABLE IF EXISTS inputs_system_regulation_up_project;
 CREATE TABLE inputs_system_regulation_up_project (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, project)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, project)
 );
 
 
@@ -2389,8 +2466,9 @@ DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
 CREATE TABLE inputs_system_frequency_response_percent (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba)
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_frequency_response_percent_lz_map;
@@ -2408,10 +2486,11 @@ DROP TABLE IF EXISTS inputs_system_frequency_response_project;
 CREATE TABLE inputs_system_frequency_response_project (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, project)
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id, project)
 );
 
 -- Spinning reserves
@@ -2446,8 +2525,9 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
 CREATE TABLE inputs_system_spinning_reserves_percent (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba)
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent_lz_map;
@@ -2465,10 +2545,11 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves_project;
 CREATE TABLE inputs_system_spinning_reserves_project (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 project VARCHAR(64),
 percent_power_req FLOAT,
 percent_capacity_req FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, project)
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id, project)
 );
 
 -- -- Policy -- --
@@ -2817,6 +2898,8 @@ transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
 transmission_flow_scenario_id INTEGER,
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2982,6 +3065,12 @@ FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
     subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
 FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
     subscenarios_transmission_flow (transmission_flow_scenario_id),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_groups
+    (transmission_capacity_group_scenario_id),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -3685,6 +3774,19 @@ new_build_transmission_capacity_mw FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
 );
 
+DROP TABLE IF EXISTS results_transmission_group_capacity;
+CREATE TABLE results_transmission_group_capacity (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+group_new_capacity FLOAT,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_capacity_group, period)
+);
+
 -- TODO: add table for costs new build?
 DROP TABLE IF EXISTS results_transmission_costs_capacity;
 CREATE TABLE results_transmission_costs_capacity (
@@ -3871,6 +3973,10 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 sell_power FLOAT,
 buy_power FLOAT,
+net_buy_power FLOAT,
+final_sell_power FLOAT,
+final_buy_power FLOAT,
+final_net_buy_power FLOAT,
 PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 

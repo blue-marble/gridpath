@@ -43,6 +43,9 @@ UBUNTU_16 = (
     else False
 )
 
+# Windows check
+WINDOWS = True if os.name == "nt" else False
+
 
 class TestExamples(unittest.TestCase):
     """ """
@@ -524,44 +527,36 @@ class TestExamples(unittest.TestCase):
         self.check_validation("single_stage_prod_cost_cycle_select")
         self.run_and_check_objective(
             "single_stage_prod_cost_cycle_select",
-            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
+            {1: -7008092000118.654, 2: -7008092000118.654, 3: -7008092000118.654},
         )
 
     def test_example_multi_stage_prod_cost_parallel(self):
         """
         Check validation and objective function values of
-        "multi_stage_prod_cost" example
+        "multi_stage_prod_cost" example running subproblems in parallel
         :return:
         """
-        # TODO: figure why run_e2e processed gets terminated on linux when
-        #  using parallel processing; skip test on linux for the time being
-        if platform.system() == "Linux":
-            print(
-                "Skipping test_example_multi_stage_prod_cost_parallel on ",
-                platform.system(),
-            )
-        else:
-            self.run_and_check_objective(
-                "multi_stage_prod_cost",
-                {
-                    1: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
-                    2: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
-                    3: {
-                        1: -1265436373826.0408,
-                        2: -1265436373826.0408,
-                        3: -1265436373826.099,
-                    },
+        self.run_and_check_objective(
+            "multi_stage_prod_cost",
+            {
+                1: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
                 },
-                parallel=3,
-            )
+                2: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
+                },
+                3: {
+                    1: -1265436373826.0408,
+                    2: -1265436373826.0408,
+                    3: -1265436373826.099,
+                },
+            },
+            parallel=3,
+        )
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
@@ -1146,13 +1141,17 @@ class TestExamples(unittest.TestCase):
     def test_example_test_new_solar_carbon_cap_dac(self):
         """
         Check validation and objective function value of
-        "test_new_solar_carbon_cap_dac" example
+        "test_new_solar_carbon_cap_dac" example.
+
+        Note that the same version of Cbc (v2.10.5) produces a slightly different
+        objective function for this problem on Windows than on Mac.
         :return:
         """
 
         self.check_validation("test_new_solar_carbon_cap_dac")
         self.run_and_check_objective(
-            "test_new_solar_carbon_cap_dac", -3504434601570.9893
+            "test_new_solar_carbon_cap_dac",
+            -3504434601571.8643 if WINDOWS else -3504434601570.9893,
         )
 
     def test_example_test_cap_factor_limits(self):
@@ -1192,6 +1191,25 @@ class TestExamples(unittest.TestCase):
                 },
             },
         )
+
+    def test_example_test_supplemental_firing(self):
+        """
+        Check validation and objective function value of "test_supplemental_firing" example
+        :return:
+        """
+
+        self.check_validation("test_supplemental_firing")
+        self.run_and_check_objective("test_supplemental_firing", -4380327039279.8545)
+
+    def test_example_test_tx_capacity_groups(self):
+        """
+        Check validation and objective function value of
+        "test_tx_capacity_groups" example
+        :return:
+        """
+
+        self.check_validation("test_tx_capacity_groups")
+        self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
 
     @classmethod
     def tearDownClass(cls):
