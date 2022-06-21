@@ -22,16 +22,17 @@ The main()_ function of this script can also be called with the
 """
 
 from argparse import ArgumentParser
-import csv
 import os.path
 import pandas as pd
 import sys
 
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
+from gridpath.auxiliary.import_export_rules import import_export_rules
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_import_results_parser,
 )
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
@@ -39,9 +40,7 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_db
 
 
-def _import_rule(
-    db, scenario_id, subproblem, stage, results_directory, loaded_modules, quiet
-):
+def _import_rule(results_directory, quiet):
     """
     :return: boolean
 
@@ -216,15 +215,12 @@ def import_subproblem_stage_results_into_database(
     Import results for a subproblem/stage. We first check the import rule to
     determine whether to import.
     """
-    import_results = import_rule(
-        db=db,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_directory=results_directory,
-        loaded_modules=loaded_modules,
-        quiet=quiet,
-    )
+    if import_rule is None:
+        import_results = _import_rule(results_directory=results_directory, quiet=quiet)
+    else:
+        import_results = import_export_rules[import_rule]["import"](
+            results_directory=results_directory, quiet=quiet
+        )
 
     if import_results:
         c = db.cursor()
@@ -257,14 +253,19 @@ def parse_arguments(args):
     :return:
     """
     parser = ArgumentParser(
-        add_help=True, parents=[get_db_parser(), get_required_e2e_arguments_parser()]
+        add_help=True,
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(),
+            get_import_results_parser(),
+        ],
     )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
 
-def main(import_rule, args=None):
+def main(args=None):
     """
 
     :return:
@@ -279,6 +280,7 @@ def main(import_rule, args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
     quiet = parsed_arguments.quiet
+    import_rule = parsed_arguments.results_import_rule
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -324,7 +326,7 @@ def main(import_rule, args=None):
 
     # Import appropriate results into database
     import_scenario_results_into_database(
-        import_rule=import_rule,
+        import_rule=parsed_arguments.results_import_rule,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subproblems=subproblem_structure,
@@ -339,4 +341,4 @@ def main(import_rule, args=None):
 
 
 if __name__ == "__main__":
-    main(import_rule=_import_rule)
+    main()

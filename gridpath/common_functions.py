@@ -140,7 +140,7 @@ def get_db_parser():
     return parser
 
 
-def get_parallel_get_inputs_parser():
+def get_get_inputs_parser():
     """ """
 
     parser = ArgumentParser(add_help=False)
@@ -153,18 +153,7 @@ def get_parallel_get_inputs_parser():
     return parser
 
 
-def get_parallel_solve_parser():
-    """ """
-
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument(
-        "--n_parallel_solve", default=1, help="Solve n subproblems in parallel."
-    )
-
-    return parser
-
-
-def get_solve_parser():
+def get_run_scenario_parser():
     """
     Create ArgumentParser object which has the common set of arguments for
     solving a scenario (see run_scenario.py and run_end_to_end.py).
@@ -235,6 +224,29 @@ def get_solve_parser():
         default=False,
         action="store_true",
         help="Flag for test suite runs. Results not saved.",
+    )
+
+    # Parallel solve
+    parser.add_argument(
+        "--n_parallel_solve",
+        default=1,
+        help="Solve n subproblems in parallel.",
+    )
+
+    # Results export rule name
+    parser.add_argument(
+        "--results_export_rule",
+        help="The name of the rule to use to decide whether to export results.",
+    )
+
+    return parser
+
+
+def get_import_results_parser():
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--results_import_rule",
+        help="The name of the rule to use to decide whether to import results.",
     )
 
     return parser
