@@ -36,13 +36,13 @@ def export_rule_use(instance, quiet):
 
 
 def summarize_results_use(
-    scenario_directory, subproblem_directory, stage_directory, quiet
+    scenario_directory, subproblem, stage, quiet
 ):
     if os.path.exists(
         os.path.join(
             scenario_directory,
-            subproblem_directory,
-            stage_directory,
+            subproblem,
+            stage,
             "results",
             "load_balance.csv",
         )
