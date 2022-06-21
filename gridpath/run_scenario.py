@@ -936,14 +936,20 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
     """
     if parsed_arguments.results_export_rule is None:
         summarize_rule = _summarize_rule(
-            scenario_directory=scenario_directory, subproblem=subproblem,
-            stage=stage, quiet=parsed_arguments.quiet
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=parsed_arguments.quiet,
         )
     else:
         summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
             "summarize"
-        ](scenario_directory=scenario_directory, subproblem=subproblem, stage=stage,
-          quiet=parsed_arguments.quiet)
+        ](
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=parsed_arguments.quiet,
+        )
 
     if summarize_rule:
         # Only summarize results if solver status was "optimal"
