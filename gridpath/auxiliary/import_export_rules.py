@@ -35,9 +35,7 @@ def export_rule_use(instance, quiet):
     return unserved_energy_found
 
 
-def summarize_results_use(
-    scenario_directory, subproblem, stage, quiet
-):
+def summarize_results_use(scenario_directory, subproblem, stage, quiet):
     if os.path.exists(
         os.path.join(
             scenario_directory,
