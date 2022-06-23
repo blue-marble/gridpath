@@ -53,7 +53,7 @@ from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_arguments):
+def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -127,12 +127,16 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
         loaded_modules,
     )
 
+    return dynamic_components, instance
+
+
+def solve_problem(parsed_arguments, dynamic_components, instance):
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return instance, results, dynamic_components
+    return dynamic_components, instance, results
 
 
 def run_optimization_for_subproblem_stage(
@@ -210,8 +214,17 @@ def run_optimization_for_subproblem_stage(
     stage_directory = str(stage_directory)
 
     # Create problem instance and solve it
-    solved_instance, results, dynamic_components = create_and_solve_problem(
-        scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+    dynamic_components, instance = create_problem(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem_directory,
+        stage=stage_directory,
+        parsed_arguments=parsed_arguments
+    )
+
+    dynamic_components, solved_instance, results = solve_problem(
+        parsed_arguments=parsed_arguments,
+        dynamic_components=dynamic_components,
+        instance=instance,
     )
 
     # Save the scenario results to disk
