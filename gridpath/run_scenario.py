@@ -38,6 +38,7 @@ from pyomo.environ import (
 
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import ComponentUID, SymbolMap
 from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
@@ -228,7 +229,7 @@ def run_optimization_for_subproblem_stage(
         scenario_directory=scenario_directory,
         subproblem=subproblem_directory,
         stage=stage_directory,
-        parsed_arguments=parsed_arguments
+        parsed_arguments=parsed_arguments,
     )
 
     if False:
@@ -241,13 +242,22 @@ def run_optimization_for_subproblem_stage(
         problem_file_format = "lp"
 
         smap_id = write_problem_file(
-            instance=instance, scenario_directory=scenario_directory,
-            problem_format=problem_file_format
+            instance=instance,
+            scenario_directory=scenario_directory,
+            problem_format=problem_file_format,
         )
         symbol_map = instance.solutions.symbol_map[smap_id]
 
-        with open(os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb") as f_out:
-            dill.dump(symbol_map, f_out)
+        tmp_buffer = {}  # this makes the process faster
+        symbol_cuid_pairs = tuple(
+            (symbol, ComponentUID(var_weakref(), cuid_buffer=tmp_buffer))
+            for symbol, var_weakref in symbol_map.bySymbol.items()
+        )
+
+        with open(
+            os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb"
+        ) as f_out:
+            dill.dump(symbol_cuid_pairs, f_out)
 
         return None
     else:
@@ -1166,6 +1176,7 @@ def _summarize_rule(scenario_directory, subproblem, stage, quiet):
 
 #####
 
+
 def write_problem_file(instance, scenario_directory, problem_format):
     """
 
@@ -1178,24 +1189,27 @@ def write_problem_file(instance, scenario_directory, problem_format):
     """
     # TODO: can we get these from the pyomo code?
     formats = dict()
-    formats['py'] = ProblemFormat.pyomo
-    formats['nl'] = ProblemFormat.nl
-    formats['bar'] = ProblemFormat.bar
-    formats['mps'] = ProblemFormat.mps
-    formats['mod'] = ProblemFormat.mod
-    formats['lp'] = ProblemFormat.cpxlp
-    formats['osil'] = ProblemFormat.osil
-    formats['gms'] = ProblemFormat.gams
-    formats['gams'] = ProblemFormat.gams
+    formats["py"] = ProblemFormat.pyomo
+    formats["nl"] = ProblemFormat.nl
+    formats["bar"] = ProblemFormat.bar
+    formats["mps"] = ProblemFormat.mps
+    formats["mod"] = ProblemFormat.mod
+    formats["lp"] = ProblemFormat.cpxlp
+    formats["osil"] = ProblemFormat.osil
+    formats["gms"] = ProblemFormat.gams
+    formats["gams"] = ProblemFormat.gams
 
     scenario = os.path.basename(scenario_directory)
     # This needs to be under an if statement and do only if we want to save
     # the problem file as MPS
     # Dealing with large files: https://developer.ibm.com/answers/questions/483607/sending-large-lp-file-to-dropsolve/#:~:targetText=2%20answers&targetText=There%20is%20a%20hard%20limit,read%20will%20work%20on%20DOcplexcloud.
     print("Writing {} problem file...".format(problem_format.upper()))
-    filename, smap_id = instance.write(os.path.join(
-        scenario_directory, "logs", "{}.{}".format(scenario, problem_format)
-    ), format=formats[problem_format], io_options=[]
+    filename, smap_id = instance.write(
+        os.path.join(
+            scenario_directory, "logs", "{}.{}".format(scenario, problem_format)
+        ),
+        format=formats[problem_format],
+        io_options=[],
     )
 
     return smap_id
@@ -1208,9 +1222,17 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     :param solution_filename:
     :return:
     """
-    print("Loading results from CPLEX XML solution file {}...".format(
-        solution_filename))
-    #
+    print(
+        "Loading results from CPLEX XML solution file {}...".format(solution_filename)
+    )
+
+    # TODO: check if we can just use this instead of parsing ourselves
+    # parse the SOL file
+    # with ReaderFactory(ResultsFormat.sol) as reader:
+    #     results = reader(solution_filename, suffixes=)
+    # # tag the results object with the symbol_map
+    # results._smap = symbol_map
+
     # # Get the smap_id for this model
     # # TODO: can't pickle the instance object (local object not pickleable)
     # #  or the symbol map, while the smap_id is different every time the
@@ -1222,12 +1244,19 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     #     problem_format="lp"
     # )
 
-    with open(os.path.join(scenario_directory, "logs", "instance.pickle"), "rb") as \
-            instance_in:
+    with open(
+        os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
+    ) as instance_in:
         instance = dill.load(instance_in)
-    with open(os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb") as \
-            map_in:
-        symbol_map = dill.load(map_in)
+    with open(
+        os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
         print(symbol_map)
 
     # May need to try this for regenerating the symbol map withouth having to
@@ -1250,15 +1279,19 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     # This needs to be under an if statement and execute when we are loading
     # solution from disk
     # Read XML solution file
-    root = ET.parse(os.path.join(scenario_directory, "logs", solution_filename)).getroot()
+    root = ET.parse(
+        os.path.join(scenario_directory, "logs", solution_filename)
+    ).getroot()
 
     # Variables
     print("Variables")
     print(datetime.datetime.now())
-    for type_tag in root.findall('variables/variable'):
-        var_id, var_index, value = type_tag.get('name'), type_tag.get(
-            'index'), \
-                               type_tag.get('value')
+    for type_tag in root.findall("variables/variable"):
+        var_id, var_index, value = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("value"),
+        )
         if var_id == "ONE_VAR_CONSTANT":
             pass
         else:
@@ -1273,9 +1306,12 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     # Constraints
     print("Constraints")
     print(datetime.datetime.now())
-    for type_tag in root.findall('linearConstraints/constraint'):
-        constraint_id_w_extra_symbols, const_index, dual = type_tag.get(
-            'name'), type_tag.get('index'), type_tag.get('dual')
+    for type_tag in root.findall("linearConstraints/constraint"):
+        constraint_id_w_extra_symbols, const_index, dual = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("dual"),
+        )
         if constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
             pass
         else:
@@ -1292,10 +1328,13 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     termination_condition = header.get("solutionStatusString")
     # TODO: what are the types
     solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
-    results = Results(solver_status=solver_status, termination_condition=termination_condition)
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
 
-    print("What did we get: ", results.solver.status,
-          results.solver.termination_condition)
+    print(
+        "What did we get: ", results.solver.status, results.solver.termination_condition
+    )
 
     return instance, results
 
