@@ -244,9 +244,10 @@ def run_optimization_for_subproblem_stage(
             instance=instance, scenario_directory=scenario_directory,
             problem_format=problem_file_format
         )
+        symbol_map = instance.solutions.symbol_map[smap_id]
 
-        with open(os.path.join(scenario_directory, "logs", "smap_id.pickle"), "wb") as f_out:
-            dill.dump(smap_id, f_out)
+        with open(os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb") as f_out:
+            dill.dump(symbol_map, f_out)
 
         return None
     else:
@@ -1224,22 +1225,26 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     with open(os.path.join(scenario_directory, "logs", "instance.pickle"), "rb") as \
             instance_in:
         instance = dill.load(instance_in)
-    with open(os.path.join(scenario_directory, "logs", "smap_id.pickle"), "rb") as \
+    with open(os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb") as \
             map_in:
-        smap_id_from_pickle = dill.load(map_in)
-        print(smap_id_from_pickle)
+        symbol_map = dill.load(map_in)
+        print(symbol_map)
 
-    # TODO: Can't match the pickled map to the instance, so re-creating it here with
-    #  the re-loaded pickle instance
-    smap_id = write_problem_file(
-        instance=instance, scenario_directory=scenario_directory,
-        problem_format="lp"
-    )
+    # May need to try this for regenerating the symbol map withouth having to
+    # re-create the LP file from the instance object:
+    # https://notebook.community/Pyomo/PyomoGallery/asl_io/asl_io
 
-    print(dir(instance))
-    print("smap_id: ", smap_id)
-
-    symbol_map = instance.solutions.symbol_map[smap_id]
+    # # TODO: Can't match the pickled map to the instance, so re-creating it here with
+    # #  the re-loaded pickle instance
+    # smap_id = write_problem_file(
+    #     instance=instance, scenario_directory=scenario_directory,
+    #     problem_format="lp"
+    # )
+    #
+    # print(dir(instance))
+    # print("smap_id: ", smap_id)
+    #
+    # symbol_map = instance.solutions.symbol_map[smap_id]
 
     # #### WORKING VERSION #####
     # This needs to be under an if statement and execute when we are loading
@@ -1257,6 +1262,9 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
         if var_id == "ONE_VAR_CONSTANT":
             pass
         else:
+            print(var_id)
+            print(symbol_map.bySymbol[var_id])
+            print(symbol_map.bySymbol[var_id]().value)
             symbol_map.bySymbol[var_id]().value = float(value)
             # instance.find_component(var_id).value = value
 
