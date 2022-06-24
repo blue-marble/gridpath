@@ -25,6 +25,8 @@ from csv import reader, writer
 import datetime
 from multiprocessing import get_context, Manager
 import os.path
+import dill
+import xml.etree.ElementTree as ET
 from pyomo.environ import (
     AbstractModel,
     Suffix,
@@ -36,6 +38,7 @@ from pyomo.environ import (
 
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
 
@@ -127,6 +130,13 @@ def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
         loaded_modules,
     )
 
+    print("pre pickling: ", dir(instance))
+
+    # TODO: also need to pickle the dynamic components
+    # with open(os.path.join(scenario_directory, "logs", "instance.pickle"), "wb") as \
+    #         f_out:
+    #     dill.dump(instance, f_out)
+
     return dynamic_components, instance
 
 
@@ -213,7 +223,7 @@ def run_optimization_for_subproblem_stage(
     subproblem_directory = str(subproblem_directory)
     stage_directory = str(stage_directory)
 
-    # Create problem instance and solve it
+    # Create problem instance and either save the problem file or solve the instance
     dynamic_components, instance = create_problem(
         scenario_directory=scenario_directory,
         subproblem=subproblem_directory,
@@ -221,46 +231,71 @@ def run_optimization_for_subproblem_stage(
         parsed_arguments=parsed_arguments
     )
 
-    dynamic_components, solved_instance, results = solve_problem(
-        parsed_arguments=parsed_arguments,
-        dynamic_components=dynamic_components,
-        instance=instance,
-    )
+    if False:
+        # TODO: add check that this is specified and that it is within
+        #  what's allowed by Pyomo
 
-    # Save the scenario results to disk
-    save_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        solved_instance,
-        results,
-        dynamic_components,
-        parsed_arguments,
-    )
+        # TODO: add to arguments
+        # problem_file_format = parsed_arguments.problem_file_format
 
-    # Summarize results
-    summarize_results(
-        scenario_directory,
-        subproblem_directory,
-        stage_directory,
-        parsed_arguments,
-    )
+        problem_file_format = "lp"
 
-    # If logging, we need to return sys.stdout to original (i.e. stop writing
-    # to log file)
-    if parsed_arguments.log:
-        sys.stdout = stdout_original
-        sys.stderr = stderr_original
+        smap_id = write_problem_file(
+            instance=instance, scenario_directory=scenario_directory,
+            problem_format=problem_file_format
+        )
 
-    # Return the objective function value (in the testing suite, the value
-    # gets checked against the expected value, but this is the only place
-    # this is actually used)
-    # TODO: this will need to have a variable for the name of the objective
-    #  function component once there are multiple possible objective functions
-    if results.solver.termination_condition != "infeasible":
-        return solved_instance.NPV()
+        with open(os.path.join(scenario_directory, "logs", "smap_id.pickle"), "wb") as f_out:
+            dill.dump(smap_id, f_out)
+
+        return None
     else:
-        warnings.warn("WARNING: the problem was infeasible!")
+        # dynamic_components, solved_instance, results = solve_problem(
+        #     parsed_arguments=parsed_arguments,
+        #     dynamic_components=dynamic_components,
+        #     instance=instance,
+        # )
+
+        # TODO: figure out how the solution filename works upstream
+        solved_instance, results = load_cplex_xml_solution(
+            scenario_directory=scenario_directory,
+            solution_filename="test.sol",
+        )
+
+        # Save the scenario results to disk
+        save_results(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            solved_instance,
+            results,
+            dynamic_components,
+            parsed_arguments,
+        )
+
+        # Summarize results
+        summarize_results(
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            parsed_arguments,
+        )
+
+        # If logging, we need to return sys.stdout to original (i.e. stop writing
+        # to log file)
+        if parsed_arguments.log:
+            sys.stdout = stdout_original
+            sys.stderr = stderr_original
+
+        # Return the objective function value (in the testing suite, the value
+        # gets checked against the expected value, but this is the only place
+        # this is actually used)
+        # TODO: this will need to have a variable for the name of the objective
+        #  function component once there are multiple possible objective functions
+        if results.solver.termination_condition != "infeasible":
+            return solved_instance.NPV()
+        else:
+            warnings.warn("WARNING: the problem was infeasible!")
 
 
 def run_optimization_for_subproblem(
@@ -1126,6 +1161,146 @@ def _summarize_rule(scenario_directory, subproblem, stage, quiet):
     summarize_results = True
 
     return summarize_results
+
+
+#####
+
+def write_problem_file(instance, scenario_directory, problem_format):
+    """
+
+    :param instance:
+    :param scenario_directory:
+    :param problem_format:
+    :return:
+
+    TODO: move problem file to
+    """
+    # TODO: can we get these from the pyomo code?
+    formats = dict()
+    formats['py'] = ProblemFormat.pyomo
+    formats['nl'] = ProblemFormat.nl
+    formats['bar'] = ProblemFormat.bar
+    formats['mps'] = ProblemFormat.mps
+    formats['mod'] = ProblemFormat.mod
+    formats['lp'] = ProblemFormat.cpxlp
+    formats['osil'] = ProblemFormat.osil
+    formats['gms'] = ProblemFormat.gams
+    formats['gams'] = ProblemFormat.gams
+
+    scenario = os.path.basename(scenario_directory)
+    # This needs to be under an if statement and do only if we want to save
+    # the problem file as MPS
+    # Dealing with large files: https://developer.ibm.com/answers/questions/483607/sending-large-lp-file-to-dropsolve/#:~:targetText=2%20answers&targetText=There%20is%20a%20hard%20limit,read%20will%20work%20on%20DOcplexcloud.
+    print("Writing {} problem file...".format(problem_format.upper()))
+    filename, smap_id = instance.write(os.path.join(
+        scenario_directory, "logs", "{}.{}".format(scenario, problem_format)
+    ), format=formats[problem_format], io_options=[]
+    )
+
+    return smap_id
+
+
+def load_cplex_xml_solution(scenario_directory, solution_filename):
+    """
+
+    :param scenario_directory:
+    :param solution_filename:
+    :return:
+    """
+    print("Loading results from CPLEX XML solution file {}...".format(
+        solution_filename))
+    #
+    # # Get the smap_id for this model
+    # # TODO: can't pickle the instance object (local object not pickleable)
+    # #  or the symbol map, while the smap_id is different every time the
+    # #  instance is created (so can't use that to get the symbol map)
+    # #  We will therefore need to save these in memory while waiting for the
+    # #  solution from the cloud; for now repeating the problem file saving here
+    # smap_id = write_problem_file(
+    #     instance=instance, scenario_directory=scenario_directory,
+    #     problem_format="lp"
+    # )
+
+    with open(os.path.join(scenario_directory, "logs", "instance.pickle"), "rb") as \
+            instance_in:
+        instance = dill.load(instance_in)
+    with open(os.path.join(scenario_directory, "logs", "smap_id.pickle"), "rb") as \
+            map_in:
+        smap_id_from_pickle = dill.load(map_in)
+        print(smap_id_from_pickle)
+
+    # TODO: Can't match the pickled map to the instance, so re-creating it here with
+    #  the re-loaded pickle instance
+    smap_id = write_problem_file(
+        instance=instance, scenario_directory=scenario_directory,
+        problem_format="lp"
+    )
+
+    print(dir(instance))
+    print("smap_id: ", smap_id)
+
+    symbol_map = instance.solutions.symbol_map[smap_id]
+
+    # #### WORKING VERSION #####
+    # This needs to be under an if statement and execute when we are loading
+    # solution from disk
+    # Read XML solution file
+    root = ET.parse(os.path.join(scenario_directory, "logs", solution_filename)).getroot()
+
+    # Variables
+    print("Variables")
+    print(datetime.datetime.now())
+    for type_tag in root.findall('variables/variable'):
+        var_id, var_index, value = type_tag.get('name'), type_tag.get(
+            'index'), \
+                               type_tag.get('value')
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+            # instance.find_component(var_id).value = value
+
+    print(datetime.datetime.now())
+
+    # Constraints
+    print("Constraints")
+    print(datetime.datetime.now())
+    for type_tag in root.findall('linearConstraints/constraint'):
+        constraint_id_w_extra_symbols, const_index, dual = type_tag.get(
+            'name'), type_tag.get('index'), type_tag.get('dual')
+        if constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
+            pass
+        else:
+            constraint_id = constraint_id_w_extra_symbols[4:-1]
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+            # instance.dual[instance.find_component(constraint_id)] = dual
+    print(datetime.datetime.now())
+
+    # Solver status
+    header = root.findall("header")[0]  # Need a check that there is only one element
+    # setattr(instance, "solver", "status")
+    # setattr(instance.solver, "status", header.get("solutionStatusString"))
+
+    termination_condition = header.get("solutionStatusString")
+    # TODO: what are the types
+    solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
+    results = Results(solver_status=solver_status, termination_condition=termination_condition)
+
+    print("What did we get: ", results.solver.status,
+          results.solver.termination_condition)
+
+    return instance, results
+
+
+class Results(object):
+    def __init__(self, solver_status, termination_condition):
+        self.solver = Object()
+        self.solver.status = solver_status
+        self.solver.termination_condition = termination_condition
+
+
+class Object(object):
+    pass
 
 
 if __name__ == "__main__":
