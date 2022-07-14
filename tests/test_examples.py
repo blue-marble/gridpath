@@ -527,7 +527,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("single_stage_prod_cost_cycle_select")
         self.run_and_check_objective(
             "single_stage_prod_cost_cycle_select",
-            {1: -7008092000118.654, 2: -7008092000118.654, 3: -7008092000118.654},
+            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
         )
 
     def test_example_multi_stage_prod_cost_parallel(self):
