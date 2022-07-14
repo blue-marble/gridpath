@@ -353,6 +353,7 @@ def min_power_rule(mod, g, tmp):
     else:
         return mod.GenVar_Upwards_Reserves_MW[g, tmp] == 0
 
+
 # Operational Type Methods
 ###############################################################################
 
