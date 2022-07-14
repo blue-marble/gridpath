@@ -324,7 +324,7 @@ def max_power_rule(mod, g, tmp):
     capacity factor. When available power is negative (e.g. parasitic losses), don't
     allow upward reserves.
     """
-    if mod.gen_var_cap_factor[g, tmp] >= 0:
+    if mod.gen_var_cap_factor[g, tmp] > 0:
         return (
             mod.GenVar_Provide_Power_MW[g, tmp] + mod.GenVar_Upwards_Reserves_MW[g, tmp]
             <= mod.Capacity_MW[g, mod.period[tmp]]
@@ -344,14 +344,14 @@ def min_power_rule(mod, g, tmp):
     positive). If the capacity factor is negative (e.g. parasitic losses), don't allow
     downward reserves.
     """
-    if mod.gen_var_cap_factor[g, tmp] >= 0:
+    if mod.gen_var_cap_factor[g, tmp] > 0:
         return (
             mod.GenVar_Provide_Power_MW[g, tmp]
             - mod.GenVar_Downwards_Reserves_MW[g, tmp]
             >= 0
         )
     else:
-        return mod.GenVar_Upwards_Reserves_MW[g, tmp] == 0
+        return mod.GenVar_Downwards_Reserves_MW[g, tmp] == 0
 
 
 # Operational Type Methods
