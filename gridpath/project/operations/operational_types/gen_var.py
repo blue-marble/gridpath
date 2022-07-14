@@ -104,7 +104,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +=========================================================================+
     | | :code:`GenVar_Provide_Power_MW`                                       |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
-    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Within*: :code:`Reals`                                               |
     |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
@@ -150,12 +150,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
     | Limits the power plus upward reserves in each timepoint based on the    |
-    | :code:`gen_var_cap_factor` and the available capacity.                  |
+    | :code:`gen_var_cap_factor` and the available capacity. Note that this   |
+    | operational type can only provide reserves when the capacity factor is  |
+    | positive (no reserves when we consuming power, i.e. due to parasitic    |
+    | losses, auxiliary consumption, etc.).                                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenVar_Min_Power_Constraint`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Power provision minus downward reserves should exceed zero.             |
+    | Power provision minus downward reserves should exceed zero. Note that   |
+    | this operational type can only provide reserves when the capacity       |
+    | factor is  positive (no reserves when we consuming power, i.e. due to   |
+    | parasitic losses, auxiliary consumption, etc.).                         |
     +-------------------------------------------------------------------------+
 
     """
@@ -185,7 +191,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Variables
     ###########################################################################
 
-    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=NonNegativeReals)
+    m.GenVar_Provide_Power_MW = Var(m.GEN_VAR_OPR_TMPS, within=Reals)
 
     # Expressions
     ###########################################################################
@@ -313,15 +319,20 @@ def max_power_rule(mod, g, tmp):
     **Constraint Name**: GenVar_Max_Power_Constraint
     **Enforced Over**: GEN_VAR_OPR_TMPS
 
-    Power provision plus upward services cannot exceed available power, which
-    is equal to the available capacity multiplied by the capacity factor.
+    When available power is positive, power provision plus upward services cannot exceed
+    available power, which is equal to the available capacity multiplied by the
+    capacity factor. When available power is negative (e.g. parasitic losses), don't
+    allow upward reserves.
     """
-    return (
-        mod.GenVar_Provide_Power_MW[g, tmp] + mod.GenVar_Upwards_Reserves_MW[g, tmp]
-        <= mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.Availability_Derate[g, tmp]
-        * mod.gen_var_cap_factor[g, tmp]
-    )
+    if mod.gen_var_cap_factor[g, tmp] >= 0:
+        return (
+            mod.GenVar_Provide_Power_MW[g, tmp] + mod.GenVar_Upwards_Reserves_MW[g, tmp]
+            <= mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Availability_Derate[g, tmp]
+            * mod.gen_var_cap_factor[g, tmp]
+        )
+    else:
+        return mod.GenVar_Upwards_Reserves_MW[g, tmp] == 0
 
 
 def min_power_rule(mod, g, tmp):
@@ -329,13 +340,18 @@ def min_power_rule(mod, g, tmp):
     **Constraint Name**: GenVar_Min_Power_Constraint
     **Enforced Over**: GEN_VAR_OPR_TMPS
 
-    Power provision minus downward services cannot be less than zero.
+    Power provision minus downward services cannot be less than zero if power is
+    positive). If the capacity factor is negative (e.g. parasitic losses), don't allow
+    downward reserves.
     """
-    return (
-        mod.GenVar_Provide_Power_MW[g, tmp] - mod.GenVar_Downwards_Reserves_MW[g, tmp]
-        >= 0
-    )
-
+    if mod.gen_var_cap_factor[g, tmp] >= 0:
+        return (
+            mod.GenVar_Provide_Power_MW[g, tmp]
+            - mod.GenVar_Downwards_Reserves_MW[g, tmp]
+            >= 0
+        )
+    else:
+        return mod.GenVar_Upwards_Reserves_MW[g, tmp] == 0
 
 # Operational Type Methods
 ###############################################################################
