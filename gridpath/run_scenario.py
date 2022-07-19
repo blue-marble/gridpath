@@ -375,7 +375,7 @@ def run_scenario(
         # Should probably just remove this logic here and have a dictionary
         # for all objective functions
         if len(objective_values.keys()) == 1:
-            objective_values = objective_values[1]
+            objective_values = objective_values[list(objective_values.keys())[0]]
 
         return objective_values
 
