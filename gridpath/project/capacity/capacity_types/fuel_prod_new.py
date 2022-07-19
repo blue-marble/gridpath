@@ -80,7 +80,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`fuel_prod_new_lifetime_yrs`                                    |
+    | | :code:`fuel_prod_new_operational_lifetime_yrs`                        |
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -119,10 +119,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | project-vintage combination, based on the                               |
-    | :code:`fuel_prod_new_lifetime_yrs`. For instance, capacity of 2020      |
-    | vintage with lifetime of 30 years will be assumed operational starting  |
-    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
-    | in 2050.                                                                |
+    | :code:`fuel_prod_new_operational_lifetime_yrs`. For instance, capacity  |
+    | of 2020 vintage with lifetime of 30 years will be assumed operational   |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`FUEL_PROD_NEW_OPR_PRDS`                                        |
     |                                                                         |
@@ -136,7 +136,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
-    | :code:`fuel_prod_new_lifetime_yrs`.                                     |
+    | :code:`fuel_prod_new_operational_lifetime_yrs`.                         |
     +-------------------------------------------------------------------------+
 
     |
@@ -208,7 +208,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.fuel_prod_new_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
+    m.fuel_prod_new_operational_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
 
     m.fuel_prod_new_prod_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
@@ -287,7 +287,7 @@ def operational_periods_by_vintage(mod, prj, v):
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.fuel_prod_new_lifetime_yrs[prj, v],
+        lifetime_yrs=mod.fuel_prod_new_operational_lifetime_yrs[prj, v],
     )
 
 
@@ -473,7 +473,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ),
         index=m.FUEL_PROD_NEW_VNTS,
         param=(
-            m.fuel_prod_new_lifetime_yrs,
+            m.fuel_prod_new_operational_lifetime_yrs,
             m.fuel_prod_new_prod_cost_fuelunitperhour_yr,
             m.fuel_prod_new_release_cost_fuelunitperhour_yr,
             m.fuel_prod_new_storage_cost_fuelunit_yr,
@@ -605,7 +605,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c = conn.cursor()
 
     costs = c.execute(
-        """SELECT project, vintage, lifetime_yrs,
+        """SELECT project, vintage, operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -615,7 +615,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
         INNER JOIN
-        (SELECT project, vintage, lifetime_yrs,
+        (SELECT project, vintage, operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -669,7 +669,7 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
-                "lifetime_yrs",
+                "operational_lifetime_yrs",
                 "fuel_production_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_storage_capacity_cost_per_fuelunit_yr",

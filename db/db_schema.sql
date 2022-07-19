@@ -4619,7 +4619,7 @@ CREATE VIEW project_new_operational_periods AS
 WITH main_data (project, project_new_cost_scenario_id, period, highrange)
     AS (
     SELECT project, project_new_cost_scenario_id, vintage AS period,
-    vintage + lifetime_yrs AS highrange
+    vintage + operational_lifetime_yrs AS highrange
     FROM inputs_project_new_cost
     UNION ALL
     SELECT project, project_new_cost_scenario_id, period + 1 AS period,

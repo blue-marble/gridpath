@@ -134,14 +134,14 @@ class TestStorNewLin(unittest.TestCase):
         )
         self.assertListEqual(expected_storage_vintage_set, actual_storage_vintage_set)
 
-        # Params: stor_new_lin_lifetime_yrs
+        # Params: stor_new_lin_operational_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Battery", 2020): 10, ("Battery", 2030): 10}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.stor_new_lin_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.stor_new_lin_operational_lifetime_yrs[prj, vintage]
                     for (prj, vintage) in instance.STOR_NEW_LIN_VNTS
                 }.items()
             )

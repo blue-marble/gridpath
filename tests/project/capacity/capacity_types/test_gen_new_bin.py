@@ -104,7 +104,7 @@ class TestGenNewBin(unittest.TestCase):
         )
         self.assertListEqual(expected_gen_vintage_set, actual_gen_vintage_set)
 
-        # Params: gen_new_bin_lifetime_yrs_by_vintage
+        # Params: gen_new_bin_operational_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted(
                 {
@@ -116,7 +116,7 @@ class TestGenNewBin(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.gen_new_bin_lifetime_yrs_by_vintage[
+                    (prj, vintage): instance.gen_new_bin_operational_lifetime_yrs_by_vintage[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.GEN_NEW_BIN_VNTS

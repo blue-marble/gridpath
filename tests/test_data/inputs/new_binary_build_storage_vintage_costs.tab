@@ -1,4 +1,4 @@
-project	vintage	lifetime_yrs	annualized_real_cost_per_mw_yr	annualized_real_cost_per_mwh_yr
+project	vintage	operational_lifetime_yrs	annualized_real_cost_per_mw_yr	annualized_real_cost_per_mwh_yr
 Battery_Binary	2020	10	1	1
 Battery_Binary	2030	10	1	1
 

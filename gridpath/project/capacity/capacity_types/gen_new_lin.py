@@ -96,7 +96,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_new_lin_lifetime_yrs_by_vintage`                           |
+    | | :code:`gen_new_lin_operational_lifetime_yrs_by_vintage`               |
     | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -115,7 +115,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
         the duration of the project's lifetime. It is up to the user to
-        ensure that the :code:`gen_new_lin_lifetime_yrs_by_vintage` and
+        ensure that the :code:`gen_new_lin_operational_lifetime_yrs_by_vintage` and
         :code:`gen_new_lin_annualized_real_cost_per_mw_yr` parameters are
         consistent.
 
@@ -147,10 +147,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | project-vintage combination, based on the                               |
-    | :code:`gen_new_lin_lifetime_yrs_by_vintage`. For instance, capacity of  |
-    | the 2020 vintage with lifetime of 30 years will be assumed operational  |
-    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
-    | operational in 2050.                                                    |
+    | :code:`gen_new_lin_operational_lifetime_yrs_by_vintage`. For instance,  |
+    | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
+    | operational  starting Jan 1, 2020 and through Dec 31, 2049, but will    |
+    | *not* be operational in 2050.                                           |
     +-------------------------------------------------------------------------+
     | | :code:`GEN_NEW_LIN_OPR_PRDS`                                          |
     |                                                                         |
@@ -164,7 +164,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
-    | :code:`gen_new_lin_lifetime_yrs_by_vintage`.                            |
+    | :code:`gen_new_lin_operational_lifetime_yrs_by_vintage`.                |
     +-------------------------------------------------------------------------+
 
     |
@@ -229,7 +229,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.gen_new_lin_lifetime_yrs_by_vintage = Param(
+    m.gen_new_lin_operational_lifetime_yrs_by_vintage = Param(
         m.GEN_NEW_LIN_VNTS, within=NonNegativeReals
     )
 
@@ -304,7 +304,7 @@ def operational_periods_by_generator_vintage(mod, prj, v):
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v],
+        lifetime_yrs=mod.gen_new_lin_operational_lifetime_yrs_by_vintage[prj, v],
     )
 
 
@@ -451,9 +451,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "new_build_generator_vintage_costs.tab",
         ),
         index=m.GEN_NEW_LIN_VNTS,
-        select=("project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
+        select=("project", "vintage", "operational_lifetime_yrs", "annualized_real_cost_per_mw_yr"),
         param=(
-            m.gen_new_lin_lifetime_yrs_by_vintage,
+            m.gen_new_lin_operational_lifetime_yrs_by_vintage,
             m.gen_new_lin_annualized_real_cost_per_mw_yr,
         ),
     )
@@ -661,7 +661,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     )
 
     new_gen_costs = c.execute(
-        """SELECT project, vintage, lifetime_yrs,
+        """SELECT project, vintage, operational_lifetime_yrs,
         annualized_real_cost_per_mw_yr"""
         + get_potentials[0]
         + """FROM inputs_project_portfolios
@@ -670,7 +670,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
-        (SELECT project, vintage, lifetime_yrs,
+        (SELECT project, vintage, operational_lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
@@ -721,7 +721,7 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "lifetime_yrs", "annualized_real_cost_per_mw_yr"]
+            ["project", "vintage", "operational_lifetime_yrs", "annualized_real_cost_per_mw_yr"]
             + (
                 []
                 if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None

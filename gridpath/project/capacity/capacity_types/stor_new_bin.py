@@ -76,7 +76,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_new_bin_lifetime_yrs`                                     |
+    | | :code:`stor_new_bin_operational_lifetime_yrs`                         |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
@@ -117,7 +117,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         the study (and multiplied by the number of years the period
         represents) for the duration of the project's lifetime. It is up to
         the user to ensure that the
-        :code:`stor_new_bin_lifetime_yrs`,
+        :code:`stor_new_bin_operational_lifetime_yrs`,
         :code:`stor_new_bin_annualized_real_cost_per_mw_yr`, and
         :code:`stor_new_bin_annualized_real_cost_per_mwh_yr` parameters are
         consistent.
@@ -130,10 +130,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | project-vintage combination, based on the                               |
-    | :code:`stor_new_bin_lifetime_yrs`. For instance, capacity of 2020       |
-    | vintage with lifetime of 30 years will be assumed operational starting  |
-    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
-    | in 2050.                                                                |
+    | :code:`stor_new_bin_operational_lifetime_yrs`. For instance, capacity   |
+    | of 2020 vintage with lifetime of 30 years will be assumed operational   |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`STOR_NEW_BIN_OPR_PRDS`                                         |
     |                                                                         |
@@ -147,7 +147,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
-    | :code:`stor_new_bin_lifetime_yrs`.                                      |
+    | :code:`stor_new_bin_operational_lifetime_yrs`.                          |
     +-------------------------------------------------------------------------+
 
     |
@@ -186,7 +186,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.stor_new_bin_lifetime_yrs = Param(m.STOR_NEW_BIN_VNTS, within=NonNegativeReals)
+    m.stor_new_bin_operational_lifetime_yrs = Param(m.STOR_NEW_BIN_VNTS, within=NonNegativeReals)
 
     m.stor_new_bin_annualized_real_cost_per_mw_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
@@ -245,7 +245,7 @@ def operational_periods_by_storage_vintage(mod, prj, v):
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.stor_new_bin_lifetime_yrs[prj, v],
+        lifetime_yrs=mod.stor_new_bin_operational_lifetime_yrs[prj, v],
     )
 
 
@@ -392,12 +392,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         select=(
             "project",
             "vintage",
-            "lifetime_yrs",
+            "operational_lifetime_yrs",
             "annualized_real_cost_per_mw_yr",
             "annualized_real_cost_per_mwh_yr",
         ),
         param=(
-            m.stor_new_bin_lifetime_yrs,
+            m.stor_new_bin_operational_lifetime_yrs,
             m.stor_new_bin_annualized_real_cost_per_mw_yr,
             m.stor_new_bin_annualized_real_cost_per_mwh_yr,
         ),
@@ -539,7 +539,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
         """
-        SELECT project, vintage, lifetime_yrs,
+        SELECT project, vintage, operational_lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
@@ -550,7 +550,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
             WHERE temporal_scenario_id = {}) as relevant_vintages
         
         INNER JOIN
-            (SELECT project, vintage, lifetime_yrs,
+            (SELECT project, vintage, operational_lifetime_yrs,
             annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
@@ -625,7 +625,7 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
-                "lifetime_yrs",
+                "operational_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr",
             ]

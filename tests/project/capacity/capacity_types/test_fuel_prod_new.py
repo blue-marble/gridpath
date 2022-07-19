@@ -108,14 +108,14 @@ class TestFuelProdNew(unittest.TestCase):
         )
         self.assertListEqual(expected_vintages, actual_vintages)
 
-        # Params: fuel_prod_new_lifetime_yrs
+        # Params: fuel_prod_new_operational_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Fuel_Prod_New", 2020): 30, ("Fuel_Prod_New", 2030): 30}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.fuel_prod_new_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.fuel_prod_new_operational_lifetime_yrs[prj, vintage]
                     for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
                 }.items()
             )
