@@ -185,6 +185,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.DR_NEW = Set()
 
     m.DR_NEW_OPR_PRDS = Set(dimen=2, initialize=m.DR_NEW * m.PERIODS)
+    m.DR_NEW_FIN_PRDS = Set(dimen=2, initialize=m.DR_NEW * m.PERIODS)
 
     m.DR_NEW_PTS = Set(dimen=2, within=m.DR_NEW * list(range(1, 1001)))
 
@@ -239,6 +240,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
         "DR_NEW_OPR_PRDS",
+    )
+
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "DR_NEW_FIN_PRDS",
     )
 
 

@@ -243,7 +243,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
-
 def operational_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),

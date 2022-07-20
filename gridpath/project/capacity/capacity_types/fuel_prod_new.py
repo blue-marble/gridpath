@@ -40,7 +40,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -210,6 +213,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.fuel_prod_new_operational_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
 
+    m.fuel_prod_new_fixed_o_m_cost_fuelunitperhour_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
+
+    m.fuel_prod_new_financial_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS,
+                                                     within=NonNegativeReals)
+
     m.fuel_prod_new_prod_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
@@ -235,6 +253,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FUEL_PROD_NEW_VNTS_OPR_IN_PRD = Set(
         m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_operational_in_period
+    )
+
+    m.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE = Set(
+        m.FUEL_PROD_NEW_VNTS, initialize=financial_periods_by_vintage
+    )
+
+    m.FUEL_PROD_NEW_FIN_PRDS = Set(
+        dimen=2, initialize=fuel_prod_new_financial_periods
+    )
+
+    # TODO: this set is actually probably not needed in all modules
+    m.FUEL_PROD_NEW_VNTS_FIN_IN_PRD = Set(
+        m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_financial_in_period
     )
 
     # Variable
@@ -276,6 +307,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "FUEL_PROD_NEW_OPR_PRDS",
     )
 
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "FUEL_PROD_NEW_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
@@ -302,6 +339,31 @@ def fuel_prod_new_vintages_operational_in_period(mod, p):
     return project_vintages_relevant_in_period(
         project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
         relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+        period=p,
+    )
+
+
+def financial_periods_by_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.fuel_prod_new_financial_lifetime_yrs[prj, v],
+    )
+
+
+def fuel_prod_new_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.FUEL_PROD_NEW_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
+    )
+
+
+def fuel_prod_new_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.FUEL_PROD_NEW_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_FUEL_PROD_NEW_VINTAGE,
         period=p,
     )
 
@@ -417,6 +479,25 @@ def capacity_cost_rule(mod, prj, prd):
             + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
             * mod.fuel_prod_new_storage_cost_fuelunit_yr[prj, v]
         )
+        for (project, v) in mod.FUEL_PROD_NEW_VNTS_FIN_IN_PRD[prd]
+        if project == prj
+    )
+
+def fixed_cost_rule(mod, prj, prd):
+    """
+    The fixed O&M cost for new-build generators in a given period is the
+    capacity-build of a particular vintage times the fixed cost for that vintage
+    summed over all vintages operational in the period.
+    """
+    sum(
+        (
+                mod.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]
+                * mod.fuel_prod_new_prod_fixed_o_m_cost_fuelunitperhour_yr[prj, v]
+                + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
+                * mod.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr[prj, v]
+                + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
+                * mod.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr[prj, v]
+        )
         for (project, v) in mod.FUEL_PROD_NEW_VNTS_OPR_IN_PRD[prd]
         if project == prj
     )
@@ -474,6 +555,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         index=m.FUEL_PROD_NEW_VNTS,
         param=(
             m.fuel_prod_new_operational_lifetime_yrs,
+            m.fuel_prod_new_prod_fixed_o_m_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr,
+            m.fuel_prod_new_financial_lifetime_yrs,
             m.fuel_prod_new_prod_cost_fuelunitperhour_yr,
             m.fuel_prod_new_release_cost_fuelunitperhour_yr,
             m.fuel_prod_new_storage_cost_fuelunit_yr,
@@ -605,7 +690,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c = conn.cursor()
 
     costs = c.execute(
-        """SELECT project, vintage, operational_lifetime_yrs,
+        """SELECT project, vintage, financial_lifetime_yrs,
+        fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr,
+        operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -615,7 +704,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
         INNER JOIN
-        (SELECT project, vintage, operational_lifetime_yrs,
+        (SELECT project, vintage, financial_lifetime_yrs,
+        fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr,
+        operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -669,6 +762,10 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
+                "financial_lifetime_yrs",
+                "fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr",
+                "fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr",
+                "fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr",
                 "operational_lifetime_yrs",
                 "fuel_production_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_cost_per_fuelunitperhour_yr",

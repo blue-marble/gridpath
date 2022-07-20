@@ -45,7 +45,8 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import \
+    capacity_type_operational_period_sets, capacity_type_financial_period_sets
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -341,6 +342,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.stor_new_lin_operational_lifetime_yrs = Param(m.STOR_NEW_LIN_VNTS, within=NonNegativeReals)
 
+    m.stor_new_lin_fixed_o_m_cost_per_mw_yr = Param(
+        m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_lin_fixed_o_m_cost_per_mwh_yr = Param(
+        m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_lin_financial_lifetime_yrs = Param(
+        m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
+    )
+
     m.stor_new_lin_annualized_real_cost_per_mw_yr = Param(
         m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
     )
@@ -379,6 +392,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.STOR_NEW_LIN_VNTS_OPR_IN_PRD = Set(
         m.PERIODS, dimen=2, initialize=stor_new_lin_vintages_operational_in_period
+    )
+
+    m.FIN_PRDS_BY_STOR_NEW_LIN_VINTAGE = Set(
+        m.STOR_NEW_LIN_VNTS, initialize=financial_periods_by_storage_vintage
+    )
+
+    m.STOR_NEW_LIN_FIN_PRDS = Set(dimen=2, initialize=stor_new_lin_financial_periods)
+
+    m.STOR_NEW_LIN_VNTS_FIN_IN_PRD = Set(
+        m.PERIODS, dimen=2, initialize=stor_new_lin_vintages_financial_in_period
     )
 
     # Variable
@@ -435,6 +458,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "STOR_NEW_LIN_OPR_PRDS",
     )
 
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "STOR_NEW_LIN_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
@@ -461,6 +490,31 @@ def stor_new_lin_vintages_operational_in_period(mod, p):
     return project_vintages_relevant_in_period(
         project_vintage_set=mod.STOR_NEW_LIN_VNTS,
         relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
+        period=p,
+    )
+
+
+def financial_periods_by_storage_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.stor_new_lin_financial_lifetime_yrs[prj, v],
+    )
+
+
+def stor_new_lin_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.STOR_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_LIN_VINTAGE,
+    )
+
+
+def stor_new_lin_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.STOR_NEW_LIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_LIN_VINTAGE,
         period=p,
     )
 
@@ -629,11 +683,11 @@ def energy_capacity_rule(mod, g, p):
 
 def capacity_cost_rule(mod, g, p):
     """
-    The capacity cost for new storage projects in a given period is the
+    The capital cost for new storage projects in a given period is the
     capacity-build of a particular vintage times the annualized power cost for
     that vintage plus the energy-build of the same vintages times the
     annualized energy cost for that vintage, summed over all vintages
-    operational in the period. Note that power and energy costs are additive.
+    incurring costs in the period. Note that power and energy costs are additive.
     """
     return sum(
         (
@@ -642,7 +696,26 @@ def capacity_cost_rule(mod, g, p):
             + mod.StorNewLin_Build_MWh[g, v]
             * mod.stor_new_lin_annualized_real_cost_per_mwh_yr[g, v]
         )
-        for (gen, v) in mod.STOR_NEW_LIN_VNTS_OPR_IN_PRD[p]
+        for (gen, v) in mod.STOR_NEW_LIN_VNTS_FIN_IN_PRD[p]
+        if gen == g
+    )
+
+def fixed_cost_rule(mod, g, p):
+    """
+    The fixed O&M cost for new storage projects in a given period is the
+    capacity-build of a particular vintage times the fixed power cost for
+    that vintage plus the energy-build of the same vintages times the
+    fixed energy cost for that vintage, summed over all vintages
+    operational in the period. Note that power and energy costs are additive.
+    """
+    return sum(
+        (
+            mod.StorNewLin_Build_MW[g, v]
+            * mod.stor_new_lin_fixed_o_m_cost_per_mw_yr[g, v]
+            + mod.StorNewLin_Build_MWh[g, v]
+            * mod.stor_new_lin_fixed_o_m_cost_per_mwh_yr[g, v]
+        )
+        for (gen, v) in mod.STOR_NEW_LIN_VNTS_FIN_IN_PRD[p]
         if gen == g
     )
 
@@ -730,11 +803,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "project",
             "vintage",
             "operational_lifetime_yrs",
+            "fixed_o_m_cost_per_mw_yr",
+            "fixed_o_m_cost_per_mwh_yr",
+            "financial_lifetime_yrs",
             "annualized_real_cost_per_mw_yr",
             "annualized_real_cost_per_mwh_yr",
         ),
         param=(
             m.stor_new_lin_operational_lifetime_yrs,
+            m.stor_new_lin_fixed_o_m_cost_per_mw_yr,
+            m.stor_new_lin_fixed_o_m_cost_per_mwh_yr,
+            m.stor_new_lin_financial_lifetime_yrs,
             m.stor_new_lin_annualized_real_cost_per_mw_yr,
             m.stor_new_lin_annualized_real_cost_per_mwh_yr,
         ),
@@ -1010,6 +1089,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
     new_stor_costs = c.execute(
         """SELECT project, vintage, operational_lifetime_yrs,
+        fixed_o_m_cost_per_mw_yr, fixed_o_m_cost_per_mwh_yr, financial_lifetime_yrs
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr"""
         + get_potentials[0]
@@ -1020,6 +1100,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         WHERE temporal_scenario_id = {}) as relevant_vintages
         INNER JOIN
         (SELECT project, vintage, operational_lifetime_yrs,
+        fixed_o_m_cost_per_mw_yr, fixed_o_m_cost_per_mwh_yr, financial_lifetime_yrs
         annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
@@ -1076,6 +1157,9 @@ def write_model_inputs(
                 "project",
                 "vintage",
                 "operational_lifetime_yrs",
+                "fixed_o_m_cost_per_mw_yr",
+                "fixed_o_m_cost_per_mwh_yr",
+                "financial_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr",
             ]
