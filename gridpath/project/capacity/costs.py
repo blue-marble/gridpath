@@ -183,7 +183,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "capacity_cost",
             ]
         )
-        for (prj, p) in m.PRJ_OPR_PRDS:
+        for (prj, p) in m.PRJ_FIN_PRDS:
             writer.writerow(
                 [
                     prj,
@@ -195,6 +195,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Capacity_Cost_in_Period[prj, p]),
                 ]
             )
+    # TODO: export fixed costs
 
 
 # Database

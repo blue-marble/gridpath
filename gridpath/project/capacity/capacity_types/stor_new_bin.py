@@ -191,19 +191,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
-    m.stor_new_bin_fixed_o_m_cost_per_mw_yr = Param(
+    m.stor_new_bin_fixed_cost_per_mw_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
-    m.stor_new_bin_fixed_o_m_cost_per_mwh_yr = Param(
-        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
-    )
-
-    m.stor_new_bin_fixed_o_m_cost_per_mw_yr = Param(
+    m.stor_new_bin_fixed_cost_per_mwh_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
     m.stor_new_bin_financial_lifetime_yrs = Param(
+        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_bin_annualized_real_cost_per_mw_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
@@ -418,9 +418,9 @@ def fixed_cost_rule(mod, g, p):
         mod.StorNewBin_Build[g, v]
         * (
             mod.stor_new_bin_build_size_mw[g]
-            * mod.stor_new_bin_fixed_o_m_cost_per_mw_yr[g, v]
+            * mod.stor_new_bin_fixed_cost_per_mw_yr[g, v]
             + mod.stor_new_bin_build_size_mwh[g]
-            * mod.stor_new_bin_fixed_o_m_cost_per_mwh_yr[g, v]
+            * mod.stor_new_bin_fixed_cost_per_mwh_yr[g, v]
         )
         for (gen, v) in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
         if gen == g
@@ -470,16 +470,16 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "project",
             "vintage",
             "operational_lifetime_yrs",
-            "fixed_o_m_cost_per_mw_yr",
-            "fixed_o_m_cost_per_mwh_yr",
+            "fixed_cost_per_mw_yr",
+            "fixed_cost_per_mwh_yr",
             "financial_lifetime_yrs",
             "annualized_real_cost_per_mw_yr",
             "annualized_real_cost_per_mwh_yr",
         ),
         param=(
             m.stor_new_bin_operational_lifetime_yrs,
-            m.stor_new_bin_fixed_o_m_cost_per_mw_yr,
-            m.stor_new_bin_fixed_o_m_cost_per_mwh_yr,
+            m.stor_new_bin_fixed_cost_per_mw_yr,
+            m.stor_new_bin_fixed_cost_per_mwh_yr,
             m.stor_new_bin_financial_lifetime_yrs,
             m.stor_new_bin_annualized_real_cost_per_mw_yr,
             m.stor_new_bin_annualized_real_cost_per_mwh_yr,
@@ -623,7 +623,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     new_stor_costs = c1.execute(
         """
         SELECT project, vintage, operational_lifetime_yrs,
-        fixed_o_m_cost_per_mw_yr, fixed_o_m_cost_per_mwh_yr, financial_lifetime_yrs
+        fixed_cost_per_mw_yr, fixed_cost_per_mwh_yr, financial_lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
@@ -635,7 +635,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         
         INNER JOIN
             (SELECT project, vintage, operational_lifetime_yrs, 
-            fixed_o_m_cost_per_mw_yr, fixed_o_m_cost_per_mwh_yr, financial_lifetime_yrs
+            fixed_cost_per_mw_yr, fixed_cost_per_mwh_yr, financial_lifetime_yrs,
             annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
@@ -711,8 +711,8 @@ def write_model_inputs(
                 "project",
                 "vintage",
                 "operational_lifetime_yrs",
-                "fixed_o_m_cost_per_mw_yr",
-                "fixed_o_m_cost_per_mwh_yr",
+                "fixed_cost_per_mw_yr",
+                "fixed_cost_per_mwh_yr",
                 "financial_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr",

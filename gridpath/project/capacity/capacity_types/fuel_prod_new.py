@@ -213,15 +213,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.fuel_prod_new_operational_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
 
-    m.fuel_prod_new_fixed_o_m_cost_fuelunitperhour_yr = Param(
+    m.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
-    m.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr = Param(
+    m.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
-    m.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr = Param(
+    m.fuel_prod_new_storage_fixed_cost_fuelunit_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
@@ -489,14 +489,14 @@ def fixed_cost_rule(mod, prj, prd):
     capacity-build of a particular vintage times the fixed cost for that vintage
     summed over all vintages operational in the period.
     """
-    sum(
+    return sum(
         (
                 mod.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_prod_fixed_o_m_cost_fuelunitperhour_yr[prj, v]
+                * mod.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr[prj, v]
                 + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr[prj, v]
+                * mod.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr[prj, v]
                 + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr[prj, v]
+                * mod.fuel_prod_new_storage_fixed_cost_fuelunit_yr[prj, v]
         )
         for (project, v) in mod.FUEL_PROD_NEW_VNTS_OPR_IN_PRD[prd]
         if project == prj
@@ -555,9 +555,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         index=m.FUEL_PROD_NEW_VNTS,
         param=(
             m.fuel_prod_new_operational_lifetime_yrs,
-            m.fuel_prod_new_prod_fixed_o_m_cost_fuelunitperhour_yr,
-            m.fuel_prod_new_release_fixed_o_m_cost_fuelunitperhour_yr,
-            m.fuel_prod_new_storage_fixed_o_m_cost_fuelunit_yr,
+            m.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr,
+            m.fuel_prod_new_storage_fixed_cost_fuelunit_yr,
             m.fuel_prod_new_financial_lifetime_yrs,
             m.fuel_prod_new_prod_cost_fuelunitperhour_yr,
             m.fuel_prod_new_release_cost_fuelunitperhour_yr,
@@ -691,9 +691,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
 
     costs = c.execute(
         """SELECT project, vintage, financial_lifetime_yrs,
-        fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
         operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
@@ -705,9 +705,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
         INNER JOIN
         (SELECT project, vintage, financial_lifetime_yrs,
-        fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
-        fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr,
-        fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr,
+        fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
+        fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
         operational_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
@@ -763,9 +763,9 @@ def write_model_inputs(
                 "project",
                 "vintage",
                 "financial_lifetime_yrs",
-                "fuel_production_capacity_fixed_o_m_cost_per_fuelunitperhour_yr",
-                "fuel_release_capacity_fixed_o_m_cost_per_fuelunitperhour_yr",
-                "fuel_storage_capacity_fixed_o_m_cost_per_fuelunit_yr",
+                "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr",
+                "fuel_storage_capacity_fixed_cost_per_fuelunit_yr",
                 "operational_lifetime_yrs",
                 "fuel_production_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_cost_per_fuelunitperhour_yr",
