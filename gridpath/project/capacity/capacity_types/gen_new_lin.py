@@ -78,13 +78,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | A two-dimensional set of project-vintage combinations to describe the   |
     | periods in time when project capacity can be built in the optimization. |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT`                             |
+    | | :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT`                             |
     |                                                                         |
     | Two-dimensional set of project-vintage combinations to describe all     |
     | possible project-vintage combinations for projects with a cumulative    |
     | minimum build capacity specified.                                       |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT`                             |
+    | | :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT`                             |
     |                                                                         |
     | Two-dimensional set of project-vintage combinations to describe all     |
     | possible project-vintage combinations for projects with a cumulative    |
@@ -199,14 +199,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +=========================================================================+
-    | | :code:`GenNewLin_Min_Cum_Build_Constraint`                            |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT`             |
+    | | :code:`GenNewLin_Min_Cumulative_Build_Constraint`                            |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT`             |
     |                                                                         |
     | Ensures that certain amount of capacity is built by a certain period,   |
     | based on :code:`gen_new_lin_min_cumulative_new_build_mw`.               |
     +-------------------------------------------------------------------------+
-    | | :code:`GenNewLin_Max_Cum_Build_Constraint`                            |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT`             |
+    | | :code:`GenNewLin_Max_Cumulative_Build_Constraint`                            |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT`             |
     |                                                                         |
     | Limits the amount of capacity built by a certain period, based on       |
     | :code:`gen_new_lin_max_cumulative_new_build_mw`.                        |
@@ -220,11 +220,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_NEW_LIN_VNTS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
 
-    # TODO: rename vintage to period since the constraint is by
-    #  project-period, not project-vintage?
     m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
     m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
+
+    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
+
+    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
     # Required Params
     ###########################################################################
@@ -240,12 +242,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Optional Params
     ###########################################################################
 
+    m.gen_new_lin_min_new_build_mw = Param(
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, within=NonNegativeReals, default=0
+    )
+
+    m.gen_new_lin_max_new_build_mw = Param(
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, within=NonNegativeReals, default=float(
+            "inf")
+    )
+    
     m.gen_new_lin_min_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT, within=NonNegativeReals, default=0
     )
 
     m.gen_new_lin_max_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, within=NonNegativeReals
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT, within=NonNegativeReals, default=float(
+            "inf")
     )
 
     # Derived Sets
@@ -276,12 +288,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Constraints
     ###########################################################################
 
-    m.GenNewLin_Min_Cum_Build_Constraint = Constraint(
-        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, rule=min_cum_build_rule
+    m.GenNewLin_Min_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT, rule=min_build_rule
     )
 
-    m.GenNewLin_Max_Cum_Build_Constraint = Constraint(
-        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, rule=max_cum_build_rule
+    m.GenNewLin_Max_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, rule=max_build_rule
+    )
+
+    m.GenNewLin_Min_Cumulative_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT, rule=min_cumulative_build_rule
+    )
+
+    m.GenNewLin_Max_Cumulative_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT, rule=max_cumulative_build_rule
     )
 
     # Dynamic Components
@@ -354,33 +374,65 @@ def gen_new_lin_capacity_rule(mod, g, p):
 # Constraint Formulation Rules
 ###############################################################################
 
-
-def min_cum_build_rule(mod, g, p):
+def min_build_rule(mod, g, v):
     """
-    **Constraint Name**: GenNewLin_Min_Cum_Build_Constraint
+    **Constraint Name**: GenNewLin_Min_Build_Constraint
     **Enforced Over**: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
 
-    Must build a certain amount of capacity by period p.
+    Must build a certain amount of capacity in vintage v.
+    """
+    if mod.gen_new_lin_min_new_build_mw == 0:
+        return Constraint.Skip
+    else:
+        return (
+            mod.GenNewLin_Build_MW[g, v]
+            >= mod.gen_new_lin_min_new_build_mw[g, p]
+        )
+
+
+def max_build_rule(mod, g, v):
+    """
+    **Constraint Name**: GenNewLin_Max_CBuild_Constraint
+    **Enforced Over**: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+
+    Can't build more than certain amount of capacity in vintage.
+    """
+    if mod.gen_new_lin_max_new_build_mw == float("inf"):
+        return Constraint.Skip
+    return (
+        mod.GenNewLin_Build_MW[g, v]
+        <= mod.gen_new_lin_max_new_build_mw[g, v]
+    )
+
+
+def min_cumulative_build_rule(mod, g, v):
+    """
+    **Constraint Name**: GenNewLin_Min_Cumulative_Build_Constraint
+    **Enforced Over**: GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
+
+    Must build a certain amount of capacity by vintage v.
     """
     if mod.gen_new_lin_min_cumulative_new_build_mw == 0:
         return Constraint.Skip
     else:
         return (
-            mod.GenNewLin_Capacity_MW[g, p]
-            >= mod.gen_new_lin_min_cumulative_new_build_mw[g, p]
+            mod.GenNewLin_Capacity_MW[g, v]
+            >= mod.gen_new_lin_min_cumulative_new_build_mw[g, v]
         )
 
 
-def max_cum_build_rule(mod, g, p):
+def max_cumulative_build_rule(mod, g, v):
     """
-    **Constraint Name**: GenNewLin_Max_Cum_Build_Constraint
-    **Enforced Over**: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+    **Constraint Name**: GenNewLin_Max_Cumulative_Build_Constraint
+    **Enforced Over**: GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT
 
-    Can't build more than certain amount of capacity by period p.
+    Can't build more than certain amount of capacity by vintage v.
     """
+    if mod.gen_new_lin_max_cumulative_new_build_mw == float("inf"):
+        return Constraint.Skip
     return (
-        mod.GenNewLin_Capacity_MW[g, p]
-        <= mod.gen_new_lin_max_cumulative_new_build_mw[g, p]
+        mod.GenNewLin_Capacity_MW[g, v]
+        <= mod.gen_new_lin_max_cumulative_new_build_mw[g, v]
     )
 
 
@@ -461,6 +513,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Min and max cumulative capacity
     project_vintages_with_min = list()
     project_vintages_with_max = list()
+    project_vintages_with_cumulative_min = list()
+    project_vintages_with_cumulative_max = list()
+    min_mw = dict()
+    max_mw = dict()
     min_cumulative_mw = dict()
     max_cumulative_mw = dict()
 
@@ -477,7 +533,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         nrows=1,
     ).values[0]
 
-    optional_columns = ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+    optional_columns = ["min_new_build_mw", "max_new_build_mw",
+                        "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
     df = pd.read_csv(
@@ -492,14 +549,43 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         usecols=["project", "vintage"] + used_columns,
     )
 
+    # TODO: refactor
     # min_cumulative_new_build_mw is optional,
     # so GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+    # and min_cumulative_new_build_mw simply won't be initialized if
+    # min_cumulative_new_build_mw does not exist in the input file
+    if "min_new_build_mw" in df.columns:
+        for row in zip(df["project"], df["vintage"], df["min_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_min.append((row[0], row[1]))
+                min_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # max_cumulative_new_build_mw is optional,
+    # so GEN_NEW_LIN_VNTS_MAX_CONSTRAINT
+    # and max_cumulative_new_build_mw simply won't be initialized if
+    # max_cumulative_new_build_mw does not exist in the input file
+    if "max_new_build_mw" in df.columns:
+        for row in zip(df["project"], df["vintage"], df["max_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_max.append((row[0], row[1]))
+                max_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+    
+    # min_cumulative_new_build_mw is optional,
+    # so GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
     # and min_cumulative_new_build_mw simply won't be initialized if
     # min_cumulative_new_build_mw does not exist in the input file
     if "min_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"], df["vintage"], df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
-                project_vintages_with_min.append((row[0], row[1]))
+                project_vintages_with_cumulative_min.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
             else:
                 pass
@@ -507,33 +593,49 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
     # max_cumulative_new_build_mw is optional,
-    # so GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+    # so GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT
     # and max_cumulative_new_build_mw simply won't be initialized if
     # max_cumulative_new_build_mw does not exist in the input file
     if "max_cumulative_new_build_mw" in df.columns:
         for row in zip(df["project"], df["vintage"], df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
-                project_vintages_with_max.append((row[0], row[1]))
+                project_vintages_with_cumulative_max.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
             else:
                 pass
     else:
         pass
 
-    # Load min and max cumulative capacity data
+    # Load min and max capacity data
     if not project_vintages_with_min:
         pass  # if the list is empty, don't initialize the set
     else:
         data_portal.data()["GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT"] = {
             None: project_vintages_with_min
         }
-    data_portal.data()["gen_new_lin_min_cumulative_new_build_mw"] = min_cumulative_mw
+    data_portal.data()["gen_new_lin_min_new_build_mw"] = min_mw
 
     if not project_vintages_with_max:
         pass  # if the list is empty, don't initialize the set
     else:
         data_portal.data()["GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT"] = {
             None: project_vintages_with_max
+        }
+    data_portal.data()["gen_new_lin_max_new_build_mw"] = max_mw
+
+    if not project_vintages_with_cumulative_min:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT"] = {
+            None: project_vintages_with_cumulative_min
+        }
+    data_portal.data()["gen_new_lin_min_cumulative_new_build_mw"] = min_cumulative_mw
+
+    if not project_vintages_with_cumulative_max:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT"] = {
+            None: project_vintages_with_cumulative_max
         }
     data_portal.data()["gen_new_lin_max_cumulative_new_build_mw"] = max_cumulative_mw
 
@@ -647,10 +749,10 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         (" ", " ")
         if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
         else (
-            """, min_cumulative_new_build_mw, 
+            """, min_new_build_mw, max_new_build_mw, min_cumulative_new_build_mw, 
             max_cumulative_new_build_mw """,
             """LEFT OUTER JOIN
-            (SELECT project, period AS vintage, 
+            (SELECT project, period AS vintage, min_new_build_mw, max_new_build_mw,
             min_cumulative_new_build_mw, max_cumulative_new_build_mw
             FROM inputs_project_new_potential
             WHERE project_new_potential_scenario_id = {}) as potential
@@ -725,7 +827,8 @@ def write_model_inputs(
             + (
                 []
                 if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-                else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+                else ["min_new_build_mw", "max_new_build_mw", 
+                      "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
             )
         )
 
@@ -839,7 +942,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         ),
     )
 
-    cols = ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+    cols = ["min_new_build_mw", "max_new_build_mw", 
+            "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
     # Check that maximum new build doesn't decrease
     if cols[1] in df_cols:
         write_validation_to_database(

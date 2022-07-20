@@ -148,12 +148,12 @@ class TestGenNewLin(unittest.TestCase):
         )
         self.assertDictEqual(expected_cost, actual_cost)
 
-        # Set: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+        # Set: GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
         expected_gen_vintage_min_set = sorted([("Gas_CT_New", 2030)])
         actual_gen_vintage_min_set = sorted(
             [
                 (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
             ]
         )
         self.assertListEqual(expected_gen_vintage_min_set, actual_gen_vintage_min_set)
@@ -164,20 +164,20 @@ class TestGenNewLin(unittest.TestCase):
             sorted(
                 {
                     (prj, v): instance.gen_new_lin_min_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
+                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
                 }.items()
             )
         )
         self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
 
-        # Set: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+        # Set: GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT
         expected_gen_vintage_max_set = sorted(
             [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030)]
         )
         actual_gen_vintage_max_set = sorted(
             [
                 (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT
             ]
         )
         self.assertListEqual(expected_gen_vintage_max_set, actual_gen_vintage_max_set)
@@ -190,7 +190,7 @@ class TestGenNewLin(unittest.TestCase):
             sorted(
                 {
                     (prj, v): instance.gen_new_lin_max_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
+                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT
                 }.items()
             )
         )
