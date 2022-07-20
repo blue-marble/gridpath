@@ -224,9 +224,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
-    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
+    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT = Set(
+        dimen=2, within=m.GEN_NEW_LIN_VNTS
+    )
 
-    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
+    m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT = Set(
+        dimen=2, within=m.GEN_NEW_LIN_VNTS
+    )
 
     # Required Params
     ###########################################################################
@@ -247,17 +251,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     m.gen_new_lin_max_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT, within=NonNegativeReals, default=float(
-            "inf")
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
+        within=NonNegativeReals,
+        default=float("inf"),
     )
-    
+
     m.gen_new_lin_min_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT, within=NonNegativeReals, default=0
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT,
+        within=NonNegativeReals,
+        default=0,
     )
 
     m.gen_new_lin_max_cumulative_new_build_mw = Param(
-        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT, within=NonNegativeReals, default=float(
-            "inf")
+        m.GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT,
+        within=NonNegativeReals,
+        default=float("inf"),
     )
 
     # Derived Sets
@@ -374,6 +382,7 @@ def gen_new_lin_capacity_rule(mod, g, p):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 def min_build_rule(mod, g, v):
     """
     **Constraint Name**: GenNewLin_Min_Build_Constraint
@@ -384,10 +393,7 @@ def min_build_rule(mod, g, v):
     if mod.gen_new_lin_min_new_build_mw == 0:
         return Constraint.Skip
     else:
-        return (
-            mod.GenNewLin_Build_MW[g, v]
-            >= mod.gen_new_lin_min_new_build_mw[g, p]
-        )
+        return mod.GenNewLin_Build_MW[g, v] >= mod.gen_new_lin_min_new_build_mw[g, v]
 
 
 def max_build_rule(mod, g, v):
@@ -399,10 +405,7 @@ def max_build_rule(mod, g, v):
     """
     if mod.gen_new_lin_max_new_build_mw == float("inf"):
         return Constraint.Skip
-    return (
-        mod.GenNewLin_Build_MW[g, v]
-        <= mod.gen_new_lin_max_new_build_mw[g, v]
-    )
+    return mod.GenNewLin_Build_MW[g, v] <= mod.gen_new_lin_max_new_build_mw[g, v]
 
 
 def min_cumulative_build_rule(mod, g, v):
@@ -533,8 +536,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         nrows=1,
     ).values[0]
 
-    optional_columns = ["min_new_build_mw", "max_new_build_mw",
-                        "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+    optional_columns = [
+        "min_new_build_mw",
+        "max_new_build_mw",
+        "min_cumulative_new_build_mw",
+        "max_cumulative_new_build_mw",
+    ]
     used_columns = [c for c in optional_columns if c in header]
 
     df = pd.read_csv(
@@ -577,7 +584,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                 pass
     else:
         pass
-    
+
     # min_cumulative_new_build_mw is optional,
     # so GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT
     # and min_cumulative_new_build_mw simply won't be initialized if
@@ -827,8 +834,12 @@ def write_model_inputs(
             + (
                 []
                 if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-                else ["min_new_build_mw", "max_new_build_mw", 
-                      "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+                else [
+                    "min_new_build_mw",
+                    "max_new_build_mw",
+                    "min_cumulative_new_build_mw",
+                    "max_cumulative_new_build_mw",
+                ]
             )
         )
 
@@ -942,8 +953,12 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         ),
     )
 
-    cols = ["min_new_build_mw", "max_new_build_mw", 
-            "min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+    cols = [
+        "min_new_build_mw",
+        "max_new_build_mw",
+        "min_cumulative_new_build_mw",
+        "max_cumulative_new_build_mw",
+    ]
     # Check that maximum new build doesn't decrease
     if cols[1] in df_cols:
         write_validation_to_database(
