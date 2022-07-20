@@ -211,7 +211,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.fuel_prod_new_operational_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals)
+    m.fuel_prod_new_operational_lifetime_yrs = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
 
     m.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
@@ -225,8 +227,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
     )
 
-    m.fuel_prod_new_financial_lifetime_yrs = Param(m.FUEL_PROD_NEW_VNTS,
-                                                     within=NonNegativeReals)
+    m.fuel_prod_new_financial_lifetime_yrs = Param(
+        m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
+    )
 
     m.fuel_prod_new_prod_cost_fuelunitperhour_yr = Param(
         m.FUEL_PROD_NEW_VNTS, within=NonNegativeReals
@@ -259,9 +262,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.FUEL_PROD_NEW_VNTS, initialize=financial_periods_by_vintage
     )
 
-    m.FUEL_PROD_NEW_FIN_PRDS = Set(
-        dimen=2, initialize=fuel_prod_new_financial_periods
-    )
+    m.FUEL_PROD_NEW_FIN_PRDS = Set(dimen=2, initialize=fuel_prod_new_financial_periods)
 
     # TODO: this set is actually probably not needed in all modules
     m.FUEL_PROD_NEW_VNTS_FIN_IN_PRD = Set(
@@ -483,6 +484,7 @@ def capacity_cost_rule(mod, prj, prd):
         if project == prj
     )
 
+
 def fixed_cost_rule(mod, prj, prd):
     """
     The fixed O&M cost for new-build generators in a given period is the
@@ -491,12 +493,12 @@ def fixed_cost_rule(mod, prj, prd):
     """
     return sum(
         (
-                mod.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr[prj, v]
-                + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr[prj, v]
-                + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
-                * mod.fuel_prod_new_storage_fixed_cost_fuelunit_yr[prj, v]
+            mod.FuelProdNew_Build_Prod_Cap_FuelUnitPerHour[prj, v]
+            * mod.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr[prj, v]
+            + mod.FuelProdNew_Build_Rel_Cap_FuelUnitPerHour[prj, v]
+            * mod.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr[prj, v]
+            + mod.FuelProdNew_Build_Stor_Cap_FuelUnitPerHour[prj, v]
+            * mod.fuel_prod_new_storage_fixed_cost_fuelunit_yr[prj, v]
         )
         for (project, v) in mod.FUEL_PROD_NEW_VNTS_OPR_IN_PRD[prd]
         if project == prj

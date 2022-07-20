@@ -141,7 +141,9 @@ class TestStorNewLin(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.stor_new_lin_operational_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.stor_new_lin_operational_lifetime_yrs[
+                        prj, vintage
+                    ]
                     for (prj, vintage) in instance.STOR_NEW_LIN_VNTS
                 }.items()
             )

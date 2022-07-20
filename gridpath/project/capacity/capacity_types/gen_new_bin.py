@@ -35,8 +35,10 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, Constraint, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, capacity_type_financial_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -243,6 +245,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
+
 def operational_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
@@ -266,6 +269,7 @@ def gen_new_bin_vintages_operational_in_period(mod, p):
         relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
         period=p,
     )
+
 
 def financial_periods_by_generator_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
@@ -644,7 +648,8 @@ def write_model_inputs(
                 "fixed_cost_per_mw_yr",
                 "financial_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
-            ])
+            ]
+        )
 
         for row in new_gen_costs:
             replace_nulls = ["." if i is None else i for i in row]

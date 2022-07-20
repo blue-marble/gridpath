@@ -115,7 +115,9 @@ class TestFuelProdNew(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.fuel_prod_new_operational_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.fuel_prod_new_operational_lifetime_yrs[
+                        prj, vintage
+                    ]
                     for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
                 }.items()
             )

@@ -508,8 +508,7 @@ def fixed_cost_rule(mod, g, p):
     summed over all vintages operational in the period.
     """
     return sum(
-        mod.GenNewLin_Build_MW[g, v]
-        * mod.gen_new_lin_fixed_cost_per_mw_yr[g, v]
+        mod.GenNewLin_Build_MW[g, v] * mod.gen_new_lin_fixed_cost_per_mw_yr[g, v]
         for (gen, v) in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )

@@ -44,8 +44,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, capacity_type_financial_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     get_projects,
     get_expected_dtypes,

@@ -45,8 +45,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, capacity_type_financial_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -340,7 +342,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.stor_new_lin_max_duration_hrs = Param(m.STOR_NEW_LIN, within=NonNegativeReals)
 
-    m.stor_new_lin_operational_lifetime_yrs = Param(m.STOR_NEW_LIN_VNTS, within=NonNegativeReals)
+    m.stor_new_lin_operational_lifetime_yrs = Param(
+        m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
+    )
 
     m.stor_new_lin_fixed_cost_per_mw_yr = Param(
         m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
@@ -700,6 +704,7 @@ def capacity_cost_rule(mod, g, p):
         if gen == g
     )
 
+
 def fixed_cost_rule(mod, g, p):
     """
     The fixed O&M cost for new storage projects in a given period is the
@@ -710,8 +715,7 @@ def fixed_cost_rule(mod, g, p):
     """
     return sum(
         (
-            mod.StorNewLin_Build_MW[g, v]
-            * mod.stor_new_lin_fixed_cost_per_mw_yr[g, v]
+            mod.StorNewLin_Build_MW[g, v] * mod.stor_new_lin_fixed_cost_per_mw_yr[g, v]
             + mod.StorNewLin_Build_MWh[g, v]
             * mod.stor_new_lin_fixed_cost_per_mwh_yr[g, v]
         )

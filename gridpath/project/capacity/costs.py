@@ -59,7 +59,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
 
     """
-    
+
     # Dynamic Inputs
     ###########################################################################
 
@@ -73,7 +73,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     imported_capacity_modules = load_project_capacity_type_modules(
         required_capacity_modules
     )
-    
+
     # Sets
     ###########################################################################
 
@@ -116,7 +116,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Capacity_Cost_in_Period = Expression(m.PRJ_FIN_PRDS, rule=capacity_cost_rule)
 
-
     def fixed_cost_rule(mod, prj, prd):
         """
         Get fixed cost for each generator's respective capacity module. These are
@@ -148,6 +147,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # Input-Output
 ###############################################################################
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """

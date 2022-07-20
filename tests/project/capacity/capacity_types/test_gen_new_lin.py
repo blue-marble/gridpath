@@ -117,7 +117,10 @@ class TestGenNewLin(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.gen_new_lin_operational_lifetime_yrs_by_vintage[
+                    (
+                        prj,
+                        vintage,
+                    ): instance.gen_new_lin_operational_lifetime_yrs_by_vintage[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.GEN_NEW_LIN_VNTS

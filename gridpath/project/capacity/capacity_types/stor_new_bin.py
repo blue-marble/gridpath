@@ -36,8 +36,10 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Constraint, value, Binary
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import \
-    capacity_type_operational_period_sets, capacity_type_financial_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -293,6 +295,7 @@ def stor_new_bin_vintages_operational_in_period(mod, p):
         relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
         period=p,
     )
+
 
 def financial_periods_by_storage_vintage(mod, prj, v):
     return relevant_periods_by_project_vintage(
