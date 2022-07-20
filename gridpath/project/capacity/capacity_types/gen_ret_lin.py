@@ -44,7 +44,8 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import \
+    capacity_type_operational_period_sets, capacity_type_financial_period_sets
 from gridpath.auxiliary.validations import (
     get_projects,
     get_expected_dtypes,
@@ -267,9 +268,9 @@ def capacity_rule(mod, g, p):
     return mod.GenRetLin_Capacity_MW[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_ret_lin* capacity type is its net
+    The fixed cost of projects of the *gen_ret_lin* capacity type is its net
     capacity (pre-specified capacity minus retired capacity) times the per-mw
     fixed cost for each of the project's operational periods.
     """

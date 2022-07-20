@@ -120,7 +120,7 @@ def capacity_rule(mod, g, p):
     return mod.gen_spec_capacity_mw[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
     The capacity cost of projects of the *gen_spec* capacity type is a
     pre-specified number equal to the capacity times the per-mw fixed cost

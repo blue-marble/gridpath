@@ -35,7 +35,8 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, Constraint, value
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import \
+    capacity_type_operational_period_sets, capacity_type_financial_period_sets
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -45,9 +46,9 @@ from gridpath.auxiliary.validations import (
     validate_idxs,
 )
 from gridpath.project.capacity.capacity_types.common_methods import (
-    operational_periods_by_project_vintage,
-    project_operational_periods,
-    project_vintages_operational_in_period,
+    relevant_periods_by_project_vintage,
+    project_relevant_periods,
+    project_vintages_relevant_in_period,
     update_capacity_results_table,
 )
 
@@ -174,6 +175,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
+    m.gen_new_bin_fixed_o_m_cost_per_mw_yr = Param(
+        m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
+    m.gen_new_bin_financial_lifetime_yrs_by_vintage = Param(
+        m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
     m.gen_new_bin_annualized_real_cost_per_mw_yr = Param(
         m.GEN_NEW_BIN_VNTS, within=NonNegativeReals
     )
@@ -191,6 +200,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD = Set(
         m.PERIODS, dimen=2, initialize=gen_new_bin_vintages_operational_in_period
+    )
+
+    m.FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE = Set(
+        m.GEN_NEW_BIN_VNTS, initialize=financial_periods_by_generator_vintage
+    )
+
+    m.GEN_NEW_BIN_FIN_PRDS = Set(dimen=2, initialize=gen_new_bin_financial_periods)
+
+    m.GEN_NEW_BIN_VNTS_FIN_IN_PERIOD = Set(
+        m.PERIODS, dimen=2, initialize=gen_new_bin_vintages_financial_in_period
     )
 
     # Variables
@@ -214,13 +233,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "GEN_NEW_BIN_OPR_PRDS",
     )
 
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "GEN_NEW_BIN_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
 
 
 def operational_periods_by_generator_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
+    return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
@@ -230,16 +255,40 @@ def operational_periods_by_generator_vintage(mod, prj, v):
 
 
 def gen_new_bin_operational_periods(mod):
-    return project_operational_periods(
+    return project_relevant_periods(
         project_vintages_set=mod.GEN_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
     )
 
 
 def gen_new_bin_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
+    return project_vintages_relevant_in_period(
         project_vintage_set=mod.GEN_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+        period=p,
+    )
+
+def financial_periods_by_generator_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.gen_new_bin_financial_lifetime_yrs_by_vintage[prj, v],
+    )
+
+
+def gen_new_bin_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.GEN_NEW_zBIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+    )
+
+
+def gen_new_bin_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.GEN_NEW_BIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE,
         period=p,
     )
 
@@ -311,6 +360,20 @@ def capacity_cost_rule(mod, g, p):
         mod.GenNewBin_Build[g, v]
         * mod.gen_new_bin_build_size_mw[g]
         * mod.gen_new_bin_annualized_real_cost_per_mw_yr[g, v]
+        for (gen, v) in mod.GEN_NEW_BIN_VNTS_FIN_IN_PERIOD[p]
+        if gen == g
+    )
+
+
+def fixed_cost_rule(mod, g, p):
+    """
+    The fixed O&M cost for new-build generators in a given period is the
+    capacity-build of a particular vintage times the fixed cost for that vintage
+    summed over all vintages operational in the period.
+    """
+    return sum(
+        mod.GenNewBin_Build_MW[g, v]
+        * mod.gen_new_bin_fixed_o_m_cost_per_mw_yr[g, v]
         for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )
@@ -352,9 +415,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "new_binary_build_generator_vintage_costs.tab",
         ),
         index=m.GEN_NEW_BIN_VNTS,
-        select=("project", "vintage", "operational_lifetime_yrs", "annualized_real_cost_per_mw_yr"),
+        select=(
+            "project",
+            "vintage",
+            "operational_lifetime_yrs",
+            "fixed_o_m_cost_per_mw_yr",
+            "financial_lifetime_yrs",
+            "annualized_real_cost_per_mw_yr",
+        ),
         param=(
             m.gen_new_bin_operational_lifetime_yrs_by_vintage,
+            m.gen_new_bin_fixed_o_m_cost_per_mw_yr,
+            m.gen_new_bin_financial_lifetime_yrs_by_vintage,
             m.gen_new_bin_annualized_real_cost_per_mw_yr,
         ),
     )
@@ -485,6 +557,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c1 = conn.cursor()
     new_gen_costs = c1.execute(
         """SELECT project, vintage, operational_lifetime_yrs,
+        fixed_o_m_cost_per_mw_yr, financial_lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_portfolios
         
@@ -495,6 +568,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         
         INNER JOIN
         (SELECT project, vintage, operational_lifetime_yrs,
+        fixed_o_m_cost_per_mw_yr, financial_lifetime_yrs,
         annualized_real_cost_per_mw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
@@ -563,8 +637,14 @@ def write_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "vintage", "operational_lifetime_yrs", "annualized_real_cost_per_mw_yr"]
-        )
+            [
+                "project",
+                "vintage",
+                "operational_lifetime_yrs",
+                "fixed_o_m_cost_per_mw_yr",
+                "financial_lifetime_yrs",
+                "annualized_real_cost_per_mw_yr",
+            ])
 
         for row in new_gen_costs:
             replace_nulls = ["." if i is None else i for i in row]

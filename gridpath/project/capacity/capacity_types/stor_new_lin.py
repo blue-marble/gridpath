@@ -57,9 +57,9 @@ from gridpath.auxiliary.validations import (
     validate_column_monotonicity,
 )
 from gridpath.project.capacity.capacity_types.common_methods import (
-    operational_periods_by_project_vintage,
-    project_operational_periods,
-    project_vintages_operational_in_period,
+    relevant_periods_by_project_vintage,
+    project_relevant_periods,
+    project_vintages_relevant_in_period,
     update_capacity_results_table,
 )
 
@@ -441,7 +441,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def operational_periods_by_storage_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
+    return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
@@ -451,16 +451,16 @@ def operational_periods_by_storage_vintage(mod, prj, v):
 
 
 def stor_new_lin_operational_periods(mod):
-    return project_operational_periods(
+    return project_relevant_periods(
         project_vintages_set=mod.STOR_NEW_LIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
     )
 
 
 def stor_new_lin_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
+    return project_vintages_relevant_in_period(
         project_vintage_set=mod.STOR_NEW_LIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
         period=p,
     )
 
