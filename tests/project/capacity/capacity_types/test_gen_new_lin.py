@@ -133,9 +133,9 @@ class TestGenNewLin(unittest.TestCase):
         expected_fcost = OrderedDict(
             sorted(
                 {
-                    ("Gas_CCGT_New", 2020): 0,
-                    ("Gas_CCGT_New", 2030): 0,
-                    ("Gas_CT_New", 2030): 0,
+                    ("Gas_CCGT_New", 2020): 1,
+                    ("Gas_CCGT_New", 2030): 1,
+                    ("Gas_CT_New", 2030): 1,
                 }.items()
             )
         )
@@ -153,7 +153,7 @@ class TestGenNewLin(unittest.TestCase):
         expected_flifetime = OrderedDict(
             sorted(
                 {
-                    ("Gas_CCGT_New", 2020): 30,
+                    ("Gas_CCGT_New", 2020): 10,
                     ("Gas_CCGT_New", 2030): 30,
                     ("Gas_CT_New", 2030): 30,
                 }.items()
@@ -304,7 +304,7 @@ class TestGenNewLin(unittest.TestCase):
 
         # Set: FIN_PRDS_BY_GEN_NEW_LIN_VINTAGE
         expected_fperiods_by_gen_vintage = {
-            ("Gas_CCGT_New", 2020): [2020, 2030],
+            ("Gas_CCGT_New", 2020): [2020],
             ("Gas_CCGT_New", 2030): [2030],
             ("Gas_CT_New", 2030): [2030],
         }
@@ -333,7 +333,6 @@ class TestGenNewLin(unittest.TestCase):
         expected_gen_vintage_f_in_period = {
             2020: [("Gas_CCGT_New", 2020)],
             2030: [
-                ("Gas_CCGT_New", 2020),
                 ("Gas_CCGT_New", 2030),
                 ("Gas_CT_New", 2030),
             ],

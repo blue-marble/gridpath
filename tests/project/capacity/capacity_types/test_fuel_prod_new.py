@@ -126,7 +126,7 @@ class TestFuelProdNew(unittest.TestCase):
 
         # Params: fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr
         expected_prod_fcost = OrderedDict(
-            sorted({("Fuel_Prod_New", 2020): 0, ("Fuel_Prod_New", 2030): 0}.items())
+            sorted({("Fuel_Prod_New", 2020): 1, ("Fuel_Prod_New", 2030): 1}.items())
         )
         actual_prod_fcost = OrderedDict(
             sorted(
@@ -145,7 +145,7 @@ class TestFuelProdNew(unittest.TestCase):
 
         # Params: fuel_prod_new_release_fixed_cost_fuelunitperhour_yr
         expected_rel_fcost = OrderedDict(
-            sorted({("Fuel_Prod_New", 2020): 0, ("Fuel_Prod_New", 2030): 0}.items())
+            sorted({("Fuel_Prod_New", 2020): 2, ("Fuel_Prod_New", 2030): 2}.items())
         )
         actual_rel_fcost = OrderedDict(
             sorted(
@@ -164,7 +164,7 @@ class TestFuelProdNew(unittest.TestCase):
 
         # Params: fuel_prod_new_storage_fixed_cost_fuelunit_yr
         expected_rel_fcost = OrderedDict(
-            sorted({("Fuel_Prod_New", 2020): 0, ("Fuel_Prod_New", 2030): 0}.items())
+            sorted({("Fuel_Prod_New", 2020): 3, ("Fuel_Prod_New", 2030): 3}.items())
         )
         actual_rel_fcost = OrderedDict(
             sorted(
@@ -183,7 +183,7 @@ class TestFuelProdNew(unittest.TestCase):
 
         # Params: fuel_prod_new_financial_lifetime_yrs
         expected_flifetime = OrderedDict(
-            sorted({("Fuel_Prod_New", 2020): 30, ("Fuel_Prod_New", 2030): 30}.items())
+            sorted({("Fuel_Prod_New", 2020): 20, ("Fuel_Prod_New", 2030): 30}.items())
         )
         actual_flifetime = OrderedDict(
             sorted(

@@ -152,7 +152,7 @@ class TestStorNewLin(unittest.TestCase):
 
         # Params: stor_new_lin_fixed_cost_per_mw_yr
         expected_mw_yr_fcost = OrderedDict(
-            sorted({("Battery", 2020): 0, ("Battery", 2030): 0}.items())
+            sorted({("Battery", 2020): 10, ("Battery", 2030): 1}.items())
         )
         actual_mw_yr_fcost = OrderedDict(
             sorted(
@@ -169,7 +169,7 @@ class TestStorNewLin(unittest.TestCase):
 
         # Params: stor_new_lin_fixed_cost_per_mwh_yr
         expected_mwh_yr_fcost = OrderedDict(
-            sorted({("Battery", 2020): 0, ("Battery", 2030): 0}.items())
+            sorted({("Battery", 2020): 1, ("Battery", 2030): 10}.items())
         )
         actual_mwh_yr_fcost = OrderedDict(
             sorted(
@@ -186,7 +186,7 @@ class TestStorNewLin(unittest.TestCase):
 
         # Params: stor_new_lin_financial_lifetime_yrs
         expected_flifetime = OrderedDict(
-            sorted({("Battery", 2020): 10, ("Battery", 2030): 10}.items())
+            sorted({("Battery", 2020): 20, ("Battery", 2030): 5}.items())
         )
         actual_flifetime = OrderedDict(
             sorted(
@@ -416,8 +416,8 @@ class TestStorNewLin(unittest.TestCase):
 
         # Sets: FIN_PRDS_BY_STOR_NEW_LIN_VINTAGE
         expected_fperiods_by_stor_vintage = {
-            ("Battery", 2020): [2020],
-            ("Battery", 2030): [2030],
+            ("Battery", 2020): [2020, 2030],
+            ("Battery", 2030): [],
         }
         actual_fperiods_by_stor_vintage = {
             (prj, vintage): [
@@ -440,14 +440,14 @@ class TestStorNewLin(unittest.TestCase):
         # Sets: STOR_NEW_LIN_VNTS_FIN_IN_PRD
         expected_stor_vintage_f_in_period = {
             2020: [("Battery", 2020)],
-            2030: [("Battery", 2030)],
+            2030: [("Battery", 2020)],
         }
         actual_stor_vintage_f_in_period = {
             p: [(g, v) for (g, v) in instance.STOR_NEW_LIN_VNTS_FIN_IN_PRD[p]]
             for p in instance.PERIODS
         }
         self.assertDictEqual(
-            expected_stor_vintage_op_in_period, actual_stor_vintage_f_in_period
+            expected_stor_vintage_f_in_period, actual_stor_vintage_f_in_period
         )
 
 
