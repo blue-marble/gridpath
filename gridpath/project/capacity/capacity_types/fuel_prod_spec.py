@@ -173,9 +173,9 @@ def fuel_storage_capacity_rule(mod, prj, prd):
     return mod.fuel_storage_capacity_fuelunit[prj, prd]
 
 
-def capacity_cost_rule(mod, prj, prd):
+def fixed_cost_rule(mod, prj, prd):
     """
-    The capacity cost of projects of the *fuel_spec* capacity type is a
+    The fixed cost of projects of the *fuel_spec* capacity type is a
     pre-specified number with the following costs:
     * fuel production capacity x fuel production fixed cost;
     * fuel release capacity x fuel release fixed cost;
