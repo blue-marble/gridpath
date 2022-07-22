@@ -16,16 +16,14 @@
 This capacity type describes new storage projects that can be built by the
 optimization at a pre-specified size, duration and cost. The model can
 decide to build the project at the specified size in some or all investment
-*periods*, or not at all. Once built, the capacity remains available for the
-duration of the project's pre-specified lifetime.
+*periods*, or not at all. Once built, the capacity remains operational and fixed O&M
+costs are incurred for the duration of the project's pre-specified operational lifetime.
 
-The cost input to the model is an annualized cost per unit of power capacity
-(MW) and an annualized cost per unit energy capacity (MWh). Both costs are
-additive. If the optimization makes the decision to build new
-power/energy capacity, the total annualized cost is incurred in each period
-of the study (and multiplied by the number of years the period represents)
-for the duration of the project's lifetime. Annual fixed O&M costs are also
-incurred by binary new-build storage.
+The capital cost input to the model is an annualized cost per unit of power capacity
+(MW) and an annualized cost per unit energy capacity (MWh). The costs are additive.
+If the optimization makes the decision to build new power/energy capacity, the total
+annualized cost is incurred in each period of the study (and multiplied by the number
+of years the period represents) for the duration of the project's financial lifetime.
 """
 
 from __future__ import print_function
@@ -86,6 +84,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's lifetime, i.e. how long project capacity/energy of a      |
     | particular vintage remains operational.                                 |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_fixed_cost_per_mw_yr`                             |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power capacity fixed O&M cost incurred in each year in    |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_fixed_cost_per_mwh_yr`                            |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's energy capacity fixed O&M cost incurred in each year in   |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_financial_lifetime_yrs`                           |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how long project capacity of a   |
+    | particular incurs annualized capital costs.                             |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_new_bin_annualized_real_cost_per_mw_yr`                   |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -115,15 +134,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | can only build the project in this pre-specified size.                  |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
-        capacity/energy. This annualized cost is incurred in each period of
-        the study (and multiplied by the number of years the period
-        represents) for the duration of the project's lifetime. It is up to
-        the user to ensure that the
-        :code:`stor_new_bin_operational_lifetime_yrs`,
-        :code:`stor_new_bin_annualized_real_cost_per_mw_yr`, and
-        :code:`stor_new_bin_annualized_real_cost_per_mwh_yr` parameters are
-        consistent.
+    .. note:: The cost input to the model is an annualized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
@@ -151,6 +169,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
     | :code:`stor_new_bin_operational_lifetime_yrs`.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE`                              |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    |                                                                         |
+    | Indexed set that describes the financial periods for each possible      |
+    | project-vintage combination, based on the                               |
+    | :code:`gen_new_lin_financial_lifetime_yrs_by_vintage`. For instance,    |
+    | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
+    | to incur costs starting Jan 1, 2020 and through Dec 31, 2049, but will  |
+    | *not* be operational in 2050.                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_BIN_FIN_PRDS`                                         |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be incurring costs if built. This set is added to   |
+    | the list of sets to join to get the final :code:`PRJ_FIN_PRDS` set      |
+    | defined in **gridpath.project.capacity.capacity**.                      |
     +-------------------------------------------------------------------------+
 
     |

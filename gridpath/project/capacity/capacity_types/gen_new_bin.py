@@ -16,14 +16,14 @@
 This capacity type describes new generation projects that can be built by the
 optimization at a pre-specified size and cost. The model can decide to build
 the project at the specified size in some or all investment *periods*, or not
-at all. Once built, the capacity remains available for the duration of the
-project's pre-specified lifetime.
+at all. Once built, the capacity remains operational and fixed O&M costs are incurred
+for the duration of the project's pre-specified operational lifetime.
 
-The cost input to the model is an annualized cost per unit capacity. If the
+The capital cost input to the model is an annualized cost per unit capacity. If the
 optimization makes the decision to build new capacity, the total annualized
 cost is incurred in each period of the study (and multiplied by the number
-of years the period represents) for the duration of the project's lifetime.
-Annual fixed O&M costs are also incurred by binary new-build generation.
+of years the period represents) for the duration of the project's financial
+lifetime.
 """
 
 from __future__ import print_function
@@ -86,6 +86,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's lifetime, i.e. how long project capacity of a particular  |
     | vintage remains operational.                                            |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_new_bin_fixed_cost_per_mw_yr`                              |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed O&M cost incurred in each year in which the project |
+    | is operational.                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_new_bin_financial_lifetime_yrs_by_vintage`                 |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how long project capacity of a   |
+    | particular incurs annualized capital costs.                             |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_new_bin_annualized_real_cost_per_mw_yr`                    |
     | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -101,13 +115,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | project in this pre-specified size.                                     |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
+    .. note:: The cost input to the model is an annualized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
-        the duration of the project's lifetime. It is up to the user to
-        ensure that the :code:`gen_new_bin_operational_lifetime_yrs_by_vintage` and
-        :code:`gen_new_bin_annualized_real_cost_per_mw_yr` parameters are
-        consistent.
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
@@ -135,6 +150,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
     | :code:`gen_new_bin_operational_lifetime_yrs_by_vintage`.                |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_BIN_FIN_PRDS`                                          |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be incurring annual capital costs if built. This    |
+    | set is added to the list of sets to join to get the final               |
+    | :code:`PRJ_OPR_PRDS` set defined in                                     |
+    | **gridpath.project.capacity.capacity**.                                 |
     +-------------------------------------------------------------------------+
 
     |

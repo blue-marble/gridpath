@@ -128,6 +128,51 @@ class TestGenNewBin(unittest.TestCase):
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
+        # Params: gen_new_bin_fixed_cost_per_mw_yr
+        expected_fcost = OrderedDict(
+            sorted(
+                {
+                    ("Gas_CCGT_New_Binary", 2020): 0,
+                    ("Gas_CCGT_New_Binary", 2030): 0,
+                }.items()
+            )
+        )
+        actual_fcost = OrderedDict(
+            sorted(
+                {
+                    (prj, vintage): instance.gen_new_bin_fixed_cost_per_mw_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.GEN_NEW_BIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fcost, actual_fcost)
+
+        # Params: gen_new_bin_financial_lifetime_yrs_by_vintage
+        expected_flifetime = OrderedDict(
+            sorted(
+                {
+                    ("Gas_CCGT_New_Binary", 2020): 30,
+                    ("Gas_CCGT_New_Binary", 2030): 30,
+                }.items()
+            )
+        )
+        actual_flifetime = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.gen_new_bin_financial_lifetime_yrs_by_vintage[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.GEN_NEW_BIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_flifetime, actual_flifetime)
+
         # Params: gen_new_bin_annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(
             sorted(
@@ -201,6 +246,32 @@ class TestGenNewBin(unittest.TestCase):
         self.assertDictEqual(
             expected_gen_vintage_op_in_period, actual_gen_vintage_op_in_period
         )
+
+        # Set: FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE
+        expected_fperiods_by_gen_vintage = {
+            ("Gas_CCGT_New_Binary", 2020): [2020, 2030],
+            ("Gas_CCGT_New_Binary", 2030): [2030],
+        }
+        actual_fperiods_by_gen_vintage = {
+            (prj, vintage): [
+                period
+                for period in instance.FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE[prj, vintage]
+            ]
+            for (prj, vintage) in instance.FIN_PRDS_BY_GEN_NEW_BIN_VINTAGE
+        }
+        self.assertDictEqual(
+            expected_fperiods_by_gen_vintage, actual_fperiods_by_gen_vintage
+        )
+
+        # Set: GEN_NEW_BIN_FIN_PRDS
+        expected_gen_op_fperiods = [
+            ("Gas_CCGT_New_Binary", 2020),
+            ("Gas_CCGT_New_Binary", 2030),
+        ]
+        actual_gen_op_fperiods = sorted(
+            [(prj, period) for (prj, period) in instance.GEN_NEW_BIN_FIN_PRDS]
+        )
+        self.assertListEqual(expected_gen_op_fperiods, actual_gen_op_fperiods)
 
 
 if __name__ == "__main__":

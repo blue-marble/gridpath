@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """
+This type is a custom implementation for GridPath projects in the California
+Integrated Resource Planning proceeding (2018ish). It is outdated.
+
 This capacity type describes a supply curve for new shiftable load (DR; demand
 response) capacity. The supply curve does not have vintages, i.e. there are
 no cost differences for capacity built in different periods. The cost for
@@ -25,9 +28,6 @@ power capacity based on the 'minimum duration' specified for the project,
 e.g. if the minimum duration specified is N hours, then the MW capacity will
 be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
-
-This type is a custom implementation for GridPath projects in the California
-Integrated Resource Planning proceeding.
 """
 
 from __future__ import division
@@ -77,7 +77,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`DR_NEW_OPR_PRDS`                                               |
     |                                                                         |
     | Two-dimensional set of all :code:`dr_new` projects and their            |
-    | operational periods.                                                    |
+    | operational periods. All periods for now.                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`DR_NEW_FIN_PRDS`                                               |
+    |                                                                         |
+    | Two-dimensional set of all :code:`dr_new` projects and their            |
+    | financial periods (annual costs incurred). All periods for now.         |
     +-------------------------------------------------------------------------+
     | | :code:`DR_NEW_PTS`                                                    |
     |                                                                         |
@@ -239,14 +244,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Components
     ###########################################################################
 
-    # Add to list of sets we'll join to get the final
-    # PRJ_OPR_PRDS set
+    # Add to list of sets we'll join to get the final PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
         "DR_NEW_OPR_PRDS",
     )
 
-    # Add to list of sets we'll join to get the final
-    # PRJ_FIN_PRDS set
+    # Add to list of sets we'll join to get the final PRJ_FIN_PRDS set
     getattr(d, capacity_type_financial_period_sets).append(
         "DR_NEW_FIN_PRDS",
     )

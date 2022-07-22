@@ -217,7 +217,7 @@ def capacity_rule(mod, g, p):
 
 def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_ret_bin* capacity type is its net
+    The fixed cost of projects of the *gen_ret_bin* capacity type is its net
     capacity (pre-specified capacity or zero if retired) times the per-mw
     fixed cost for each of the project's operational periods.
     """

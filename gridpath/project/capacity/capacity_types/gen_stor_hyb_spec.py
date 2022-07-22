@@ -214,7 +214,7 @@ def energy_capacity_rule(mod, prj, prd):
 
 def fixed_cost_rule(mod, prj, prd):
     """
-    The capacity cost of projects of the *gen_stor_hyb_spec* capacity type is a
+    The fixed cost of projects of the *gen_stor_hyb_spec* capacity type is a
     pre-specified number equal to the capacity times the per-mw fixed cost
     for each of the project's operational periods.
     """

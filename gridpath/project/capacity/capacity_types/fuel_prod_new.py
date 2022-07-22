@@ -87,8 +87,37 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's lifetime, i.e. how long project capacity/energy of a      |
-    | particular vintage remains operational.                                 |
+    | The project's operational lifetime, i.e. how long project               |
+    | capacity/energy of a particular vintage remains operational and can be  |
+    | used.                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr`              |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost incurred while the fuel production capacity is |
+    | operational.
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_release_fixed_cost_fuelunitperhour_yr`           |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost incurred while the fuel release capacity is    |
+    | operational.                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_storage_fixed_cost_fuelunit_yr`                  |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new fuel storage capacity in annualized     |
+    | real dollars per FuelUnit (per FuelUnit-year).                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`fuel_prod_new_financial_lifetime_yrs`                          |
+    | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how the annual payments for the  |
+    | project capacity of a particular vintage must be made.                  |
     +-------------------------------------------------------------------------+
     | | :code:`fuel_prod_new_prod_cost_fuelunitperhour_yr`                    |
     | | *Defined over*: :code:`FUEL_PROD_NEW_VNTS`                            |
@@ -111,6 +140,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's cost to build new fuel storage capacity in annualized     |
     | real dollars per FuelUnit (per FuelUnit-year).                          |
     +-------------------------------------------------------------------------+
+
+    .. note:: The cost input to the model is an annualized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     |
 
@@ -264,7 +302,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.FUEL_PROD_NEW_FIN_PRDS = Set(dimen=2, initialize=fuel_prod_new_financial_periods)
 
-    # TODO: this set is actually probably not needed in all modules
     m.FUEL_PROD_NEW_VNTS_FIN_IN_PRD = Set(
         m.PERIODS, dimen=2, initialize=fuel_prod_new_vintages_financial_in_period
     )
@@ -692,11 +729,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c = conn.cursor()
 
     costs = c.execute(
-        """SELECT project, vintage, financial_lifetime_yrs,
+        """SELECT project, vintage, operational_lifetime_yrs,
         fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
-        operational_lifetime_yrs,
+        financial_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -706,11 +743,11 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {temporal_scenario_id}) as relevant_vintages
         INNER JOIN
-        (SELECT project, vintage, financial_lifetime_yrs,
+        (SELECT project, vintage, operational_lifetime_yrs,
         fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_fixed_cost_per_fuelunit_yr,
-        operational_lifetime_yrs,
+        financial_lifetime_yrs,
         fuel_production_capacity_cost_per_fuelunitperhour_yr,
         fuel_release_capacity_cost_per_fuelunitperhour_yr,
         fuel_storage_capacity_cost_per_fuelunit_yr
@@ -764,11 +801,11 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
-                "financial_lifetime_yrs",
+                "operational_lifetime_yrs",
                 "fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr",
                 "fuel_storage_capacity_fixed_cost_per_fuelunit_yr",
-                "operational_lifetime_yrs",
+                "financial_lifetime_yrs",
                 "fuel_production_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_release_capacity_cost_per_fuelunitperhour_yr",
                 "fuel_storage_capacity_cost_per_fuelunit_yr",

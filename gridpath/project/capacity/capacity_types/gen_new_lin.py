@@ -17,15 +17,15 @@ This capacity type describes new generation projects that can be built by the
 optimization at a cost. These investment decisions are linearized, i.e.
 the decision is not whether to build a unit of a specific size (e.g. a
 50-MW combustion turbine), but how much capacity to build at a particular
-*project*. Once built, the capacity exists for the duration of the generator's
-pre-specified lifetime. Minimum and maximum capacity constraints can be
-optionally implemented.
+*project*. Once built, the capacity remains operational and fixed O&M costs are incurred
+for the duration of the project's pre-specified operational lifetime. Minimum and
+maximum capacity constraints can be optionally implemented.
 
-The cost input to the model is an annualized cost per unit capacity. If the
+The capital cost input to the model is an annualized cost per unit capacity. If the
 optimization makes the decision to build new capacity, the total annualized
 cost is incurred in each period of the study (and multiplied by the number
-of years the period represents) for the duration of the project's lifetime.
-Annual fixed O&M costs are also incurred by linear new-build generation.
+of years the period represents) for the duration of the project's financial
+lifetime.
 """
 
 from __future__ import print_function
@@ -106,12 +106,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's lifetime, i.e. how long project capacity of a particular  |
     | vintage remains operational.                                            |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_new_lin_fixed_cost_per_mw_yr`                              |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed O&M cost incurred in each year in which the project |
+    | is operational.                                                         |
+    +-------------------------------------------------------------------------+
     | | :code:`gen_new_lin_financial_lifetime_yrs_by_vintage`                 |
     | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The project's financial lifetime, i.e. how it takes to pay off the      |
-    | project's capital cost.                                                 |
+    | The project's financial lifetime, i.e. how long project capacity of a   |
+    | particular incurs annualized capital costs.                             |
     +-------------------------------------------------------------------------+
     | | :code:`gen_new_lin_annualized_real_cost_per_mw_yr`                    |
     | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
@@ -121,13 +128,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | per MW.                                                                 |
     +-------------------------------------------------------------------------+
 
-    .. note:: The capital cost input to the model is an annualized cost per unit
+    .. note:: The cost input to the model is an annualized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
-        the duration of the project's financial lifetime. It is up to the user to
-        ensure that the :code:`gen_new_lin_financial_lifetime_yrs_by_vintage` and
-        :code:`gen_new_lin_annualized_real_cost_per_mw_yr` parameters are
-        consistent.
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -179,7 +187,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`FIN_PRDS_BY_GEN_NEW_LIN_VINTAGE`                               |
     | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
     |                                                                         |
-    | Indexed set that describes the financial   periods for each possible    |
+    | Indexed set that describes the financial periods for each possible      |
     | project-vintage combination, based on the                               |
     | :code:`gen_new_lin_financial_lifetime_yrs_by_vintage`. For instance,    |
     | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
@@ -253,8 +261,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.GEN_NEW_LIN_VNTS = Set(dimen=2, within=m.PROJECTS * m.PERIODS)
 
-    # TODO: rename vintage to period since the constraint is by
-    #  project-period, not project-vintage?
     m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)
 
     m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(dimen=2, within=m.GEN_NEW_LIN_VNTS)

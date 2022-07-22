@@ -19,12 +19,16 @@ project's power capacity and its energy capacity, therefore endogenously
 determining the duration sizing of the storage. The decisions are linearized,
 i.e. the model decides how much power capacity and how much energy capacity
 to build at a project, not whether or not to built a project of pre-defined
-capacity. Once built, these storage projects remain available for the duration
-of their pre-specified lifetime. Minimum and maximum power capacity and
-duration constraints can be optionally implemented.
+capacity. Once built, the capacity remains operational and fixed O&M
+costs are incurred for the duration of the project's pre-specified operational lifetime.
+Minimum and maximum power capacity and duration constraints can be optionally
+implemented.
 
-Like with new-build generation, capacity costs added to the objective
-function include the annualized capital cost and the annual fixed O&M cost.
+The capital cost input to the model is an annualized cost per unit of power capacity
+(MW) and an annualized cost per unit energy capacity (MWh). The costs are additive.
+If the optimization makes the decision to build new power/energy capacity, the total
+annualized cost is incurred in each period of the study (and multiplied by the number
+of years the period represents) for the duration of the project's financial lifetime.
 """
 
 from __future__ import print_function
@@ -135,6 +139,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's lifetime, i.e. how long project capacity/energy of a      |
     | particular vintage remains operational.                                 |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_fixed_cost_per_mw_yr`                             |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power capacity fixed O&M cost incurred in each year in    |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_fixed_cost_per_mwh_yr`                            |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's energy capacity fixed O&M cost incurred in each year in   |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_financial_lifetime_yrs`                           |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how long project capacity of a   |
+    | particular incurs annualized capital costs.                             |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_new_lin_annualized_real_cost_per_mw_yr`                   |
     | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -150,15 +175,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | dollars in per MW.                                                      |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
-        capacity/energy. This annualized cost is incurred in each period of
-        the study (and multiplied by the number of years the period
-        represents) for the duration of the project's lifetime. It is up to
-        the user to ensure that the
-        :code:`stor_new_lin_operational_lifetime_yrs`,
-        :code:`stor_new_lin_annualized_real_cost_per_mw_yr`, and
-        :code:`stor_new_lin_annualized_real_cost_per_mwh_yr` parameters are
-        consistent.
+    .. note:: The cost input to the model is an annualized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
