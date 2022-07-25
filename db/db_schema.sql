@@ -1636,12 +1636,12 @@ DROP TABLE IF EXISTS inputs_project_elcc_chars;
 CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
-prm_type VARCHAR(32),
+prm_type VARCHAR(32),  -- to model 'energy_only" PRM type, select energy_only feature
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
 cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
-deliverability_group VARCHAR(64),  --optional
+deliverability_group VARCHAR(64) CHECK (prm_type = 'energy_only'),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -2844,6 +2844,7 @@ of_carbon_tax INTEGER,
 of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
+of_energy_only INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
 of_markets INTEGER,
