@@ -818,9 +818,12 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-        self.check_validation("2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit")
+        self.check_validation(
+            "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit"
+        )
         self.run_and_check_objective(
-            "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit", -11133045897.995474
+            "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit",
+            -11133045897.995474,
         )
 
     def test_example_2periods_new_build_local_capacity(self):

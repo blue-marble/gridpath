@@ -39,24 +39,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Costs for having fully deliverable capacity by project group
     # We'll need to figure out how much capacity is built in groups of
     # projects, not by individual project
-    m.DELIVERABILITY_GROUPS = Set()
+    m.DELIVERABILITY_GROUP_PERIODS = Set()
+
+    # TODO: how to fix
+    m.DELIVERABILITY_GROUPS = Set(
+        initialize=lambda mod: list(
+            set([g for (g, p) in mod.DELIVERABILITY_GROUP_PERIODS])
+        )
+    )
 
     # This is the number of MW in the group that can be built without
     # incurring an additional cost for full deliverability
     m.no_cost_deliverable_capacity_mw = Param(
-        m.DELIVERABILITY_GROUPS, within=NonNegativeReals
+        m.DELIVERABILITY_GROUP_PERIODS, within=NonNegativeReals
     )
     m.deliverability_cost_per_mw = Param(
-        m.DELIVERABILITY_GROUPS, within=NonNegativeReals, default=0
+        m.DELIVERABILITY_GROUP_PERIODS, within=NonNegativeReals, default=0
     )
 
     # We'll also constrain how much deliverable and how much energy-only capacity can
     # be built in each group
     m.deliverable_capacity_limit_mw = Param(
-        m.DELIVERABILITY_GROUPS, within=NonNegativeReals, default=float("inf")
+        m.DELIVERABILITY_GROUP_PERIODS, within=NonNegativeReals, default=float("inf")
     )
     m.energy_only_capacity_limit_mw = Param(
-        m.DELIVERABILITY_GROUPS, within=NonNegativeReals, default=float("inf")
+        m.DELIVERABILITY_GROUP_PERIODS, within=NonNegativeReals, default=float("inf")
     )
 
     # Limit this to EOA_PRM_PROJECTS; if another project is
@@ -133,9 +140,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=energy_only_capacity_of_deliverability_group_rule,
     )
 
+    # TODO: how does the per mw-yr work here; this should be a one-time cost incurred
+    #  when the transmission is added; make that clear in the docs
+    #  If not, we need to incur in each subsequent period
     # Calculate costs for ELCC-eligibility
     m.Deliverability_Group_Deliverable_Capacity_Cost = Var(
-        m.DELIVERABILITY_GROUPS, m.PERIODS, within=NonNegativeReals
+        m.DELIVERABILITY_GROUP_PERIODS, within=NonNegativeReals
     )
 
     def deliverable_capacity_cost_constraint_rule(mod, g, p):
@@ -149,21 +159,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        if mod.deliverability_cost_per_mw[g] == 0:
+        if mod.deliverability_cost_per_mw[g, p] == 0:
             return Constraint.Skip
         else:
             return (
                 mod.Deliverability_Group_Deliverable_Capacity_Cost[g, p]
                 >= (
                     mod.Deliverability_Group_Deliverable_Capacity_MW[g, p]
-                    - mod.no_cost_deliverable_capacity_mw[g]
+                    - mod.no_cost_deliverable_capacity_mw[g, p]
                 )
-                * mod.deliverability_cost_per_mw[g]
+                * mod.deliverability_cost_per_mw[g, p]
             )
 
     m.Deliverability_Group_Deliverable_Capacity_Cost_Constraint = Constraint(
-        m.DELIVERABILITY_GROUPS,
-        m.PERIODS,
+        m.DELIVERABILITY_GROUP_PERIODS,
         rule=deliverable_capacity_cost_constraint_rule,
     )
 
@@ -177,11 +186,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return (
             mod.Deliverability_Group_Deliverable_Capacity_MW[g, p]
-            <= mod.deliverable_capacity_limit_mw[g]
+            <= mod.deliverable_capacity_limit_mw[g, p]
         )
 
     m.Deliverability_Group_Deliverable_Capacity_Limit_Constraint = Constraint(
-        m.DELIVERABILITY_GROUPS, m.PERIODS, rule=deliverable_capacity_limit_rule
+        m.DELIVERABILITY_GROUP_PERIODS, rule=deliverable_capacity_limit_rule
     )
 
     def energy_only_limit_rule(mod, g, p):
@@ -194,11 +203,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         return (
             mod.Deliverability_Group_Energy_Only_Capacity_MW[g, p]
-            <= mod.energy_only_capacity_limit_mw[g]
+            <= mod.energy_only_capacity_limit_mw[g, p]
         )
 
     m.Deliverability_Group_Energy_Only_Capacity_Limit_Constraint = Constraint(
-        m.DELIVERABILITY_GROUPS, m.PERIODS, rule=energy_only_limit_rule
+        m.DELIVERABILITY_GROUP_PERIODS, rule=energy_only_limit_rule
     )
 
 
@@ -226,7 +235,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     if os.path.exists(group_threshold_costs_file):
         data_portal.load(
             filename=group_threshold_costs_file,
-            index=m.DELIVERABILITY_GROUPS,
+            index=m.DELIVERABILITY_GROUP_PERIODS,
             param=(
                 m.no_cost_deliverable_capacity_mw,
                 m.deliverability_cost_per_mw,
@@ -289,20 +298,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "deliverability_cost",
             ]
         )
-        for g in m.DELIVERABILITY_GROUPS:
-            for p in m.PERIODS:
-                writer.writerow(
-                    [
-                        g,
-                        p,
-                        m.no_cost_deliverable_capacity_mw[g],
-                        m.deliverability_cost_per_mw[g],
-                        value(m.Deliverability_Group_Total_Capacity_MW[g, p]),
-                        value(m.Deliverability_Group_Deliverable_Capacity_MW[g, p]),
-                        value(m.Deliverability_Group_Energy_Only_Capacity_MW[g, p]),
-                        value(m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]),
-                    ]
-                )
+        # TODO: add limits to results
+        for (g, p) in m.DELIVERABILITY_GROUP_PERIODS:
+            writer.writerow(
+                [
+                    g,
+                    p,
+                    m.no_cost_deliverable_capacity_mw[g, p],
+                    m.deliverability_cost_per_mw[g, p],
+                    value(m.Deliverability_Group_Total_Capacity_MW[g, p]),
+                    value(m.Deliverability_Group_Deliverable_Capacity_MW[g, p]),
+                    value(m.Deliverability_Group_Energy_Only_Capacity_MW[g, p]),
+                    value(m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]),
+                ]
+            )
 
 
 def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
@@ -325,7 +334,8 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         # Threshold groups with threshold for ELCC eligibility, cost,
         # and energy-only limit
         group_threshold_costs = c1.execute(
-            """SELECT deliverability_group, 
+            """SELECT deliverability_group,
+            period,
             no_cost_deliverable_capacity_mw, 
             deliverability_cost_per_mw,
             deliverable_capacity_limit_mw,
@@ -417,6 +427,7 @@ def write_model_inputs(
             writer.writerow(
                 [
                     "deliverability_group",
+                    "period",
                     "no_cost_deliverable_capacity_mw",
                     "deliverability_cost_per_mw",
                     "deliverable_capacity_limit_mw",

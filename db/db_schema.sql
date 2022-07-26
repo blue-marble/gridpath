@@ -1718,11 +1718,12 @@ DROP TABLE IF EXISTS inputs_project_prm_energy_only;
 CREATE TABLE inputs_project_prm_energy_only (
 prm_energy_only_scenario_id INTEGER,
 deliverability_group VARCHAR(64),
+period FLOAT,
 no_cost_deliverable_capacity_mw FLOAT,
 deliverability_cost_per_mw FLOAT,
 deliverable_capacity_limit_mw FLOAT,
 energy_only_capacity_limit_mw FLOAT,
-PRIMARY KEY (prm_energy_only_scenario_id, deliverability_group),
+PRIMARY KEY (prm_energy_only_scenario_id, deliverability_group, period),
 FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
 subscenarios_project_prm_energy_only
 (prm_energy_only_scenario_id)

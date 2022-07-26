@@ -36,8 +36,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Deliverability_Group_Deliverable_Capacity_Cost[g, p]
             * mod.discount_factor[p]
             * mod.number_years_represented[p]
-            for g in mod.DELIVERABILITY_GROUPS
-            for p in mod.PERIODS
+            for (g, p) in mod.DELIVERABILITY_GROUP_PERIODS
         )
 
     m.Total_PRM_Group_Costs = Expression(rule=total_capacity_threshold_cost_rule)
