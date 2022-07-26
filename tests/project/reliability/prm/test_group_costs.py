@@ -112,14 +112,14 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
             expected_deliverability_groups_set, actual_deliverability_groups_set
         )
 
-        # Param: deliverability_group_no_cost_deliverable_capacity_mw
+        # Param: no_cost_deliverable_capacity_mw
         expected_no_cost_deliv_cap = OrderedDict(
             sorted({"Threshold_Group_1": 2000.0, "Threshold_Group_2": 1140.0}.items())
         )
         actual_no_cost_deliv_cap = OrderedDict(
             sorted(
                 {
-                    g: instance.deliverability_group_no_cost_deliverable_capacity_mw[g]
+                    g: instance.no_cost_deliverable_capacity_mw[g]
                     for g in instance.DELIVERABILITY_GROUPS
                 }.items()
             )
@@ -127,14 +127,14 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
 
         self.assertDictEqual(expected_no_cost_deliv_cap, actual_no_cost_deliv_cap)
 
-        # Param: deliverability_group_deliverability_cost_per_mw
+        # Param: deliverability_cost_per_mw
         expected_deliv_cost = OrderedDict(
             sorted({"Threshold_Group_1": 37.0, "Threshold_Group_2": 147.0}.items())
         )
         actual_deliv_cost = OrderedDict(
             sorted(
                 {
-                    g: instance.deliverability_group_deliverability_cost_per_mw[g]
+                    g: instance.deliverability_cost_per_mw[g]
                     for g in instance.DELIVERABILITY_GROUPS
                 }.items()
             )
@@ -142,14 +142,29 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
 
         self.assertDictEqual(expected_deliv_cost, actual_deliv_cost)
 
-        # Param: deliverability_group_energy_only_capacity_limit_mw
+        # Param: deliverable_capacity_limit_mw
+        expected_deliverable_limit = OrderedDict(
+            sorted({"Threshold_Group_1": 5000, "Threshold_Group_2": 4000}.items())
+        )
+        actual_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    g: instance.deliverable_capacity_limit_mw[g]
+                    for g in instance.DELIVERABILITY_GROUPS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_deliverable_limit, actual_deliverable_limit)
+
+        # Param: energy_only_capacity_limit_mw
         expected_energy_only_limit = OrderedDict(
             sorted({"Threshold_Group_1": 4000, "Threshold_Group_2": 5000}.items())
         )
         actual_energy_only_limit = OrderedDict(
             sorted(
                 {
-                    g: instance.deliverability_group_energy_only_capacity_limit_mw[g]
+                    g: instance.energy_only_capacity_limit_mw[g]
                     for g in instance.DELIVERABILITY_GROUPS
                 }.items()
             )
@@ -158,15 +173,15 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
         self.assertDictEqual(expected_energy_only_limit, actual_energy_only_limit)
 
         # Set: DELIVERABILITY_GROUP_PROJECTS
-        expected_deliverability_group_projects = sorted(
+        expected_projects = sorted(
             [("Threshold_Group_1", "Wind"), ("Threshold_Group_2", "Wind_z2")]
         )
-        actual_deliverability_group_projects = sorted(
+        actual_projects = sorted(
             [(g, p) for (g, p) in instance.DELIVERABILITY_GROUP_PROJECTS]
         )
 
         self.assertListEqual(
-            expected_deliverability_group_projects, actual_deliverability_group_projects
+            expected_projects, actual_projects
         )
 
         # Set: PROJECTS_BY_DELIVERABILITY_GROUP

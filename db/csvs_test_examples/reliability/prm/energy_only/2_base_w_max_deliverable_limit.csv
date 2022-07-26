@@ -1,2 +1,2 @@
 deliverability_group,no_cost_deliverable_capacity_mw,deliverability_cost_per_mw,deliverable_capacity_limit_mw,energy_only_capacity_limit_mw
-Deliverability_Group,0,1000000,,
+Deliverability_Group,0,1000000,49,
