@@ -17,6 +17,7 @@ of_carbon_tax,
 of_performance_standard,1
 of_fuel_burn_limit,
 of_prm,
+of_energy_only,
 of_elcc_surface,
 of_local_capacity,
 of_markets,

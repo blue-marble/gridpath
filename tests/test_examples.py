@@ -799,6 +799,16 @@ class TestExamples(unittest.TestCase):
         self.check_validation("2periods_new_build_simple_prm")
         self.run_and_check_objective("2periods_new_build_simple_prm", objective)
 
+    def test_example_2periods_new_build_simple_prm_w_energy_only(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
+        example
+        :return:
+        """
+        self.check_validation("2periods_new_build_simple_prm_w_energy_only")
+        self.run_and_check_objective("2periods_new_build_simple_prm_w_energy_only", -11133045893.614159)
+
     def test_example_2periods_new_build_local_capacity(self):
         """
         Check validation and objective function value of

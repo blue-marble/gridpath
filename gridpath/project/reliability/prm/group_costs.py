@@ -15,8 +15,15 @@
 
 import csv
 import os.path
-from pyomo.environ import Set, Var, Expression, Param, Constraint, NonNegativeReals, \
-    value
+from pyomo.environ import (
+    Set,
+    Var,
+    Expression,
+    Param,
+    Constraint,
+    NonNegativeReals,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
@@ -226,13 +233,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def export_results(
-    m,
-    d,
-    scenario_directory,
-    subproblem,
-    stage,
-):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param m:
@@ -245,15 +246,15 @@ def export_results(
 
     # Total capacity for all projects in group
     with open(
-            os.path.join(
-                scenario_directory,
-                str(subproblem),
-                str(stage),
-                "results",
-                "deliverability_group_capacity_and_costs.csv",
-            ),
-            "w",
-            newline="",
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "deliverability_group_capacity_and_costs.csv",
+        ),
+        "w",
+        newline="",
     ) as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -283,6 +284,7 @@ def export_results(
                     ]
                 )
 
+
 def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -294,8 +296,10 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     if subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID is None:
         # If we call this module, it's because we specified the feature, so we can
         # raise an error if an energy_only_scenario_id is not specified.
-        raise ValueError("You must specify a energy_only_scenario_id for this "
-                         "scenario to use the 'energy only' feature.")
+        raise ValueError(
+            "You must specify a energy_only_scenario_id for this "
+            "scenario to use the 'energy only' feature."
+        )
     else:
         c1 = conn.cursor()
         # Threshold groups with threshold for ELCC eligibility, cost,
@@ -458,9 +462,8 @@ def import_results_into_database(
     # Load results into the temporary table
     results = []
     with open(
-            os.path.join(results_directory,
-                         "deliverability_group_capacity_and_costs.csv"),
-            "r",
+        os.path.join(results_directory, "deliverability_group_capacity_and_costs.csv"),
+        "r",
     ) as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
@@ -533,4 +536,3 @@ def import_results_into_database(
         scenario_id
     )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-

@@ -1641,7 +1641,9 @@ elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
 cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
-deliverability_group VARCHAR(64) CHECK (prm_type = 'energy_only'),  --optional
+deliverability_group VARCHAR(64) CHECK (
+    deliverability_group IS NULL OR prm_type = 'energy_only_allowed'
+),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
