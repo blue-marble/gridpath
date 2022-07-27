@@ -74,23 +74,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # total capacity since in some cases full deliverability may require
     # additional costs to be incurred (e.g. for transmission, etc.)
     m.Deliverable_Capacity_MW = Var(m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals)
-    m.Energy_Only_Capacity_MW = Var(m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals)
 
-    def max_deliverable_capacity_constraint(mod, g, p):
-        """
-        The fully deliverable capacity can't exceed the total project capacity
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return (
-            mod.Deliverable_Capacity_MW[g, p] + mod.Energy_Only_Capacity_MW[g, p]
-            == mod.Capacity_MW[g, p]
-        )
+    def energy_only_capacity_rule(mod, g, p):
+        """ """
+        return mod.Capacity_MW[g, p] - mod.Deliverable_Capacity_MW[g, p]
 
-    m.Max_Deliverable_Capacity_Constraint = Constraint(
-        m.EOA_PRM_PRJ_OPR_PRDS, rule=max_deliverable_capacity_constraint
+    m.Energy_Only_Capacity_MW = Expression(
+        m.EOA_PRM_PRJ_OPR_PRDS, initialize=energy_only_capacity_rule
     )
 
 

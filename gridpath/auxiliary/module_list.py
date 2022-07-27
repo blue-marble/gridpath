@@ -384,7 +384,7 @@ def cross_feature_modules_list():
             "project.reliability.prm.elcc_surface",
             "system.reliability.prm.elcc_surface",
         ],
-        ("prm", "energy_only"): [
+        ("prm", "deliverability"): [
             "project.reliability.prm.group_costs",
             "objective.project.aggregate_prm_group_costs",
         ],
