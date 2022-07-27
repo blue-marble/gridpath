@@ -35,7 +35,6 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.project.capacity.capacity_types.common_methods import (
-    project_relevant_periods,
     project_vintages_relevant_in_period,
     relevant_periods_by_project_vintage,
 )
@@ -80,7 +79,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         default=float("inf"),
     )
 
-    # Derived sets for capacity and cost tracking
+    # Multipliers for the constraint types and peak designations
+    m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS = Set(dimen=3)
+    m.peak_designation_multiplier = Param(
+        m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS, within=NonNegativeReals
+    )
+    m.CONSTRAINT_TYPES = Set(
+        initialize=lambda mod: list(
+            set([t for (prj, t, d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
+        ),
+        within=["total", "deliverable", "energy_only"],
+    )
+    m.PEAK_DESIGNATIONS = Set(
+        initialize=lambda mod: list(
+            set([d for (prj, t, d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
+        )
+    )
+
+    # ### Derived sets for capacity and cost tracking ###
     def operational_periods_by_group_vintage(mod, g, v):
         return relevant_periods_by_project_vintage(
             periods=getattr(mod, "PERIODS"),
@@ -120,47 +136,71 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
-    def total_project_capacity_in_group_rule(mod, g, period):
+    def total_project_capacity_in_group_rule(
+        mod, g, period, constraint_type, peak_designation
+    ):
         """
-        Total capacity of projects in each deliverability group.
         :param mod:
         :param g:
         :param period:
+        :param constraint_type:
+        :param peak_designation:
         :return:
         """
-        return sum(
-            mod.Capacity_MW[prj, p]
-            for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-            if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-        )
+        if constraint_type == "total":
+            return sum(
+                mod.Capacity_MW[prj, p]
+                * mod.peak_designation_multiplier[
+                    prj, constraint_type, peak_designation
+                ]
+                for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
+                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            )
+        else:
+            return Constraint.Skip
 
     m.Group_Total_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
         rule=total_project_capacity_in_group_rule,
     )
 
-    def deliverable_project_capacity_in_group_rule(mod, g, period):
+    def deliverable_project_capacity_in_group_rule(
+        mod, g, period, constraint_type, peak_designation
+    ):
         """
-        ELCC-eligible capacity of projects in each deliverability group
         :param mod:
         :param g:
         :param period:
+        :param constraint_type:
+        :param peak_designation:
         :return:
         """
-        return sum(
-            mod.Deliverable_Capacity_MW[prj, p]
-            for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-            if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-        )
+        if constraint_type == "deliverable":
+            return sum(
+                mod.Deliverable_Capacity_MW[prj, p]
+                * mod.peak_designation_multiplier[
+                    prj, constraint_type, peak_designation
+                ]
+                for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
+                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            )
+        else:
+            return Constraint.Skip
 
     m.Deliverability_Group_Deliverable_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
         rule=deliverable_project_capacity_in_group_rule,
     )
 
-    def energy_only_project_capacity_in_group_rule(mod, g, period):
+    def energy_only_project_capacity_in_group_rule(
+        mod, g, period, constraint_type, peak_designation
+    ):
         """
         Energy-only capacity of projects in each deliverability group
         :param mod:
@@ -168,15 +208,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param period:
         :return:
         """
-        return sum(
-            mod.Energy_Only_Capacity_MW[prj, p]
-            for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-            if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
-        )
+        if constraint_type == "energy_only":
+            return sum(
+                mod.Energy_Only_Capacity_MW[prj, p]
+                * mod.peak_designation_multiplier[
+                    prj, constraint_type, peak_designation
+                ]
+                for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
+                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+            )
+        else:
+            return Constraint.Skip
 
     m.Group_Energy_Only_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
         rule=energy_only_project_capacity_in_group_rule,
     )
 
@@ -187,7 +235,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def group_capacity_rule(mod, g, p):
         """
-        **Expression Name**: Deliverability_Group_Capacity_MW
+        **Expression Name**: Cumulative_Added_Deliverability_Capacity_MW
         **Enforced Over**: (m.DELIVERABILITY_GROUPS, m.PERIODS(
         **Defaults to**: 0
 
@@ -209,23 +257,76 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             if gen == g
         )
 
-    m.Deliverability_Group_Capacity_MW = Expression(
+    m.Cumulative_Added_Deliverability_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
         initialize=group_capacity_rule,
     )
 
-    # Limit deliverable capacity
-    def prj_deliverable_capacity_less_than_build_constraint_rule(mod, g, p):
-        return (
-            mod.Deliverability_Group_Deliverable_Project_Capacity_MW[g, p]
-            <= mod.Deliverability_Group_Capacity_MW[g, p]
-        )
+    # Limit deliverable capacity based on added deliverabilty
+    def prj_deliverable_capacity_less_than_build_constraint_rule(
+        mod, g, p, constraint_type, peak_designation
+    ):
+        if constraint_type == "deliverable":
+            return (
+                mod.Deliverability_Group_Deliverable_Project_Capacity_MW[
+                    g, p, constraint_type, peak_designation
+                ]
+                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+            )
+        else:
+            return Constraint.Skip
 
     m.Prj_Deliv_Capacity_Constraint = Constraint(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
         rule=prj_deliverable_capacity_less_than_build_constraint_rule,
+    )
+
+    # Limit total capacity based on added deliverabilty
+    def prj_total_capacity_less_than_build_constraint_rule(
+        mod, g, p, constraint_type, peak_designation
+    ):
+        if constraint_type == "total":
+            return (
+                mod.Deliverability_Group_Total_Project_Capacity_MW[
+                    g, p, constraint_type, peak_designation
+                ]
+                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+            )
+        else:
+            return Constraint.Skip
+
+    m.Prj_Total_Capacity_Constraint = Constraint(
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
+        rule=prj_total_capacity_less_than_build_constraint_rule,
+    )
+
+    # Limit energy-only capacity based on added deliverabilty
+    def prj_energy_only_capacity_less_than_build_constraint_rule(
+        mod, g, p, constraint_type, peak_designation
+    ):
+        if constraint_type == "energy_only":
+            return (
+                mod.Deliverability_Group_Energy_Only_Project_Capacity_MW[
+                    g, p, constraint_type, peak_designation
+                ]
+                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+            )
+        else:
+            return Constraint.Skip
+
+    m.Prj_Energy_Only_Capacity_Constraint = Constraint(
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
+        rule=prj_energy_only_capacity_less_than_build_constraint_rule,
     )
 
     def capacity_cost_rule(mod, g, p):
@@ -258,7 +359,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return (
-            mod.Deliverability_Group_Capacity_MW[g, p]
+            mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
             <= mod.deliverable_capacity_limit_mw[g, p]
         )
 
@@ -321,6 +422,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=group_projects_file, set=m.DELIVERABILITY_GROUP_PROJECTS)
 
+    multipliers_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "deliverability_project_multipliers.tab",
+    )
+    data_portal.load(
+        filename=multipliers_file,
+        index=m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS,
+        param=m.peak_designation_multiplier,
+    )
+
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -350,11 +464,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             [
                 "deliverability_group",
                 "period",
-                "deliverability_cost_per_mw_yr",
-                "total_capacity_built_mw",
-                "elcc_eligible_capacity_built_mw",
-                "energy_only_capacity_built_mw",
-                "deliverability_cost",
+                "deliverability_capacity_built_in_period_mw",
+                "cumulative_added_deliverability_capacity_mw",
+                "deliverability_cost_in_period",
             ]
         )
         # TODO: add limits to results
@@ -364,12 +476,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     [
                         g,
                         p,
-                        m.deliverability_cost_per_mw_yr[g, p],
-                        value(m.Group_Total_Project_Capacity_MW[g, p]),
-                        value(
-                            m.Deliverability_Group_Deliverable_Project_Capacity_MW[g, p]
-                        ),
-                        value(m.Group_Energy_Only_Project_Capacity_MW[g, p]),
+                        value(m.Deliverability_Group_Build_MW[g, p])
+                        if (g, p) in m.DELIVERABILITY_GROUP_VINTAGES
+                        else None,
+                        value(m.Cumulative_Added_Deliverability_Capacity_MW[g, p]),
                         value(m.Deliverability_Group_Deliverable_Capacity_Cost[g, p]),
                     ]
                 )
@@ -437,7 +547,19 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
             )
         )
 
-    return group_costs, group_potential, group_projects
+        c4 = conn.cursor()
+        # Project multipliers by constraint type and peak designation
+        project_multipliers = c4.execute(
+            """
+            SELECT project, constraint_type, peak_designation, multiplier
+            FROM inputs_project_prm_deliverability_multipliers
+            WHERE project_prm_deliverability_multipliers_scenario_id = {multipliers}
+            """.format(
+                multipliers=subscenarios.PROJECT_PRM_DELIVERABILITY_MULTIPLIERS_SCENARIO_ID,
+            )
+        )
+
+    return group_costs, group_potential, group_projects, project_multipliers
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -451,7 +573,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     pass
     # Validation to be added
-    # group_costs, group_potential, group_projects = \
+    # group_costs, group_potential, group_projects, project_multipliers = \
     #   get_model_inputs_from_database(
     #       scenario_id, subscenarios, subproblem, stage, conn)
 
@@ -471,7 +593,12 @@ def write_model_inputs(
     :return:
     """
 
-    (group_costs, group_potential, group_projects,) = get_model_inputs_from_database(
+    (
+        group_costs,
+        group_potential,
+        group_projects,
+        project_multipliers,
+    ) = get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -552,6 +679,27 @@ def write_model_inputs(
         for row in group_projects:
             writer.writerow(row)
 
+    with open(
+        os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "deliverability_project_multipliers.tab",
+        ),
+        "w",
+    ) as multipliers_file:
+        writer = csv.writer(multipliers_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            ["project", "constraint_type", "peak_designation", "multiplier"]
+        )
+
+        # Input data
+        for row in project_multipliers:
+            writer.writerow(row)
+
 
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
@@ -594,11 +742,9 @@ def import_results_into_database(
         for row in reader:
             group = row[0]
             period = row[1]
-            no_cost_deliverable_capacity_mw = row[2]
-            deliverability_cost_per_mw_yr = row[3]
-            total_capacity_mw = row[4]
-            energy_only_capacity_mw = row[5]
-            deliverable_capacity_cost = row[6]
+            period_build = row[2]
+            cumulative_build = row[3]
+            cost_in_period = row[4]
 
             results.append(
                 (
@@ -607,11 +753,9 @@ def import_results_into_database(
                     period,
                     subproblem,
                     stage,
-                    no_cost_deliverable_capacity_mw,
-                    deliverability_cost_per_mw_yr,
-                    total_capacity_mw,
-                    energy_only_capacity_mw,
-                    deliverable_capacity_cost,
+                    period_build,
+                    cumulative_build,
+                    cost_in_period,
                 )
             )
 
@@ -619,12 +763,10 @@ def import_results_into_database(
             INSERT INTO 
             temp_results_project_prm_deliverability_group_capacity_and_costs{}
             (scenario_id, deliverability_group, period, subproblem_id, stage_id,
-            deliverability_cost_per_mw_yr,
-            total_capacity_mw, 
-            deliverable_capacity_mw, 
-            energy_only_capacity_mw,
-            deliverable_capacity_cost)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            deliverability_built_in_period_mw,
+            cumulative_added_deliverability_in_period_mw, 
+            deliverability_annual_cost_in_period)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
             """.format(
         scenario_id
     )
@@ -635,16 +777,14 @@ def import_results_into_database(
             INSERT INTO 
             results_project_prm_deliverability_group_capacity_and_costs
             (scenario_id, deliverability_group, period, subproblem_id, stage_id, 
-            deliverability_cost_per_mw_yr,
-            total_capacity_mw, 
-            deliverable_capacity_mw, energy_only_capacity_mw,
-            deliverable_capacity_cost)
+            deliverability_built_in_period_mw,
+            cumulative_added_deliverability_in_period_mw, 
+            deliverability_annual_cost_in_period)
             SELECT
             scenario_id, deliverability_group, period, subproblem_id, stage_id, 
-            deliverability_cost_per_mw_yr,
-            total_capacity_mw, 
-            deliverable_capacity_mw, energy_only_capacity_mw,
-            deliverable_capacity_cost
+            deliverability_built_in_period_mw,
+            cumulative_added_deliverability_in_period_mw, 
+            deliverability_annual_cost_in_period
             FROM 
             temp_results_project_prm_deliverability_group_capacity_and_costs{}
             ORDER BY scenario_id, deliverability_group, period, subproblem_id, 

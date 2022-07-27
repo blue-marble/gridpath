@@ -309,7 +309,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
         -- costs which will be derated by the fraction_of_hours_in_subproblem
         INNER JOIN
         (SELECT scenario_id, subproblem_id, stage_id, period, 
-        SUM(deliverable_capacity_cost) AS deliverable_capacity_cost
+        SUM(deliverability_annual_cost_in_period) AS deliverable_capacity_cost
         FROM results_project_prm_deliverability_group_capacity_and_costs
         WHERE scenario_id = ?
         GROUP BY scenario_id, subproblem_id, stage_id, period

@@ -1747,6 +1747,30 @@ subscenarios_project_prm_deliverability_potential
 (prm_deliverability_potential_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_multipliers;
+CREATE TABLE subscenarios_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER PRIMARY KEY,
+    name VARCHAR(32),
+    description VARCHAR(128)
+);
+
+CREATE TABLE inputs_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER,
+    project VARCHAR(64),
+    constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+    peak_designation VARCHAR(16),
+    multiplier FLOAT,
+    PRIMARY KEY (project_prm_deliverability_multipliers_scenario_id, project,
+                 constraint_type, peak_designation),
+    FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+        subscenarios_project_prm_deliverability_multipliers
+            (project_prm_deliverability_multipliers_scenario_id)
+);
+
 
 -- Project local capacity zones and chars
 -- Which projects can contribute to local capacity requirements
@@ -2908,6 +2932,7 @@ project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
 prm_deliverability_potential_scenario_id INTEGER,
+project_prm_deliverability_multipliers_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
 load_zone_market_scenario_id INTEGER,
@@ -3047,6 +3072,9 @@ FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
 FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
     subscenarios_project_prm_deliverability_potential
         (prm_deliverability_potential_scenario_id),
+FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_multipliers
+        (project_prm_deliverability_multipliers_scenario_id),
 FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
     subscenarios_project_local_capacity_zones
         (project_local_capacity_zone_scenario_id),
@@ -3532,11 +3560,9 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
-deliverability_cost_per_mw_yr FLOAT,
-total_capacity_mw FLOAT,
-deliverable_capacity_mw FLOAT,
-energy_only_capacity_mw FLOAT,
-deliverable_capacity_cost FLOAT,
+deliverability_built_in_period_mw FLOAT,
+cumulative_added_deliverability_in_period_mw FLOAT,
+deliverability_annual_cost_in_period FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
