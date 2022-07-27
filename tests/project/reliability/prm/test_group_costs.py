@@ -165,6 +165,51 @@ class TestDeliverabilityGroupCosts(unittest.TestCase):
 
         self.assertDictEqual(expected_deliv_cost, actual_deliv_cost)
 
+        # Param: existing_deliverability_mw
+        expected_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    ("Threshold_Group_1", 2020, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2030, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2020, "deliverable", "peak_secondary"): 200,
+                    ("Threshold_Group_1", 2030, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2020, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_1", 2030, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_1", 2020, "total", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2030, "total", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2020, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2030, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2020, "total", "offpeak"): 1000,
+                    ("Threshold_Group_1", 2030, "total", "offpeak"): 0,
+                    ("Threshold_Group_2", 2020, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "peak_highest"): 200,
+                    ("Threshold_Group_2", 2020, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2020, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_2", 2020, "total", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2030, "total", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2020, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2030, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2020, "total", "offpeak"): 0,
+                    ("Threshold_Group_2", 2030, "total", "offpeak"): 999,
+                }.items()
+            )
+        )
+        actual_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    (g, p, t, d): instance.existing_deliverability_mw[g, p, t, d]
+                    for g in instance.DELIVERABILITY_GROUPS
+                    for p in instance.PERIODS
+                    for t in instance.CONSTRAINT_TYPES
+                    for d in instance.PEAK_DESIGNATIONS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_deliverable_limit, actual_deliverable_limit)
+
         # Param: deliverable_capacity_limit_mw
         expected_deliverable_limit = OrderedDict(
             sorted(

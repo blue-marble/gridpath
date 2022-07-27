@@ -1727,6 +1727,33 @@ subscenarios_project_prm_deliverability_costs
 (prm_deliverability_cost_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_existing;
+CREATE TABLE subscenarios_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_existing;
+CREATE TABLE inputs_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period FLOAT,
+constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+peak_designation VARCHAR(16),
+existing_deliverability_mw FLOAT,
+PRIMARY KEY (prm_deliverability_existing_scenario_id, deliverability_group, period,
+             constraint_type, peak_designation),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_existing
+(prm_deliverability_existing_scenario_id)
+);
+
 DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_potential;
 CREATE TABLE subscenarios_project_prm_deliverability_potential (
 prm_deliverability_potential_scenario_id INTEGER PRIMARY KEY
@@ -2931,6 +2958,7 @@ project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
+prm_deliverability_existing_scenario_id INTEGER,
 prm_deliverability_potential_scenario_id INTEGER,
 project_prm_deliverability_multipliers_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
@@ -3069,6 +3097,9 @@ FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
     subscenarios_project_prm_deliverability_costs (prm_deliverability_cost_scenario_id),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_existing
+        (prm_deliverability_existing_scenario_id),
 FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
     subscenarios_project_prm_deliverability_potential
         (prm_deliverability_potential_scenario_id),

@@ -108,6 +108,7 @@ reliability/prm/project_prm_zones,prm,project_prm_zone_scenario_id,project_prm_z
 reliability/prm/project_elcc_chars,prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,,0,0,,,,
 reliability/prm/system_prm_requirement,prm,prm_requirement_scenario_id,system_prm_requirement,simple,,0,0,,,,
 reliability/prm/deliverability/costs,deliverability,prm_deliverability_cost_scenario_id,project_prm_deliverability_costs,simple,,0,0,,,,
+reliability/prm/deliverability/existing,deliverability,prm_deliverability_existing_scenario_id,project_prm_deliverability_existing,simple,,0,0,,,,
 reliability/prm/deliverability/potential,deliverability,prm_deliverability_potential_scenario_id,project_prm_deliverability_potential,simple,,0,0,,,,
 reliability/prm/deliverability/multipliers,deliverability,project_prm_deliverability_multipliers_scenario_id,project_prm_deliverability_multipliers,simple,,0,0,,,,
 reliability/prm/elcc_surface,elcc_surface,elcc_surface_scenario_id,system_prm_zone_elcc_surface,dir_main,,0,0,zone_intercepts.csv,,,

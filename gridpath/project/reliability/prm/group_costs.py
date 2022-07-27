@@ -70,8 +70,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.DELIVERABILITY_GROUP_VINTAGES, within=NonNegativeReals
     )
 
-    # We'll also constrain how much deliverable and how much energy-only capacity can
-    # be built in each group
+    # We'll also constrain how much deliverability can be built in each group
     # This is a cumulative capacity limit for each vintage
     m.deliverable_capacity_limit_mw = Param(
         m.DELIVERABILITY_GROUPS,
@@ -141,6 +140,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod: list(
             set([_d for (prj, t, _d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
         )
+    )
+
+    # Existing deliverability
+    m.existing_deliverability_mw = Param(
+        m.DELIVERABILITY_GROUPS,
+        m.PERIODS,
+        m.CONSTRAINT_TYPES,
+        m.PEAK_DESIGNATIONS,
+        within=NonNegativeReals,
+        default=0,
     )
 
     # Expressions to use in constraints by type and peak designation
@@ -283,7 +292,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod.Group_Deliverable_Project_Capacity_MW[
                     g, p, constraint_type, peak_designation
                 ]
-                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+                <= mod.existing_deliverability_mw[
+                    g, p, constraint_type, peak_designation
+                ]
+                + mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
             )
         else:
             return Constraint.Skip
@@ -305,7 +317,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod.Group_Total_Project_Capacity_MW[
                     g, p, constraint_type, peak_designation
                 ]
-                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+                <= mod.existing_deliverability_mw[
+                    g, p, constraint_type, peak_designation
+                ]
+                + mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
             )
         else:
             return Constraint.Skip
@@ -327,7 +342,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                 mod.Deliverability_Group_Energy_Only_Project_Capacity_MW[
                     g, p, constraint_type, peak_designation
                 ]
-                <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
+                <= mod.existing_deliverability_mw[
+                    g, p, constraint_type, peak_designation
+                ]
+                + mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
             )
         else:
             return Constraint.Skip
@@ -408,6 +426,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.deliverability_cost_per_mw_yr,
         ),
     )
+
+    # Existing deliverability: optional
+    existing_deliverability_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "deliverability_existing.tab",
+    )
+    if os.path.exists(existing_deliverability_file):
+        data_portal.load(
+            filename=existing_deliverability_file,
+            param=m.existing_deliverability_mw,
+        )
 
     # Potentials: optional
     group_potentials_file = os.path.join(
@@ -526,10 +558,23 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         )
 
         c2 = conn.cursor()
+        if subscenarios.PRM_DELIVERABILITY_EXISTING_SCENARIO_ID is None:
+            existing = []
+        else:
+            existing = c2.execute(
+                """SELECT deliverability_group, period, constraint_type, 
+                peak_designation, existing_deliverability_mw
+            FROM inputs_project_prm_deliverability_existing
+            WHERE prm_deliverability_existing_scenario_id = {}""".format(
+                    subscenarios.PRM_DELIVERABILITY_EXISTING_SCENARIO_ID
+                )
+            )
+
+        c3 = conn.cursor()
         if subscenarios.PRM_DELIVERABILITY_POTENTIAL_SCENARIO_ID is None:
             group_potential = []
         else:
-            group_potential = c2.execute(
+            group_potential = c3.execute(
                 """SELECT deliverability_group, period,
             deliverable_capacity_limit_cumulative_mw
             FROM inputs_project_prm_deliverability_potential
@@ -538,9 +583,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
                 )
             )
 
-        c3 = conn.cursor()
+        c4 = conn.cursor()
         # Projects by group
-        group_projects = c3.execute(
+        group_projects = c4.execute(
             """SELECT deliverability_group, project 
             FROM 
             (SELECT project
@@ -558,9 +603,9 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
             )
         )
 
-        c4 = conn.cursor()
+        c5 = conn.cursor()
         # Project multipliers by constraint type and peak designation
-        project_multipliers = c4.execute(
+        project_multipliers = c5.execute(
             """
             SELECT project, constraint_type, peak_designation, multiplier
             FROM inputs_project_prm_deliverability_multipliers
@@ -570,7 +615,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
             )
         )
 
-    return group_costs, group_potential, group_projects, project_multipliers
+    return group_costs, existing, group_potential, group_projects, project_multipliers
 
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
@@ -584,7 +629,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     pass
     # Validation to be added
-    # group_costs, group_potential, group_projects, project_multipliers = \
+    # group_costs, existing, group_potential, group_projects, project_multipliers = \
     #   get_model_inputs_from_database(
     #       scenario_id, subscenarios, subproblem, stage, conn)
 
@@ -606,6 +651,7 @@ def write_model_inputs(
 
     (
         group_costs,
+        existing,
         group_potential,
         group_projects,
         project_multipliers,
@@ -640,6 +686,38 @@ def write_model_inputs(
         for row in group_costs:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+    existing = existing.fetchall()
+    if existing:
+        with open(
+            os.path.join(
+                scenario_directory,
+                subproblem,
+                stage,
+                "inputs",
+                "deliverability_existing.tab",
+            ),
+            "w",
+            newline="",
+        ) as potentials_file:
+            writer = csv.writer(potentials_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                [
+                    "deliverability_group",
+                    "period",
+                    "constraint_type",
+                    "peak_designation",
+                    "existing_deliverability_mw",
+                ]
+            )
+
+            # Input data
+            for row in existing:
+                writer.writerow(row)
+    else:
+        pass
 
     group_potential = group_potential.fetchall()
     if group_potential:
