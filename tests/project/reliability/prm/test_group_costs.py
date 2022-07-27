@@ -57,7 +57,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestELCCEligibilityThresholds(unittest.TestCase):
+class TestDeliverabilityGroupCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -197,6 +197,54 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
         )
 
         self.assertListEqual(expected_projects, actual_projects)
+
+        # Set: PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+        expected_type_peak_design = sorted(
+            [
+                ("Wind", "deliverable", "peak_highest"),
+                ("Wind", "deliverable", "peak_secondary"),
+                ("Wind", "total", "offpeak"),
+                ("Wind_z2", "deliverable", "peak_highest"),
+                ("Wind_z2", "deliverable", "peak_secondary"),
+                ("Wind_z2", "total", "offpeak"),
+            ]
+        )
+        actual_type_peak_design = sorted(
+            [
+                (prj, t, d)
+                for (prj, t, d) in instance.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+            ]
+        )
+
+        self.assertListEqual(expected_type_peak_design, actual_type_peak_design)
+
+        # Param: peak_designation_multiplier
+        expected_multipliers = OrderedDict(
+            sorted(
+                {
+                    ("Wind", "deliverable", "peak_highest"): 0.2,
+                    ("Wind", "deliverable", "peak_secondary"): 0.3,
+                    ("Wind", "total", "offpeak"): 0.5,
+                    ("Wind_z2", "deliverable", "peak_highest"): 0.25,
+                    ("Wind_z2", "deliverable", "peak_secondary"): 0.4,
+                    ("Wind_z2", "total", "offpeak"): 0.6,
+                }.items()
+            )
+        )
+        actual_multipliers = OrderedDict(
+            sorted(
+                {
+                    (prj, tp, des): instance.peak_designation_multiplier[prj, tp, des]
+                    for (
+                        prj,
+                        tp,
+                        des,
+                    ) in instance.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_multipliers, actual_multipliers)
 
         # Set: OPR_PRDS_BY_GROUP_VINTAGE
         expected_opr_prds_by_grp_vintage = OrderedDict(

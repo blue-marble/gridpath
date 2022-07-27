@@ -14,7 +14,8 @@
 
 """
 Building "transmission" capacity to allow for project capacity to count as
-deliverable for PRM purposes. Note that this is not transmission for the purposes of
+deliverable for PRM purposes OR for energy-only purposes even if the PRM "deliverable"
+capacity is not increased. Note that this is  not transmission for the purposes of
 power flow in the model, so we will also call it "deliverability" capacity. There is
 currently no distinction between the operational and financial lifetime of this
 "deliverability" capacity (like we have for projects).
@@ -79,23 +80,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         default=float("inf"),
     )
 
-    # Multipliers for the constraint types and peak designations
-    m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS = Set(dimen=3)
-    m.peak_designation_multiplier = Param(
-        m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS, within=NonNegativeReals
-    )
-    m.CONSTRAINT_TYPES = Set(
-        initialize=lambda mod: list(
-            set([t for (prj, t, d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
-        ),
-        within=["total", "deliverable", "energy_only"],
-    )
-    m.PEAK_DESIGNATIONS = Set(
-        initialize=lambda mod: list(
-            set([d for (prj, t, d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
-        )
-    )
-
     # ### Derived sets for capacity and cost tracking ###
     def operational_periods_by_group_vintage(mod, g, v):
         return relevant_periods_by_project_vintage(
@@ -136,7 +120,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
-    def total_project_capacity_in_group_rule(
+    # Multipliers for the constraint types and peak designations
+    m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS = Set(dimen=3)
+    m.peak_designation_multiplier = Param(
+        m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS, within=NonNegativeReals
+    )
+    # Constraints can be applied on the total project capacity, the deliverable (for
+    # PRM purposes) capacity or the energy-only (for PRM purposes) capacity.
+    m.CONSTRAINT_TYPES = Set(
+        initialize=lambda mod: list(
+            set([t for (prj, t, _d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
+        ),
+        within=["total", "deliverable", "energy_only"],
+    )
+    # Depending on load conditions, we can expect different capacity factors from the
+    # deliverable capacity (i.e., different transmission needs) and we can apply
+    # several constraints with different cap factors (multipliers), as we may not
+    # know which one will bind ahead of time
+    m.PEAK_DESIGNATIONS = Set(
+        initialize=lambda mod: list(
+            set([_d for (prj, t, _d) in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS])
+        )
+    )
+
+    # Expressions to use in constraints by type and peak designation
+    def total_project_capacity_in_group_init(
         mod, g, period, constraint_type, peak_designation
     ):
         """
@@ -154,20 +162,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     prj, constraint_type, peak_designation
                 ]
                 for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                if p == period
+                and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                and (prj, constraint_type, peak_designation)
+                in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
             )
-        else:
-            return Constraint.Skip
 
     m.Group_Total_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
         m.CONSTRAINT_TYPES,
         m.PEAK_DESIGNATIONS,
-        rule=total_project_capacity_in_group_rule,
+        initialize=total_project_capacity_in_group_init,
     )
 
-    def deliverable_project_capacity_in_group_rule(
+    def deliverable_project_capacity_in_group_init(
         mod, g, period, constraint_type, peak_designation
     ):
         """
@@ -185,20 +194,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     prj, constraint_type, peak_designation
                 ]
                 for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                if p == period
+                and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                and (prj, constraint_type, peak_designation)
+                in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
             )
-        else:
-            return Constraint.Skip
 
-    m.Deliverability_Group_Deliverable_Project_Capacity_MW = Expression(
+    m.Group_Deliverable_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
         m.CONSTRAINT_TYPES,
         m.PEAK_DESIGNATIONS,
-        rule=deliverable_project_capacity_in_group_rule,
+        initialize=deliverable_project_capacity_in_group_init,
     )
 
-    def energy_only_project_capacity_in_group_rule(
+    def energy_only_project_capacity_in_group_init(
         mod, g, period, constraint_type, peak_designation
     ):
         """
@@ -215,17 +225,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
                     prj, constraint_type, peak_designation
                 ]
                 for (prj, p) in mod.EOA_PRM_PRJ_OPR_PRDS
-                if p == period and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                if p == period
+                and prj in mod.PROJECTS_BY_DELIVERABILITY_GROUP[g]
+                and (prj, constraint_type, peak_designation)
+                in mod.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
             )
-        else:
-            return Constraint.Skip
 
     m.Group_Energy_Only_Project_Capacity_MW = Expression(
         m.DELIVERABILITY_GROUPS,
         m.PERIODS,
         m.CONSTRAINT_TYPES,
         m.PEAK_DESIGNATIONS,
-        rule=energy_only_project_capacity_in_group_rule,
+        initialize=energy_only_project_capacity_in_group_init,
     )
 
     # Variables
@@ -269,7 +280,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ):
         if constraint_type == "deliverable":
             return (
-                mod.Deliverability_Group_Deliverable_Project_Capacity_MW[
+                mod.Group_Deliverable_Project_Capacity_MW[
                     g, p, constraint_type, peak_designation
                 ]
                 <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
@@ -291,7 +302,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ):
         if constraint_type == "total":
             return (
-                mod.Deliverability_Group_Total_Project_Capacity_MW[
+                mod.Group_Total_Project_Capacity_MW[
                     g, p, constraint_type, peak_designation
                 ]
                 <= mod.Cumulative_Added_Deliverability_Capacity_MW[g, p]
