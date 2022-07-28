@@ -163,7 +163,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "load_zone_markets.tab",
         ),
-        set=m.LZ_MARKETS,
+        index=m.LZ_MARKETS,
+        param=m.final_participation_stage,
     )
 
     # Load starting market positions if applicable
@@ -247,7 +248,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # market_scenario_id
     load_zone_markets = c.execute(
         """
-        SELECT load_zone, market
+        SELECT load_zone, market, final_participation_stage
         FROM
         -- Get included load_zones only
         (SELECT load_zone
@@ -256,7 +257,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ) as lz_tbl
         LEFT OUTER JOIN 
         -- Get markets for those load zones
-        (SELECT load_zone, market
+        (SELECT load_zone, market, final_participation_stage
             FROM inputs_load_zone_markets
             WHERE load_zone_market_scenario_id = ?
         ) as lz_mh_tbl
@@ -310,9 +311,10 @@ def write_model_inputs(
     ) as f:
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
-        writer.writerow(["load_zone", "market"])
+        writer.writerow(["load_zone", "market", "final_participation_stage"])
         for row in load_zone_markets:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

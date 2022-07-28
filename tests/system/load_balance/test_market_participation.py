@@ -123,8 +123,8 @@ class TestMarketParticipation(unittest.TestCase):
 
         # Param: final_participation_stage
         expected_final_participation_stage = {
-            ("Zone1", "Market_Hub_1"): 1,
-            ("Zone1", "Market_Hub_2"): 1,
+            ("Zone1", "Market_Hub_1"): 2,
+            ("Zone1", "Market_Hub_2"): 3,
             ("Zone2", "Market_Hub_1"): 1,
         }
         actual_final_participation_stage = {
