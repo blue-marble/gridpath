@@ -39,34 +39,65 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
-    | | :code:`cumulative_new_build_mw`                       |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | :code:`min_new_build_power`                                           |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
     |                                                                         |
-    | The minimum cumulative amount of capacity (in MW) that must be built    |
-    | for a project by a certain period.                                      |
+    | The minimum amount of power capacity for a project to be built in a     |
+    | certain period.                                                         |
     +-------------------------------------------------------------------------+
-    | | :code:`max_capacity_power`                       |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | :code:`max_new_build_power`                                           |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`Infinity`                                           |
     |                                                                         |
-    | The maximum cumulative amount of capacity (in MW) that must be built    |
-    | for a project by a certain period.                                      |
+    | The maximum amount of power capacity for a project to be built in a     |
+    | certain period.                                                         |
     +-------------------------------------------------------------------------+
-    +-------------------------------------------------------------------------+
-    | | :code:`stor_new_lin_min_capacity_powerh`                     |
-    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | :code:`min_capacity_power`                                            |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
     |                                                                         |
-    | The minimum cumulative amount of energy capacity (in MWh) that must be  |
-    | built for a storage project by a certain period.                        |
+    | The minimum amount of power capacity for a project in a certain period. |
     +-------------------------------------------------------------------------+
-    | | :code:`stor_new_lin_max_capacity_powerh`                     |
-    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | :code:`max_capacity_power`                                            |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`Infinity`                                           |
     |                                                                         |
-    | The maximum cumulative amount of energy capacity (in MW) that can be    |
-    | built for a project by a certain period.                                |
+    | The maximum amount of power capacity for a project in a certain period. |
+    +-------------------------------------------------------------------------+
+    | | :code:`min_new_build_energy`                                          |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of energy capacity for a project to be built in a    |
+    | certain period.                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`max_new_build_energy`                                          |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`Infinity`                                           |
+    |                                                                         |
+    | The maximum amount of energy capacity for a project to be built in a    |
+    | certain period.                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`min_capacity_energy`                                           |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The minimum amount of energy capacity for a project in a certain period.|
+    +-------------------------------------------------------------------------+
+    | | :code:`max_capacity_energy`                                           |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`Infinity`                                           |
+    |                                                                         |
+    | The maximum amount of energy capacity for a project in a certain period.|
     +-------------------------------------------------------------------------+
 
     |
@@ -74,29 +105,53 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Constraints                                                             |
     +=========================================================================+
-    | | :code:`GenNewLin_Min_Cumulative_Build_Constraint`                     |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MIN_CONSTRAINT`  |
+    | | :code:`Min_Build_Power_Constraint`                                    |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that certain amount of capacity is built by a certain period,   |
-    | based on :code:`min_capacity_power`.               |
+    | Ensures that certain amount of power capacity must be built in a        | 
+    | particular period, based on :code:`min_new_build_power`.                |
     +-------------------------------------------------------------------------+
-    | | :code:`GenNewLin_Max_Cumulative_Build_Constraint`                     |
-    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_CUMULATIVE_MAX_CONSTRAINT`  |
+    | | :code:`Max_Build_Power_Constraint`                                    |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Limits the amount of capacity built by a certain period, based on       |
-    | :code:`max_capacity_power`.                        |
+    | Limits the amount of power capacity that can be built in a particular   |
+    | period based on :code:`max_new_build_power`.                            |
     +-------------------------------------------------------------------------+
-    | | :code:`StorNewLin_Min_Cum_Build_Energy_Constraint`                    |
-    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT`     |
+    | | :code:`Min_Power_Constraint`                                          |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that A certain amount of energy capacity is built by a certain  |
-    | period, based on :code:`stor_new_lin_min_capacity_powerh`.     |
+    | Ensures that certain amount of power capacity must exist in a certain   | 
+    | period, based on :code:`min_capacity_power`.                            |
     +-------------------------------------------------------------------------+
-    | | :code:`StorNewLin_Max_Cum_Build_Energy_Constraint`                    |
-    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT`     |
+    | | :code:`Max_Power_Constraint`                                          |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Limits the amount of energy capacity built by a certain period, based   |
-    | on :code:`stor_new_lin_max_capacity_powerh`.                   |
+    | Limits the amount of power capacity that can exist in a certain period, |
+    | based on :code:`max_capacity_power`.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`Min_Build_Energy_Constraint`                                   |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    |                                                                         |
+    | Ensures that certain amount of energy capacity must be built in a       | 
+    | particular period, based on :code:`min_new_build_energy`.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Build_Energy_Constraint`                                   |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    |                                                                         |
+    | Limits the amount of energy capacity that can be built in a particular  |
+    | period based on :code:`max_new_build_energy`.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`Min_Energy_Constraint`                                         |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    |                                                                         |
+    | Ensures that certain amount of energy capacity must exist in a certain  | 
+    | period, based on :code:`min_capacity_energy`.                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`Max_Energy_Constraint`                                         |
+    | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
+    |                                                                         |
+    | Limits the amount of energy capacity that can exist in a certain        |  
+    | period, based on :code:`max_capacity_energy`.                           |
     +-------------------------------------------------------------------------+
 
 
@@ -192,7 +247,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Power capacity
     def min_build_capacity_rule(mod, prj, prd):
         """
-        **Constraint Name**: Min_Build_Capacity_Constraint
+        **Constraint Name**: Min_Build_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
 
         Must build a certain amount of capacity in period.
@@ -202,13 +257,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return new_capacity_rule(mod, prj, prd) >= mod.min_new_build_power[prj, prd]
 
-    m.Min_Build_Capacity_Constraint = Constraint(
+    m.Min_Build_Power_Constraint = Constraint(
         m.PROJECTS, m.PERIODS, rule=min_build_capacity_rule
     )
 
     def max_build_capacity_rule(mod, prj, prd):
         """
-        **Constraint Name**: Max_Build_Capacity_Constraint
+        **Constraint Name**: Max_Build_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
 
         Can't build more than certain amount of capacity in period.
@@ -217,13 +272,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return Constraint.Skip
         return new_capacity_rule(mod, prj, prd) <= mod.max_new_build_power[prj, prd]
 
-    m.Max_Build_Capacity_Constraint = Constraint(
+    m.Max_Build_Power_Constraint = Constraint(
         m.PROJECTS, m.PERIODS, rule=max_build_capacity_rule
     )
 
     def min_capacity_rule(mod, prj, prd):
         """
-        **Constraint Name**: Min_Capacity_Constraint
+        **Constraint Name**: Min_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
 
         Must have a certain amount of capacity in period.
@@ -233,13 +288,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return mod.Capacity_MW[prj, prd] >= mod.min_capacity_power[prj, prd]
 
-    m.Min_Capacity_Constraint = Constraint(
+    m.Min_Power_Constraint = Constraint(
         m.PROJECTS, m.PERIODS, rule=min_capacity_rule
     )
 
     def max_capacity_rule(mod, prj, prd):
         """
-        **Constraint Name**: Max_Capacity_Constraint
+        **Constraint Name**: Max_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
 
         Can't have more than certain amount of capacity in period.
@@ -248,7 +303,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return Constraint.Skip
         return mod.Capacity_MW[prj, prd] <= mod.max_capacity_power[prj, prd]
 
-    m.Max_Capacity_Constraint = Constraint(
+    m.Max_Power_Constraint = Constraint(
         m.PROJECTS, m.PERIODS, rule=max_capacity_rule
     )
 
