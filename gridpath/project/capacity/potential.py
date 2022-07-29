@@ -245,7 +245,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     # Power capacity
-    def min_build_capacity_rule(mod, prj, prd):
+    def min_build_power_rule(mod, prj, prd):
         """
         **Constraint Name**: Min_Build_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
@@ -258,10 +258,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return new_capacity_rule(mod, prj, prd) >= mod.min_new_build_power[prj, prd]
 
     m.Min_Build_Power_Constraint = Constraint(
-        m.PROJECTS, m.PERIODS, rule=min_build_capacity_rule
+        m.PROJECTS, m.PERIODS, rule=min_build_power_rule
     )
 
-    def max_build_capacity_rule(mod, prj, prd):
+    def max_build_power_rule(mod, prj, prd):
         """
         **Constraint Name**: Max_Build_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIODS
@@ -273,10 +273,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         return new_capacity_rule(mod, prj, prd) <= mod.max_new_build_power[prj, prd]
 
     m.Max_Build_Power_Constraint = Constraint(
-        m.PROJECTS, m.PERIODS, rule=max_build_capacity_rule
+        m.PROJECTS, m.PERIODS, rule=max_build_power_rule
     )
 
-    def min_capacity_rule(mod, prj, prd):
+    def min_power_rule(mod, prj, prd):
         """
         **Constraint Name**: Min_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
@@ -288,9 +288,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return mod.Capacity_MW[prj, prd] >= mod.min_capacity_power[prj, prd]
 
-    m.Min_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=min_capacity_rule)
+    m.Min_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=min_power_rule)
 
-    def max_capacity_rule(mod, prj, prd):
+    def max_power_rule(mod, prj, prd):
         """
         **Constraint Name**: Max_Power_Constraint
         **Enforced Over**: m.PROJECTS, m.PERIOD
@@ -301,7 +301,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return Constraint.Skip
         return mod.Capacity_MW[prj, prd] <= mod.max_capacity_power[prj, prd]
 
-    m.Max_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=max_capacity_rule)
+    m.Max_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=max_power_rule)
 
     # Energy capacity (for storage)
     def min_build_energy_rule(mod, prj, prd):
