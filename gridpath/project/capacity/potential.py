@@ -108,7 +108,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`Min_Build_Power_Constraint`                                    |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that certain amount of power capacity must be built in a        | 
+    | Ensures that certain amount of power capacity must be built in a        |
     | particular period, based on :code:`min_new_build_power`.                |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Build_Power_Constraint`                                    |
@@ -120,7 +120,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`Min_Power_Constraint`                                          |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that certain amount of power capacity must exist in a certain   | 
+    | Ensures that certain amount of power capacity must exist in a certain   |
     | period, based on :code:`min_capacity_power`.                            |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Power_Constraint`                                          |
@@ -132,7 +132,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`Min_Build_Energy_Constraint`                                   |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that certain amount of energy capacity must be built in a       | 
+    | Ensures that certain amount of energy capacity must be built in a       |
     | particular period, based on :code:`min_new_build_energy`.               |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Build_Energy_Constraint`                                   |
@@ -144,13 +144,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`Min_Energy_Constraint`                                         |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Ensures that certain amount of energy capacity must exist in a certain  | 
+    | Ensures that certain amount of energy capacity must exist in a certain  |
     | period, based on :code:`min_capacity_energy`.                           |
     +-------------------------------------------------------------------------+
     | | :code:`Max_Energy_Constraint`                                         |
     | | *Defined over*: :code:`PROJECTS`, :code:`PERIODS`                     |
     |                                                                         |
-    | Limits the amount of energy capacity that can exist in a certain        |  
+    | Limits the amount of energy capacity that can exist in a certain        |
     | period, based on :code:`max_capacity_energy`.                           |
     +-------------------------------------------------------------------------+
 
@@ -288,9 +288,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         else:
             return mod.Capacity_MW[prj, prd] >= mod.min_capacity_power[prj, prd]
 
-    m.Min_Power_Constraint = Constraint(
-        m.PROJECTS, m.PERIODS, rule=min_capacity_rule
-    )
+    m.Min_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=min_capacity_rule)
 
     def max_capacity_rule(mod, prj, prd):
         """
@@ -303,9 +301,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             return Constraint.Skip
         return mod.Capacity_MW[prj, prd] <= mod.max_capacity_power[prj, prd]
 
-    m.Max_Power_Constraint = Constraint(
-        m.PROJECTS, m.PERIODS, rule=max_capacity_rule
-    )
+    m.Max_Power_Constraint = Constraint(m.PROJECTS, m.PERIODS, rule=max_capacity_rule)
 
     # Energy capacity (for storage)
     def min_build_energy_rule(mod, prj, prd):
@@ -390,12 +386,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     potentials_file = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "new_build_potentials.tab",
-        )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "new_build_potentials.tab",
+    )
     if os.path.exists(potentials_file):
         data_portal.load(
             filename=potentials_file,
@@ -469,10 +465,12 @@ def write_model_inputs(
     :return:
     """
 
-    potentials = [row for row in get_model_inputs_from_database(
-        scenario_id, subscenarios, subproblem, stage, conn
-    ).fetchall()]
-
+    potentials = [
+        row
+        for row in get_model_inputs_from_database(
+            scenario_id, subscenarios, subproblem, stage, conn
+        ).fetchall()
+    ]
 
     if not potentials:
         pass

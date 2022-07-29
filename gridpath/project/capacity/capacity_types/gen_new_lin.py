@@ -204,7 +204,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.GEN_NEW_LIN_VNTS, within=NonNegativeReals
     )
 
-
     # Derived Sets
     ###########################################################################
 
@@ -296,8 +295,10 @@ def gen_new_lin_capacity_rule(mod, g, p):
         if gen == g
     )
 
+
 # Capacity Type Methods
 ###############################################################################
+
 
 def capacity_rule(mod, g, p):
     """
@@ -489,7 +490,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         AND capacity_type = 'gen_new_lin';""".format(
             temporal=subscenarios.TEMPORAL_SCENARIO_ID,
             new_cost=subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 

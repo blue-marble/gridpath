@@ -130,7 +130,7 @@ class TestCapacityCosts(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_min_new_build_power, actual_min_new_build_power)
-        
+
         # Param: max_new_build_power
         expected_max_new_build_power = {}
         for (prj, prd) in project_periods:

@@ -148,7 +148,6 @@ class TestGenNewLin(unittest.TestCase):
         )
         self.assertDictEqual(expected_cost, actual_cost)
 
-
     def test_derived_data(self):
         """
         Calculations

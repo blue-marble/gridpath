@@ -259,8 +259,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.STOR_NEW_LIN = Set()
     m.STOR_NEW_LIN_VNTS = Set(dimen=2, within=m.STOR_NEW_LIN * m.PERIODS)
 
-
-
     # Required Params
     ###########################################################################
 
@@ -277,7 +275,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.stor_new_lin_annualized_real_cost_per_mwh_yr = Param(
         m.STOR_NEW_LIN_VNTS, within=NonNegativeReals
     )
-
 
     # Derived Sets
     ###########################################################################
@@ -710,7 +707,7 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         AND capacity_type = 'stor_new_lin';""".format(
             temporal=subscenarios.TEMPORAL_SCENARIO_ID,
             new_cost=subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
