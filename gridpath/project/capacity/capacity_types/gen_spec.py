@@ -120,9 +120,9 @@ def capacity_rule(mod, g, p):
     return mod.gen_spec_capacity_mw[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_spec* capacity type is a
+    The fixed cost of projects of the *gen_spec* capacity type is a
     pre-specified number equal to the capacity times the per-mw fixed cost
     for each of the project's operational periods.
     """
@@ -288,7 +288,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_yr"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

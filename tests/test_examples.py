@@ -1211,6 +1211,19 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_tx_capacity_groups")
         self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
 
+    def test_example_2periods_new_build_fin_lifetime(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_fin_lifetime" example. Same as "2periods_new_build" but
+        with shorter financial lifetimes and some fixed costs. Cost is lower because
+        the same payment is made fewer times.
+        """
+
+        self.check_validation("2periods_new_build_fin_lifetime")
+        self.run_and_check_objective(
+            "2periods_new_build_fin_lifetime", -10022366566.861605
+        )
+
     def test_example_2periods_new_build_cumulative_and_vintage_min_max(self):
         """
         Check validation and objective function value of

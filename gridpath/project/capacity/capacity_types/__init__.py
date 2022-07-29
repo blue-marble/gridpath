@@ -150,6 +150,11 @@ def capacity_cost_rule(mod, prj, prd):
     return 0
 
 
+def fixed_cost_rule(mod, prj, prd):
+    """ """
+    return 0
+
+
 def new_capacity_rule(mod, prj, prd):
     """
     New capacity built at project g in period p.

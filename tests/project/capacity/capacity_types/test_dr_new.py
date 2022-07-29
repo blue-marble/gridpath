@@ -101,6 +101,16 @@ class TestDRNew(unittest.TestCase):
         actual_projects = sorted([prj for prj in instance.DR_NEW])
         self.assertListEqual(expected_projects, actual_projects)
 
+        # Set: DR_NEW_OPR_PRDS
+        expected_opr_periods = [("Shift_DR", 2020), ("Shift_DR", 2030)]
+        actual_opr_periods = [(dr, prd) for (dr, prd) in instance.DR_NEW_OPR_PRDS]
+        self.assertListEqual(expected_opr_periods, actual_opr_periods)
+
+        # Set: DR_NEW_FIN_PRDS
+        expected_fin_periods = [("Shift_DR", 2020), ("Shift_DR", 2030)]
+        actual_fin_periods = [(dr, prd) for (dr, prd) in instance.DR_NEW_FIN_PRDS]
+        self.assertListEqual(expected_fin_periods, actual_fin_periods)
+
         # Param: dr_new_min_duration
         expected_duration = OrderedDict(sorted({"Shift_DR": 6}.items()))
         actual_duration = OrderedDict(
