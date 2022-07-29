@@ -334,26 +334,27 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-
-    data_portal.load(
-        filename=os.path.join(
+    potentials_file = os.path.join(
             scenario_directory,
             str(subproblem),
             str(stage),
             "inputs",
             "new_build_potentials.tab",
-        ),
-        param=(
-            m.min_new_build_power,
-            m.max_new_build_power,
-            m.min_capacity_power,
-            m.max_capacity_power,
-            m.min_new_build_energy,
-            m.max_new_build_energy,
-            m.min_capacity_energy,
-            m.max_capacity_energy,
-        ),
-    )
+        )
+    if os.path.exists(potentials_file):
+        data_portal.load(
+            filename=potentials_file,
+            param=(
+                m.min_new_build_power,
+                m.max_new_build_power,
+                m.min_capacity_power,
+                m.max_capacity_power,
+                m.min_new_build_energy,
+                m.max_new_build_energy,
+                m.min_capacity_energy,
+                m.max_capacity_energy,
+            ),
+        )
 
 
 # Database
@@ -370,34 +371,31 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     """
     c = conn.cursor()
 
-    if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None:
-        potentials = []
-    else:
-        potentials = c.execute(
-            """SELECT project, period, min_new_build_power, max_new_build_power,
-                min_capacity_power, max_capacity_power,
-                min_new_build_energy, max_new_build_energy,
-                min_capacity_energy, max_capacity_energy
-                FROM inputs_project_portfolios
-                CROSS JOIN
-                (SELECT period
-                FROM inputs_temporal_periods
-                WHERE temporal_scenario_id = {temporal}) as relevant_vintages
-                INNER JOIN (
-                SELECT project, period, min_new_build_power, max_new_build_power,
-                min_capacity_power, max_capacity_power,
-                min_new_build_energy, max_new_build_energy,
-                min_capacity_energy, max_capacity_energy
-                FROM inputs_project_new_potential
-                WHERE project_new_potential_scenario_id = {potential}) as potential
-                USING (project, period)
-                WHERE project_portfolio_scenario_id = {portfolio}
-                """.format(
-                temporal=subscenarios.TEMPORAL_SCENARIO_ID,
-                potential=subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
-                portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            ),
+    potentials = c.execute(
+        """SELECT project, period, min_new_build_power, max_new_build_power,
+            min_capacity_power, max_capacity_power,
+            min_new_build_energy, max_new_build_energy,
+            min_capacity_energy, max_capacity_energy
+            FROM inputs_project_portfolios
+            CROSS JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE temporal_scenario_id = {temporal}) as relevant_vintages
+            INNER JOIN (
+            SELECT project, period, min_new_build_power, max_new_build_power,
+            min_capacity_power, max_capacity_power,
+            min_new_build_energy, max_new_build_energy,
+            min_capacity_energy, max_capacity_energy
+            FROM inputs_project_new_potential
+            WHERE project_new_potential_scenario_id = {potential}) as potential
+            USING (project, period)
+            WHERE project_portfolio_scenario_id = {portfolio}
+            """.format(
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
+            potential=subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
+    )
 
     return potentials
 
@@ -416,11 +414,12 @@ def write_model_inputs(
     :return:
     """
 
-    potentials = get_model_inputs_from_database(
+    potentials = [row for row in get_model_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
-    )
+    ).fetchall()]
 
-    if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None:
+
+    if not potentials:
         pass
     else:
         with open(
