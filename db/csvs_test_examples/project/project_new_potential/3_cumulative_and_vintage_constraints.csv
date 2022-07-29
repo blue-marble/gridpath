@@ -1,4 +1,4 @@
-project,period,min_new_build_mw,max_new_build_mw,min_new_build_mwh,max_new_build_mwh,min_cumulative_new_build_mw,max_cumulative_new_build_mw,min_cumulative_new_build_mwh,max_cumulative_new_build_mwh
-Gas_CCGT_new,2020,,10,,,0,20,,
-Gas_CCGT_new,2030,,,,,0,20,,
-Gas_CT_new,2030,30,,,,10,,,
+project,period,min_new_build_power,max_new_build_power,min_capacity_power,max_capacity_power,min_new_build_energy,max_new_build_energy,min_capacity_energy,max_capacity_energy
+Gas_CCGT_new,2020,,10,0,20,,,,
+Gas_CCGT_new,2030,,,0,20,,,,
+Gas_CT_new,2030,30,,10,,,,,

@@ -157,6 +157,13 @@ def new_capacity_rule(mod, prj, prd):
     return 0
 
 
+def new_energy_capacity_rule(mod, prj, prd):
+    """
+    New energy capacity built at project g in period p.
+    """
+    return 0
+
+
 def fuel_prod_capacity_rule(mod, prj, prd):
     """
     Fuel production capacity.
