@@ -196,54 +196,6 @@ class TestGenNewLin(unittest.TestCase):
         )
         self.assertDictEqual(expected_cost, actual_cost)
 
-        # Set: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-        expected_gen_vintage_min_set = sorted([("Gas_CT_New", 2030)])
-        actual_gen_vintage_min_set = sorted(
-            [
-                (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-            ]
-        )
-        self.assertListEqual(expected_gen_vintage_min_set, actual_gen_vintage_min_set)
-
-        # Params: gen_new_lin_min_cumulative_new_build_mw
-        expected_min_new_mw = OrderedDict(sorted({("Gas_CT_New", 2030): 10}.items()))
-        actual_min_new_mw = OrderedDict(
-            sorted(
-                {
-                    (prj, v): instance.gen_new_lin_min_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
-
-        # Set: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-        expected_gen_vintage_max_set = sorted(
-            [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030)]
-        )
-        actual_gen_vintage_max_set = sorted(
-            [
-                (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-            ]
-        )
-        self.assertListEqual(expected_gen_vintage_max_set, actual_gen_vintage_max_set)
-
-        # Params: gen_new_lin_max_cumulative_new_build_mw
-        expected_max_new_mw = OrderedDict(
-            sorted({("Gas_CCGT_New", 2020): 20, ("Gas_CCGT_New", 2030): 20}.items())
-        )
-        actual_max_new_mw = OrderedDict(
-            sorted(
-                {
-                    (prj, v): instance.gen_new_lin_max_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_max_new_mw, actual_max_new_mw)
-
     def test_derived_data(self):
         """
         Calculations
