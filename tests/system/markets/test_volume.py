@@ -140,6 +140,47 @@ class TestMarketPrices(unittest.TestCase):
         )
         self.assertDictEqual(expected_max_purchases, actual_max_purchases)
 
+        # Param: max_final_market_sales
+        expected_max_final_sales = OrderedDict(
+            sorted(
+                market_volume_df.set_index(["market", "timepoint"])
+                .to_dict()["max_final_market_sales"]
+                .items()
+            )
+        )
+        for key in expected_max_final_sales.keys():
+            expected_max_final_sales[key] = float("inf")
+
+        actual_max_final_sales = OrderedDict(
+            sorted(
+                {
+                    (mrkt, tmp): instance.max_final_market_sales[mrkt, tmp]
+                    for mrkt in instance.MARKETS
+                    for tmp in instance.TMPS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_final_sales, actual_max_final_sales)
+
+        # Param: max_final_market_purchases
+        expected_max_final_purchases = OrderedDict(
+            sorted(
+                market_volume_df.set_index(["market", "timepoint"])
+                .to_dict()["max_final_market_purchases"]
+                .items()
+            )
+        )
+        actual_max_final_purchases = OrderedDict(
+            sorted(
+                {
+                    (mrkt, tmp): instance.max_final_market_purchases[mrkt, tmp]
+                    for mrkt in instance.MARKETS
+                    for tmp in instance.TMPS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_final_purchases, actual_max_final_purchases)
+
 
 if __name__ == "__main__":
     unittest.main()

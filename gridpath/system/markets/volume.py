@@ -22,8 +22,9 @@ Infinity = float("inf")
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """ """
     m.max_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
-
     m.max_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
+    m.max_final_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
+    m.max_final_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
 
     def total_market_sales_rule(mod, market, tmp):
         return sum(
@@ -45,6 +46,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.MARKETS, m.TMPS, rule=total_market_purchases_rule
     )
 
+    def total_net_market_sales_rule(mod, market, tmp):
+        return sum(
+            mod.Final_Sell_Power_Position[lz, mrkt, tmp]
+            for (lz, mrkt) in mod.LZ_MARKETS
+            if mrkt == market
+        )
+
+    m.Total_Net_Market_Sales = Expression(
+        m.MARKETS, m.TMPS, rule=total_net_market_sales_rule
+    )
+
+    def total_net_market_purchases_rule(mod, market, tmp):
+        return sum(
+            mod.Final_Buy_Power_Position[lz, mrkt, tmp]
+            for (lz, mrkt) in mod.LZ_MARKETS
+            if mrkt == market
+        )
+
+    m.Total_Net_Market_Purchases = Expression(
+        m.MARKETS, m.TMPS, rule=total_net_market_purchases_rule
+    )
+
+    # Constraints
     def max_market_sales_rule(mod, hub, tmp):
         return mod.Total_Market_Sales[hub, tmp] <= mod.max_market_sales[hub, tmp]
 
@@ -61,6 +85,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.MARKETS, m.TMPS, rule=max_market_purchases_rule
     )
 
+    def max_final_market_sales_rule(mod, hub, tmp):
+        return (
+            mod.Total_Net_Market_Sales[hub, tmp] <= mod.max_final_market_sales[hub, tmp]
+        )
+
+    m.Max_Net_Market_Sales_Constraint = Constraint(
+        m.MARKETS, m.TMPS, rule=max_final_market_sales_rule
+    )
+
+    def max_final_market_purchases_rule(mod, hub, tmp):
+        return (
+            mod.Total_Net_Market_Purchases[hub, tmp]
+            <= mod.max_final_market_purchases[hub, tmp]
+        )
+
+    m.Max_Net_Market_Purchases_Constraint = Constraint(
+        m.MARKETS, m.TMPS, rule=max_final_market_purchases_rule
+    )
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
@@ -71,7 +114,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "market_volume.tab",
         ),
-        param=(m.max_market_sales, m.max_market_purchases),
+        param=(
+            m.max_market_sales,
+            m.max_market_purchases,
+            m.max_final_market_sales,
+            m.max_final_market_purchases,
+        ),
     )
 
 
@@ -92,7 +140,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # market_scenario_id
     market_limits = c.execute(
         """
-        SELECT market, timepoint, max_market_sales, max_market_purchases
+        SELECT market, timepoint, max_market_sales, max_market_purchases,
+        max_final_market_sales, max_final_market_purchases
         -- Get prices for included markets only
         FROM (
             SELECT market
@@ -107,7 +156,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             AND stage_id = ?
         ) as tmp_tbl
         LEFT OUTER JOIN (
-            SELECT market, stage_id, timepoint, max_market_sales, max_market_purchases
+            SELECT market, stage_id, timepoint, max_market_sales, max_market_purchases,
+            max_final_market_sales, max_final_market_purchases
             FROM inputs_market_volume
             WHERE market_volume_scenario_id = ?
         ) as price_tbl
@@ -158,7 +208,14 @@ def write_model_inputs(
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         writer.writerow(
-            ["market", "timepoint", "max_market_sales", "max_market_purchases"]
+            [
+                "market",
+                "timepoint",
+                "max_market_sales",
+                "max_market_purchases",
+                "max_final_market_sales",
+                "max_final_market_purchases",
+            ]
         )
         for row in market_limits:
             replace_nulls = ["." if i is None else i for i in row]
