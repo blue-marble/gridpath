@@ -156,9 +156,9 @@ def energy_capacity_rule(mod, g, p):
     return mod.stor_spec_energy_capacity_mwh[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *stor_spec* capacity type is a
+    The fixed cost of projects of the *stor_spec* capacity type is a
     pre-specified number equal to the power capacity times the per-mw fixed
     cost plus the energy capacity times the per-mwh fixed cost for each of
     the project's operational periods.
@@ -329,7 +329,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     # Check for missing values (vs. missing row entries above)
     cols = [
         "specified_capacity_mw",
-        "fixed_cost_per_mw_year",
+        "fixed_cost_per_mw_yr",
         "fixed_cost_per_mwh_year",
     ]
     write_validation_to_database(

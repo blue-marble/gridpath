@@ -182,22 +182,15 @@ def import_objective_function_value(
     ) as f:
         objective_function = f.read()
 
-    del_sql = """
-        DELETE FROM results_scenario
+    obj_sql = """
+        UPDATE results_scenario
+        SET objective_function_value = ?
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?
-    """
-    del_data = (scenario_id, subproblem, stage)
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql, data=del_data, many=False)
-
-    obj_sql = """
-        INSERT INTO results_scenario
-        (scenario_id, subproblem_id, stage_id, objective_function_value)
-        VALUES(?, ?, ?, ?)
     ;"""
 
-    obj_data = (scenario_id, subproblem, stage, objective_function)
+    obj_data = (objective_function, scenario_id, subproblem, stage)
     spin_on_database_lock(conn=db, cursor=c, sql=obj_sql, data=obj_data, many=False)
 
 

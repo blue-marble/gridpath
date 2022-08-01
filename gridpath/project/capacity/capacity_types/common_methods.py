@@ -20,7 +20,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import get_column_row_value
 
 
-def operational_periods_by_project_vintage(
+def relevant_periods_by_project_vintage(
     periods, period_start_year, period_end_year, vintage, lifetime_yrs
 ):
     """
@@ -31,86 +31,94 @@ def operational_periods_by_project_vintage(
         by period
     :param vintage: the project vintage
     :param lifetime_yrs: the project-vintage lifetime
-    :return: the operational periods given the study periods and
+    :return: the operational or financial periods given the study periods and
         the project vintage and lifetime
 
-    Given the list of study periods and the project's vintage and lifetime,
-    this function returns the list of periods in which a project with
-    this vintage and lifetime will be operational.
+    Given the list of study periods and the project's vintage and lifetime (either
+    the operational lifetime or the financial lifetime), this function returns the
+    list of periods in which a project with this vintage and lifetime will be
+    operational (based on the operational lifetime) or incurring an annualized capital
+    cost (based on the financial lifetime) respectively. When a project is
+    operational, it incurs annual fixed O&M costs.
 
-    Two conditions must be met for a period to be operational for a project
-    of a certain vintage:
+    Two conditions must be met for a period to be operational / incurring costs for a
+    project of a certain vintage:
     1) project vintage (i.e. first operational year) must be before or equal
     to the start year of the period
-    2) project last operational year must be after the period end year.
+    2) project last lifetime year must be **after** the period end year.
 
     The end year of the period is exclusive (i.e. the last day of a period
     with end year 2030 is actually 2020-12-29). With the current
     formulation, a project with a 10 year lifetime of the 2020 vintage is
-    assumed to be operational on 2020-01-01 and remain operational through
-    2029-12-31 (vintage 2020, last operational year 2030 exclusive). It will be
-    operational in a period with a start year of 2020 and end year of 2030.
+    assumed to be operational / incurring costs on 2020-01-01 and remain operational
+    / incurring costs through 2029-12-31 (vintage 2020, last lifetime year 2030
+    exclusive). It will be operational / incurring costs in a period with a start
+    year of 2020 and end year of 2030.
 
-    If either the vintage or the last operational year is within the period,
-    the period is assumed to not be operational for the project.
+    If either the vintage or the last lifetime year is within the period,
+    the period is assumed to not be operational / incurring capital costs for the
+    project.
     """
-    # No operational periods if vintage does not belong to the project set;
+    # No relevant periods if vintage does not belong to the project set;
     # this shouldn't happen as we (should) enforce VINTAGES within PERIODS.
     if vintage not in periods:
         return []
     else:
-        first_operational_year = period_start_year[vintage]
-        last_operational_year = period_start_year[vintage] + lifetime_yrs
-        operational_periods = list()
+        first_lifetime_year = period_start_year[vintage]
+        last_lifetime_year = period_start_year[vintage] + lifetime_yrs
+        relevant_periods = list()
         for p in periods:
             if (
-                first_operational_year <= period_start_year[p]
-                and last_operational_year >= period_end_year[p]
+                first_lifetime_year <= period_start_year[p]
+                and last_lifetime_year >= period_end_year[p]
             ):
-                operational_periods.append(p)
+                relevant_periods.append(p)
             else:
                 pass
 
-    return operational_periods
+    return relevant_periods
 
 
-def project_operational_periods(
-    project_vintages_set, operational_periods_by_project_vintage_set
+def project_relevant_periods(
+    project_vintages_set, relevant_periods_by_project_vintage_set
 ):
     """
     :param project_vintages_set: the possible project-vintages when capacity
         can be built
-    :param operational_periods_by_project_vintage_set: the project operational
+    :param relevant_periods_by_project_vintage_set: the project operational
         periods based on vintage
     :return: all study periods when the project could be operational
 
-    Get the periods in which each project COULD be operational given all
-    project-vintages and operational periods by project-vintage (the
-    lifetime is allowed to differ by vintage).
+    Get the periods in which each project COULD be operational (or incurring
+    capital costs) given all project-vintages and relevant periods by
+    project-vintage (the lifetime is allowed to differ by vintage).
     """
     return set(
         (g, p)
         for (g, v) in project_vintages_set
-        for p in operational_periods_by_project_vintage_set[g, v]
+        for p in relevant_periods_by_project_vintage_set[g, v]
     )
 
 
-def project_vintages_operational_in_period(
-    project_vintage_set, operational_periods_by_project_vintage_set, period
+def project_vintages_relevant_in_period(
+    project_vintage_set, relevant_periods_by_project_vintage_set, period
 ):
     """
     :param project_vintage_set: possible project-vintages when capacity
         could be built
-    :param operational_periods_by_project_vintage_set: the periods when
-        project capacity of a particular vintage could be operational
+    :param relevant_periods_by_project_vintage_set: the periods when
+        project capacity of a particular vintage could be operational (or incurring
+        capital costs)
     :param period: the period we're in
-    :return: all vintages that could be operational in a period
+    :return: all vintages that could be operational (or incurring capital costs) in a
+        period
 
-    Get the project vintages that COULD be operational in each period.
+    Get the project vintages that COULD be operational (or incurring capital costs) in
+    each period.
     """
     project_vintages = list()
     for (prj, v) in project_vintage_set:
-        if period in operational_periods_by_project_vintage_set[prj, v]:
+        if period in relevant_periods_by_project_vintage_set[prj, v]:
             project_vintages.append((prj, v))
         else:
             pass
@@ -201,7 +209,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         fuel_production_capacity_fuelunitperhour,
         fuel_release_capacity_fuelunitperhour,
         fuel_storage_capacity_fuelunit,
-        fixed_cost_per_mw_year,
+        fixed_cost_per_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_mwh_year,
@@ -227,7 +235,7 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
         USING (project, period)
         INNER JOIN
         (SELECT project, period,
-        fixed_cost_per_mw_year,
+        fixed_cost_per_mw_yr,
         hyb_gen_fixed_cost_per_mw_yr,
         hyb_stor_fixed_cost_per_mw_yr,
         fixed_cost_per_mwh_year,
@@ -313,7 +321,7 @@ def write_from_query(spec_project_params, writer):
             fuel_prod_cap,
             fuel_rel_cap,
             fuel_stor_cap,
-            fixed_cost_per_mw_year,
+            fixed_cost_per_mw_yr,
             hyb_gen_fixed_cost_per_mw_yr,
             hyb_stor_fixed_cost_per_mw_yr,
             fixed_cost_per_mwh_year,
@@ -332,7 +340,7 @@ def write_from_query(spec_project_params, writer):
                 fuel_prod_cap,
                 fuel_rel_cap,
                 fuel_stor_cap,
-                fixed_cost_per_mw_year,
+                fixed_cost_per_mw_yr,
                 hyb_gen_fixed_cost_per_mw_yr,
                 hyb_stor_fixed_cost_per_mw_yr,
                 fixed_cost_per_mwh_year,

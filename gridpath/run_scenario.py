@@ -434,7 +434,7 @@ def run_scenario(
         # Should probably just remove this logic here and have a dictionary
         # for all objective functions
         if len(objective_values.keys()) == 1:
-            objective_values = objective_values[1]
+            objective_values = objective_values[list(objective_values.keys())[0]]
 
         return objective_values
 
@@ -926,10 +926,7 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         "w",
         newline="",
     ) as objective_file:
-        objective_file.write("Objective function: " + str(objective_function_value))
-        # TODO: change to writing the value only when we implement importing
-        #  the objective function value into the results_scenario table
-        # objective_file.write(str(objective_function_value))
+        objective_file.write(str(objective_function_value))
 
 
 def save_duals(scenario_directory, subproblem, stage, instance):

@@ -692,6 +692,8 @@ stage_id INTEGER,
 timepoint INTEGER,
 max_market_sales FLOAT,
 max_market_purchases FLOAT,
+max_final_market_sales FLOAT,
+max_final_market_purchases FLOAT,
 PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_volume_scenario_id) REFERENCES
 subscenarios_market_volume (market_volume_scenario_id)
@@ -793,7 +795,7 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-fixed_cost_per_mw_year FLOAT,
+fixed_cost_per_mw_yr FLOAT,
 hyb_gen_fixed_cost_per_mw_yr FLOAT,
 hyb_stor_fixed_cost_per_mw_yr FLOAT,
 fixed_cost_per_mwh_year FLOAT,
@@ -818,20 +820,26 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
--- These currently include annualized capital costs and annual fixed O&M
+-- Annual fixed O&M costs are incurred in each operational year
+-- Capital costs are incurred in each year of the financial lifetime
 DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
 vintage INTEGER,
-lifetime_yrs INTEGER,
+operational_lifetime_yrs FLOAT,
+fixed_cost_per_mw_yr FLOAT,
+fixed_cost_per_mwh_yr FLOAT,
+fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_storage_capacity_fixed_cost_per_fuelunit_yr FLOAT,
+financial_lifetime_yrs FLOAT,
 annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
-levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
-supply_curve_scenario_id INTEGER,
 fuel_production_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel prod cost
 fuel_release_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel release cost
 fuel_storage_capacity_cost_per_fuelunit_yr FLOAT, -- annualized fuel storage cost
+supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
@@ -882,10 +890,14 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-min_cumulative_new_build_mw FLOAT,
-max_cumulative_new_build_mw FLOAT,
-min_cumulative_new_build_mwh FLOAT,
-max_cumulative_new_build_mwh FLOAT,
+min_new_build_power FLOAT,
+max_new_build_power FLOAT,
+min_capacity_power FLOAT,
+max_capacity_power FLOAT,
+min_new_build_energy FLOAT,
+max_new_build_energy FLOAT,
+min_capacity_energy FLOAT,
+max_capacity_energy FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
@@ -4293,6 +4305,7 @@ scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 Total_Capacity_Costs Float,
+Total_Fixed_Costs FLOAT,
 Total_Tx_Capacity_Costs Float,
 Total_PRM_Group_Costs Float,
 Total_Variable_OM_Cost Float,
@@ -4613,7 +4626,7 @@ CREATE VIEW project_new_operational_periods AS
 WITH main_data (project, project_new_cost_scenario_id, period, highrange)
     AS (
     SELECT project, project_new_cost_scenario_id, vintage AS period,
-    vintage + lifetime_yrs AS highrange
+    vintage + operational_lifetime_yrs AS highrange
     FROM inputs_project_new_cost
     UNION ALL
     SELECT project, project_new_cost_scenario_id, period + 1 AS period,
