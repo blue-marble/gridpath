@@ -176,6 +176,25 @@ def get_run_scenario_parser():
         help="Log output to a file in the scenario's 'logs' "
         "directory as well as the terminal.",
     )
+    # Problem files and solutions
+    parser.add_argument(
+        "--create_problem_file_only",
+        default=False,
+        action="store_true",
+        help="Create and save the problem file, but don't solve yet."
+    )
+    parser.add_argument(
+        "--problem_file_format",
+        default="lp",
+        # TODO: add docs on which ones we know are supported
+        help="The format of the problem file, e.g. lp, mps, mod, etc."
+    )
+    parser.add_argument(
+        "--load_solution",
+        default=False,
+        action="store_true",
+        help="Skip solve and load results from solution file instead."
+    )
     # Solver options
     parser.add_argument(
         "--solver",

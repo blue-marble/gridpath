@@ -131,23 +131,16 @@ def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
         loaded_modules,
     )
 
-    print("pre pickling: ", dir(instance))
-
-    # TODO: also need to pickle the dynamic components
-    # with open(os.path.join(scenario_directory, "logs", "instance.pickle"), "wb") as \
-    #         f_out:
-    #     dill.dump(instance, f_out)
-
     return dynamic_components, instance
 
 
-def solve_problem(parsed_arguments, dynamic_components, instance):
+def solve_problem(parsed_arguments, instance):
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return dynamic_components, instance, results
+    return instance, results
 
 
 def run_optimization_for_subproblem_stage(
@@ -225,88 +218,104 @@ def run_optimization_for_subproblem_stage(
     stage_directory = str(stage_directory)
 
     # Create problem instance and either save the problem file or solve the instance
-    dynamic_components, instance = create_problem(
-        scenario_directory=scenario_directory,
-        subproblem=subproblem_directory,
-        stage=stage_directory,
-        parsed_arguments=parsed_arguments,
+    # TODO: incompatible options
+    # If we are loading a solution, skip the compilation step; we'll use the saved
+    # instance and dynamic components
+    if parsed_arguments.load_solution:
+        # TODO: more elegant way to pass the scenario name
+        scenario_name = os.path.basename(os.path.normpath(scenario_directory))
+        # TODO: figure out how the solution filename works upstream
+        solved_instance, results, dynamic_components = load_cplex_xml_solution(
+            scenario_directory=scenario_directory,
+            solution_filename="{}.sol".format(scenario_name),
+        )
+    else:
+        dynamic_components, instance = create_problem(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem_directory,
+            stage=stage_directory,
+            parsed_arguments=parsed_arguments,
+        )
+
+        if parsed_arguments.create_problem_file_only:
+
+            print("pre pickling: ", dir(instance))
+
+            # TODO: also need to pickle the dynamic components
+            if parsed_arguments.create_problem_file_only:
+                with open(os.path.join(scenario_directory, "logs", "instance.pickle"),
+                          "wb") as \
+                        f_out:
+                    dill.dump(instance, f_out)
+                with open(os.path.join(scenario_directory, "logs",
+                                       "dynamic_components.pickle"), "wb") as \
+                        f_out:
+                    dill.dump(dynamic_components, f_out)
+
+            # TODO: add check that this is specified and that it is within
+            #  what's allowed by Pyomo
+            problem_file_format = parsed_arguments.problem_file_format
+
+            smap_id = write_problem_file(
+                instance=instance,
+                scenario_directory=scenario_directory,
+                problem_format=problem_file_format,
+            )
+            symbol_map = instance.solutions.symbol_map[smap_id]
+
+            tmp_buffer = {}  # this makes the process faster
+            symbol_cuid_pairs = tuple(
+                (symbol, ComponentUID(var_weakref(), cuid_buffer=tmp_buffer))
+                for symbol, var_weakref in symbol_map.bySymbol.items()
+            )
+
+            with open(
+                os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb"
+            ) as f_out:
+                dill.dump(symbol_cuid_pairs, f_out)
+
+            print("Problem file written to {}".format("SPECIFY DIR WHERE TO WRITE"))
+            sys.exit()
+        else:
+            solved_instance, results = solve_problem(
+                parsed_arguments=parsed_arguments,
+                instance=instance,
+            )
+
+    # Save the scenario results to disk
+    save_results(
+        scenario_directory,
+        subproblem_directory,
+        stage_directory,
+        solved_instance,
+        results,
+        dynamic_components,
+        parsed_arguments,
     )
 
-    if False:
-        # TODO: add check that this is specified and that it is within
-        #  what's allowed by Pyomo
+    # Summarize results
+    summarize_results(
+        scenario_directory,
+        subproblem_directory,
+        stage_directory,
+        parsed_arguments,
+    )
 
-        # TODO: add to arguments
-        # problem_file_format = parsed_arguments.problem_file_format
+    # If logging, we need to return sys.stdout to original (i.e. stop writing
+    # to log file)
+    if parsed_arguments.log:
+        sys.stdout = stdout_original
+        sys.stderr = stderr_original
 
-        problem_file_format = "lp"
-
-        smap_id = write_problem_file(
-            instance=instance,
-            scenario_directory=scenario_directory,
-            problem_format=problem_file_format,
-        )
-        symbol_map = instance.solutions.symbol_map[smap_id]
-
-        tmp_buffer = {}  # this makes the process faster
-        symbol_cuid_pairs = tuple(
-            (symbol, ComponentUID(var_weakref(), cuid_buffer=tmp_buffer))
-            for symbol, var_weakref in symbol_map.bySymbol.items()
-        )
-
-        with open(
-            os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb"
-        ) as f_out:
-            dill.dump(symbol_cuid_pairs, f_out)
-
-        return None
+    # Return the objective function value (in the testing suite, the value
+    # gets checked against the expected value, but this is the only place
+    # this is actually used)
+    # TODO: this will need to have a variable for the name of the objective
+    #  function component once there are multiple possible objective functions
+    if results.solver.termination_condition != "infeasible":
+        return solved_instance.NPV()
     else:
-        # dynamic_components, solved_instance, results = solve_problem(
-        #     parsed_arguments=parsed_arguments,
-        #     dynamic_components=dynamic_components,
-        #     instance=instance,
-        # )
-
-        # TODO: figure out how the solution filename works upstream
-        solved_instance, results = load_cplex_xml_solution(
-            scenario_directory=scenario_directory,
-            solution_filename="test.sol",
-        )
-
-        # Save the scenario results to disk
-        save_results(
-            scenario_directory,
-            subproblem_directory,
-            stage_directory,
-            solved_instance,
-            results,
-            dynamic_components,
-            parsed_arguments,
-        )
-
-        # Summarize results
-        summarize_results(
-            scenario_directory,
-            subproblem_directory,
-            stage_directory,
-            parsed_arguments,
-        )
-
-        # If logging, we need to return sys.stdout to original (i.e. stop writing
-        # to log file)
-        if parsed_arguments.log:
-            sys.stdout = stdout_original
-            sys.stderr = stderr_original
-
-        # Return the objective function value (in the testing suite, the value
-        # gets checked against the expected value, but this is the only place
-        # this is actually used)
-        # TODO: this will need to have a variable for the name of the objective
-        #  function component once there are multiple possible objective functions
-        if results.solver.termination_condition != "infeasible":
-            return solved_instance.NPV()
-        else:
-            warnings.warn("WARNING: the problem was infeasible!")
+        warnings.warn("WARNING: the problem was infeasible!")
 
 
 def run_optimization_for_subproblem(
@@ -1246,6 +1255,10 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     ) as instance_in:
         instance = dill.load(instance_in)
     with open(
+        os.path.join(scenario_directory, "logs", "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
         os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb"
     ) as map_in:
         symbol_cuid_pairs = dill.load(map_in)
@@ -1333,7 +1346,7 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
         "What did we get: ", results.solver.status, results.solver.termination_condition
     )
 
-    return instance, results
+    return instance, results, dynamic_components
 
 
 class Results(object):
