@@ -190,6 +190,11 @@ def get_run_scenario_parser():
         help="The format of the problem file, e.g. lp, mps, mod, etc."
     )
     parser.add_argument(
+        "--solve_from_lp_file",
+        default=False,
+        action="store_true"
+    )
+    parser.add_argument(
         "--load_solution",
         default=False,
         action="store_true",

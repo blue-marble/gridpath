@@ -39,6 +39,7 @@ from pyomo.environ import (
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core import ComponentUID, SymbolMap
+import pyomo.environ
 from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
@@ -238,9 +239,6 @@ def run_optimization_for_subproblem_stage(
         )
 
         if parsed_arguments.create_problem_file_only:
-
-            print("pre pickling: ", dir(instance))
-
             # TODO: also need to pickle the dynamic components
             if parsed_arguments.create_problem_file_only:
                 with open(os.path.join(scenario_directory, "logs", "instance.pickle"),
@@ -790,7 +788,23 @@ def solve(instance, parsed_arguments):
     # Otherwise, only pass the solver name; Pyomo will look for the
     # executable in the PATH
     else:
-        optimizer = SolverFactory(solver_name)
+        if solver_name == "gurobi_persistent":
+            # Try tagging constraints for Gurobi
+            # Use persistent Gurobi interface
+            optimizer = SolverFactory(solver_name, model=instance)
+
+            # Set CTag attribute for all linear constraints
+            optimizer._solver_model.update()
+            for c in optimizer._solver_model.getConstrs():
+                c.CTag = c.ConstrName
+
+            # Set parameters to output information in JSON file
+            optimizer.options['ResultFile'] = os.path.join(scenario_directory,
+                                                           "logs",
+                                                           "gurobi_solution.json")
+            optimizer.options['JSONSolDetail'] = 1
+        else:
+            optimizer = SolverFactory(solver_name)
 
     # Solve
     # Apply the solver options (if any)
@@ -843,8 +857,8 @@ def solve(instance, parsed_arguments):
         results = optimizer.solve(
             instance,
             tee=not parsed_arguments.mute_solver_output,
-            keepfiles=parsed_arguments.keepfiles,
-            symbolic_solver_labels=parsed_arguments.symbolic,
+            # keepfiles=parsed_arguments.keepfiles,
+            # symbolic_solver_labels=parsed_arguments.symbolic,
         )
 
     # Can optionally log infeasibilities but this has resulted in false
@@ -1209,6 +1223,7 @@ def write_problem_file(instance, scenario_directory, problem_format):
     # This needs to be under an if statement and do only if we want to save
     # the problem file as MPS
     # Dealing with large files: https://developer.ibm.com/answers/questions/483607/sending-large-lp-file-to-dropsolve/#:~:targetText=2%20answers&targetText=There%20is%20a%20hard%20limit,read%20will%20work%20on%20DOcplexcloud.
+
     print("Writing {} problem file...".format(problem_format.upper()))
     filename, smap_id = instance.write(
         os.path.join(
@@ -1223,32 +1238,14 @@ def write_problem_file(instance, scenario_directory, problem_format):
 
 def load_cplex_xml_solution(scenario_directory, solution_filename):
     """
-
     :param scenario_directory:
     :param solution_filename:
     :return:
     """
     print(
-        "Loading results from CPLEX XML solution file {}...".format(solution_filename)
+        "Loading results from solution file {}...".format(solution_filename)
     )
 
-    # TODO: check if we can just use this instead of parsing ourselves
-    # parse the SOL file
-    # with ReaderFactory(ResultsFormat.sol) as reader:
-    #     results = reader(solution_filename, suffixes=)
-    # # tag the results object with the symbol_map
-    # results._smap = symbol_map
-
-    # # Get the smap_id for this model
-    # # TODO: can't pickle the instance object (local object not pickleable)
-    # #  or the symbol map, while the smap_id is different every time the
-    # #  instance is created (so can't use that to get the symbol map)
-    # #  We will therefore need to save these in memory while waiting for the
-    # #  solution from the cloud; for now repeating the problem file saving here
-    # smap_id = write_problem_file(
-    #     instance=instance, scenario_directory=scenario_directory,
-    #     problem_format="lp"
-    # )
 
     with open(
         os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
@@ -1267,23 +1264,6 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
             (cuid.find_component_on(instance), symbol)
             for symbol, cuid in symbol_cuid_pairs
         )
-        print(symbol_map)
-
-    # May need to try this for regenerating the symbol map withouth having to
-    # re-create the LP file from the instance object:
-    # https://notebook.community/Pyomo/PyomoGallery/asl_io/asl_io
-
-    # # TODO: Can't match the pickled map to the instance, so re-creating it here with
-    # #  the re-loaded pickle instance
-    # smap_id = write_problem_file(
-    #     instance=instance, scenario_directory=scenario_directory,
-    #     problem_format="lp"
-    # )
-    #
-    # print(dir(instance))
-    # print("smap_id: ", smap_id)
-    #
-    # symbol_map = instance.solutions.symbol_map[smap_id]
 
     # #### WORKING VERSION #####
     # This needs to be under an if statement and execute when we are loading
@@ -1294,8 +1274,6 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     ).getroot()
 
     # Variables
-    print("Variables")
-    print(datetime.datetime.now())
     for type_tag in root.findall("variables/variable"):
         var_id, var_index, value = (
             type_tag.get("name"),
@@ -1305,17 +1283,9 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
         if var_id == "ONE_VAR_CONSTANT":
             pass
         else:
-            print(var_id)
-            print(symbol_map.bySymbol[var_id])
-            print(symbol_map.bySymbol[var_id]().value)
             symbol_map.bySymbol[var_id]().value = float(value)
-            # instance.find_component(var_id).value = value
-
-    print(datetime.datetime.now())
 
     # Constraints
-    print("Constraints")
-    print(datetime.datetime.now())
     for type_tag in root.findall("linearConstraints/constraint"):
         constraint_id_w_extra_symbols, const_index, dual = (
             type_tag.get("name"),
@@ -1327,23 +1297,15 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
         else:
             constraint_id = constraint_id_w_extra_symbols[4:-1]
             instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
-            # instance.dual[instance.find_component(constraint_id)] = dual
-    print(datetime.datetime.now())
 
     # Solver status
     header = root.findall("header")[0]  # Need a check that there is only one element
-    # setattr(instance, "solver", "status")
-    # setattr(instance.solver, "status", header.get("solutionStatusString"))
 
     termination_condition = header.get("solutionStatusString")
     # TODO: what are the types
     solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
     results = Results(
         solver_status=solver_status, termination_condition=termination_condition
-    )
-
-    print(
-        "What did we get: ", results.solver.status, results.solver.termination_condition
     )
 
     return instance, results, dynamic_components
