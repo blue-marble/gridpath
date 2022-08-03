@@ -1251,6 +1251,21 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_fin_lifetime", -10022366566.861605
         )
 
+    def test_example_2periods_new_build_cumulative_and_vintage_min_max(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_cumulative_and_vintage_min_max" example. It is the same
+        as 2periods_new_build_cumulative_and_min_max but with a max in 2020 for the
+        CCGT to force early build and a min on the CT in 2030 to force more build.
+
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_cumulative_and_vintage_min_max")
+        self.run_and_check_objective(
+            "2periods_new_build_cumulative_and_vintage_min_max", -110384972580606.39
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

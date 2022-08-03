@@ -692,6 +692,8 @@ stage_id INTEGER,
 timepoint INTEGER,
 max_market_sales FLOAT,
 max_market_purchases FLOAT,
+max_final_market_sales FLOAT,
+max_final_market_purchases FLOAT,
 PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_volume_scenario_id) REFERENCES
 subscenarios_market_volume (market_volume_scenario_id)
@@ -888,10 +890,14 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-min_cumulative_new_build_mw FLOAT,
-max_cumulative_new_build_mw FLOAT,
-min_cumulative_new_build_mwh FLOAT,
-max_cumulative_new_build_mwh FLOAT,
+min_new_build_power FLOAT,
+max_new_build_power FLOAT,
+min_capacity_power FLOAT,
+max_capacity_power FLOAT,
+min_new_build_energy FLOAT,
+max_new_build_energy FLOAT,
+min_capacity_energy FLOAT,
+max_capacity_energy FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
