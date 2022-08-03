@@ -31,9 +31,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     """
 
-    def total_market_revenue_rule(mod):
+    def total_market_net_cost_init(mod):
         return sum(
-            mod.Sell_Power[lz, market, tmp]
+            mod.Net_Market_Purchased_Power[lz, market, tmp]
             * mod.market_price[market, tmp]
             * mod.hrs_in_tmp[tmp]
             * mod.tmp_weight[tmp]
@@ -43,21 +43,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             if not mod.no_market_participation_in_stage[lz, market]
         )
 
-    m.Total_Market_Revenue = Expression(rule=total_market_revenue_rule)
-
-    def total_market_cost_rule(mod):
-        return sum(
-            mod.Buy_Power[lz, market, tmp]
-            * mod.market_price[market, tmp]
-            * mod.hrs_in_tmp[tmp]
-            * mod.tmp_weight[tmp]
-            * mod.number_years_represented[mod.period[tmp]]
-            * mod.discount_factor[mod.period[tmp]]
-            for (lz, market, tmp) in mod.LZ_MARKETS * mod.TMPS
-            if not mod.no_market_participation_in_stage[lz, market]
-        )
-
-    m.Total_Market_Cost = Expression(rule=total_market_cost_rule)
+    m.Total_Market_Net_Cost = Expression(initialize=total_market_net_cost_init)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -69,5 +55,4 @@ def record_dynamic_components(dynamic_components):
     Add total load balance penalty costs to cost components
     """
 
-    getattr(dynamic_components, cost_components).append("Total_Market_Cost")
-    getattr(dynamic_components, revenue_components).append("Total_Market_Revenue")
+    getattr(dynamic_components, cost_components).append("Total_Market_Net_Cost")

@@ -26,51 +26,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.max_final_market_sales = Param(m.MARKETS, m.TMPS, default=Infinity)
     m.max_final_market_purchases = Param(m.MARKETS, m.TMPS, default=Infinity)
 
-    def total_market_sales_rule(mod, market, tmp):
+    # Constrain total net purchases in the current stage
+    def total_net_market_purchases_init(mod, market, tmp):
         return sum(
-            mod.Sell_Power[lz, mrkt, tmp]
+            mod.Net_Market_Purchased_Power[lz, mrkt, tmp]
             for (lz, mrkt) in mod.LZ_MARKETS
             if mrkt == market
         )
 
-    m.Total_Market_Sales = Expression(m.MARKETS, m.TMPS, rule=total_market_sales_rule)
-
-    def total_market_purchases_rule(mod, market, tmp):
-        return sum(
-            mod.Buy_Power[lz, mrkt, tmp]
-            for (lz, mrkt) in mod.LZ_MARKETS
-            if mrkt == market
-        )
-
-    m.Total_Market_Purchases = Expression(
-        m.MARKETS, m.TMPS, rule=total_market_purchases_rule
+    m.Total_Net_Market_Purchased_Power = Expression(
+        m.MARKETS, m.TMPS, initialize=total_net_market_purchases_init
     )
 
-    def total_net_market_sales_rule(mod, market, tmp):
-        return sum(
-            mod.Final_Sell_Power_Position[lz, mrkt, tmp]
-            for (lz, mrkt) in mod.LZ_MARKETS
-            if mrkt == market
-        )
-
-    m.Total_Net_Market_Sales = Expression(
-        m.MARKETS, m.TMPS, rule=total_net_market_sales_rule
-    )
-
-    def total_net_market_purchases_rule(mod, market, tmp):
-        return sum(
-            mod.Final_Buy_Power_Position[lz, mrkt, tmp]
-            for (lz, mrkt) in mod.LZ_MARKETS
-            if mrkt == market
-        )
-
-    m.Total_Net_Market_Purchases = Expression(
-        m.MARKETS, m.TMPS, rule=total_net_market_purchases_rule
-    )
-
-    # Constraints
     def max_market_sales_rule(mod, hub, tmp):
-        return mod.Total_Market_Sales[hub, tmp] <= mod.max_market_sales[hub, tmp]
+        return (
+            mod.Total_Net_Market_Purchased_Power[hub, tmp]
+            >= -mod.max_market_sales[hub, tmp]
+        )
 
     m.Max_Market_Sales_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_market_sales_rule
@@ -78,29 +50,44 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def max_market_purchases_rule(mod, hub, tmp):
         return (
-            mod.Total_Market_Purchases[hub, tmp] <= mod.max_market_purchases[hub, tmp]
+            mod.Total_Net_Market_Purchased_Power[hub, tmp]
+            <= mod.max_market_purchases[hub, tmp]
         )
 
     m.Max_Market_Purchases_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_market_purchases_rule
     )
 
-    def max_final_market_sales_rule(mod, hub, tmp):
-        return (
-            mod.Total_Net_Market_Sales[hub, tmp] <= mod.max_final_market_sales[hub, tmp]
+    # Constrain total final net purchases in the current stage (given previous stage
+    # positions)
+    def total_final_net_market_purchases_init(mod, market, tmp):
+        return sum(
+            mod.Final_Net_Market_Purchased_Power[lz, mrkt, tmp]
+            for (lz, mrkt) in mod.LZ_MARKETS
+            if mrkt == market
         )
 
-    m.Max_Net_Market_Sales_Constraint = Constraint(
+    m.Total_Final_Net_Market_Purchased_Power = Expression(
+        m.MARKETS, m.TMPS, rule=total_final_net_market_purchases_init
+    )
+
+    def max_final_market_sales_rule(mod, hub, tmp):
+        return (
+            mod.Total_Final_Net_Market_Purchased_Power[hub, tmp]
+            >= -mod.max_final_market_sales[hub, tmp]
+        )
+
+    m.Max_Final_Market_Sales_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_final_market_sales_rule
     )
 
     def max_final_market_purchases_rule(mod, hub, tmp):
         return (
-            mod.Total_Net_Market_Purchases[hub, tmp]
+            mod.Total_Final_Net_Market_Purchased_Power[hub, tmp]
             <= mod.max_final_market_purchases[hub, tmp]
         )
 
-    m.Max_Net_Market_Purchases_Constraint = Constraint(
+    m.Max_Final_Market_Purchases_Constraint = Constraint(
         m.MARKETS, m.TMPS, rule=max_final_market_purchases_rule
     )
 

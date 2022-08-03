@@ -22,6 +22,7 @@ from pyomo.environ import (
     Expression,
     PositiveIntegers,
     NonNegativeReals,
+    Reals,
     Boolean,
     value,
 )
@@ -71,70 +72,43 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.LZ_MARKETS_PREV_STAGE_TMPS = Set(dimen=3)
 
-    m.prev_stage_sell_power_position = Param(
-        m.LZ_MARKETS_PREV_STAGE_TMPS, within=NonNegativeReals, default=0
-    )
-    m.prev_stage_buy_power_position = Param(
-        m.LZ_MARKETS_PREV_STAGE_TMPS, within=NonNegativeReals, default=0
+    m.prev_stage_net_market_purchased_power = Param(
+        m.LZ_MARKETS_PREV_STAGE_TMPS, within=Reals, default=0
     )
 
     # Variables
-    m.Sell_Power = Var(m.LZ_MARKETS, m.TMPS, within=NonNegativeReals)
+    # This is positive when purchasing power and negative when buying power
+    # Market participation in the current stage
+    m.Net_Market_Purchased_Power = Var(m.LZ_MARKETS, m.TMPS, within=Reals)
 
-    m.Buy_Power = Var(m.LZ_MARKETS, m.TMPS, within=NonNegativeReals)
-
-    def final_sell_power_position_rule(mod, lz, hub, tmp):
+    # Adjusted net purchased power based on previous stage net purchases to use in
+    # the load-balance constraints
+    def final_market_position_init(mod, lz, hub, tmp):
         if mod.first_stage_flag:
             prev_position = 0
         else:
-            prev_position = mod.prev_stage_sell_power_position[
+            prev_position = mod.prev_stage_net_market_purchased_power[
                 lz, hub, mod.prev_stage_tmp_map[tmp]
             ]
 
-        return mod.Sell_Power[lz, hub, tmp] + prev_position
+        return mod.Net_Market_Purchased_Power[lz, hub, tmp] + prev_position
 
-    m.Final_Sell_Power_Position = Expression(
-        m.LZ_MARKETS, m.TMPS, rule=final_sell_power_position_rule
+    m.Final_Net_Market_Purchased_Power = Expression(
+        m.LZ_MARKETS, m.TMPS, initialize=final_market_position_init
     )
 
-    def final_buy_power_position_rule(mod, lz, hub, tmp):
-        if mod.first_stage_flag:
-            prev_position = 0
-        else:
-            prev_position = mod.prev_stage_buy_power_position[
-                lz, hub, mod.prev_stage_tmp_map[tmp]
-            ]
-
-        return mod.Buy_Power[lz, hub, tmp] + prev_position
-
-    m.Final_Buy_Power_Position = Expression(
-        m.LZ_MARKETS, m.TMPS, rule=final_buy_power_position_rule
-    )
-
-    def total_power_sold_from_zone_rule(mod, z, tmp):
+    # Sum up final positions in all markets for use in the load-balance constraints
+    def total_lz_net_purchased_power_init(mod, z, tmp):
         if z in mod.MARKET_LZS:
             return sum(
-                mod.Final_Sell_Power_Position[z, hub, tmp]
+                mod.Final_Net_Market_Purchased_Power[z, hub, tmp]
                 for hub in mod.MARKETS_BY_LZ[z]
             )
         else:
             return 0
 
-    m.Total_Power_Sold = Expression(
-        m.LOAD_ZONES, m.TMPS, rule=total_power_sold_from_zone_rule
-    )
-
-    def total_power_sold_to_zone_rule(mod, z, tmp):
-        if z in mod.MARKET_LZS:
-            return sum(
-                mod.Final_Buy_Power_Position[z, hub, tmp]
-                for hub in mod.MARKETS_BY_LZ[z]
-            )
-        else:
-            return 0
-
-    m.Total_Power_Bought = Expression(
-        m.LOAD_ZONES, m.TMPS, rule=total_power_sold_to_zone_rule
+    m.Total_Final_LZ_Net_Purchased_Power = Expression(
+        m.LOAD_ZONES, m.TMPS, initialize=total_lz_net_purchased_power_init
     )
 
     record_dynamic_components(dynamic_components=d)
@@ -146,11 +120,8 @@ def record_dynamic_components(dynamic_components):
     :return:
 
     """
-    getattr(dynamic_components, load_balance_consumption_components).append(
-        "Total_Power_Sold"
-    )
     getattr(dynamic_components, load_balance_production_components).append(
-        "Total_Power_Bought"
+        "Total_Final_LZ_Net_Purchased_Power"
     )
 
 
@@ -197,34 +168,31 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             ] = starting_market_positions_df.apply(
                 lambda row: stages.index(row["stage"]), axis=1
             )
-            prev_stage_market_positions_df = starting_market_positions_df[
+            prev_stage_net_market_purchased_powers_df = starting_market_positions_df[
                 starting_market_positions_df["stage_index"] == stages.index(stage) - 1
             ]
             lz_market_timepoints = list(
                 zip(
-                    prev_stage_market_positions_df["load_zone"],
-                    prev_stage_market_positions_df["market"],
-                    prev_stage_market_positions_df["timepoint"],
+                    prev_stage_net_market_purchased_powers_df["load_zone"],
+                    prev_stage_net_market_purchased_powers_df["market"],
+                    prev_stage_net_market_purchased_powers_df["timepoint"],
                 )
             )
-            sell_positions_dict = dict(
+            net_market_purchased_power_dict = dict(
                 zip(
                     lz_market_timepoints,
-                    prev_stage_market_positions_df["final_sell_power_position"],
-                )
-            )
-            buy_positions_dict = dict(
-                zip(
-                    lz_market_timepoints,
-                    prev_stage_market_positions_df["final_buy_power_position"],
+                    prev_stage_net_market_purchased_powers_df[
+                        "final_net_market_purchased_power"
+                    ],
                 )
             )
 
             data_portal.data()["LZ_MARKETS_PREV_STAGE_TMPS"] = {
                 None: lz_market_timepoints
             }
-            data_portal.data()["prev_stage_sell_power_position"] = sell_positions_dict
-            data_portal.data()["prev_stage_buy_power_position"] = buy_positions_dict
+            data_portal.data()[
+                "prev_stage_net_market_purchased_power"
+            ] = net_market_purchased_power_dict
     else:
         first_stage_flag = {None: True}
 
@@ -351,7 +319,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "number_of_hours_in_timepoint",
                 "sell_power",
                 "buy_power",
-                "net_buy_power",
+                "net_purchased_power",
                 "final_sell_power_position",
                 "final_buy_power_position",
                 "final_net_buy_power_position",
@@ -369,14 +337,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                         m.number_years_represented[m.period[tmp]],
                         m.tmp_weight[tmp],
                         m.hrs_in_tmp[tmp],
-                        value(m.Sell_Power[z, mrkt, tmp]),
-                        value(m.Buy_Power[z, mrkt, tmp]),
-                        value(m.Buy_Power[z, mrkt, tmp])
-                        - value(m.Sell_Power[z, mrkt, tmp]),
-                        value(m.Final_Sell_Power_Position[z, mrkt, tmp]),
-                        value(m.Final_Buy_Power_Position[z, mrkt, tmp]),
-                        value(m.Final_Buy_Power_Position[z, mrkt, tmp])
-                        - value(m.Final_Sell_Power_Position[z, mrkt, tmp]),
+                        -value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                        else 0,
+                        value(m.Net_Market_Purchased_Power[z, mrkt, tmp])
+                        if value(m.Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
+                        else 0,
+                        value(m.Net_Market_Purchased_Power[z, mrkt, tmp]),
+                        -value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) < 0
+                        else 0,
+                        value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp])
+                        if value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]) >= 0
+                        else 0,
+                        value(m.Final_Net_Market_Purchased_Power[z, mrkt, tmp]),
                     ]
                 )
 
