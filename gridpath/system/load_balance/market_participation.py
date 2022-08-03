@@ -21,7 +21,6 @@ from pyomo.environ import (
     Var,
     Expression,
     PositiveIntegers,
-    NonNegativeReals,
     Reals,
     Boolean,
     value,
@@ -29,10 +28,7 @@ from pyomo.environ import (
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import check_for_integer_subdirectories
-from gridpath.auxiliary.dynamic_components import (
-    load_balance_production_components,
-    load_balance_consumption_components,
-)
+from gridpath.auxiliary.dynamic_components import load_balance_production_components
 from gridpath.auxiliary.db_interface import setup_results_import
 
 
