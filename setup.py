@@ -26,9 +26,17 @@ extras_coverage = [
     "coveralls",  # automated coverage results
 ]
 
+extras_pickle = ["dill"]  # pickling
 extras_gurobi = ["gurobipy"]  # Gurobi Python interface
 
-extras_all = extras_ui + extras_doc + extras_black + extras_coverage + extras_gurobi
+extras_all = (
+    extras_ui
+    + extras_doc
+    + extras_black
+    + extras_coverage
+    + extras_pickle
+    + extras_gurobi
+)
 
 setup(
     name="GridPath",
@@ -56,6 +64,7 @@ setup(
         "ui": extras_ui,
         "all": extras_all,
         "coverage": extras_coverage,
+        "pickle": extras_pickle,
         "gurobi": extras_gurobi,
     },
     include_package_data=True,
