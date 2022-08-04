@@ -795,23 +795,7 @@ def solve(instance, parsed_arguments):
     # Otherwise, only pass the solver name; Pyomo will look for the
     # executable in the PATH
     else:
-        if solver_name == "gurobi_persistent":
-            # Try tagging constraints for Gurobi
-            # Use persistent Gurobi interface
-            optimizer = SolverFactory(solver_name, model=instance)
-
-            # Set CTag attribute for all linear constraints
-            optimizer._solver_model.update()
-            for c in optimizer._solver_model.getConstrs():
-                c.CTag = c.ConstrName
-
-            # Set parameters to output information in JSON file
-            optimizer.options['ResultFile'] = os.path.join(scenario_directory,
-                                                           "logs",
-                                                           "gurobi_solution.json")
-            optimizer.options['JSONSolDetail'] = 1
-        else:
-            optimizer = SolverFactory(solver_name)
+        optimizer = SolverFactory(solver_name)
 
     # Solve
     # Apply the solver options (if any)
@@ -864,8 +848,8 @@ def solve(instance, parsed_arguments):
         results = optimizer.solve(
             instance,
             tee=not parsed_arguments.mute_solver_output,
-            # keepfiles=parsed_arguments.keepfiles,
-            # symbolic_solver_labels=parsed_arguments.symbolic,
+            keepfiles=parsed_arguments.keepfiles,
+            symbolic_solver_labels=parsed_arguments.symbolic,
         )
 
     # Can optionally log infeasibilities but this has resulted in false

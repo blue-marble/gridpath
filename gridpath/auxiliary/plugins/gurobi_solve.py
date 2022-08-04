@@ -7,7 +7,7 @@ import os.path
 
 # Read and solve model
 
-model = gp.read("/Users/ana/dev/gridpath_v0.14+dev/examples/test/logs/test.lp")
+model = gp.read("/examples/test/logs/test.lp")
 
 # Define tags for some variables in order to access their values later
 for count, v in enumerate(model.getVars()):
@@ -25,7 +25,7 @@ model.optimize()
 
 if model.Status == GRB.OPTIMAL:
     with open(
-        "/Users/ana/dev/gridpath_v0.14+dev/examples/test/logs/gurobi_solution.json",
+            "/examples/test/logs/gurobi_solution.json",
         "w",
     ) as f:
         json.dump(json.loads(model.getJSONSolution().replace("\'", '"')), f)
