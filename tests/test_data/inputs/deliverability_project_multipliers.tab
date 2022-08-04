@@ -1,0 +1,7 @@
+project	constraint_type	peak_designation	multiplier
+Wind	deliverable	peak_highest	0.2
+Wind_z2	deliverable	peak_highest	0.25
+Wind	deliverable	peak_secondary	0.3
+Wind_z2	deliverable	peak_secondary	0.4
+Wind	total	offpeak	0.5
+Wind_z2	total	offpeak	0.6

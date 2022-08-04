@@ -27,11 +27,8 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     else:
         for (z, hub, tmp) in m.LZ_MARKETS * m.TMPS:
             if m.no_market_participation_in_stage[z, hub]:
-                m.Sell_Power[z, hub, tmp] = 0
-                m.Sell_Power[z, hub, tmp].fixed = True
-
-                m.Buy_Power[z, hub, tmp] = 0
-                m.Buy_Power[z, hub, tmp].fixed = True
+                m.Net_Market_Purchased_Power[z, hub, tmp] = 0
+                m.Net_Market_Purchased_Power[z, hub, tmp].fixed = True
             else:
                 pass
 
@@ -49,8 +46,7 @@ def write_pass_through_file_headers(pass_through_directory):
                 "market",
                 "timepoint",
                 "stage",
-                "final_sell_power_position",
-                "final_buy_power_position",
+                "final_net_market_purchased_power",
             ]
         )
 
@@ -86,7 +82,6 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
                     hub,
                     tmp,
                     stage,
-                    value(m.Final_Sell_Power_Position[lz, hub, tmp]),
-                    value(m.Final_Buy_Power_Position[lz, hub, tmp]),
+                    value(m.Final_Net_Market_Purchased_Power[lz, hub, tmp]),
                 ]
             )

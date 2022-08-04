@@ -327,10 +327,8 @@ def optional_modules_list():
             "project.reliability.prm",
             "project.reliability.prm.prm_types",
             "project.reliability.prm.prm_simple",
-            "project.reliability.prm.group_costs",
             "system.reliability.prm.aggregate_project_simple_prm_contribution",
             "system.reliability.prm.prm_balance",
-            "objective.project.aggregate_prm_group_costs",
             "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         ],
         "local_capacity": [
@@ -386,6 +384,10 @@ def cross_feature_modules_list():
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
             "system.reliability.prm.elcc_surface",
+        ],
+        ("prm", "deliverability"): [
+            "project.reliability.prm.group_costs",
+            "objective.project.aggregate_prm_group_costs",
         ],
         ("prm", "elcc_surface", "tuning"): [
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
