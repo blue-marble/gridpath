@@ -23,10 +23,12 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
+import dill
+import json
 from multiprocessing import get_context, Manager
 import os.path
-import dill
 import xml.etree.ElementTree as ET
+
 from pyomo.environ import (
     AbstractModel,
     Suffix,
@@ -226,9 +228,14 @@ def run_optimization_for_subproblem_stage(
         # TODO: more elegant way to pass the scenario name
         scenario_name = os.path.basename(os.path.normpath(scenario_directory))
         # TODO: figure out how the solution filename works upstream
-        solved_instance, results, dynamic_components = load_cplex_xml_solution(
+        # solved_instance, results, dynamic_components = load_cplex_xml_solution(
+        #     scenario_directory=scenario_directory,
+        #     solution_filename="{}.sol".format(scenario_name),
+        # )
+        solved_instance, results, dynamic_components = load_gurobi_json_solution(
             scenario_directory=scenario_directory,
-            solution_filename="{}.sol".format(scenario_name),
+            # TODO: standardize this based on cplex vs gurobi
+            solution_filename="gurobi_solution.json",
         )
     else:
         dynamic_components, instance = create_problem(
@@ -1247,6 +1254,7 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     )
 
 
+    # TODO: refactor for use with cplex and gurobi solutions
     with open(
         os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
     ) as instance_in:
@@ -1304,6 +1312,72 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     termination_condition = header.get("solutionStatusString")
     # TODO: what are the types
     solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_gurobi_json_solution(scenario_directory, solution_filename):
+    """
+    :param scenario_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(solution_filename)
+    )
+
+
+    # TODO: refactor for use with cplex and gurobi solutions
+    with open(
+        os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
+    ) as instance_in:
+        instance = dill.load(instance_in)
+    with open(
+        os.path.join(scenario_directory, "logs", "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
+        os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
+
+    # #### WORKING VERSION #####
+    # This needs to be under an if statement and execute when we are loading
+    # solution from disk
+    # Read JSON solution file
+    with open(os.path.join(scenario_directory, "logs", solution_filename), "r") as f:
+        solution = json.load(f)
+
+    # Variables
+    for v in solution["Vars"]:
+        var_id, value = v["VTag"][0], v["X"]
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for c in solution["Constrs"]:
+        constraint_id, dual = c["CTag"][0][4:], c["Pi"]
+        if constraint_id == "ONE_VAR_CONSTAN":
+            pass
+        else:
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    # TODO: what are the types
+    termination_condition = "optimal" if solution["SolutionInfo"]["Status"] == 2 else\
+        "unknown"
+    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else\
+        "unknown"
     results = Results(
         solver_status=solver_status, termination_condition=termination_condition
     )
