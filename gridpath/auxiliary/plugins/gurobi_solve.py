@@ -16,36 +16,12 @@
 Solve from LP file with Gurobi and save GridPath-compatible solution file.
 """
 
-
-from argparse import ArgumentParser
 import json
 import sys
 import gurobipy
 import os.path
 
-
-def parse_arguments(arguments):
-    """
-
-    :return:
-    """
-    parser = ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument(
-        "--problem_file_directory",
-        help="The location of the LP problem file to solve.",
-    )
-    parser.add_argument(
-        "--problem_file_name",
-        default="problem_file.lp",
-        help="The name of the LP problem file to solve. Defaults to 'problem_file.lp' if not specified.",
-    )
-
-    # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
-
-    return parsed_arguments
+from gridpath.auxiliary.plugins.common_functions import parse_arguments
 
 
 def main(args=None):
