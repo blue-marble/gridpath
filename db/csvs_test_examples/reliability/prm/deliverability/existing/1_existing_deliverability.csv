@@ -1,0 +1,7 @@
+deliverability_group,period,constraint_type,peak_designation,existing_deliverability_mw
+Deliverability_Group,2020,deliverable,peak_highest,0
+Deliverability_Group,2030,deliverable,peak_highest,0
+Deliverability_Group,2020,deliverable,peak_secondary,0
+Deliverability_Group,2030,deliverable,peak_secondary,0
+Deliverability_Group,2020,total,offpeak,0
+Deliverability_Group,2030,total,offpeak,0

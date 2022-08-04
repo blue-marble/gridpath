@@ -1642,12 +1642,14 @@ DROP TABLE IF EXISTS inputs_project_elcc_chars;
 CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
-prm_type VARCHAR(32),
+prm_type VARCHAR(32),  -- to model 'energy_only" PRM type, select energy_only feature
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
 cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
-deliverability_group VARCHAR(64),  --optional
+deliverability_group VARCHAR(64) CHECK (
+    deliverability_group IS NULL OR prm_type = 'energy_only_allowed'
+),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
@@ -1709,26 +1711,97 @@ elcc_surface_cap_factor FLOAT,
 PRIMARY KEY (elcc_surface_scenario_id, project)
 );
 
--- Energy-only parameters
-DROP TABLE IF EXISTS subscenarios_project_prm_energy_only;
-CREATE TABLE subscenarios_project_prm_energy_only (
-prm_energy_only_scenario_id INTEGER PRIMARY KEY
+-- Deliverability parameters
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_costs;
+CREATE TABLE subscenarios_project_prm_deliverability_costs (
+prm_deliverability_cost_scenario_id INTEGER PRIMARY KEY
 AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_prm_energy_only;
-CREATE TABLE inputs_project_prm_energy_only (
-prm_energy_only_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_costs;
+CREATE TABLE inputs_project_prm_deliverability_costs (
+prm_deliverability_cost_scenario_id INTEGER,
 deliverability_group VARCHAR(64),
-deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
-deliverability_group_deliverability_cost_per_mw FLOAT,
-deliverability_group_energy_only_capacity_limit_mw FLOAT,
-PRIMARY KEY (prm_energy_only_scenario_id, deliverability_group),
-FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
-subscenarios_project_prm_energy_only
-(prm_energy_only_scenario_id)
+vintage FLOAT,
+lifetime_yrs FLOAT,
+deliverability_cost_per_mw_yr FLOAT,
+PRIMARY KEY (prm_deliverability_cost_scenario_id, deliverability_group, vintage),
+FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_costs
+(prm_deliverability_cost_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_existing;
+CREATE TABLE subscenarios_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_existing;
+CREATE TABLE inputs_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period FLOAT,
+constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+peak_designation VARCHAR(16),
+existing_deliverability_mw FLOAT,
+PRIMARY KEY (prm_deliverability_existing_scenario_id, deliverability_group, period,
+             constraint_type, peak_designation),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_existing
+(prm_deliverability_existing_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_potential;
+CREATE TABLE subscenarios_project_prm_deliverability_potential (
+prm_deliverability_potential_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_potential;
+CREATE TABLE inputs_project_prm_deliverability_potential (
+prm_deliverability_potential_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period FLOAT,
+deliverable_capacity_limit_cumulative_mw FLOAT,
+PRIMARY KEY (prm_deliverability_potential_scenario_id, deliverability_group, period),
+FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_potential
+(prm_deliverability_potential_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_multipliers;
+CREATE TABLE subscenarios_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER PRIMARY KEY,
+    name VARCHAR(32),
+    description VARCHAR(128)
+);
+
+CREATE TABLE inputs_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER,
+    project VARCHAR(64),
+    constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+    peak_designation VARCHAR(16),
+    multiplier FLOAT,
+    PRIMARY KEY (project_prm_deliverability_multipliers_scenario_id, project,
+                 constraint_type, peak_designation),
+    FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+        subscenarios_project_prm_deliverability_multipliers
+            (project_prm_deliverability_multipliers_scenario_id)
 );
 
 
@@ -2850,6 +2923,7 @@ of_carbon_tax INTEGER,
 of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
+of_deliverability INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
 of_markets INTEGER,
@@ -2889,7 +2963,10 @@ project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
-prm_energy_only_scenario_id INTEGER,
+prm_deliverability_cost_scenario_id INTEGER,
+prm_deliverability_existing_scenario_id INTEGER,
+prm_deliverability_potential_scenario_id INTEGER,
+project_prm_deliverability_multipliers_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
 load_zone_market_scenario_id INTEGER,
@@ -3024,8 +3101,17 @@ FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
-FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
-    subscenarios_project_prm_energy_only (prm_energy_only_scenario_id),
+FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_costs (prm_deliverability_cost_scenario_id),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_existing
+        (prm_deliverability_existing_scenario_id),
+FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_potential
+        (prm_deliverability_potential_scenario_id),
+FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_multipliers
+        (project_prm_deliverability_multipliers_scenario_id),
 FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
     subscenarios_project_local_capacity_zones
         (project_local_capacity_zone_scenario_id),
@@ -3511,12 +3597,9 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
-deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
-deliverability_group_deliverability_cost_per_mw FLOAT,
-total_capacity_mw FLOAT,
-deliverable_capacity_mw FLOAT,
-energy_only_capacity_mw FLOAT,
-deliverable_capacity_cost FLOAT,
+deliverability_built_in_period_mw FLOAT,
+cumulative_added_deliverability_in_period_mw FLOAT,
+deliverability_annual_cost_in_period FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
@@ -4307,7 +4390,7 @@ stage_id INTEGER,
 Total_Capacity_Costs Float,
 Total_Fixed_Costs FLOAT,
 Total_Tx_Capacity_Costs Float,
-Total_PRM_Group_Costs Float,
+Total_PRM_Deliverability_Group_Costs FLOAT,
 Total_Variable_OM_Cost Float,
 Total_Fuel_Cost Float,
 Total_Startup_Cost Float,
@@ -4435,7 +4518,7 @@ subscenarios_project_energy_target_zones.name AS project_energy_target_areas,
 subscenarios_project_carbon_cap_zones.name AS project_carbon_cap_areas,
 subscenarios_project_prm_zones.name AS project_prm_areas,
 subscenarios_project_elcc_chars.name AS project_elcc_chars,
-subscenarios_project_prm_energy_only.name AS project_prm_energy_only,
+subscenarios_project_prm_deliverability_costs.name AS project_prm_deliverability_costs,
 subscenarios_project_local_capacity_zones.name AS project_local_capacity_areas,
 subscenarios_project_local_capacity_chars.name AS project_local_capacity_chars,
 subscenarios_project_specified_capacity.name AS project_specified_capacity,
@@ -4527,8 +4610,8 @@ LEFT JOIN subscenarios_project_prm_zones
     USING (project_prm_zone_scenario_id)
 LEFT JOIN subscenarios_project_elcc_chars
     USING (project_elcc_chars_scenario_id)
-LEFT JOIN subscenarios_project_prm_energy_only
-    USING (prm_energy_only_scenario_id)
+LEFT JOIN subscenarios_project_prm_deliverability_costs
+    USING (prm_deliverability_cost_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_zones
     USING (project_local_capacity_zone_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_chars

@@ -57,7 +57,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestELCCEligibilityThresholds(unittest.TestCase):
+class TestDeliverabilityGroupCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -100,28 +100,272 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: PRM_COST_GROUPS
-        expected_groups = sorted(["Threshold_Group_1", "Threshold_Group_2"])
-        actual_groups = sorted([g for g in instance.PRM_COST_GROUPS])
-        self.assertListEqual(expected_groups, actual_groups)
+        # Set: DELIVERABILITY_GROUP_VINTAGES
+        expected_deliverability_group_periods_set = sorted(
+            [("Threshold_Group_1", 2020), ("Threshold_Group_2", 2030)]
+        )
+        actual_deliverability_group_periods_set = sorted(
+            [(g, v) for (g, v) in instance.DELIVERABILITY_GROUP_VINTAGES]
+        )
 
-        # Param: group_prm_type
-        expected_thresholds = OrderedDict(
+        self.assertListEqual(
+            expected_deliverability_group_periods_set,
+            actual_deliverability_group_periods_set,
+        )
+
+        # Set: DELIVERABILITY_GROUPS
+        expected_deliverability_groups_set = sorted(
+            ["Threshold_Group_1", "Threshold_Group_2"]
+        )
+        actual_deliverability_groups_set = sorted(
+            [g for g in instance.DELIVERABILITY_GROUPS]
+        )
+
+        self.assertListEqual(
+            expected_deliverability_groups_set, actual_deliverability_groups_set
+        )
+
+        # Param: deliverability_lifetime_yrs
+        expected_lifetime = OrderedDict(
             sorted(
                 {
-                    "Threshold_Group_1": "energy_only_allowed",
-                    "Threshold_Group_2": "energy_only_allowed",
+                    ("Threshold_Group_1", 2020): float("inf"),
+                    ("Threshold_Group_2", 2030): 10,
                 }.items()
             )
         )
-        actual_thresholds = OrderedDict(
+        actual_lifetime = OrderedDict(
             sorted(
                 {
-                    g: instance.group_prm_type[g] for g in instance.PRM_COST_GROUPS
+                    (g, p): instance.deliverability_lifetime_yrs[g, p]
+                    for (g, p) in instance.DELIVERABILITY_GROUP_VINTAGES
                 }.items()
             )
         )
-        self.assertDictEqual(expected_thresholds, actual_thresholds)
+
+        self.assertDictEqual(expected_lifetime, actual_lifetime)
+
+        # Param: deliverability_cost_per_mw_yr
+        expected_deliv_cost = OrderedDict(
+            sorted(
+                {
+                    ("Threshold_Group_1", 2020): 37.0,
+                    ("Threshold_Group_2", 2030): 147.0,
+                }.items()
+            )
+        )
+        actual_deliv_cost = OrderedDict(
+            sorted(
+                {
+                    (g, p): instance.deliverability_cost_per_mw_yr[g, p]
+                    for (g, p) in instance.DELIVERABILITY_GROUP_VINTAGES
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_deliv_cost, actual_deliv_cost)
+
+        # Param: existing_deliverability_mw
+        expected_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    ("Threshold_Group_1", 2020, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2030, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2020, "deliverable", "peak_secondary"): 200,
+                    ("Threshold_Group_1", 2030, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2020, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_1", 2030, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_1", 2020, "total", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2030, "total", "peak_highest"): 0,
+                    ("Threshold_Group_1", 2020, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2030, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_1", 2020, "total", "offpeak"): 1000,
+                    ("Threshold_Group_1", 2030, "total", "offpeak"): 0,
+                    ("Threshold_Group_2", 2020, "deliverable", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "peak_highest"): 200,
+                    ("Threshold_Group_2", 2020, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2020, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_2", 2030, "deliverable", "offpeak"): 0,
+                    ("Threshold_Group_2", 2020, "total", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2030, "total", "peak_highest"): 0,
+                    ("Threshold_Group_2", 2020, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2030, "total", "peak_secondary"): 0,
+                    ("Threshold_Group_2", 2020, "total", "offpeak"): 0,
+                    ("Threshold_Group_2", 2030, "total", "offpeak"): 999,
+                }.items()
+            )
+        )
+        actual_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    (g, p, t, d): instance.existing_deliverability_mw[g, p, t, d]
+                    for g in instance.DELIVERABILITY_GROUPS
+                    for p in instance.PERIODS
+                    for t in instance.CONSTRAINT_TYPES
+                    for d in instance.PEAK_DESIGNATIONS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_deliverable_limit, actual_deliverable_limit)
+
+        # Param: deliverable_capacity_limit_mw
+        expected_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    ("Threshold_Group_1", 2020): 5000,
+                    ("Threshold_Group_1", 2030): float("inf"),
+                    ("Threshold_Group_2", 2020): float("inf"),
+                    ("Threshold_Group_2", 2030): 4000,
+                }.items()
+            )
+        )
+        actual_deliverable_limit = OrderedDict(
+            sorted(
+                {
+                    (g, p): instance.deliverable_capacity_limit_mw[g, p]
+                    for g in instance.DELIVERABILITY_GROUPS
+                    for p in instance.PERIODS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_deliverable_limit, actual_deliverable_limit)
+
+        # Set: DELIVERABILITY_GROUP_PROJECTS
+        expected_projects = sorted(
+            [("Threshold_Group_1", "Wind"), ("Threshold_Group_2", "Wind_z2")]
+        )
+        actual_projects = sorted(
+            [(g, p) for (g, p) in instance.DELIVERABILITY_GROUP_PROJECTS]
+        )
+
+        self.assertListEqual(expected_projects, actual_projects)
+
+        # Set: PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+        expected_type_peak_design = sorted(
+            [
+                ("Wind", "deliverable", "peak_highest"),
+                ("Wind", "deliverable", "peak_secondary"),
+                ("Wind", "total", "offpeak"),
+                ("Wind_z2", "deliverable", "peak_highest"),
+                ("Wind_z2", "deliverable", "peak_secondary"),
+                ("Wind_z2", "total", "offpeak"),
+            ]
+        )
+        actual_type_peak_design = sorted(
+            [
+                (prj, t, d)
+                for (prj, t, d) in instance.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+            ]
+        )
+
+        self.assertListEqual(expected_type_peak_design, actual_type_peak_design)
+
+        # Param: peak_designation_multiplier
+        expected_multipliers = OrderedDict(
+            sorted(
+                {
+                    ("Wind", "deliverable", "peak_highest"): 0.2,
+                    ("Wind", "deliverable", "peak_secondary"): 0.3,
+                    ("Wind", "total", "offpeak"): 0.5,
+                    ("Wind_z2", "deliverable", "peak_highest"): 0.25,
+                    ("Wind_z2", "deliverable", "peak_secondary"): 0.4,
+                    ("Wind_z2", "total", "offpeak"): 0.6,
+                }.items()
+            )
+        )
+        actual_multipliers = OrderedDict(
+            sorted(
+                {
+                    (prj, tp, des): instance.peak_designation_multiplier[prj, tp, des]
+                    for (
+                        prj,
+                        tp,
+                        des,
+                    ) in instance.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_multipliers, actual_multipliers)
+
+        # Set: OPR_PRDS_BY_GROUP_VINTAGE
+        expected_opr_prds_by_grp_vintage = OrderedDict(
+            sorted(
+                {
+                    ("Threshold_Group_1", 2020): [2020, 2030],
+                    ("Threshold_Group_2", 2030): [2030],
+                }.items()
+            )
+        )
+        actual_opr_prds_by_grp_vintage = OrderedDict(
+            sorted(
+                {
+                    (g, v): [p for p in instance.OPR_PRDS_BY_GROUP_VINTAGE[g, v]]
+                    for (g, v) in instance.DELIVERABILITY_GROUP_VINTAGES
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(
+            expected_opr_prds_by_grp_vintage, actual_opr_prds_by_grp_vintage
+        )
+
+        # Set: GROUP_VNTS_OPR_IN_PERIOD
+        expected_g_v_by_period = OrderedDict(
+            sorted(
+                {
+                    2020: [("Threshold_Group_1", 2020)],
+                    2030: [
+                        ("Threshold_Group_1", 2020),
+                        ("Threshold_Group_2", 2030),
+                    ],
+                }.items()
+            )
+        )
+        actual_g_v_by_period = OrderedDict(
+            sorted(
+                {
+                    p: [(g, v) for (g, v) in instance.GROUP_VNTS_OPR_IN_PERIOD[p]]
+                    for p in instance.PERIODS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_g_v_by_period, actual_g_v_by_period)
+
+        # Projects
+        # Set: DELIVERABILITY_GROUP_PROJECTS
+        expected_projects = sorted(
+            [("Threshold_Group_1", "Wind"), ("Threshold_Group_2", "Wind_z2")]
+        )
+        actual_projects = sorted(
+            [(g, p) for (g, p) in instance.DELIVERABILITY_GROUP_PROJECTS]
+        )
+
+        self.assertListEqual(expected_projects, actual_projects)
+
+        # Set: PROJECTS_BY_DELIVERABILITY_GROUP
+        expected_prj_by_grp = OrderedDict(
+            sorted(
+                {
+                    "Threshold_Group_1": ["Wind"],
+                    "Threshold_Group_2": ["Wind_z2"],
+                }.items()
+            )
+        )
+        actual_prj_by_grp = OrderedDict(
+            sorted(
+                {
+                    g: [p for p in instance.PROJECTS_BY_DELIVERABILITY_GROUP[g]]
+                    for g in instance.DELIVERABILITY_GROUPS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_prj_by_grp, actual_prj_by_grp)
 
 
 if __name__ == "__main__":
