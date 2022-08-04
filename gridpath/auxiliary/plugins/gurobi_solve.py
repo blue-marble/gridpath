@@ -1,52 +1,87 @@
+# Copyright 2016-2022 Blue Marble Analytics LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Solve from LP file with Gurobi and save GridPath-compatible solution file.
+"""
+
+
+from argparse import ArgumentParser
 import json
 import sys
-import gurobipy as gp
-from gurobipy import GRB
-
+import gurobipy
 import os.path
 
-# Read and solve model
 
-model = gp.read("/examples/test/logs/test.lp")
+def parse_arguments(arguments):
+    """
 
-# Define tags for some variables in order to access their values later
-for count, v in enumerate(model.getVars()):
-    print(count, v)
-    print(str(v)[12:-1])
-    v.VTag = str(v)[12:-1]
+    :return:
+    """
+    parser = ArgumentParser(add_help=True)
 
-for count, c in enumerate(model.getConstrs()):
-    print(count, c)
-    print(str(c)[15:-2])
-    c.CTag = str(c)[15:-2]
+    # Scenario name and location options
+    parser.add_argument(
+        "--problem_file_directory",
+        help="The location of the LP problem file to solve.",
+    )
+    parser.add_argument(
+        "--problem_file_name",
+        default="problem_file.lp",
+        help="The name of the LP problem file to solve. Defaults to 'problem_file.lp' if not specified.",
+    )
 
-model.setParam(GRB.Param.JSONSolDetail, 1)
-model.optimize()
+    # Parse arguments
+    parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
-if model.Status == GRB.OPTIMAL:
-    with open(
-            "/examples/test/logs/gurobi_solution.json",
-        "w",
-    ) as f:
-        json.dump(json.loads(model.getJSONSolution().replace("\'", '"')), f)
+    return parsed_arguments
 
-    # # ## TO MOVE TO run_scenario.py ###
-    # scenario_directory = "/Users/ana/dev/gridpath_v0.14+dev/examples/test/"
-    # solution_filename = "gurobi_solution.json"
-    # with open(os.path.join(scenario_directory, "logs", solution_filename), "r") as f:
-    #     solution = json.load(f)
-    #
-    # for v in solution["Vars"]:
-    #     print(v["VTag"][0], v["X"])
-    #
-    # for c in solution["Constrs"]:
-    #     print(c["CTag"][0], c["Pi"])
-    #
-    # # for c in solution("Constrs"):
-    # #     print(c)
 
-    sys.exit(0)
-    
-elif model.Status != GRB.INFEASIBLE:
-    print("Model status: {}".format(model.Status))
-    sys.exit(0)
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+        parsed_args = parse_arguments(arguments=args)
+
+        prob_sol_dir = parsed_args.problem_file_directory
+        problem_file = parsed_args.problem_file_name
+
+        # Read model
+        model = gurobipy.read(os.path.join(prob_sol_dir, problem_file))
+
+        # Define tags for some variables in order to access their values later
+        for count, v in enumerate(model.getVars()):
+            v.VTag = str(v)[12:-1]
+
+        for count, c in enumerate(model.getConstrs()):
+            c.CTag = str(c)[15:-2]
+
+        model.setParam(gurobipy.GRB.Param.JSONSolDetail, 1)
+        model.optimize()
+
+        if model.Status == gurobipy.GRB.OPTIMAL:
+            with open(
+                os.path.join(prob_sol_dir, "gurobi_solution.json"),
+                "w",
+            ) as f:
+                json.dump(json.loads(model.getJSONSolution().replace("'", '"')), f)
+
+            sys.exit(0)
+
+        elif model.Status != gurobipy.GRB.INFEASIBLE:
+            print("Model was infeasible. Status: {}".format(model.Status))
+            sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
