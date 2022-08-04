@@ -219,11 +219,10 @@ def run_optimization_for_subproblem_stage(
     # We're expecting subproblem and stage to be strings downstream from here
     subproblem_directory = str(subproblem_directory)
     stage_directory = str(stage_directory)
-    
+
     # Used only if we are writing problem files or loading solutions
     prob_sol_files_directory = os.path.join(
-        scenario_directory, subproblem_directory, stage_directory,
-        "prob_sol_files"
+        scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
     )
 
     # Create problem instance and either save the problem file or solve the instance
@@ -250,23 +249,25 @@ def run_optimization_for_subproblem_stage(
 
         if parsed_arguments.create_lp_problem_file_only:
             prob_sol_files_directory = os.path.join(
-                scenario_directory, subproblem_directory, stage_directory,
-                "prob_sol_files"
+                scenario_directory,
+                subproblem_directory,
+                stage_directory,
+                "prob_sol_files",
             )
             if not os.path.exists(prob_sol_files_directory):
                 os.makedirs(prob_sol_files_directory)
-            with open(os.path.join(prob_sol_files_directory, "instance.pickle"),
-                      "wb") as \
-                    f_out:
+            with open(
+                os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
+            ) as f_out:
                 dill.dump(instance, f_out)
-            with open(os.path.join(prob_sol_files_directory,
-                                   "dynamic_components.pickle"), "wb") as \
-                    f_out:
+            with open(
+                os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
+                "wb",
+            ) as f_out:
                 dill.dump(dynamic_components, f_out)
 
             smap_id = write_problem_file(
-                instance=instance,
-                prob_sol_files_directory=prob_sol_files_directory
+                instance=instance, prob_sol_files_directory=prob_sol_files_directory
             )
             symbol_map = instance.solutions.symbol_map[smap_id]
 
@@ -1223,23 +1224,25 @@ def write_problem_file(instance, prob_sol_files_directory, problem_format="lp"):
     return smap_id
 
 
-def load_cplex_xml_solution(prob_sol_files_directory, solution_filename="cplex_solution.sol"):
+def load_cplex_xml_solution(
+    prob_sol_files_directory, solution_filename="cplex_solution.sol"
+):
     """
     :param prob_sol_files_directory:
     :param solution_filename:
     :return:
     """
     print(
-        "Loading results from solution file {}...".format(os.path.join(
-            prob_sol_files_directory, solution_filename))
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
     )
     instance, dynamic_components, symbol_map = load_problem_info(
-        prob_sol_files_directory=prob_sol_files_directory)
+        prob_sol_files_directory=prob_sol_files_directory
+    )
 
     # Read XML (.sol) solution file
-    root = ET.parse(
-        os.path.join(prob_sol_files_directory, solution_filename)
-    ).getroot()
+    root = ET.parse(os.path.join(prob_sol_files_directory, solution_filename)).getroot()
 
     # Variables
     for type_tag in root.findall("variables/variable"):
@@ -1279,20 +1282,23 @@ def load_cplex_xml_solution(prob_sol_files_directory, solution_filename="cplex_s
     return instance, results, dynamic_components
 
 
-def load_gurobi_json_solution(prob_sol_files_directory,
-                              solution_filename="gurobi_solution.json"):
+def load_gurobi_json_solution(
+    prob_sol_files_directory, solution_filename="gurobi_solution.json"
+):
     """
     :param prob_sol_files_directory:
     :param solution_filename:
     :return:
     """
     print(
-        "Loading results from solution file {}...".format(os.path.join(
-            prob_sol_files_directory, solution_filename))
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
     )
 
     instance, dynamic_components, symbol_map = load_problem_info(
-        prob_sol_files_directory=prob_sol_files_directory)
+        prob_sol_files_directory=prob_sol_files_directory
+    )
 
     # #### WORKING VERSION #####
     # This needs to be under an if statement and execute when we are loading
@@ -1319,10 +1325,10 @@ def load_gurobi_json_solution(prob_sol_files_directory,
 
     # Solver status
     # TODO: what are the types
-    termination_condition = "optimal" if solution["SolutionInfo"]["Status"] == 2 else\
-        "unknown"
-    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else\
-        "unknown"
+    termination_condition = (
+        "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    )
+    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
     results = Results(
         solver_status=solver_status, termination_condition=termination_condition
     )

@@ -25,7 +25,10 @@ extras_coverage = [
     "coverage",  # test coverage
     "coveralls",  # automated coverage results
 ]
-extras_all = extras_ui + extras_doc + extras_black + extras_coverage
+
+extras_gurobi = ["gurobipy"]  # Gurobi Python interface
+
+extras_all = extras_ui + extras_doc + extras_black + extras_coverage + extras_gurobi
 
 setup(
     name="GridPath",
@@ -53,6 +56,7 @@ setup(
         "ui": extras_ui,
         "all": extras_all,
         "coverage": extras_coverage,
+        "gurobi": extras_gurobi,
     },
     include_package_data=True,
     entry_points={
