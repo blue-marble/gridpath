@@ -219,22 +219,25 @@ def run_optimization_for_subproblem_stage(
     # We're expecting subproblem and stage to be strings downstream from here
     subproblem_directory = str(subproblem_directory)
     stage_directory = str(stage_directory)
+    
+    # Used only if we are writing problem files or loading solutions
+    prob_sol_files_directory = os.path.join(
+        scenario_directory, subproblem_directory, stage_directory,
+        "prob_sol_files"
+    )
 
     # Create problem instance and either save the problem file or solve the instance
     # TODO: incompatible options
     # If we are loading a solution, skip the compilation step; we'll use the saved
     # instance and dynamic components
-    if parsed_arguments.load_solution:
-        # TODO: more elegant way to pass the scenario name
-        scenario_name = os.path.basename(os.path.normpath(scenario_directory))
-        # TODO: figure out how the solution filename works upstream
-        # solved_instance, results, dynamic_components = load_cplex_xml_solution(
-        #     scenario_directory=scenario_directory,
-        #     solution_filename="{}.sol".format(scenario_name),
-        # )
+    if parsed_arguments.load_cplex_solution:
+        solved_instance, results, dynamic_components = load_cplex_xml_solution(
+            prob_sol_files_directory=prob_sol_files_directory,
+            solution_filename="cplex_solution.sol",
+        )
+    elif parsed_arguments.load_gurobi_solution:
         solved_instance, results, dynamic_components = load_gurobi_json_solution(
-            scenario_directory=scenario_directory,
-            # TODO: standardize this based on cplex vs gurobi
+            prob_sol_files_directory=prob_sol_files_directory,
             solution_filename="gurobi_solution.json",
         )
     else:
@@ -245,41 +248,39 @@ def run_optimization_for_subproblem_stage(
             parsed_arguments=parsed_arguments,
         )
 
-        if parsed_arguments.create_problem_file_only:
-            # TODO: also need to pickle the dynamic components
-            if parsed_arguments.create_problem_file_only:
-                with open(os.path.join(scenario_directory, "logs", "instance.pickle"),
-                          "wb") as \
-                        f_out:
-                    dill.dump(instance, f_out)
-                with open(os.path.join(scenario_directory, "logs",
-                                       "dynamic_components.pickle"), "wb") as \
-                        f_out:
-                    dill.dump(dynamic_components, f_out)
-
-            # TODO: add check that this is specified and that it is within
-            #  what's allowed by Pyomo
-            problem_file_format = parsed_arguments.problem_file_format
+        if parsed_arguments.create_lp_problem_file_only:
+            prob_sol_files_directory = os.path.join(
+                scenario_directory, subproblem_directory, stage_directory,
+                "prob_sol_files"
+            )
+            if not os.path.exists(prob_sol_files_directory):
+                os.makedirs(prob_sol_files_directory)
+            with open(os.path.join(prob_sol_files_directory, "instance.pickle"),
+                      "wb") as \
+                    f_out:
+                dill.dump(instance, f_out)
+            with open(os.path.join(prob_sol_files_directory,
+                                   "dynamic_components.pickle"), "wb") as \
+                    f_out:
+                dill.dump(dynamic_components, f_out)
 
             smap_id = write_problem_file(
                 instance=instance,
-                scenario_directory=scenario_directory,
-                problem_format=problem_file_format,
+                prob_sol_files_directory=prob_sol_files_directory
             )
             symbol_map = instance.solutions.symbol_map[smap_id]
 
-            tmp_buffer = {}  # this makes the process faster
             symbol_cuid_pairs = tuple(
-                (symbol, ComponentUID(var_weakref(), cuid_buffer=tmp_buffer))
+                (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
                 for symbol, var_weakref in symbol_map.bySymbol.items()
             )
 
             with open(
-                os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "wb"
+                os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
             ) as f_out:
                 dill.dump(symbol_cuid_pairs, f_out)
 
-            print("Problem file written to {}".format("SPECIFY DIR WHERE TO WRITE"))
+            print("Problem file written to {}".format(prob_sol_files_directory))
             sys.exit()
         else:
             solved_instance, results = solve_problem(
@@ -1188,37 +1189,32 @@ def _summarize_rule(scenario_directory, subproblem, stage, quiet):
 #####
 
 
-def write_problem_file(instance, scenario_directory, problem_format):
+def write_problem_file(instance, prob_sol_files_directory, problem_format="lp"):
     """
 
     :param instance:
-    :param scenario_directory:
+    :param prob_sol_files_directory:
     :param problem_format:
     :return:
 
-    TODO: move problem file to
     """
-    # TODO: can we get these from the pyomo code?
     formats = dict()
-    formats["py"] = ProblemFormat.pyomo
-    formats["nl"] = ProblemFormat.nl
-    formats["bar"] = ProblemFormat.bar
-    formats["mps"] = ProblemFormat.mps
-    formats["mod"] = ProblemFormat.mod
+    # Only supporting LP problem format for now
     formats["lp"] = ProblemFormat.cpxlp
-    formats["osil"] = ProblemFormat.osil
-    formats["gms"] = ProblemFormat.gams
-    formats["gams"] = ProblemFormat.gams
 
-    scenario = os.path.basename(scenario_directory)
-    # This needs to be under an if statement and do only if we want to save
-    # the problem file as MPS
-    # Dealing with large files: https://developer.ibm.com/answers/questions/483607/sending-large-lp-file-to-dropsolve/#:~:targetText=2%20answers&targetText=There%20is%20a%20hard%20limit,read%20will%20work%20on%20DOcplexcloud.
+    # formats["py"] = ProblemFormat.pyomo
+    # formats["nl"] = ProblemFormat.nl
+    # formats["bar"] = ProblemFormat.bar
+    # formats["mps"] = ProblemFormat.mps
+    # formats["mod"] = ProblemFormat.mod
+    # formats["osil"] = ProblemFormat.osil
+    # formats["gms"] = ProblemFormat.gams
+    # formats["gams"] = ProblemFormat.gams
 
     print("Writing {} problem file...".format(problem_format.upper()))
     filename, smap_id = instance.write(
         os.path.join(
-            scenario_directory, "logs", "{}.{}".format(scenario, problem_format)
+            prob_sol_files_directory, "problem_file.{}".format(problem_format)
         ),
         format=formats[problem_format],
         io_options=[],
@@ -1227,42 +1223,22 @@ def write_problem_file(instance, scenario_directory, problem_format):
     return smap_id
 
 
-def load_cplex_xml_solution(scenario_directory, solution_filename):
+def load_cplex_xml_solution(prob_sol_files_directory, solution_filename="cplex_solution.sol"):
     """
-    :param scenario_directory:
+    :param prob_sol_files_directory:
     :param solution_filename:
     :return:
     """
     print(
-        "Loading results from solution file {}...".format(solution_filename)
+        "Loading results from solution file {}...".format(os.path.join(
+            prob_sol_files_directory, solution_filename))
     )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory)
 
-
-    # TODO: refactor for use with cplex and gurobi solutions
-    with open(
-        os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
-    ) as instance_in:
-        instance = dill.load(instance_in)
-    with open(
-        os.path.join(scenario_directory, "logs", "dynamic_components.pickle"), "rb"
-    ) as dc_in:
-        dynamic_components = dill.load(dc_in)
-    with open(
-        os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb"
-    ) as map_in:
-        symbol_cuid_pairs = dill.load(map_in)
-        symbol_map = SymbolMap()
-        symbol_map.addSymbols(
-            (cuid.find_component_on(instance), symbol)
-            for symbol, cuid in symbol_cuid_pairs
-        )
-
-    # #### WORKING VERSION #####
-    # This needs to be under an if statement and execute when we are loading
-    # solution from disk
-    # Read XML solution file
+    # Read XML (.sol) solution file
     root = ET.parse(
-        os.path.join(scenario_directory, "logs", solution_filename)
+        os.path.join(prob_sol_files_directory, solution_filename)
     ).getroot()
 
     # Variables
@@ -1303,41 +1279,26 @@ def load_cplex_xml_solution(scenario_directory, solution_filename):
     return instance, results, dynamic_components
 
 
-def load_gurobi_json_solution(scenario_directory, solution_filename):
+def load_gurobi_json_solution(prob_sol_files_directory,
+                              solution_filename="gurobi_solution.json"):
     """
-    :param scenario_directory:
+    :param prob_sol_files_directory:
     :param solution_filename:
     :return:
     """
     print(
-        "Loading results from solution file {}...".format(solution_filename)
+        "Loading results from solution file {}...".format(os.path.join(
+            prob_sol_files_directory, solution_filename))
     )
 
-
-    # TODO: refactor for use with cplex and gurobi solutions
-    with open(
-        os.path.join(scenario_directory, "logs", "instance.pickle"), "rb"
-    ) as instance_in:
-        instance = dill.load(instance_in)
-    with open(
-        os.path.join(scenario_directory, "logs", "dynamic_components.pickle"), "rb"
-    ) as dc_in:
-        dynamic_components = dill.load(dc_in)
-    with open(
-        os.path.join(scenario_directory, "logs", "symbol_map.pickle"), "rb"
-    ) as map_in:
-        symbol_cuid_pairs = dill.load(map_in)
-        symbol_map = SymbolMap()
-        symbol_map.addSymbols(
-            (cuid.find_component_on(instance), symbol)
-            for symbol, cuid in symbol_cuid_pairs
-        )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory)
 
     # #### WORKING VERSION #####
     # This needs to be under an if statement and execute when we are loading
     # solution from disk
     # Read JSON solution file
-    with open(os.path.join(scenario_directory, "logs", solution_filename), "r") as f:
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
         solution = json.load(f)
 
     # Variables
@@ -1367,6 +1328,28 @@ def load_gurobi_json_solution(scenario_directory, solution_filename):
     )
 
     return instance, results, dynamic_components
+
+
+def load_problem_info(prob_sol_files_directory):
+    with open(
+        os.path.join(prob_sol_files_directory, "instance.pickle"), "rb"
+    ) as instance_in:
+        instance = dill.load(instance_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
+
+    return instance, dynamic_components, symbol_map
 
 
 class Results(object):
