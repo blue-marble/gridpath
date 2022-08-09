@@ -30,6 +30,7 @@ from pyomo.environ import (
     Param,
     Constraint,
     NonNegativeReals,
+    Reals,
     value,
 )
 
@@ -122,7 +123,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Multipliers for the constraint types and peak designations
     m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS = Set(dimen=3)
     m.peak_designation_multiplier = Param(
-        m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS, within=NonNegativeReals
+        m.PROJECT_CONSTRAINT_TYPE_PEAK_DESIGNATIONS, within=Reals
     )
     # Constraints can be applied on the total project capacity, the deliverable (for
     # PRM purposes) capacity or the energy-only (for PRM purposes) capacity.
