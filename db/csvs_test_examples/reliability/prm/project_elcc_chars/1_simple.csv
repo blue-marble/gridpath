@@ -1,4 +1,4 @@
-project,prm_type,elcc_simple_fraction,contributes_to_elcc_surface,cap_factor_for_elcc_surface,min_duration_for_full_capacity_credit_hours,deliverability_group
+project,prm_type,elcc_simple_fraction,elcc_surface_name,cap_factor_for_elcc_surface,min_duration_for_full_capacity_credit_hours,deliverability_group
 Nuclear,fully_deliverable,0.8,,,,
 Coal,fully_deliverable,0.8,,,,
 Gas_CCGT,fully_deliverable,0.8,,,,
