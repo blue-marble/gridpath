@@ -268,7 +268,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         if mod.max_new_build_power[prj, prd] == float("inf"):
             return Constraint.Skip
-        return new_capacity_rule(mod, prj, prd) <= mod.max_new_build_power[prj, prd]
+        else:
+            return new_capacity_rule(mod, prj, prd) <= mod.max_new_build_power[prj, prd]
 
     m.Max_Build_Power_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_build_power_rule)
 
@@ -295,7 +296,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         if mod.max_capacity_power[prj, prd] == float("inf"):
             return Constraint.Skip
-        return mod.Capacity_MW[prj, prd] <= mod.max_capacity_power[prj, prd]
+        else:
+            return mod.Capacity_MW[prj, prd] <= mod.max_capacity_power[prj, prd]
 
     m.Max_Power_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_power_rule)
 
@@ -328,10 +330,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         if mod.max_new_build_energy[prj, prd] == float("inf"):
             return Constraint.Skip
-        return (
-            new_energy_capacity_rule(mod, prj, prd)
-            <= mod.max_new_build_energy[prj, prd]
-        )
+        else:
+            return (
+                new_energy_capacity_rule(mod, prj, prd)
+                <= mod.max_new_build_energy[prj, prd]
+            )
 
     m.Max_Build_Energy_Constraint = Constraint(
         m.PRJ_OPR_PRDS, rule=max_build_energy_rule
@@ -362,7 +365,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         if mod.max_capacity_energy[prj, prd] == float("inf"):
             return Constraint.Skip
-        return mod.Energy_Capacity_MWh[prj, prd] <= mod.max_capacity_energy[prj, prd]
+        else:
+            return (
+                mod.Energy_Capacity_MWh[prj, prd] <= mod.max_capacity_energy[prj, prd]
+            )
 
     m.Max_Energy_Constraint = Constraint(m.PRJ_OPR_PRDS, rule=max_energy_rule)
 
