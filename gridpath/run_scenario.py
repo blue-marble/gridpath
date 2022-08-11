@@ -519,7 +519,7 @@ def save_results(
 
         save_objective_function_value(scenario_directory, subproblem, stage, instance)
 
-        save_duals(scenario_directory, subproblem, stage, instance)
+        save_duals(scenario_directory, subproblem, stage, instance, dynamic_components)
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -870,7 +870,7 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         objective_file.write(str(objective_function_value))
 
 
-def save_duals(scenario_directory, subproblem, stage, instance):
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     """
     :param scenario_directory:
     :param subproblem:
@@ -888,7 +888,9 @@ def save_duals(scenario_directory, subproblem, stage, instance):
     instance.constraint_indices = {}
     for m in loaded_modules:
         if hasattr(m, "save_duals"):
-            m.save_duals(instance)
+            m.save_duals(
+                scenario_directory, subproblem, stage, instance, dynamic_components
+            )
         else:
             pass
 

@@ -147,8 +147,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([z, p, value(m.Dynamic_ELCC_MW[z, p])])
 
 
-def save_duals(m):
-    m.constraint_indices["Dynamic_ELCC_Constraint"] = [
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Dynamic_ELCC_Constraint"] = [
         "prm_zone",
         "period",
         "facet",

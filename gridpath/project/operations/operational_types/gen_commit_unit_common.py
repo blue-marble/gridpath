@@ -62,6 +62,7 @@ from pyomo.environ import (
     value,
 )
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.operations.operational_types.common_functions import (
@@ -3781,3 +3782,92 @@ def export_linked_subproblem_inputs(
                 pass
     else:
         pass
+
+
+def save_duals(m, bin_or_lin):
+    m.constraint_indices["GenCommit{}_Ramp_Up_Constraint".format(bin_or_lin)] = [
+        "project",
+        "timepoint",
+        "dual",
+    ]
+
+    m.constraint_indices["GenCommit{}_Ramp_Down_Constraint".format(bin_or_lin)] = [
+        "project",
+        "timepoint",
+        "dual",
+    ]
+
+    m.constraint_indices["GenCommit{}_Min_Up_Time_Constraint".format(bin_or_lin)] = [
+        "project",
+        "timepoint",
+        "dual",
+    ]
+
+    m.constraint_indices["GenCommit{}_Min_Down_Time_Constraint".format(bin_or_lin)] = [
+        "project",
+        "timepoint",
+        "dual",
+    ]
+
+
+def generic_constraint_column_dict(bin_or_lin):
+
+    constraint_column_dict = {
+        "GenCommit{}_Ramp_Up_Constraint".format(bin_or_lin): "ramp_up_dual",
+        "GenCommit{}_Ramp_Down_Constraint".format(bin_or_lin): "ramp_down_dual",
+        "GenCommit{}_Min_Up_Time_Constraint".format(bin_or_lin): "min_up_time_dual",
+        "GenCommit{}_Min_Down_Time_Constraint".format(bin_or_lin): "min_down_time_dual",
+    }
+
+    return constraint_column_dict
+
+
+def generic_duals_sql(column):
+    duals_sql = """
+        UPDATE results_project_dispatch
+        SET {column} = ?
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+        AND project = ?
+        AND timepoint = ?
+    """.format(
+        column=column
+    )
+
+    return duals_sql
+
+
+def generic_load_duals_from_csv(constraint_filepath):
+    # Update duals
+    duals_results = []
+    with open(constraint_filepath, "r") as f:
+        reader = csv.reader(f)
+
+        next(reader)  # skip header
+
+        row_list = [row for row in reader]
+
+    return row_list
+
+
+def generic_update_duals_in_db(
+    conn, results_directory, scenario_id, subproblem, stage, bin_or_lin
+):
+    constraint_column_dict = generic_constraint_column_dict(bin_or_lin=bin_or_lin)
+    for constraint in constraint_column_dict.keys():
+        c = conn.cursor()
+        constraint_path = os.path.join(results_directory, constraint + ".csv")
+        row_list = generic_load_duals_from_csv(constraint_path)
+        duals_results = [
+            (row[2], scenario_id, subproblem, stage, row[0], row[1]) for row in row_list
+        ]
+
+        sql = generic_duals_sql(constraint_column_dict[constraint])
+
+        spin_on_database_lock(
+            conn=conn,
+            cursor=c,
+            sql=sql,
+            data=duals_results,
+        )

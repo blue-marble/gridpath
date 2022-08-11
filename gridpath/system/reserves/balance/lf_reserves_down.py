@@ -67,13 +67,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
 
-def save_duals(m):
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     """
 
     :param m:
     :return:
     """
-    generic_save_duals(m, "Meet_LF_Reserves_Down_Constraint")
+    generic_save_duals(instance, "Meet_LF_Reserves_Down_Constraint")
 
 
 def import_results_into_database(
