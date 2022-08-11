@@ -3846,7 +3846,9 @@ def generic_load_duals_from_csv(constraint_filepath):
 
         next(reader)  # skip header
 
-    return reader
+        row_list = [row for row in reader]
+
+    return row_list
 
 
 def generic_update_duals_in_db(
@@ -3855,10 +3857,10 @@ def generic_update_duals_in_db(
     constraint_column_dict = generic_constraint_column_dict(bin_or_lin=bin_or_lin)
     for constraint in constraint_column_dict.keys():
         c = conn.cursor()
-        constraint_path = os.path.join(results_directory, constraint, ".csv")
-        reader = generic_load_duals_from_csv(constraint_path)
+        constraint_path = os.path.join(results_directory, constraint + ".csv")
+        row_list = generic_load_duals_from_csv(constraint_path)
         duals_results = [
-            (row[2], scenario_id, subproblem, stage, row[0], row[1]) for row in reader
+            (row[2], scenario_id, subproblem, stage, row[0], row[1]) for row in row_list
         ]
 
         sql = generic_duals_sql(constraint_column_dict[constraint])

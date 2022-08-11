@@ -296,7 +296,7 @@ def import_model_results_to_database(
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
-        bin_or_lin="Bin"
+        bin_or_lin="Bin",
     )
 
 
