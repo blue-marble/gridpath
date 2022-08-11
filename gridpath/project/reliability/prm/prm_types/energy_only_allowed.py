@@ -75,12 +75,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # additional costs to be incurred (e.g. for transmission, etc.)
     m.Deliverable_Capacity_MW = Var(m.EOA_PRM_PRJ_OPR_PRDS, within=NonNegativeReals)
 
-    def energy_only_capacity_rule(mod, g, p):
+    def energy_only_capacity_init(mod, g, p):
         """ """
         return mod.Capacity_MW[g, p] - mod.Deliverable_Capacity_MW[g, p]
 
     m.Energy_Only_Capacity_MW = Expression(
-        m.EOA_PRM_PRJ_OPR_PRDS, initialize=energy_only_capacity_rule
+        m.EOA_PRM_PRJ_OPR_PRDS, initialize=energy_only_capacity_init
+    )
+
+    def deliverable_capacity_constraint_rule(mod, g, p):
+        """
+        Deliverable capacity must be less than the project capacity.
+        """
+        return mod.Deliverable_Capacity_MW[g, p] <= mod.Capacity_MW[g, p]
+
+    m.Deliverable_Less_Than_Total_Constraint = Constraint(
+        m.EOA_PRM_PRJ_OPR_PRDS, rule=deliverable_capacity_constraint_rule
     )
 
 

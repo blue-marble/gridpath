@@ -823,7 +823,7 @@ class TestExamples(unittest.TestCase):
         )
         self.run_and_check_objective(
             "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit",
-            -11065845900.191603,
+            -11133045900.191603,
         )
 
     def test_example_2periods_new_build_local_capacity(self):
