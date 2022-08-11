@@ -808,7 +808,7 @@ class TestExamples(unittest.TestCase):
         """
         self.check_validation("2periods_new_build_simple_prm_w_energy_only")
         self.run_and_check_objective(
-            "2periods_new_build_simple_prm_w_energy_only", -11065845900.191603
+            "2periods_new_build_simple_prm_w_energy_only", -11133045895.810287
         )
 
     def test_example_2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit(self):
