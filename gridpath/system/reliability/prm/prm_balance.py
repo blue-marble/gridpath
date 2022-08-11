@@ -117,8 +117,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             )
 
 
-def save_duals(m):
-    m.constraint_indices["PRM_Constraint"] = ["prm_zone", "period", "dual"]
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["PRM_Constraint"] = ["prm_zone", "period", "dual"]
 
 
 def import_results_into_database(

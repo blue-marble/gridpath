@@ -233,6 +233,10 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     )
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    gen_commit_unit_common.save_duals(instance, "Lin")
+
+
 # Database
 ###############################################################################
 

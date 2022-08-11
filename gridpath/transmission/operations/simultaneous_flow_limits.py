@@ -292,8 +292,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             )
 
 
-def save_duals(m):
-    m.constraint_indices["Sim_Flow_Constraint"] = ["sim_flow_lmt", "timepoint", "dual"]
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Sim_Flow_Constraint"] = ["sim_flow_lmt", "timepoint", "dual"]
 
 
 # Database
