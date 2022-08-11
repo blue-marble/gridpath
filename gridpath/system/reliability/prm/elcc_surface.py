@@ -207,7 +207,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     # The intercepts for the surface
     intercepts = c.execute(
-        """SELECT surface_name, prm_zone, period, facet, elcc_surface_intercept
+        """SELECT elcc_surface_name, prm_zone, period, facet, elcc_surface_intercept
         FROM inputs_system_prm_zone_elcc_surface
         INNER JOIN inputs_temporal_periods
         USING (period)
