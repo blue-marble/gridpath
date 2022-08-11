@@ -267,6 +267,16 @@ def import_model_results_to_database(
         results_file="dispatch_continuous_commit.csv",
     )
 
+    # Update duals
+    gen_commit_unit_common.generic_update_duals_in_db(
+        conn=db,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        bin_or_lin="Lin"
+    )
+
 
 # Validation
 ###############################################################################
