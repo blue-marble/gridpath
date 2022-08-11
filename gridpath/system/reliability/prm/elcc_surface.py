@@ -161,7 +161,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         newline="",
     ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["surface_name", "prm_zone", "period", "elcc_mw"])
+        writer.writerow(["elcc_surface_name", "prm_zone", "period", "elcc_mw"])
         for (s, z, p) in m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS:
             writer.writerow([s, z, p, value(m.Dynamic_ELCC_MW[s, z, p])])
 
