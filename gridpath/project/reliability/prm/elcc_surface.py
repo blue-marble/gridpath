@@ -543,7 +543,7 @@ def import_results_into_database(
         prm_zone, facet, technology, load_zone,
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
         scenario_id
     )
