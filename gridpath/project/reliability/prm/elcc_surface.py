@@ -222,8 +222,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.technology[prj],
                     value(m.Capacity_MW[prj, period]),
                     value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                    value(m.elcc_surface_coefficient[prj, period, facet]),
-                    value(m.ELCC_Surface_Contribution_MW[prj, period, facet]),
+                    value(m.elcc_surface_coefficient[surface, prj, period, facet]),
+                    value(m.ELCC_Surface_Contribution_MW[surface, prj, period, facet]),
                 ]
             )
 

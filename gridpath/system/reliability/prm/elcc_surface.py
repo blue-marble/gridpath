@@ -268,7 +268,7 @@ def write_model_inputs(
 
         # Writer header
         writer.writerow(
-            ["surface_name", "prm_zone", "period", "facet", "elcc_surface_intercept"]
+            ["elcc_surface_name", "prm_zone", "period", "facet", "elcc_surface_intercept"]
         )
         # Write data
         for row in intercepts:
