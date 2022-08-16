@@ -1161,6 +1161,16 @@ def add_model_components(
 
     setattr(
         m,
+        "gen_commit_{}_allow_startup_shutdown_power".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=Boolean,
+            default=0,
+        ),
+    )
+
+    setattr(
+        m,
         "gen_commit_{}_aux_consumption_frac_capacity".format(bin_or_lin),
         Param(
             getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
@@ -2502,6 +2512,9 @@ def add_model_components(
             ]
             <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp])
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+            * getattr(
+                mod, "gen_commit_{}_allow_startup_shutdown_power".format(bin_or_lin)
+            )[g]
         )
 
     setattr(
@@ -2753,6 +2766,9 @@ def add_model_components(
             ]
             <= (1 - getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp])
             * getattr(mod, "GenCommit{}_Pmin_MW".format(Bin_or_Lin))[g, tmp]
+            * getattr(
+                mod, "gen_commit_{}_allow_startup_shutdown_power".format(bin_or_lin)
+            )[g]
         )
 
     setattr(
