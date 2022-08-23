@@ -46,9 +46,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # ELCC surface for each PRM project
     m.elcc_surface_name = Param(m.PRM_PROJECTS, within=Any, default=None)
-    m.elcc_surface_cap_factor = Param(m.PRM_PROJECTS, within=(NonNegativeReals |
-                                                              {None}),
-                                      default=None)
+    m.elcc_surface_cap_factor = Param(
+        m.PRM_PROJECTS, within=(NonNegativeReals | {None}), default=None
+    )
 
     # Two-dimensional set of the ELCC surface name and the project that contribute to
     # that surface
@@ -257,14 +257,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE project_prm_zone_scenario_id = {}) as prj_prm_tbl
         USING (project)
         -- Get the ELCC surface contribution flag
-        LEFT OUTER JOIN 
-        (SELECT project, elcc_surface_name
-        FROM inputs_project_elcc_chars
-        WHERE project_elcc_chars_scenario_id = {}) as contr_tbl
-        USING (project)
         LEFT OUTER JOIN
         -- Get the cap factors for the surface 
-        (SELECT project, elcc_surface_cap_factor
+        (SELECT project, elcc_surface_name, elcc_surface_cap_factor
         FROM inputs_project_elcc_surface_cap_factors
         WHERE elcc_surface_scenario_id = {}) as cf_tbl
         USING (project)

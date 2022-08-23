@@ -588,19 +588,34 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
         # Projects by group
         group_projects = c4.execute(
             """SELECT deliverability_group, project 
-            FROM 
-            (SELECT project
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            LEFT OUTER JOIN 
-            (SELECT deliverability_group, project 
-            FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}
-            ORDER BY deliverability_group, project) as grp_tbl
+            FROM (
+                SELECT project
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {portfolio}
+             ) as portfolio  -- portfolio projects only
+             LEFT OUTER JOIN (
+                SELECT project
+                FROM inputs_project_prm_zones
+                WHERE project_prm_zone_scenario_id = {prm_zone}
+            ) as proj_tbl  --  prm contributing projects only
             USING (project)
-            WHERE deliverability_group IS NOT NULL;""".format(
-                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+            LEFT OUTER JOIN (
+                SELECT project, project_deliverability_scenario_id
+                FROM inputs_project_elcc_chars
+                WHERE project_elcc_chars_scenario_id = {prj_elcc} 
+            )
+            USING (project)
+            LEFT OUTER JOIN (
+                SELECT project, project_deliverability_scenario_id, deliverability_group
+                FROM inputs_project_deliverability
+            ORDER BY deliverability_group, project
+            ) as grp_tbl
+            USING (project, project_deliverability_scenario_id)
+            WHERE deliverability_group IS NOT NULL
+            ;""".format(
+                portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+                prm_zone=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+                prj_elcc=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
             )
         )
 
