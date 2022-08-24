@@ -1,3 +1,3 @@
-period,elcc_simple_fraction,min_duration_for_full_capacity_credit_hours
-2020,0.8,4.0
-2030,0.8,4.0
+period,elcc_simple_fraction
+2020,0.8
+2030,0.8

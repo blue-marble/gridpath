@@ -1643,6 +1643,7 @@ CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
 prm_type VARCHAR(32),  -- to model 'energy_only" PRM type, select energy_only feature
+min_duration_for_full_capacity_credit_hours FLOAT,
 project_elcc_simple_scenario_id INTEGER,
 project_deliverability_scenario_id INTEGER CHECK (
     project_deliverability_scenario_id IS NULL OR prm_type = 'energy_only_allowed'
@@ -1669,7 +1670,6 @@ project VARCHAR(64),
 project_elcc_simple_scenario_id INTEGER,
 period FLOAT,
 elcc_simple_fraction FLOAT,
-min_duration_for_full_capacity_credit_hours FLOAT,
 PRIMARY KEY (project, project_elcc_simple_scenario_id, period),
 FOREIGN KEY (project, project_elcc_simple_scenario_id) REFERENCES
 subscenarios_project_elcc_simple (project, project_elcc_simple_scenario_id)
