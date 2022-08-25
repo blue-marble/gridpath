@@ -249,12 +249,12 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- Only select project in the scenario's portfolio
         (SELECT project
         FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}) as prj_tbl
+        WHERE project_portfolio_scenario_id = {portfolio}) as prj_tbl
         LEFT OUTER JOIN 
         -- Only select projects contributing to the PRM
         (SELECT project
         FROM inputs_project_prm_zones
-        WHERE project_prm_zone_scenario_id = {}) as prj_prm_tbl
+        WHERE project_prm_zone_scenario_id = {prj_prm_zone}) as prj_prm_tbl
         USING (project)
         -- Get the ELCC surface contribution flag
         LEFT OUTER JOIN
@@ -264,10 +264,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE elcc_surface_scenario_id = {}) as cf_tbl
         USING (project)
         ;""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID,
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            prj_prm_zone=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            elcc_surface=subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
@@ -279,17 +278,17 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         FROM
         (SELECT project
         FROM inputs_project_portfolios
-        WHERE project_portfolio_scenario_id = {}) as prj_tbl
+        WHERE project_portfolio_scenario_id = {portfolio}) as prj_tbl
         LEFT OUTER JOIN 
         inputs_project_elcc_surface
         USING (project)
         INNER JOIN inputs_temporal_periods
         USING (period)
-        WHERE elcc_surface_scenario_id = {}
-        AND temporal_scenario_id = {};""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
+        WHERE elcc_surface_scenario_id = {elcc_surface}
+        AND temporal_scenario_id = {temporal};""".format(
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            elcc_surface=subscenarios.ELCC_SURFACE_SCENARIO_ID,
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
@@ -304,20 +303,20 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- join them
         (SELECT prm_zone
         FROM inputs_geography_prm_zones
-        WHERE prm_zone_scenario_id = {}) as prm_zone_tbl
+        WHERE prm_zone_scenario_id = {prm_zone}) as prm_zone_tbl
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as period_tbl
+        WHERE temporal_scenario_id = {temporal}) as period_tbl
         -- Join to the normalization params
         LEFT OUTER JOIN
         inputs_system_prm_zone_elcc_surface_prm_load
         USING (prm_zone, period)
-        WHERE elcc_surface_scenario_id = {}
+        WHERE elcc_surface_scenario_id = {elcc_surface}
         """.format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID,
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
+            elcc_surface=subscenarios.ELCC_SURFACE_SCENARIO_ID,
         )
     )
 
