@@ -389,9 +389,15 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         """
         SELECT capacity_group, project
         FROM inputs_project_capacity_groups
-        WHERE project_capacity_group_scenario_id = {}
+        WHERE project_capacity_group_scenario_id = {prj_cap_group_sid}
+        AND project in (
+            SELECT DISTINCT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {prj_portfolio_sid}
+            )
         """.format(
-            subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID
+            prj_cap_group_sid=subscenarios.PROJECT_CAPACITY_GROUP_SCENARIO_ID,
+            prj_portfolio_sid=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
         )
     )
 
