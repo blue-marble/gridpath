@@ -373,7 +373,7 @@ def max_losses_from_rule(mod, l, tmp):
     else:
         return (
             mod.TxSimple_Losses_LZ_From_MW[l, tmp]
-            <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
+            <= -mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
             * mod.Tx_Availability_Derate[l, tmp]
             * mod.tx_simple_loss_factor[l]
         )
