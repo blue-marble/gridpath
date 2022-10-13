@@ -195,7 +195,42 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Capacity_Cost_in_Period[prj, p]),
                 ]
             )
-    # TODO: export fixed costs
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "costs_fixed_all_projects.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "hours_in_period_timepoints",
+                "hours_in_subproblem_period",
+                "technology",
+                "load_zone",
+                "fixed_cost",
+            ]
+        )
+        for (prj, p) in m.PRJ_FIN_PRDS:
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.hours_in_period_timepoints[p],
+                    m.hours_in_subproblem_period[p],
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.Fixed_Cost_in_Period[prj, p]),
+                ]
+            )
 
 
 # Database
