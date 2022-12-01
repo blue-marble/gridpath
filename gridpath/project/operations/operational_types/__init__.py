@@ -153,6 +153,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    # Save module-specific duals
+    # Operational type modules
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
+        if hasattr(imported_operational_modules[op_m], "save_duals"):
+            imported_operational_modules[op_m].save_duals(
+                scenario_directory,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
+            )
+        else:
+            pass
+
+
 # TODO: move this into SubScenarios class?
 def get_required_opchar_modules(scenario_id, c):
     """

@@ -249,8 +249,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             )
 
 
-def save_duals(m):
-    m.constraint_indices["Meet_Fuel_Burn_Min_Abs_Constraint"] = [
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Meet_Fuel_Burn_Min_Abs_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -258,7 +258,7 @@ def save_duals(m):
         "dual",
     ]
 
-    m.constraint_indices["Meet_Fuel_Burn_Max_Abs_Constraint"] = [
+    instance.constraint_indices["Meet_Fuel_Burn_Max_Abs_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",
@@ -266,7 +266,7 @@ def save_duals(m):
         "dual",
     ]
 
-    m.constraint_indices["Meet_Fuel_Burn_Max_Rel_Constraint"] = [
+    instance.constraint_indices["Meet_Fuel_Burn_Max_Rel_Constraint"] = [
         "fuel",
         "fuel_ba",
         "balancing_type",

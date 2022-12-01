@@ -7,6 +7,7 @@ ramp_up_when_on_rate,float,,optional,optional,optional,optional,optional,optiona
 ramp_down_when_on_rate,float,,optional,optional,optional,optional,optional,optional,,optional,,,,,,
 min_up_time_hours,float,,,optional,optional,optional,,,,,,,,,,
 min_down_time_hours,float,,,optional,optional,optional,,,,,,,,,,
+allow_startup_shutdown_power,float,,,optional,,optional,,,,,,,,,,
 charging_efficiency,float,,,,,,,,,,,,required,required,,
 discharging_efficiency,float,,,,,,,,,,,,required,required,,
 charging_capacity_multiplier,float,,,,,,,,,,,,optional,,,

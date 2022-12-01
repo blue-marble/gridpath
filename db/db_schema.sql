@@ -995,6 +995,7 @@ min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 cycle_selection_scenario_id INTEGER,
 supplemental_firing_scenario_id INTEGER,
+allow_startup_shutdown_power INTEGER, -- defaults to 0 in the model if not specified
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -3393,9 +3394,13 @@ active_startup_type FLOAT,
 auxiliary_consumption_mw FLOAT,
 gross_power_mw FLOAT,
 ramp_up_violation FLOAT,
+ramp_up_dual FLOAT,
 ramp_down_violation FLOAT,
+ramp_down_dual FLOAT,
 min_up_time_violation FLOAT,
+min_up_time_dual FLOAT,
 min_down_time_violation FLOAT,
+min_down_time_dual FLOAT,
 hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)

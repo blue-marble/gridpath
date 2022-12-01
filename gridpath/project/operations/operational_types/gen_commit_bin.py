@@ -255,6 +255,10 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     )
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    gen_commit_unit_common.save_duals(instance, "Bin")
+
+
 # Database
 ###############################################################################
 
@@ -283,6 +287,16 @@ def import_model_results_to_database(
         subproblem=subproblem,
         stage=stage,
         results_file="dispatch_binary_commit.csv",
+    )
+
+    # Update duals
+    gen_commit_unit_common.generic_update_duals_in_db(
+        conn=db,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        bin_or_lin="Bin",
     )
 
 

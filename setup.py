@@ -25,7 +25,10 @@ extras_coverage = [
     "coverage",  # test coverage
     "coveralls",  # automated coverage results
 ]
-extras_all = extras_ui + extras_doc + extras_black + extras_coverage
+
+extras_gurobi = ["gurobipy"]  # Gurobi Python interface
+
+extras_all = extras_ui + extras_doc + extras_black + extras_coverage + extras_gurobi
 
 setup(
     name="GridPath",
@@ -47,12 +50,14 @@ setup(
         "networkx==2.5.1",  # network package for DC OPF
         "pyutilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
+        "dill==0.3.5.1",  # pickling
     ],
     extras_require={
         "doc": extras_doc,
         "ui": extras_ui,
         "all": extras_all,
         "coverage": extras_coverage,
+        "gurobi": extras_gurobi,
     },
     include_package_data=True,
     entry_points={
