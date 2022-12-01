@@ -19,7 +19,7 @@ Contributions to ELCC surface
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, value
+from pyomo.environ import Param, Set, NonNegativeReals, Binary, Expression, value, Any
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -36,30 +36,46 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    # Which projects contribute to the ELCC surface
-    m.contributes_to_elcc_surface = Param(m.PRM_PROJECTS, within=Binary)
+    m.ELCC_SURFACE_PRM_ZONE_PERIODS = Set(dimen=3, within=Any * m.PRM_ZONES * m.PERIODS)
 
-    m.ELCC_SURFACE_PROJECTS = Set(
-        within=m.PRM_PROJECTS,
-        initialize=lambda mod: subset_init_by_param_value(
-            mod, "PRM_PROJECTS", "contributes_to_elcc_surface", 1
-        ),
+    # Loads for normalization
+    m.prm_peak_load_mw = Param(m.ELCC_SURFACE_PRM_ZONE_PERIODS, within=NonNegativeReals)
+    m.prm_annual_load_mwh = Param(
+        m.ELCC_SURFACE_PRM_ZONE_PERIODS, within=NonNegativeReals
     )
 
-    m.elcc_surface_cap_factor = Param(m.ELCC_SURFACE_PROJECTS, within=NonNegativeReals)
+    # ELCC surface for each PRM project
+    m.elcc_surface_name = Param(m.PRM_PROJECTS, within=Any, default=None)
+    m.elcc_surface_cap_factor = Param(
+        m.PRM_PROJECTS, within=(NonNegativeReals | {None}), default=None
+    )
+
+    # Two-dimensional set of the ELCC surface name and the project that contribute to
+    # that surface
+    m.ELCC_SURFACE_PROJECTS = Set(
+        dimen=2,
+        initialize=lambda mod: [
+            (mod.elcc_surface_name[prj], prj)
+            for prj in mod.PRM_PROJECTS
+            if mod.elcc_surface_name[prj] is not None
+        ],
+    )
 
     m.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE = Set(
         m.PRM_ZONES,
+        dimen=2,
         within=m.ELCC_SURFACE_PROJECTS,
-        initialize=lambda mod, prm_z: subset_init_by_param_value(
-            mod, "ELCC_SURFACE_PROJECTS", "prm_zone", prm_z
-        ),
+        initialize=lambda mod, prm_z: [
+            (surface, prj)
+            for (surface, prj) in mod.ELCC_SURFACE_PROJECTS
+            if mod.prm_zone[prj] == prm_z
+        ],
     )
 
     # Define the ELCC surface
     # Surface is limited to 1000 facets
-    m.PROJECT_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
+    m.ELCC_SURFACE_PROJECT_PERIOD_FACETS = Set(
+        dimen=4, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
     )
 
     # The project coefficient for the surface
@@ -69,24 +85,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # 2-dimensional surface), but we have it by project here for maximum
     # flexibility
     m.elcc_surface_coefficient = Param(
-        m.PROJECT_PERIOD_ELCC_SURFACE_FACETS, within=NonNegativeReals
-    )
-
-    m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE = Set(within=m.PRM_ZONES * m.PERIODS)
-
-    # Loads for normalization
-    m.prm_peak_load_mw = Param(
-        m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE, within=NonNegativeReals
-    )
-    m.prm_annual_load_mwh = Param(
-        m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE, within=NonNegativeReals
+        m.ELCC_SURFACE_PROJECT_PERIOD_FACETS, within=NonNegativeReals
     )
 
     # ELCC surface contribution of each project
-    def elcc_surface_contribution_rule(mod, prj, p, f):
+    def elcc_surface_contribution_rule(mod, surface, prj, p, f):
         """
 
         :param mod:
+        :param surface:
         :param prj:
         :param p:
         :param f:
@@ -94,18 +101,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         if (prj, p) in mod.PRJ_OPR_PRDS:
             return (
-                mod.elcc_surface_coefficient[prj, p, f]
-                * mod.prm_peak_load_mw[mod.prm_zone[prj], p]
+                mod.elcc_surface_coefficient[surface, prj, p, f]
+                * mod.prm_peak_load_mw[surface, mod.prm_zone[prj], p]
                 * mod.ELCC_Eligible_Capacity_MW[prj, p]
                 * 8760
                 * mod.elcc_surface_cap_factor[prj]
-                / mod.prm_annual_load_mwh[mod.prm_zone[prj], p]
+                / mod.prm_annual_load_mwh[surface, mod.prm_zone[prj], p]
             )
         else:
             return 0
 
     m.ELCC_Surface_Contribution_MW = Expression(
-        m.PROJECT_PERIOD_ELCC_SURFACE_FACETS, rule=elcc_surface_contribution_rule
+        m.ELCC_SURFACE_PROJECT_PERIOD_FACETS, rule=elcc_surface_contribution_rule
     )
 
 
@@ -120,42 +127,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    # Projects that contribute to the ELCC surface
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"
-        ),
-        select=("project", "contributes_to_elcc_surface"),
-        param=(m.contributes_to_elcc_surface,),
-    )
-
-    elcc_df = pd.read_csv(
-        os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
-        sep="\t",
-        usecols=["project", "contributes_to_elcc_surface", "elcc_surface_cap_factor"],
-        dtype=object,  # we'll be checking for objects later
-    )
-
-    elcc_proj_df = elcc_df[elcc_df["contributes_to_elcc_surface"] == "1"]
-
-    data_portal.data()["elcc_surface_cap_factor"] = get_param_dict(
-        df=elcc_proj_df, column_name="elcc_surface_cap_factor", cast_as_type=float
-    )
-
-    # Project-period-facet
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory,
-            subproblem,
-            stage,
-            "inputs",
-            "project_elcc_surface_coefficients.tab",
-        ),
-        index=m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
-        param=m.elcc_surface_coefficient,
-        select=("project", "period", "facet", "elcc_surface_coefficient"),
-    )
-
     # Loads for the normalization
     data_portal.load(
         filename=os.path.join(
@@ -165,8 +136,40 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "elcc_surface_normalization_loads.tab",
         ),
-        index=m.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE,
+        index=m.ELCC_SURFACE_PRM_ZONE_PERIODS,
         param=(m.prm_peak_load_mw, m.prm_annual_load_mwh),
+    )
+
+    # Projects that contribute to the ELCC surface
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+        ),
+        select=("project", "elcc_surface_name", "elcc_surface_cap_factor"),
+        param=(
+            m.elcc_surface_name,
+            m.elcc_surface_cap_factor,
+        ),
+    )
+
+    # Surface-project-period-facet
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "project_elcc_surface_coefficients.tab",
+        ),
+        index=m.ELCC_SURFACE_PROJECT_PERIOD_FACETS,
+        param=m.elcc_surface_coefficient,
+        select=(
+            "elcc_surface_name",
+            "project",
+            "period",
+            "facet",
+            "elcc_surface_coefficient",
+        ),
     )
 
 
@@ -194,6 +197,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(results_file)
         writer.writerow(
             [
+                "elcc_surface_name",
                 "project",
                 "period",
                 "prm_zone",
@@ -206,9 +210,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "elcc_mw",
             ]
         )
-        for (prj, period, facet) in m.PROJECT_PERIOD_ELCC_SURFACE_FACETS:
+        for (surface, prj, period, facet) in m.ELCC_SURFACE_PROJECT_PERIOD_FACETS:
             writer.writerow(
                 [
+                    surface,
                     prj,
                     period,
                     m.prm_zone[prj],
@@ -217,8 +222,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.technology[prj],
                     value(m.Capacity_MW[prj, period]),
                     value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                    value(m.elcc_surface_coefficient[prj, period, facet]),
-                    value(m.ELCC_Surface_Contribution_MW[prj, period, facet]),
+                    value(m.elcc_surface_coefficient[surface, prj, period, facet]),
+                    value(m.ELCC_Surface_Contribution_MW[surface, prj, period, facet]),
                 ]
             )
 
@@ -239,7 +244,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Which projects will contribute to the surface and their cap factors
     project_contr_cf = c1.execute(
         """
-        SELECT project, contributes_to_elcc_surface, elcc_surface_cap_factor
+        SELECT project, elcc_surface_name, elcc_surface_cap_factor
         FROM 
         -- Only select project in the scenario's portfolio
         (SELECT project
@@ -253,7 +258,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         USING (project)
         -- Get the ELCC surface contribution flag
         LEFT OUTER JOIN 
-        (SELECT project, contributes_to_elcc_surface
+        (SELECT project, elcc_surface_name
         FROM inputs_project_elcc_chars
         WHERE project_elcc_chars_scenario_id = {}) as contr_tbl
         USING (project)
@@ -275,7 +280,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # The coefficients for the surface
     coefficients = c2.execute(
         """
-        SELECT project, period, facet, elcc_surface_coefficient
+        SELECT elcc_surface_name, project, period, facet, elcc_surface_coefficient
         FROM
         (SELECT project
         FROM inputs_project_portfolios
@@ -297,7 +302,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # The peak and annual load for the normalization
     elcc_norm_loads = c3.execute(
         """
-        SELECT prm_zone, period, prm_peak_load_mw, prm_annual_load_mwh
+        SELECT elcc_surface_name, prm_zone, period, prm_peak_load_mw, 
+        prm_annual_load_mwh
         FROM 
         -- only select the PRM zones and periods in the scenario and cross 
         -- join them
@@ -374,7 +380,7 @@ def write_model_inputs(
 
         # Append column header
         header = next(reader)
-        header.append("contributes_to_elcc_surface")
+        header.append("elcc_surface_name")
         header.append("elcc_surface_cap_factor")
         new_rows.append(header)
 
@@ -424,7 +430,15 @@ def write_model_inputs(
         writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
-        writer.writerow(["project", "period", "facet", "elcc_surface_coefficient"])
+        writer.writerow(
+            [
+                "elcc_surface_name",
+                "project",
+                "period",
+                "facet",
+                "elcc_surface_coefficient",
+            ]
+        )
         # Write data
         for row in coefficients:
             writer.writerow(row)
@@ -444,7 +458,13 @@ def write_model_inputs(
 
         # Writer header
         writer.writerow(
-            ["prm_zone", "period", "prm_peak_load_mw", "prm_annual_load_mwh"]
+            [
+                "elcc_surface_name",
+                "prm_zone",
+                "period",
+                "prm_peak_load_mw",
+                "prm_annual_load_mwh",
+            ]
         )
         # Write data
         for row in elcc_norm_loads:
@@ -486,20 +506,22 @@ def import_results_into_database(
 
         next(reader)  # skip header
         for row in reader:
-            project = row[0]
-            period = row[1]
-            prm_zone = row[2]
-            facet = row[3]
-            load_zone = row[4]
-            technology = row[5]
-            capacity = row[6]
-            elcc_eligible_capacity = row[7]
-            coefficient = row[8]
-            elcc = row[9]
+            elcc_surface_name = row[0]
+            project = row[1]
+            period = row[2]
+            prm_zone = row[3]
+            facet = row[4]
+            load_zone = row[5]
+            technology = row[6]
+            capacity = row[7]
+            elcc_eligible_capacity = row[8]
+            coefficient = row[9]
+            elcc = row[10]
 
             results.append(
                 (
                     scenario_id,
+                    elcc_surface_name,
                     project,
                     period,
                     subproblem,
@@ -517,11 +539,11 @@ def import_results_into_database(
 
     insert_temp_sql = """
         INSERT INTO temp_results_project_elcc_surface{}
-        (scenario_id, project, period, subproblem_id, stage_id, 
+        (scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id, 
         prm_zone, facet, technology, load_zone,
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
         scenario_id
     )
@@ -530,12 +552,12 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     insert_sql = """
         INSERT INTO results_project_elcc_surface
-        (scenario_id, project, period, subproblem_id, stage_id,
+        (scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id,
         prm_zone, facet, technology, load_zone, 
         capacity_mw, elcc_eligible_capacity_mw, 
         elcc_surface_coefficient, elcc_mw)
         SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
+        scenario_id, elcc_surface_name, project, period, subproblem_id, stage_id,
         prm_zone, facet, technology, load_zone, 
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw

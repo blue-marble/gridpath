@@ -48,21 +48,19 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Surface can change by prm_zone and period
     # Limit surface to 1000 facets
-    m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.PRM_ZONES * m.PERIODS * list(range(1, 1001))
+    m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS = Set(
+        dimen=4, within=m.ELCC_SURFACE_PRM_ZONE_PERIODS * list(range(1, 1001))
     )
 
     # The intercept for the prm_zone/period/facet combination
     m.elcc_surface_intercept = Param(
-        m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS, within=NonNegativeReals
+        m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS, within=NonNegativeReals
     )
 
     # Endogenous dynamic ELCC surface
-    m.Dynamic_ELCC_MW = Var(
-        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, within=NonNegativeReals
-    )
+    m.Dynamic_ELCC_MW = Var(m.ELCC_SURFACE_PRM_ZONE_PERIODS, within=NonNegativeReals)
 
-    def elcc_surface_rule(mod, prm_zone, period, facet):
+    def elcc_surface_rule(mod, surface, prm_zone, period, facet):
         """
 
         :param mod:
@@ -72,26 +70,41 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return (
-            mod.Dynamic_ELCC_MW[prm_zone, period]
+            mod.Dynamic_ELCC_MW[surface, prm_zone, period]
             <= sum(
-                mod.ELCC_Surface_Contribution_MW[prj, period, facet]
-                for prj in mod.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[prm_zone]
+                mod.ELCC_Surface_Contribution_MW[s, prj, period, facet]
+                for (s, prj) in mod.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[prm_zone]
+                if s == surface
                 # This is redundant since since ELCC_Surface_Contribution_MW
                 # is 0 for non-operational periods, but keep here for
                 # extra safety
-                if period in mod.OPR_PRDS_BY_PRJ[prj]
+                and period in mod.OPR_PRDS_BY_PRJ[prj]
             )
-            + mod.elcc_surface_intercept[prm_zone, period, facet]
-            * mod.prm_peak_load_mw[prm_zone, period]
+            + mod.elcc_surface_intercept[surface, prm_zone, period, facet]
+            * mod.prm_peak_load_mw[surface, prm_zone, period]
         )
 
     # Dynamic ELCC piecewise constraint
     m.Dynamic_ELCC_Constraint = Constraint(
-        m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS, rule=elcc_surface_rule
+        m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS, rule=elcc_surface_rule
+    )
+
+    def total_contribution_from_all_surfaces_init(mod, prm_zone, period):
+        return sum(
+            mod.Dynamic_ELCC_MW[surface, z, p]
+            for (surface, z, p) in mod.ELCC_SURFACE_PRM_ZONE_PERIODS
+            if z == prm_zone and p == period
+        )
+
+    m.Total_Contribution_from_ELCC_Surfaces = Expression(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
+        initialize=total_contribution_from_all_surfaces_init,
     )
 
     # Add to emission imports to carbon balance
-    getattr(d, prm_balance_provision_components).append("Dynamic_ELCC_MW")
+    getattr(d, prm_balance_provision_components).append(
+        "Total_Contribution_from_ELCC_Surfaces"
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -114,9 +127,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "prm_zone_surface_facets_and_intercept.tab",
         ),
-        index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
+        index=m.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS,
         param=m.elcc_surface_intercept,
-        select=("prm_zone", "period", "facet", "elcc_surface_intercept"),
+        select=(
+            "elcc_surface_name",
+            "prm_zone",
+            "period",
+            "facet",
+            "elcc_surface_intercept",
+        ),
     )
 
 
@@ -142,13 +161,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         newline="",
     ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["prm_zone", "period", "elcc_mw"])
+        writer.writerow(["elcc_surface_name", "prm_zone", "period", "elcc_mw"])
+        for (s, z, p) in m.ELCC_SURFACE_PRM_ZONE_PERIODS:
+            writer.writerow([s, z, p, value(m.Dynamic_ELCC_MW[s, z, p])])
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "prm_elcc_surface_total.csv",
+        ),
+        "w",
+        newline="",
+    ) as results_file:
+        writer = csv.writer(results_file)
+        writer.writerow(
+            ["prm_zone", "period", "total_contribution_from_elcc_surfaces_mw"]
+        )
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([z, p, value(m.Dynamic_ELCC_MW[z, p])])
+            writer.writerow(
+                [z, p, value(m.Total_Contribution_from_ELCC_Surfaces[z, p])]
+            )
 
 
 def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     instance.constraint_indices["Dynamic_ELCC_Constraint"] = [
+        "surface_name",
         "prm_zone",
         "period",
         "facet",
@@ -167,7 +207,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c = conn.cursor()
     # The intercepts for the surface
     intercepts = c.execute(
-        """SELECT prm_zone, period, facet, elcc_surface_intercept
+        """SELECT elcc_surface_name, prm_zone, period, facet, elcc_surface_intercept
         FROM inputs_system_prm_zone_elcc_surface
         INNER JOIN inputs_temporal_periods
         USING (period)
@@ -227,7 +267,15 @@ def write_model_inputs(
         writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
-        writer.writerow(["prm_zone", "period", "facet", "elcc_surface_intercept"])
+        writer.writerow(
+            [
+                "elcc_surface_name",
+                "prm_zone",
+                "period",
+                "facet",
+                "elcc_surface_intercept",
+            ]
+        )
         # Write data
         for row in intercepts:
             writer.writerow(row)
@@ -270,7 +318,8 @@ def import_results_into_database(
 
     results = []
     with open(
-        os.path.join(results_directory, "prm_elcc_surface.csv"), "r"
+        os.path.join(results_directory, "prm_elcc_surface_total.csv"),
+        "r",
     ) as surface_file:
         reader = csv.reader(surface_file)
 

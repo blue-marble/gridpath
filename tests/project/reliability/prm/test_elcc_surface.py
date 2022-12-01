@@ -100,85 +100,144 @@ class TestProjELCCSurface(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: contributes_to_elcc_surface
-        expected_elcc_contr = OrderedDict(
-            sorted(
-                {
-                    "Coal": 0,
-                    "Coal_z2": 0,
-                    "Gas_CCGT": 0,
-                    "Gas_CCGT_New": 0,
-                    "Gas_CCGT_New_Binary": 0,
-                    "Gas_CCGT_z2": 0,
-                    "Gas_CT": 0,
-                    "Gas_CT_New": 0,
-                    "Gas_CT_z2": 0,
-                    "Nuclear": 1,
-                    "Nuclear_z2": 0,
-                    "Wind": 1,
-                    "Wind_z2": 1,
-                    "Battery": 0,
-                    "Battery_Binary": 0,
-                    "Battery_Specified": 0,
-                    "Hydro": 0,
-                    "Hydro_NonCurtailable": 0,
-                    "Disp_Binary_Commit": 0,
-                    "Disp_Cont_Commit": 0,
-                    "Disp_No_Commit": 0,
-                    "Clunky_Old_Gen": 0,
-                    "Clunky_Old_Gen2": 0,
-                    "Nuclear_Flexible": 0,
-                }.items()
-            )
-        )
-
-        actual_elcc_contr = OrderedDict(
-            sorted(
-                {
-                    p: instance.contributes_to_elcc_surface[p]
-                    for p in instance.PRM_PROJECTS
-                }.items()
-            )
-        )
-
-        self.assertDictEqual(expected_elcc_contr, actual_elcc_contr)
-
-        # Set: ELCC_SURFACE_PROJECTS
-        expected_elcc_surf_prj = sorted(["Nuclear", "Wind", "Wind_z2"])
-        actual_elcc_surf_prj = sorted([p for p in instance.ELCC_SURFACE_PROJECTS])
-        self.assertListEqual(expected_elcc_surf_prj, actual_elcc_surf_prj)
-
-        # Set: PROJECT_PERIOD_ELCC_SURFACE_FACETS
-        expected_prj_p_f = sorted(
+        # Set: ELCC_SURFACE_PRM_ZONE_PERIODS
+        expected_surface_zone_periods = sorted(
             [
-                ("Nuclear", 2020, 1),
-                ("Nuclear", 2020, 2),
-                ("Nuclear", 2030, 1),
-                ("Nuclear", 2030, 2),
-                ("Wind", 2020, 1),
-                ("Wind", 2020, 2),
-                ("Wind", 2030, 1),
-                ("Wind", 2030, 2),
-                ("Wind_z2", 2020, 1),
-                ("Wind_z2", 2020, 2),
-                ("Wind_z2", 2030, 1),
-                ("Wind_z2", 2030, 2),
+                ("Nuclear", "PRM_Zone1", 2020),
+                ("Nuclear", "PRM_Zone1", 2030),
+                ("Wind_Solar", "PRM_Zone1", 2020),
+                ("Wind_Solar", "PRM_Zone1", 2030),
+                ("Wind_Solar", "PRM_Zone2", 2020),
+                ("Wind_Solar", "PRM_Zone2", 2030),
             ]
         )
 
-        actual_prj_p_f = sorted(
-            [(prj, p, f) for (prj, p, f) in instance.PROJECT_PERIOD_ELCC_SURFACE_FACETS]
+        actual_surface_zone_periods = sorted(
+            [(s, z, p) for (s, z, p) in instance.ELCC_SURFACE_PRM_ZONE_PERIODS]
         )
 
-        self.assertListEqual(expected_prj_p_f, actual_prj_p_f)
+        self.assertListEqual(expected_surface_zone_periods, actual_surface_zone_periods)
+
+        # Param: prm_peak_load_mw
+        expected_peak_load = OrderedDict(
+            sorted(
+                {
+                    ("Nuclear", "PRM_Zone1", 2020): 49406.65942,
+                    ("Nuclear", "PRM_Zone1", 2030): 49406.65942,
+                    ("Wind_Solar", "PRM_Zone1", 2020): 49406.65942,
+                    ("Wind_Solar", "PRM_Zone1", 2030): 49406.65942,
+                    ("Wind_Solar", "PRM_Zone2", 2020): 49913.83791,
+                    ("Wind_Solar", "PRM_Zone2", 2030): 49913.83791,
+                }.items()
+            )
+        )
+
+        actual_peak_load = OrderedDict(
+            sorted(
+                {
+                    (s, z, p): instance.prm_peak_load_mw[s, z, p]
+                    for (s, z, p) in instance.ELCC_SURFACE_PRM_ZONE_PERIODS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_peak_load, actual_peak_load)
+
+        # Param: prm_annual_load_mwh
+        expected_annual_load = OrderedDict(
+            sorted(
+                {
+                    ("Nuclear", "PRM_Zone1", 2020): 242189141,
+                    ("Nuclear", "PRM_Zone1", 2030): 242189141,
+                    ("Wind_Solar", "PRM_Zone1", 2020): 242189141,
+                    ("Wind_Solar", "PRM_Zone1", 2030): 242189141,
+                    ("Wind_Solar", "PRM_Zone2", 2020): 244545760.8,
+                    ("Wind_Solar", "PRM_Zone2", 2030): 244545760.8,
+                }.items()
+            )
+        )
+
+        actual_annual_load = OrderedDict(
+            sorted(
+                {
+                    (s, z, p): instance.prm_annual_load_mwh[s, z, p]
+                    for (s, z, p) in instance.ELCC_SURFACE_PRM_ZONE_PERIODS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_annual_load, actual_annual_load)
+
+        # Param: elcc_surface_name
+        expected_elcc_surface_names = OrderedDict(
+            sorted(
+                {
+                    "Coal": None,
+                    "Coal_z2": None,
+                    "Gas_CCGT": None,
+                    "Gas_CCGT_New": None,
+                    "Gas_CCGT_New_Binary": None,
+                    "Gas_CCGT_z2": None,
+                    "Gas_CT": None,
+                    "Gas_CT_New": None,
+                    "Gas_CT_z2": None,
+                    "Nuclear": "Nuclear",
+                    "Nuclear_z2": None,
+                    "Wind": "Wind_Solar",
+                    "Wind_z2": "Wind_Solar",
+                    "Battery": None,
+                    "Battery_Binary": None,
+                    "Battery_Specified": None,
+                    "Hydro": None,
+                    "Hydro_NonCurtailable": None,
+                    "Disp_Binary_Commit": None,
+                    "Disp_Cont_Commit": None,
+                    "Disp_No_Commit": None,
+                    "Clunky_Old_Gen": None,
+                    "Clunky_Old_Gen2": None,
+                    "Nuclear_Flexible": None,
+                }.items()
+            )
+        )
+
+        actual_elcc_surface_names = OrderedDict(
+            sorted(
+                {
+                    p: instance.elcc_surface_name[p] for p in instance.PRM_PROJECTS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(expected_elcc_surface_names, actual_elcc_surface_names)
 
         # Param: elcc_surface_cap_factor
         expected_elcc_cf = OrderedDict(
             sorted(
                 {
+                    "Coal": None,
+                    "Coal_z2": None,
+                    "Gas_CCGT": None,
+                    "Gas_CCGT_New": None,
+                    "Gas_CCGT_New_Binary": None,
+                    "Gas_CCGT_z2": None,
+                    "Gas_CT": None,
+                    "Gas_CT_New": None,
+                    "Gas_CT_z2": None,
                     "Nuclear": 0.123,
+                    "Nuclear_z2": None,
                     "Wind": 0.123,
                     "Wind_z2": 0.123,
+                    "Battery": None,
+                    "Battery_Binary": None,
+                    "Battery_Specified": None,
+                    "Hydro": None,
+                    "Hydro_NonCurtailable": None,
+                    "Disp_Binary_Commit": None,
+                    "Disp_Cont_Commit": None,
+                    "Disp_No_Commit": None,
+                    "Clunky_Old_Gen": None,
+                    "Clunky_Old_Gen2": None,
+                    "Nuclear_Flexible": None,
                 }.items()
             )
         )
@@ -187,29 +246,91 @@ class TestProjELCCSurface(unittest.TestCase):
             sorted(
                 {
                     p: instance.elcc_surface_cap_factor[p]
-                    for p in instance.ELCC_SURFACE_PROJECTS
+                    for p in instance.PRM_PROJECTS
                 }.items()
             )
         )
 
         self.assertDictEqual(expected_elcc_cf, actual_elcc_cf)
 
+        # Set: ELCC_SURFACE_PROJECTS
+        expected_elcc_surf_prj = sorted(
+            [("Nuclear", "Nuclear"), ("Wind_Solar", "Wind"), ("Wind_Solar", "Wind_z2")]
+        )
+        actual_elcc_surf_prj = sorted(
+            [(s, p) for (s, p) in instance.ELCC_SURFACE_PROJECTS]
+        )
+        self.assertListEqual(expected_elcc_surf_prj, actual_elcc_surf_prj)
+
+        # Set: ELCC_SURFACE_PROJECTS_BY_PRM_ZONE
+        expected_surface_projects_by_zone = OrderedDict(
+            sorted(
+                {
+                    "PRM_Zone1": [("Nuclear", "Nuclear"), ("Wind_Solar", "Wind")],
+                    "PRM_Zone2": [("Wind_Solar", "Wind_z2")],
+                }.items()
+            )
+        )
+
+        actual_surface_projects_by_zone = OrderedDict(
+            sorted(
+                {
+                    z: [
+                        (s, p)
+                        for (s, p) in instance.ELCC_SURFACE_PROJECTS_BY_PRM_ZONE[z]
+                    ]
+                    for z in instance.PRM_ZONES
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(
+            expected_surface_projects_by_zone, actual_surface_projects_by_zone
+        )
+
+        # Set: ELCC_SURFACE_PROJECT_PERIOD_FACETS
+        expected_s_prj_p_f = sorted(
+            [
+                ("Nuclear", "Nuclear", 2020, 1),
+                ("Nuclear", "Nuclear", 2020, 2),
+                ("Nuclear", "Nuclear", 2030, 1),
+                ("Nuclear", "Nuclear", 2030, 2),
+                ("Wind_Solar", "Wind", 2020, 1),
+                ("Wind_Solar", "Wind", 2020, 2),
+                ("Wind_Solar", "Wind", 2030, 1),
+                ("Wind_Solar", "Wind", 2030, 2),
+                ("Wind_Solar", "Wind_z2", 2020, 1),
+                ("Wind_Solar", "Wind_z2", 2020, 2),
+                ("Wind_Solar", "Wind_z2", 2030, 1),
+                ("Wind_Solar", "Wind_z2", 2030, 2),
+            ]
+        )
+
+        actual_s_prj_p_f = sorted(
+            [
+                (s, prj, p, f)
+                for (s, prj, p, f) in instance.ELCC_SURFACE_PROJECT_PERIOD_FACETS
+            ]
+        )
+
+        self.assertListEqual(expected_s_prj_p_f, actual_s_prj_p_f)
+
         # Param: elcc_surface_coefficient
         expected_coeff = OrderedDict(
             sorted(
                 {
-                    ("Nuclear", 2020, 1): 0.9,
-                    ("Nuclear", 2020, 2): 0.9,
-                    ("Nuclear", 2030, 1): 0.9,
-                    ("Nuclear", 2030, 2): 0.9,
-                    ("Wind", 2020, 1): 0.3,
-                    ("Wind", 2020, 2): 0.2,
-                    ("Wind", 2030, 1): 0.25,
-                    ("Wind", 2030, 2): 0.2,
-                    ("Wind_z2", 2020, 1): 0.3,
-                    ("Wind_z2", 2020, 2): 0.25,
-                    ("Wind_z2", 2030, 1): 0.3,
-                    ("Wind_z2", 2030, 2): 0.25,
+                    ("Nuclear", "Nuclear", 2020, 1): 0.9,
+                    ("Nuclear", "Nuclear", 2020, 2): 0.9,
+                    ("Nuclear", "Nuclear", 2030, 1): 0.9,
+                    ("Nuclear", "Nuclear", 2030, 2): 0.9,
+                    ("Wind_Solar", "Wind", 2020, 1): 0.3,
+                    ("Wind_Solar", "Wind", 2020, 2): 0.2,
+                    ("Wind_Solar", "Wind", 2030, 1): 0.25,
+                    ("Wind_Solar", "Wind", 2030, 2): 0.2,
+                    ("Wind_Solar", "Wind_z2", 2020, 1): 0.3,
+                    ("Wind_Solar", "Wind_z2", 2020, 2): 0.25,
+                    ("Wind_Solar", "Wind_z2", 2030, 1): 0.3,
+                    ("Wind_Solar", "Wind_z2", 2030, 2): 0.25,
                 }.items()
             )
         )
@@ -217,53 +338,9 @@ class TestProjELCCSurface(unittest.TestCase):
         actual_coeff = OrderedDict(
             sorted(
                 {
-                    (prj, p, f): instance.elcc_surface_coefficient[prj, p, f]
-                    for (prj, p, f) in instance.PROJECT_PERIOD_ELCC_SURFACE_FACETS
+                    (s, prj, p, f): instance.elcc_surface_coefficient[s, prj, p, f]
+                    for (s, prj, p, f) in instance.ELCC_SURFACE_PROJECT_PERIOD_FACETS
                 }.items()
             )
         )
         self.assertDictEqual(expected_coeff, actual_coeff)
-
-        # Param: prm_peak_load_mw
-        expected_prm_peak_load = OrderedDict(
-            sorted(
-                {
-                    ("PRM_Zone1", 2020): 49406.65942,
-                    ("PRM_Zone1", 2030): 49406.65942,
-                    ("PRM_Zone2", 2020): 49913.83791,
-                    ("PRM_Zone2", 2030): 49913.83791,
-                }.items()
-            )
-        )
-
-        actual_prm_peak_load = OrderedDict(
-            sorted(
-                {
-                    (z, p): instance.prm_peak_load_mw[z, p]
-                    for (z, p) in instance.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_prm_peak_load, actual_prm_peak_load)
-
-        # Param: prm_peak_load_mw
-        expected_annua_load = OrderedDict(
-            sorted(
-                {
-                    ("PRM_Zone1", 2020): 242189141,
-                    ("PRM_Zone1", 2030): 242189141,
-                    ("PRM_Zone2", 2020): 244545760.8,
-                    ("PRM_Zone2", 2030): 244545760.8,
-                }.items()
-            )
-        )
-
-        actual_annual_load = OrderedDict(
-            sorted(
-                {
-                    (z, p): instance.prm_annual_load_mwh[z, p]
-                    for (z, p) in instance.PRM_ZONE_PERIODS_FOR_ELCC_SURFACE
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_annua_load, actual_annual_load)

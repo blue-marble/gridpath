@@ -1,9 +1,13 @@
-prm_zone	period	facet	elcc_surface_intercept
-PRM_Zone1	2020	1	5000
-PRM_Zone1	2020	2	6000
-PRM_Zone1	2030	1	10000
-PRM_Zone1	2030	2	12000
-PRM_Zone2	2020	1	1000
-PRM_Zone2	2020	2	1100
-PRM_Zone2	2030	1	1200
-PRM_Zone2	2030	2	1300
+elcc_surface_name	prm_zone	period	facet	elcc_surface_intercept
+Nuclear	PRM_Zone1	2020	1	5000
+Nuclear	PRM_Zone1	2020	2	6000
+Nuclear	PRM_Zone1	2030	1	10000
+Nuclear	PRM_Zone1	2030	2	12000
+Wind_Solar	PRM_Zone1	2020	1	500
+Wind_Solar	PRM_Zone1	2020	2	600
+Wind_Solar	PRM_Zone1	2030	1	1000
+Wind_Solar	PRM_Zone1	2030	2	1200
+Wind_Solar	PRM_Zone2	2020	1	1000
+Wind_Solar	PRM_Zone2	2020	2	1100
+Wind_Solar	PRM_Zone2	2030	1	1200
+Wind_Solar	PRM_Zone2	2030	2	1300
