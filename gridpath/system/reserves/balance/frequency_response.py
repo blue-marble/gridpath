@@ -99,14 +99,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
 
-def save_duals(m):
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     """
 
     :param m:
     :return:
     """
-    generic_save_duals(m, "Meet_Frequency_Response_Constraint")
-    generic_save_duals(m, "Meet_Frequency_Response_Partial_Constraint")
+    generic_save_duals(instance, "Meet_Frequency_Response_Constraint")
+    generic_save_duals(instance, "Meet_Frequency_Response_Partial_Constraint")
 
 
 def import_results_into_database(
