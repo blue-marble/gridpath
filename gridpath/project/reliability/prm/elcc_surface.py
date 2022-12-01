@@ -46,9 +46,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # ELCC surface for each PRM project
     m.elcc_surface_name = Param(m.PRM_PROJECTS, within=Any, default=None)
-    m.elcc_surface_cap_factor = Param(m.PRM_PROJECTS, within=(NonNegativeReals |
-                                                              {None}),
-                                      default=None)
+    m.elcc_surface_cap_factor = Param(
+        m.PRM_PROJECTS, within=(NonNegativeReals | {None}), default=None
+    )
 
     # Two-dimensional set of the ELCC surface name and the project that contribute to
     # that surface

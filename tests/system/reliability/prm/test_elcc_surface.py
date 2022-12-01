@@ -121,8 +121,10 @@ class TestELCCSurface(unittest.TestCase):
         )
 
         actual_s_z_p_f = sorted(
-            [(s, z, p, f) for (s, z, p, f) in
-             instance.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS]
+            [
+                (s, z, p, f)
+                for (s, z, p, f) in instance.ELCC_SURFACE_PRM_ZONE_PERIOD_FACETS
+            ]
         )
 
         self.assertListEqual(expected_s_z_p_f, actual_s_z_p_f)
