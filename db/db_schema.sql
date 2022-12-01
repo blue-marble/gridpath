@@ -1644,17 +1644,57 @@ CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
 prm_type VARCHAR(32),  -- to model 'energy_only" PRM type, select energy_only feature
-elcc_simple_fraction FLOAT,
-elcc_surface_name INTEGER,  -- projects can only contribute to one surface for now
-cap_factor_for_elcc_surface FLOAT,
 min_duration_for_full_capacity_credit_hours FLOAT,
-deliverability_group VARCHAR(64) CHECK (
-    deliverability_group IS NULL OR prm_type = 'energy_only_allowed'
+project_elcc_simple_scenario_id INTEGER,
+project_deliverability_scenario_id INTEGER CHECK (
+    project_deliverability_scenario_id IS NULL OR prm_type = 'energy_only_allowed'
 ),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
+);
+
+-- Simple ELCC chars
+DROP TABLE IF EXISTS subscenarios_project_elcc_simple;
+CREATE TABLE subscenarios_project_elcc_simple (
+project VARCHAR(32),
+project_elcc_simple_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, project_elcc_simple_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_elcc_simple;
+CREATE TABLE inputs_project_elcc_simple (
+project VARCHAR(64),
+project_elcc_simple_scenario_id INTEGER,
+period FLOAT,
+elcc_simple_fraction FLOAT,
+PRIMARY KEY (project, project_elcc_simple_scenario_id, period),
+FOREIGN KEY (project, project_elcc_simple_scenario_id) REFERENCES
+subscenarios_project_elcc_simple (project, project_elcc_simple_scenario_id)
+);
+
+-- Deliverability chars
+DROP TABLE IF EXISTS subscenarios_project_deliverability;
+CREATE TABLE subscenarios_project_deliverability (
+project VARCHAR(32),
+project_deliverability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, project_deliverability_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS inputs_project_deliverability;
+CREATE TABLE inputs_project_deliverability (
+project VARCHAR(64),
+project_deliverability_scenario_id INTEGER,
+deliverability_group VARCHAR(64),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
+PRIMARY KEY (project, project_deliverability_scenario_id, deliverability_group),
+FOREIGN KEY (project, project_deliverability_scenario_id) REFERENCES
+subscenarios_project_deliverability (project, project_deliverability_scenario_id)
 );
 
 -- ELCC surface
