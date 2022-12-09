@@ -17,11 +17,7 @@ Subsidy programs (e.g. investment tax credits).
 """
 from pyomo.environ import Set, Param, Var, Expression, Constraint, NonNegativeReals
 
-from gridpath.auxiliary.auxiliary import (
-    get_required_subtype_modules_from_projects_file,
-    join_sets,
-)
-from gridpath.auxiliary.dynamic_components import capacity_type_vintage_sets
+from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -69,8 +65,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Define programs
     m.PROGRAMS = Set()
-
-    m.program_budget = Param(m.PROGRAM, m.PERIODS, within=NonNegativeReals)
+    m.program_budget = Param(m.PROGRAMS, m.PERIODS, within=NonNegativeReals, default=0)
 
     m.PROGRAM_PROJECT_VINTAGES = Set(
         dimen=3, within=m.PROGRAMS * m.PROJECTS * m.PERIODS
@@ -138,4 +133,22 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Project_Annual_Payment_Reduction_from_Base = Expression(
         m.PRJ_FIN_PRDS, initialize=total_annual_payment_reduction
+    )
+
+    # TODO: only works for gen_new_lin; need to get financial lifetime for other
+    #  types of projects
+    def max_program_budget_rule(mod, prg, prd):
+        return (
+            sum(
+                mod.Subsidize_MW[prg, prj, v]
+                * mod.annual_payment_subsidy[prg, prj, v]
+                * mod.gen_new_lin_financial_lifetime_yrs_by_vintage[prj, v]
+                for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
+                if v == prd
+            )
+            <= mod.program_budget[prg, prd]
+        )
+
+    m.Max_Program_Budget_in_Period_Constraint = Constraint(
+        m.PROGRAMS, m.PERIODS, rule=max_program_budget_rule
     )
