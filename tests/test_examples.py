@@ -1266,6 +1266,16 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_cumulative_and_vintage_min_max", -110384972580606.39
         )
 
+    def test_example_test_new_solar_itc(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_itc" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_itc")
+        self.run_and_check_objective("test_new_solar_itc", -3796301348804.993)
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)

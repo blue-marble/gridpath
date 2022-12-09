@@ -15,7 +15,17 @@
 """
 Subsidy programs (e.g. investment tax credits).
 """
-from pyomo.environ import Set, Param, Var, Expression, Constraint, NonNegativeReals
+import csv
+import os.path
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Expression,
+    Constraint,
+    NonNegativeReals,
+    value,
+)
 
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.capacity.common_functions import (
@@ -44,46 +54,79 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         required_capacity_modules
     )
 
-    def get_vintages_fin_in_period(mod):
-        get_vintages_fin_in_period = {}
+    # TODO: make this work with all new capacity types
+    def get_vintages_fin_in_period(mod, p):
+        vintages_fin_in_period = []
 
-        # Add any components specific to the capacity type modules
-        for op_m in required_capacity_modules:
-            imp_op_m = imported_capacity_modules[op_m]
-            if hasattr(imp_op_m, "vintages_fin_in_period_rule"):
-                for p in mod.PERIODS:
-                    get_vintages_fin_in_period.update(
-                        imp_op_m.vintages_fin_in_period_rule(mod, p)
-                    )
+        # # Add any components specific to the capacity type modules
+        # for op_m in required_capacity_modules:
+        #     imp_op_m = imported_capacity_modules[op_m]
+        #     if hasattr(imp_op_m, "vintages_fin_in_period_rule"):
+        #         for p in mod.PERIODS:
+        #             vintages_fin_in_period.update(
+        #                 imp_op_m.vintages_fin_in_period_rule(mod, p)
+        #             )
+        fin_periods = []
+        if hasattr(mod, "GEN_NEW_LIN_VNTS_FIN_IN_PERIOD"):
+            fin_periods = fin_periods + [
+                (prj, v) for (prj, v) in mod.GEN_NEW_LIN_VNTS_FIN_IN_PERIOD[p]
+            ]
+
+        if hasattr(mod, "STOR_NEW_LIN_VNTS_FIN_IN_PERIOD"):
+            fin_periods = fin_periods + [
+                (prj, v) for (prj, v) in mod.STOR_NEW_LIN_VNTS_FIN_IN_PERIOD[p]
+            ]
+
+        return fin_periods
 
     m.PRJ_VNTS_FIN_IN_PERIOD = Set(
         m.PERIODS,
         dimen=2,
         within=m.PROJECTS * m.PERIODS,
-        initialize=get_vintages_fin_in_period,
+        initialize=lambda mod, p: get_vintages_fin_in_period(mod, p),
     )
 
     # Define programs
-    m.PROGRAMS = Set()
-    m.program_budget = Param(m.PROGRAMS, m.PERIODS, within=NonNegativeReals, default=0)
+    # TODO: currently requires budget to be specified for every period, I think
+    m.PROGRAM_PERIODS = Set(dimen=2)
+    m.program_budget = Param(m.PROGRAM_PERIODS, within=NonNegativeReals)
+
+    m.PROGRAMS = Set(
+        initialize=lambda mod: list(set(prg for (prg, prd) in mod.PROGRAM_PERIODS))
+    )
 
     m.PROGRAM_PROJECT_VINTAGES = Set(
         dimen=3, within=m.PROGRAMS * m.PROJECTS * m.PERIODS
     )
     m.PROGRAM_ELIGIBLE_PROJECTS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: set(
-            [prj for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES]
+        initialize=lambda mod: list(
+            set([prj for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES])
         ),
     )
-    m.PROGRAMS_VINTAGES_BY_PROJECT = Set(
+    m.PROGRAM_VINTAGES_BY_PROJECT = Set(
         m.PROJECTS,
-        initialize=lambda mod, project, vintage: set(
-            [
-                prg
-                for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES
-                if (prj, v) == (project, vintage)
-            ]
+        initialize=lambda mod, project: list(
+            set(
+                [
+                    (prg, v)
+                    for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES
+                    if prj == project
+                ]
+            )
+        ),
+    )
+
+    m.PROJECT_VINTAGES_BY_PROGRAM = Set(
+        m.PROGRAMS,
+        initialize=lambda mod, program: list(
+            set(
+                [
+                    (prj, v)
+                    for (prg, prj, v) in mod.PROGRAM_PROJECT_VINTAGES
+                    if prg == program
+                ]
+            )
         ),
     )
 
@@ -126,9 +169,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def total_annual_payment_reduction(mod, prj, prd):
         return sum(
             mod.Subsidize_MW[prg, prj, v] * mod.annual_payment_subsidy[prg, prj, v]
-            for prg in mod.PROGRAM_VINTAGES_BY_PROJECT[prj]
             for (project, v) in mod.PRJ_VNTS_FIN_IN_PERIOD[prd]
-            if project == prj
+            for (prg, vintage) in mod.PROGRAM_VINTAGES_BY_PROJECT[prj]
+            if vintage == v and project == prj
         )
 
     m.Project_Annual_Payment_Reduction_from_Base = Expression(
@@ -152,3 +195,162 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Max_Program_Budget_in_Period_Constraint = Constraint(
         m.PROGRAMS, m.PERIODS, rule=max_program_budget_rule
     )
+
+
+# ### Input-Output ### #
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """ """
+    # Only load data if the input files were written; otehrwise, we won't
+    # initialize the components in this module
+
+    budgets_file = os.path.join(
+        scenario_directory,
+        subproblem,
+        stage,
+        "inputs",
+        "subsidies_program_budgets.tab",
+    )
+    data_portal.load(
+        filename=budgets_file,
+        index=m.PROGRAM_PERIODS,
+        param=m.program_budget,
+    )
+
+    prj_file = os.path.join(
+        scenario_directory, subproblem, stage, "inputs", "subsidies_projects.tab"
+    )
+    data_portal.load(
+        filename=prj_file,
+        index=m.PROGRAM_PROJECT_VINTAGES,
+        param=m.annual_payment_subsidy,
+    )
+
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """ """
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "subsidies.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "program",
+                "project",
+                "vintage",
+                "subsidized_mw",
+            ]
+        )
+        for (prg, prj, v) in m.PROGRAM_PROJECT_VINTAGES:
+            writer.writerow(
+                [
+                    prg,
+                    prj,
+                    v,
+                    value(m.Subsidize_MW[prg, prj, v]),
+                ]
+            )
+
+
+# ### Database ### #
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    c1 = conn.cursor()
+    program_budgets = c1.execute(
+        """
+        SELECT program, period, program_budget
+        FROM inputs_system_subsidies
+        WHERE subsidy_scenario_id = {subsidy_scenario_id}
+        """.format(
+            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID
+        )
+    )
+
+    c2 = conn.cursor()
+    project_subsidies = c2.execute(
+        """
+        SELECT program, project, vintage, annual_payment_subsidy
+        FROM inputs_system_subsidies_projects
+        WHERE subsidy_scenario_id = {subsidy_scenario_id}
+        """.format(
+            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID
+        )
+    )
+
+    return program_budgets, project_subsidies
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """ """
+    program_budgets, project_subsidies = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "subsidies_program_budgets.tab",
+        ),
+        "w",
+        newline="",
+    ) as req_file:
+        writer = csv.writer(req_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            [
+                "program",
+                "period",
+                "program_budget",
+            ]
+        )
+
+        for row in program_budgets:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "subsidies_projects.tab",
+        ),
+        "w",
+        newline="",
+    ) as req_file:
+        writer = csv.writer(req_file, delimiter="\t", lineterminator="\n")
+
+        # Write header
+        writer.writerow(
+            [
+                "program",
+                "project",
+                "period",
+                "annual_payment_subsidy",
+            ]
+        )
+
+        for row in project_subsidies:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

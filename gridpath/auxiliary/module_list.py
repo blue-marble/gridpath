@@ -325,7 +325,7 @@ def optional_modules_list():
         ],
         "subsidies": [
             "system.policy.subsidies",
-            "objective.system.policy.aggregate_subsidies"
+            "objective.system.policy.aggregate_subsidies",
         ],
         "prm": [
             "geography.prm_zones",
