@@ -44,7 +44,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # The fraction of ELCC-eligible capacity that counts for the PRM via the
     # simple PRM method (whether or not project also contributes through the
     # ELCC surface)
-    m.elcc_simple_fraction = Param(m.PRM_PROJECTS, within=PercentFraction)
+    m.elcc_simple_fraction = Param(
+        m.PRM_PROJECTS, m.PERIODS, within=PercentFraction, default=0
+    )
 
     def elcc_simple_rule(mod, g, p):
         """
@@ -53,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :param p:
         :return:
         """
-        return mod.ELCC_Eligible_Capacity_MW[g, p] * mod.elcc_simple_fraction[g]
+        return mod.ELCC_Eligible_Capacity_MW[g, p] * mod.elcc_simple_fraction[g, p]
 
     m.PRM_Simple_Contribution_MW = Expression(m.PRM_PRJ_OPR_PRDS, rule=elcc_simple_rule)
 
@@ -71,10 +73,13 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, subproblem, stage, "inputs", "projects.tab"
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "prm_projects_simple_elcc.tab",
         ),
-        select=("project", "elcc_simple_fraction"),
-        param=(m.elcc_simple_fraction,),
+        param=m.elcc_simple_fraction,
     )
 
 
@@ -123,7 +128,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.load_zone[prj],
                     value(m.Capacity_MW[prj, period]),
                     value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                    value(m.elcc_simple_fraction[prj]),
+                    value(m.elcc_simple_fraction[prj, period]),
                     value(m.PRM_Simple_Contribution_MW[prj, period]),
                 ]
             )
@@ -141,18 +146,39 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     project_fractions = c.execute(
-        """SELECT project, elcc_simple_fraction
-        FROM 
-        (SELECT project
-        FROM inputs_project_prm_zones
-        WHERE project_prm_zone_scenario_id = {}) as proj_tbl
-        LEFT OUTER JOIN 
-        (SELECT project, elcc_simple_fraction
-        FROM inputs_project_elcc_chars
-        WHERE project_elcc_chars_scenario_id = {}) as frac_tbl
-        USING (project);""".format(
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+        """SELECT project, period, elcc_simple_fraction
+        FROM (
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {portfolio}
+         ) as portfolio
+         LEFT OUTER JOIN (
+            SELECT project
+            FROM inputs_project_prm_zones
+            WHERE project_prm_zone_scenario_id = {prm_zone}
+        ) as proj_tbl
+        USING (project)
+        LEFT OUTER JOIN (
+            SELECT project, project_elcc_simple_scenario_id
+            FROM inputs_project_elcc_chars
+            WHERE project_elcc_chars_scenario_id = {prj_elcc} 
+        )
+        USING (project)
+        LEFT OUTER JOIN (
+            SELECT project, project_elcc_simple_scenario_id, period, 
+            elcc_simple_fraction
+            FROM inputs_project_elcc_simple
+        ) as frac_tbl
+        USING (project, project_elcc_simple_scenario_id)
+        WHERE period in (
+            SELECT period FROM inputs_temporal
+            WHERE temporal_scenario_id = {temporal}
+        )
+        ;""".format(
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            prm_zone=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            prj_elcc=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+            temporal=subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
@@ -217,46 +243,21 @@ def write_model_inputs(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
-    # Make a dict for easy access
-    prj_frac_dict = dict()
-    for (prj, fraction) in project_fractions:
-        prj_frac_dict[str(prj)] = "." if fraction is None else str(fraction)
-
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
-        ),
-        "r",
-    ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
-
-        new_rows = list()
-
-        # Append column header
-        header = next(reader)
-        header.append("elcc_simple_fraction")
-        new_rows.append(header)
-
-        # Append correct values
-        for row in reader:
-            # If project specified, check if BA specified or not
-            if row[0] in list(prj_frac_dict.keys()):
-                row.append(prj_frac_dict[row[0]])
-                new_rows.append(row)
-            # If project not specified, specify no BA
-            else:
-                row.append(".")
-                new_rows.append(row)
-
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "prm_projects_simple_elcc.tab",
         ),
         "w",
         newline="",
     ) as projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
-        writer.writerows(new_rows)
+        writer.writerow(["project", "period", "elcc_simple_fraction"])
+        for row in project_fractions:
+            writer.writerow(row)
 
 
 def import_results_into_database(
