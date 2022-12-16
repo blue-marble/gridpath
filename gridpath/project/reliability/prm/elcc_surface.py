@@ -261,7 +261,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- Get the cap factors for the surface 
         (SELECT project, elcc_surface_name, elcc_surface_cap_factor
         FROM inputs_project_elcc_surface_cap_factors
-        WHERE elcc_surface_scenario_id = {}) as cf_tbl
+        WHERE elcc_surface_scenario_id = {elcc_surface}) as cf_tbl
         USING (project)
         ;""".format(
             portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
