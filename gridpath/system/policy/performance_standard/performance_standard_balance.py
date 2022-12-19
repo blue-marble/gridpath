@@ -122,6 +122,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             )
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Performance_Standard_Constraint"] = ["performance_standard_zone", "period", "dual"]
+
+
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
