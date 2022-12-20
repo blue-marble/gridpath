@@ -109,6 +109,11 @@ class TestOperationsInit(unittest.TestCase):
             sep="\t",
         )
 
+        fuels_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs", "fuels.tab"),
+            sep="\t",
+        )
+
         var_om_curve_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "variable_om_curves.tab"),
             sep="\t",
@@ -299,6 +304,28 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictEqual(expected_fuels_by_prj_od, actual_fuels_by_project_od)
 
+        # Set: FUEL_PRJ_FUELS_FUEL_GROUP
+        fuel_group_fuels = list(
+            fuels_df[["fuel_group", "fuel"]].to_records(index=False)
+        )
+        fuel_group_fuels = sorted([tuple(i) for i in fuel_group_fuels])
+        expected_fuel_project_fuels_fuel_group = sorted(
+            [
+                (prj, fg, f)
+                for (prj, f) in expected_fuel_project_fuels
+                for (fg, _f) in fuel_group_fuels
+                if f == _f
+            ]
+        )
+
+        actual_fuel_project_fuels_fuel_group = sorted(
+            [(p, fg, f) for (p, fg, f) in instance.FUEL_PRJ_FUELS_FUEL_GROUP]
+        )
+
+        self.assertListEqual(
+            expected_fuel_project_fuels_fuel_group, actual_fuel_project_fuels_fuel_group
+        )
+
         # Set: HR_CURVE_PRJS_PRDS_SGMS
         expected_hr_curve_projects_periods_sgms = sorted(
             [
@@ -336,6 +363,8 @@ class TestOperationsInit(unittest.TestCase):
                 ("Clunky_Old_Gen2", 2030, 0),
                 ("Nuclear_Flexible", 2020, 0),
                 ("Nuclear_Flexible", 2030, 0),
+                ("DAC", 2020, 0),
+                ("DAC", 2030, 0),
             ]
         )
 
@@ -636,6 +665,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_Flexible", 2030, 0): 9.0,
                     ("Nuclear_z2", 2020, 0): 1666.67,
                     ("Nuclear_z2", 2030, 0): 1666.67,
+                    ("DAC", 2020, 0): 1000.0,
+                    ("DAC", 2030, 0): 1000.0,
                 }.items()
             )
         )
@@ -690,6 +721,8 @@ class TestOperationsInit(unittest.TestCase):
                     ("Nuclear_Flexible", 2030, 0): 0,
                     ("Nuclear_z2", 2020, 0): 0,
                     ("Nuclear_z2", 2030, 0): 0,
+                    ("DAC", 2020, 0): 0,
+                    ("DAC", 2030, 0): 0,
                 }.items()
             )
         )

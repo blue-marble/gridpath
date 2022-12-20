@@ -23,7 +23,7 @@ The main() function of this script can also be called with the
 
 from argparse import ArgumentParser
 import csv
-from multiprocessing import Pool
+from multiprocessing import get_context
 import os.path
 import pandas as pd
 import sys
@@ -36,7 +36,7 @@ from gridpath.common_functions import (
     create_directory_if_not_exists,
     get_db_parser,
     get_required_e2e_arguments_parser,
-    get_parallel_get_inputs_parser,
+    get_get_inputs_parser,
 )
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import (
@@ -132,7 +132,8 @@ def write_model_inputs(
             ]
         )
 
-        pool = Pool(n_parallel_subproblems)
+        # Pool must use spawn to work properly on Linux
+        pool = get_context("spawn").Pool(n_parallel_subproblems)
         pool.map(get_inputs_for_subproblem_pool, pool_data)
         pool.close()
 
@@ -217,23 +218,14 @@ def get_inputs_for_subproblem(
         )
         if not os.path.exists(pass_through_directory):
             os.makedirs(pass_through_directory)
-        with open(
-            os.path.join(pass_through_directory, "fixed_commitment.tab"),
-            "w",
-            newline="",
-        ) as fixed_commitment_file:
-            fixed_commitment_writer = csv.writer(
-                fixed_commitment_file, delimiter="\t", lineterminator="\n"
-            )
-            fixed_commitment_writer.writerow(
-                [
-                    "project",
-                    "timepoint",
-                    "stage",
-                    "final_commitment_stage",
-                    "commitment",
-                ]
-            )
+        # Write the headers of the pass through files
+        for m in loaded_modules:
+            if hasattr(m, "write_pass_through_file_headers"):
+                m.write_pass_through_file_headers(
+                    pass_through_directory=pass_through_directory
+                )
+            else:
+                pass
 
 
 def get_inputs_for_subproblem_pool(pool_datum):
@@ -311,7 +303,7 @@ def parse_arguments(args):
         parents=[
             get_db_parser(),
             get_required_e2e_arguments_parser(),
-            get_parallel_get_inputs_parser(),
+            get_get_inputs_parser(),
         ],
     )
 

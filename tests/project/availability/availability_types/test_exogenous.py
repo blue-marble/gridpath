@@ -126,6 +126,9 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                 "Nuclear_Flexible",
                 "Shift_DR",
                 "Wind_Battery_Hybrid",
+                "Fuel_Prod",
+                "Fuel_Prod_New",
+                "DAC",
             ]
         )
         actual_project_subset = sorted([prj for prj in instance.AVL_EXOG])
@@ -166,7 +169,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             else:
                 expected_availability_derate[p, tmp] = defaults[p, tmp]
         actual_availability_derate = {
-            (prj, tmp): instance.avl_exog_derate[prj, tmp]
+            (prj, tmp): instance.avl_exog_cap_derate[prj, tmp]
             for (prj, tmp) in instance.AVL_EXOG_OPR_TMPS
         }
 

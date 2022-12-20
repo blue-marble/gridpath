@@ -28,5 +28,8 @@
 
 """
 
+# TODO: allow using 0 as to horizon to apply the same limit to all horizon in a
+#  balancing type
+
 if __name__ == "__main__":
     print(__doc__)

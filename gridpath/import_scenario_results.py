@@ -22,26 +22,28 @@ The main()_ function of this script can also be called with the
 """
 
 from argparse import ArgumentParser
-import csv
 import os.path
 import pandas as pd
 import sys
 
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
+from gridpath.auxiliary.import_export_rules import import_export_rules
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_db_parser,
     get_required_e2e_arguments_parser,
+    get_import_results_parser,
 )
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_db
+from gridpath.auxiliary.scenario_chars import (
+    get_subproblem_structure_from_db,
+    get_subproblem_structure_from_disk,
+)
 
 
-def _import_rule(
-    db, scenario_id, subproblem, stage, results_directory, loaded_modules, quiet
-):
+def _import_rule(results_directory, quiet):
     """
     :return: boolean
 
@@ -78,28 +80,26 @@ def import_scenario_results_into_database(
 
     subproblems_list = subproblems.SUBPROBLEM_STAGES.keys()
     for subproblem in subproblems_list:
-        stages = subproblems.SUBPROBLEM_STAGES[subproblem]
-        for stage in stages:
-            # if there are subproblems/stages, input directory will be nested
-            if len(subproblems_list) > 1 and len(stages) > 1:
+        stages_list = subproblems.SUBPROBLEM_STAGES[subproblem]
+        for stage in stages_list:
+            # if there are stages, input directory will be nested regardless of
+            # number of subproblems
+            if len(stages_list) > 1:
                 results_directory = os.path.join(
                     scenario_directory, str(subproblem), str(stage), "results"
                 )
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
                     print("--- stage {}".format(str(stage)))
-            elif len(subproblems.SUBPROBLEM_STAGES.keys()) > 1:
+            # If no stages but more than one subproblem, we need a subproblem directory
+            elif len(subproblems_list) > 1:
                 results_directory = os.path.join(
                     scenario_directory, str(subproblem), "results"
                 )
                 if not quiet:
                     print("--- subproblem {}".format(str(subproblem)))
-            elif len(stages) > 1:
-                results_directory = os.path.join(
-                    scenario_directory, str(stage), "results"
-                )
-                if not quiet:
-                    print("--- stage {}".format(str(stage)))
+            # If single subproblem and single stage, we skip the subproblem and stage
+            # directories
             else:
                 results_directory = os.path.join(scenario_directory, "results")
 
@@ -185,22 +185,15 @@ def import_objective_function_value(
     ) as f:
         objective_function = f.read()
 
-    del_sql = """
-        DELETE FROM results_scenario
+    obj_sql = """
+        UPDATE results_scenario
+        SET objective_function_value = ?
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?
-    """
-    del_data = (scenario_id, subproblem, stage)
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql, data=del_data, many=False)
-
-    obj_sql = """
-        INSERT INTO results_scenario
-        (scenario_id, subproblem_id, stage_id, objective_function_value)
-        VALUES(?, ?, ?, ?)
     ;"""
 
-    obj_data = (scenario_id, subproblem, stage, objective_function)
+    obj_data = (objective_function, scenario_id, subproblem, stage)
     spin_on_database_lock(conn=db, cursor=c, sql=obj_sql, data=obj_data, many=False)
 
 
@@ -218,15 +211,12 @@ def import_subproblem_stage_results_into_database(
     Import results for a subproblem/stage. We first check the import rule to
     determine whether to import.
     """
-    import_results = import_rule(
-        db=db,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_directory=results_directory,
-        loaded_modules=loaded_modules,
-        quiet=quiet,
-    )
+    if import_rule is None:
+        import_results = _import_rule(results_directory=results_directory, quiet=quiet)
+    else:
+        import_results = import_export_rules[import_rule]["import"](
+            results_directory=results_directory, quiet=quiet
+        )
 
     if import_results:
         c = db.cursor()
@@ -259,14 +249,19 @@ def parse_arguments(args):
     :return:
     """
     parser = ArgumentParser(
-        add_help=True, parents=[get_db_parser(), get_required_e2e_arguments_parser()]
+        add_help=True,
+        parents=[
+            get_db_parser(),
+            get_required_e2e_arguments_parser(),
+            get_import_results_parser(),
+        ],
     )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
 
-def main(import_rule, args=None):
+def main(args=None):
     """
 
     :return:
@@ -281,6 +276,7 @@ def main(import_rule, args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
     quiet = parsed_arguments.quiet
+    import_rule = parsed_arguments.results_import_rule
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -295,8 +291,8 @@ def main(import_rule, args=None):
         script="import_scenario_results",
     )
 
-    subproblem_structure = get_subproblem_structure_from_db(
-        conn=conn, scenario_id=scenario_id
+    subproblem_structure = get_subproblem_structure_from_disk(
+        scenario_directory=os.path.join(scenario_location, scenario_name)
     )
 
     # Determine scenario directory
@@ -326,7 +322,7 @@ def main(import_rule, args=None):
 
     # Import appropriate results into database
     import_scenario_results_into_database(
-        import_rule=import_rule,
+        import_rule=parsed_arguments.results_import_rule,
         loaded_modules=loaded_modules,
         scenario_id=scenario_id,
         subproblems=subproblem_structure,
@@ -341,4 +337,4 @@ def main(import_rule, args=None):
 
 
 if __name__ == "__main__":
-    main(import_rule=_import_rule)
+    main()

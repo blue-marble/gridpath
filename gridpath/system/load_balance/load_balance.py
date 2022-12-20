@@ -127,6 +127,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TMPS, rule=meet_load_rule)
 
+    def use_limit_constraint_rule(mod, lz):
+        return (
+            sum(
+                mod.Unserved_Energy_MW_Expression[lz, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS
+            )
+            <= mod.unserved_energy_limit_mwh[lz]
+        )
+
+    m.Total_USE_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, rule=use_limit_constraint_rule
+    )
+
+    def max_unserved_load_limit_constraint_rule(mod, lz, tmp):
+        return (
+            mod.Unserved_Energy_MW_Expression[lz, tmp]
+            <= mod.max_unserved_load_limit_mw[lz]
+        )
+
+    m.Max_Unserved_Load_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_limit_constraint_rule
+    )
+
 
 def record_dynamic_components(dynamic_components):
     """
@@ -198,8 +223,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 )
 
 
-def save_duals(m):
-    m.constraint_indices["Meet_Load_Constraint"] = ["zone", "timepoint", "dual"]
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Meet_Load_Constraint"] = ["zone", "timepoint", "dual"]
 
 
 def import_results_into_database(
@@ -266,36 +291,18 @@ def import_results_into_database(
             )
     insert_temp_sql = """
         INSERT INTO 
-        temp_results_system_load_balance{}
+        temp_results_system_load_balance{scenario_id}
         (scenario_id, load_zone, period, subproblem_id, stage_id,
         timepoint, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
         load_mw, overgeneration_mw, unserved_energy_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(
-        scenario_id
+        scenario_id=scenario_id
     )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_system_load_balance
-        (scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw)
-        SELECT
-        scenario_id, load_zone, period, subproblem_id, stage_id, 
-        timepoint, discount_factor, number_years_represented,
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_mw, overgeneration_mw, unserved_energy_mw
-        FROM temp_results_system_load_balance{}
-        ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
-
+    # Update the temporary table with the duals
     # Update duals
     duals_results = []
     with open(
@@ -310,19 +317,21 @@ def import_results_into_database(
                 (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
     duals_sql = """
-        UPDATE results_system_load_balance
+        UPDATE temp_results_system_load_balance{scenario_id}
         SET dual = ?
         WHERE load_zone = ?
         AND timepoint = ?
         AND scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
-        """
+        """.format(
+        scenario_id=scenario_id
+    )
     spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
     # Calculate marginal cost per MW
     mc_sql = """
-        UPDATE results_system_load_balance
+        UPDATE temp_results_system_load_balance{scenario_id}
         SET marginal_price_per_mw = 
         dual / (discount_factor * number_years_represented * timepoint_weight 
         * number_of_hours_in_timepoint)
@@ -330,8 +339,27 @@ def import_results_into_database(
         AND subproblem_id = ?
         AND stage_id = ?;
         """.format(
-        scenario_id, subproblem, stage
+        scenario_id=scenario_id
     )
     spin_on_database_lock(
         conn=db, cursor=c, sql=mc_sql, data=(scenario_id, subproblem, stage), many=False
     )
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_system_load_balance
+        (scenario_id, load_zone, period, subproblem_id, stage_id, 
+        timepoint, discount_factor, number_years_represented,
+        timepoint_weight, number_of_hours_in_timepoint,
+        load_mw, overgeneration_mw, unserved_energy_mw, dual, marginal_price_per_mw)
+        SELECT
+        scenario_id, load_zone, period, subproblem_id, stage_id, 
+        timepoint, discount_factor, number_years_represented,
+        timepoint_weight, number_of_hours_in_timepoint,
+        load_mw, overgeneration_mw, unserved_energy_mw, dual, marginal_price_per_mw
+        FROM temp_results_system_load_balance{}
+        ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
+        """.format(
+        scenario_id
+    )
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)

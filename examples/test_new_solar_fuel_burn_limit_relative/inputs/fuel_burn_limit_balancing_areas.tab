@@ -1,3 +1,3 @@
-fuel	fuel_burn_limit_ba	allow_violation	violation_penalty_per_unit
-Coal	Coal_Burn_BA	0	0.0
-Gas	Gas_Burn_BA	0	0.0
+fuel	fuel_burn_limit_ba	min_allow_violation	min_violation_penalty_per_unit	max_allow_violation	max_violation_penalty_per_unit	relative_max_allow_violation	relative_max_violation_penalty_per_unit
+Coal	Coal_Burn_BA	0	0.0	0	0.0	0	0.0
+Gas	Gas_Burn_BA	0	0.0	0	0.0	0	0.0

@@ -17,6 +17,7 @@ from __future__ import print_function
 from builtins import str
 from importlib import import_module
 import os.path
+from pyomo.environ import value
 import sys
 import unittest
 
@@ -119,6 +120,38 @@ class TestMarketParticipation(unittest.TestCase):
             z: [mrkt for mrkt in instance.MARKETS_BY_LZ[z]] for z in instance.MARKET_LZS
         }
         self.assertDictEqual(expected_markets_by_lz, actual_markets_by_lz)
+
+        # Param: final_participation_stage
+        expected_final_participation_stage = {
+            ("Zone1", "Market_Hub_1"): 2,
+            ("Zone1", "Market_Hub_2"): 3,
+            ("Zone2", "Market_Hub_1"): 1,
+        }
+        actual_final_participation_stage = {
+            (z, m): instance.final_participation_stage[z, m]
+            for (z, m) in instance.LZ_MARKETS
+        }
+        self.assertDictEqual(
+            expected_final_participation_stage, actual_final_participation_stage
+        )
+
+        # Param: first_stage_flag
+        self.assertEqual(True, instance.first_stage_flag)
+
+        # Param: no_market_participation_in_stage
+        expected_no_market_participation_in_stage = {
+            ("Zone1", "Market_Hub_1"): False,
+            ("Zone1", "Market_Hub_2"): False,
+            ("Zone2", "Market_Hub_1"): False,
+        }
+        actual_no_market_participation_in_stage = {
+            (z, m): instance.no_market_participation_in_stage[z, m]
+            for (z, m) in instance.LZ_MARKETS
+        }
+        self.assertDictEqual(
+            expected_no_market_participation_in_stage,
+            actual_no_market_participation_in_stage,
+        )
 
 
 if __name__ == "__main__":

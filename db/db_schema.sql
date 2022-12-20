@@ -388,7 +388,9 @@ allow_overgeneration INTEGER,
 overgeneration_penalty_per_mw FLOAT,
 allow_unserved_energy INTEGER,
 unserved_energy_penalty_per_mwh FLOAT,
+unserved_energy_limit_mwh FLOAT,  -- limit on the total USE
 max_unserved_load_penalty_per_mw FLOAT,
+max_unserved_load_limit_mw FLOAT, -- limit on the max unserved load
 export_penalty_cost_per_mwh FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
@@ -596,6 +598,27 @@ FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id)
 );
 
+-- Performance standard
+-- This is the unit at which the performance standard is applied in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_performance_standard_zones;
+CREATE TABLE subscenarios_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_performance_standard_zones;
+CREATE TABLE inputs_geography_performance_standard_zones (
+performance_standard_zone_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_emission FLOAT DEFAULT 0,
+PRIMARY KEY (performance_standard_zone_scenario_id, performance_standard_zone),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id)
+);
+
 -- PRM
 -- This is the unit at which PRM requirements are met in the model; it can be
 -- different from the load zones
@@ -669,9 +692,10 @@ DROP TABLE IF EXISTS inputs_market_prices;
 CREATE TABLE inputs_market_prices (
 market_price_scenario_id INTEGER,
 market VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 market_price FLOAT,
-PRIMARY KEY (market_price_scenario_id, market, timepoint),
+PRIMARY KEY (market_price_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_price_scenario_id) REFERENCES
 subscenarios_market_prices (market_price_scenario_id)
 );
@@ -687,10 +711,13 @@ DROP TABLE IF EXISTS inputs_market_volume;
 CREATE TABLE inputs_market_volume (
 market_volume_scenario_id INTEGER,
 market VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 max_market_sales FLOAT,
 max_market_purchases FLOAT,
-PRIMARY KEY (market_volume_scenario_id, market, timepoint),
+max_final_market_sales FLOAT,
+max_final_market_purchases FLOAT,
+PRIMARY KEY (market_volume_scenario_id, market, stage_id, timepoint),
 FOREIGN KEY (market_volume_scenario_id) REFERENCES
 subscenarios_market_volume (market_volume_scenario_id)
 );
@@ -709,8 +736,12 @@ CREATE TABLE inputs_geography_fuel_burn_limit_balancing_areas (
 fuel_burn_limit_ba_scenario_id INTEGER,
 fuel VARCHAR(32),
 fuel_burn_limit_ba VARCHAR(32),
-allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
-violation_penalty_per_unit FLOAT DEFAULT 0,
+min_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+min_violation_penalty_per_unit FLOAT DEFAULT 0,
+max_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+max_violation_penalty_per_unit FLOAT DEFAULT 0,
+relative_max_allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+relative_max_violation_penalty_per_unit FLOAT DEFAULT 0,
 PRIMARY KEY (fuel_burn_limit_ba_scenario_id, fuel, fuel_burn_limit_ba),
 FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
 subscenarios_geography_fuel_burn_limit_balancing_areas (fuel_burn_limit_ba_scenario_id)
@@ -767,6 +798,9 @@ specified_capacity_mw FLOAT, -- grid-facing nameplate capacity
 hyb_gen_specified_capacity_mw FLOAT, -- e.g. CAES turbine capacity
 hyb_stor_specified_capacity_mw FLOAT, -- e.g. battery tightly-coupled with PV
 specified_capacity_mwh FLOAT, -- storage energy capacity
+fuel_production_capacity_fuelunitperhour FLOAT, -- fuel production capacity (e.g. electrolyzer)
+fuel_release_capacity_fuelunitperhour FLOAT, -- fuel release capacity
+fuel_storage_capacity_fuelunit FLOAT, -- fuel storage capacity
 PRIMARY KEY (project_specified_capacity_scenario_id, project, period),
 FOREIGN KEY (project_specified_capacity_scenario_id) REFERENCES
 subscenarios_project_specified_capacity (project_specified_capacity_scenario_id)
@@ -784,10 +818,13 @@ CREATE TABLE inputs_project_specified_fixed_cost (
 project_specified_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-fixed_cost_per_mw_year FLOAT,
+fixed_cost_per_mw_yr FLOAT,
 hyb_gen_fixed_cost_per_mw_yr FLOAT,
 hyb_stor_fixed_cost_per_mw_yr FLOAT,
 fixed_cost_per_mwh_year FLOAT,
+fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_storage_capacity_fixed_cost_per_fuelunit_yr FLOAT,
 PRIMARY KEY (project_specified_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_specified_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_specified_fixed_cost
@@ -806,15 +843,25 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
+-- Annual fixed O&M costs are incurred in each operational year
+-- Capital costs are incurred in each year of the financial lifetime
 DROP TABLE IF EXISTS inputs_project_new_cost;
 CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
 vintage INTEGER,
-lifetime_yrs INTEGER,
+operational_lifetime_yrs FLOAT,
+fixed_cost_per_mw_yr FLOAT,
+fixed_cost_per_mwh_yr FLOAT,
+fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr FLOAT,
+fuel_storage_capacity_fixed_cost_per_fuelunit_yr FLOAT,
+financial_lifetime_yrs FLOAT,
 annualized_real_cost_per_mw_yr FLOAT,
 annualized_real_cost_per_mwh_yr FLOAT,
-levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
+fuel_production_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel prod cost
+fuel_release_capacity_cost_per_fuelunitperhour_yr FLOAT, -- annualized fuel release cost
+fuel_storage_capacity_cost_per_fuelunit_yr FLOAT, -- annualized fuel storage cost
 supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, vintage),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
@@ -866,10 +913,14 @@ CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-min_cumulative_new_build_mw FLOAT,
-max_cumulative_new_build_mw FLOAT,
-min_cumulative_new_build_mwh FLOAT,
-max_cumulative_new_build_mwh FLOAT,
+min_new_build_power FLOAT,
+max_new_build_power FLOAT,
+min_capacity_power FLOAT,
+max_capacity_power FLOAT,
+min_new_build_energy FLOAT,
+max_new_build_energy FLOAT,
+min_capacity_energy FLOAT,
+max_capacity_energy FLOAT,
 PRIMARY KEY (project_new_potential_scenario_id, project, period),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
@@ -965,6 +1016,9 @@ min_up_time_hours INTEGER,
 min_up_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 min_down_time_hours INTEGER,
 min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
+cycle_selection_scenario_id INTEGER,
+supplemental_firing_scenario_id INTEGER,
+allow_startup_shutdown_power INTEGER, -- defaults to 0 in the model if not specified
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
@@ -989,6 +1043,8 @@ regulation_up_ramp_rate FLOAT,
 regulation_down_ramp_rate FLOAT,
 frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
+powerunithour_per_fuelunit FLOAT,
+cap_factor_limits_scenario_id INTEGER,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -1002,12 +1058,20 @@ subscenarios_project_heat_rate_curves
 FOREIGN KEY (project, variable_om_curves_scenario_id) REFERENCES
 subscenarios_project_variable_om_curves
 (project, variable_om_curves_scenario_id),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection
+(project, cycle_selection_scenario_id),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing
+(project, supplemental_firing_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
 FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id),
+FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
+    subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
@@ -1106,6 +1170,50 @@ FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
 subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
 
+-- Cycle selection (e.g. plants that can operate in simple cycle or combined cycle mode)
+DROP TABLE IF EXISTS subscenarios_project_cycle_selection;
+CREATE TABLE subscenarios_project_cycle_selection (
+project VARCHAR(32),
+cycle_selection_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, cycle_selection_scenario_id)
+);
+
+-- If project is on, cycle_selection_project must be off
+DROP TABLE IF EXISTS inputs_project_cycle_selection;
+CREATE TABLE inputs_project_cycle_selection (
+project VARCHAR(64),
+cycle_selection_scenario_id INTEGER,
+cycle_selection_project VARCHAR(64),
+PRIMARY KEY (project, cycle_selection_scenario_id, cycle_selection_project),
+FOREIGN KEY (project, cycle_selection_scenario_id) REFERENCES
+subscenarios_project_cycle_selection (project, cycle_selection_scenario_id)
+);
+
+
+-- Supplemental firing
+DROP TABLE IF EXISTS subscenarios_project_supplemental_firing;
+CREATE TABLE subscenarios_project_supplemental_firing (
+project VARCHAR(32),
+supplemental_firing_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, supplemental_firing_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_supplemental_firing;
+CREATE TABLE inputs_project_supplemental_firing (
+project VARCHAR(64),
+supplemental_firing_scenario_id INTEGER,
+supplemental_firing_project VARCHAR(64),
+PRIMARY KEY (project, supplemental_firing_scenario_id, supplemental_firing_project),
+FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
+subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
+);
+
+
+
 -- Variable generator profiles
 -- TODO: this is not exactly a subscenario, as a variable profile will be
 -- assigned to variable projects in the project_operational_chars table and
@@ -1161,6 +1269,31 @@ subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id)
 );
 
+-- Cap factor limits
+DROP TABLE IF EXISTS subscenarios_project_cap_factor_limits;
+CREATE TABLE subscenarios_project_cap_factor_limits (
+    project VARCHAR(64),
+    cap_factor_limits_scenario_id INTEGER,
+    name VARCHAR(32),
+    description VARCHAR(128),
+    PRIMARY KEY (project, cap_factor_limits_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_cap_factor_limits;
+CREATE TABLE inputs_project_cap_factor_limits (
+    project VARCHAR(64),
+    cap_factor_limits_scenario_id INTEGER,
+    balancing_type_horizon VARCHAR(64),
+    horizon INTEGER,
+    min_cap_factor FLOAT,
+    max_cap_factor FLOAT,
+    PRIMARY KEY (project, cap_factor_limits_scenario_id, balancing_type_horizon,
+                 horizon),
+    FOREIGN KEY (project, cap_factor_limits_scenario_id) REFERENCES
+        subscenarios_project_cap_factor_limits (project, cap_factor_limits_scenario_id)
+);
+
+
 -- Project availability (e.g. due to planned outages/availability)
 -- Subscenarios
 DROP TABLE IF EXISTS subscenarios_project_availability;
@@ -1199,6 +1332,7 @@ exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
 availability_derate FLOAT,
+hyb_stor_cap_availability_derate FLOAT,
 PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id, timepoint),
 FOREIGN KEY (project, exogenous_availability_scenario_id)
     REFERENCES subscenarios_project_availability_exogenous
@@ -1414,6 +1548,7 @@ FOREIGN KEY (tx_line_transmission_target_zone_scenario_id) REFERENCES
 -- Depends on carbon cap zone geography
 -- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
+-- Projects can contribute to multiple carbon cap zones
 DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
 CREATE TABLE subscenarios_project_carbon_cap_zones (
 project_carbon_cap_zone_scenario_id INTEGER PRIMARY KEY,
@@ -1426,7 +1561,7 @@ CREATE TABLE inputs_project_carbon_cap_zones (
 project_carbon_cap_zone_scenario_id INTEGER,
 project VARCHAR(64),
 carbon_cap_zone VARCHAR(32),
-PRIMARY KEY (project_carbon_cap_zone_scenario_id, project),
+PRIMARY KEY (project_carbon_cap_zone_scenario_id, project, carbon_cap_zone),
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
@@ -1466,10 +1601,33 @@ CREATE TABLE inputs_project_carbon_tax_allowance (
 project_carbon_tax_allowance_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+fuel_group VARCHAR(32),
 carbon_tax_allowance_tco2_per_mwh FLOAT,
-PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period),
+PRIMARY KEY (project_carbon_tax_allowance_scenario_id, project, period, fuel_group),
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
  subscenarios_project_carbon_tax_allowance (project_carbon_tax_allowance_scenario_id)
+);
+
+-- Project performance standard zones
+-- Which projects count toward the performance standard
+-- Depends on performance standard zone geography
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+DROP TABLE IF EXISTS subscenarios_project_performance_standard_zones;
+CREATE TABLE subscenarios_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_performance_standard_zones;
+CREATE TABLE inputs_project_performance_standard_zones (
+project_performance_standard_zone_scenario_id INTEGER,
+project VARCHAR(64),
+performance_standard_zone VARCHAR(32),
+PRIMARY KEY (project_performance_standard_zone_scenario_id, project),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+ subscenarios_project_performance_standard_zones (project_performance_standard_zone_scenario_id)
 );
 
 -- Project fuel burn limit balancing areas
@@ -1530,16 +1688,58 @@ DROP TABLE IF EXISTS inputs_project_elcc_chars;
 CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
-prm_type VARCHAR(32),
-elcc_simple_fraction FLOAT,
-contributes_to_elcc_surface INTEGER,
-cap_factor_for_elcc_surface FLOAT,
+prm_type VARCHAR(32),  -- to model 'energy_only" PRM type, select energy_only feature
 min_duration_for_full_capacity_credit_hours FLOAT,
-deliverability_group VARCHAR(64),  --optional
+project_elcc_simple_scenario_id INTEGER,
+project_deliverability_scenario_id INTEGER CHECK (
+    project_deliverability_scenario_id IS NULL OR prm_type = 'energy_only_allowed'
+),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
+);
+
+-- Simple ELCC chars
+DROP TABLE IF EXISTS subscenarios_project_elcc_simple;
+CREATE TABLE subscenarios_project_elcc_simple (
+project VARCHAR(32),
+project_elcc_simple_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, project_elcc_simple_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_elcc_simple;
+CREATE TABLE inputs_project_elcc_simple (
+project VARCHAR(64),
+project_elcc_simple_scenario_id INTEGER,
+period FLOAT,
+elcc_simple_fraction FLOAT,
+PRIMARY KEY (project, project_elcc_simple_scenario_id, period),
+FOREIGN KEY (project, project_elcc_simple_scenario_id) REFERENCES
+subscenarios_project_elcc_simple (project, project_elcc_simple_scenario_id)
+);
+
+-- Deliverability chars
+DROP TABLE IF EXISTS subscenarios_project_deliverability;
+CREATE TABLE subscenarios_project_deliverability (
+project VARCHAR(32),
+project_deliverability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, project_deliverability_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS inputs_project_deliverability;
+CREATE TABLE inputs_project_deliverability (
+project VARCHAR(64),
+project_deliverability_scenario_id INTEGER,
+deliverability_group VARCHAR(64),  -- can be NULL; otherwise ensure projects with group are energy_only_allowed
+PRIMARY KEY (project, project_deliverability_scenario_id, deliverability_group),
+FOREIGN KEY (project, project_deliverability_scenario_id) REFERENCES
+subscenarios_project_deliverability (project, project_deliverability_scenario_id)
 );
 
 -- ELCC surface
@@ -1555,11 +1755,12 @@ description VARCHAR(128)
 DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface;
 CREATE TABLE inputs_system_prm_zone_elcc_surface (
 elcc_surface_scenario_id INTEGER,
+elcc_surface_name VARCHAR(32),
 prm_zone VARCHAR(32),
 period INTEGER,
 facet INTEGER,
 elcc_surface_intercept FLOAT,
-PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period, facet),
+PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, prm_zone, period, facet),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
 );
@@ -1568,11 +1769,12 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface_prm_load;
 CREATE TABLE inputs_system_prm_zone_elcc_surface_prm_load (
 elcc_surface_scenario_id INTEGER,
+elcc_surface_name VARCHAR(32),
 prm_zone VARCHAR(32),
 period INTEGER,
 prm_peak_load_mw FLOAT,
 prm_annual_load_mwh FLOAT,
-PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period),
+PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, prm_zone, period),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id)
 );
@@ -1581,42 +1783,115 @@ FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
 DROP TABLE IF EXISTS inputs_project_elcc_surface;
 CREATE TABLE inputs_project_elcc_surface (
 elcc_surface_scenario_id INTEGER,
+elcc_surface_name VARCHAR(32),
 project VARCHAR(64),
 period INTEGER,
 facet INTEGER,
 elcc_surface_coefficient FLOAT,
-PRIMARY KEY (elcc_surface_scenario_id, project, period, facet)
+PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, project, period, facet)
 );
 
 -- Project cap factors for the ELCC surface
 DROP TABLE IF EXISTS inputs_project_elcc_surface_cap_factors;
 CREATE TABLE inputs_project_elcc_surface_cap_factors (
 elcc_surface_scenario_id INTEGER,
+elcc_surface_name VARCHAR(32),
 project VARCHAR(64),
 elcc_surface_cap_factor FLOAT,
-PRIMARY KEY (elcc_surface_scenario_id, project)
+PRIMARY KEY (elcc_surface_scenario_id, elcc_surface_name, project)
 );
 
--- Energy-only parameters
-DROP TABLE IF EXISTS subscenarios_project_prm_energy_only;
-CREATE TABLE subscenarios_project_prm_energy_only (
-prm_energy_only_scenario_id INTEGER PRIMARY KEY
+-- Deliverability parameters
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_costs;
+CREATE TABLE subscenarios_project_prm_deliverability_costs (
+prm_deliverability_cost_scenario_id INTEGER PRIMARY KEY
 AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_prm_energy_only;
-CREATE TABLE inputs_project_prm_energy_only (
-prm_energy_only_scenario_id INTEGER,
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_costs;
+CREATE TABLE inputs_project_prm_deliverability_costs (
+prm_deliverability_cost_scenario_id INTEGER,
 deliverability_group VARCHAR(64),
-deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
-deliverability_group_deliverability_cost_per_mw FLOAT,
-deliverability_group_energy_only_capacity_limit_mw FLOAT,
-PRIMARY KEY (prm_energy_only_scenario_id, deliverability_group),
-FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
-subscenarios_project_prm_energy_only
-(prm_energy_only_scenario_id)
+vintage FLOAT,
+lifetime_yrs FLOAT,
+deliverability_cost_per_mw_yr FLOAT,
+PRIMARY KEY (prm_deliverability_cost_scenario_id, deliverability_group, vintage),
+FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_costs
+(prm_deliverability_cost_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_existing;
+CREATE TABLE subscenarios_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_existing;
+CREATE TABLE inputs_project_prm_deliverability_existing (
+prm_deliverability_existing_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period FLOAT,
+constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+peak_designation VARCHAR(16),
+existing_deliverability_mw FLOAT,
+PRIMARY KEY (prm_deliverability_existing_scenario_id, deliverability_group, period,
+             constraint_type, peak_designation),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_existing
+(prm_deliverability_existing_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_potential;
+CREATE TABLE subscenarios_project_prm_deliverability_potential (
+prm_deliverability_potential_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_prm_deliverability_potential;
+CREATE TABLE inputs_project_prm_deliverability_potential (
+prm_deliverability_potential_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period FLOAT,
+deliverable_capacity_limit_cumulative_mw FLOAT,
+PRIMARY KEY (prm_deliverability_potential_scenario_id, deliverability_group, period),
+FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
+subscenarios_project_prm_deliverability_potential
+(prm_deliverability_potential_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_prm_deliverability_multipliers;
+CREATE TABLE subscenarios_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER PRIMARY KEY,
+    name VARCHAR(32),
+    description VARCHAR(128)
+);
+
+CREATE TABLE inputs_project_prm_deliverability_multipliers (
+    project_prm_deliverability_multipliers_scenario_id INTEGER,
+    project VARCHAR(64),
+    constraint_type VARCHAR(16) CHECK (
+        constraint_type = 'total'
+            OR constraint_type = 'deliverable'
+            OR constraint_type = 'energy_only'
+        ),
+    peak_designation VARCHAR(16),
+    multiplier FLOAT,
+    PRIMARY KEY (project_prm_deliverability_multipliers_scenario_id, project,
+                 constraint_type, peak_designation),
+    FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+        subscenarios_project_prm_deliverability_multipliers
+            (project_prm_deliverability_multipliers_scenario_id)
 );
 
 
@@ -1677,6 +1952,7 @@ CREATE TABLE inputs_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 co2_intensity_tons_per_mmbtu FLOAT,
+fuel_group VARCHAR(32),
 PRIMARY KEY (fuel_scenario_id, fuel),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
 (fuel_scenario_id)
@@ -1889,6 +2165,27 @@ FOREIGN KEY (transmission_line, exogenous_availability_scenario_id)
         (transmission_line, exogenous_availability_scenario_id)
 );
 
+-- Transmission flow
+DROP TABLE IF EXISTS subscenarios_transmission_flow;
+CREATE TABLE subscenarios_transmission_flow (
+transmission_flow_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_flow;
+CREATE TABLE inputs_transmission_flow (
+transmission_flow_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+stage_id INTEGER,
+timepoint INTEGER,
+min_flow_mw FLOAT,
+max_flow_mw FLOAT,
+PRIMARY KEY (transmission_flow_scenario_id, transmission_line, stage_id, timepoint),
+FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
+subscenarios_transmission_flow (transmission_flow_scenario_id)
+);
+
 
 -- Operational characteristics
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
@@ -1931,6 +2228,49 @@ hurdle_rate_negative_direction_per_mwh FLOAT,
 PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line, period),
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
 subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
+);
+
+-- Group capacity requirements
+-- Requirements
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_group_requirements;
+CREATE TABLE subscenarios_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER PRIMARY KEY
+    AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_group_requirements;
+CREATE TABLE inputs_transmission_capacity_group_requirements (
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (transmission_capacity_group_requirement_scenario_id,
+            transmission_capacity_group, period),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id)
+);
+
+
+-- Group transmission lines mapping
+DROP TABLE IF EXISTS subscenarios_transmission_capacity_groups;
+CREATE TABLE subscenarios_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_capacity_groups;
+CREATE TABLE inputs_transmission_capacity_groups (
+transmission_capacity_group_scenario_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+transmission_line VARCHAR(64),
+PRIMARY KEY (transmission_capacity_group_scenario_id, transmission_capacity_group, transmission_line),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+subscenarios_transmission_capacity_groups (transmission_capacity_group_scenario_id)
 );
 
 -- Simultaneous flows
@@ -2022,6 +2362,7 @@ CREATE TABLE inputs_load_zone_markets (
 load_zone_market_scenario_id INTEGER,
 load_zone VARCHAR(64),
 market VARCHAR(32),
+final_participation_stage INTEGER,  -- can leave NULL, defaults to 1 in model
 PRIMARY KEY (load_zone_market_scenario_id, load_zone, market),
 FOREIGN KEY (load_zone_market_scenario_id)
 REFERENCES subscenarios_load_zone_markets (load_zone_market_scenario_id)
@@ -2058,12 +2399,14 @@ subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 -- need to specify which load, i.e. specify a mapping between the reserve BA
 -- and the load zones whose load should be part of the requirement
 -- calculation (mapping should be one-to-many)
+-- Note that the by-timepoint requirement and the percent requirement are additive
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent;
 CREATE TABLE inputs_system_lf_reserves_up_percent (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba)
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up_percent_lz_map;
@@ -2072,6 +2415,20 @@ lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_lf_reserves_up_project;
+CREATE TABLE inputs_system_lf_reserves_up_project (
+lf_reserves_up_scenario_id INTEGER,
+lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id, project)
 );
 
 -- LF reserves down
@@ -2106,8 +2463,9 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent;
 CREATE TABLE inputs_system_lf_reserves_down_percent (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba)
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down_percent_lz_map;
@@ -2116,6 +2474,20 @@ lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_lf_reserves_down_project;
+CREATE TABLE inputs_system_lf_reserves_down_project (
+lf_reserves_down_scenario_id INTEGER,
+lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id, project)
 );
 
 -- Regulation up
@@ -2149,8 +2521,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_down_percent;
 CREATE TABLE inputs_system_regulation_down_percent (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba)
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_down_percent_lz_map;
@@ -2159,6 +2532,20 @@ regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_regulation_down_project;
+CREATE TABLE inputs_system_regulation_down_project (
+regulation_down_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id, project)
 );
 
 -- Regulation down
@@ -2193,8 +2580,9 @@ DROP TABLE IF EXISTS inputs_system_regulation_up_percent;
 CREATE TABLE inputs_system_regulation_up_percent (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_regulation_up_percent_lz_map;
@@ -2204,6 +2592,21 @@ regulation_up_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, load_zone)
 );
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_regulation_up_project;
+CREATE TABLE inputs_system_regulation_up_project (
+regulation_up_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, project)
+);
+
 
 -- Frequency response
 DROP TABLE IF EXISTS subscenarios_system_frequency_response;
@@ -2238,8 +2641,9 @@ DROP TABLE IF EXISTS inputs_system_frequency_response_percent;
 CREATE TABLE inputs_system_frequency_response_percent (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba)
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_frequency_response_percent_lz_map;
@@ -2248,6 +2652,20 @@ frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_frequency_response_project;
+CREATE TABLE inputs_system_frequency_response_project (
+frequency_response_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id, project)
 );
 
 -- Spinning reserves
@@ -2282,8 +2700,9 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent;
 CREATE TABLE inputs_system_spinning_reserves_percent (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 percent_load_req FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba)
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id)
 );
 
 DROP TABLE IF EXISTS inputs_system_spinning_reserves_percent_lz_map;
@@ -2292,6 +2711,20 @@ spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 load_zone VARCHAR(32),
 PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, load_zone)
+);
+
+-- Projects can also contribute to the requirement, specified as percent of their
+-- power output in a timepoint or a percentage of their capacity
+-- Note this is additive to the by-timepoint and percent requirements
+DROP TABLE IF EXISTS inputs_system_spinning_reserves_project;
+CREATE TABLE inputs_system_spinning_reserves_project (
+spinning_reserves_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
+project VARCHAR(64),
+percent_power_req FLOAT,
+percent_capacity_req FLOAT,
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id, project)
 );
 
 -- -- Policy -- --
@@ -2446,6 +2879,31 @@ FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
 subscenarios_system_carbon_tax (carbon_tax_scenario_id)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS subscenarios_system_performance_standard;
+CREATE TABLE subscenarios_system_performance_standard (
+performance_standard_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- performance_standard_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_performance_standard;
+CREATE TABLE inputs_system_performance_standard (
+performance_standard_scenario_id INTEGER,
+performance_standard_zone VARCHAR(32),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+performance_standard_tco2_per_mwh FLOAT,
+PRIMARY KEY (performance_standard_scenario_id, performance_standard_zone, period,
+subproblem_id, stage_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+subscenarios_system_performance_standard (performance_standard_scenario_id)
+);
+
 -- PRM requirements
 DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
 CREATE TABLE subscenarios_system_prm_requirement (
@@ -2509,10 +2967,11 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 balancing_type_horizon VARCHAR(64),
 horizon INTEGER,
-fuel_burn_limit_unit FLOAT,
-relative_fuel_burn_limit_fuel VARCHAR(32),
-relative_fuel_burn_limit_ba VARCHAR(32),
-fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+fuel_burn_min_unit FLOAT,
+fuel_burn_max_unit FLOAT,
+relative_fuel_burn_max_fuel VARCHAR(32),
+relative_fuel_burn_max_ba VARCHAR(32),
+fraction_of_relative_fuel_burn_max_fuel_ba FLOAT,
 PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
@@ -2577,8 +3036,10 @@ of_period_transmission_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
+of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
+of_deliverability INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
 of_markets INTEGER,
@@ -2595,6 +3056,7 @@ energy_target_zone_scenario_id INTEGER,
 transmission_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 carbon_tax_zone_scenario_id INTEGER,
+performance_standard_zone_scenario_id INTEGER,
 fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
@@ -2615,10 +3077,14 @@ tx_line_transmission_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
 project_carbon_tax_allowance_scenario_id INTEGER,
+project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
-prm_energy_only_scenario_id INTEGER,
+prm_deliverability_cost_scenario_id INTEGER,
+prm_deliverability_existing_scenario_id INTEGER,
+prm_deliverability_potential_scenario_id INTEGER,
+project_prm_deliverability_multipliers_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_chars_scenario_id INTEGER,
 load_zone_market_scenario_id INTEGER,
@@ -2638,6 +3104,9 @@ transmission_availability_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_new_potential_scenario_id INTEGER,
+transmission_flow_scenario_id INTEGER,
+transmission_capacity_group_requirement_scenario_id INTEGER,
+transmission_capacity_group_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -2653,6 +3122,7 @@ horizon_energy_target_scenario_id INTEGER,
 period_transmission_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
+performance_standard_scenario_id INTEGER,
 fuel_burn_limit_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
@@ -2689,6 +3159,8 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_tax_zones (carbon_tax_zone_scenario_id),
+FOREIGN KEY (performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_geography_performance_standard_zones (performance_standard_zone_scenario_id),
 FOREIGN KEY (fuel_burn_limit_ba_scenario_id) REFERENCES
     subscenarios_geography_fuel_burn_limit_balancing_areas
         (fuel_burn_limit_ba_scenario_id),
@@ -2743,6 +3215,9 @@ FOREIGN KEY (project_carbon_tax_zone_scenario_id) REFERENCES
 FOREIGN KEY (project_carbon_tax_allowance_scenario_id) REFERENCES
     subscenarios_project_carbon_tax_allowance
         (project_carbon_tax_allowance_scenario_id),
+FOREIGN KEY (project_performance_standard_zone_scenario_id) REFERENCES
+    subscenarios_project_performance_standard_zones
+        (project_performance_standard_zone_scenario_id),
 FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
     subscenarios_project_fuel_burn_limit_balancing_areas
         (project_fuel_burn_limit_ba_scenario_id),
@@ -2750,8 +3225,17 @@ FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
-FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
-    subscenarios_project_prm_energy_only (prm_energy_only_scenario_id),
+FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_costs (prm_deliverability_cost_scenario_id),
+FOREIGN KEY (prm_deliverability_existing_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_existing
+        (prm_deliverability_existing_scenario_id),
+FOREIGN KEY (prm_deliverability_potential_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_potential
+        (prm_deliverability_potential_scenario_id),
+FOREIGN KEY (project_prm_deliverability_multipliers_scenario_id) REFERENCES
+    subscenarios_project_prm_deliverability_multipliers
+        (project_prm_deliverability_multipliers_scenario_id),
 FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
     subscenarios_project_local_capacity_zones
         (project_local_capacity_zone_scenario_id),
@@ -2801,6 +3285,14 @@ FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
         (transmission_hurdle_rate_scenario_id),
 FOREIGN KEY (transmission_new_potential_scenario_id) REFERENCES
     subscenarios_transmission_new_potential (transmission_new_potential_scenario_id),
+FOREIGN KEY (transmission_flow_scenario_id) REFERENCES
+    subscenarios_transmission_flow (transmission_flow_scenario_id),
+FOREIGN KEY (transmission_capacity_group_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_groups
+    (transmission_capacity_group_scenario_id),
+FOREIGN KEY (transmission_capacity_group_requirement_scenario_id) REFERENCES
+    subscenarios_transmission_capacity_group_requirements
+    (transmission_capacity_group_requirement_scenario_id),
 FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
         (transmission_carbon_cap_zone_scenario_id),
@@ -2837,6 +3329,8 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
     subscenarios_system_carbon_tax (carbon_tax_scenario_id),
+FOREIGN KEY (performance_standard_scenario_id) REFERENCES
+    subscenarios_system_performance_standard (performance_standard_scenario_id),
 FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
     subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
@@ -2896,11 +3390,17 @@ capacity_mw FLOAT,
 hyb_gen_capacity_mw FLOAT,
 hyb_stor_capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
+fuel_prod_capacity_fuelunitperhour FLOAT,
+fuel_rel_capacity_fuelunitperhour FLOAT,
+fuel_stor_capacity_fuelunit FLOAT,
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
 new_build_binary INTEGER,
 retired_mw FLOAT,
 retired_binary INTEGER,
+new_fuel_prod_capacity_fuelunitperhour FLOAT,
+new_fuel_rel_capacity_fuelunitperhour FLOAT,
+new_fuel_stor_capacity_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -2976,9 +3476,13 @@ active_startup_type FLOAT,
 auxiliary_consumption_mw FLOAT,
 gross_power_mw FLOAT,
 ramp_up_violation FLOAT,
+ramp_up_dual FLOAT,
 ramp_down_violation FLOAT,
+ramp_down_dual FLOAT,
 min_up_time_violation FLOAT,
+min_up_time_dual FLOAT,
 min_down_time_violation FLOAT,
+min_down_time_dual FLOAT,
 hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
@@ -3016,6 +3520,22 @@ hour_of_day FLOAT,
 load_zone VARCHAR(32),
 scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
+);
+
+DROP TABLE IF EXISTS results_project_cap_factor_limits;
+CREATE TABLE results_project_cap_factor_limits (
+    scenario_id INTEGER,
+    subproblem_id INTEGER,
+    stage_id INTEGER,
+    project VARCHAR(64),
+    balancing_type_horizon VARCHAR(64),
+    horizon INTEGER,
+    min_cap_factor FLOAT,
+    max_cap_factor FLOAT,
+    actual_power_provision_mwh,
+    possible_power_provision_mwh,
+    PRIMARY KEY (scenario_id, subproblem_id, stage_id, project,
+                 balancing_type_horizon, horizon)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_by_technology;
@@ -3208,12 +3728,9 @@ subproblem_id INTEGER,
 stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
-deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
-deliverability_group_deliverability_cost_per_mw FLOAT,
-total_capacity_mw FLOAT,
-deliverable_capacity_mw FLOAT,
-energy_only_capacity_mw FLOAT,
-deliverable_capacity_cost FLOAT,
+deliverability_built_in_period_mw FLOAT,
+cumulative_added_deliverability_in_period_mw FLOAT,
+deliverability_annual_cost_in_period FLOAT,
 PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
@@ -3260,6 +3777,7 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+elcc_surface_name VARCHAR(32),
 prm_zone VARCHAR(32),
 facet INTEGER,
 technology VARCHAR(32),
@@ -3392,6 +3910,8 @@ fuel VARCHAR(32),
 operations_fuel_burn_mmbtu FLOAT,
 startup_fuel_burn_mmbtu FLOAT,
 total_fuel_burn_mmbtu FLOAT,
+fuel_contribution_fuelunit FLOAT,
+net_fuel_burn_fuelunit FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint, fuel)
 );
 
@@ -3494,6 +4014,19 @@ load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 new_build_transmission_capacity_mw FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_transmission_group_capacity;
+CREATE TABLE results_transmission_group_capacity (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+transmission_capacity_group VARCHAR(64),
+period INTEGER,
+group_new_capacity FLOAT,
+transmission_capacity_group_new_capacity_min FLOAT,
+transmission_capacity_group_new_capacity_max FLOAT,
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, transmission_capacity_group, period)
 );
 
 -- TODO: add table for costs new build?
@@ -3682,7 +4215,11 @@ number_of_hours_in_timepoint FLOAT,
 spinup_or_lookahead INTEGER,
 sell_power FLOAT,
 buy_power FLOAT,
-PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
+net_buy_power FLOAT,
+final_sell_power FLOAT,
+final_buy_power FLOAT,
+final_net_buy_power FLOAT,
+PRIMARY KEY (scenario_id, load_zone, market, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
@@ -3860,6 +4397,23 @@ dual FLOAT,
 PRIMARY KEY (scenario_id, carbon_tax_zone, subproblem_id, stage_id, period)
 );
 
+-- Performance standard
+DROP TABLE IF EXISTS results_system_performance_standard;
+CREATE TABLE results_system_performance_standard (
+scenario_id INTEGER,
+performance_standard_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+performance_standard_tco2_per_mwh FLOAT,
+project_performance_standard_total_carbon_emissions_tco2 FLOAT,
+project_performance_standard_total_energy_mwh FLOAT,
+performance_standard_overage FLOAT,
+PRIMARY KEY (scenario_id, performance_standard_zone, subproblem_id, stage_id, period)
+);
+
 -- Energy target balance
 DROP TABLE IF EXISTS results_system_period_energy_target;
 CREATE TABLE  results_system_period_energy_target (
@@ -3936,15 +4490,19 @@ number_years_represented FLOAT,  -- based on period of last horizon timepoint
 discount_factor FLOAT, -- based on period of last horizon timepoint
 fuel VARCHAR(32),
 fuel_burn_limit_ba VARCHAR(32),
-fuel_burn_limit_unit FLOAT,
-relative_fuel_burn_limit_fuel FLOAT,
-relative_fuel_burn_limit_ba FLOAT,
-fraction_of_relative_fuel_burn_limit_fuel_ba FLOAT,
+fuel_burn_min_unit FLOAT,
+fuel_burn_max_unit FLOAT,
+relative_fuel_burn_max_fuel FLOAT,
+relative_fuel_burn_max_ba FLOAT,
+fraction_of_relative_fuel_burn_max_fuel_ba FLOAT,
 total_fuel_burn_unit FLOAT,
-fuel_burn_limit_abs_overage_unit FLOAT,
-abs_dual FLOAT,
-abs_fuel_burn_limit_marginal_cost_per_unit FLOAT,
-fuel_burn_limit_rel_overage_unit FLOAT,
+fuel_burn_min_abs_shortage_unit,
+fuel_burn_max_abs_overage_unit FLOAT,
+abs_min_dual FLOAT,
+abs_min_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+abs_max_dual FLOAT,
+abs_max_fuel_burn_limit_marginal_cost_per_unit FLOAT,
+fuel_burn_max_rel_overage_unit FLOAT,
 rel_dual FLOAT,
 rel_fuel_burn_limit_marginal_cost_per_unit FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, balancing_type_horizon, horizon,
@@ -3969,6 +4527,19 @@ prm_shortage_mw FLOAT,
 dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_system_prm_elcc_surfaces;
+CREATE TABLE  results_system_prm_elcc_surfaces (
+scenario_id INTEGER,
+elcc_surface_name VARCHAR(32),
+prm_zone VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+elcc_surface_mw FLOAT,
+dual FLOAT,
+PRIMARY KEY (scenario_id, elcc_surface_name, prm_zone, period, subproblem_id, stage_id)
 );
 
 -- Local capacity balance
@@ -3998,8 +4569,9 @@ scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 Total_Capacity_Costs Float,
+Total_Fixed_Costs FLOAT,
 Total_Tx_Capacity_Costs Float,
-Total_PRM_Group_Costs Float,
+Total_PRM_Deliverability_Group_Costs FLOAT,
 Total_Variable_OM_Cost Float,
 Total_Fuel_Cost Float,
 Total_Startup_Cost Float,
@@ -4019,16 +4591,17 @@ Total_PRM_Shortage_Penalty_Costs Float,
 Total_Local_Capacity_Shortage_Penalty_Costs Float,
 Total_Carbon_Cap_Balance_Penalty_Costs Float,
 Total_Carbon_Tax_Cost FLOAT,
+Total_Performance_Standard_Balance_Penalty_Costs Float,
 Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Period_Transmission_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
-Total_Market_Cost FLOAT,
-Total_Market_Revenue FLOAT,
+Total_Market_Net_Cost FLOAT,
 Total_Export_Penalty_Cost FLOAT,
-Total_Horizon_Fuel_Burn_Limit_Abs_Penalty_Costs FLOAT,
-Total_Horizon_Fuel_Burn_Limit_Rel_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
+Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
@@ -4045,7 +4618,9 @@ CREATE TABLE subscenarios_options_solver (
 
 -- Note that with shell solvers such as GAMS and AMPL, you also need to specify
 -- "solver" as a solver_option_name and give it the appropriate value depending on
--- which solver you want to use (e.g. cplex, gurobi)
+-- which solver you want to use (e.g. CPLEX, Gurobi) in order to pass options to that
+-- solver
+-- Currently, only GAMS is supported; AMPL may work
 DROP TABLE IF EXISTS inputs_options_solver;
 CREATE TABLE inputs_options_solver (
     solver_options_id INTEGER,
@@ -4125,7 +4700,7 @@ subscenarios_project_energy_target_zones.name AS project_energy_target_areas,
 subscenarios_project_carbon_cap_zones.name AS project_carbon_cap_areas,
 subscenarios_project_prm_zones.name AS project_prm_areas,
 subscenarios_project_elcc_chars.name AS project_elcc_chars,
-subscenarios_project_prm_energy_only.name AS project_prm_energy_only,
+subscenarios_project_prm_deliverability_costs.name AS project_prm_deliverability_costs,
 subscenarios_project_local_capacity_zones.name AS project_local_capacity_areas,
 subscenarios_project_local_capacity_chars.name AS project_local_capacity_chars,
 subscenarios_project_specified_capacity.name AS project_specified_capacity,
@@ -4217,8 +4792,8 @@ LEFT JOIN subscenarios_project_prm_zones
     USING (project_prm_zone_scenario_id)
 LEFT JOIN subscenarios_project_elcc_chars
     USING (project_elcc_chars_scenario_id)
-LEFT JOIN subscenarios_project_prm_energy_only
-    USING (prm_energy_only_scenario_id)
+LEFT JOIN subscenarios_project_prm_deliverability_costs
+    USING (prm_deliverability_cost_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_zones
     USING (project_local_capacity_zone_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_chars
@@ -4315,7 +4890,7 @@ CREATE VIEW project_new_operational_periods AS
 WITH main_data (project, project_new_cost_scenario_id, period, highrange)
     AS (
     SELECT project, project_new_cost_scenario_id, vintage AS period,
-    vintage + lifetime_yrs AS highrange
+    vintage + operational_lifetime_yrs AS highrange
     FROM inputs_project_new_cost
     UNION ALL
     SELECT project, project_new_cost_scenario_id, period + 1 AS period,

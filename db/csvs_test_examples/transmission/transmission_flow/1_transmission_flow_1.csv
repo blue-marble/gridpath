@@ -1,0 +1,5 @@
+transmission_line,stage_id,timepoint,min_flow_mw,max_flow_mw
+Tx1,1,20200101,-10,-0.1
+Tx1,1,20200102,2,
+Tx2,1,20200101,,-4
+Tx2,1,20200102,2,

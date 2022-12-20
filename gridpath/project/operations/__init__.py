@@ -338,6 +338,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj],
     )
 
+    m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
+        dimen=3,
+        within=m.FUEL_PRJS * m.FUEL_GROUPS_FUELS,
+        initialize=lambda mod: set(
+            (g, fg, f)
+            for (fg, f) in mod.FUEL_GROUPS_FUELS
+            for (g, _f) in mod.FUEL_PRJ_FUELS
+            if f == _f
+        ),
+    )
+
     # Projects with heat rate curves (must be within FUEL_PRJS)
     m.HR_CURVE_PRJS_PRDS_SGMS = Set(dimen=3)
 
@@ -681,11 +692,13 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ramp_down_violation_penalty,
         min_up_time_hours, min_up_time_violation_penalty,
         min_down_time_hours, min_down_time_violation_penalty,
+        allow_startup_shutdown_power,
         charging_efficiency, discharging_efficiency,
         charging_capacity_multiplier, discharging_capacity_multiplier,
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
-        last_commitment_stage, curtailment_cost_per_pwh
+        last_commitment_stage, curtailment_cost_per_pwh,
+        powerunithour_per_fuelunit
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -806,7 +819,82 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
-    return proj_opchar, fuels, heat_rates, vom_curves, startup_chars
+    c6 = conn.cursor()
+    cycle_selection = c6.execute(
+        """
+        SELECT project, cycle_selection_project
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, cycle_selection_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {project_opchar_scenario_id}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_cycle_selection
+        USING(project, cycle_selection_scenario_id)
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND cycle_selection_scenario_id IS NOT NULL
+        """.format(
+            project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    c7 = conn.cursor()
+    cap_factor_limits = c7.execute(
+        """
+        SELECT project, balancing_type_horizon, horizon, min_cap_factor, max_cap_factor
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, cap_factor_limits_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {project_opchar_scenario_id}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_cap_factor_limits
+        USING(project, cap_factor_limits_scenario_id)
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND cap_factor_limits_scenario_id IS NOT NULL
+        """.format(
+            project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    c8 = conn.cursor()
+    supplemental_firing = c8.execute(
+        """
+        SELECT project, supplemental_firing_project
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, supplemental_firing_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {project_opchar_scenario_id}
+        ) AS op_char
+        USING (project)
+        INNER JOIN
+        inputs_project_supplemental_firing
+        USING(project, supplemental_firing_scenario_id)
+        WHERE project_portfolio_scenario_id = {project_portfolio_scenario_id}
+        AND supplemental_firing_scenario_id IS NOT NULL
+        """.format(
+            project_opchar_scenario_id=subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            project_portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    return (
+        proj_opchar,
+        fuels,
+        heat_rates,
+        vom_curves,
+        startup_chars,
+        cycle_selection,
+        cap_factor_limits,
+        supplemental_firing,
+    )
 
 
 def write_model_inputs(
@@ -827,7 +915,14 @@ def write_model_inputs(
         heat_rate_curves,
         vom_curves,
         startup_chars,
+        cycle_selection,
+        cap_factor_limits,
+        supplemental_firing,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+
+    inputs_directory = os.path.join(
+        scenario_directory, str(subproblem), str(stage), "inputs"
+    )
 
     # Update the projects.tab file
     new_columns = [
@@ -847,6 +942,7 @@ def write_model_inputs(
         "min_up_time_violation_penalty",
         "min_down_time_hours",
         "min_down_time_violation_penalty",
+        "allow_startup_shutdown_power",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -857,71 +953,69 @@ def write_model_inputs(
         "aux_consumption_frac_power",
         "last_commitment_stage",
         "curtailment_cost_per_pwh",
+        "powerunithour_per_fuelunit",
     ]
     append_to_input_file(
-        inputs_directory=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs"
-        ),
+        inputs_directory=inputs_directory,
         input_file="projects.tab",
         query_results=proj_opchar,
         index_n_columns=1,
         new_column_names=new_columns,
     )
 
-    # TODO: refactor these inputs, we're doing the same thing
     # Write fuels file
     fuels_df = cursor_to_df(fuels)
-    if not fuels_df.empty:
-        fuels_df = fuels_df.fillna(".")
-        fpath = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "project_fuels.tab",
-        )
-
-        fuels_df.to_csv(fpath, index=False, sep="\t")
+    write_additional_opchar_file(
+        opchar_df=fuels_df,
+        inputs_directory=inputs_directory,
+        filename="project_fuels.tab",
+    )
 
     # Write heat rates file
     hr_df = cursor_to_df(heat_rate_curves)
-    if not hr_df.empty:
-        hr_df = hr_df.fillna(".")
-        fpath = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "heat_rate_curves.tab",
-        )
-
-        hr_df.to_csv(fpath, index=False, sep="\t")
+    write_additional_opchar_file(
+        opchar_df=hr_df,
+        inputs_directory=inputs_directory,
+        filename="heat_rate_curves.tab",
+    )
 
     # Write VOM file
     vom_df = cursor_to_df(vom_curves)
-    if not vom_df.empty:
-        vom_df = vom_df.fillna(".")
-        fpath = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "variable_om_curves.tab",
-        )
-        vom_df.to_csv(fpath, index=False, sep="\t")
+    write_additional_opchar_file(
+        opchar_df=vom_df,
+        inputs_directory=inputs_directory,
+        filename="variable_om_curves.tab",
+    )
 
     # Write startup chars file
     su_df = cursor_to_df(startup_chars)
-    if not su_df.empty:
-        su_df = su_df.fillna(".")
-        fpath = os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "inputs",
-            "startup_chars.tab",
-        )
-        su_df.to_csv(fpath, index=False, sep="\t")
+    write_additional_opchar_file(
+        opchar_df=su_df, inputs_directory=inputs_directory, filename="startup_chars.tab"
+    )
+
+    # Write the cycle selection file
+    cs_df = cursor_to_df(cycle_selection)
+    write_additional_opchar_file(
+        opchar_df=cs_df,
+        inputs_directory=inputs_directory,
+        filename="cycle_selection.tab",
+    )
+
+    # Write the cap_factor_limits file
+    cfl_df = cursor_to_df(cap_factor_limits)
+    write_additional_opchar_file(
+        opchar_df=cfl_df,
+        inputs_directory=inputs_directory,
+        filename="cap_factor_limits.tab",
+    )
+
+    # Write the supplemental firing file
+    sf_df = cursor_to_df(supplemental_firing)
+    write_additional_opchar_file(
+        opchar_df=sf_df,
+        inputs_directory=inputs_directory,
+        filename="supplemental_firing.tab",
+    )
 
 
 # Validation
@@ -945,6 +1039,9 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         heat_rates,
         vom_curves,
         startup_chars,
+        cycle_select,
+        cap_factor_limits,
+        supplemental_firing,
     ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
@@ -1370,3 +1467,14 @@ def calculate_slope_intercept(project, load_points, heat_rates):
             )
 
     return slopes, intercepts
+
+
+def write_additional_opchar_file(opchar_df, inputs_directory, filename):
+    """
+    Write input tab file to the multi-dimensional operating characterstics from a
+    dataframe.
+    """
+    if not opchar_df.empty:
+        opchar_df = opchar_df.fillna(".")
+        fpath = os.path.join(inputs_directory, filename)
+        opchar_df.to_csv(fpath, index=False, sep="\t")

@@ -1,0 +1,17 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_solar_reserve_prj_contribution* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+No new generation was built.
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                  18,688.00          13.91
+                 Gas                   63,072.00          46.96
+                 Nuclear               52,560.00          39.13
+                 Solar                      0.00           0.00
+                 Wind                       0.00           0.00

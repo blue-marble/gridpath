@@ -1,0 +1,27 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_solar_carbon_cap_2zones_tx_hydrogen_prod_new* #####
+
+### CAPACITY RESULTS ###
+
+--> New Fuel Production, Release, and Storage Capacity <--
+                                 New Fuel Production Capacity (MMBtu per hour)  New Fuel Release Capacity (MMBtu per hour)  New Fuel Storage Capacity (MMBtu)
+load_zone technology    vintage                                                                                                                              
+Zone1     Hydrogen_Prod 2020                                         10,168.00                                   10,168.00                           5,120.00
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Solar      2020                  2.00
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                                Annual Energy (MWh)  % Total Power
+load_zone period technology                                       
+Zone1     2020   Coal                          0.00           0.00
+                 Gas                           0.00           0.00
+                 Hydrogen                122,640.00          58.33
+                 Hydrogen_Prod          -445,358.40        -211.83
+                 Nuclear                  52,560.00          25.00
+                 Solar                     8,760.00           4.17
+                 Wind                    471,638.40         224.33
+Zone2     2020   Gas                       8,760.00         100.00

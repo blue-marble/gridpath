@@ -35,6 +35,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         reserve_requirement_tmp_param="regulation_up_requirement_mw",
         reserve_requirement_percent_param="reg_up_per_req",
         reserve_zone_load_zone_set="REG_UP_BA_LZ",
+        ba_prj_req_contribution_set="REG_UP_BA_PRJ_CONTRIBUTION",
+        prj_power_param="reg_up_prj_pwr_contribution",
+        prj_capacity_param="reg_up_prj_cap_contribution",
         reserve_requirement_expression="Reg_Up_Requirement",
     )
 
@@ -50,6 +53,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reserve_requirement_param="regulation_up_requirement_mw",
         reserve_zone_load_zone_set="REG_UP_BA_LZ",
         reserve_requirement_percent_param="reg_up_per_req",
+        ba_prj_req_contribution_set="REG_UP_BA_PRJ_CONTRIBUTION",
+        prj_power_param="reg_up_prj_pwr_contribution",
+        prj_capacity_param="reg_up_prj_cap_contribution",
         reserve_type="regulation_up",
     )
 
@@ -103,7 +109,7 @@ def write_model_inputs(
     :return:
     """
 
-    tmp_req, percent_req, percent_map = get_inputs_from_database(
+    tmp_req, percent_req, percent_map, project_contributions = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
 
@@ -114,5 +120,6 @@ def write_model_inputs(
         timepoint_req=tmp_req,
         percent_req=percent_req,
         percent_map=percent_map,
+        project_contributions=project_contributions,
         reserve_type="regulation_up",
     )

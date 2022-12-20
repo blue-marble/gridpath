@@ -41,10 +41,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Capacity_Cost_in_Period[g, p]
             * mod.discount_factor[p]
             * mod.number_years_represented[p]
-            for (g, p) in mod.PRJ_OPR_PRDS
+            for (g, p) in mod.PRJ_FIN_PRDS
         )
 
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
+
+    def total_fixed_cost_rule(mod):
+        return sum(
+            mod.Fixed_Cost_in_Period[g, p]
+            * mod.discount_factor[p]
+            * mod.number_years_represented[p]
+            for (g, p) in mod.PRJ_OPR_PRDS
+        )
+
+    m.Total_Fixed_Costs = Expression(rule=total_fixed_cost_rule)
 
     record_dynamic_components(dynamic_components=d)
 
@@ -57,3 +67,4 @@ def record_dynamic_components(dynamic_components):
     """
 
     getattr(dynamic_components, cost_components).append("Total_Capacity_Costs")
+    getattr(dynamic_components, cost_components).append("Total_Fixed_Costs")

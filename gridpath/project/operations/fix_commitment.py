@@ -317,3 +317,23 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
                     m.Commitment[g, tmp].expr.value,
                 ]
             )
+
+
+def write_pass_through_file_headers(pass_through_directory):
+    with open(
+        os.path.join(pass_through_directory, "fixed_commitment.tab"),
+        "w",
+        newline="",
+    ) as fixed_commitment_file:
+        fixed_commitment_writer = writer(
+            fixed_commitment_file, delimiter="\t", lineterminator="\n"
+        )
+        fixed_commitment_writer.writerow(
+            [
+                "project",
+                "timepoint",
+                "stage",
+                "final_commitment_stage",
+                "commitment",
+            ]
+        )

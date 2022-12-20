@@ -1024,6 +1024,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
+        "allow_startup_shutdown_power",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
@@ -1032,6 +1033,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "maximum_duration_hours",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "powerunithour_per_fuelunit",
     ]
 
     sql = """SELECT {}

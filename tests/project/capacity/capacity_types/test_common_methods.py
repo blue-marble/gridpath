@@ -31,7 +31,7 @@ except ImportError:
 class TestCapacityTypeCommonMethods(unittest.TestCase):
     """ """
 
-    def test_operational_periods_by_project_vintage(self):
+    def test_relevant_periods_by_project_vintage(self):
         """
 
         :return:
@@ -90,7 +90,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         for test_case in test_case_numbers:
             expected_operational_periods = expected_operational_periods_dict[test_case]
             actual_operational_periods = (
-                MODULE_BEING_TESTED.operational_periods_by_project_vintage(
+                MODULE_BEING_TESTED.relevant_periods_by_project_vintage(
                     periods=test_case_params[test_case][0],
                     period_start_year=test_case_params[test_case][1],
                     period_end_year=test_case_params[test_case][2],
@@ -102,7 +102,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
                 expected_operational_periods, actual_operational_periods
             )
 
-    def test_project_operational_periods(self):
+    def test_project_relevant_periods(self):
         """
         G1 has lifetime of 30 years, G2 has lifetime of 10 years,
         G3 has lifetime of 100 years
@@ -117,7 +117,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             ("G2", 2040),
             ("G3", 2020),
         ]
-        operational_periods_by_project_vintage = {
+        relevant_periods_by_project_vintage = {
             ("G1", 2020): [2020, 2030, 2040],
             ("G1", 2030): [2030, 2040, 2050],
             ("G1", 2040): [2040, 2050],
@@ -127,7 +127,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             ("G3", 2020): [2020, 2030, 2040, 2050],
         }
 
-        expected_project_operational_periods = sorted(
+        expected_project_relevant_periods = sorted(
             [
                 ("G1", 2020),
                 ("G1", 2030),
@@ -142,20 +142,20 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             ]
         )
 
-        actual_project_operational_periods = sorted(
+        actual_project_relevant_periods = sorted(
             list(
-                MODULE_BEING_TESTED.project_operational_periods(
+                MODULE_BEING_TESTED.project_relevant_periods(
                     project_vintages_set=project_vintages,
-                    operational_periods_by_project_vintage_set=operational_periods_by_project_vintage,
+                    relevant_periods_by_project_vintage_set=relevant_periods_by_project_vintage,
                 )
             )
         )
 
         self.assertListEqual(
-            expected_project_operational_periods, actual_project_operational_periods
+            expected_project_relevant_periods, actual_project_relevant_periods
         )
 
-    def test_project_vintages_operational_in_period(self):
+    def test_project_vintages_relevant_in_period(self):
         """
         G1 has lifetime of 30 years, G2 has lifetime of 10 years,
         G3 has lifetime of 100 years
@@ -170,7 +170,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             ("G2", 2040),
             ("G3", 2020),
         ]
-        operational_periods_by_project_vintage = {
+        relevant_periods_by_project_vintage = {
             ("G1", 2020): [2020, 2030, 2040],
             ("G1", 2030): [2030, 2040, 2050],
             ("G1", 2040): [2040, 2050],
@@ -196,9 +196,9 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
         for p in [2020, 2030, 2040, 2050]:
             expected_project_vintages = sorted(expected_project_vintages_by_period[p])
             actual_project_vintages = sorted(
-                MODULE_BEING_TESTED.project_vintages_operational_in_period(
+                MODULE_BEING_TESTED.project_vintages_relevant_in_period(
                     project_vintage_set=project_vintages,
-                    operational_periods_by_project_vintage_set=operational_periods_by_project_vintage,
+                    relevant_periods_by_project_vintage_set=relevant_periods_by_project_vintage,
                     period=p,
                 )
             )

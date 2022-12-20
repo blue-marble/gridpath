@@ -210,13 +210,13 @@ Fuel Inputs (OPTIONAL)
 Fuel Characteristics
 ********************
 
-.. automodule:: db.csvs_test_examples.fuels.project_fuels.doc
+.. automodule:: db.csvs_test_examples.fuels.fuel_chars.doc
 
 
 Fuel Prices
 ***********
 
-.. automodule:: db.csvs_test_examples.fuels.project_fuel_prices.doc
+.. automodule:: db.csvs_test_examples.fuels.fuel_prices.doc
 
 *******************
 Reserves (OPTIONAL)

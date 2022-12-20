@@ -104,7 +104,7 @@ class TestGenNewLin(unittest.TestCase):
         )
         self.assertListEqual(expected_gen_vintage_set, actual_gen_vintage_set)
 
-        # Params: gen_new_lin_lifetime_yrs_by_vintage
+        # Params: gen_new_lin_operational_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted(
                 {
@@ -117,7 +117,10 @@ class TestGenNewLin(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.gen_new_lin_lifetime_yrs_by_vintage[
+                    (
+                        prj,
+                        vintage,
+                    ): instance.gen_new_lin_operational_lifetime_yrs_by_vintage[
                         prj, vintage
                     ]
                     for (prj, vintage) in instance.GEN_NEW_LIN_VNTS
@@ -125,6 +128,51 @@ class TestGenNewLin(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
+
+        # Params: gen_new_lin_fixed_cost_per_mw_yr
+        expected_fcost = OrderedDict(
+            sorted(
+                {
+                    ("Gas_CCGT_New", 2020): 1,
+                    ("Gas_CCGT_New", 2030): 1,
+                    ("Gas_CT_New", 2030): 1,
+                }.items()
+            )
+        )
+        actual_fcost = OrderedDict(
+            sorted(
+                {
+                    (prj, v): instance.gen_new_lin_fixed_cost_per_mw_yr[prj, v]
+                    for (prj, v) in instance.GEN_NEW_LIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_fcost, actual_fcost)
+
+        # Params: gen_new_lin_financial_lifetime_yrs_by_vintage
+        expected_flifetime = OrderedDict(
+            sorted(
+                {
+                    ("Gas_CCGT_New", 2020): 10,
+                    ("Gas_CCGT_New", 2030): 30,
+                    ("Gas_CT_New", 2030): 30,
+                }.items()
+            )
+        )
+        actual_flifetime = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.gen_new_lin_financial_lifetime_yrs_by_vintage[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.GEN_NEW_LIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_flifetime, actual_flifetime)
 
         # Params: gen_new_lin_annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(
@@ -147,54 +195,6 @@ class TestGenNewLin(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_cost, actual_cost)
-
-        # Set: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-        expected_gen_vintage_min_set = sorted([("Gas_CT_New", 2030)])
-        actual_gen_vintage_min_set = sorted(
-            [
-                (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-            ]
-        )
-        self.assertListEqual(expected_gen_vintage_min_set, actual_gen_vintage_min_set)
-
-        # Params: gen_new_lin_min_cumulative_new_build_mw
-        expected_min_new_mw = OrderedDict(sorted({("Gas_CT_New", 2030): 10}.items()))
-        actual_min_new_mw = OrderedDict(
-            sorted(
-                {
-                    (prj, v): instance.gen_new_lin_min_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
-
-        # Set: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-        expected_gen_vintage_max_set = sorted(
-            [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030)]
-        )
-        actual_gen_vintage_max_set = sorted(
-            [
-                (prj, period)
-                for (prj, period) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-            ]
-        )
-        self.assertListEqual(expected_gen_vintage_max_set, actual_gen_vintage_max_set)
-
-        # Params: gen_new_lin_max_cumulative_new_build_mw
-        expected_max_new_mw = OrderedDict(
-            sorted({("Gas_CCGT_New", 2020): 20, ("Gas_CCGT_New", 2030): 20}.items())
-        )
-        actual_max_new_mw = OrderedDict(
-            sorted(
-                {
-                    (prj, v): instance.gen_new_lin_max_cumulative_new_build_mw[prj, v]
-                    for (prj, v) in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
-                }.items()
-            )
-        )
-        self.assertDictEqual(expected_max_new_mw, actual_max_new_mw)
 
     def test_derived_data(self):
         """
@@ -252,6 +252,49 @@ class TestGenNewLin(unittest.TestCase):
         }
         self.assertDictEqual(
             expected_gen_vintage_op_in_period, actual_gen_vintage_op_in_period
+        )
+
+        # Set: FIN_PRDS_BY_GEN_NEW_LIN_VINTAGE
+        expected_fperiods_by_gen_vintage = {
+            ("Gas_CCGT_New", 2020): [2020],
+            ("Gas_CCGT_New", 2030): [2030],
+            ("Gas_CT_New", 2030): [2030],
+        }
+        actual_fperiods_by_gen_vintage = {
+            (prj, v): [
+                period for period in instance.FIN_PRDS_BY_GEN_NEW_LIN_VINTAGE[prj, v]
+            ]
+            for (prj, v) in instance.FIN_PRDS_BY_GEN_NEW_LIN_VINTAGE
+        }
+        self.assertDictEqual(
+            expected_fperiods_by_gen_vintage, actual_fperiods_by_gen_vintage
+        )
+
+        # Set: GEN_NEW_LIN_FIN_PRDS
+        expected_gen_op_fperiods = [
+            ("Gas_CCGT_New", 2020),
+            ("Gas_CCGT_New", 2030),
+            ("Gas_CT_New", 2030),
+        ]
+        actual_gen_op_fperiods = sorted(
+            [(prj, period) for (prj, period) in instance.GEN_NEW_LIN_FIN_PRDS]
+        )
+        self.assertListEqual(expected_gen_op_fperiods, actual_gen_op_fperiods)
+
+        # Set: GEN_NEW_LIN_VNTS_FIN_IN_PERIOD
+        expected_gen_vintage_f_in_period = {
+            2020: [("Gas_CCGT_New", 2020)],
+            2030: [
+                ("Gas_CCGT_New", 2030),
+                ("Gas_CT_New", 2030),
+            ],
+        }
+        actual_gen_vintage_f_in_period = {
+            p: [(g, v) for (g, v) in sorted(instance.GEN_NEW_LIN_VNTS_FIN_IN_PERIOD[p])]
+            for p in sorted(instance.PERIODS)
+        }
+        self.assertDictEqual(
+            expected_gen_vintage_f_in_period, actual_gen_vintage_f_in_period
         )
 
 

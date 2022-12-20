@@ -1,6 +1,6 @@
 {
   "name": "gridpath-ui",
-  "version": "0.12.0",
+  "version": "0.14.1",
   "main": "src/electron-main.js",
   "scripts": {
     "ng": "ng",
@@ -47,7 +47,7 @@
     "@types/node": "~8.9.4",
     "codelyzer": "~4.5.0",
     "electron": "^5.0.4",
-    "electron-builder": "^22.14.5",
+    "electron-builder": "^23.0.2",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
     "jquery": "^3.4.1",

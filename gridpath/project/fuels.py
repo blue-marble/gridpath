@@ -19,7 +19,7 @@
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals, Reals
+from pyomo.environ import Param, Set, NonNegativeReals, Reals, Any
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
@@ -38,6 +38,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
     m.FUELS = Set()
+    m.FUEL_GROUPS = Set()
+    m.FUEL_GROUPS_FUELS = Set(within=m.FUEL_GROUPS * m.FUELS)
+    m.FUELS_BY_FUEL_GROUP = Set(
+        m.FUEL_GROUPS,
+        within=m.FUELS,
+        initialize=lambda mod, fg: [
+            f for (group, f) in mod.FUEL_GROUPS_FUELS if group == fg
+        ],
+    )
+
     # Allow negative emissions
     m.co2_intensity_tons_per_mmbtu = Param(m.FUELS, within=Reals)
 
@@ -60,16 +70,41 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Load fuel chars only if there are data
     # There will be no data in this file if the database is used and there
     # are no projects with fuels in the scenario
+    # Fuel group column is optional
     fuels_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs", "fuels.tab"
     )
-    fuels_df = pd.read_csv(fuels_file)
+    fuels_df = pd.read_csv(fuels_file, delimiter="\t")
     if fuels_df.empty:
         pass
     else:
+
         data_portal.load(
-            filename=fuels_file, index=m.FUELS, param=m.co2_intensity_tons_per_mmbtu
+            filename=fuels_file,
+            index=m.FUELS,
+            select=("fuel", "co2_intensity_tons_per_mmbtu"),
+            param=m.co2_intensity_tons_per_mmbtu,
         )
+
+        header = pd.read_csv(
+            os.path.join(
+                scenario_directory, str(subproblem), str(stage), "inputs", "fuels.tab"
+            ),
+            sep="\t",
+            header=None,
+            nrows=1,
+        ).values[0]
+
+        if "fuel_group" in header:
+
+            data_portal.data()["FUEL_GROUPS"] = fuels_df["fuel_group"].unique()
+
+            data_portal.load(
+                filename=fuels_file,
+                index=m.FUEL_GROUPS_FUELS,
+                select=("fuel_group", "fuel"),
+                param=(),
+            )
 
     # Load fuel prices only if there are data
     # There will be no data in this file if the database is used and there
@@ -96,7 +131,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c1 = conn.cursor()
     fuels = c1.execute(
-        """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu
+        """SELECT DISTINCT fuel, co2_intensity_tons_per_mmbtu, fuel_group
         FROM (
         SELECT project, fuel, min_fraction_in_fuel_blend, max_fraction_in_fuel_blend
         FROM inputs_project_portfolios
@@ -117,7 +152,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         ) as project_fuels_tbl
         LEFT OUTER JOIN (
         -- Get the fuel chars for the relevant fuels
-        SELECT fuel, co2_intensity_tons_per_mmbtu
+        SELECT fuel, co2_intensity_tons_per_mmbtu, fuel_group
         FROM inputs_fuels
         WHERE fuel_scenario_id = {fuel_scenario_id}
         ) AS fuels_tbl
@@ -332,10 +367,11 @@ def write_model_inputs(
         writer = csv.writer(fuels_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["FUELS", "co2_intensity_tons_per_mmbtu"])
+        writer.writerow(["fuel", "co2_intensity_tons_per_mmbtu", "fuel_group"])
 
         for row in fuels:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
     with open(
         os.path.join(

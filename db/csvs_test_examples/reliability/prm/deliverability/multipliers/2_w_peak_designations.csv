@@ -1,0 +1,7 @@
+﻿project,constraint_type,peak_designation,multiplier
+Gas_CCGT_new,deliverable,peak_highest,0.9
+Gas_CT_new,deliverable,peak_highest,0.9
+Gas_CCGT_new,deliverable,peak_secondary,0.9
+Gas_CT_new,deliverable,peak_secondary,0.9
+Gas_CCGT_new,total,offpeak,0.95
+Gas_CT_new,total,offpeak,0.95

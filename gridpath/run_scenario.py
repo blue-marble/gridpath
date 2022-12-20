@@ -23,8 +23,12 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
-from multiprocessing import Pool, Manager
+import dill
+import json
+from multiprocessing import get_context, Manager
 import os.path
+import xml.etree.ElementTree as ET
+
 from pyomo.environ import (
     AbstractModel,
     Suffix,
@@ -36,16 +40,19 @@ from pyomo.environ import (
 
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import ComponentUID, SymbolMap
+import pyomo.environ
+from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
 
+from gridpath.auxiliary.import_export_rules import import_export_rules
 from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_disk
 from gridpath.common_functions import (
     determine_scenario_directory,
     get_scenario_name_parser,
     get_required_e2e_arguments_parser,
-    get_solve_parser,
-    get_parallel_solve_parser,
+    get_run_scenario_parser,
     create_logs_directory_if_not_exists,
     Logging,
 )
@@ -53,7 +60,7 @@ from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_arguments):
+def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -127,16 +134,23 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
         loaded_modules,
     )
 
+    return dynamic_components, instance
+
+
+def solve_problem(parsed_arguments, instance):
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return instance, results, dynamic_components
+    return instance, results
 
 
 def run_optimization_for_subproblem_stage(
-    scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+    scenario_directory,
+    subproblem_directory,
+    stage_directory,
+    parsed_arguments,
 ):
     """
     :param scenario_directory: the main scenario directory
@@ -206,10 +220,74 @@ def run_optimization_for_subproblem_stage(
     subproblem_directory = str(subproblem_directory)
     stage_directory = str(stage_directory)
 
-    # Create problem instance and solve it
-    solved_instance, results, dynamic_components = create_and_solve_problem(
-        scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+    # Used only if we are writing problem files or loading solutions
+    prob_sol_files_directory = os.path.join(
+        scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
     )
+
+    # Create problem instance and either save the problem file or solve the instance
+    # TODO: incompatible options
+    # If we are loading a solution, skip the compilation step; we'll use the saved
+    # instance and dynamic components
+    if parsed_arguments.load_cplex_solution:
+        solved_instance, results, dynamic_components = load_cplex_xml_solution(
+            prob_sol_files_directory=prob_sol_files_directory,
+            solution_filename="cplex_solution.sol",
+        )
+    elif parsed_arguments.load_gurobi_solution:
+        solved_instance, results, dynamic_components = load_gurobi_json_solution(
+            prob_sol_files_directory=prob_sol_files_directory,
+            solution_filename="gurobi_solution.json",
+        )
+    else:
+        dynamic_components, instance = create_problem(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem_directory,
+            stage=stage_directory,
+            parsed_arguments=parsed_arguments,
+        )
+
+        if parsed_arguments.create_lp_problem_file_only:
+            prob_sol_files_directory = os.path.join(
+                scenario_directory,
+                subproblem_directory,
+                stage_directory,
+                "prob_sol_files",
+            )
+            if not os.path.exists(prob_sol_files_directory):
+                os.makedirs(prob_sol_files_directory)
+            with open(
+                os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
+            ) as f_out:
+                dill.dump(instance, f_out)
+            with open(
+                os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
+                "wb",
+            ) as f_out:
+                dill.dump(dynamic_components, f_out)
+
+            smap_id = write_problem_file(
+                instance=instance, prob_sol_files_directory=prob_sol_files_directory
+            )
+            symbol_map = instance.solutions.symbol_map[smap_id]
+
+            symbol_cuid_pairs = tuple(
+                (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                for symbol, var_weakref in symbol_map.bySymbol.items()
+            )
+
+            with open(
+                os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
+            ) as f_out:
+                dill.dump(symbol_cuid_pairs, f_out)
+
+            print("Problem file written to {}".format(prob_sol_files_directory))
+            sys.exit()
+        else:
+            solved_instance, results = solve_problem(
+                parsed_arguments=parsed_arguments,
+                instance=instance,
+            )
 
     # Save the scenario results to disk
     save_results(
@@ -224,7 +302,10 @@ def run_optimization_for_subproblem_stage(
 
     # Summarize results
     summarize_results(
-        scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+        scenario_directory,
+        subproblem_directory,
+        stage_directory,
+        parsed_arguments,
     )
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
@@ -273,7 +354,10 @@ def run_optimization_for_subproblem(
     if subproblem_structure.SUBPROBLEM_STAGES[subproblem] == [1]:
         stage_directory = ""
         objective_values[subproblem] = run_optimization_for_subproblem_stage(
-            scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+            scenario_directory,
+            subproblem_directory,
+            stage_directory,
+            parsed_arguments,
         )
     # Otherwise, run the stage problem
     else:
@@ -309,19 +393,23 @@ def run_optimization_for_subproblem_pool(pool_datum):
     )
 
 
-def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
+def run_scenario(
+    scenario_directory,
+    subproblem_structure,
+    parsed_arguments,
+):
     """
-    :param scenario_directory: scenario directory path
-    :param subproblem_structure: the subproblem structure object
-    :param parsed_arguments:
-    :return: the objective function value (NPV); only used in
-     'testing' mode.
-
     Check the scenario structure, iterate over all subproblems if they
     exist, and run the subproblem optimization.
 
     The objective function is returned, but it's only really used if we
     are in 'testing' mode.
+
+    :param scenario_directory: scenario directory path
+    :param subproblem_structure: the subproblem structure object
+    :param parsed_arguments:
+    :return: the objective function value (NPV); only used in
+     'testing' mode.
     """
     try:
         n_parallel_subproblems = int(parsed_arguments.n_parallel_solve)
@@ -362,7 +450,7 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
         # Should probably just remove this logic here and have a dictionary
         # for all objective functions
         if len(objective_values.keys()) == 1:
-            objective_values = objective_values[1]
+            objective_values = objective_values[list(objective_values.keys())[0]]
 
         return objective_values
 
@@ -406,7 +494,8 @@ def run_scenario(scenario_directory, subproblem_structure, parsed_arguments):
             for subproblem in subproblem_structure.SUBPROBLEM_STAGES.keys():
                 objective_values[subproblem] = manager.dict()
 
-            pool = Pool(n_parallel_subproblems)
+            # Pool must use spawn to work properly on Linux
+            pool = get_context("spawn").Pool(n_parallel_subproblems)
             pool_data = tuple(
                 [
                     [
@@ -484,15 +573,28 @@ def save_results(
             else:
                 print("Solution is not optimal.")
         # Continue with results export
+        # Parse arguments to see if we're following a special rule for whether to
+        # export results
+        if parsed_arguments.results_export_rule is None:
+            export_rule = _export_rule(instance=instance, quiet=parsed_arguments.quiet)
+        else:
+            export_rule = import_export_rules[parsed_arguments.results_export_rule][
+                "export"
+            ](instance=instance, quiet=parsed_arguments.quiet)
         export_results(
-            scenario_directory, subproblem, stage, instance, dynamic_components
+            scenario_directory,
+            subproblem,
+            stage,
+            instance,
+            dynamic_components,
+            export_rule,
         )
 
         export_pass_through_inputs(scenario_directory, subproblem, stage, instance)
 
         save_objective_function_value(scenario_directory, subproblem, stage, instance)
 
-        save_duals(scenario_directory, subproblem, stage, instance)
+        save_duals(scenario_directory, subproblem, stage, instance, dynamic_components)
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -697,36 +799,54 @@ def solve(instance, parsed_arguments):
     else:
         optimizer = SolverFactory(solver_name)
 
-    # Apply the solver options (if any)
-    if "solver" in solver_options.keys():
-        # The "solver" needs to be specified if using a "shell solver" -- e.g. we
-        # could be using CPLEX through GAMS
-        # TODO: these should be passed differently for shell solvers; we need
-        #  logic to write options files for the selected solver; see
-        #  https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
-        pass
-    else:
-        for opt in solver_options.keys():
-            optimizer.options[opt] = solver_options[opt]
-
     # Solve
+    # Apply the solver options (if any)
     # Note: Pyomo moves the results to the instance object by default.
     # If you want the results to stay into a results object, set the
     # load_solutions argument to False:
     # >>> results = solver.solve(instance, load_solutions=False)
-    # With "shell solvers" (e.g. GAMS, AMPL), we need to specify which solver to
-    # actually use
-    # If "solver" is not specified, the "optimizer" object solve method does not have
-    # the "solver" argument
-    if "solver" in solver_options.keys():
-        results = optimizer.solve(
-            instance,
-            solver=solver_options["solver"],
-            tee=not parsed_arguments.mute_solver_output,
-            keepfiles=parsed_arguments.keepfiles,
-            symbolic_solver_labels=parsed_arguments.symbolic,
-        )
+    # With "shell solvers" (e.g. GAMS, AMPL), we can specify which solver (e.g.
+    # CPLEX, Gurobi) to use
+    # No access to AMPL, so not supported at this pont
+    if solver_name == "gams":
+        # Specify which "solver" to use if using GAMS as a "shell solver" --
+        # e.g. we could be using CPLEX through GAMS
+        # The following way to pass options to the solver is GAMS-specific, may also
+        # work for AMPL but not supported at this point
+        # Based on: https://stackoverflow.com/questions/57965894/how-to-specify-gams-solver-specific-options-through-pyomo/64698920#64698920
+        if "solver" in solver_options.keys():
+            add_options = [
+                "GAMS_MODEL.optfile = 1;",
+                "$onecho > {solver}.opt".format(solver=solver_options["solver"]),
+            ]
+            for opt in solver_options.keys():
+                if opt == "solver":
+                    pass
+                else:
+                    opt_string = "{option} {value}".format(
+                        option=opt, value=solver_options[opt]
+                    )
+                    add_options.append(opt_string)
+
+            add_options.append("$offecho")
+
+            results = optimizer.solve(
+                instance,
+                solver=solver_options["solver"],
+                add_options=add_options,
+                tee=not parsed_arguments.mute_solver_output,
+                keepfiles=parsed_arguments.keepfiles,
+                symbolic_solver_labels=parsed_arguments.symbolic,
+            )
+        else:
+            warnings.warn(
+                "A solver must be specified in the solver settings if you "
+                "want to pass settings through GAMS."
+            )
     else:
+        for opt in solver_options.keys():
+            optimizer.options[opt] = solver_options[opt]
+
         results = optimizer.solve(
             instance,
             tee=not parsed_arguments.mute_solver_output,
@@ -742,7 +862,9 @@ def solve(instance, parsed_arguments):
     return results
 
 
-def export_results(scenario_directory, subproblem, stage, instance, dynamic_components):
+def export_results(
+    scenario_directory, subproblem, stage, instance, dynamic_components, export_rule
+):
     """
     :param scenario_directory:
     :param subproblem:
@@ -753,18 +875,19 @@ def export_results(scenario_directory, subproblem, stage, instance, dynamic_comp
 
     Export results for each loaded module (if applicable)
     """
-    # Determine/load modules and dynamic components
-    modules_to_use, loaded_modules = set_up_gridpath_modules(
-        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
-    )
+    if export_rule:
+        # Determine/load modules and dynamic components
+        modules_to_use, loaded_modules = set_up_gridpath_modules(
+            scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+        )
 
-    for m in loaded_modules:
-        if hasattr(m, "export_results"):
-            m.export_results(
-                scenario_directory, subproblem, stage, instance, dynamic_components
-            )
-    else:
-        pass
+        for m in loaded_modules:
+            if hasattr(m, "export_results"):
+                m.export_results(
+                    scenario_directory, subproblem, stage, instance, dynamic_components
+                )
+        else:
+            pass
 
 
 def export_pass_through_inputs(scenario_directory, subproblem, stage, instance):
@@ -819,13 +942,10 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         "w",
         newline="",
     ) as objective_file:
-        objective_file.write("Objective function: " + str(objective_function_value))
-        # TODO: change to writing the value only when we implement importing
-        #  the objective function value into the results_scenario table
-        # objective_file.write(str(objective_function_value))
+        objective_file.write(str(objective_function_value))
 
 
-def save_duals(scenario_directory, subproblem, stage, instance):
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     """
     :param scenario_directory:
     :param subproblem:
@@ -843,7 +963,9 @@ def save_duals(scenario_directory, subproblem, stage, instance):
     instance.constraint_indices = {}
     for m in loaded_modules:
         if hasattr(m, "save_duals"):
-            m.save_duals(instance)
+            m.save_duals(
+                scenario_directory, subproblem, stage, instance, dynamic_components
+            )
         else:
             pass
 
@@ -887,46 +1009,66 @@ def summarize_results(scenario_directory, subproblem, stage, parsed_arguments):
 
     Summarize results (after results export)
     """
-    # Only summarize results if solver status was "optimal"
-    with open(
-        os.path.join(
-            scenario_directory, subproblem, stage, "results", "solver_status.txt"
-        ),
-        "r",
-    ) as f:
-        solver_status = f.read()
-
-    if solver_status == "ok":
-        if not parsed_arguments.quiet:
-            print("Summarizing results...")
-
-        # Determine/load modules and dynamic components
-        modules_to_use, loaded_modules = set_up_gridpath_modules(
-            scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+    if parsed_arguments.results_export_rule is None:
+        summarize_rule = _summarize_rule(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=parsed_arguments.quiet,
+        )
+    else:
+        summarize_rule = import_export_rules[parsed_arguments.results_export_rule][
+            "summarize"
+        ](
+            scenario_directory=scenario_directory,
+            subproblem=subproblem,
+            stage=stage,
+            quiet=parsed_arguments.quiet,
         )
 
-        # Make the summary results file
-        summary_results_file = os.path.join(
-            scenario_directory, subproblem, stage, "results", "summary_results.txt"
-        )
+    if summarize_rule:
+        # Only summarize results if solver status was "optimal"
+        with open(
+            os.path.join(
+                scenario_directory, subproblem, stage, "results", "solver_status.txt"
+            ),
+            "r",
+        ) as f:
+            solver_status = f.read()
 
-        # TODO: how to handle results from previous runs
-        # Overwrite prior results
-        with open(summary_results_file, "w", newline="") as outfile:
-            outfile.write(
-                "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
-                    parsed_arguments.scenario
-                )
+        if solver_status == "ok":
+            if not parsed_arguments.quiet:
+                print("Summarizing results...")
+
+            # Determine/load modules and dynamic components
+            modules_to_use, loaded_modules = set_up_gridpath_modules(
+                scenario_directory=scenario_directory,
+                subproblem=subproblem,
+                stage=stage,
             )
 
-        # Go through the modules and get the appropriate results
-        for m in loaded_modules:
-            if hasattr(m, "summarize_results"):
-                m.summarize_results(scenario_directory, subproblem, stage)
+            # Make the summary results file
+            summary_results_file = os.path.join(
+                scenario_directory, subproblem, stage, "results", "summary_results.txt"
+            )
+
+            # TODO: how to handle results from previous runs
+            # Overwrite prior results
+            with open(summary_results_file, "w", newline="") as outfile:
+                outfile.write(
+                    "##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
+                        parsed_arguments.scenario
+                    )
+                )
+
+            # Go through the modules and get the appropriate results
+            for m in loaded_modules:
+                if hasattr(m, "summarize_results"):
+                    m.summarize_results(scenario_directory, subproblem, stage)
+            else:
+                pass
         else:
             pass
-    else:
-        pass
 
 
 def set_up_gridpath_modules(scenario_directory, subproblem, stage):
@@ -962,8 +1104,7 @@ def parse_arguments(args):
         parents=[
             get_scenario_name_parser(),
             get_required_e2e_arguments_parser(),
-            get_solve_parser(),
-            get_parallel_solve_parser(),
+            get_run_scenario_parser(),
         ],
     )
 
@@ -1022,6 +1163,212 @@ def main(args=None):
 
     # Return the objective function values (used in testing)
     return expected_objective_values
+
+
+def _export_rule(instance, quiet):
+    """
+    :return: boolean
+
+    Rule for whether to export results for the current proble. Write your
+    custom rule here to use this functionality. Must return True or False.
+    """
+    export_results = True
+
+    return export_results
+
+
+def _summarize_rule(scenario_directory, subproblem, stage, quiet):
+    """
+    :return: boolean
+
+    Rule for whether to summarize results for a subproblem/stage. Write your
+    custom rule here to use this functionality. Must return True or False.
+    """
+    summarize_results = True
+
+    return summarize_results
+
+
+#####
+
+
+def write_problem_file(instance, prob_sol_files_directory, problem_format="lp"):
+    """
+
+    :param instance:
+    :param prob_sol_files_directory:
+    :param problem_format:
+    :return:
+
+    """
+    formats = dict()
+    # Only supporting LP problem format for now
+    formats["lp"] = ProblemFormat.cpxlp
+
+    # formats["py"] = ProblemFormat.pyomo
+    # formats["nl"] = ProblemFormat.nl
+    # formats["bar"] = ProblemFormat.bar
+    # formats["mps"] = ProblemFormat.mps
+    # formats["mod"] = ProblemFormat.mod
+    # formats["osil"] = ProblemFormat.osil
+    # formats["gms"] = ProblemFormat.gams
+    # formats["gams"] = ProblemFormat.gams
+
+    print("Writing {} problem file...".format(problem_format.upper()))
+    filename, smap_id = instance.write(
+        os.path.join(
+            prob_sol_files_directory, "problem_file.{}".format(problem_format)
+        ),
+        format=formats[problem_format],
+        io_options=[],
+    )
+
+    return smap_id
+
+
+def load_cplex_xml_solution(
+    prob_sol_files_directory, solution_filename="cplex_solution.sol"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # Read XML (.sol) solution file
+    root = ET.parse(os.path.join(prob_sol_files_directory, solution_filename)).getroot()
+
+    # Variables
+    for type_tag in root.findall("variables/variable"):
+        var_id, var_index, value = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("value"),
+        )
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for type_tag in root.findall("linearConstraints/constraint"):
+        constraint_id_w_extra_symbols, const_index, dual = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("dual"),
+        )
+        if constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
+            pass
+        else:
+            constraint_id = constraint_id_w_extra_symbols[4:-1]
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    header = root.findall("header")[0]  # Need a check that there is only one element
+
+    termination_condition = header.get("solutionStatusString")
+    # TODO: what are the types
+    solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_gurobi_json_solution(
+    prob_sol_files_directory, solution_filename="gurobi_solution.json"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # #### WORKING VERSION #####
+    # This needs to be under an if statement and execute when we are loading
+    # solution from disk
+    # Read JSON solution file
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
+        solution = json.load(f)
+
+    # Variables
+    for v in solution["Vars"]:
+        var_id, value = v["VTag"][0], v["X"]
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for c in solution["Constrs"]:
+        constraint_id, dual = c["CTag"][0][4:], c["Pi"]
+        if constraint_id == "ONE_VAR_CONSTAN":
+            pass
+        else:
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    # TODO: what are the types
+    termination_condition = (
+        "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    )
+    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_problem_info(prob_sol_files_directory):
+    with open(
+        os.path.join(prob_sol_files_directory, "instance.pickle"), "rb"
+    ) as instance_in:
+        instance = dill.load(instance_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
+
+    return instance, dynamic_components, symbol_map
+
+
+class Results(object):
+    def __init__(self, solver_status, termination_condition):
+        self.solver = Object()
+        self.solver.status = solver_status
+        self.solver.termination_condition = termination_condition
+
+
+class Object(object):
+    pass
 
 
 if __name__ == "__main__":

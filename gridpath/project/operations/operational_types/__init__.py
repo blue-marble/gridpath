@@ -24,6 +24,7 @@ module, these defaults are used.
 
 import csv
 import os.path
+from pyomo.environ import Set
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
@@ -33,10 +34,17 @@ from gridpath.auxiliary.db_interface import setup_results_import
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_COMMIT_BINLIN`                                             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    |                                                                         |
+    | Union of the GEN_COMMIT_BIN and GEN_COMMIT_LIN sets if they exist. We   |
+    | use this set to limit membership in the GEN_W_CYCLE_SELECT set to these |
+    | operational types.                                                      |
+    +-------------------------------------------------------------------------+
 
-    :param m:
-    :param d:
-    :return:
     """
     # Import needed operational modules
     required_operational_modules = get_required_subtype_modules_from_projects_file(
@@ -55,6 +63,20 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
+
+    # Combined sets from operational type module sets (used to limit cycle select and
+    # supplemental firing projects)
+    def gen_commit_binlin_set_init(mod):
+        if hasattr(mod, "GEN_COMMIT_BIN") and hasattr(m, "GEN_COMMIT_LIN"):
+            return mod.GEN_COMMIT_BIN | mod.GEN_COMMIT_LIN
+        elif hasattr(mod, "GEN_COMMIT_BIN"):
+            return mod.GEN_COMMIT_BIN
+        elif hasattr(mod, "GEN_COMMIT_LIN"):
+            return mod.GEN_COMMIT_LIN
+        else:
+            return []
+
+    m.GEN_COMMIT_BINLIN = Set(initialize=gen_commit_binlin_set_init)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -126,6 +148,34 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 scenario_directory,
                 subproblem,
                 stage,
+            )
+        else:
+            pass
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    # Save module-specific duals
+    # Operational type modules
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_operational_modules:
+        if hasattr(imported_operational_modules[op_m], "save_duals"):
+            imported_operational_modules[op_m].save_duals(
+                scenario_directory,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
             )
         else:
             pass
@@ -517,4 +567,9 @@ def curtailment_cost_rule(mod, prj, tmp):
     If no curtailment_cost_rule is specified, the default curtailment cost
     is 0.
     """
+    return 0
+
+
+def fuel_contribution_rule(mod, prj, tmp):
+    """ """
     return 0

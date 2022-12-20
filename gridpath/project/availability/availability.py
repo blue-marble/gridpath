@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         if hasattr(imp_op_m, "add_model_components"):
             imp_op_m.add_model_components(m, d, scenario_directory, subproblem, stage)
 
-    def availability_derate_rule(mod, g, tmp):
+    def availability_derate_cap_rule(mod, g, tmp):
         """
 
         :param mod:
@@ -59,9 +59,33 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         availability_type = mod.availability_type[g]
         return imported_availability_modules[
             availability_type
-        ].availability_derate_rule(mod, g, tmp)
+        ].availability_derate_cap_rule(mod, g, tmp)
 
-    m.Availability_Derate = Expression(m.PRJ_OPR_TMPS, rule=availability_derate_rule)
+    m.Availability_Derate = Expression(
+        m.PRJ_OPR_TMPS, rule=availability_derate_cap_rule
+    )
+
+    # TODO: can we define this only for hybrid projects, so defined over
+    #  AVL_EXOG_OPR_TMPS, not PRJ_OPR_TMPS
+    def availability_derate_hyb_stor_cap_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        # TODO: make the no_availability type module, which will be the
+        #  default for the availability type param (it will just return 1 as
+        #  the derate)
+        availability_type = mod.availability_type[g]
+        return imported_availability_modules[
+            availability_type
+        ].availability_derate_hyb_stor_cap_rule(mod, g, tmp)
+
+    m.Availability_Hyb_Stor_Cap_Derate = Expression(
+        m.PRJ_OPR_TMPS, rule=availability_derate_hyb_stor_cap_rule
+    )
 
 
 def write_model_inputs(
@@ -245,7 +269,7 @@ def load_availability_type_modules(required_availability_types):
     return load_subtype_modules(
         required_subtype_modules=required_availability_types,
         package="gridpath.project.availability.availability_types",
-        required_attributes=["availability_derate_rule"],
+        required_attributes=["availability_derate_cap_rule"],
     )
 
 

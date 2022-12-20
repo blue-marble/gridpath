@@ -1,41 +1,44 @@
-project	period	specified_capacity_mw	hyb_gen_specified_capacity_mw	hyb_stor_specified_capacity_mw	specified_capacity_mwh	fixed_cost_per_mw_yr	hyb_gen_fixed_cost_per_mw_yr	hyb_stor_fixed_cost_per_mw_yr	fixed_cost_per_mwh_yr
-Nuclear	2020	6				0			
-Gas_CCGT	2020	6				0			
-Coal	2020	6				0			
-Gas_CT	2020	6				0			
-Wind	2020	2				0			
-Nuclear	2030	6				0			
-Gas_CCGT	2030	6				0			
-Coal	2030	6				0			
-Gas_CT	2030	6				0			
-Wind	2030	2				0			
-Nuclear_z2	2020	6				0			
-Gas_CCGT_z2	2020	6				0			
-Coal_z2	2020	6				0			
-Gas_CT_z2	2020	6				0			
-Wind_z2	2020	2				0			
-Nuclear_z2	2030	6				0			
-Gas_CCGT_z2	2030	6				0			
-Coal_z2	2030	6				0			
-Gas_CT_z2	2030	6				0			
-Wind_z2	2030	2				0			
-Hydro	2020	6				0			
-Hydro	2030	6				0			
-Hydro_NonCurtailable	2020	6				0			
-Hydro_NonCurtailable	2030	6				0			
-Disp_Binary_Commit	2020	6				0			
-Disp_Binary_Commit	2030	6				0			
-Disp_Cont_Commit	2020	6				0			
-Disp_Cont_Commit	2030	6				0			
-Disp_No_Commit	2020	6				0			
-Disp_No_Commit	2030	6				0			
-Clunky_Old_Gen	2020	10				1000			
-Clunky_Old_Gen	2030	10				1000			
-Clunky_Old_Gen2	2020	10				1000			
-Clunky_Old_Gen2	2030	10				1000			
-Customer_PV	2020	1				0			
-Customer_PV	2030	1				0			
-Nuclear_Flexible	2030	1000				1			
-Battery_Specified	2020	6			6	10000			5000
-Wind_Battery_Hybrid	2020	5	5	1	4	1	0.5	0.3	0.2
-Wind_Battery_Hybrid	2030	6	5	1	4	1	0.5	0.3	0.2
+project	period	specified_capacity_mw	hyb_gen_specified_capacity_mw	hyb_stor_specified_capacity_mw	specified_capacity_mwh	fuel_production_capacity_fuelunitperhour	fuel_release_capacity_fuelunitperhour	fuel_storage_capacity_fuelunit	fixed_cost_per_mw_yr	hyb_gen_fixed_cost_per_mw_yr	hyb_stor_fixed_cost_per_mw_yr	fixed_cost_per_mwh_yr	fuel_production_capacity_fixed_cost_per_fuelunitperhour_yr	fuel_release_capacity_fixed_cost_per_fuelunitperhour_yr	fuel_storage_capacity_fixed_cost_per_fuelunit_yr
+Nuclear	2020	6							0						
+Gas_CCGT	2020	6							0						
+Coal	2020	6							0						
+Gas_CT	2020	6							0						
+Wind	2020	2							0						
+Nuclear	2030	6							0						
+Gas_CCGT	2030	6							0						
+Coal	2030	6							0						
+Gas_CT	2030	6							0						
+Wind	2030	2							0						
+Nuclear_z2	2020	6							0						
+Gas_CCGT_z2	2020	6							0						
+Coal_z2	2020	6							0						
+Gas_CT_z2	2020	6							0						
+Wind_z2	2020	2							0						
+Nuclear_z2	2030	6							0						
+Gas_CCGT_z2	2030	6							0						
+Coal_z2	2030	6							0						
+Gas_CT_z2	2030	6							0						
+Wind_z2	2030	2							0						
+Hydro	2020	6							0						
+Hydro	2030	6							0						
+Hydro_NonCurtailable	2020	6							0						
+Hydro_NonCurtailable	2030	6							0						
+Disp_Binary_Commit	2020	6							0						
+Disp_Binary_Commit	2030	6							0						
+Disp_Cont_Commit	2020	6							0						
+Disp_Cont_Commit	2030	6							0						
+Disp_No_Commit	2020	6							0						
+Disp_No_Commit	2030	6							0						
+Clunky_Old_Gen	2020	10							1000						
+Clunky_Old_Gen	2030	10							1000						
+Clunky_Old_Gen2	2020	10							1000						
+Clunky_Old_Gen2	2030	10							1000						
+Customer_PV	2020	1							0						
+Customer_PV	2030	1							0						
+Nuclear_Flexible	2030	1000							1						
+Battery_Specified	2020	6			6				10000			5000			
+Wind_Battery_Hybrid	2020	5	5	1	4				1	0.5	0.3	0.2			
+Wind_Battery_Hybrid	2030	6	5	1	4				1	0.5	0.3	0.2			
+Fuel_Prod	2030					100	1000	10000					10	100	1000
+DAC	2020	1000							10						
+DAC	2030	1000							10						

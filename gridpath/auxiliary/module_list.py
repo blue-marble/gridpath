@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,22 +56,18 @@ def all_modules_list():
         "geography.transmission_target_zones",
         "geography.carbon_cap_zones",
         "geography.carbon_tax_zones",
+        "geography.performance_standard_zones",
         "geography.fuel_burn_limit_balancing_areas",
         "geography.prm_zones",
         "geography.local_capacity_zones",
         "geography.markets",
         "system.load_balance.static_load_requirement",
-        "system.reserves.requirement.lf_reserves_up",
-        "system.reserves.requirement.lf_reserves_down",
-        "system.reserves.requirement.regulation_up",
-        "system.reserves.requirement.regulation_down",
-        "system.reserves.requirement.frequency_response",
-        "system.reserves.requirement.spinning_reserves",
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
         "system.policy.transmission_targets.period_transmission_target",
         "system.policy.carbon_cap.carbon_cap",
         "system.policy.carbon_tax.carbon_tax",
+        "system.policy.performance_standard.performance_standard",
         "system.policy.fuel_burn_limits.fuel_burn_limits",
         "system.reliability.prm.prm_requirement",
         "system.reliability.local_capacity.local_capacity_requirement",
@@ -80,6 +76,7 @@ def all_modules_list():
         "project.capacity",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
+        "project.capacity.potential",
         "project.capacity.capacity_groups",
         "project.capacity.costs",
         "project.availability.availability",
@@ -99,6 +96,9 @@ def all_modules_list():
         "project.operations.reserves.op_type_dependent.frequency_response",
         "project.operations.reserves.op_type_dependent.spinning_reserves",
         "project.operations.power",
+        "project.operations.cycle_select",
+        "project.operations.supplemental_firing",
+        "project.operations.cap_factor_limits",
         "project.operations.fix_commitment",
         "project.operations.fuel_burn",
         "project.operations.costs",
@@ -107,6 +107,7 @@ def all_modules_list():
         "project.operations.carbon_emissions",
         "project.operations.carbon_cap",
         "project.operations.carbon_tax",
+        "project.operations.performance_standard",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",
@@ -117,6 +118,7 @@ def all_modules_list():
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
+        "transmission.capacity.capacity_groups",
         "transmission.availability.availability",
         "transmission.operations.operational_types",
         "transmission.operations.operations",
@@ -124,10 +126,17 @@ def all_modules_list():
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
         "transmission.operations.transmission_target_contributions",
+        "system.reserves.requirement.lf_reserves_up",
+        "system.reserves.requirement.lf_reserves_down",
+        "system.reserves.requirement.regulation_up",
+        "system.reserves.requirement.regulation_down",
+        "system.reserves.requirement.frequency_response",
+        "system.reserves.requirement.spinning_reserves",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
         "transmission.operations.export_penalty_costs",
         "system.load_balance.market_participation",
+        "system.load_balance.fix_market_participation",
         "system.load_balance.load_balance",
         "system.reserves.aggregation.lf_reserves_up",
         "system.reserves.aggregation.regulation_up",
@@ -152,6 +161,8 @@ def all_modules_list():
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
         "system.policy.carbon_tax.carbon_tax_costs",
+        "system.policy.performance_standard.aggregate_project_performance_standard",
+        "system.policy.performance_standard.performance_standard_balance",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
@@ -181,6 +192,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_period_transmission_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.policy.aggregate_carbon_tax_costs",
+        "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
@@ -205,6 +217,7 @@ def optional_modules_list():
             "transmission",
             "transmission.capacity.capacity_types",
             "transmission.capacity.capacity",
+            "transmission.capacity.capacity_groups",
             "transmission.availability.availability",
             "transmission.operations.operational_types",
             "transmission.operations.operations",
@@ -307,6 +320,14 @@ def optional_modules_list():
             "system.policy.carbon_tax.carbon_tax_costs",
             "objective.system.policy.aggregate_carbon_tax_costs",
         ],
+        "performance_standard": [
+            "geography.performance_standard_zones",
+            "system.policy.performance_standard.performance_standard",
+            "project.operations.performance_standard",
+            "system.policy.performance_standard.aggregate_project_performance_standard",
+            "system.policy.performance_standard.performance_standard_balance",
+            "objective.system.policy.aggregate_performance_standard_violation_penalties",
+        ],
         "fuel_burn_limit": [
             "geography.fuel_burn_limit_balancing_areas",
             "system.policy.fuel_burn_limits.fuel_burn_limits",
@@ -320,10 +341,8 @@ def optional_modules_list():
             "project.reliability.prm",
             "project.reliability.prm.prm_types",
             "project.reliability.prm.prm_simple",
-            "project.reliability.prm.group_costs",
             "system.reliability.prm.aggregate_project_simple_prm_contribution",
             "system.reliability.prm.prm_balance",
-            "objective.project.aggregate_prm_group_costs",
             "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         ],
         "local_capacity": [
@@ -380,11 +399,27 @@ def cross_feature_modules_list():
             "project.reliability.prm.elcc_surface",
             "system.reliability.prm.elcc_surface",
         ],
+        ("prm", "deliverability"): [
+            "project.reliability.prm.group_costs",
+            "objective.project.aggregate_prm_group_costs",
+        ],
         ("prm", "elcc_surface", "tuning"): [
             "objective.system.reliability.prm.dynamic_elcc_tuning_penalties"
         ],
     }
     return cross_modules
+
+
+def stage_feature_module_list():
+    """
+    :return: dictionary with a features as keys and a list of modules to be included
+    if those features are selected AND there are stages as values
+    """
+    stage_feature_modules = {
+        "markets": ["system.load_balance.fix_market_participation"]
+    }
+
+    return stage_feature_modules
 
 
 def feature_shared_modules_list():
@@ -420,10 +455,10 @@ def determine_modules(
         for the list of requested features. Optional input; if not specified,
         function will look for the 'features' input parameter
     :param multi_stage: Boolean. Optional input that determines whether the
-        fix_commitment module is used (yes if True, no if False); if not
+        modules that fix variables are used (yes if True, no if False); if not
         specified, this function will check the scenario_directory to
         determine whether there are stage subdirectories (if there are not,
-        the fix_commitment module is removed).
+        the 'fix variables' modules are removed).
     :return: the list of modules -- a subset of all GridPath modules -- needed
         for a scenario. These are the module names, not the actual modules.
 
@@ -468,9 +503,10 @@ def determine_modules(
 
     # If we haven't explicitly specified whether this is a multi-stages
     # scenario, check the scenario directory to determine whether we have
-    # multiple stages and remove the fix_commitment module from the
+    # multiple stages and remove the "fix variables" modules from the
     # modules_to_use list if not
-    # Also remove the fix_commitment if the multi_stage argument is False
+    # Also remove the "fix variables modules" if the multi_stage argument is False
+    remove_fix_variable_modules = False
     if multi_stage is None:
         subproblems = check_for_integer_subdirectories(scenario_directory)
         # Check if we have subproblems
@@ -481,21 +517,25 @@ def determine_modules(
                     os.path.join(scenario_directory, subproblem)
                 )
                 # If we find stages in any subproblem, break out of the loop
-                # and keep the fix_commitment module
+                # and keep the "fix variables" modules
                 if stages:
                     break
             else:
-                modules_to_use.remove("project.operations.fix_commitment")
+                remove_fix_variable_modules = True
         # If we make it here, we didn't find subproblems so we'll remove the
-        # fix_commitment module
+        # "fix variables" modules
         else:
-            modules_to_use.remove("project.operations.fix_commitment")
+            remove_fix_variable_modules = True
     # If multi_stages has been specified explicitly, decide whether to
-    # remove the fix_commitment module based on the value specified
+    # remove the "fix variables" modules based on the value specified
     elif multi_stage is False:
-        modules_to_use.remove("project.operations.fix_commitment")
+        remove_fix_variable_modules = True
     else:
         pass
+
+    if remove_fix_variable_modules:
+        modules_to_use.remove("project.operations.fix_commitment")
+        modules_to_use.remove("system.load_balance.fix_market_participation")
 
     # Remove modules associated with features that are not requested
     optional_modules = optional_modules_list()
@@ -525,6 +565,14 @@ def determine_modules(
             pass
         else:
             for m in cross_feature_modules[feature_group]:
+                modules_to_use.remove(m)
+
+    # Remove "fix variables" modules, which should not be included when the feature is
+    # not included even when there are stages
+    stage_feature_modules = stage_feature_module_list()
+    for feature in stage_feature_modules:
+        if feature not in requested_features and not remove_fix_variable_modules:
+            for m in stage_feature_modules[feature]:
                 modules_to_use.remove(m)
 
     return modules_to_use

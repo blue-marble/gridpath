@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2022 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,10 +29,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
-    The module adds the *LOAD_ZONES* set to the model formulation.
-
-    We will designate the *LOAD_ZONES* set with *Z* and the load zones index
-    will be *z*.
+    The module adds the *LOAD_ZONES* set to the model formulation as well as vairous
+    parameters associated with load balance penalties and limits.
     """
     m.LOAD_ZONES = Set()
 
@@ -40,9 +38,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.overgeneration_penalty_per_mw = Param(m.LOAD_ZONES, within=NonNegativeReals)
 
     m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Boolean)
+
     m.unserved_energy_penalty_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.unserved_energy_limit_mwh = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
+    )
 
     m.max_unserved_load_penalty_per_mw = Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.max_unserved_load_limit_mw = Param(
+        m.LOAD_ZONES, within=NonNegativeReals, default=float("inf")
+    )
 
     # Can only be applied if transmission is included
     m.export_penalty_cost_per_mwh = Param(m.LOAD_ZONES, within=NonNegativeReals)
@@ -69,7 +74,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.overgeneration_penalty_per_mw,
             m.allow_unserved_energy,
             m.unserved_energy_penalty_per_mwh,
+            m.unserved_energy_limit_mwh,
             m.max_unserved_load_penalty_per_mw,
+            m.max_unserved_load_limit_mw,
             m.export_penalty_cost_per_mwh,
         ),
     )
@@ -89,8 +96,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     load_zones = c.execute(
         """
         SELECT load_zone, allow_overgeneration, overgeneration_penalty_per_mw, 
-        allow_unserved_energy, unserved_energy_penalty_per_mwh,
-        max_unserved_load_penalty_per_mw, export_penalty_cost_per_mwh
+        allow_unserved_energy, unserved_energy_penalty_per_mwh, 
+        unserved_energy_limit_mwh, max_unserved_load_penalty_per_mw, 
+        max_unserved_load_limit_mw, export_penalty_cost_per_mwh
         FROM inputs_geography_load_zones
         WHERE load_zone_scenario_id = {};
         """.format(
@@ -151,10 +159,13 @@ def write_model_inputs(
                 "overgeneration_penalty_per_mw",
                 "allow_unserved_energy",
                 "unserved_energy_penalty_per_mwh",
+                "unserved_energy_limit_mwh",
                 "max_unserved_load_penalty_per_mw",
+                "max_unserved_load_limit_mw",
                 "export_penalty_cost_per_mwh",
             ]
         )
 
         for row in load_zones:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
