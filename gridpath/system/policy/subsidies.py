@@ -193,7 +193,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
     m.Max_Program_Budget_in_Period_Constraint = Constraint(
-        m.PROGRAMS, m.PERIODS, rule=max_program_budget_rule
+        m.PROGRAM_PERIODS, rule=max_program_budget_rule
     )
 
 
@@ -275,8 +275,12 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         SELECT program, period, program_budget
         FROM inputs_system_subsidies
         WHERE subsidy_scenario_id = {subsidy_scenario_id}
+        AND period in (
+        SELECT period FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {temporal_scenario_id})
         """.format(
-            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID
+            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
