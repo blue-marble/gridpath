@@ -178,14 +178,17 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PRJ_FIN_PRDS, initialize=total_annual_payment_reduction
     )
 
-    # TODO: only works for gen_new_lin; need to get financial lifetime for other
-    #  types of projects
     def max_program_budget_rule(mod, prg, prd):
         return (
             sum(
                 mod.Subsidize_MW[prg, prj, v]
                 * mod.annual_payment_subsidy[prg, prj, v]
-                * mod.gen_new_lin_financial_lifetime_yrs_by_vintage[prj, v]
+                * getattr(
+                    mod,
+                    "{capacity_type}_financial_lifetime_yrs_by_vintage".format(
+                        capacity_type=mod.capacity_type[prj]
+                    ),
+                )[prj, v]
                 for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
                 if v == prd
             )
