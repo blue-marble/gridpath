@@ -98,12 +98,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The project's energy capacity fixed O&M cost incurred in each year in   |
     | which the project is operational.                                       |
     +-------------------------------------------------------------------------+
-    | | :code:`stor_new_bin_financial_lifetime_yrs`                           |
+    | | :code:`stor_new_bin_financial_lifetime_yrs_by_vintage`                |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's financial lifetime, i.e. how long project capacity of a   |
-    | particular incurs annualized capital costs.                             |
+    | particular vintage incurs annualized capital costs.                     |
     +-------------------------------------------------------------------------+
     | | :code:`stor_new_bin_annualized_real_cost_per_mw_yr`                   |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
@@ -236,7 +236,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
-    m.stor_new_bin_financial_lifetime_yrs = Param(
+    m.stor_new_bin_financial_lifetime_yrs_by_vintage = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
     )
 
@@ -338,7 +338,7 @@ def financial_periods_by_storage_vintage(mod, prj, v):
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.stor_new_bin_financial_lifetime_yrs[prj, v],
+        lifetime_yrs=mod.stor_new_bin_financial_lifetime_yrs_by_vintage[prj, v],
     )
 
 
@@ -530,7 +530,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.stor_new_bin_operational_lifetime_yrs,
             m.stor_new_bin_fixed_cost_per_mw_yr,
             m.stor_new_bin_fixed_cost_per_mwh_yr,
-            m.stor_new_bin_financial_lifetime_yrs,
+            m.stor_new_bin_financial_lifetime_yrs_by_vintage,
             m.stor_new_bin_annualized_real_cost_per_mw_yr,
             m.stor_new_bin_annualized_real_cost_per_mwh_yr,
         ),
