@@ -54,7 +54,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         required_capacity_modules
     )
 
-    # TODO: make this work with all new capacity types
+    # TODO: make this work with all new capacity types; will need to standardize set
+    #  names
     def get_vintages_fin_in_period(mod, p):
         vintages_fin_in_period = []
 
@@ -68,13 +69,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         #             )
         fin_periods = []
         if hasattr(mod, "GEN_NEW_LIN_VNTS_FIN_IN_PERIOD"):
-            fin_periods = fin_periods + [
+            fin_periods += [
                 (prj, v) for (prj, v) in mod.GEN_NEW_LIN_VNTS_FIN_IN_PERIOD[p]
             ]
 
-        if hasattr(mod, "STOR_NEW_LIN_VNTS_FIN_IN_PERIOD"):
-            fin_periods = fin_periods + [
-                (prj, v) for (prj, v) in mod.STOR_NEW_LIN_VNTS_FIN_IN_PERIOD[p]
+        if hasattr(mod, "STOR_NEW_LIN_VNTS_FIN_IN_PRD"):
+            fin_periods += [
+                (prj, v) for (prj, v) in mod.STOR_NEW_LIN_VNTS_FIN_IN_PRD[p]
             ]
 
         return fin_periods
@@ -179,21 +180,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def max_program_budget_rule(mod, prg, prd):
-        return (
-            sum(
-                mod.Subsidize_MW[prg, prj, v]
-                * mod.annual_payment_subsidy[prg, prj, v]
-                * getattr(
-                    mod,
-                    "{capacity_type}_financial_lifetime_yrs_by_vintage".format(
-                        capacity_type=mod.capacity_type[prj]
-                    ),
-                )[prj, v]
-                for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
-                if v == prd
+        projects_subsidized_in_period = [
+            (prj, v) for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg] if v == prd
+        ]
+        if projects_subsidized_in_period:  # projects to subsidize in period
+            return (
+                sum(
+                    mod.Subsidize_MW[prg, prj, v]
+                    * mod.annual_payment_subsidy[prg, prj, v]
+                    * getattr(
+                        mod,
+                        "{capacity_type}_financial_lifetime_yrs_by_vintage".format(
+                            capacity_type=mod.capacity_type[prj]
+                        ),
+                    )[prj, v]
+                    for (prj, v) in mod.PROJECT_VINTAGES_BY_PROGRAM[prg]
+                    if v == prd
+                )
+                <= mod.program_budget[prg, prd]
             )
-            <= mod.program_budget[prg, prd]
-        )
+        else:
+            return Constraint.Feasible
 
     m.Max_Program_Budget_in_Period_Constraint = Constraint(
         m.PROGRAM_PERIODS, rule=max_program_budget_rule
@@ -293,8 +300,17 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         SELECT program, project, vintage, annual_payment_subsidy
         FROM inputs_system_subsidies_projects
         WHERE subsidy_scenario_id = {subsidy_scenario_id}
+        AND project in (
+            SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {portfolio_scenario_id}
+        )
+        AND vintage in (
+        SELECT period FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {temporal_scenario_id})
         """.format(
-            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID
+            subsidy_scenario_id=subscenarios.SUBSIDY_SCENARIO_ID,
+            portfolio_scenario_id=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            temporal_scenario_id=subscenarios.TEMPORAL_SCENARIO_ID,
         )
     )
 
