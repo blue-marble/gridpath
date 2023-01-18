@@ -24,32 +24,45 @@ GridPath's documentation is hosted on [Read the Docs](https://gridpath.readthedo
 # Installation
 
 ## Python
-GridPath is tested on Python 3.8, 3.9, and 3.10. Get Python
+GridPath is tested on Python 3.8, 3.9, and 3.10. We recommend using Python 3.9. Get 
+Python
 [here](https://www.python.org/downloads/ "Python download").
 
-## Python Packages
+## GridPath Python environment
 You should create a Python environment for your GridPath installation, e.g. via 
-`venv`, [a lightweight environment manager](https://docs.python.org/3/library/venv.html, "venv") 
-that is part of the standard Python distribution. You can install all needed Python 
-packages, including the developer extras, by navigating to the GridPath root 
-directory (which is where this `README.md` file is located) and running:
-```bash
-pip install -e .[all]
-```
+`venv`, [a lightweight environment manager](https://docs.python.org/3/library/venv.html "venv") 
+that is part of the standard Python distribution. Make sure to [create](https://docs.python.org/3/library/venv.html#creating-virtual-environments "create") [activate](https://docs.python.org/3/library/venv.html#how-venvs-work "activate") the environment before installing GridPath.
+
+## Install GridPath
+
+Once you have _created and activated_ the GridPath Python environment, you can install GridPath and the Python packages it uses.
 
 For most users, installing GridPath's base set of Python packages and those needed 
-to use the graphical user interface would be sufficient. You can do so by running:
+to use the graphical user interface would be sufficient. You can do so by navigating to the GridPath root 
+directory (which is where this `README.md` file is located) and running:
 ```bash
-pip install -e .[ui]
+pip install .[ui]
 ```
 
-NOTE: if you don't plan to edit the GridPath code, you can install without the 
-`-e` option.
+You can install all needed Python 
+packages, including the developer extras by running:
+```bash
+pip install .[all]
+```
+
+**NOTE:** If you plan to edit the GridPath code, you should install with the `-e` flag.
 
 ## Solver
-You will need a solver to use this platform. GridPath assumes you will be 
-using Cbc (Coin-or branch and cut) by default, but you can specify a 
-different solver (see the **Usage** section).
+You will need a solver to use this platform. GridPath assumes you will be using Cbc (Coin-or branch and cut) by default, but you can specify a 
+different solver.
+
+## Testing your installation
+
+To test the GridPath codebase, [make sure the GridPath environment you installed to 
+is activated](https://docs.python.org/3/library/venv.html#how-venvs-work "activate") and use the unittest module as follows from the root directory:
+```bash
+python -m unittest discover tests
+```
 
 # Usage
 
@@ -65,7 +78,7 @@ gridpath_run --scenario SCENARIO_NAME --scenario_location
 If you are using the database, you can use the command `gridpath_run_e2e` to 
 run GridPath end-to-end, i.e. get inputs for the scenario from the database, 
 solve the scenario problem, import the results into the database, and 
-process them.
+process them. Refer to the documentation for how to build the database.
 
 ```bash
 gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location 
@@ -78,24 +91,10 @@ solver, check the help menu, e.g.:
 gridpath_run --help
 ```
 
-NOTE: To activate your gridpath environment, use the following command (
-assuming your environment is called "env", is created with `venv`, and is stored 
-in the GridPath root folder):
-```bash
-source env/bin/activate
-```
 
 ## Help
 In general, you can check usage of GridPath's scripts by calling the `--help` 
 option, e.g.:
 ```bash
 python get_scenario_inputs.py --help
-```
-
-# Testing
-
-To test the GridPath codebase, use the unittest module as follows from the 
-root directory:
-```bash
-python -m unittest discover tests
 ```
