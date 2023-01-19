@@ -37,7 +37,7 @@ to specify a scenario location (as these are not in the default
 *scenarios* subdirectory). For example, to run the *test* scenario in
 the *examples* directory, run the following::
 
-    python run_scenario.py --scenario test --scenario_location ../examples
+    gridpath_run --scenario test --scenario_location ../examples
 
 
 Workflow
@@ -46,7 +46,7 @@ Workflow
 .. image:: ../graphics/gridpath_workflow.png
 
 GridPath requires a large amount of data on a range of electricity system
-aspects such as zonal and transmission topography, load profiles, generator
+aspects such as zonal and transmission topology, load profiles, generator
 capacities and operating characteristics, renewable profiles, hydropower
 operations, reserve requirements, reliability policies, environmental
 policies, etc. Data is managed via an SQLite database. GridPath includes

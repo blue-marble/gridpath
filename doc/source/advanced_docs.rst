@@ -158,6 +158,16 @@ gridpath.project.operations.costs
 .. automodule:: gridpath.project.operations.costs
     :members: add_model_components
 
+gridpath.project.operations.carbon_emissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.carbon_emissions
+    :members: add_model_components
+
+gridpath.project.operations.carbon_tax
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.carbon_tax
+    :members: add_model_components
+
 gridpath.project.operations.fuel_burn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.fuel_burn
@@ -168,9 +178,24 @@ gridpath.project.operations.cycle_select
 .. automodule:: gridpath.project.operations.cycle_select
     :members: add_model_components
 
+gridpath.project.operations.supplemental_firing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.supplemental_firing
+    :members: add_model_components
+
 gridpath.project.operations.energy_target_contributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.energy_target_contributions
+    :members: add_model_components
+
+gridpath.project.operations.performance_standard
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.performance_standard
+    :members: add_model_components
+
+gridpath.project.operations.cap_factor_limits
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.cap_factor_limits
     :members: add_model_components
 
 gridpath.project.operations.tuning_costs
