@@ -34,7 +34,15 @@ Creating the Database
 Populating the Database
 ***********************
 
+Loading Input Data
+==================
+
 .. automodule:: db.utilities.port_csvs_to_db
+
+Creating Scenarios
+==================
+
+.. automodule:: db.utilities.scenario
 
 GridPath Input Data
 ###################

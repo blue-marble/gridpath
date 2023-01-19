@@ -13,12 +13,14 @@
 # limitations under the License.
 
 """
-Create the database and make schema.
+This script create an empty GridPath database with the appropriate table structure.
 
-TODO: expand this description of the table naming conventions
-The schema for the GridPath SQLite database is in db_schema.sql
-Table names follow a pre-defined structure.
+The user may specify the name and location of the GridPath database path using the
+*--database* flag.
 
+>>> python create_database.py --database PATH/DO/DB
+
+The default schema for the GridPath SQLite database is in db_schema.sql.
 
 .. _database-structure-section-ref:
 
@@ -45,7 +47,7 @@ def parse_arguments(arguments):
     # Scenario name and location options
     parser.add_argument(
         "--database",
-        default="../db/io.db",
+        default="./io.db",
         help="The database file path relative to the current "
         "working directory. Defaults to ../db/io.db ",
     )

@@ -29,41 +29,6 @@ solver, check the help menu, e.g.::
 
     gridpath_run --help
 
-The run_scenario.py and run_end_to_end.py scripts
--------------------------------------------------
-
-You can also run scenarios via the :code:`run_scenario.py` script in the
-*./gridpath/* directory. The scenario name should be specified with the
-:code:`--scenario` argument. For example, to run a scenario named 'test'
-(located in the *./scenarios/* directory) navigate to the *./gridpath/*
-directory and run the following::
-
-    python run_scenario.py --scenario test
-
-Scenario directories are assumed to be located in the *./scenarios/*
-directory by default. For example, the inputs, results, and logs for a
-scenario named 'test' would be in *./scenarios/test/*. You can also run
-scenarios located in directories other than *./scenarios* by specifying the
-path to that directory with (absolute path or path relative to *./gridpath/*).
-For example, to run the 'test' scenario in the examples directory, run the
-following (from the *./gridpath/* directory)::
-
-    python run_scenario.py --scenario test --scenario_location ../examples
-
-
-If you are using the database, you can use the :code:`run_end_to_end.py`
-script in the *./gridpath/* directory to run GridPath end-to-end, i.e. get
-inputs for the scenario from the database, solve the scenario problem,
-import the results into the database, and process them::
-
-    python run_end_to_end.py --scenario test
-
-To see usage and other optional arguments, e.g. how to specify a
-solver, check the help menu::
-
-    python run_scenario.py --help
-
-
 
 Examples
 ========
