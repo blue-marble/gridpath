@@ -455,3 +455,4 @@ To run the validation suite from the command line, navigate to the
 :code:`gridpath/gridpath` folder and type::
 
     validate_inputs.py --scenario SCENARIO_NAME --database PATH/TO/DATABASE
+

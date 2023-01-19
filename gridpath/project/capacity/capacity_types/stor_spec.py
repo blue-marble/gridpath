@@ -14,11 +14,11 @@
 
 """
 This capacity type describes the power (i.e. charging and discharging
-capacity) and energy capacity (i.e. duration) of storage projects that are
-available to the optimization without having to incur an investment cost.
-For example, it can be applied to existing storage projects or to
-storage projects that will be built in the future and whose capital costs we
-want to ignore (in the objective function).
+capacity) and energy capacity (i.e., duration -- see important note on interaction
+with discharge efficiency) of storage projects that are available to the optimization
+without having to incur an investment cost. For example, it can be applied to
+existing storage projects or to storage projects that will be built in the future and
+whose capital costs we want to ignore (in the objective function).
 
 It is not required to specify a capacity for all periods, i.e. a project can
 be operational in some periods but not in others with no restriction on the
@@ -26,6 +26,12 @@ order and combination of periods. The user may specify a fixed O&M cost for
 specified-storage projects, but this cost will be a fixed number in the
 objective function and will therefore not affect any of the optimization
 decisions.
+
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 
 """
 

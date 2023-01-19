@@ -163,6 +163,11 @@ gridpath.project.operations.fuel_burn
 .. automodule:: gridpath.project.operations.fuel_burn
     :members: add_model_components
 
+gridpath.project.operations.cycle_select
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.cycle_select
+    :members: add_model_components
+
 gridpath.project.operations.energy_target_contributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.energy_target_contributions
