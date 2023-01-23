@@ -573,7 +573,9 @@ def validate_row_monotonicity(
     cols = [col] if isinstance(col, str) else col
     for c in cols:
         df2 = df.dropna(subset=[c])
-        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col, group_keys=False)[c]
+        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col, group_keys=False)[
+            c
+        ]
         if increasing:
             invalids = ~group.apply(lambda x: x.is_monotonic_increasing)
             direction = "increase"

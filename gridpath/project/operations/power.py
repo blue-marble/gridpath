@@ -209,7 +209,9 @@ def summarize_results(scenario_directory, subproblem, stage):
     # zone and period)
     lz_period_power_df = pd.DataFrame(
         operational_results_df.groupby(
-            by=["load_zone", "period"], as_index=True, group_keys=False,
+            by=["load_zone", "period"],
+            as_index=True,
+            group_keys=False,
         ).sum(numeric_only=False,)["weighted_power_mwh"]
     )
 
