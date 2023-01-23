@@ -18,6 +18,7 @@ extras_ui = [
     "psutil==5.8.0",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
     "Werkzeug==2.0.2",  # See #903
+    "dnspython==1.16.0",  # Avoids eventlet version mismatch
 ]
 extras_black = ["black"]
 
@@ -39,18 +40,18 @@ setup(
     maintainer="Blue Marble Analytics LLC",
     maintainer_email="info@gridpath.io",
     license="Apache v2",
-    platforms=["MacOS", "Windows"],
+    platforms=["MacOS", "Windows", "Linux"],
     keywords=["energy", "electricity", "power", "renewables", "planning", "operations"],
     packages=find_packages(),
     install_requires=[
-        "Pyomo==6.3.0",  # Optimization modeling language
-        "pandas==1.4.2",  # Data-processing
+        "Pyomo==6.4.4",  # Optimization modeling language
+        "pandas==1.5.3",  # Data-processing
         "bokeh==2.2.3",  # Visualization library (required - see #779)
         "pscript==0.7.5",  # Python to JavaScript compiler (for viz)
-        "networkx==2.5.1",  # network package for DC OPF
-        "pyutilib==6.0.0",  # used for solver temp file management
+        "networkx==3.0",  # network package for DC OPF
+        "PyUtilib==6.0.0",  # used for solver temp file management
         "Jinja2==3.0.3",  # bokeh dependency; see #904
-        "dill==0.3.5.1",  # pickling
+        "dill==0.3.6",  # pickling
     ],
     extras_require={
         "doc": extras_doc,

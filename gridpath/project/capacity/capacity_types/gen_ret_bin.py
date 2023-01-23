@@ -330,7 +330,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
