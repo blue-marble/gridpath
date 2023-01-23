@@ -18,7 +18,7 @@ optimization at a cost. Investment decisions are made separately for the
 project's power capacity and its energy capacity, therefore endogenously
 determining the duration sizing of the storage. The decisions are linearized,
 i.e. the model decides how much power capacity and how much energy capacity
-to build at a project, not whether or not to built a project of pre-defined
+to build at a project, not whether or not to build a project of pre-defined
 capacity. Once built, the capacity remains operational and fixed O&M
 costs are incurred for the duration of the project's pre-specified operational lifetime.
 Minimum and maximum power capacity and duration constraints can be optionally
@@ -29,6 +29,12 @@ The capital cost input to the model is an annualized cost per unit of power capa
 If the optimization makes the decision to build new power/energy capacity, the total
 annualized cost is incurred in each period of the study (and multiplied by the number
 of years the period represents) for the duration of the project's financial lifetime.
+
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 """
 
 from __future__ import print_function

@@ -1,8 +1,25 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2016-2023 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This script contains functions for creating, updating, and deleting a
-scenario. You can create a single or multiple scenarios from a CSV.
+The *scenario.py* script in the db directory contains functions for creating, updating,
+and deleting a scenario. You can create a single or multiple scenarios from a CSV.
+This script assumes that the user has already created the database file using the
+*create_database.py* script and loaded input data for the scenario using the
+*port_csvs_to_db.py* script.
+
+The *scenario.py* script takes several arguments. For usage info, run:
+
+>>> python scenario.py --help
+
+The user must specify the GridPath database path using the *--database* flag
+and the path to the directory where the scenario CSV is located using the
+*--csv_path* flag.
+
+>>> python port_csvs_to_db.py --database PATH/DO/DB --csv_path PATH/TO/SCENARIO/CSV
+
+To load a single scenario by name, use the *--scenario* flag. To delete a scenario from
+the database, specify the scenario name with the *--scenario* flag and use the
+*--delete* flag.
 """
 
 from argparse import ArgumentParser
