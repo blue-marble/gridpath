@@ -6,9 +6,9 @@ This section contains the advanced documentation that is automatically generated
 from the documentation within each GridPath module.
 
 
-*******************
-Basic Functionality
-*******************
+******************
+Core Functionality
+******************
 
 This chapter describes GridPath's basic functionality if no optional
 features are included.
@@ -382,7 +382,6 @@ gridpath.objective.transmission.aggregate_hurdle_costs
 .. automodule:: gridpath.objective.transmission.aggregate_hurdle_costs
 
 
-
 Operating Reserves
 ==================
 GridPath can model operating reserve requirements and provision. Reserves
@@ -410,13 +409,29 @@ gridpath.project.operations.reserves.reserve_provision
     :members: generic_record_dynamic_components
 
 
-
 Reliability
 ===========
 GridPath currently includes the ability to require that a planning reserve
-requirement be met.
+requirement be met. Projects can contribute toward the reserve requirement via a
+simple fraction of their installed capacity or an "ELCC surface" that takes into
+account declining marginal contributions and/or portfolio effects with other projects.
+GridPath can also account for "deliverability," i.e., lower capacity contributions
+due to transmission limits.
 
-More documentation will be included in the future.
+gridpath.project.reliability.prm.prm_simple
+-------------------------------------------
+
+.. automodule:: gridpath.project.reliability.prm.prm_simple
+
+gridpath.project.reliability.prm.elcc_surface
+---------------------------------------------
+
+.. automodule:: gridpath.project.reliability.prm.elcc_surface
+
+gridpath.system.reliability.prm.elcc_surface
+--------------------------------------------
+
+.. automodule:: gridpath.system.reliability.prm.elcc_surface
 
 Policy
 ======
@@ -426,9 +441,47 @@ portfolio standard requiring that a certain percentage of demand be met with
 renewable resources, and a carbon cap, requiring that total emissions be
 below a certain level.
 
-More documentation will be included in the future.
+gridpath.system.policy.carbon_cap.carbon_cap
+--------------------------------------------
 
-Custom Modules
-==============
+.. automodule:: gridpath.system.policy.carbon_cap.carbon_cap
 
-GridPath can include custom modules.
+
+gridpath.system.policy.carbon_cap.carbon_tax
+--------------------------------------------
+
+.. automodule:: gridpath.system.policy.carbon_cap.carbon_tax
+
+gridpath.system.policy.energy_targets.horizon_energy_target
+-----------------------------------------------------------
+
+.. automodule:: gridpath.system.policy.energy_targets.horizon_energy_target
+
+gridpath.system.policy.fuel_burn_limits.fuel_burn_limits
+--------------------------------------------------------
+
+.. automodule:: gridpath.system.policy.fuel_burn_limits.fuel_burn_limits
+
+gridpath.system.policy.performance_standard.performance_standard
+----------------------------------------------------------------
+
+.. automodule:: gridpath.system.policy.performance_standard.performance_standard
+
+
+Markets
+=======
+
+GridPath can model market participation of a project or a set of projects. A price
+stream is required and projects are assumed to be price-takers. The market volume can
+be constrained. In multi-stage modeling, the transactions from the previous stages
+can be fixed in the following stages.
+
+gridpath.system.policy.markets.prices
+-------------------------------------
+
+.. automodule:: gridpath.system.policy.markets.prices
+
+gridpath.system.policy.markets.volume
+-------------------------------------
+
+.. automodule:: gridpath.system.policy.markets.volume
