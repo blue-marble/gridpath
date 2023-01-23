@@ -49,7 +49,7 @@ def parse_arguments(arguments):
         "--database",
         default="./io.db",
         help="The database file path relative to the current "
-        "working directory. Defaults to ../db/io.db ",
+        "working directory. Defaults to ./io.db ",
     )
     parser.add_argument(
         "--db_schema",
