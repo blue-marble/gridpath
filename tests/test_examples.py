@@ -1178,7 +1178,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_solar_carbon_cap_dac")
         self.run_and_check_objective(
             "test_new_solar_carbon_cap_dac",
-            -3504434601571.8643 if WINDOWS else -3504434601570.9893,
+            -3504434601570.9893,
         )
 
     def test_example_test_cap_factor_limits(self):
