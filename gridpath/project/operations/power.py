@@ -198,8 +198,8 @@ def summarize_results(scenario_directory, subproblem, stage):
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
         operational_results_df.groupby(
-            by=["load_zone", "period", "technology"], as_index=True
-        ).sum()["weighted_power_mwh"]
+            by=["load_zone", "period", "technology"], as_index=True, group_keys=False
+        ).sum(numeric_only=False)["weighted_power_mwh"]
     )
 
     operational_results_agg_df.columns = ["weighted_power_mwh"]
@@ -208,9 +208,11 @@ def summarize_results(scenario_directory, subproblem, stage):
     # to find the percentage of total power by technology (for each load
     # zone and period)
     lz_period_power_df = pd.DataFrame(
-        operational_results_df.groupby(by=["load_zone", "period"], as_index=True).sum()[
-            "weighted_power_mwh"
-        ]
+        operational_results_df.groupby(
+            by=["load_zone", "period"],
+            as_index=True,
+            group_keys=False,
+        ).sum(numeric_only=False,)["weighted_power_mwh"]
     )
 
     # Name the power column

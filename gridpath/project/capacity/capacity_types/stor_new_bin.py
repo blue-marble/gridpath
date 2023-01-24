@@ -16,16 +16,20 @@
 This capacity type describes new storage projects that can be built by the
 optimization at a pre-specified size, duration and cost. The model can
 decide to build the project at the specified size in some or all investment
-*periods*, or not at all. Once built, the capacity remains available for the
-duration of the project's pre-specified lifetime.
+*periods*, or not at all. Once built, the capacity remains operational and fixed O&M
+costs are incurred for the duration of the project's pre-specified operational lifetime.
 
-The cost input to the model is an annualized cost per unit of power capacity
-(MW) and an annualized cost per unit energy capacity (MWh). Both costs are
-additive. If the optimization makes the decision to build new
-power/energy capacity, the total annualized cost is incurred in each period
-of the study (and multiplied by the number of years the period represents)
-for the duration of the project's lifetime. Annual fixed O&M costs are also
-incurred by binary new-build storage.
+The capital cost input to the model is an annualized cost per unit of power capacity
+(MW) and an annualized cost per unit energy capacity (MWh). The costs are additive.
+If the optimization makes the decision to build new power/energy capacity, the total
+annualized cost is incurred in each period of the study (and multiplied by the number
+of years the period represents) for the duration of the project's financial lifetime.
+
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 """
 
 from __future__ import print_function
@@ -36,7 +40,10 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, Constraint, value, Binary
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     get_expected_dtypes,
@@ -46,9 +53,9 @@ from gridpath.auxiliary.validations import (
     validate_idxs,
 )
 from gridpath.project.capacity.capacity_types.common_methods import (
-    operational_periods_by_project_vintage,
-    project_operational_periods,
-    project_vintages_operational_in_period,
+    relevant_periods_by_project_vintage,
+    project_relevant_periods,
+    project_vintages_relevant_in_period,
     update_capacity_results_table,
 )
 
@@ -76,12 +83,33 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`stor_new_bin_lifetime_yrs`                                     |
+    | | :code:`stor_new_bin_operational_lifetime_yrs`                         |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's lifetime, i.e. how long project capacity/energy of a      |
     | particular vintage remains operational.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_fixed_cost_per_mw_yr`                             |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power capacity fixed O&M cost incurred in each year in    |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_fixed_cost_per_mwh_yr`                            |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's energy capacity fixed O&M cost incurred in each year in   |
+    | which the project is operational.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_financial_lifetime_yrs`                           |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's financial lifetime, i.e. how long project capacity of a   |
+    | particular incurs annualized capital costs.                             |
     +-------------------------------------------------------------------------+
     | | :code:`stor_new_bin_annualized_real_cost_per_mw_yr`                   |
     | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
@@ -112,15 +140,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | can only build the project in this pre-specified size.                  |
     +-------------------------------------------------------------------------+
 
-    .. note:: The cost input to the model is a levelized cost per unit
-        capacity/energy. This annualized cost is incurred in each period of
-        the study (and multiplied by the number of years the period
-        represents) for the duration of the project's lifetime. It is up to
-        the user to ensure that the
-        :code:`stor_new_bin_lifetime_yrs`,
-        :code:`stor_new_bin_annualized_real_cost_per_mw_yr`, and
-        :code:`stor_new_bin_annualized_real_cost_per_mwh_yr` parameters are
-        consistent.
+    .. note:: The cost input to the model is an annualized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's "financial" lifetime. It is up to the
+        user to ensure that the variousl lifetime and cost parameters are consistent
+        with one another and with the period length (projects are operational
+        and incur capital costs only if the operational and financial lifetimes last
+        through the end of a period respectively.
 
     +-------------------------------------------------------------------------+
     | Derived Sets                                                            |
@@ -130,10 +157,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
     | project-vintage combination, based on the                               |
-    | :code:`stor_new_bin_lifetime_yrs`. For instance, capacity of 2020       |
-    | vintage with lifetime of 30 years will be assumed operational starting  |
-    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
-    | in 2050.                                                                |
+    | :code:`stor_new_bin_operational_lifetime_yrs`. For instance, capacity   |
+    | of 2020 vintage with lifetime of 30 years will be assumed operational   |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`STOR_NEW_BIN_OPR_PRDS`                                         |
     |                                                                         |
@@ -147,7 +174,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | Indexed set that describes the project-vintages that could be           |
     | operational in each period based on the                                 |
-    | :code:`stor_new_bin_lifetime_yrs`.                                      |
+    | :code:`stor_new_bin_operational_lifetime_yrs`.                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE`                              |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    |                                                                         |
+    | Indexed set that describes the financial periods for each possible      |
+    | project-vintage combination, based on the                               |
+    | :code:`gen_new_lin_financial_lifetime_yrs_by_vintage`. For instance,    |
+    | capacity of  the 2020 vintage with lifetime of 30 years will be assumed |
+    | to incur costs starting Jan 1, 2020 and through Dec 31, 2049, but will  |
+    | *not* be operational in 2050.                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_BIN_FIN_PRDS`                                         |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be incurring costs if built. This set is added to   |
+    | the list of sets to join to get the final :code:`PRJ_FIN_PRDS` set      |
+    | defined in **gridpath.project.capacity.capacity**.                      |
     +-------------------------------------------------------------------------+
 
     |
@@ -186,7 +230,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.stor_new_bin_lifetime_yrs = Param(m.STOR_NEW_BIN_VNTS, within=NonNegativeReals)
+    m.stor_new_bin_operational_lifetime_yrs = Param(
+        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_bin_fixed_cost_per_mw_yr = Param(
+        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_bin_fixed_cost_per_mwh_yr = Param(
+        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
+    )
+
+    m.stor_new_bin_financial_lifetime_yrs = Param(
+        m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
+    )
 
     m.stor_new_bin_annualized_real_cost_per_mw_yr = Param(
         m.STOR_NEW_BIN_VNTS, within=NonNegativeReals
@@ -213,6 +271,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PERIODS, dimen=2, initialize=stor_new_bin_vintages_operational_in_period
     )
 
+    m.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE = Set(
+        m.STOR_NEW_BIN_VNTS, initialize=financial_periods_by_storage_vintage
+    )
+
+    m.STOR_NEW_BIN_FIN_PRDS = Set(dimen=2, initialize=stor_new_bin_financial_periods)
+
+    m.STOR_NEW_BIN_VNTS_FIN_IN_PRD = Set(
+        m.PERIODS, dimen=2, initialize=stor_new_bin_vintages_financial_in_period
+    )
+
     # Variables
     ###########################################################################
 
@@ -234,32 +302,63 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         "STOR_NEW_BIN_OPR_PRDS",
     )
 
+    # Add to list of sets we'll join to get the final
+    # PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "STOR_NEW_BIN_FIN_PRDS",
+    )
+
 
 # Set Rules
 ###############################################################################
 
 
 def operational_periods_by_storage_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
+    return relevant_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"),
         period_start_year=getattr(mod, "period_start_year"),
         period_end_year=getattr(mod, "period_end_year"),
         vintage=v,
-        lifetime_yrs=mod.stor_new_bin_lifetime_yrs[prj, v],
+        lifetime_yrs=mod.stor_new_bin_operational_lifetime_yrs[prj, v],
     )
 
 
 def stor_new_bin_operational_periods(mod):
-    return project_operational_periods(
+    return project_relevant_periods(
         project_vintages_set=mod.STOR_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
     )
 
 
 def stor_new_bin_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
+    return project_vintages_relevant_in_period(
         project_vintage_set=mod.STOR_NEW_BIN_VNTS,
-        operational_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
+        relevant_periods_by_project_vintage_set=mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
+        period=p,
+    )
+
+
+def financial_periods_by_storage_vintage(mod, prj, v):
+    return relevant_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"),
+        period_start_year=getattr(mod, "period_start_year"),
+        period_end_year=getattr(mod, "period_end_year"),
+        vintage=v,
+        lifetime_yrs=mod.stor_new_bin_financial_lifetime_yrs[prj, v],
+    )
+
+
+def stor_new_bin_financial_periods(mod):
+    return project_relevant_periods(
+        project_vintages_set=mod.STOR_NEW_BIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE,
+    )
+
+
+def stor_new_bin_vintages_financial_in_period(mod, p):
+    return project_vintages_relevant_in_period(
+        project_vintage_set=mod.STOR_NEW_BIN_VNTS,
+        relevant_periods_by_project_vintage_set=mod.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE,
         period=p,
     )
 
@@ -330,11 +429,11 @@ def energy_capacity_rule(mod, g, p):
 
 def capacity_cost_rule(mod, g, p):
     """
-    The capacity cost for new storage projects in a given period is the
+    The capital cost for new storage projects in a given period is the
     capacity-build of a particular vintage times the annualized power cost for
     that vintage plus the energy-build of the same vintages times the
     annualized energy cost for that vintage, summed over all vintages
-    operational in the period. Note that power and energy costs are additive.
+    incurring costs in the period. Note that power and energy costs are additive.
     """
 
     return sum(
@@ -344,6 +443,28 @@ def capacity_cost_rule(mod, g, p):
             * mod.stor_new_bin_annualized_real_cost_per_mw_yr[g, v]
             + mod.stor_new_bin_build_size_mwh[g]
             * mod.stor_new_bin_annualized_real_cost_per_mwh_yr[g, v]
+        )
+        for (gen, v) in mod.STOR_NEW_BIN_VNTS_FIN_IN_PRD[p]
+        if gen == g
+    )
+
+
+def fixed_cost_rule(mod, g, p):
+    """
+    The fixed O&M cost for new storage projects in a given period is the
+    capacity-build of a particular vintage times the fixed power cost for
+    that vintage plus the energy-build of the same vintages times the
+    annualized energy cost for that vintage, summed over all vintages
+    operational in the period. Note that power and energy costs are additive.
+    """
+
+    return sum(
+        mod.StorNewBin_Build[g, v]
+        * (
+            mod.stor_new_bin_build_size_mw[g]
+            * mod.stor_new_bin_fixed_cost_per_mw_yr[g, v]
+            + mod.stor_new_bin_build_size_mwh[g]
+            * mod.stor_new_bin_fixed_cost_per_mwh_yr[g, v]
         )
         for (gen, v) in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
         if gen == g
@@ -357,6 +478,18 @@ def new_capacity_rule(mod, g, p):
     """
     return (
         mod.StorNewBin_Build[g, p] * mod.stor_new_bin_build_size_mw[g]
+        if (g, p) in mod.STOR_NEW_BIN_VNTS
+        else 0
+    )
+
+
+def new_energy_capacity_rule(mod, g, p):
+    """
+    New capacity built at project g in period p.
+    Returns 0 if we can't build capacity at this project in period p.
+    """
+    return (
+        mod.StorNewBin_Build[g, p] * mod.stor_new_bin_build_size_mwh[g]
         if (g, p) in mod.STOR_NEW_BIN_VNTS
         else 0
     )
@@ -392,12 +525,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         select=(
             "project",
             "vintage",
-            "lifetime_yrs",
+            "operational_lifetime_yrs",
+            "fixed_cost_per_mw_yr",
+            "fixed_cost_per_mwh_yr",
+            "financial_lifetime_yrs",
             "annualized_real_cost_per_mw_yr",
             "annualized_real_cost_per_mwh_yr",
         ),
         param=(
-            m.stor_new_bin_lifetime_yrs,
+            m.stor_new_bin_operational_lifetime_yrs,
+            m.stor_new_bin_fixed_cost_per_mw_yr,
+            m.stor_new_bin_fixed_cost_per_mwh_yr,
+            m.stor_new_bin_financial_lifetime_yrs,
             m.stor_new_bin_annualized_real_cost_per_mw_yr,
             m.stor_new_bin_annualized_real_cost_per_mwh_yr,
         ),
@@ -491,7 +630,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -539,7 +678,8 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
     c1 = conn.cursor()
     new_stor_costs = c1.execute(
         """
-        SELECT project, vintage, lifetime_yrs,
+        SELECT project, vintage, operational_lifetime_yrs,
+        fixed_cost_per_mw_yr, fixed_cost_per_mwh_yr, financial_lifetime_yrs,
         annualized_real_cost_per_mw_yr,
         annualized_real_cost_per_mwh_yr
         FROM inputs_project_portfolios
@@ -550,7 +690,8 @@ def get_model_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
             WHERE temporal_scenario_id = {}) as relevant_vintages
         
         INNER JOIN
-            (SELECT project, vintage, lifetime_yrs,
+            (SELECT project, vintage, operational_lifetime_yrs, 
+            fixed_cost_per_mw_yr, fixed_cost_per_mwh_yr, financial_lifetime_yrs,
             annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr
             FROM inputs_project_new_cost
             WHERE project_new_cost_scenario_id = {}) as cost
@@ -625,7 +766,10 @@ def write_model_inputs(
             [
                 "project",
                 "vintage",
-                "lifetime_yrs",
+                "operational_lifetime_yrs",
+                "fixed_cost_per_mw_yr",
+                "fixed_cost_per_mwh_yr",
+                "financial_lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr",
             ]

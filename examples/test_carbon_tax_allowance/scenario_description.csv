@@ -17,6 +17,7 @@ of_carbon_tax,1
 of_performance_standard,
 of_fuel_burn_limit,
 of_prm,
+of_deliverability,
 of_elcc_surface,
 of_local_capacity,
 of_markets,
@@ -56,7 +57,10 @@ project_performance_standard_zone_scenario_id,NULL
 project_fuel_burn_limit_ba_scenario_id,NULL
 project_prm_zone_scenario_id,NULL
 project_elcc_chars_scenario_id,NULL
-prm_energy_only_scenario_id,NULL
+prm_deliverability_cost_scenario_id,NULL
+prm_deliverability_existing_scenario_id,NULL
+prm_deliverability_potential_scenario_id,NULL
+project_prm_deliverability_multipliers_scenario_id,NULL
 project_local_capacity_zone_scenario_id,NULL
 project_local_capacity_chars_scenario_id,NULL
 load_zone_market_scenario_id,NULL

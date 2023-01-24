@@ -1,4 +1,4 @@
-﻿project,elcc_surface_cap_factor
-Solar_BTM,0.100385265
-Solar,0.277001349
-Wind,0.282768082
+﻿elcc_surface_name,project,elcc_surface_cap_factor
+Wind_Solar,Solar_BTM,0.100385265
+Wind_Solar,Solar,0.277001349
+Wind_Solar,Wind,0.282768082

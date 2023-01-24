@@ -215,9 +215,9 @@ def capacity_rule(mod, g, p):
     return mod.gen_ret_bin_capacity_mw[g, p] * (1 - mod.GenRetBin_Retire[g, p])
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_ret_bin* capacity type is its net
+    The fixed cost of projects of the *gen_ret_bin* capacity type is its net
     capacity (pre-specified capacity or zero if retired) times the per-mw
     fixed cost for each of the project's operational periods.
     """
@@ -330,7 +330,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
@@ -511,7 +511,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_yr"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

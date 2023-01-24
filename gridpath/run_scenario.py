@@ -23,8 +23,12 @@ The main() function of this script can also be called with the
 import argparse
 from csv import reader, writer
 import datetime
+import dill
+import json
 from multiprocessing import get_context, Manager
 import os.path
+import xml.etree.ElementTree as ET
+
 from pyomo.environ import (
     AbstractModel,
     Suffix,
@@ -36,6 +40,9 @@ from pyomo.environ import (
 
 # from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import ComponentUID, SymbolMap
+import pyomo.environ
+from pyomo.opt import ReaderFactory, ResultsFormat, ProblemFormat
 import sys
 import warnings
 
@@ -53,7 +60,7 @@ from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
-def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_arguments):
+def create_problem(scenario_directory, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
     :param subproblem: the horizon subproblem name
@@ -127,12 +134,16 @@ def create_and_solve_problem(scenario_directory, subproblem, stage, parsed_argum
         loaded_modules,
     )
 
+    return dynamic_components, instance
+
+
+def solve_problem(parsed_arguments, instance):
     # Solve
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solve(instance, parsed_arguments)
 
-    return instance, results, dynamic_components
+    return instance, results
 
 
 def run_optimization_for_subproblem_stage(
@@ -209,10 +220,74 @@ def run_optimization_for_subproblem_stage(
     subproblem_directory = str(subproblem_directory)
     stage_directory = str(stage_directory)
 
-    # Create problem instance and solve it
-    solved_instance, results, dynamic_components = create_and_solve_problem(
-        scenario_directory, subproblem_directory, stage_directory, parsed_arguments
+    # Used only if we are writing problem files or loading solutions
+    prob_sol_files_directory = os.path.join(
+        scenario_directory, subproblem_directory, stage_directory, "prob_sol_files"
     )
+
+    # Create problem instance and either save the problem file or solve the instance
+    # TODO: incompatible options
+    # If we are loading a solution, skip the compilation step; we'll use the saved
+    # instance and dynamic components
+    if parsed_arguments.load_cplex_solution:
+        solved_instance, results, dynamic_components = load_cplex_xml_solution(
+            prob_sol_files_directory=prob_sol_files_directory,
+            solution_filename="cplex_solution.sol",
+        )
+    elif parsed_arguments.load_gurobi_solution:
+        solved_instance, results, dynamic_components = load_gurobi_json_solution(
+            prob_sol_files_directory=prob_sol_files_directory,
+            solution_filename="gurobi_solution.json",
+        )
+    else:
+        dynamic_components, instance = create_problem(
+            scenario_directory=scenario_directory,
+            subproblem=subproblem_directory,
+            stage=stage_directory,
+            parsed_arguments=parsed_arguments,
+        )
+
+        if parsed_arguments.create_lp_problem_file_only:
+            prob_sol_files_directory = os.path.join(
+                scenario_directory,
+                subproblem_directory,
+                stage_directory,
+                "prob_sol_files",
+            )
+            if not os.path.exists(prob_sol_files_directory):
+                os.makedirs(prob_sol_files_directory)
+            with open(
+                os.path.join(prob_sol_files_directory, "instance.pickle"), "wb"
+            ) as f_out:
+                dill.dump(instance, f_out)
+            with open(
+                os.path.join(prob_sol_files_directory, "dynamic_components.pickle"),
+                "wb",
+            ) as f_out:
+                dill.dump(dynamic_components, f_out)
+
+            smap_id = write_problem_file(
+                instance=instance, prob_sol_files_directory=prob_sol_files_directory
+            )
+            symbol_map = instance.solutions.symbol_map[smap_id]
+
+            symbol_cuid_pairs = tuple(
+                (symbol, ComponentUID(var_weakref(), cuid_buffer={}))
+                for symbol, var_weakref in symbol_map.bySymbol.items()
+            )
+
+            with open(
+                os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "wb"
+            ) as f_out:
+                dill.dump(symbol_cuid_pairs, f_out)
+
+            print("Problem file written to {}".format(prob_sol_files_directory))
+            sys.exit()
+        else:
+            solved_instance, results = solve_problem(
+                parsed_arguments=parsed_arguments,
+                instance=instance,
+            )
 
     # Save the scenario results to disk
     save_results(
@@ -375,7 +450,7 @@ def run_scenario(
         # Should probably just remove this logic here and have a dictionary
         # for all objective functions
         if len(objective_values.keys()) == 1:
-            objective_values = objective_values[1]
+            objective_values = objective_values[list(objective_values.keys())[0]]
 
         return objective_values
 
@@ -519,7 +594,7 @@ def save_results(
 
         save_objective_function_value(scenario_directory, subproblem, stage, instance)
 
-        save_duals(scenario_directory, subproblem, stage, instance)
+        save_duals(scenario_directory, subproblem, stage, instance, dynamic_components)
     # If solver status is not ok, don't export results and print some
     # messages for the user
     else:
@@ -867,13 +942,10 @@ def save_objective_function_value(scenario_directory, subproblem, stage, instanc
         "w",
         newline="",
     ) as objective_file:
-        objective_file.write("Objective function: " + str(objective_function_value))
-        # TODO: change to writing the value only when we implement importing
-        #  the objective function value into the results_scenario table
-        # objective_file.write(str(objective_function_value))
+        objective_file.write(str(objective_function_value))
 
 
-def save_duals(scenario_directory, subproblem, stage, instance):
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
     """
     :param scenario_directory:
     :param subproblem:
@@ -891,7 +963,9 @@ def save_duals(scenario_directory, subproblem, stage, instance):
     instance.constraint_indices = {}
     for m in loaded_modules:
         if hasattr(m, "save_duals"):
-            m.save_duals(instance)
+            m.save_duals(
+                scenario_directory, subproblem, stage, instance, dynamic_components
+            )
         else:
             pass
 
@@ -1113,6 +1187,188 @@ def _summarize_rule(scenario_directory, subproblem, stage, quiet):
     summarize_results = True
 
     return summarize_results
+
+
+#####
+
+
+def write_problem_file(instance, prob_sol_files_directory, problem_format="lp"):
+    """
+
+    :param instance:
+    :param prob_sol_files_directory:
+    :param problem_format:
+    :return:
+
+    """
+    formats = dict()
+    # Only supporting LP problem format for now
+    formats["lp"] = ProblemFormat.cpxlp
+
+    # formats["py"] = ProblemFormat.pyomo
+    # formats["nl"] = ProblemFormat.nl
+    # formats["bar"] = ProblemFormat.bar
+    # formats["mps"] = ProblemFormat.mps
+    # formats["mod"] = ProblemFormat.mod
+    # formats["osil"] = ProblemFormat.osil
+    # formats["gms"] = ProblemFormat.gams
+    # formats["gams"] = ProblemFormat.gams
+
+    print("Writing {} problem file...".format(problem_format.upper()))
+    filename, smap_id = instance.write(
+        os.path.join(
+            prob_sol_files_directory, "problem_file.{}".format(problem_format)
+        ),
+        format=formats[problem_format],
+        io_options=[],
+    )
+
+    return smap_id
+
+
+def load_cplex_xml_solution(
+    prob_sol_files_directory, solution_filename="cplex_solution.sol"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # Read XML (.sol) solution file
+    root = ET.parse(os.path.join(prob_sol_files_directory, solution_filename)).getroot()
+
+    # Variables
+    for type_tag in root.findall("variables/variable"):
+        var_id, var_index, value = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("value"),
+        )
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for type_tag in root.findall("linearConstraints/constraint"):
+        constraint_id_w_extra_symbols, const_index, dual = (
+            type_tag.get("name"),
+            type_tag.get("index"),
+            type_tag.get("dual"),
+        )
+        if constraint_id_w_extra_symbols == "c_e_ONE_VAR_CONSTANT":
+            pass
+        else:
+            constraint_id = constraint_id_w_extra_symbols[4:-1]
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    header = root.findall("header")[0]  # Need a check that there is only one element
+
+    termination_condition = header.get("solutionStatusString")
+    # TODO: what are the types
+    solver_status = "ok" if header.get("solutionStatusValue") == "1" else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_gurobi_json_solution(
+    prob_sol_files_directory, solution_filename="gurobi_solution.json"
+):
+    """
+    :param prob_sol_files_directory:
+    :param solution_filename:
+    :return:
+    """
+    print(
+        "Loading results from solution file {}...".format(
+            os.path.join(prob_sol_files_directory, solution_filename)
+        )
+    )
+
+    instance, dynamic_components, symbol_map = load_problem_info(
+        prob_sol_files_directory=prob_sol_files_directory
+    )
+
+    # #### WORKING VERSION #####
+    # This needs to be under an if statement and execute when we are loading
+    # solution from disk
+    # Read JSON solution file
+    with open(os.path.join(prob_sol_files_directory, solution_filename), "r") as f:
+        solution = json.load(f)
+
+    # Variables
+    for v in solution["Vars"]:
+        var_id, value = v["VTag"][0], v["X"]
+        if var_id == "ONE_VAR_CONSTANT":
+            pass
+        else:
+            symbol_map.bySymbol[var_id]().value = float(value)
+
+    # Constraints
+    for c in solution["Constrs"]:
+        constraint_id, dual = c["CTag"][0][4:], c["Pi"]
+        if constraint_id == "ONE_VAR_CONSTAN":
+            pass
+        else:
+            instance.dual[symbol_map.bySymbol[constraint_id]()] = float(dual)
+
+    # Solver status
+    # TODO: what are the types
+    termination_condition = (
+        "optimal" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    )
+    solver_status = "ok" if solution["SolutionInfo"]["Status"] == 2 else "unknown"
+    results = Results(
+        solver_status=solver_status, termination_condition=termination_condition
+    )
+
+    return instance, results, dynamic_components
+
+
+def load_problem_info(prob_sol_files_directory):
+    with open(
+        os.path.join(prob_sol_files_directory, "instance.pickle"), "rb"
+    ) as instance_in:
+        instance = dill.load(instance_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "dynamic_components.pickle"), "rb"
+    ) as dc_in:
+        dynamic_components = dill.load(dc_in)
+    with open(
+        os.path.join(prob_sol_files_directory, "symbol_map.pickle"), "rb"
+    ) as map_in:
+        symbol_cuid_pairs = dill.load(map_in)
+        symbol_map = SymbolMap()
+        symbol_map.addSymbols(
+            (cuid.find_component_on(instance), symbol)
+            for symbol, cuid in symbol_cuid_pairs
+        )
+
+    return instance, dynamic_components, symbol_map
+
+
+class Results(object):
+    def __init__(self, solver_status, termination_condition):
+        self.solver = Object()
+        self.solver.status = solver_status
+        self.solver.termination_condition = termination_condition
+
+
+class Object(object):
+    pass
 
 
 if __name__ == "__main__":

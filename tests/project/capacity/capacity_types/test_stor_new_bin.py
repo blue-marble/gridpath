@@ -144,19 +144,71 @@ class TestStorNewBin(unittest.TestCase):
         )
         self.assertListEqual(expected_storage_vintage_set, actual_storage_vintage_set)
 
-        # Params: stor_new_bin_lifetime_yrs
+        # Params: stor_new_bin_operational_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Battery_Binary", 2020): 10, ("Battery_Binary", 2030): 10}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.stor_new_bin_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.stor_new_bin_operational_lifetime_yrs[
+                        prj, vintage
+                    ]
                     for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
                 }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
+
+        # Params: stor_new_bin_fixed_cost_per_mw_yr
+        expected_mw_yr_fcost = OrderedDict(
+            sorted({("Battery_Binary", 2020): 0, ("Battery_Binary", 2030): 0}.items())
+        )
+        actual_mw_yr_fcost = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.stor_new_bin_fixed_cost_per_mw_yr[prj, vintage]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_mw_yr_fcost, actual_mw_yr_fcost)
+
+        # Params: stor_new_bin_fixed_cost_per_mwh_yr
+        expected_mwh_yr_fcost = OrderedDict(
+            sorted({("Battery_Binary", 2020): 0, ("Battery_Binary", 2030): 0}.items())
+        )
+        actual_mwh_yr_fcost = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.stor_new_bin_fixed_cost_per_mwh_yr[prj, vintage]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_mwh_yr_fcost, actual_mwh_yr_fcost)
+
+        # Params: stor_new_bin_financial_lifetime_yrs
+        expected_flifetime = OrderedDict(
+            sorted({("Battery_Binary", 2020): 10, ("Battery_Binary", 2030): 10}.items())
+        )
+        actual_flifetime = OrderedDict(
+            sorted(
+                {
+                    (prj, vintage): instance.stor_new_bin_financial_lifetime_yrs[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_flifetime, actual_flifetime)
 
         # Params: stor_new_bin_annualized_real_cost_per_mw_yr
         expected_mw_yr_cost = OrderedDict(
@@ -246,6 +298,44 @@ class TestStorNewBin(unittest.TestCase):
         }
         self.assertDictEqual(
             expected_stor_vintage_op_in_period, actual_stor_vintage_op_in_period
+        )
+
+        # Sets: FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE
+        expected_fperiods_by_stor_vintage = {
+            ("Battery_Binary", 2020): [2020],
+            ("Battery_Binary", 2030): [2030],
+        }
+        actual_fperiods_by_stor_vintage = {
+            (prj, vintage): [
+                period
+                for period in instance.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE[prj, vintage]
+            ]
+            for (prj, vintage) in instance.FIN_PRDS_BY_STOR_NEW_BIN_VINTAGE
+        }
+        self.assertDictEqual(
+            expected_fperiods_by_stor_vintage, actual_fperiods_by_stor_vintage
+        )
+
+        # Sets: STOR_NEW_BIN_FIN_PRDS
+        expected_stor_fperiods = sorted(
+            [("Battery_Binary", 2020), ("Battery_Binary", 2030)]
+        )
+        actual_stor_fperiods = sorted(
+            [(prj, period) for (prj, period) in instance.STOR_NEW_BIN_FIN_PRDS]
+        )
+        self.assertListEqual(expected_stor_fperiods, actual_stor_fperiods)
+
+        # Sets: STOR_NEW_BIN_VNTS_FIN_IN_PRD
+        expected_stor_vintage_f_in_period = {
+            2020: [("Battery_Binary", 2020)],
+            2030: [("Battery_Binary", 2030)],
+        }
+        actual_stor_vintage_f_in_period = {
+            p: [(g, v) for (g, v) in instance.STOR_NEW_BIN_VNTS_FIN_IN_PRD[p]]
+            for p in instance.PERIODS
+        }
+        self.assertDictEqual(
+            expected_stor_vintage_f_in_period, actual_stor_vintage_f_in_period
         )
 
 

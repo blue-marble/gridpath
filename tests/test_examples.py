@@ -527,7 +527,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("single_stage_prod_cost_cycle_select")
         self.run_and_check_objective(
             "single_stage_prod_cost_cycle_select",
-            {1: -7008092000118.654, 2: -7008092000118.654, 3: -7008092000118.654},
+            {1: -7154084662888.654, 2: -7154084662888.654, 3: -7154084662888.654},
         )
 
     def test_example_multi_stage_prod_cost_parallel(self):
@@ -798,6 +798,33 @@ class TestExamples(unittest.TestCase):
         objective = -10153045886.999044 if UBUNTU_16 else -10153045900.191605
         self.check_validation("2periods_new_build_simple_prm")
         self.run_and_check_objective("2periods_new_build_simple_prm", objective)
+
+    def test_example_2periods_new_build_simple_prm_w_energy_only(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
+        example
+        :return:
+        """
+        self.check_validation("2periods_new_build_simple_prm_w_energy_only")
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_w_energy_only", -11133045895.810287
+        )
+
+    def test_example_2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm"
+        example
+        :return:
+        """
+        self.check_validation(
+            "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_w_energy_only_deliv_cap_limit",
+            -11133045900.191603,
+        )
 
     def test_example_2periods_new_build_local_capacity(self):
         """
@@ -1151,7 +1178,7 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_new_solar_carbon_cap_dac")
         self.run_and_check_objective(
             "test_new_solar_carbon_cap_dac",
-            -3504434601571.8643 if WINDOWS else -3504434601570.9893,
+            -3504434601570.9893,
         )
 
     def test_example_test_cap_factor_limits(self):
@@ -1210,6 +1237,34 @@ class TestExamples(unittest.TestCase):
 
         self.check_validation("test_tx_capacity_groups")
         self.run_and_check_objective("test_tx_capacity_groups", -12284573611936.518)
+
+    def test_example_2periods_new_build_fin_lifetime(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_fin_lifetime" example. Same as "2periods_new_build" but
+        with shorter financial lifetimes and some fixed costs. Cost is lower because
+        the same payment is made fewer times.
+        """
+
+        self.check_validation("2periods_new_build_fin_lifetime")
+        self.run_and_check_objective(
+            "2periods_new_build_fin_lifetime", -10022366566.861605
+        )
+
+    def test_example_2periods_new_build_cumulative_and_vintage_min_max(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_cumulative_and_vintage_min_max" example. It is the same
+        as 2periods_new_build_cumulative_and_min_max but with a max in 2020 for the
+        CCGT to force early build and a min on the CT in 2030 to force more build.
+
+        :return:
+        """
+
+        self.check_validation("2periods_new_build_cumulative_and_vintage_min_max")
+        self.run_and_check_objective(
+            "2periods_new_build_cumulative_and_vintage_min_max", -110384972580606.39
+        )
 
     @classmethod
     def tearDownClass(cls):

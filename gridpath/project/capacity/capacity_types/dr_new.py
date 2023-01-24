@@ -13,6 +13,9 @@
 # limitations under the License.
 
 """
+This type is a custom implementation for GridPath projects in the California
+Integrated Resource Planning proceeding (2018ish). It is outdated.
+
 This capacity type describes a supply curve for new shiftable load (DR; demand
 response) capacity. The supply curve does not have vintages, i.e. there are
 no cost differences for capacity built in different periods. The cost for
@@ -25,9 +28,6 @@ power capacity based on the 'minimum duration' specified for the project,
 e.g. if the minimum duration specified is N hours, then the MW capacity will
 be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
-
-This type is a custom implementation for GridPath projects in the California
-Integrated Resource Planning proceeding.
 """
 
 from __future__ import division
@@ -51,7 +51,10 @@ from pyomo.environ import (
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import cursor_to_df
 from gridpath.auxiliary.db_interface import setup_results_import
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_missing_inputs,
@@ -74,7 +77,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | :code:`DR_NEW_OPR_PRDS`                                               |
     |                                                                         |
     | Two-dimensional set of all :code:`dr_new` projects and their            |
-    | operational periods.                                                    |
+    | operational periods. All periods for now.                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`DR_NEW_FIN_PRDS`                                               |
+    |                                                                         |
+    | Two-dimensional set of all :code:`dr_new` projects and their            |
+    | financial periods (annual costs incurred). All periods for now.         |
     +-------------------------------------------------------------------------+
     | | :code:`DR_NEW_PTS`                                                    |
     |                                                                         |
@@ -185,6 +193,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.DR_NEW = Set()
 
     m.DR_NEW_OPR_PRDS = Set(dimen=2, initialize=m.DR_NEW * m.PERIODS)
+    m.DR_NEW_FIN_PRDS = Set(dimen=2, initialize=m.DR_NEW * m.PERIODS)
 
     m.DR_NEW_PTS = Set(dimen=2, within=m.DR_NEW * list(range(1, 1001)))
 
@@ -235,10 +244,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Dynamic Components
     ###########################################################################
 
-    # Add to list of sets we'll join to get the final
-    # PRJ_OPR_PRDS set
+    # Add to list of sets we'll join to get the final PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
         "DR_NEW_OPR_PRDS",
+    )
+
+    # Add to list of sets we'll join to get the final PRJ_FIN_PRDS set
+    getattr(d, capacity_type_financial_period_sets).append(
+        "DR_NEW_FIN_PRDS",
     )
 
 
@@ -461,7 +474,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(

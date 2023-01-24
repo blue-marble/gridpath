@@ -37,7 +37,10 @@ from gridpath.common_functions import (
 from db.common_functions import connect_to_database, spin_on_database_lock
 from db.utilities.scenario import delete_scenario_results
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import get_subproblem_structure_from_db
+from gridpath.auxiliary.scenario_chars import (
+    get_subproblem_structure_from_db,
+    get_subproblem_structure_from_disk,
+)
 
 
 def _import_rule(results_directory, quiet):
@@ -182,22 +185,15 @@ def import_objective_function_value(
     ) as f:
         objective_function = f.read()
 
-    del_sql = """
-        DELETE FROM results_scenario
+    obj_sql = """
+        UPDATE results_scenario
+        SET objective_function_value = ?
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?
-    """
-    del_data = (scenario_id, subproblem, stage)
-    spin_on_database_lock(conn=db, cursor=c, sql=del_sql, data=del_data, many=False)
-
-    obj_sql = """
-        INSERT INTO results_scenario
-        (scenario_id, subproblem_id, stage_id, objective_function_value)
-        VALUES(?, ?, ?, ?)
     ;"""
 
-    obj_data = (scenario_id, subproblem, stage, objective_function)
+    obj_data = (objective_function, scenario_id, subproblem, stage)
     spin_on_database_lock(conn=db, cursor=c, sql=obj_sql, data=obj_data, many=False)
 
 
@@ -295,8 +291,8 @@ def main(args=None):
         script="import_scenario_results",
     )
 
-    subproblem_structure = get_subproblem_structure_from_db(
-        conn=conn, scenario_id=scenario_id
+    subproblem_structure = get_subproblem_structure_from_disk(
+        scenario_directory=os.path.join(scenario_location, scenario_name)
     )
 
     # Determine scenario directory

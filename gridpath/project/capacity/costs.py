@@ -25,14 +25,18 @@ from builtins import next
 from builtins import str
 import csv
 import os.path
-from pyomo.environ import Expression, value
+from pyomo.environ import Set, Expression, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
+from gridpath.auxiliary.auxiliary import (
+    get_required_subtype_modules_from_projects_file,
+    join_sets,
+)
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
 from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import capacity_type_financial_period_sets
 import gridpath.project.capacity.capacity_types as cap_type_init
 
 
@@ -70,12 +74,25 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         required_capacity_modules
     )
 
+    # Sets
+    ###########################################################################
+
+    m.PRJ_FIN_PRDS = Set(
+        dimen=2,
+        within=m.PROJECTS * m.PERIODS,
+        initialize=lambda mod: join_sets(
+            mod,
+            getattr(d, capacity_type_financial_period_sets),
+        ),
+    )  # assumes capacity types model components are already added!
+
     # Expressions
     ###########################################################################
 
     def capacity_cost_rule(mod, prj, prd):
         """
-        Get capacity cost for each generator's respective capacity module.
+        Get capacity capital cost for each generator's respective capacity module.
+        These are applied in every financial period.
 
         Note that capacity cost inputs and calculations in the modules are on
         a period basis. Therefore, if the period spans subproblems (the main
@@ -97,7 +114,35 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             / mod.hours_in_period_timepoints[prd]
         )
 
-    m.Capacity_Cost_in_Period = Expression(m.PRJ_OPR_PRDS, rule=capacity_cost_rule)
+    m.Capacity_Cost_in_Period = Expression(m.PRJ_FIN_PRDS, rule=capacity_cost_rule)
+
+    def fixed_cost_rule(mod, prj, prd):
+        """
+        Get fixed cost for each generator's respective capacity module. These are
+        applied in every operational period.
+
+        Note that fixed cost inputs and calculations in the modules are on
+        a period basis. Therefore, if the period spans subproblems (the main
+        example of this would be specified capacity in, say, a production-cost
+        scenario with multiple subproblems), we adjust the fixed costs down
+        accordingly.
+        """
+        cap_type = mod.capacity_type[prj]
+        if hasattr(imported_capacity_modules[cap_type], "fixed_cost_rule"):
+            fixed_cost = imported_capacity_modules[cap_type].fixed_cost_rule(
+                mod, prj, prd
+            )
+        else:
+            fixed_cost = cap_type_init.fixed_cost_rule(mod, prj, prd)
+
+        return (
+            fixed_cost
+            * mod.hours_in_subproblem_period[prd]
+            / mod.hours_in_period_timepoints[prd]
+        )
+
+    # TODO: make sure this gets added to the objective function downstream
+    m.Fixed_Cost_in_Period = Expression(m.PRJ_OPR_PRDS, rule=fixed_cost_rule)
 
 
 # Input-Output
@@ -138,7 +183,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "capacity_cost",
             ]
         )
-        for (prj, p) in m.PRJ_OPR_PRDS:
+        for (prj, p) in m.PRJ_FIN_PRDS:
             writer.writerow(
                 [
                     prj,
@@ -148,6 +193,42 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.technology[prj],
                     m.load_zone[prj],
                     value(m.Capacity_Cost_in_Period[prj, p]),
+                ]
+            )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "costs_fixed_all_projects.csv",
+        ),
+        "w",
+        newline="",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "project",
+                "period",
+                "hours_in_period_timepoints",
+                "hours_in_subproblem_period",
+                "technology",
+                "load_zone",
+                "fixed_cost",
+            ]
+        )
+        for (prj, p) in m.PRJ_FIN_PRDS:
+            writer.writerow(
+                [
+                    prj,
+                    p,
+                    m.hours_in_period_timepoints[p],
+                    m.hours_in_subproblem_period[p],
+                    m.technology[prj],
+                    m.load_zone[prj],
+                    value(m.Fixed_Cost_in_Period[prj, p]),
                 ]
             )
 

@@ -44,7 +44,10 @@ from pyomo.environ import (
 )
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import capacity_type_operational_period_sets
+from gridpath.auxiliary.dynamic_components import (
+    capacity_type_operational_period_sets,
+    capacity_type_financial_period_sets,
+)
 from gridpath.auxiliary.validations import (
     get_projects,
     get_expected_dtypes,
@@ -267,9 +270,9 @@ def capacity_rule(mod, g, p):
     return mod.GenRetLin_Capacity_MW[g, p]
 
 
-def capacity_cost_rule(mod, g, p):
+def fixed_cost_rule(mod, g, p):
     """
-    The capacity cost of projects of the *gen_ret_lin* capacity type is its net
+    The fixed cost of projects of the *gen_ret_lin* capacity type is its net
     capacity (pre-specified capacity minus retired capacity) times the per-mw
     fixed cost for each of the project's operational periods.
     """
@@ -367,7 +370,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
@@ -548,7 +551,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check for missing values (vs. missing row entries above)
-    cols = ["specified_capacity_mw", "fixed_cost_per_mw_year"]
+    cols = ["specified_capacity_mw", "fixed_cost_per_mw_yr"]
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,

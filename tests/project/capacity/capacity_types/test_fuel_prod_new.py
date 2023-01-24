@@ -108,19 +108,94 @@ class TestFuelProdNew(unittest.TestCase):
         )
         self.assertListEqual(expected_vintages, actual_vintages)
 
-        # Params: fuel_prod_new_lifetime_yrs
+        # Params: fuel_prod_new_operational_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Fuel_Prod_New", 2020): 30, ("Fuel_Prod_New", 2030): 30}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {
-                    (prj, vintage): instance.fuel_prod_new_lifetime_yrs[prj, vintage]
+                    (prj, vintage): instance.fuel_prod_new_operational_lifetime_yrs[
+                        prj, vintage
+                    ]
                     for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
                 }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
+
+        # Params: fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr
+        expected_prod_fcost = OrderedDict(
+            sorted({("Fuel_Prod_New", 2020): 1, ("Fuel_Prod_New", 2030): 1}.items())
+        )
+        actual_prod_fcost = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.fuel_prod_new_prod_fixed_cost_fuelunitperhour_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_prod_fcost, actual_prod_fcost)
+
+        # Params: fuel_prod_new_release_fixed_cost_fuelunitperhour_yr
+        expected_rel_fcost = OrderedDict(
+            sorted({("Fuel_Prod_New", 2020): 2, ("Fuel_Prod_New", 2030): 2}.items())
+        )
+        actual_rel_fcost = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.fuel_prod_new_release_fixed_cost_fuelunitperhour_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_rel_fcost, actual_rel_fcost)
+
+        # Params: fuel_prod_new_storage_fixed_cost_fuelunit_yr
+        expected_rel_fcost = OrderedDict(
+            sorted({("Fuel_Prod_New", 2020): 3, ("Fuel_Prod_New", 2030): 3}.items())
+        )
+        actual_rel_fcost = OrderedDict(
+            sorted(
+                {
+                    (
+                        prj,
+                        vintage,
+                    ): instance.fuel_prod_new_storage_fixed_cost_fuelunit_yr[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_rel_fcost, actual_rel_fcost)
+
+        # Params: fuel_prod_new_financial_lifetime_yrs
+        expected_flifetime = OrderedDict(
+            sorted({("Fuel_Prod_New", 2020): 20, ("Fuel_Prod_New", 2030): 30}.items())
+        )
+        actual_flifetime = OrderedDict(
+            sorted(
+                {
+                    (prj, vintage): instance.fuel_prod_new_financial_lifetime_yrs[
+                        prj, vintage
+                    ]
+                    for (prj, vintage) in instance.FUEL_PROD_NEW_VNTS
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_flifetime, actual_flifetime)
 
         # Params: fuel_prod_new_prod_cost_fuelunitperhour_yr
         expected_prod_cost = OrderedDict(
@@ -204,6 +279,29 @@ class TestFuelProdNew(unittest.TestCase):
         self.assertDictEqual(
             expected_op_periods_by_fuel_prod_vintage,
             actual_periods_by_fuel_prod_vintage,
+        )
+
+        # Sets: FUEL_PROD_NEW_FIN_PRDS
+        expected_fuel_prod_f_periods = sorted(
+            [("Fuel_Prod_New", 2020), ("Fuel_Prod_New", 2030)]
+        )
+        actual_fuel_prod_f_periods = sorted(
+            [(prj, period) for (prj, period) in instance.FUEL_PROD_NEW_FIN_PRDS]
+        )
+        self.assertListEqual(expected_fuel_prod_f_periods, actual_fuel_prod_f_periods)
+
+        # Sets: FUEL_PROD_NEW_VNTS_FIN_IN_PRD
+        expected_fuel_prod_vintage_f_in_period = {
+            2020: [("Fuel_Prod_New", 2020)],
+            2030: [("Fuel_Prod_New", 2020), ("Fuel_Prod_New", 2030)],
+        }
+        actual_fuel_prod_vintage_f_in_period = {
+            p: [(g, v) for (g, v) in instance.FUEL_PROD_NEW_VNTS_FIN_IN_PRD[p]]
+            for p in instance.PERIODS
+        }
+        self.assertDictEqual(
+            expected_fuel_prod_vintage_f_in_period,
+            actual_fuel_prod_vintage_f_in_period,
         )
 
         # Sets: FUEL_PROD_NEW_OPR_PRDS

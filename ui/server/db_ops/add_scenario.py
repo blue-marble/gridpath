@@ -150,6 +150,7 @@ def get_meta_data(c, form_key):
     ui_table = form_key[:sep]
     ui_table_row = form_key[sep + 1 :]
 
+    print(ui_table, ui_table_row)
     (subscenario_table, subscenario_id_column) = c.execute(
         """SELECT ui_row_db_subscenario_table,
       ui_row_db_subscenario_table_id_column

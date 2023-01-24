@@ -17,10 +17,7 @@ Approaches
 
 GridPath can be used in production-cost simulation or capacity-expansion mode
 depending on whether "projects" of the "new" capacity types are included
-in the model. To be implemented is functionality to change the objective
-function in order to be able to take an asset-valuation approach (i.e. profit-
-maximization instead of cost-minimization) or optimize for something other
-than cost (e.g. minimize CO2 emissions).
+in the model.
 
 Production-Cost Simulation
 ==========================
@@ -91,6 +88,20 @@ GridPath's architecture makes it possible for the same modules to be re-used
 in production-cost or capacity-expansion modeling setting, allowing for a
 seamless transition from one approach to the other, as datasets can be more
 easily shared and reused.
+
+Asset-Valuation
+===============
+
+GridPath can include market functionality and can optimize the dispatch of a resource
+or a set of resources to maximize market revenue while meeting other system constraints.
+
+Resource Adequacy
+=================
+
+GridPath can be used to evaluate the system's resource adequacy, e.g., by using
+dispatch modeling over many load, renewable output, and generator and transmission
+outage conditions.
+
 
 Linear, Mixed-Integer, and Non-Linear Formulations
 ==================================================
@@ -538,24 +549,31 @@ capacity as their ELCC via the *prm_simple* module. See
 
 .. _policy-section-ref:
 
+Markets
+=======
+
+GridPath can allow a resource or a set of resources to participate in markets with
+pre-specified price streams, assuming resources are price-takers and subject to
+market volume limits.
+
 Policy
 ======
 
-Renewable Portfolio Standard (RPS)
-----------------------------------
-GridPath can optionally impose renewable portfolio standard requirements.
-The user must first define the zones with an RPS requirement. The RPS
-requirement is a period- or horizon-level constraint. Each RPS-eligible
-project must be assigned an RPS zone to whose requirement it can contribute.
-The amount of RPS-eligible energy a project contributes in each timepoint is
-determined by its operational type (e.g. a must-run biomass plant will
-contribute its full capacity times the timepoint duration in every timepoint
-while a wind project will contribute its capacity factor times its capacity).
+Energy Targets (e.g., Renewable Portfolio Standard)
+---------------------------------------------------
+GridPath can optionally impose targests for energy production by eligible
+projects, e.g., renewable portfolio standard (RPS) requirements. The user must first
+define the zones with an RPS requirement. The RPS requirement is a period- or
+horizon-level constraint. Each RPS-eligible project must be assigned an RPS zone to
+whose requirement it can contribute. The amount of RPS-eligible energy a project
+contributes in each timepoint is determined by its operational type (e.g. a must-run
+biomass plant will contribute its full capacity times the timepoint duration in every
+timepoint while a wind project will contribute its capacity factor times its capacity).
 The model aggregates all projects' contributions for each period and ensures
 that the RPS requirement is met in each RPS zone and period.
 
-Carbon Cap
-----------
+Carbon Cap or Carbon Cost
+-------------------------
 GridPath can optionally impose an carbon cap constraint. The user must
 first define the zones with an emissions cap and the cap level by period (not
 all periods must have a requirement). Each carbon-emitting project must be
@@ -573,6 +591,21 @@ energy. These emissions are then added to the emissions cap constraint.
 
 The emissions cap could be applied to carbon emissions or to other types of
 emissions.
+
+Alternatively, GridPath can model a cost on carbon emissions and optimize the amount
+of emissions.
+
+Fuel Use Limits
+---------------
+
+GridPath can be used to impose constraints on the amount of fuel available to
+generators over certain time periods.
+
+Performance Standard
+--------------------
+
+GridPath can optionally impose a performance standard requirement, i.e. limiting the
+emissions intensity of energy produced by a set of projects.
 
 .. _custom-modules-section-ref:
 
@@ -595,5 +628,5 @@ functionality such as:
 * *Energy-limits*: additional limits on ELCC based on energy-limitations
   (e.g. for storage)
 
-Similar custom functionality can be added for other systems and easily
-excluded when not needed.
+Similar custom functionality can be added for other systems and easily excluded when
+not needed.

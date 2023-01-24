@@ -1,0 +1,2 @@
+project	period	min_new_build_power	max_new_build_power	min_capacity_power	max_capacity_power	min_new_build_energy	max_new_build_energy	min_capacity_energy	max_capacity_energy
+Solar	2020	.	.	0.0	4.0	.	.	.	.

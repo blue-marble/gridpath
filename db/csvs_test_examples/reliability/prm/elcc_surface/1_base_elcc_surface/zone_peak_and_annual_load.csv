@@ -1,2 +1,2 @@
-﻿prm_zone,period,prm_peak_load_mw,prm_annual_load_mwh
-Zone1,2020,49406.65942,242189141
+﻿elcc_surface_name,prm_zone,period,prm_peak_load_mw,prm_annual_load_mwh
+Wind_Solar,Zone1,2020,49406.65942,242189141
