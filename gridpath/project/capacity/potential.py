@@ -511,6 +511,56 @@ def write_model_inputs(
                 writer.writerow(replace_nulls)
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Min_Build_Power_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Build_Power_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Power_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Power_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Build_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Build_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Energy_Constraint"] = [
+        "project",
+        "period",
+        "dual",
+    ]
+
+
 # Validation
 ###############################################################################
 

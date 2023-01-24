@@ -378,6 +378,20 @@ def write_model_inputs(
                 writer.writerow(row)
 
 
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Max_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+
 def import_results_into_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
