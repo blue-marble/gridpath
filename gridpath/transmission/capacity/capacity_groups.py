@@ -171,17 +171,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        <= mod.tx_capacity_group_new_capacity_max[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            <= mod.tx_capacity_group_new_capacity_max[grp, prd]
+        )
 
 
 def new_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        >= mod.tx_capacity_group_new_capacity_min[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            >= mod.tx_capacity_group_new_capacity_min[grp, prd]
+        )
 
 
 # Input-Output
