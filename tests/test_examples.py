@@ -487,6 +487,18 @@ class TestExamples(unittest.TestCase):
             {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408},
         )
 
+    def test_example_single_stage_prod_cost_linked_subproblems_w_hydro(self):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        self.check_validation("single_stage_prod_cost_linked_subproblems_w_hydro")
+        self.run_and_check_objective(
+            "single_stage_prod_cost_linked_subproblems_w_hydro",
+            {1: -71637941.12254025, 2: -71637941.12254025, 3: -71637941.12254025},
+        )
+
     def test_example_multi_stage_prod_cost(self):
         """
         Check validation and objective function values of

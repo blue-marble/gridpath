@@ -740,6 +740,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             index=m.GEN_HYDRO_LINKED_TMPS,
             param=(
                 m.gen_hydro_linked_power,
+                m.gen_hydro_linked_curtailment,
                 m.gen_hydro_linked_upwards_reserves,
                 m.gen_hydro_linked_downwards_reserves,
             ),
@@ -838,6 +839,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "project",
                     "linked_timepoint",
                     "linked_provide_power",
+                    "linked_curtailment",
                     "linked_upward_reserves",
                     "linked_downward_reserves",
                 ]
@@ -849,6 +851,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                             p,
                             tmp_linked_tmp_dict[tmp],
                             max(value(mod.GenHydro_Gross_Power_MW[p, tmp]), 0),
+                            max(value(mod.GenHydro_Curtail_MW[p, tmp]), 0),
                             max(value(mod.GenHydro_Upwards_Reserves_MW[p, tmp]), 0),
                             max(value(mod.GenHydro_Downwards_Reserves_MW[p, tmp]), 0),
                         ]
