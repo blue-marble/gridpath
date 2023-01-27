@@ -619,6 +619,25 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
 );
 
+-- These are "links" between zones, but I'm keeping them in geography as they are not
+-- really transmission
+DROP TABLE IF EXISTS subscenarios_geography_prm_capacity_transfers;
+CREATE TABLE subscenarios_geography_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_prm_capacity_transfers;
+CREATE TABLE inputs_geography_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER,
+prm_zone VARCHAR(32),  -- "from" zone
+prm_capacity_transfer_zones VARCHAR(32),  -- "to" zone,
+PRIMARY KEY (prm_capacity_transfer_scenario_id, prm_zone, prm_capacity_transfer_zones),
+FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
+    subscenarios_geography_prm_capacity_transfers (prm_capacity_transfer_scenario_id)
+);
+
 -- Local capacity
 -- This is the unit at which local capacity requirements are met in the model;
 -- it can be different from the load zones
@@ -2970,6 +2989,7 @@ of_carbon_tax INTEGER,
 of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
 of_prm INTEGER,
+of_capacity_transfers INTEGER,
 of_deliverability INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2989,6 +3009,7 @@ carbon_tax_zone_scenario_id INTEGER,
 performance_standard_zone_scenario_id INTEGER,
 fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
+prm_capacity_transfer_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
@@ -3255,6 +3276,8 @@ FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
     subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
+FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
+    subscenarios_geography_prm_capacity_transfers (prm_capacity_transfer_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
@@ -4405,6 +4428,8 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
+capacity_contribution_kept_mw FLOAT,
+capacity_contribution_from_transfers_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
 prm_shortage_mw FLOAT,

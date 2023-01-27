@@ -37,7 +37,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    def total_prm_provision_rule(mod, z, p):
+    def total_prm_provision_kept_rule(mod, z, p):
         """
 
         :param mod:
@@ -46,18 +46,40 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         :return:
         """
         return sum(
-            mod.PRM_Simple_Contribution_MW[g, p]
+            mod.Keep_Capacity_Contribution[g, p]
             for g in mod.PRM_PROJECTS_BY_PRM_ZONE[z]
             if (g, p) in mod.PRM_PRJ_OPR_PRDS
         )
 
-    m.Total_PRM_Simple_Contribution_MW = Expression(
-        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=total_prm_provision_rule
+    m.Total_PRM_Simple_Contribution_Kept_MW = Expression(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=total_prm_provision_kept_rule
+    )
+
+    def total_prm_provision_from_transfers_rule(mod, z, p):
+        """
+
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return sum(
+            mod.Transfer_Capacity_Contribution[g, p, z]
+            for (g, prd, transfer_zone) in mod.PRM_PRJ_OPR_PRDS_CAP_TRANSFER_ZONES
+            if transfer_zone == z and prd == p
+        )
+
+    m.Total_PRM_Simple_Contribution_From_Transfers_MW = Expression(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT,
+        rule=total_prm_provision_from_transfers_rule,
     )
 
     # Add to balance constraint
     getattr(d, prm_balance_provision_components).append(
-        "Total_PRM_Simple_Contribution_MW"
+        "Total_PRM_Simple_Contribution_Kept_MW"
+    )
+    getattr(d, prm_balance_provision_components).append(
+        "Total_PRM_Simple_Contribution_From_Transfers_MW"
     )
 
 
@@ -83,9 +105,26 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         newline="",
     ) as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["prm_zone", "period", "elcc_mw"])
+        writer.writerow(
+            [
+                "prm_zone",
+                "period",
+                "total_capacity_contributions_mw",
+                "capacity_contribution_kept_mw",
+                "capacity_contribution_from_transfers_mw",
+            ]
+        )
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
-            writer.writerow([z, p, value(m.Total_PRM_Simple_Contribution_MW[z, p])])
+            writer.writerow(
+                [
+                    z,
+                    p,
+                    value(m.Total_PRM_Simple_Contribution_Kept_MW[z, p])
+                    + value(m.Total_PRM_Simple_Contribution_From_Transfers_MW[z, p]),
+                    value(m.Total_PRM_Simple_Contribution_Kept_MW[z, p]),
+                    value(m.Total_PRM_Simple_Contribution_From_Transfers_MW[z, p]),
+                ]
+            )
 
 
 def import_results_into_database(
@@ -124,16 +163,30 @@ def import_results_into_database(
         for row in reader:
             prm_zone = row[0]
             period = row[1]
-            elcc = row[2]
+            total = row[2]
+            cap_kept = row[3]
+            cap_from_transfers = row[4]
 
-            results.append((scenario_id, prm_zone, period, subproblem, stage, elcc))
+            results.append(
+                (
+                    scenario_id,
+                    prm_zone,
+                    period,
+                    subproblem,
+                    stage,
+                    total,
+                    cap_kept,
+                    cap_from_transfers,
+                )
+            )
 
     insert_temp_sql = """
         INSERT INTO 
         temp_results_system_prm{}
          (scenario_id, prm_zone, period, subproblem_id, stage_id, 
-         elcc_simple_mw)
-         VALUES (?, ?, ?, ?, ?, ?);""".format(
+         elcc_simple_mw, capacity_contribution_kept_mw, 
+         capacity_contribution_from_transfers_mw)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?);""".format(
         scenario_id
     )
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
@@ -141,8 +194,10 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     insert_sql = """
         INSERT INTO results_system_prm
-        (scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw)
-        SELECT scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw
+        (scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw, capacity_contribution_kept_mw, 
+         capacity_contribution_from_transfers_mw)
+        SELECT scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw, capacity_contribution_kept_mw, 
+         capacity_contribution_from_transfers_mw
         FROM temp_results_system_prm{}
          ORDER BY scenario_id, prm_zone, period, subproblem_id, stage_id;
          """.format(

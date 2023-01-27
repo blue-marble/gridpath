@@ -1,0 +1,23 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_simple_prm_w_transfers* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology vintage                   
+Zone1     Gas        2020                124.00
+                     2030                 27.67
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                       0.00           0.00
+                 Gas                  329,376.00          83.56
+                 Nuclear               52,560.00          13.33
+                 Wind                  12,264.00           3.11
+          2030   Coal                       0.00           0.00
+                 Gas                  329,376.00          83.56
+                 Nuclear               52,560.00          13.33
+                 Wind                  12,264.00           3.11

@@ -1,0 +1,5 @@
+prm_zone,period,prm_requirement_mw,prm_peak_load_mw,prm_annual_load_mwh
+PRMZone1,2020,60,,
+PRMZone1,2030,60,,
+PRMZone2,2020,60,,
+PRMZone2,2030,60,,

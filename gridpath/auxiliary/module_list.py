@@ -58,6 +58,7 @@ def all_modules_list():
         "geography.performance_standard_zones",
         "geography.fuel_burn_limit_balancing_areas",
         "geography.prm_zones",
+        "geography.capacity_transfer_links",
         "geography.local_capacity_zones",
         "geography.markets",
         "system.load_balance.static_load_requirement",
@@ -109,6 +110,7 @@ def all_modules_list():
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",
+        "project.reliability.prm.transfer_simple_capacity_contributions",
         "project.reliability.prm.elcc_surface",
         "project.reliability.prm.group_costs",
         "project.reliability.local_capacity",
@@ -161,6 +163,7 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
+        "system.reliability.prm.aggregate_project_simple_prm_contribution_w_transfers",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
         "system.reliability.local_capacity.aggregate_local_capacity_contribution",
@@ -381,6 +384,11 @@ def cross_feature_modules_list():
         ("transmission", "simultaneous_flow_limits"): [
             "transmission.operations.simultaneous_flow_limits"
         ],
+        ("prm", "capacity_transfers"): [
+            "geography.capacity_transfer_links",
+            "project.reliability.prm.transfer_simple_capacity_contributions",
+            "system.reliability.prm.aggregate_project_simple_prm_contribution_w_transfers",
+        ],
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
             "system.reliability.prm.elcc_surface",
@@ -422,6 +430,21 @@ def feature_shared_modules_list():
     }
 
     return shared_modules
+
+
+def feature_remove_modules_list():
+    """
+    :return: dictionary with the feature name as keys and a list of modules to be
+    excluded if the feature is selected
+    """
+
+    feature_remove_modules = {
+        "capacity_transfers": [
+            "system.reliability.prm.aggregate_project_simple_prm_contribution"
+        ]
+    }
+
+    return feature_remove_modules
 
 
 def determine_modules(
@@ -555,6 +578,12 @@ def determine_modules(
     for feature in stage_feature_modules:
         if feature not in requested_features and not remove_fix_variable_modules:
             for m in stage_feature_modules[feature]:
+                modules_to_use.remove(m)
+
+    # Remove modules features explicitly ask to remove
+    for feature in feature_remove_modules_list().keys():
+        if feature in requested_features:
+            for m in feature_remove_modules_list()[feature]:
                 modules_to_use.remove(m)
 
     return modules_to_use

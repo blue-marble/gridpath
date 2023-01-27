@@ -1266,6 +1266,19 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_cumulative_and_vintage_min_max", -110384972580606.39
         )
 
+    def test_example_2periods_new_build_simple_prm_w_transfers(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_w_transfers"
+        example
+        :return:
+        """
+        objective = -10453045902.378979
+        self.check_validation("2periods_new_build_simple_prm_w_transfers")
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_w_transfers", objective
+        )
+
     @classmethod
     def tearDownClass(cls):
         os.remove(DB_PATH)
