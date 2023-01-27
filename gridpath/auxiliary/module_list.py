@@ -110,7 +110,6 @@ def all_modules_list():
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",
-        "project.reliability.prm.transfer_simple_capacity_contributions",
         "project.reliability.prm.elcc_surface",
         "project.reliability.prm.group_costs",
         "project.reliability.local_capacity",
@@ -163,7 +162,7 @@ def all_modules_list():
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
-        "system.reliability.prm.aggregate_project_simple_prm_contribution_w_transfers",
+        "system.reliability.prm.capacity_contribution_transfers",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
         "system.reliability.local_capacity.aggregate_local_capacity_contribution",
@@ -386,8 +385,7 @@ def cross_feature_modules_list():
         ],
         ("prm", "capacity_transfers"): [
             "geography.capacity_transfer_links",
-            "project.reliability.prm.transfer_simple_capacity_contributions",
-            "system.reliability.prm.aggregate_project_simple_prm_contribution_w_transfers",
+            "system.reliability.prm.capacity_contribution_transfers",
         ],
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
@@ -439,9 +437,6 @@ def feature_remove_modules_list():
     """
 
     feature_remove_modules = {
-        "capacity_transfers": [
-            "system.reliability.prm.aggregate_project_simple_prm_contribution"
-        ]
     }
 
     return feature_remove_modules

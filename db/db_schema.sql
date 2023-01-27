@@ -4428,8 +4428,8 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
-capacity_contribution_kept_mw FLOAT,
-capacity_contribution_from_transfers_mw FLOAT,
+capacity_contribution_transferred_from_mw FLOAT,
+capacity_contribution_transferred_to_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
 prm_shortage_mw FLOAT,
@@ -4449,6 +4449,16 @@ stage_id INTEGER,
 elcc_surface_mw FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, elcc_surface_name, prm_zone, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_system_capacity_transfers;
+CREATE TABLE  results_system_capacity_transfers (
+scenario_id INTEGER,
+prm_zone_from VARCHAR(64),
+prm_zone_to VARCHAR(64),
+period INTEGER,
+capacity_transfer_mw FLOAT,
+PRIMARY KEY (scenario_id, prm_zone_to, prm_zone_from, period)
 );
 
 -- Local capacity balance
