@@ -825,3 +825,12 @@ def curtailment_cost_rule(mod, g, tmp):
         * mod.curtailment_cost_per_pwh[g]
         * mod.stor_losses_factor_curtailment
     )
+
+
+def soc_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    return mod.soc_penalty_cost_per_energyunit[prj] * (
+        mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        - mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
+    )
