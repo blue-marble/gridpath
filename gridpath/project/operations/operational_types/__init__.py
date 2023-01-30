@@ -573,3 +573,10 @@ def curtailment_cost_rule(mod, prj, tmp):
 def fuel_contribution_rule(mod, prj, tmp):
     """ """
     return 0
+
+
+def soc_penalty_cost_rule(mod, prj, tmp):
+    """
+    If no soc_penalty_cost_rule is specified, the default SOC penalty cost is 0.
+    """
+    return 0

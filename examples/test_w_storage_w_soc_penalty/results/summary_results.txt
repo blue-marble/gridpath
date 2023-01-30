@@ -1,0 +1,14 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_w_storage_w_soc_penalty* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                     876.00           0.67
+                 Gas                   67,671.00          51.50
+                 Nuclear               52,560.00          40.00
+                 Storage               -1,971.00          -1.50
+                 Wind                  12,264.00           9.33
