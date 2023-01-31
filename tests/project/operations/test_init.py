@@ -486,6 +486,21 @@ class TestOperationsInit(unittest.TestCase):
             expected_curtailment_cost_projects, actual_curtailment_cost_projects
         )
 
+        # Set: SOC_PENALTY_COST_PRJS
+        expected_soc_penalty_cost_projects = sorted(
+            projects_df[projects_df["soc_penalty_cost_per_energyunit"] != "."][
+                "project"
+            ].tolist()
+        )
+
+        actual_soc_penalty_cost_projects = sorted(
+            [p for p in instance.SOC_PENALTY_COST_PRJS]
+        )
+
+        self.assertListEqual(
+            expected_soc_penalty_cost_projects, actual_soc_penalty_cost_projects
+        )
+
         # Param: variable_om_cost_per_mwh
         var_om_cost_df = projects_df[projects_df["variable_om_cost_per_mwh"] != "."]
         expected_var_om_cost_by_prj = OrderedDict(
@@ -897,6 +912,35 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertDictEqual(
             expected_curtailment_cost_by_prj, actual_curtailment_cost_by_prj
+        )
+
+        # Param: soc_penalty_cost_per_energyunit
+        soc_penalty_cost_df = projects_df[
+            projects_df["soc_penalty_cost_per_energyunit"] != "."
+        ]
+        expected_soc_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                dict(
+                    zip(
+                        soc_penalty_cost_df["project"],
+                        pd.to_numeric(
+                            soc_penalty_cost_df["soc_penalty_cost_per_energyunit"]
+                        ),
+                    )
+                ).items()
+            )
+        )
+        actual_soc_penalty_cost_by_prj = OrderedDict(
+            sorted(
+                {
+                    p: instance.soc_penalty_cost_per_energyunit[p]
+                    for p in instance.SOC_PENALTY_COST_PRJS
+                }.items()
+            )
+        )
+
+        self.assertDictEqual(
+            expected_soc_penalty_cost_by_prj, actual_soc_penalty_cost_by_prj
         )
 
     def test_get_slopes_intercept_by_project_period_segment(self):

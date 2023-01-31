@@ -1266,6 +1266,18 @@ class TestExamples(unittest.TestCase):
             "2periods_new_build_cumulative_and_vintage_min_max", -110384972580606.39
         )
 
+    def test_example_test_w_storage_w_soc_penalty(self):
+        """
+        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        example
+        :return:
+        """
+
+        self.check_validation("test_w_storage_w_soc_penalty")
+        self.run_and_check_objective(
+            "test_w_storage_w_soc_penalty", -245736137.55082923
+        )
+
     def test_example_2periods_new_build_simple_prm_w_transfers(self):
         """
         Check validation and objective function value of
