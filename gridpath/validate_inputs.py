@@ -304,11 +304,11 @@ def update_validation_status(conn, scenario_id):
 
     if validations:
         status = 2
-        # # Print the errors
-        # for e in c.execute(
-        #     f"""SELECT * FROM status_validation WHERE scenario_id = {scenario_id};"""
-        # ).fetchall():
-        #     print(e)
+        # Print the errors
+        for e in c.execute(
+            f"""SELECT * FROM status_validation WHERE scenario_id = {scenario_id};"""
+        ).fetchall():
+            print(e)
     else:
         status = 1
 

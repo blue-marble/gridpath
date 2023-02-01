@@ -58,7 +58,6 @@ def all_modules_list():
         "geography.performance_standard_zones",
         "geography.fuel_burn_limit_balancing_areas",
         "geography.prm_zones",
-        "geography.capacity_transfer_links",
         "geography.local_capacity_zones",
         "geography.markets",
         "system.load_balance.static_load_requirement",
@@ -124,6 +123,7 @@ def all_modules_list():
         "transmission.operations.hurdle_costs",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
+        "transmission.reliability.capacity_transfer_links",
         "system.reserves.requirement.lf_reserves_up",
         "system.reserves.requirement.lf_reserves_down",
         "system.reserves.requirement.regulation_up",
@@ -383,8 +383,8 @@ def cross_feature_modules_list():
         ("transmission", "simultaneous_flow_limits"): [
             "transmission.operations.simultaneous_flow_limits"
         ],
-        ("prm", "capacity_transfers"): [
-            "geography.capacity_transfer_links",
+        ("transmission", "prm", "capacity_transfers"): [
+            "transmission.reliability.capacity_transfer_links",
             "system.reliability.prm.capacity_contribution_transfers",
         ],
         ("prm", "elcc_surface"): [

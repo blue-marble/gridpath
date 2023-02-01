@@ -13,24 +13,59 @@
 # limitations under the License.
 
 """
+Capacity transfers between PRM zones.
+
+Note that the capacity transfer variable is not at the transmission line level -- it
+is defined at the "capacity transfer link" level, with the transmission line topology
+used to limit total transfers on each link.
 
 """
 
 import csv
 import os.path
-from pyomo.environ import Var, NonNegativeReals, Expression, value
+from pyomo.environ import (
+    Set,
+    Param,
+    Var,
+    Constraint,
+    NonNegativeReals,
+    Expression,
+    value,
+)
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.db_interface import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_balance_provision_components
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`PRM_TX_LINES`                                                  |
+    |                                                                         |
+    | The set of PRM-relevant transmission lines.                             |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`prm_zone_from`                                                 |
+    | | *Defined over*: :code:`PRM_TX_LINES`                                  |
+    | | *Within*: :code:`PRM_ZONES`                                           |
+    |                                                                         |
+    | The transmission line's starting PRM zone.                              |
+    +-------------------------------------------------------------------------+
+    | | :code:`prm_zone_to`                                                  |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    | | *Within*: :code:`PRM_ZONES`                                           |
+    |                                                                         |
+    | The transmission line's ending PRM zone.                                |
+    +-------------------------------------------------------------------------+
     """
     m.Transfer_Capacity_Contribution = Var(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
@@ -61,9 +96,166 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PRM_ZONES, m.PERIODS, initialize=total_transfers_to_init
     )
 
+    # Sets
+    ###########################################################################
+
+    m.PRM_TX_LINES = Set(within=m.TX_LINES)
+
+    # Required Input Params
+    ###########################################################################
+    m.prm_zone_from = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
+    m.prm_zone_to = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
+
+    # TODO: add limits on transfers; will need to move to own module that is only
+    #  included if transmission reliability is included
+    def transfer_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
+        # Sum of max capacity of lines with prm_zone_to == z plus
+        # Negative sum of min capacity of lines with prm_zone_from == z
+        return mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd] <= sum(
+            mod.Tx_Max_Capacity_MW[tx, op]
+            for (tx, op) in mod.TX_OPR_PRDS
+            if op == prd
+            and mod.prm_zone_from[tx] == prm_z_from
+            and mod.prm_zone_to[tx] == prm_z_to
+        ) + -sum(
+            mod.Tx_Min_Capacity_MW[tx, op]
+            for (tx, op) in mod.TX_OPR_PRDS
+            if op == prd
+            and mod.prm_zone_from[tx] == prm_z_to
+            and mod.prm_zone_to[tx] == prm_z_from
+        )
+
+    m.Capacity_Transfer_Limits_Constraint = Constraint(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        rule=transfer_limits_constraint_rule
+    )
+
     # Add to balance constraint
     getattr(d, prm_balance_provision_components).append("Total_Transfers_from_PRM_Zone")
     getattr(d, prm_balance_provision_components).append("Total_Transfers_to_PRM_Zone")
+
+
+# Input-Output
+###############################################################################
+
+
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param stage:
+    :param stage:
+    :return:
+    """
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory,
+            subproblem,
+            stage,
+            "inputs",
+            "prm_transmission_lines.tab",
+        ),
+        select=(
+            "transmission_line",
+            "prm_zone_from",
+            "prm_zone_to",
+        ),
+        index=m.PRM_TX_LINES,
+        param=(
+            m.prm_zone_from,
+            m.prm_zone_to,
+        ),
+    )
+
+
+# Database
+###############################################################################
+
+
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem = 1 if subproblem == "" else subproblem
+    stage = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    transmission_lines = c.execute(
+        """SELECT transmission_line, prm_zone_from, prm_zone_to
+        FROM inputs_transmission_portfolios
+        LEFT OUTER JOIN
+            (SELECT transmission_line, prm_zone_from, prm_zone_to
+            FROM inputs_transmission_prm_zones
+            WHERE transmission_prm_zone_scenario_id = {prm_z}) as tx_prm_zones
+        USING (transmission_line)
+        WHERE transmission_portfolio_scenario_id = {portfolio};""".format(
+            prm_z=subscenarios.TRANSMISSION_PRM_ZONE_SCENARIO_ID,
+            portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+        )
+    )
+
+    # TODO: allow Tx lines with no PRM zones from and to specified, that are only
+    #  used for say, reliability capacity exchanges; they would need a different
+    #  operational type (no power transfer); the decisions also won't be made at the
+    #  transmission line level, but the capacity will limit the aggregate transfer
+    #  between PRM zones, so there won't be flow variables
+
+    return transmission_lines
+
+
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    transmission_lines.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    transmission_lines = get_inputs_from_database(
+        scenario_id, subscenarios, subproblem, stage, conn
+    )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "prm_transmission_lines.tab",
+        ),
+        "w",
+        newline="",
+    ) as transmission_lines_tab_file:
+        writer = csv.writer(
+            transmission_lines_tab_file, delimiter="\t", lineterminator="\n"
+        )
+
+        # Write header
+        writer.writerow(
+            [
+                "transmission_line",
+                "prm_zone_from",
+                "prm_zone_to",
+            ]
+        )
+
+        for row in transmission_lines:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -158,8 +350,15 @@ def import_results_into_database(
             transfers_to = row[3]
 
             results.append(
-                (transfers_from, transfers_to, scenario_id, prm_zone, period,
-                 subproblem, stage)
+                (
+                    transfers_from,
+                    transfers_to,
+                    scenario_id,
+                    prm_zone,
+                    period,
+                    subproblem,
+                    stage,
+                )
             )
 
     update_sql = """

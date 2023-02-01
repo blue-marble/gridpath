@@ -1278,6 +1278,19 @@ class TestExamples(unittest.TestCase):
             "test_w_storage_w_soc_penalty", -245736137.55082923
         )
 
+    def test_example_2periods_new_build_simple_prm_2loadzones(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones"
+        example
+        :return:
+        """
+        objective = -10453045900.191605
+        self.check_validation("2periods_new_build_simple_prm_2loadzones")
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones", objective
+        )
+
     def test_example_2periods_new_build_simple_prm_w_transfers(self):
         """
         Check validation and objective function value of

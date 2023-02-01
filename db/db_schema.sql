@@ -1652,6 +1652,30 @@ FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
  subscenarios_project_prm_zones (project_prm_zone_scenario_id)
 );
 
+-- Transmission PRM zones
+-- Which transmission lines can contribute to PRM requirements
+-- Depends on how PRM zones are specified
+-- This table can include all lines with NULLs for lines not
+-- contributing to transfers
+
+DROP TABLE IF EXISTS subscenarios_transmission_prm_zones;
+CREATE TABLE subscenarios_transmission_prm_zones (
+transmission_prm_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_zones;
+CREATE TABLE inputs_transmission_prm_zones (
+transmission_prm_zone_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+prm_zone_from VARCHAR(32),
+prm_zone_to VARCHAR(32),
+PRIMARY KEY (transmission_prm_zone_scenario_id, transmission_line),
+FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
+ subscenarios_transmission_prm_zones (transmission_prm_zone_scenario_id)
+);
+
 -- Project capacity contribution characteristics (simple ELCC treatment or
 -- treatment via an ELCC surface
 DROP TABLE IF EXISTS subscenarios_project_elcc_chars;
@@ -3031,6 +3055,7 @@ project_carbon_tax_allowance_scenario_id INTEGER,
 project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
+transmission_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
 prm_deliverability_existing_scenario_id INTEGER,
@@ -3168,6 +3193,8 @@ FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         (project_fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
+FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
+    subscenarios_transmission_prm_zones (transmission_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
