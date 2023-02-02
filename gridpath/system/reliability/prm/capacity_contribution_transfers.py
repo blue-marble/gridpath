@@ -427,7 +427,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "capacity_contribution_transferred_to_mw",
             ]
         )
-        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
+        for z, p in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow(
                 [
                     z,
