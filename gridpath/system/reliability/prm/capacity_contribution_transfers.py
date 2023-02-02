@@ -107,12 +107,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             mod.Tx_Max_Capacity_MW[tx, op]
             for (tx, op) in mod.TX_OPR_PRDS
             if op == prd
+            and tx in mod.PRM_TX_LINES
             and mod.prm_zone_from[tx] == prm_z_from
             and mod.prm_zone_to[tx] == prm_z_to
         ) + -sum(
             mod.Tx_Min_Capacity_MW[tx, op]
             for (tx, op) in mod.TX_OPR_PRDS
             if op == prd
+            and tx in mod.PRM_TX_LINES
             and mod.prm_zone_from[tx] == prm_z_to
             and mod.prm_zone_to[tx] == prm_z_from
         )
@@ -167,16 +169,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     limits_tab_file = os.path.join(
-                scenario_directory,
-                str(subproblem),
-                str(stage),
-                "inputs",
-                "prm_capacity_transfer_limits.tab",
-            )
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "prm_capacity_transfer_limits.tab",
+    )
     if os.path.exists(limits_tab_file):
         data_portal.load(
             filename=limits_tab_file,
-            index=m.PRM_TX_LINES,
             param=(
                 m.min_transfer_energyunit,
                 m.max_transfer_energyunit,
