@@ -78,7 +78,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     if fuels_df.empty:
         pass
     else:
-
         data_portal.load(
             filename=fuels_file,
             index=m.FUELS,
@@ -96,7 +95,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         ).values[0]
 
         if "fuel_group" in header:
-
             data_portal.data()["FUEL_GROUPS"] = fuels_df["fuel_group"].unique()
 
             data_portal.load(

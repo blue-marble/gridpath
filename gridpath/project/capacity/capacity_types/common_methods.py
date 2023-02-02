@@ -117,7 +117,7 @@ def project_vintages_relevant_in_period(
     each period.
     """
     project_vintages = list()
-    for (prj, v) in project_vintage_set:
+    for prj, v in project_vintage_set:
         if period in relevant_periods_by_project_vintage_set[prj, v]:
             project_vintages.append((prj, v))
         else:
@@ -260,7 +260,6 @@ def spec_get_inputs_from_database(conn, subscenarios, capacity_type):
 
 
 def spec_write_tab_file(scenario_directory, subproblem, stage, spec_project_params):
-
     spec_params_filepath = os.path.join(
         scenario_directory,
         str(subproblem),
@@ -352,7 +351,6 @@ def write_from_query(spec_project_params, writer):
 
 
 def spec_determine_inputs(scenario_directory, subproblem, stage, capacity_type):
-
     # Determine the relevant projects
     project_list = list()
 

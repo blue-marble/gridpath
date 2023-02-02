@@ -224,6 +224,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Power and State of Charge
 def max_production_rule(mod, prj, tmp):
     """
@@ -488,7 +489,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 "fuel_prod_power_consumption_powerunit",
             ]
         )
-        for (p, tmp) in mod.FUEL_PROD_OPR_TMPS:
+        for p, tmp in mod.FUEL_PROD_OPR_TMPS:
             writer.writerow(
                 [
                     p,

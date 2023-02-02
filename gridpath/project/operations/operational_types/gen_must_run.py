@@ -311,7 +311,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             ]
         )
 
-        for (p, tmp) in mod.GEN_MUST_RUN_OPR_TMPS:
+        for p, tmp in mod.GEN_MUST_RUN_OPR_TMPS:
             writer.writerow(
                 [
                     p,

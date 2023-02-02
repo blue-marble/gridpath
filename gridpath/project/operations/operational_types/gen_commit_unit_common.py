@@ -3468,7 +3468,7 @@ def export_results(
             ]
         )
 
-        for (p, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
+        for p, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
             writer.writerow(
                 [
                     p,
@@ -3609,7 +3609,7 @@ def export_linked_subproblem_inputs(
                 ]
             )
 
-            for (p, tmp) in sorted(
+            for p, tmp in sorted(
                 getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
             ):
                 if tmp in tmps_to_link:
@@ -3759,7 +3759,7 @@ def export_linked_subproblem_inputs(
                             "linked_startup_ramp_rate_mw_per_tmp",
                         ]
                     )
-                    for (p, tmp, s) in sorted(
+                    for p, tmp, s in sorted(
                         getattr(
                             mod, "GEN_COMMIT_{}_OPR_TMPS_STR_TYPES".format(BIN_OR_LIN)
                         )
@@ -3827,7 +3827,6 @@ def save_duals(m, bin_or_lin):
 
 
 def generic_constraint_column_dict(bin_or_lin):
-
     constraint_column_dict = {
         "GenCommit{}_Ramp_Up_Constraint".format(bin_or_lin): "ramp_up_dual",
         "GenCommit{}_Ramp_Down_Constraint".format(bin_or_lin): "ramp_down_dual",

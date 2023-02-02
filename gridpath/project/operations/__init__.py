@@ -666,7 +666,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
     if os.path.exists(hr_curves_file) and os.path.exists(project_fuels_file):
-
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 

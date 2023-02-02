@@ -371,6 +371,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Power and State of Charge
 def max_discharge_rule(mod, s, tmp):
     """
@@ -727,7 +728,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 "discharge_mw",
             ]
         )
-        for (p, tmp) in mod.STOR_OPR_TMPS:
+        for p, tmp in mod.STOR_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -780,7 +781,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_charge",
                 ]
             )
-            for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+            for p, tmp in sorted(mod.STOR_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [

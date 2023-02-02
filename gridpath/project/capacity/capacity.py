@@ -247,6 +247,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Set Rules
 ###############################################################################
 
+
 # TODO: the creation of the OPR_PRJS_IN_TMPS is by far
 #  the most time-consuming step in instantiating the problem; is there
 #  any way to speed it up? It is perhaps inefficient to iterate over all
@@ -339,7 +340,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "fuel_stor_capacity_fuelunit",
             ]
         )
-        for (prj, p) in m.PRJ_OPR_PRDS:
+        for prj, p in m.PRJ_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

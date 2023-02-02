@@ -148,7 +148,6 @@ def get_inputs_for_subproblem(
     subscenarios,
     db_path,
 ):
-
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # First make inputs directory if needed

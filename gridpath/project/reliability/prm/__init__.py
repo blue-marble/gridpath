@@ -220,7 +220,7 @@ def write_model_inputs(
     # Only assign a type to projects that contribute to a PRM zone in case
     # we have projects with missing zones here
     prj_zone_type_dict = dict()
-    for (prj, zone, prm_type) in project_zones:
+    for prj, zone, prm_type in project_zones:
         prj_zone_type_dict[str(prj)] = (
             (".", ".") if zone is None else (str(zone), str(prm_type))
         )

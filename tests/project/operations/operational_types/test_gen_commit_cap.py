@@ -64,7 +64,6 @@ class TestGenCommitCap(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
-
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")

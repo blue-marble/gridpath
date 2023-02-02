@@ -321,7 +321,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "final_net_buy_power_position",
             ]
         )
-        for (z, mrkt) in getattr(m, "LZ_MARKETS"):
+        for z, mrkt in getattr(m, "LZ_MARKETS"):
             for tmp in getattr(m, "TMPS"):
                 writer.writerow(
                     [

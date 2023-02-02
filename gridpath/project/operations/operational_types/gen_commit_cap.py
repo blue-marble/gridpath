@@ -624,6 +624,7 @@ def auxiliary_consumption_rule(mod, g, tmp):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Commitment and power
 def commit_capacity_constraint_rule(mod, g, tmp):
     """
@@ -1473,7 +1474,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             ]
         )
 
-        for (p, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS:
+        for p, tmp in mod.GEN_COMMIT_CAP_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -1534,7 +1535,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_shutdown",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_COMMIT_CAP_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [

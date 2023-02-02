@@ -438,7 +438,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mwh",
             ]
         )
-        for (prj, p) in m.DR_NEW_OPR_PRDS:
+        for prj, p in m.DR_NEW_OPR_PRDS:
             writer.writerow(
                 [
                     prj,
@@ -676,7 +676,6 @@ def write_model_inputs(
                     "type.".format(project)
                 )
             else:
-
                 for row in supply_curve:
                     writer.writerow(row)
 

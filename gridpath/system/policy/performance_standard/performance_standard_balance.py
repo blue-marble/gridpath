@@ -107,7 +107,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "performance_standard_overage",
             ]
         )
-        for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD:
+        for z, p in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD:
             writer.writerow(
                 [
                     z,

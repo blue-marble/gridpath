@@ -63,7 +63,6 @@ class TestGenCommitLin(unittest.TestCase):
     """ """
 
     def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
-
         # check if both inputs are dicts
         self.assertIsInstance(d1, dict, "First argument is not a dictionary")
         self.assertIsInstance(d2, dict, "Second argument is not a dictionary")
@@ -194,7 +193,7 @@ class TestGenCommitLin(unittest.TestCase):
         }
 
         expected_opr_tmps_str_types = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
+        for p, tmp in expected_operational_timepoints_by_project:
             st_types = expected_str_by_prj[p]
             for st in st_types:
                 expected_opr_tmps_str_types.append((p, tmp, st))

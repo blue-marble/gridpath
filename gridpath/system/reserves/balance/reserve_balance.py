@@ -133,7 +133,7 @@ def generic_export_results(
                 column_name,
             ]
         )
-        for (ba, tmp) in getattr(m, reserve_zone_set) * m.TMPS:
+        for ba, tmp in getattr(m, reserve_zone_set) * m.TMPS:
             writer.writerow(
                 [
                     ba,

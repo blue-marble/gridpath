@@ -836,7 +836,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             ]
         )
 
-        for (p, tmp) in mod.GEN_VAR_STOR_HYB_OPR_TMPS:
+        for p, tmp in mod.GEN_VAR_STOR_HYB_OPR_TMPS:
             writer.writerow(
                 [
                     p,
