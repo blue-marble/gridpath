@@ -139,7 +139,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "power_mw",
             ]
         )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for p, tmp in m.PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,

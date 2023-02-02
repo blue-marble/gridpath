@@ -139,13 +139,13 @@ class TestFuelBurn(unittest.TestCase):
         # Set: FUEL_PRJS_FUEL_OPR_TMPS
         expected_fuel_project_fuels = list(prj_fuels_df.to_records(index=False))
         expected_fuels_by_prj = {}
-        for (p, f, blend_min, blend_max) in expected_fuel_project_fuels:
+        for p, f, blend_min, blend_max in expected_fuel_project_fuels:
             if p not in expected_fuels_by_prj.keys():
                 expected_fuels_by_prj[p] = [f]
             else:
                 expected_fuels_by_prj[p].append(f)
         expected_fuel_prj_fuel_tmps = []
-        for (p, tmp) in expected_fuel_prj_tmps:
+        for p, tmp in expected_fuel_prj_tmps:
             for f in expected_fuels_by_prj[p]:
                 expected_fuel_prj_fuel_tmps.append((p, f, tmp))
 
@@ -232,7 +232,7 @@ class TestFuelBurn(unittest.TestCase):
             ("DAC", 2030): [0],
         }
         expected_hr_curve_prj_tmp_sgms = list()
-        for (prj, tmp) in expected_hr_curve_prj_tmps:
+        for prj, tmp in expected_hr_curve_prj_tmps:
             prd = timepoints_df[timepoints_df["timepoint"] == tmp].iloc[0]["period"]
             segments = expected_segments_by_prj_period[prj, prd]
             for sgm in segments:
@@ -268,7 +268,7 @@ class TestFuelBurn(unittest.TestCase):
 
         # Set: STARTUP_FUEL_PRJS_FUEL_OPR_TMPS
         expected_startup_fuel_prj_fuel_tmps = []
-        for (p, tmp) in expected_startup_fuel_prj_tmps:
+        for p, tmp in expected_startup_fuel_prj_tmps:
             for f in expected_fuels_by_prj[p]:
                 expected_startup_fuel_prj_fuel_tmps.append((p, f, tmp))
 

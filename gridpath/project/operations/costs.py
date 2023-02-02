@@ -526,7 +526,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "curtailment_cost",
             ]
         )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for p, tmp in m.PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,

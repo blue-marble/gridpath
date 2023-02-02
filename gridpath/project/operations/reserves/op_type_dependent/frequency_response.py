@@ -160,7 +160,7 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_ramp_rate_dict = dict()
-    for (prj, ramp_rate) in prj_ramp_rates:
+    for prj, ramp_rate in prj_ramp_rates:
         prj_ramp_rate_dict[str(prj)] = "." if ramp_rate is None else str(ramp_rate)
 
     # Add params to projects file

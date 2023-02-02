@@ -594,7 +594,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "net_fuel_burn_fuelunit",
             ]
         )
-        for (p, f, tmp) in m.FUEL_PRJS_FUEL_OPR_TMPS:
+        for p, f, tmp in m.FUEL_PRJS_FUEL_OPR_TMPS:
             writer.writerow(
                 [
                     p,

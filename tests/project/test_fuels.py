@@ -129,7 +129,7 @@ class TestFuels(unittest.TestCase):
 
         # Set: FUELS_BY_FUEL_GROUP
         expected_fuels_by_fg = {}
-        for (fg, f) in expected_fuel_groups_fuels:
+        for fg, f in expected_fuel_groups_fuels:
             if fg not in expected_fuels_by_fg.keys():
                 expected_fuels_by_fg[fg] = [f]
             else:

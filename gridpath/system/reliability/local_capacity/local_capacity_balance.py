@@ -113,7 +113,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "local_capacity_shortage_mw",
             ]
         )
-        for (z, p) in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT:
+        for z, p in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow(
                 [
                     z,

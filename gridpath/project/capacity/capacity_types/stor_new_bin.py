@@ -589,7 +589,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mwh",
             ]
         )
-        for (prj, v) in m.STOR_NEW_BIN_VNTS:
+        for prj, v in m.STOR_NEW_BIN_VNTS:
             writer.writerow(
                 [
                     prj,

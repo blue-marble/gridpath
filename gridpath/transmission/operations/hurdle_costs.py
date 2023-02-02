@@ -253,7 +253,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "hurdle_cost_negative_direction",
             ]
         )
-        for (tx, tmp) in m.TX_OPR_TMPS:
+        for tx, tmp in m.TX_OPR_TMPS:
             writer.writerow(
                 [
                     tx,

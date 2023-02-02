@@ -210,7 +210,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "elcc_mw",
             ]
         )
-        for (surface, prj, period, facet) in m.ELCC_SURFACE_PROJECT_PERIOD_FACETS:
+        for surface, prj, period, facet in m.ELCC_SURFACE_PROJECT_PERIOD_FACETS:
             writer.writerow(
                 [
                     surface,
@@ -359,7 +359,7 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_contr_cf_dict = dict()
-    for (prj, contr, cf) in project_contr_cf:
+    for prj, contr, cf in project_contr_cf:
         prj_contr_cf_dict[str(prj)] = (contr, cf)
 
     with open(

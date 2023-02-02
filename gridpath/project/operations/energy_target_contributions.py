@@ -304,7 +304,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "subhourly_curtailment_mw",
             ]
         )
-        for (p, tmp) in m.ENERGY_TARGET_PRJ_OPR_TMPS:
+        for p, tmp in m.ENERGY_TARGET_PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -393,7 +393,7 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
     with open(

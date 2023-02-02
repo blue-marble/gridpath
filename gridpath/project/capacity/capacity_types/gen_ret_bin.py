@@ -292,7 +292,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "retired_binary",
             ]
         )
-        for (prj, p) in m.GEN_RET_BIN_OPR_PRDS:
+        for prj, p in m.GEN_RET_BIN_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

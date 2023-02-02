@@ -145,7 +145,7 @@ def export_results(
                 "energy_only_capacity",
             ]
         )
-        for (prj, p) in m.EOA_PRM_PRJ_OPR_PRDS:
+        for prj, p in m.EOA_PRM_PRJ_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

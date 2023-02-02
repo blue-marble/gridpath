@@ -202,7 +202,7 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
     with open(

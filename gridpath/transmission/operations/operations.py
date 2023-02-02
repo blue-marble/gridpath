@@ -160,7 +160,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "transmission_losses_lz_to",
             ]
         )
-        for (l, tmp) in m.TX_OPR_TMPS:
+        for l, tmp in m.TX_OPR_TMPS:
             writer.writerow(
                 [
                     l,

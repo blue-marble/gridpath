@@ -448,7 +448,7 @@ def generic_write_model_inputs(
     project_contributions = project_contributions.fetchall()
 
     prj_contributions = False
-    for (ba, prj, pwr, cap) in project_contributions:
+    for ba, prj, pwr, cap in project_contributions:
         if pwr is not None or cap is not None:
             prj_contributions = True
 
@@ -467,7 +467,7 @@ def generic_write_model_inputs(
             writer.writerow(
                 ["ba", "project", "percent_power_req", "percent_capacity_req"]
             )
-            for (ba, prj, pwr, cap) in project_contributions:
+            for ba, prj, pwr, cap in project_contributions:
                 if pwr is None:
                     pwr = "."
                 if cap is None:

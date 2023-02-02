@@ -204,7 +204,7 @@ def update_prj_zone_column(
     ).fetchall()
 
     updates = []
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         updates.append((zone, scenario_id, prj))
 
     sql = """

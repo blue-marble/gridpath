@@ -501,12 +501,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "w",
         newline="",
     ) as f:
-
         writer = csv.writer(f)
         writer.writerow(
             ["project", "vintage", "technology", "load_zone", "new_build_mw"]
         )
-        for (prj, p) in m.GEN_NEW_LIN_VNTS:
+        for prj, p in m.GEN_NEW_LIN_VNTS:
             writer.writerow(
                 [
                     prj,
