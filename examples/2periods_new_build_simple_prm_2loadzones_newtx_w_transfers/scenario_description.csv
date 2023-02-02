@@ -1,6 +1,6 @@
-scenario_id,85
-scenario_name,2periods_new_build_simple_prm_w_transfers
-of_transmission,
+scenario_id,87
+scenario_name,2periods_new_build_simple_prm_2loadzones_newtx_w_transfers
+of_transmission,1
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,
 of_lf_reserves_up,1
@@ -24,7 +24,7 @@ of_local_capacity,
 of_markets,
 of_tuning,
 temporal_scenario_id,6
-load_zone_scenario_id,1
+load_zone_scenario_id,2
 lf_reserves_up_ba_scenario_id,1
 lf_reserves_down_ba_scenario_id,1
 regulation_up_ba_scenario_id,1
@@ -58,6 +58,7 @@ project_carbon_tax_allowance_scenario_id,NULL
 project_performance_standard_zone_scenario_id,NULL
 project_fuel_burn_limit_ba_scenario_id,NULL
 project_prm_zone_scenario_id,2
+transmission_prm_zone_scenario_id,1
 project_elcc_chars_scenario_id,1
 prm_deliverability_cost_scenario_id,NULL
 prm_deliverability_existing_scenario_id,NULL
@@ -74,12 +75,12 @@ project_new_potential_scenario_id,NULL
 project_new_binary_build_size_scenario_id,NULL
 project_capacity_group_requirement_scenario_id,NULL
 project_capacity_group_scenario_id,NULL
-transmission_portfolio_scenario_id,NULL
-transmission_load_zone_scenario_id,NULL
-transmission_specified_capacity_scenario_id,NULL
-transmission_new_cost_scenario_id,NULL
-transmission_availability_scenario_id,NULL
-transmission_operational_chars_scenario_id,NULL
+transmission_portfolio_scenario_id,2
+transmission_load_zone_scenario_id,1
+transmission_specified_capacity_scenario_id,1
+transmission_new_cost_scenario_id,1
+transmission_availability_scenario_id,1
+transmission_operational_chars_scenario_id,1
 transmission_hurdle_rate_scenario_id,NULL
 transmission_new_potential_scenario_id,NULL
 transmission_flow_scenario_id,NULL

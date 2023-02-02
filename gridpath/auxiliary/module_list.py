@@ -436,8 +436,7 @@ def feature_remove_modules_list():
     excluded if the feature is selected
     """
 
-    feature_remove_modules = {
-    }
+    feature_remove_modules = {}
 
     return feature_remove_modules
 

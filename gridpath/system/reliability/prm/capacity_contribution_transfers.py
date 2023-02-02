@@ -128,7 +128,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.Capacity_Transfer_Limits_Constraint = Constraint(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
         m.PERIODS,
-        rule=transfer_limits_constraint_rule
+        rule=transfer_limits_constraint_rule,
     )
 
     # Add to balance constraint

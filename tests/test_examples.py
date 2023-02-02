@@ -1285,23 +1285,25 @@ class TestExamples(unittest.TestCase):
         example
         :return:
         """
-        objective = -10453045900.191605
+        objective = -613211671721885.6
         self.check_validation("2periods_new_build_simple_prm_2loadzones")
         self.run_and_check_objective(
             "2periods_new_build_simple_prm_2loadzones", objective
         )
 
-    def test_example_2periods_new_build_simple_prm_w_transfers(self):
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers(self):
         """
         Check validation and objective function value of
         "2periods_new_build_simple_prm_w_transfers"
         example
         :return:
         """
-        objective = -10453045900.191605
-        self.check_validation("2periods_new_build_simple_prm_w_transfers")
+        objective = -17323444870.099785
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers"
+        )
         self.run_and_check_objective(
-            "2periods_new_build_simple_prm_w_transfers", objective
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers", objective
         )
 
     @classmethod
