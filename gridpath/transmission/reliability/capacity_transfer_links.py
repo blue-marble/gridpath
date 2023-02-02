@@ -13,8 +13,11 @@
 # limitations under the License.
 
 """
-Zones where PRM is enforced; these can be different from the load
-zones and other balancing areas.
+Zones between which capacity transfers can occur. Please note that each direction
+must be defined separately, i.e., if PRM_Zone_1 can transfer capacity to PRM_Zone_2
+and PRM_Zone_2 can transfer capacity to PRM_Zone_1,
+the PRM_ZONES_CAPACITY_TRANSFER_ZONES set must include both (PRM_Zone_1, PRM_Zone_2)
+and (PRM_Zone_2, PRM_Zone_1).
 """
 
 import csv
@@ -68,8 +71,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     prm_zone_transfers = c.execute(
-        f"""SELECT prm_zone, prm_capacity_transfer_zones
-        FROM inputs_geography_prm_capacity_transfers
+        f"""SELECT prm_zone, prm_capacity_transfer_zone
+        FROM inputs_transmission_prm_capacity_transfers
         WHERE prm_capacity_transfer_scenario_id={subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID};
         """
     )

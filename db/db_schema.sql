@@ -619,25 +619,6 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
 );
 
--- These are "links" between zones, but I'm keeping them in geography as they are not
--- really transmission
-DROP TABLE IF EXISTS subscenarios_geography_prm_capacity_transfers;
-CREATE TABLE subscenarios_geography_prm_capacity_transfers (
-prm_capacity_transfer_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-name VARCHAR(32),
-description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_geography_prm_capacity_transfers;
-CREATE TABLE inputs_geography_prm_capacity_transfers (
-prm_capacity_transfer_scenario_id INTEGER,
-prm_zone VARCHAR(32),  -- "from" zone
-prm_capacity_transfer_zones VARCHAR(32),  -- "to" zone,
-PRIMARY KEY (prm_capacity_transfer_scenario_id, prm_zone, prm_capacity_transfer_zones),
-FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
-    subscenarios_geography_prm_capacity_transfers (prm_capacity_transfer_scenario_id)
-);
-
 -- Local capacity
 -- This is the unit at which local capacity requirements are met in the model;
 -- it can be different from the load zones
@@ -1652,12 +1633,49 @@ FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
  subscenarios_project_prm_zones (project_prm_zone_scenario_id)
 );
 
--- Transmission PRM zones
--- Which transmission lines can contribute to PRM requirements
--- Depends on how PRM zones are specified
--- This table can include all lines with NULLs for lines not
--- contributing to transfers
+-- Transmission PRM zones capacity transfer links
+-- Also, which transmission lines can are part of those links
 
+DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfers;
+CREATE TABLE subscenarios_transmission_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfers;
+CREATE TABLE inputs_transmission_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER,
+prm_zone VARCHAR(32),  -- "from" zone
+prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
+PRIMARY KEY (prm_capacity_transfer_scenario_id, prm_zone, prm_capacity_transfer_zone),
+FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id)
+);
+
+-- Param limits
+DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfer_limits;
+CREATE TABLE subscenarios_transmission_prm_capacity_transfer_limits (
+prm_capacity_transfer_limits_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfer_limits;
+CREATE TABLE inputs_transmission_prm_capacity_transfer_limits (
+prm_capacity_transfer_limits_scenario_id INTEGER,
+prm_zone VARCHAR(32),  -- "from" zone
+prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
+period INTEGER,
+min_transfer_energyunit FLOAT,
+max_transfer_energyunit FLOAT,
+PRIMARY KEY (prm_capacity_transfer_limits_scenario_id, prm_zone,
+             prm_capacity_transfer_zone, period),
+FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_limits (prm_capacity_transfer_limits_scenario_id)
+);
+
+-- Transmission line aggregations for limits
 DROP TABLE IF EXISTS subscenarios_transmission_prm_zones;
 CREATE TABLE subscenarios_transmission_prm_zones (
 transmission_prm_zone_scenario_id INTEGER PRIMARY KEY,
@@ -3034,7 +3052,6 @@ carbon_tax_zone_scenario_id INTEGER,
 performance_standard_zone_scenario_id INTEGER,
 fuel_burn_limit_ba_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
-prm_capacity_transfer_scenario_id INTEGER,
 local_capacity_zone_scenario_id INTEGER,
 market_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
@@ -3055,6 +3072,8 @@ project_carbon_tax_allowance_scenario_id INTEGER,
 project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
+prm_capacity_transfer_scenario_id INTEGER,
+prm_capacity_transfer_limits_scenario_id INTEGER,
 transmission_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
@@ -3305,7 +3324,10 @@ FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
-    subscenarios_geography_prm_capacity_transfers (prm_capacity_transfer_scenario_id),
+    subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id),
+FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_limits
+        (prm_capacity_transfer_limits_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES

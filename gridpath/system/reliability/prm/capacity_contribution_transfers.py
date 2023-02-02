@@ -67,6 +67,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The transmission line's ending PRM zone.                                |
     +-------------------------------------------------------------------------+
     """
+    # Exogenous param limits
+    m.min_transfer_energyunit = Param(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=0,
+    )
+    m.max_transfer_energyunit = Param(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        within=NonNegativeReals,
+        default=float("inf"),
+    )
+
+    # Endogenous limits based on transmission links
+    m.PRM_TX_LINES = Set(within=m.TX_LINES)
+
+    m.prm_zone_from = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
+    m.prm_zone_to = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
+
+    # Transfers between pairs of zones in each period
     m.Transfer_Capacity_Contribution = Var(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
         m.PERIODS,
@@ -74,38 +95,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=0,
     )
 
-    def total_transfers_from_init(mod, z, prd):
-        return -sum(
-            mod.Transfer_Capacity_Contribution[z, t_z, prd]
-            for (zone, t_z) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
-            if zone == z
-        )
+    # Constraint based on the params
 
-    m.Total_Transfers_from_PRM_Zone = Expression(
-        m.PRM_ZONES, m.PERIODS, initialize=total_transfers_from_init
-    )
-
-    def total_transfers_to_init(mod, t_z, prd):
-        return sum(
-            mod.Transfer_Capacity_Contribution[z, t_z, prd]
-            for (z, to_zone) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
-            if to_zone == t_z
-        )
-
-    m.Total_Transfers_to_PRM_Zone = Expression(
-        m.PRM_ZONES, m.PERIODS, initialize=total_transfers_to_init
-    )
-
-    # Sets
-    ###########################################################################
-
-    m.PRM_TX_LINES = Set(within=m.TX_LINES)
-
-    # Required Input Params
-    ###########################################################################
-    m.prm_zone_from = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
-    m.prm_zone_to = Param(m.PRM_TX_LINES, within=m.PRM_ZONES)
-
+    # Constrain based on the available transmission
     # TODO: add limits on transfers; will need to move to own module that is only
     #  included if transmission reliability is included
     def transfer_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
@@ -131,6 +123,29 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=transfer_limits_constraint_rule,
     )
 
+    # Get the total transfers for each zone
+    def total_transfers_from_init(mod, z, prd):
+        return -sum(
+            mod.Transfer_Capacity_Contribution[z, t_z, prd]
+            for (zone, t_z) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
+            if zone == z
+        )
+
+    m.Total_Transfers_from_PRM_Zone = Expression(
+        m.PRM_ZONES, m.PERIODS, initialize=total_transfers_from_init
+    )
+
+    def total_transfers_to_init(mod, t_z, prd):
+        return sum(
+            mod.Transfer_Capacity_Contribution[z, t_z, prd]
+            for (z, to_zone) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
+            if to_zone == t_z
+        )
+
+    m.Total_Transfers_to_PRM_Zone = Expression(
+        m.PRM_ZONES, m.PERIODS, initialize=total_transfers_to_init
+    )
+
     # Add to balance constraint
     getattr(d, prm_balance_provision_components).append("Total_Transfers_from_PRM_Zone")
     getattr(d, prm_balance_provision_components).append("Total_Transfers_to_PRM_Zone")
@@ -151,6 +166,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    limits_tab_file = os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "prm_capacity_transfer_limits.tab",
+            )
+    if os.path.exists(limits_tab_file):
+        data_portal.load(
+            filename=limits_tab_file,
+            index=m.PRM_TX_LINES,
+            param=(
+                m.min_transfer_energyunit,
+                m.max_transfer_energyunit,
+            ),
+        )
+
     data_portal.load(
         filename=os.path.join(
             scenario_directory,
@@ -158,11 +190,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             stage,
             "inputs",
             "prm_transmission_lines.tab",
-        ),
-        select=(
-            "transmission_line",
-            "prm_zone_from",
-            "prm_zone_to",
         ),
         index=m.PRM_TX_LINES,
         param=(
@@ -187,8 +214,20 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     subproblem = 1 if subproblem == "" else subproblem
     stage = 1 if stage == "" else stage
 
-    c = conn.cursor()
-    transmission_lines = c.execute(
+    c1 = conn.cursor()
+    limits = c1.execute(
+        f"""
+        SELECT prm_zone, prm_capacity_transfer_zone, period, 
+        min_transfer_energyunit, max_transfer_energyunit
+        FROM inputs_transmission_prm_capacity_transfer_limits
+        WHERE prm_capacity_transfer_limits_scenario_id = 
+        {subscenarios.PRM_CAPACITY_TRANSFER_LIMITS_SCENARIO_ID}
+        ;
+        """
+    )
+
+    c2 = conn.cursor()
+    transmission_lines = c2.execute(
         """SELECT transmission_line, prm_zone_from, prm_zone_to
         FROM inputs_transmission_portfolios
         LEFT OUTER JOIN
@@ -208,7 +247,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     #  transmission line level, but the capacity will limit the aggregate transfer
     #  between PRM zones, so there won't be flow variables
 
-    return transmission_lines
+    return limits, transmission_lines
 
 
 def write_model_inputs(
@@ -225,9 +264,39 @@ def write_model_inputs(
     :return:
     """
 
-    transmission_lines = get_inputs_from_database(
+    limits, transmission_lines = get_inputs_from_database(
         scenario_id, subscenarios, subproblem, stage, conn
     )
+
+    limits = limits.fetchall()
+    if limits:
+        with open(
+            os.path.join(
+                scenario_directory,
+                str(subproblem),
+                str(stage),
+                "inputs",
+                "prm_capacity_transfer_limits.tab",
+            ),
+            "w",
+            newline="",
+        ) as limits_tab_file:
+            writer = csv.writer(limits_tab_file, delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(
+                [
+                    "prm_zone",
+                    "prm_capacity_transfer_zone",
+                    "period",
+                    "min_transfer_energyunit",
+                    "max_transfer_energyunit",
+                ]
+            )
+
+            for row in limits:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
     with open(
         os.path.join(

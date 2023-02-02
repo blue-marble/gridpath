@@ -37,7 +37,6 @@ carbon_tax_zone_scenario_id,NULL
 performance_standard_zone_scenario_id,NULL
 fuel_burn_limit_ba_scenario_id,NULL
 prm_zone_scenario_id,1
-prm_capacity_transfer_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
 project_portfolio_scenario_id,10
@@ -58,6 +57,8 @@ project_carbon_tax_allowance_scenario_id,NULL
 project_performance_standard_zone_scenario_id,NULL
 project_fuel_burn_limit_ba_scenario_id,NULL
 project_prm_zone_scenario_id,1
+prm_capacity_transfer_scenario_id,NULL
+prm_capacity_transfer_limits_scenario_id,NULL
 transmission_prm_zone_scenario_id,NULL
 project_elcc_chars_scenario_id,1
 prm_deliverability_cost_scenario_id,NULL
