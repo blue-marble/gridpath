@@ -39,33 +39,53 @@ from gridpath.auxiliary.dynamic_components import prm_balance_provision_componen
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
-    The following Pyomo model components are defined in this module:
-
-    +-------------------------------------------------------------------------+
-    | Sets                                                                    |
-    +=========================================================================+
-    | | :code:`PRM_TX_LINES`                                                  |
-    |                                                                         |
-    | The set of PRM-relevant transmission lines.                             |
-    +-------------------------------------------------------------------------+
+      The following Pyomo model components are defined in this module:
 
     |
 
-    +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
-    +=========================================================================+
-    | | :code:`prm_zone_from`                                                 |
-    | | *Defined over*: :code:`PRM_TX_LINES`                                  |
-    | | *Within*: :code:`PRM_ZONES`                                           |
-    |                                                                         |
-    | The transmission line's starting PRM zone.                              |
-    +-------------------------------------------------------------------------+
-    | | :code:`prm_zone_to`                                                  |
-    | | *Defined over*: :code:`TX_LINES`                                      |
-    | | *Within*: :code:`PRM_ZONES`                                           |
-    |                                                                         |
-    | The transmission line's ending PRM zone.                                |
-    +-------------------------------------------------------------------------+
+      +-------------------------------------------------------------------------+
+      | Optional Input Params                                                   |
+      +=========================================================================+
+      | | :code:`min_transfer_energyunit`                                       |
+      | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
+      | | *Within*: :code:`NonNegativeReals`                                    |
+      | | *Default*: :code:`0`                                                  |
+      |                                                                         |
+      | Minimum capacity transfer between zones in period.                      |
+      +-------------------------------------------------------------------------+
+     | | :code:`max_transfer_energyunit`                                       |
+      | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
+      | | *Within*: :code:`NonNegativeReals`                                    |
+      | | *Default*: :code:`infinity`                                                  |
+      |                                                                         |
+      | Maximum capacity transfer between zones in period.                      |
+      +-------------------------------------------------------------------------+
+
+      +-------------------------------------------------------------------------+
+      | Sets                                                                    |
+      +=========================================================================+
+      | | :code:`PRM_TX_LINES`                                                  |
+      |                                                                         |
+      | The set of PRM-relevant transmission lines.                             |
+      +-------------------------------------------------------------------------+
+
+      |
+
+      +-------------------------------------------------------------------------+
+      | Required Input Params                                                   |
+      +=========================================================================+
+      | | :code:`prm_zone_from`                                                 |
+      | | *Defined over*: :code:`PRM_TX_LINES`                                  |
+      | | *Within*: :code:`PRM_ZONES`                                           |
+      |                                                                         |
+      | The transmission line's starting PRM zone.                              |
+      +-------------------------------------------------------------------------+
+      | | :code:`prm_zone_to`                                                  |
+      | | *Defined over*: :code:`TX_LINES`                                      |
+      | | *Within*: :code:`PRM_ZONES`                                           |
+      |                                                                         |
+      | The transmission line's ending PRM zone.                                |
+      +-------------------------------------------------------------------------+
     """
     # Exogenous param limits
     m.min_transfer_energyunit = Param(
@@ -95,12 +115,36 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         initialize=0,
     )
 
+    # ### Constraints ### #
     # Constraint based on the params
+    def min_transfer_constraint_rule(mod, prm_z_from, prm_z_to, prd):
+        return (
+            mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
+            >= mod.min_transfer_energyunit[prm_z_from, prm_z_to, prd]
+        )
+
+    m.Capacity_Transfer_Min_Limit_Constraint = Constraint(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        rule=min_transfer_constraint_rule,
+    )
+
+    def max_transfer_constraint_rule(mod, prm_z_from, prm_z_to, prd):
+        return (
+            mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
+            <= mod.max_transfer_energyunit[prm_z_from, prm_z_to, prd]
+        )
+
+    m.Capacity_Transfer_Max_Limit_Constraint = Constraint(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        m.PERIODS,
+        rule=max_transfer_constraint_rule,
+    )
 
     # Constrain based on the available transmission
     # TODO: add limits on transfers; will need to move to own module that is only
     #  included if transmission reliability is included
-    def transfer_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
+    def transfer_tx_limits_constraint_rule(mod, prm_z_from, prm_z_to, prd):
         # Sum of max capacity of lines with prm_zone_to == z plus
         # Negative sum of min capacity of lines with prm_zone_from == z
         return mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd] <= sum(
@@ -119,13 +163,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             and mod.prm_zone_to[tx] == prm_z_from
         )
 
-    m.Capacity_Transfer_Limits_Constraint = Constraint(
+    m.Capacity_Transfer_Tx_Limits_Constraint = Constraint(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
         m.PERIODS,
-        rule=transfer_limits_constraint_rule,
+        rule=transfer_tx_limits_constraint_rule,
     )
 
-    # Get the total transfers for each zone
+    ####################################################################################
+    # Get the total transfers for each zone to add to the PRM balance
     def total_transfers_from_init(mod, z, prd):
         return -sum(
             mod.Transfer_Capacity_Contribution[z, t_z, prd]
