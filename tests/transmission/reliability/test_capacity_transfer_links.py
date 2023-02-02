@@ -90,15 +90,25 @@ class TestTxCapacityTransferLinks(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: PRM_ZONES_CAPACITY_TRANSFER_ZONES
-        expected_tx_periods = sorted(
+        expected_links = sorted(
             [
                 ("PRM_Zone1", "PRM_Zone2"),
             ]
         )
-        actual_tx_periods = sorted(
+        actual_links = sorted(
             [(z, z_to) for (z, z_to) in instance.PRM_ZONES_CAPACITY_TRANSFER_ZONES]
         )
-        self.assertListEqual(expected_tx_periods, actual_tx_periods)
+        self.assertListEqual(expected_links, actual_links)
+
+        # Param: allow_elcc_surface_transfers
+        expected_allow = {("PRM_Zone1", "PRM_Zone2"): 0}
+
+        actual_allow = {
+            (z_from, z_to): instance.allow_elcc_surface_transfers[z_from, z_to]
+            for (z_from, z_to) in instance.PRM_ZONES_CAPACITY_TRANSFER_ZONES
+        }
+
+        self.assertDictEqual(expected_allow, actual_allow)
 
 
 if __name__ == "__main__":

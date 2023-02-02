@@ -1,2 +1,2 @@
-prm_zone,prm_capacity_transfer_zone
-PRMZone1,PRMZone2
+prm_zone,prm_capacity_transfer_zone,allow_elcc_surface_transfers
+PRMZone1,PRMZone2,

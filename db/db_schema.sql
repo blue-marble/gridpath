@@ -1648,6 +1648,8 @@ CREATE TABLE inputs_transmission_prm_capacity_transfers (
 prm_capacity_transfer_scenario_id INTEGER,
 prm_zone VARCHAR(32),  -- "from" zone
 prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
+allow_elcc_surface_transfers INTEGER, -- defaults to 0, only enable this if you know
+-- what you are doing
 PRIMARY KEY (prm_capacity_transfer_scenario_id, prm_zone, prm_capacity_transfer_zone),
 FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
     subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id)

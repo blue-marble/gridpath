@@ -18,11 +18,15 @@ must be defined separately, i.e., if PRM_Zone_1 can transfer capacity to PRM_Zon
 and PRM_Zone_2 can transfer capacity to PRM_Zone_1,
 the PRM_ZONES_CAPACITY_TRANSFER_ZONES set must include both (PRM_Zone_1, PRM_Zone_2)
 and (PRM_Zone_2, PRM_Zone_1).
+
+The allow_elcc_surface_transfers param defaults to 0 (only simple capacity can be
+transferred by default, as transfers of capacity from the ELCC surfaces is likely to
+result in inaccurate results).
 """
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Boolean, NonNegativeReals
+from pyomo.environ import Set, Param, Boolean
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -34,6 +38,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.PRM_ZONES_CAPACITY_TRANSFER_ZONES = Set(dimen=2, within=m.PRM_ZONES * m.PRM_ZONES)
+
+    m.allow_elcc_surface_transfers = Param(
+        m.PRM_ZONES_CAPACITY_TRANSFER_ZONES, within=Boolean, default=0
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -55,7 +63,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "inputs",
             "prm_capacity_transfer_zone_links.tab",
         ),
-        set=m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        index=m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
+        param=m.allow_elcc_surface_transfers,
     )
 
 
@@ -71,7 +80,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     stage = 1 if stage == "" else stage
     c = conn.cursor()
     prm_zone_transfers = c.execute(
-        f"""SELECT prm_zone, prm_capacity_transfer_zone
+        f"""SELECT prm_zone, prm_capacity_transfer_zone, allow_elcc_surface_transfers
         FROM inputs_transmission_prm_capacity_transfers
         WHERE prm_capacity_transfer_scenario_id={subscenarios.PRM_CAPACITY_TRANSFER_SCENARIO_ID};
         """
@@ -127,7 +136,10 @@ def write_model_inputs(
         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         # Write header
-        writer.writerow(["prm_zone", "prm_capacity_transfer_zones"])
+        writer.writerow(
+            ["prm_zone", "prm_capacity_transfer_zones", "allow_elcc_surface_transfers"]
+        )
 
         for row in prm_zone_transfers:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

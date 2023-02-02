@@ -169,6 +169,30 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         rule=transfer_tx_limits_constraint_rule,
     )
 
+    # Constrain to simple capacity contributions only (no contribution from ELCC
+    # surface)
+    m.PRM_FROM_ZONES = Set(
+        within=m.PRM_ZONES,
+        initialize=lambda mod: list(
+            set([z for (z, z_to) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES])
+        ),
+    )
+
+    def transfer_simple_capacity_only_rule(mod, prm_z, prd):
+        return (
+            sum(
+                mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
+                for (prm_z_from, prm_z_to) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
+                for prd in mod.PERIODS
+                if prm_z_from == prm_z
+            )
+            <= mod.Total_PRM_Simple_Contribution_MW[prm_z, prd]
+        )
+
+    m.Transfer_Simple_Contributions_Only_Constraint = Constraint(
+        m.PRM_FROM_ZONES, m.PERIODS, rule=transfer_simple_capacity_only_rule
+    )
+
     ####################################################################################
     # Get the total transfers for each zone to add to the PRM balance
     def total_transfers_from_init(mod, z, prd):
