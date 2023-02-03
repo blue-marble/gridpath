@@ -81,19 +81,19 @@ grid services, interconnection, reliability requirements such as a planning
 reserve margin or local capacity requirements, and policies such as a
 renewables portfolio standard (RPS) or a carbon cap.
 
-The main variables fall into two categories:
+The main variables fall into several categories:
 
-#. Capacity: whether (generator, storage, and/or transmission) capacity should be built or retired?
-#. Availability: when capacity can be made unavailable, e.g. for planned maintenance?
-#. Operations: how should available (generator, storage, and/or transmission) capacity be operated?
+#. **Capacity**: whether (generator, storage, and/or transmission) capacity should be built or retired?
+#. **Availability**: when capacity can be made unavailable, e.g. for planned maintenance?
+#. **Operations**: how should available (generator, storage, and/or transmission) capacity be operated?
 
 The main constraints include:
 
-#. Capacity: limits on the amount of capacity that can be deployed.
-#. Availability: requirements for unavailable time, e.g. for maintenance.
-#. Operations: limits on the operational capabilities of generation, storage, and transmission assets.
-#. System: meeting load, operating reserves, and reliability requirements.
-#. Policy: meeting policy targets such as an RPS or a carbon cap.
+#. **Capacity**: limits on the amount of capacity that can be deployed.
+#. **Availability**: requirements for unavailable time, e.g. for maintenance.
+#. **Operations**: limits on the operational capabilities of generation, storage, and transmission assets.
+#. **System**: meeting load, operating reserves, and reliability requirements.
+#. **Policy**: meeting policy targets such as an RPS or a carbon cap.
 
 The objective function is typically to maximize system net present value, but
 other formulations are possible.

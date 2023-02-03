@@ -438,7 +438,7 @@ def validate_columns(df, columns, valids=[], invalids=[]):
 
     # Entries are invalid if they are either not in the provided list of valid
     # entries (if any), or if they are in the provided list of invalid entries
-    falses = pd.Series([False] * len(df))
+    falses = pd.Series([False] * len(df), dtype="object")
     valids_mask = ~df["lookup"].isin(valids) if valids else falses
     invalids_mask = df["lookup"].isin(invalids) if invalids else falses
     mask = valids_mask | invalids_mask
@@ -535,7 +535,7 @@ def validate_single_input(df, idx_col="project", msg=""):
 
     results = []
 
-    n_inputs = df.groupby(idx_col).size()
+    n_inputs = df.groupby(idx_col, group_keys=False).size()
     invalids = n_inputs > 1
     if invalids.any():
         bad_idxs = invalids.index[invalids]
@@ -573,9 +573,11 @@ def validate_row_monotonicity(
     cols = [col] if isinstance(col, str) else col
     for c in cols:
         df2 = df.dropna(subset=[c])
-        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col)[c]
+        group = df2.sort_values([idx_col, rank_col]).groupby(idx_col, group_keys=False)[
+            c
+        ]
         if increasing:
-            invalids = ~group.apply(lambda x: x.is_monotonic)
+            invalids = ~group.apply(lambda x: x.is_monotonic_increasing)
             direction = "increase"
         else:
             invalids = ~group.apply(lambda x: x.is_monotonic_decreasing)
@@ -605,7 +607,7 @@ def validate_column_monotonicity(df, cols, idx_col="project", msg=""):
     results = []
 
     df = df.dropna(subset=cols)
-    invalids = ~df[cols].apply(lambda x: x.is_monotonic, axis=1)
+    invalids = ~df[cols].apply(lambda x: x.is_monotonic_increasing, axis=1)
     if invalids.any():
         bad_idxs = df[idx_col][invalids].values
         results.append(
@@ -740,7 +742,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     # Split su_df in df with hottest starts and df with coldest starts
     su_df_hot = (
-        su_df.groupby("project")
+        su_df.groupby("project", group_keys=False)
         .apply(lambda grp: grp.nsmallest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -751,7 +753,7 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         )
     )
     su_df_cold = (
-        su_df.groupby("project")
+        su_df.groupby("project", group_keys=False)
         .apply(lambda grp: grp.nlargest(1, columns=["down_time_cutoff_hours"]))
         .reset_index(drop=True)
         .rename(
@@ -763,12 +765,18 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     )
 
     # Calculate number of startup types and null values for each project
-    su_count = su_df.groupby("project").size().reset_index(name="n_types")
+    su_count = (
+        su_df.groupby("project", group_keys=False).size().reset_index(name="n_types")
+    )
     su_count_series = su_count.set_index("project")["n_types"]  # DF to Series
-    cutoff_na_count = su_df.groupby("project")["down_time_cutoff_hours"].apply(
+    cutoff_na_count = su_df.groupby("project", group_keys=False)[
+        "down_time_cutoff_hours"
+    ].apply(
         lambda grp: grp.isnull().sum()
     )  # pd.Series (index = project)
-    ramp_na_count = su_df.groupby("project")["startup_plus_ramp_up_rate"].apply(
+    ramp_na_count = su_df.groupby("project", group_keys=False)[
+        "startup_plus_ramp_up_rate"
+    ].apply(
         lambda grp: grp.isnull().sum()
     )  # pd.Series (index = project)
 
@@ -918,10 +926,12 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     # 6. Check that cutoff and ramp rate are in right order
     if ~cutoff_na_mask.any() and ~ramp_na_mask.any():
-        rank_cutoff = su_df.groupby("project")["down_time_cutoff_hours"].rank()
-        rank_ramp = su_df.groupby("project")["startup_plus_ramp_up_rate"].rank(
-            ascending=False
-        )
+        rank_cutoff = su_df.groupby("project", group_keys=False)[
+            "down_time_cutoff_hours"
+        ].rank()
+        rank_ramp = su_df.groupby("project", group_keys=False)[
+            "startup_plus_ramp_up_rate"
+        ].rank(ascending=False)
 
         invalids = rank_cutoff != rank_ramp
         if invalids.any():

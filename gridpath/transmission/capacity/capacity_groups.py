@@ -171,17 +171,23 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        <= mod.tx_capacity_group_new_capacity_max[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            <= mod.tx_capacity_group_new_capacity_max[grp, prd]
+        )
 
 
 def new_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Tx_Group_New_Capacity_in_Period[grp, prd]
-        >= mod.tx_capacity_group_new_capacity_min[grp, prd]
-    )
+    if mod.tx_capacity_group_new_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Tx_Group_New_Capacity_in_Period[grp, prd]
+            >= mod.tx_capacity_group_new_capacity_min[grp, prd]
+        )
 
 
 # Input-Output
@@ -269,7 +275,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     "transmission_capacity_group_new_capacity_max",
                 ]
             )
-            for (grp, prd) in m.TX_CAPACITY_GROUP_PERIODS:
+            for grp, prd in m.TX_CAPACITY_GROUP_PERIODS:
                 writer.writerow(
                     [
                         grp,
@@ -376,6 +382,20 @@ def write_model_inputs(
 
             for row in cap_grp_tx:
                 writer.writerow(row)
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Max_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Tx_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
 
 def import_results_into_database(

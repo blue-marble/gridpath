@@ -214,7 +214,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "fuel_burn_max_rel_overage_unit",
             ]
         )
-        for (f, ba, bt, h) in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT:
+        for f, ba, bt, h in m.FUEL_FUEL_BA_BLN_TYPE_HRZS_WITH_FUEL_BURN_LIMIT:
             writer.writerow(
                 [
                     bt,

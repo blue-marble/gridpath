@@ -438,7 +438,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mwh",
             ]
         )
-        for (prj, p) in m.DR_NEW_OPR_PRDS:
+        for prj, p in m.DR_NEW_OPR_PRDS:
             writer.writerow(
                 [
                     prj,
@@ -474,7 +474,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "period"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with new build DR power OR energy capacity
     new_build_df = pd.DataFrame(
@@ -676,7 +676,6 @@ def write_model_inputs(
                     "type.".format(project)
                 )
             else:
-
                 for row in supply_curve:
                     writer.writerow(row)
 

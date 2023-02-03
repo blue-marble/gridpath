@@ -234,31 +234,43 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 def new_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Group_New_Capacity_in_Period[grp, prd]
-        <= mod.capacity_group_new_capacity_max[grp, prd]
-    )
+    if mod.capacity_group_new_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Capacity_in_Period[grp, prd]
+            <= mod.capacity_group_new_capacity_max[grp, prd]
+        )
 
 
 def new_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Group_New_Capacity_in_Period[grp, prd]
-        >= mod.capacity_group_new_capacity_min[grp, prd]
-    )
+    if mod.capacity_group_new_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_New_Capacity_in_Period[grp, prd]
+            >= mod.capacity_group_new_capacity_min[grp, prd]
+        )
 
 
 def total_capacity_max_rule(mod, grp, prd):
-    return (
-        mod.Group_Total_Capacity_in_Period[grp, prd]
-        <= mod.capacity_group_total_capacity_max[grp, prd]
-    )
+    if mod.capacity_group_total_capacity_max[grp, prd] == float("inf"):
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Capacity_in_Period[grp, prd]
+            <= mod.capacity_group_total_capacity_max[grp, prd]
+        )
 
 
 def total_capacity_min_rule(mod, grp, prd):
-    return (
-        mod.Group_Total_Capacity_in_Period[grp, prd]
-        >= mod.capacity_group_total_capacity_min[grp, prd]
-    )
+    if mod.capacity_group_total_capacity_min[grp, prd] == 0:
+        return Constraint.Feasible
+    else:
+        return (
+            mod.Group_Total_Capacity_in_Period[grp, prd]
+            >= mod.capacity_group_total_capacity_min[grp, prd]
+        )
 
 
 # Input-Output
@@ -343,7 +355,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     "capacity_group_total_capacity_max",
                 ]
             )
-            for (grp, prd) in m.CAPACITY_GROUP_PERIODS:
+            for grp, prd in m.CAPACITY_GROUP_PERIODS:
                 writer.writerow(
                     [
                         grp,
@@ -462,6 +474,32 @@ def write_model_inputs(
 
             for row in cap_grp_prj:
                 writer.writerow(row)
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Max_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Group_Build_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Max_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["Min_Group_Total_Cap_in_Period_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
 
 def import_results_into_database(

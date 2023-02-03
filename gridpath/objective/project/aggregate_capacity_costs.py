@@ -35,6 +35,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     discount\_factor_p \\times number\_years\_represented_p}`
 
     """
+
     # Add costs to objective function
     def total_capacity_cost_rule(mod):
         return sum(

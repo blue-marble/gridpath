@@ -315,7 +315,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "carbon_emission_imports_tons_degen",
             ]
         )
-        for (tx, tmp) in m.CRB_TX_OPR_TMPS:
+        for tx, tmp in m.CRB_TX_OPR_TMPS:
             writer.writerow(
                 [
                     tx,
@@ -376,7 +376,7 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for (prj, zone, direction, intensity) in transmission_zones:
+    for prj, zone, direction, intensity in transmission_zones:
         prj_zone_dict[str(prj)] = (
             (".", ".", ".") if zone is None else (str(zone), str(direction), intensity)
         )

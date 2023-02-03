@@ -235,7 +235,7 @@ def balancing_types_init(mod):
     BLN_TYPE_HRZS set.
     """
     balancing_types = list()
-    for (b, h) in mod.BLN_TYPE_HRZS:
+    for b, h in mod.BLN_TYPE_HRZS:
         if b in balancing_types:
             pass
         else:
@@ -253,7 +253,7 @@ def horizons_by_balancing_type_init(mod, bt):
     horizons by balancing type.
     """
     horizons_of_balancing_type = []
-    for (b, h) in mod.BLN_TYPE_HRZS:
+    for b, h in mod.BLN_TYPE_HRZS:
         if b == bt:
             horizons_of_balancing_type.append(h)
 

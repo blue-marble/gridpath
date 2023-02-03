@@ -262,6 +262,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
+    m.SOC_PENALTY_COST_PRJ_OPR_TMPS = Set(
+        dimen=2,
+        within=m.PRJ_OPR_TMPS,
+        initialize=lambda mod: [
+            (p, tmp) for (p, tmp) in mod.PRJ_OPR_TMPS if p in mod.SOC_PENALTY_COST_PRJS
+        ],
+    )
+
     # Variables
     ###########################################################################
 
@@ -450,6 +458,24 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.CURTAILMENT_COST_PRJ_OPR_TMPS, rule=curtailment_cost_rule
     )
 
+    def soc_penalty_cost_rule(mod, prj, tmp):
+        """
+        State of charge penalty costs are defined for some operational types while
+        they are zero for others. Get the appropriate expression for each project
+        based on its operational type.
+        """
+        op_type = mod.operational_type[prj]
+        if hasattr(imported_operational_modules[op_type], "soc_penalty_cost_rule"):
+            return imported_operational_modules[op_type].soc_penalty_cost_rule(
+                mod, prj, tmp
+            )
+        else:
+            return op_type_init.soc_penalty_cost_rule(mod, prj, tmp)
+
+    m.SOC_Penalty_Cost = Expression(
+        m.SOC_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_penalty_cost_rule
+    )
+
 
 # Input-Output
 ###############################################################################
@@ -500,7 +526,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "curtailment_cost",
             ]
         )
-        for (p, tmp) in m.PRJ_OPR_TMPS:
+        for p, tmp in m.PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -524,6 +550,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     else None,
                     value(m.Curtailment_Cost[p, tmp])
                     if p in m.CURTAILMENT_COST_PRJS
+                    else None,
+                    value(m.SOC_Penalty_Cost[p, tmp])
+                    if p in m.SOC_PENALTY_COST_PRJS
                     else None,
                 ]
             )

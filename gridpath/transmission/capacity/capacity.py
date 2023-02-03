@@ -327,7 +327,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "transmission_max_capacity_mw",
             ]
         )
-        for (tx_line, p) in m.TX_OPR_PRDS:
+        for tx_line, p in m.TX_OPR_PRDS:
             writer.writerow(
                 [
                     tx_line,
@@ -363,7 +363,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "capacity_cost",
             ]
         )
-        for (l, p) in m.TX_OPR_PRDS:
+        for l, p in m.TX_OPR_PRDS:
             writer.writerow(
                 [
                     l,
@@ -375,6 +375,44 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Tx_Capacity_Cost_in_Prd[l, p]),
                 ]
             )
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    # Save module-specific duals
+    # Capacity type modules
+    df = pd.read_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
+        ),
+        sep="\t",
+        usecols=["transmission_line", "tx_capacity_type", "tx_operational_type"],
+    )
+
+    # Required capacity modules are the unique set of tx capacity types
+    # This list will be used to know which capacity modules to load
+    required_tx_capacity_modules = df.tx_capacity_type.unique()
+
+    # Import needed transmission capacity type modules for expression rules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(
+        required_tx_capacity_modules
+    )
+
+    # Add any components specific to the operational modules
+    for op_m in required_tx_capacity_modules:
+        if hasattr(imported_tx_capacity_modules[op_m], "save_duals"):
+            imported_tx_capacity_modules[op_m].save_duals(
+                scenario_directory,
+                subproblem,
+                stage,
+                instance,
+                dynamic_components,
+            )
+        else:
+            pass
 
 
 # Database

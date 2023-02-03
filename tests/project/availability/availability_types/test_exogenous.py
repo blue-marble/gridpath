@@ -163,7 +163,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             )
         }
         expected_availability_derate = dict()
-        for (p, tmp) in defaults.keys():
+        for p, tmp in defaults.keys():
             if (p, tmp) in derates.keys():
                 expected_availability_derate[p, tmp] = derates[p, tmp]
             else:

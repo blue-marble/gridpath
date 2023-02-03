@@ -307,7 +307,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
         fixed_commitment_writer = writer(
             fixed_commitment_file, delimiter="\t", lineterminator="\n"
         )
-        for (g, tmp) in m.FNL_COMMIT_PRJ_OPR_TMPS:
+        for g, tmp in m.FNL_COMMIT_PRJ_OPR_TMPS:
             fixed_commitment_writer.writerow(
                 [
                     g,

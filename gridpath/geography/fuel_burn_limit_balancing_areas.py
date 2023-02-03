@@ -55,7 +55,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-
     data_portal.load(
         filename=os.path.join(
             scenario_directory,

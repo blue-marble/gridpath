@@ -493,7 +493,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "w",
         newline="",
     ) as f:
-
         writer = csv.writer(f)
         writer.writerow(
             [
@@ -505,7 +504,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mw",
             ]
         )
-        for (prj, v) in m.GEN_NEW_BIN_VNTS:
+        for prj, v in m.GEN_NEW_BIN_VNTS:
             writer.writerow(
                 [
                     prj,
@@ -541,7 +540,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with the new binary build capacity
     new_build_df = pd.DataFrame(

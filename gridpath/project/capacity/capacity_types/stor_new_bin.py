@@ -24,6 +24,12 @@ The capital cost input to the model is an annualized cost per unit of power capa
 If the optimization makes the decision to build new power/energy capacity, the total
 annualized cost is incurred in each period of the study (and multiplied by the number
 of years the period represents) for the duration of the project's financial lifetime.
+
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
 """
 
 from __future__ import print_function
@@ -583,7 +589,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mwh",
             ]
         )
-        for (prj, v) in m.STOR_NEW_BIN_VNTS:
+        for prj, v in m.STOR_NEW_BIN_VNTS:
             writer.writerow(
                 [
                     prj,
@@ -624,7 +630,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with new build storage power OR energy capacity
     new_build_df = pd.DataFrame(

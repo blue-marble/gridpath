@@ -174,6 +174,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The set of projects that incur cost if curtailed.                       |
     +-------------------------------------------------------------------------+
+    | | :code:`SOC_PENALTY_COST_PRJS`                                         |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge.                                   |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -280,6 +286,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's cost of curtailment per power-unitXhour.                  |
     +-------------------------------------------------------------------------+
+    | | :code:`soc_penalty_cost_per_energyunit`                               |
+    | | *Defined over*: :code:`SOC_PENALTY_COST_PRJS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge.|
+    +-------------------------------------------------------------------------+
     """
 
     # Sets
@@ -383,6 +395,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Projects with cost of curtailment
     m.CURTAILMENT_COST_PRJS = Set(within=m.PROJECTS)
 
+    # Projects with cost based on the state of charge
+    m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+
     # Optional Params
     ###########################################################################
     m.variable_om_cost_per_mwh = Param(
@@ -430,6 +445,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS, within=NonNegativeReals)
+
+    m.soc_penalty_cost_per_energyunit = Param(
+        m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
 
     # Start list of headroom and footroom variables by project
     record_dynamic_components(d, scenario_directory, subproblem, stage)
@@ -502,6 +521,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "min_up_time_violation_penalty",
             "min_down_time_violation_penalty",
             "curtailment_cost_per_pwh",
+            "soc_penalty_cost_per_energyunit",
         ),
         param=(
             m.variable_om_cost_per_mwh,
@@ -513,6 +533,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.min_up_time_violation_penalty,
             m.min_down_time_violation_penalty,
             m.curtailment_cost_per_pwh,
+            m.soc_penalty_cost_per_energyunit,
         ),
     )
 
@@ -561,6 +582,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()["CURTAILMENT_COST_PRJS"] = {
         None: list(data_portal.data()["curtailment_cost_per_pwh"].keys())
+    }
+
+    data_portal.data()["SOC_PENALTY_COST_PRJS"] = {
+        None: list(data_portal.data()["soc_penalty_cost_per_energyunit"].keys())
     }
 
     # VOM curves
@@ -641,7 +666,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # Get column names as a few columns will be optional;
     # won't load data if fuel column does not exist
     if os.path.exists(hr_curves_file) and os.path.exists(project_fuels_file):
-
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
@@ -698,7 +722,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         minimum_duration_hours, maximum_duration_hours,
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh,
-        powerunithour_per_fuelunit
+        powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -954,6 +978,7 @@ def write_model_inputs(
         "last_commitment_stage",
         "curtailment_cost_per_pwh",
         "powerunithour_per_fuelunit",
+        "soc_penalty_cost_per_energyunit",
     ]
     append_to_input_file(
         inputs_directory=inputs_directory,

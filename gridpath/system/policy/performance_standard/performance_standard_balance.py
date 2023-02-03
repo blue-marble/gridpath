@@ -107,7 +107,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "performance_standard_overage",
             ]
         )
-        for (z, p) in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD:
+        for z, p in m.PERFORMANCE_STANDARD_ZONE_PERIODS_WITH_PERFORMANCE_STANDARD:
             writer.writerow(
                 [
                     z,
@@ -120,6 +120,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Performance_Standard_Overage_Expression[z, p]),
                 ]
             )
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["Performance_Standard_Constraint"] = [
+        "performance_standard_zone",
+        "period",
+        "dual",
+    ]
 
 
 def import_results_into_database(

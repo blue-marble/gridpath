@@ -318,7 +318,7 @@ def new_build_transmission_operational_periods(mod):
 
 def new_build_transmission_vintages_operational_in_period(mod, p):
     build_vintages_by_period = list()
-    for (g, v) in mod.TX_NEW_LIN_VNTS:
+    for g, v in mod.TX_NEW_LIN_VNTS:
         if p in mod.OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[g, v]:
             build_vintages_by_period.append((g, v))
         else:
@@ -426,7 +426,6 @@ def new_capacity_rule(mod, g, p):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-
     # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(
@@ -565,7 +564,7 @@ def export_results(m, d, scenario_directory, subproblem, stage):
                 "new_build_transmission_capacity_mw",
             ]
         )
-        for (transmission_line, v) in m.TX_NEW_LIN_VNTS:
+        for transmission_line, v in m.TX_NEW_LIN_VNTS:
             writer.writerow(
                 [
                     transmission_line,
@@ -686,6 +685,20 @@ def write_model_inputs(
         for row in tx_cost:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def save_duals(scenario_directory, subproblem, stage, instance, dynamic_components):
+    instance.constraint_indices["TxNewLin_Min_Cum_Build_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
+
+    instance.constraint_indices["TxNewLin_Max_Cum_Build_Constraint"] = [
+        "capacity_group",
+        "period",
+        "dual",
+    ]
 
 
 def import_results_into_database(
