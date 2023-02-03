@@ -48,23 +48,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def transmission_target_pos_dir_rule(mod, transmission_target_zone, period):
-        """
-        """
+        """ """
 
-        return mod.period_transmission_target_pos_dir_mwh[transmission_target_zone, period]
+        return mod.period_transmission_target_pos_dir_mwh[
+            transmission_target_zone, period
+        ]
 
     m.Period_Transmission_Target_Pos_Dir = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_pos_dir_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_pos_dir_rule,
     )
 
     def transmission_target_neg_dir_rule(mod, transmission_target_zone, period):
-        """
-        """
+        """ """
 
-        return mod.period_transmission_target_neg_dir_mwh[transmission_target_zone, period]
+        return mod.period_transmission_target_neg_dir_mwh[
+            transmission_target_zone, period
+        ]
 
     m.Period_Transmission_Target_Neg_Dir = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_neg_dir_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_neg_dir_rule,
     )
 
 

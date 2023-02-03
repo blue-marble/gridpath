@@ -14,7 +14,15 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Expression, value, Var, NonNegativeReals, Constraint
+from pyomo.environ import (
+    Param,
+    Set,
+    Expression,
+    value,
+    Var,
+    NonNegativeReals,
+    Constraint,
+)
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
@@ -87,19 +95,27 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.TRANSMISSION_TARGET_TX_OPR_TMPS = Set(
         within=m.TX_OPR_TMPS,
         initialize=lambda mod: [
-            (p, tmp) for (p, tmp) in mod.TX_OPR_TMPS if p in mod.TRANSMISSION_TARGET_TX_LINES
+            (p, tmp)
+            for (p, tmp) in mod.TX_OPR_TMPS
+            if p in mod.TRANSMISSION_TARGET_TX_LINES
         ],
     )
 
     # Input Params
     ###########################################################################
 
-    m.transmission_target_zone = Param(m.TRANSMISSION_TARGET_TX_LINES, within=m.TRANSMISSION_TARGET_ZONES)
+    m.transmission_target_zone = Param(
+        m.TRANSMISSION_TARGET_TX_LINES, within=m.TRANSMISSION_TARGET_ZONES
+    )
 
     # Variables
     ###########################################################################
-    m.Transmission_Target_Energy_MW_Pos_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
-    m.Transmission_Target_Energy_MW_Neg_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
+    m.Transmission_Target_Energy_MW_Pos_Dir = Var(
+        m.TX_OPR_TMPS, within=NonNegativeReals
+    )
+    m.Transmission_Target_Energy_MW_Neg_Dir = Var(
+        m.TX_OPR_TMPS, within=NonNegativeReals
+    )
 
     # Derived Sets (requires input params)
     ###########################################################################
@@ -114,12 +130,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     ###########################################################################
 
     def transmit_power_pos_dir_rule(mod, tx, tmp):
-        """
-
-        """
+        """ """
         return (
             mod.Transmission_Target_Energy_MW_Pos_Dir[tx, tmp]
-            <= mod.Transmit_Power_MW[tx, tmp]
+            <= mod.TxSimpleBinary_Transmit_Power_Positive_Direction_MW[tx, tmp]
         )
 
     m.Transmission_Target_Energy_MW_Pos_Dir_Constraint = Constraint(
@@ -127,12 +141,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     )
 
     def transmit_power_neg_dir_rule(mod, tx, tmp):
-        """
-
-        """
+        """ """
         return (
             mod.Transmission_Target_Energy_MW_Neg_Dir[tx, tmp]
-            <= -mod.Transmit_Power_MW[tx, tmp]
+            <= mod.TxSimpleBinary_Transmit_Power_Negative_Direction_MW[tx, tmp]
         )
 
     m.Transmission_Target_Energy_MW_Neg_Dir_Constraint = Constraint(
@@ -144,7 +156,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 ###############################################################################
 
 
-def determine_transmission_target_tx_lines_by_transmission_target_zone(mod, transmission_target_z):
+def determine_transmission_target_tx_lines_by_transmission_target_zone(
+    mod, transmission_target_z
+):
     return [
         p
         for p in mod.TRANSMISSION_TARGET_TX_LINES
@@ -169,7 +183,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
         ),
         select=("transmission_line", "transmission_target_zone"),
         param=(m.transmission_target_zone,),
@@ -214,7 +232,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "transmission_target_energy_negative_direction_mw",
             ]
         )
-        for (tx, tmp) in m.TRANSMISSION_TARGET_TX_OPR_TMPS:
+        for tx, tmp in m.TRANSMISSION_TARGET_TX_OPR_TMPS:
             writer.writerow(
                 [
                     tx,
@@ -298,12 +316,16 @@ def write_model_inputs(
 
     # Make a dict for easy access
     tx_line_zone_dict = dict()
-    for (tx, zone) in tx_lines_zones:
+    for tx, zone in tx_lines_zones:
         tx_line_zone_dict[str(tx)] = "." if zone is None else str(zone)
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
         ),
         "r",
     ) as tx_lines_file_in:
@@ -329,7 +351,11 @@ def write_model_inputs(
 
     with open(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "transmission_lines.tab"
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "inputs",
+            "transmission_lines.tab",
         ),
         "w",
         newline="",
@@ -480,6 +506,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             actual_idxs=zones_w_tx_line,
             req_idxs=zones,
             idx_label="transmission_target_zone",
-            msg="Each transmission target zone needs at least 1 " "transmission line assigned to it.",
+            msg="Each transmission target zone needs at least 1 "
+            "transmission line assigned to it.",
         ),
     )

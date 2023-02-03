@@ -32,8 +32,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     def total_penalty_costs_rule(mod):
         return sum(
-            (mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
-                + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p])
+            (
+                mod.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]
+                + mod.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]
+            )
             * mod.transmission_target_violation_penalty_per_mwh[z]
             * mod.number_years_represented[p]
             * mod.discount_factor[p]

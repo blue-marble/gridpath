@@ -39,11 +39,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     """
 
     m.Period_Transmission_Target_Shortage_Pos_Dir_MWh = Var(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, within=NonNegativeReals
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
     )
 
     m.Period_Transmission_Target_Shortage_Neg_Dir_MWh = Var(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, within=NonNegativeReals
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        within=NonNegativeReals,
     )
 
     def violation_pos_dir_expression_rule(mod, z, p):
@@ -53,7 +55,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
     m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=violation_pos_dir_expression_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=violation_pos_dir_expression_rule,
     )
 
     def violation_neg_dir_expression_rule(mod, z, p):
@@ -63,7 +66,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         )
 
     m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression = Expression(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=violation_neg_dir_expression_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=violation_neg_dir_expression_rule,
     )
 
     def transmission_target_pos_dir_rule(mod, z, p):
@@ -84,7 +88,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
 
     m.Period_Transmission_Target_Pos_Dir_Constraint = Constraint(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_pos_dir_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_pos_dir_rule,
     )
 
     def transmission_target_neg_dir_rule(mod, z, p):
@@ -105,7 +110,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             )
 
     m.Period_Transmission_Target_Neg_Dir_Constraint = Constraint(
-        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET, rule=transmission_target_neg_dir_rule
+        m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
+        rule=transmission_target_neg_dir_rule,
     )
 
 
@@ -147,7 +153,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "transmission_target_shortage_negative_direction_mwh",
             ]
         )
-        for (z, p) in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET:
+        for z, p in m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET:
             writer.writerow(
                 [
                     z,
@@ -158,16 +164,28 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]),
                     1
                     if float(m.period_transmission_target_pos_dir_mwh[z, p]) == 0
-                    else value(m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p])
+                    else value(
+                        m.Total_Period_Transmission_Target_Energy_Pos_Dir_MWh[z, p]
+                    )
                     / float(m.period_transmission_target_pos_dir_mwh[z, p]),
-                    value(m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[z, p]),
+                    value(
+                        m.Period_Transmission_Target_Shortage_Pos_Dir_MWh_Expression[
+                            z, p
+                        ]
+                    ),
                     value(m.Period_Transmission_Target_Neg_Dir[z, p]),
                     value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]),
                     1
                     if float(m.period_transmission_target_neg_dir_mwh[z, p]) == 0
-                    else value(m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p])
-                         / float(m.period_transmission_target_neg_dir_mwh[z, p]),
-                    value(m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[z, p]),
+                    else value(
+                        m.Total_Period_Transmission_Target_Energy_Neg_Dir_MWh[z, p]
+                    )
+                    / float(m.period_transmission_target_neg_dir_mwh[z, p]),
+                    value(
+                        m.Period_Transmission_Target_Shortage_Neg_Dir_MWh_Expression[
+                            z, p
+                        ]
+                    ),
                 ]
             )
 
@@ -233,7 +251,6 @@ def import_results_into_database(
                     total_transmission_target_provision_neg_dir,
                     fraction_met_neg_dir,
                     shortage_neg_dir,
-
                 )
             )
 

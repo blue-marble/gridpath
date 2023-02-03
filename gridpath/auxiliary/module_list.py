@@ -154,7 +154,8 @@ def all_modules_list():
         "system.policy.energy_targets" ".aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
-        "system.policy.transmission_targets" ".aggregate_period_transmission_target_contributions",
+        "system.policy.transmission_targets"
+        ".aggregate_period_transmission_target_contributions",
         "system.policy.transmission_targets.period_transmission_target_balance",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
