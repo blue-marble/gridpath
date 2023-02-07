@@ -97,8 +97,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.tx_availability_type = Param(
         m.TX_LINES, within=["exogenous", "exogenous_monthly"]
     )
-    m.tx_operational_type = Param(m.TX_LINES, within=["tx_dcopf", "tx_simple",
-                                                      "tx_simple_binary"])
+    m.tx_operational_type = Param(
+        m.TX_LINES, within=["tx_dcopf", "tx_simple", "tx_simple_binary"]
+    )
     m.load_zone_from = Param(m.TX_LINES, within=m.LOAD_ZONES)
     m.load_zone_to = Param(m.TX_LINES, within=m.LOAD_ZONES)
 

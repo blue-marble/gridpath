@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,17 +18,25 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
-import pandas as pd
 import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["geography.load_zones"]
-NAME_OF_MODULE_BEING_TESTED = "transmission"
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.transmission_target_zones",
+]
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.transmission_targets.period_transmission_target"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -46,7 +54,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTransmissionInit(unittest.TestCase):
+class TestPeriodTxTarget(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -77,7 +85,7 @@ class TestTransmissionInit(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -89,86 +97,75 @@ class TestTransmissionInit(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: TX_LINES
-        expected_tx_lines = sorted(["Tx1", "Tx2", "Tx3", "Tx_New", "Tx_binary_1"])
-        actual_tx_lines = sorted([tx for tx in instance.TX_LINES])
-        self.assertListEqual(expected_tx_lines, actual_tx_lines)
+        # Set: Tx_Target_Zone1
+        expected_tx_target_zone_periods = sorted(
+            [
+                ("Tx_Target_Zone1", 2020),
+                ("Tx_Target_Zone1", 2030),
+                ("Tx_Target_Zone2", 2020),
+                ("Tx_Target_Zone2", 2030),
+            ]
+        )
+        actual_tx_target_zone_periods = sorted(
+            [
+                (z, p)
+                for (
+                    z,
+                    p,
+                ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+            ]
+        )
+        self.assertListEqual(
+            expected_tx_target_zone_periods, actual_tx_target_zone_periods
+        )
 
-        # Param: tx_capacity_type
-        expected_cap_type = OrderedDict(
+        # Param: period_tx_target_mwh
+        expected_tx_target_pos = OrderedDict(
             sorted(
                 {
-                    "Tx1": "tx_spec",
-                    "Tx_New": "tx_new_lin",
-                    "Tx2": "tx_spec",
-                    "Tx3": "tx_spec",
-                    "Tx_binary_1": "tx_spec",
+                    ("Tx_Target_Zone1", 2020): 50,
+                    ("Tx_Target_Zone1", 2030): 50,
+                    ("Tx_Target_Zone2", 2020): 10,
+                    ("Tx_Target_Zone2", 2030): 10,
                 }.items()
             )
         )
-        actual_cap_type = OrderedDict(
+        actual_tx_target_pos = OrderedDict(
             sorted(
-                {tx: instance.tx_capacity_type[tx] for tx in instance.TX_LINES}.items()
+                {
+                    (z, p): instance.period_transmission_target_pos_dir_mwh[z, p]
+                    for (
+                        z,
+                        p,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
+                }.items()
             )
         )
-        self.assertDictEqual(expected_cap_type, actual_cap_type)
+        self.assertDictEqual(expected_tx_target_pos, actual_tx_target_pos)
 
-        # Param: tx_availability_type
-        expected_cap_type = OrderedDict(
+        # Param: period_transmission_target_neg_dir_mwh
+        expected_tx_target_neg = OrderedDict(
             sorted(
                 {
-                    "Tx1": "exogenous",
-                    "Tx_New": "exogenous",
-                    "Tx2": "exogenous_monthly",
-                    "Tx3": "exogenous",
-                    "Tx_binary_1": "exogenous",
+                    ("Tx_Target_Zone1", 2020): 0.2,
+                    ("Tx_Target_Zone1", 2030): 0.33,
+                    ("Tx_Target_Zone2", 2020): 0,
+                    ("Tx_Target_Zone2", 2030): 0,
                 }.items()
             )
         )
-        actual_cap_type = OrderedDict(
+        actual_tx_target_neg = OrderedDict(
             sorted(
                 {
-                    tx: instance.tx_availability_type[tx] for tx in instance.TX_LINES
+                    (z, p): instance.period_transmission_target_neg_dir_mwh[z, p]
+                    for (
+                        z,
+                        p,
+                    ) in instance.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET
                 }.items()
             )
         )
-        self.assertDictEqual(expected_cap_type, actual_cap_type)
-
-        # Param: load_zone_from
-        expected_load_zone_from = OrderedDict(
-            sorted(
-                {
-                    "Tx1": "Zone1",
-                    "Tx_New": "Zone1",
-                    "Tx2": "Zone1",
-                    "Tx3": "Zone2",
-                    "Tx_binary_1": "Zone1",
-                }.items()
-            )
-        )
-        actual_load_zone_from = OrderedDict(
-            sorted(
-                {tx: instance.load_zone_from[tx] for tx in instance.TX_LINES}.items()
-            )
-        )
-        self.assertDictEqual(expected_load_zone_from, actual_load_zone_from)
-
-        # Param: load_zone_to
-        expected_load_zone_to = OrderedDict(
-            sorted(
-                {
-                    "Tx1": "Zone2",
-                    "Tx_New": "Zone2",
-                    "Tx2": "Zone3",
-                    "Tx3": "Zone3",
-                    "Tx_binary_1": "Zone2",
-                }.items()
-            )
-        )
-        actual_load_zone_to = OrderedDict(
-            sorted({tx: instance.load_zone_to[tx] for tx in instance.TX_LINES}.items())
-        )
-        self.assertDictEqual(expected_load_zone_to, actual_load_zone_to)
+        self.assertDictEqual(expected_tx_target_neg, actual_tx_target_neg)
 
 
 if __name__ == "__main__":

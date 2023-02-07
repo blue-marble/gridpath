@@ -1,4 +1,5 @@
 # Copyright 2022 (c) Crown Copyright, GC.
+# Modifications copyright (c) 2023 Blue Marble Analytics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -266,18 +267,18 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     # Get the transmission-target zones for transmission lines in our portfolio and with zones in our
     # Transmission target zone
     tx_lines_zones = c.execute(
-        """SELECT transmission_line, transmission_target_zone
+        f"""SELECT transmission_line, transmission_target_zone
         FROM
         -- Get transmission lines from portfolio only
         (SELECT transmission_line
             FROM inputs_transmission_portfolios
-            WHERE transmission_portfolio_scenario_id = {}
+            WHERE transmission_portfolio_scenario_id = {subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID}
         ) as tx_tbl
         LEFT OUTER JOIN 
         -- Get transmission_target zones for those transmission lines
         (SELECT transmission_line, transmission_target_zone
             FROM inputs_tx_line_transmission_target_zones
-            WHERE tx_line_transmission_target_zone_scenario_id = {}
+            WHERE tx_line_transmission_target_zone_scenario_id = {subscenarios.TX_LINE_TRANSMISSION_TARGET_ZONE_SCENARIO_ID}
         ) as tx_line_transmission_target_zone_tbl
         USING (transmission_line)
         -- Filter out transmission lines whose transmission-target zone is not one included in our 
@@ -285,13 +286,9 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         WHERE transmission_target_zone in (
                 SELECT transmission_target_zone
                     FROM inputs_geography_transmission_target_zones
-                    WHERE transmission_target_zone_scenario_id = {}
+                    WHERE transmission_target_zone_scenario_id = {subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID}
         );
-        """.format(
-            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-            subscenarios.TX_LINE_TRANSMISSION_TARGET_ZONE_SCENARIO_ID,
-            subscenarios.TRANSMISSION_TARGET_ZONE_SCENARIO_ID,
-        )
+        """
     )
 
     return tx_lines_zones

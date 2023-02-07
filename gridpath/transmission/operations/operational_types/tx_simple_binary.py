@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -232,18 +232,18 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.TX_SIMPLE_BINARY, within=PercentFraction, default=0
     )
 
-    # Optional Params
-    ###########################################################################
-
-    m.tx_simple_binary_min_flow_mw = Param(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT,
-        within=Reals,
-        default=Negative_Infinity,
-    )
-
-    m.tx_simple_binary_max_flow_mw = Param(
-        m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT, within=Reals, default=Infinity
-    )
+    # # Optional Params
+    # ###########################################################################
+    #
+    # m.tx_simple_binary_min_flow_mw = Param(
+    #     m.TX_SIMPLE_BINARY_OPR_TMPS_W_MIN_CONSTRAINT,
+    #     within=Reals,
+    #     default=Negative_Infinity,
+    # )
+    #
+    # m.tx_simple_binary_max_flow_mw = Param(
+    #     m.TX_SIMPLE_BINARY_OPR_TMPS_W_MAX_CONSTRAINT, within=Reals, default=Infinity
+    # )
 
     # Variables
     ###########################################################################
@@ -561,9 +561,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     df = df[df["tx_operational_type"] == "tx_simple_binary"]
 
     # Dict of loss factor by tx_simple_binary line based on raw data
-    loss_factor_raw = dict(
-        zip(df["transmission_line"], df["tx_simple_loss_factor"])
-    )
+    loss_factor_raw = dict(zip(df["transmission_line"], df["tx_simple_loss_factor"]))
 
     # Convert loss factors to float and remove any missing data (will
     # default to 0 in the model)

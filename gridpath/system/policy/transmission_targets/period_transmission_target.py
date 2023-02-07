@@ -33,14 +33,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         dimen=2, within=m.TRANSMISSION_TARGET_ZONES * m.PERIODS
     )
 
-    # Transmission target specified in energy terms for the positive direction of the tx line
+    # Transmission target specified in energy terms for the positive direction of the
+    # tx line
     m.period_transmission_target_pos_dir_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,
         default=0,
     )
 
-    # Transmission target specified in energy terms for the negative direction of the tx line
+    # Transmission target specified in energy terms for the negative direction of the
+    # tx line
     m.period_transmission_target_neg_dir_mwh = Param(
         m.TRANSMISSION_TARGET_ZONE_PERIODS_WITH_TRANSMISSION_TARGET,
         within=NonNegativeReals,

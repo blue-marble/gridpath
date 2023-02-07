@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
-TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+TEST_DATA_DIRECTORY = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "test_data"
+)
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -32,8 +34,20 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods",
     "geography.load_zones",
     "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity",
+    "transmission.availability.availability",
+    "transmission.operations.operational_types",
+    "transmission.operations.operations",
+    "geography.transmission_target_zones",
+    "system.policy.transmission_targets.period_transmission_target",
+    "transmission.operations.transmission_target_contributions",
+    "system.policy.transmission_targets"
+    ".aggregate_period_transmission_target_contributions",
 ]
-NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
+NAME_OF_MODULE_BEING_TESTED = (
+    "system.policy.transmission_targets.period_transmission_target_balance"
+)
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -51,7 +65,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxCapacity(unittest.TestCase):
+class TestTxTargetBalance(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -80,10 +94,9 @@ class TestTxCapacity(unittest.TestCase):
             stage="",
         )
 
-    def test_derived_data(self):
+    def test_data_loaded_correctly(self):
         """
-        Capacity-type gridpath should have added appropriate data;
-        make sure it is all as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -94,25 +107,6 @@ class TestTxCapacity(unittest.TestCase):
             stage="",
         )
         instance = m.create_instance(data)
-
-        # TX_OPR_PRDS
-        expected_tx_op_p = sorted(
-            [
-                ("Tx1", 2020),
-                ("Tx1", 2030),
-                ("Tx_New", 2020),
-                ("Tx_New", 2030),
-                ("Tx2", 2020),
-                ("Tx2", 2030),
-                ("Tx3", 2020),
-                ("Tx3", 2030),
-                ("Tx_binary_1", 2020),
-                ("Tx_binary_1", 2030),
-            ]
-        )
-        actual_tx_op_p = sorted([(tx, p) for (tx, p) in instance.TX_OPR_PRDS])
-
-        self.assertListEqual(expected_tx_op_p, actual_tx_op_p)
 
 
 if __name__ == "__main__":
