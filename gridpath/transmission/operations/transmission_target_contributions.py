@@ -14,7 +14,7 @@
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Expression, value, Var, NonNegativeReals, Constraint
+from pyomo.environ import Param, Set, Expression, value, Var, NonNegativeReals, Constraint, Reals
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import (
@@ -98,8 +98,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Variables
     ###########################################################################
-    m.Transmission_Target_Energy_MW_Pos_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
-    m.Transmission_Target_Energy_MW_Neg_Dir = Var(m.TX_OPR_TMPS, within=NonNegativeReals)
+    m.Transmission_Target_Energy_MW_Pos_Dir = Var(m.TX_OPR_TMPS, within=Reals)
+    m.Transmission_Target_Energy_MW_Neg_Dir = Var(m.TX_OPR_TMPS, within=Reals)
 
     # Derived Sets (requires input params)
     ###########################################################################
