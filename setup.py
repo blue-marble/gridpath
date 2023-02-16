@@ -17,7 +17,7 @@ extras_ui = [
     "Flask-SocketIO==4.3.2",  # Flask client-server communication; see #772
     "psutil==5.8.0",  # Process management
     "python-socketio[client]<5,>=4.3.0",  # SocketIO Python client; see #772
-    "Werkzeug==2.0.2",  # See #903
+    "Werkzeug==2.2.3",  # See #903
     "dnspython==1.16.0",  # Avoids eventlet version mismatch
 ]
 extras_black = ["black"]
