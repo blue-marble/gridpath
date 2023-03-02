@@ -106,36 +106,36 @@ class TestCapacityContributionTransfers(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: min_transfer_energyunit
-        expected_min_transfer_energyunit = {
+        # Param: min_transfer_powerunit
+        expected_min_transfer_powerunit = {
             ("PRM_Zone1", "PRM_Zone2", 2020): 0,
             ("PRM_Zone1", "PRM_Zone2", 2030): 0,
         }
 
-        actual_min_transfer_energyunit = {
-            (z, z_to, p): instance.min_transfer_energyunit[z, z_to, p]
+        actual_min_transfer_powerunit = {
+            (z, z_to, p): instance.min_transfer_powerunit[z, z_to, p]
             for (z, z_to) in instance.PRM_ZONES_CAPACITY_TRANSFER_ZONES
             for p in instance.PERIODS
         }
 
         self.assertDictEqual(
-            expected_min_transfer_energyunit, actual_min_transfer_energyunit
+            expected_min_transfer_powerunit, actual_min_transfer_powerunit
         )
 
-        # Param: max_transfer_energyunit
-        expected_max_transfer_energyunit = {
+        # Param: max_transfer_powerunit
+        expected_max_transfer_powerunit = {
             ("PRM_Zone1", "PRM_Zone2", 2020): 99,
             ("PRM_Zone1", "PRM_Zone2", 2030): float("inf"),
         }
 
-        actual_max_transfer_energyunit = {
-            (z, z_to, p): instance.max_transfer_energyunit[z, z_to, p]
+        actual_max_transfer_powerunit = {
+            (z, z_to, p): instance.max_transfer_powerunit[z, z_to, p]
             for (z, z_to) in instance.PRM_ZONES_CAPACITY_TRANSFER_ZONES
             for p in instance.PERIODS
         }
 
         self.assertDictEqual(
-            expected_max_transfer_energyunit, actual_max_transfer_energyunit
+            expected_max_transfer_powerunit, actual_max_transfer_powerunit
         )
 
         # Set: PRM_TX_LINES

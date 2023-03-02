@@ -46,14 +46,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
       +-------------------------------------------------------------------------+
       | Optional Input Params                                                   |
       +=========================================================================+
-      | | :code:`min_transfer_energyunit`                                       |
+      | | :code:`min_transfer_powerunit`                                       |
       | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
       | | *Within*: :code:`NonNegativeReals`                                    |
       | | *Default*: :code:`0`                                                  |
       |                                                                         |
       | Minimum capacity transfer between zones in period.                      |
       +-------------------------------------------------------------------------+
-     | | :code:`max_transfer_energyunit`                                       |
+     | | :code:`max_transfer_powerunit`                                       |
       | | *Defined over*: :code:`PRM_ZONES_CAPACITY_TRANSFER_ZONES, PERIODS`    |
       | | *Within*: :code:`NonNegativeReals`                                    |
       | | *Default*: :code:`infinity`                                                  |
@@ -88,13 +88,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
       +-------------------------------------------------------------------------+
     """
     # Exogenous param limits
-    m.min_transfer_energyunit = Param(
+    m.min_transfer_powerunit = Param(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
         m.PERIODS,
         within=NonNegativeReals,
         default=0,
     )
-    m.max_transfer_energyunit = Param(
+    m.max_transfer_powerunit = Param(
         m.PRM_ZONES_CAPACITY_TRANSFER_ZONES,
         m.PERIODS,
         within=NonNegativeReals,
@@ -120,7 +120,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def min_transfer_constraint_rule(mod, prm_z_from, prm_z_to, prd):
         return (
             mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
-            >= mod.min_transfer_energyunit[prm_z_from, prm_z_to, prd]
+            >= mod.min_transfer_powerunit[prm_z_from, prm_z_to, prd]
         )
 
     m.Capacity_Transfer_Min_Limit_Constraint = Constraint(
@@ -132,7 +132,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     def max_transfer_constraint_rule(mod, prm_z_from, prm_z_to, prd):
         return (
             mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
-            <= mod.max_transfer_energyunit[prm_z_from, prm_z_to, prd]
+            <= mod.max_transfer_powerunit[prm_z_from, prm_z_to, prd]
         )
 
     m.Capacity_Transfer_Max_Limit_Constraint = Constraint(
@@ -248,8 +248,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.load(
             filename=limits_tab_file,
             param=(
-                m.min_transfer_energyunit,
-                m.max_transfer_energyunit,
+                m.min_transfer_powerunit,
+                m.max_transfer_powerunit,
             ),
         )
 
@@ -288,7 +288,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     limits = c1.execute(
         f"""
         SELECT prm_zone, prm_capacity_transfer_zone, period, 
-        min_transfer_energyunit, max_transfer_energyunit
+        min_transfer_powerunit, max_transfer_powerunit
         FROM inputs_transmission_prm_capacity_transfer_limits
         WHERE prm_capacity_transfer_limits_scenario_id = 
         {subscenarios.PRM_CAPACITY_TRANSFER_LIMITS_SCENARIO_ID}
@@ -359,8 +359,8 @@ def write_model_inputs(
                     "prm_zone",
                     "prm_capacity_transfer_zone",
                     "period",
-                    "min_transfer_energyunit",
-                    "max_transfer_energyunit",
+                    "min_transfer_powerunit",
+                    "max_transfer_powerunit",
                 ]
             )
 

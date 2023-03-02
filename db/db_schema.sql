@@ -1669,8 +1669,8 @@ prm_capacity_transfer_limits_scenario_id INTEGER,
 prm_zone VARCHAR(32),  -- "from" zone
 prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
 period INTEGER,
-min_transfer_energyunit FLOAT,
-max_transfer_energyunit FLOAT,
+min_transfer_powerunit FLOAT,
+max_transfer_powerunit FLOAT,
 PRIMARY KEY (prm_capacity_transfer_limits_scenario_id, prm_zone,
              prm_capacity_transfer_zone, period),
 FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
