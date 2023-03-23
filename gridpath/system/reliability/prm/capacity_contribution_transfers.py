@@ -299,13 +299,11 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
     c2 = conn.cursor()
     transmission_lines = c2.execute(
         """SELECT transmission_line, prm_zone_from, prm_zone_to
-        FROM inputs_transmission_portfolios
-        LEFT OUTER JOIN
-            (SELECT transmission_line, prm_zone_from, prm_zone_to
             FROM inputs_transmission_prm_zones
-            WHERE transmission_prm_zone_scenario_id = {prm_z}) as tx_prm_zones
-        USING (transmission_line)
-        WHERE transmission_portfolio_scenario_id = {portfolio};""".format(
+            WHERE transmission_prm_zone_scenario_id = {prm_z}
+        AND transmission_line IN
+        (SELECT transmission_line FROM inputs_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id = {portfolio});""".format(
             prm_z=subscenarios.TRANSMISSION_PRM_ZONE_SCENARIO_ID,
             portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
