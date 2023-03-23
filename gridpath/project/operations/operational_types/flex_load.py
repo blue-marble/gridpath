@@ -211,7 +211,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 
     """
-
     # Sets
     ###########################################################################
 
@@ -416,7 +415,7 @@ def power_provision_rule(mod, prj, tmp):
     """
     Negative of the shifted load.
     """
-    return -mod.Flex_Load_Grid_MW[prj, tmp]
+    return mod.flex_load_static_load_mw[prj, tmp]-mod.Flex_Load_Grid_MW[prj, tmp]
 
 
 # Input-Output
@@ -487,6 +486,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+    print("flex load dispatch")
     with open(
         os.path.join(
             scenario_directory,
