@@ -352,6 +352,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Power
 def min_power_rule(mod, g, tmp):
     """
@@ -675,7 +676,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             ]
         )
 
-        for (p, tmp) in mod.GEN_ALWAYS_ON_OPR_TMPS:
+        for p, tmp in mod.GEN_ALWAYS_ON_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -728,7 +729,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_downward_reserves",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_ALWAYS_ON_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_ALWAYS_ON_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [

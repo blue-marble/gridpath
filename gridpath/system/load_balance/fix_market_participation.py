@@ -25,7 +25,7 @@ def fix_variables(m, d, scenario_directory, subproblem, stage):
     if m.first_stage_flag:  # buy/sell variables not fixed in the first stage
         pass
     else:
-        for (z, hub, tmp) in m.LZ_MARKETS * m.TMPS:
+        for z, hub, tmp in m.LZ_MARKETS * m.TMPS:
             if m.no_market_participation_in_stage[z, hub]:
                 m.Net_Market_Purchased_Power[z, hub, tmp] = 0
                 m.Net_Market_Purchased_Power[z, hub, tmp].fixed = True
@@ -75,7 +75,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m):
         fixed_commitment_writer = csv.writer(
             market_positions_file, delimiter="\t", lineterminator="\n"
         )
-        for (lz, hub, tmp) in m.LZ_MARKETS * m.TMPS:
+        for lz, hub, tmp in m.LZ_MARKETS * m.TMPS:
             fixed_commitment_writer.writerow(
                 [
                     lz,

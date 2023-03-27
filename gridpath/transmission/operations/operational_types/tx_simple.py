@@ -279,6 +279,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # TODO: should these move to operations.py since all transmission op_types
 #  have this constraint?
 def min_transmit_rule(mod, l, tmp):

@@ -54,6 +54,7 @@ def generic_add_model_components(
     :param objective_function_reserve_penalty_cost_component:
     :return:
     """
+
     # Add violation penalty costs incurred to objective function
     def penalty_costs_rule(mod):
         return sum(

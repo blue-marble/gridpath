@@ -327,7 +327,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "transmission_max_capacity_mw",
             ]
         )
-        for (tx_line, p) in m.TX_OPR_PRDS:
+        for tx_line, p in m.TX_OPR_PRDS:
             writer.writerow(
                 [
                     tx_line,
@@ -363,7 +363,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "capacity_cost",
             ]
         )
-        for (l, p) in m.TX_OPR_PRDS:
+        for l, p in m.TX_OPR_PRDS:
             writer.writerow(
                 [
                     l,

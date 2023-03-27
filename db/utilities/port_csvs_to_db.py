@@ -339,7 +339,6 @@ def load_single_subscenario_id_from_directory(
     for index, row in csv_data_master.iterrows():
         # Load data if a directory is specified for this table
         if isinstance(row["path"], str) and row["subscenario"] == subscenario:
-
             # Parse the row
             (
                 table,

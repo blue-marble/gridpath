@@ -335,7 +335,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ) as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone", "retired_mw"])
-        for (prj, p) in m.GEN_RET_LIN_OPR_PRDS:
+        for prj, p in m.GEN_RET_LIN_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

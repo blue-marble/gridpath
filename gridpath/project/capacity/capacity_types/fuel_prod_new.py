@@ -638,7 +638,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_fuel_stor_capacity_fuelunitperhour",
             ]
         )
-        for (prj, v) in m.FUEL_PROD_NEW_VNTS:
+        for prj, v in m.FUEL_PROD_NEW_VNTS:
             writer.writerow(
                 [
                     prj,

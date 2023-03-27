@@ -118,7 +118,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "elcc_mw",
             ]
         )
-        for (prj, period) in m.PRM_PRJ_OPR_PRDS:
+        for prj, period in m.PRM_PRJ_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

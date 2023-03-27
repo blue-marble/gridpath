@@ -275,7 +275,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     "transmission_capacity_group_new_capacity_max",
                 ]
             )
-            for (grp, prd) in m.TX_CAPACITY_GROUP_PERIODS:
+            for grp, prd in m.TX_CAPACITY_GROUP_PERIODS:
                 writer.writerow(
                     [
                         grp,

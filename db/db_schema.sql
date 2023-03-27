@@ -1002,6 +1002,7 @@ charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
+soc_penalty_cost_per_energyunit FLOAT,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,
@@ -4485,6 +4486,7 @@ Total_Export_Penalty_Cost FLOAT,
 Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
+Total_SOC_Penalty_Cost FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

@@ -112,7 +112,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: min_new_build_power
         expected_min_new_build_power = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["min_new_build_power"] == ".":
                     expected_min_new_build_power[prj, prd] = 0
@@ -133,7 +133,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: max_new_build_power
         expected_max_new_build_power = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["max_new_build_power"] == ".":
                     expected_max_new_build_power[prj, prd] = float("inf")
@@ -154,7 +154,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: min_capacity_power
         expected_min_capacity_power = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["min_capacity_power"] == ".":
                     expected_min_capacity_power[prj, prd] = 0
@@ -175,7 +175,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: max_capacity_power
         expected_max_capacity_power = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["max_capacity_power"] == ".":
                     expected_max_capacity_power[prj, prd] = float("inf")
@@ -196,7 +196,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: min_new_build_energy
         expected_min_new_build_energy = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["min_new_build_energy"] == ".":
                     expected_min_new_build_energy[prj, prd] = 0
@@ -217,7 +217,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: max_new_build_energy
         expected_max_new_build_energy = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["max_new_build_energy"] == ".":
                     expected_max_new_build_energy[prj, prd] = float("inf")
@@ -238,7 +238,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: min_capacity_energy
         expected_min_capacity_energy = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["min_capacity_energy"] == ".":
                     expected_min_capacity_energy[prj, prd] = 0
@@ -259,7 +259,7 @@ class TestCapacityCosts(unittest.TestCase):
 
         # Param: max_capacity_energy
         expected_max_capacity_energy = {}
-        for (prj, prd) in project_periods:
+        for prj, prd in project_periods:
             if (prj, prd) in potentials.index:
                 if potentials.loc[prj, prd]["max_capacity_energy"] == ".":
                     expected_max_capacity_energy[prj, prd] = float("inf")

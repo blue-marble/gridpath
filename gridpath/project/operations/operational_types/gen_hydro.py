@@ -789,7 +789,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
             ]
         )
 
-        for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
+        for p, tmp in mod.GEN_HYDRO_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -844,7 +844,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_downward_reserves",
                 ]
             )
-            for (p, tmp) in sorted(mod.GEN_HYDRO_OPR_TMPS):
+            for p, tmp in sorted(mod.GEN_HYDRO_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [

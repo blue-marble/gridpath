@@ -84,7 +84,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ) as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])
-        for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
+        for z, p in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow([z, p, value(m.Total_PRM_Simple_Contribution_MW[z, p])])
 
 

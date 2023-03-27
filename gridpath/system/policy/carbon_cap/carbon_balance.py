@@ -103,7 +103,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "carbon_cap_overage",
             ]
         )
-        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
+        for z, p in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow(
                 [
                     z,

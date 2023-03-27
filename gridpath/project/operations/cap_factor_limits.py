@@ -205,7 +205,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "possible_power_provision_mwh",
             ]
         )
-        for (prj, bt, h) in m.CAP_FACTOR_LIMIT_PRJ_BT_HRZ:
+        for prj, bt, h in m.CAP_FACTOR_LIMIT_PRJ_BT_HRZ:
             writer.writerow(
                 [
                     prj,

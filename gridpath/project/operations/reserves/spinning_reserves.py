@@ -214,12 +214,12 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_ba_dict = dict()
-    for (prj, ba) in project_bas:
+    for prj, ba in project_bas:
         prj_ba_dict[str(prj)] = "." if ba is None else (str(ba))
 
     # Make a dict for easy access
     prj_derate_dict = dict()
-    for (prj, derate) in prj_derates:
+    for prj, derate in prj_derates:
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file

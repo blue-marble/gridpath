@@ -108,7 +108,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "energy_target_shortage_mwh",
             ]
         )
-        for (z, p) in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
+        for z, p in m.ENERGY_TARGET_ZONE_PERIODS_WITH_ENERGY_TARGET:
             writer.writerow(
                 [
                     z,

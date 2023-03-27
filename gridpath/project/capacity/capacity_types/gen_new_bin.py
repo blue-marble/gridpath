@@ -493,7 +493,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "w",
         newline="",
     ) as f:
-
         writer = csv.writer(f)
         writer.writerow(
             [
@@ -505,7 +504,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_build_mw",
             ]
         )
-        for (prj, v) in m.GEN_NEW_BIN_VNTS:
+        for prj, v in m.GEN_NEW_BIN_VNTS:
             writer.writerow(
                 [
                     prj,
