@@ -57,8 +57,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # TODO: make this work with all new capacity types; will need to standardize set
     #  names
     def get_vintages_fin_in_period(mod, p):
-        vintages_fin_in_period = []
-
         # # Add any components specific to the capacity type modules
         # for op_m in required_capacity_modules:
         #     imp_op_m = imported_capacity_modules[op_m]
