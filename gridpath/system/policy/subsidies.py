@@ -258,7 +258,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "subsidized_mw",
             ]
         )
-        for (prg, prj, v) in m.PROGRAM_PROJECT_VINTAGES:
+        for prg, prj, v in m.PROGRAM_PROJECT_VINTAGES:
             writer.writerow(
                 [
                     prg,

@@ -29,6 +29,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     Here, we sum up all subsidies, take the negative of that, and add the resulting
     expression to the objective-function dynamic components.
     """
+
     # Add costs to objective function
     def total_subsidy_rule(mod):
         return -sum(
