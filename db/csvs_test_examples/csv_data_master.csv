@@ -103,6 +103,8 @@ policy/performance_standard/system_performance_standard,performance_standard,per
 policy/fuel_burn_limits/bas,fuel_burn_limit,fuel_burn_limit_ba_scenario_id,geography_fuel_burn_limit_balancing_areas,simple,,0,0,,,,
 policy/fuel_burn_limits/project_bas,fuel_burn_limit,project_fuel_burn_limit_ba_scenario_id,project_fuel_burn_limit_balancing_areas,simple,,0,0,,,,
 policy/fuel_burn_limits/limits,fuel_burn_limit,fuel_burn_limit_scenario_id,system_fuel_burn_limits,simple,,0,0,,,,
+policy/subsidies,subsidies,subsidy_scenario_id,system_subsidies,dir_main,,0,0,budgets.csv,,,
+policy/subsidies,subsidies,subsidy_scenario_id,system_subsidies_projects,dir_aux,,0,0,subsidies.csv,,,
 reliability/prm/geography_prm_zones,prm,prm_zone_scenario_id,geography_prm_zones,simple,,0,0,,,,
 reliability/prm/project_prm_zones,prm,project_prm_zone_scenario_id,project_prm_zones,simple,,0,0,,,,
 reliability/prm/project_elcc_chars/simple_elcc,prm,project_elcc_simple_scenario_id,project_elcc_simple,simple,,1,0,,,,

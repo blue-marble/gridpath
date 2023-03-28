@@ -2909,6 +2909,36 @@ PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
 
+-- Subsidies (e.g., ITC)
+DROP TABLE IF EXISTS subscenarios_system_subsidies;
+CREATE TABLE subscenarios_system_subsidies (
+subsidy_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_system_subsides;
+CREATE TABLE inputs_system_subsidies (
+subsidy_scenario_id INTEGER,
+program VARCHAR(32),
+period INTEGER,
+program_budget FLOAT,
+PRIMARY KEY (subsidy_scenario_id, program, period),
+FOREIGN KEY (subsidy_scenario_id) REFERENCES
+subscenarios_system_subsidies (subsidy_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_subsidies_projects;
+CREATE TABLE inputs_system_subsidies_projects (
+subsidy_scenario_id INTEGER,
+program VARCHAR(32),
+project VARCHAR(64),
+vintage INTEGER,
+annual_payment_subsidy FLOAT,
+PRIMARY KEY (subsidy_scenario_id, program, project, vintage),
+FOREIGN KEY (subsidy_scenario_id) REFERENCES
+subscenarios_system_subsidies (subsidy_scenario_id)
+);
 
 -- Case tuning
 -- We can apply additional costs in the model to prevent degeneracy
@@ -2970,6 +3000,7 @@ of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
 of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
+of_subsidies INTEGER,
 of_prm INTEGER,
 of_deliverability INTEGER,
 of_elcc_surface INTEGER,
@@ -3053,6 +3084,7 @@ carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
 performance_standard_scenario_id INTEGER,
 fuel_burn_limit_scenario_id INTEGER,
+subsidy_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -4487,6 +4519,7 @@ Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 Total_SOC_Penalty_Cost FLOAT,
+Total_Subsidies FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 
