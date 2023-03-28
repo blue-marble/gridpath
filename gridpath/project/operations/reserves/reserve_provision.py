@@ -416,7 +416,7 @@ def generic_export_results(
                 "reserve_provision_mw",
             ]
         )
-        for (p, tmp) in getattr(m, reserve_project_operational_timepoints_set):
+        for p, tmp in getattr(m, reserve_project_operational_timepoints_set):
             writer.writerow(
                 [
                     p,

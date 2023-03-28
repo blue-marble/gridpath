@@ -148,7 +148,6 @@ def get_inputs_for_subproblem(
     subscenarios,
     db_path,
 ):
-
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # First make inputs directory if needed
@@ -397,9 +396,11 @@ def write_solver_options(scenario_directory, solver_options):
         pass
     else:
         with open(
-            os.path.join(scenario_directory, "solver_options.csv"), "w", newline=""
+            os.path.join(scenario_directory, "solver_options.csv"),
+            "w",
+            newline="",
         ) as solver_options_file:
-            writer = csv.writer(solver_options_file, delimiter=",")
+            writer = csv.writer(solver_options_file, delimiter=",", lineterminator="\n")
             writer.writerow(["solver_name", solver_options.SOLVER_NAME])
             for opt in solver_options.SOLVER_OPTIONS.keys():
                 writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])

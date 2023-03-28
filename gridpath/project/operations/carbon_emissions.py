@@ -109,7 +109,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "carbon_emissions_tons",
             ]
         )
-        for (p, tmp) in m.FUEL_PRJ_OPR_TMPS:
+        for p, tmp in m.FUEL_PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,

@@ -421,7 +421,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "availability_derate",
             ]
         )
-        for (p, tmp) in m.AVL_BIN_OPR_TMPS:
+        for p, tmp in m.AVL_BIN_OPR_TMPS:
             writer.writerow(
                 [
                     p,

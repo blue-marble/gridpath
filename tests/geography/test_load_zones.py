@@ -140,6 +140,24 @@ class TestLoadZones(unittest.TestCase):
             expected_unserved_energy_penalty, actual_unserved_energy_penalty
         )
 
+        # Param: unserved_energy_limit_mwh
+        expected_unserved_energy_limit = OrderedDict(
+            sorted(
+                {"Zone1": float("inf"), "Zone2": float("inf"), "Zone3": 100000}.items()
+            )
+        )
+        actual_unserved_energy_limit = OrderedDict(
+            sorted(
+                {
+                    z: instance.unserved_energy_limit_mwh[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(
+            expected_unserved_energy_limit, actual_unserved_energy_limit
+        )
+
         # Param: max_unserved_load_penalty_per_mw
         expected_max_unserved_load_penalty_per_mw = OrderedDict(
             sorted({"Zone1": 0, "Zone2": 0, "Zone3": 0}.items())
@@ -156,6 +174,22 @@ class TestLoadZones(unittest.TestCase):
             expected_max_unserved_load_penalty_per_mw,
             actual_max_unserved_load_penalty_per_mw,
         )
+
+        # Param: max_unserved_load_limit_mw
+        expected_unserved_load_limit = OrderedDict(
+            sorted(
+                {"Zone1": 1000, "Zone2": float("inf"), "Zone3": float("inf")}.items()
+            )
+        )
+        actual_unserved_load_limit = OrderedDict(
+            sorted(
+                {
+                    z: instance.max_unserved_load_limit_mw[z]
+                    for z in instance.LOAD_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_unserved_load_limit, actual_unserved_load_limit)
 
         # Param: export_penalty_cost_per_mwh
         expected_export_penalty_cost_per_mwh = OrderedDict(

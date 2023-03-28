@@ -238,7 +238,7 @@ class TestHorizons(unittest.TestCase):
         #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()
         prev_tmp = None
-        for (horizon, balancing_type, tmp) in [
+        for horizon, balancing_type, tmp in [
             tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
         ]:
             if tmp == expected_first_hrz_tmp[balancing_type, horizon]:
@@ -276,7 +276,7 @@ class TestHorizons(unittest.TestCase):
         # Testing for both horizons that 'circular' and 'linear'
         expected_next_tmp = dict()
         prev_tmp = None
-        for (horizon, balancing_type, tmp) in [
+        for horizon, balancing_type, tmp in [
             tuple(row) for row in timepoints_on_balancing_type_horizon_df.values
         ]:
             if prev_tmp is None:

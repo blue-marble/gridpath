@@ -228,7 +228,7 @@ def write_model_inputs(
     # Only assign a min duration to projects that contribute to a PRM zone in
     # case we have projects with missing zones here
     prj_zone_dur_dict = dict()
-    for (prj, zone, min_dur) in project_zone_dur:
+    for prj, zone, min_dur in project_zone_dur:
         prj_zone_dur_dict[str(prj)] = "." if zone is None else min_dur
 
     with open(

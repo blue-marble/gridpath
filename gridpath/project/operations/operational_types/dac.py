@@ -121,6 +121,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 # Constraint Formulation Rules
 ###############################################################################
 
+
 # Power
 def max_power_rule(mod, g, tmp):
     """

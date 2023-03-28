@@ -127,6 +127,31 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TMPS, rule=meet_load_rule)
 
+    def use_limit_constraint_rule(mod, lz):
+        return (
+            sum(
+                mod.Unserved_Energy_MW_Expression[lz, tmp]
+                * mod.hrs_in_tmp[tmp]
+                * mod.tmp_weight[tmp]
+                for tmp in mod.TMPS
+            )
+            <= mod.unserved_energy_limit_mwh[lz]
+        )
+
+    m.Total_USE_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, rule=use_limit_constraint_rule
+    )
+
+    def max_unserved_load_limit_constraint_rule(mod, lz, tmp):
+        return (
+            mod.Unserved_Energy_MW_Expression[lz, tmp]
+            <= mod.max_unserved_load_limit_mw[lz]
+        )
+
+    m.Max_Unserved_Load_Limit_Constraint = Constraint(
+        m.LOAD_ZONES, m.TMPS, rule=max_unserved_load_limit_constraint_rule
+    )
+
 
 def record_dynamic_components(dynamic_components):
     """

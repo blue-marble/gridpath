@@ -247,7 +247,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     if os.path.exists(hr_curves_file) and os.path.exists(carbon_tax_allowance_file):
-
         hr_df = pd.read_csv(hr_curves_file, sep="\t")
         projects = set(hr_df["project"].unique())
 
@@ -419,7 +418,7 @@ def write_model_inputs(
     # projects.tab
     # Make a dict for easy access
     prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
+    for prj, zone in project_zones:
         prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
 
     with open(
@@ -538,7 +537,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "carbon_tax_allowance_tons",
             ]
         )
-        for (p, fg, tmp) in m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS:
+        for p, fg, tmp in m.CARBON_TAX_PRJ_FUEL_GROUP_OPR_TMPS:
             writer.writerow(
                 [
                     p,

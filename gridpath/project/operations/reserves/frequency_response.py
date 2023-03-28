@@ -204,7 +204,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "partial",
             ]
         )
-        for (p, tmp) in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
+        for p, tmp in m.FREQUENCY_RESPONSE_PRJ_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -319,12 +319,12 @@ def write_model_inputs(
 
     # Make a dict for easy access
     prj_ba_dict = dict()
-    for (prj, ba, partial) in project_bas:
+    for prj, ba, partial in project_bas:
         prj_ba_dict[str(prj)] = (".", ".") if ba is None else (str(ba), partial)
 
     # Make a dict for easy access
     prj_derate_dict = dict()
-    for (prj, derate) in prj_derates:
+    for prj, derate in prj_derates:
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
 
     # Add params to projects file

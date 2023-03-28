@@ -107,6 +107,8 @@ policy/subsidies,subsidies,subsidy_scenario_id,system_subsidies,dir_main,,0,0,bu
 policy/subsidies,subsidies,subsidy_scenario_id,system_subsidies_projects,dir_aux,,0,0,subsidies.csv,,,
 reliability/prm/geography_prm_zones,prm,prm_zone_scenario_id,geography_prm_zones,simple,,0,0,,,,
 reliability/prm/project_prm_zones,prm,project_prm_zone_scenario_id,project_prm_zones,simple,,0,0,,,,
+reliability/prm/project_elcc_chars/simple_elcc,prm,project_elcc_simple_scenario_id,project_elcc_simple,simple,,1,0,,,,
+reliability/prm/project_elcc_chars/deliverability,prm,project_deliverability_scenario_id,project_deliverability,simple,,1,0,,,,
 reliability/prm/project_elcc_chars,prm,project_elcc_chars_scenario_id,project_elcc_chars,simple,,0,0,,,,
 reliability/prm/system_prm_requirement,prm,prm_requirement_scenario_id,system_prm_requirement,simple,,0,0,,,,
 reliability/prm/deliverability/costs,deliverability,prm_deliverability_cost_scenario_id,project_prm_deliverability_costs,simple,,0,0,,,,

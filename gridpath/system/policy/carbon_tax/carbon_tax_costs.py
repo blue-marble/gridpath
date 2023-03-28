@@ -89,7 +89,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "total_carbon_tax_cost",
             ]
         )
-        for (z, p) in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX:
+        for z, p in m.CARBON_TAX_ZONE_PERIODS_WITH_CARBON_TAX:
             writer.writerow(
                 [
                     z,

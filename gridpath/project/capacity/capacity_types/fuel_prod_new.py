@@ -638,7 +638,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "new_fuel_stor_capacity_fuelunitperhour",
             ]
         )
-        for (prj, v) in m.FUEL_PROD_NEW_VNTS:
+        for prj, v in m.FUEL_PROD_NEW_VNTS:
             writer.writerow(
                 [
                     prj,
@@ -675,7 +675,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with new build production OR release OR energy capacity
     new_build_df = pd.DataFrame(

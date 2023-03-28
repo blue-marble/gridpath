@@ -105,7 +105,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "local_capacity_contribution_mw",
             ]
         )
-        for (prj, period) in m.LOCAL_CAPACITY_PRJ_OPR_PRDS:
+        for prj, period in m.LOCAL_CAPACITY_PRJ_OPR_PRDS:
             writer.writerow(
                 [
                     prj,

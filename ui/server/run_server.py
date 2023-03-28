@@ -121,6 +121,7 @@ add_api_resources(api=api, db_path=DATABASE_PATH)
 
 # ########################## Socket Communication ########################### #
 
+
 # ### DATABASE OPERATIONS ### #
 @socketio.on("add_new_scenario")
 def socket_add_or_edit_new_scenario(msg):

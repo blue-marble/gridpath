@@ -163,7 +163,7 @@ class TestOperationalCosts(unittest.TestCase):
             ("Disp_Cont_Commit", 2030): [0],
         }
         expected_var_om_curve_prj_tmp_sgms = list()
-        for (prj, tmp) in expected_var_om_curve_prj_tmps:
+        for prj, tmp in expected_var_om_curve_prj_tmps:
             prd = timepoints_df[timepoints_df["timepoint"] == tmp].iloc[0]["period"]
             segments = expected_segments_by_prj_period[prj, prd]
             for sgm in segments:

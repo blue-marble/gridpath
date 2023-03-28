@@ -501,12 +501,11 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         "w",
         newline="",
     ) as f:
-
         writer = csv.writer(f)
         writer.writerow(
             ["project", "vintage", "technology", "load_zone", "new_build_mw"]
         )
-        for (prj, p) in m.GEN_NEW_LIN_VNTS:
+        for prj, p in m.GEN_NEW_LIN_VNTS:
             writer.writerow(
                 [
                     prj,
@@ -541,7 +540,7 @@ def summarize_results(scenario_directory, subproblem, stage, summary_results_fil
 
     capacity_results_agg_df = capacity_results_df.groupby(
         by=["load_zone", "technology", "vintage"], as_index=True
-    ).sum()
+    ).sum(numeric_only=False)
 
     # Get all technologies with the new build capacity
     new_build_df = pd.DataFrame(

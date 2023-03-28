@@ -108,30 +108,30 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         -- Get projects from portfolio only
         (SELECT project
             FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}
+            WHERE project_portfolio_scenario_id = {portfolio}
         ) as prj_tbl
             LEFT OUTER JOIN
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
-        WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
+        WHERE project_prm_zone_scenario_id = {prj_prm_zone}) as prm_zone_tbl
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, prm_type
+        (SELECT DISTINCT project, prm_type -- make sure prm_type is the same in all prds
         FROM inputs_project_elcc_chars
-        WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
+        WHERE project_elcc_chars_scenario_id = {prj_elcc}) as prm_type_tbl
         USING (project)
         -- Filter out projects whose PRM zone is not one included in our 
         -- prm_zone_sceenario_id
         WHERE prm_zone in (
                 SELECT prm_zone
                     FROM inputs_geography_prm_zones
-                    WHERE prm_zone_scenario_id = {}
+                    WHERE prm_zone_scenario_id = {prm_zone}
         );
         """.format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
-            subscenarios.PRM_ZONE_SCENARIO_ID,
+            portfolio=subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            prj_prm_zone=subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            prj_elcc=subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
+            prm_zone=subscenarios.PRM_ZONE_SCENARIO_ID,
         )
     )
 
@@ -220,7 +220,7 @@ def write_model_inputs(
     # Only assign a type to projects that contribute to a PRM zone in case
     # we have projects with missing zones here
     prj_zone_type_dict = dict()
-    for (prj, zone, prm_type) in project_zones:
+    for prj, zone, prm_type in project_zones:
         prj_zone_type_dict[str(prj)] = (
             (".", ".") if zone is None else (str(zone), str(prm_type))
         )

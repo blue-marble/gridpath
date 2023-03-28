@@ -29,6 +29,12 @@ and/or downward reserves.
 
 Costs for this operational type include variable O&M costs.
 
+.. note:: Please note that to calculate the duration of the storage project, i.e.,
+    how long it can sustain discharging at its maximum output, you must adjust the
+    energy capacity by the discharge efficiency. For example, a 1 MW  with 1 MWh energy
+    capacity battery with discharging losses of 5% (discharging_loss_factor = 95%) would
+    have a duration of 1 MWh / (1 MW/0.95) or 0.95 hours rather than 1 hour.
+
 """
 
 from __future__ import division
@@ -364,6 +370,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
 # Constraint Formulation Rules
 ###############################################################################
+
 
 # Power and State of Charge
 def max_discharge_rule(mod, s, tmp):
@@ -721,7 +728,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 "discharge_mw",
             ]
         )
-        for (p, tmp) in mod.STOR_OPR_TMPS:
+        for p, tmp in mod.STOR_OPR_TMPS:
             writer.writerow(
                 [
                     p,
@@ -774,7 +781,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     "linked_charge",
                 ]
             )
-            for (p, tmp) in sorted(mod.STOR_OPR_TMPS):
+            for p, tmp in sorted(mod.STOR_OPR_TMPS):
                 if tmp in tmps_to_link:
                     writer.writerow(
                         [
@@ -818,4 +825,13 @@ def curtailment_cost_rule(mod, g, tmp):
         )
         * mod.curtailment_cost_per_pwh[g]
         * mod.stor_losses_factor_curtailment
+    )
+
+
+def soc_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    return mod.soc_penalty_cost_per_energyunit[prj] * (
+        mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+        * mod.Availability_Derate[prj, tmp]
+        - mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
     )

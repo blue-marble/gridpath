@@ -126,7 +126,7 @@ class TestCycleSelect(unittest.TestCase):
             get_project_operational_timepoints(expected_gen_w_supplemental_firing)
         )
         expected_supplemental_firing_opr_tmps = list()
-        for (p, tmp) in expected_operational_timepoints_by_project:
+        for p, tmp in expected_operational_timepoints_by_project:
             supplemental_firing_prj_list = expected_supplemental_firing_by_prj[p]
             # Only expecting the timepoints for projects that do have cycle-select
             # projects

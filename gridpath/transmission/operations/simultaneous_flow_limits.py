@@ -286,7 +286,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "simultaneous_flow_mw",
             ]
         )
-        for (g, tmp) in m.SIM_FLOW_LMT_TMPS:
+        for g, tmp in m.SIM_FLOW_LMT_TMPS:
             writer.writerow(
                 [g, tmp, m.period[tmp], m.tmp_weight[tmp], value(m.Sim_Flow_MW[g, tmp])]
             )
