@@ -157,6 +157,7 @@ def all_modules_list():
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
         "system.policy.carbon_tax.carbon_tax_costs",
+        "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
@@ -190,6 +191,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        "objective.system.policy.aggregate_subsidies",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
@@ -322,6 +324,10 @@ def optional_modules_list():
             "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
             "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
             "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        ],
+        "subsidies": [
+            "system.policy.subsidies",
+            "objective.system.policy.aggregate_subsidies",
         ],
         "prm": [
             "geography.prm_zones",

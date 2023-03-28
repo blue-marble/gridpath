@@ -804,7 +804,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                         [
                             p,
                             tmp_linked_tmp_dict[tmp],
-                            max(value(mod.GenHydroMustTake_Gross_Power_MW_[p, tmp]), 0),
+                            max(value(mod.GenHydroMustTake_Gross_Power_MW[p, tmp]), 0),
                             max(
                                 value(mod.GenHydroMustTake_Upwards_Reserves_MW[p, tmp]),
                                 0,

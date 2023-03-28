@@ -16,6 +16,7 @@ of_track_carbon_imports,
 of_carbon_tax,1
 of_performance_standard,
 of_fuel_burn_limit,
+of_subsidies,
 of_prm,
 of_capacity_transfers,
 of_deliverability,
@@ -103,6 +104,7 @@ carbon_cap_target_scenario_id,NULL
 carbon_tax_scenario_id,1
 performance_standard_scenario_id,NULL
 fuel_burn_limit_scenario_id,NULL
+subsidy_scenario_id,NULL
 prm_requirement_scenario_id,NULL
 local_capacity_requirement_scenario_id,NULL
 elcc_surface_scenario_id,NULL
