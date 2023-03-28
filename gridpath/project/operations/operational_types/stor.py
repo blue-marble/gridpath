@@ -346,26 +346,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR_OPR_TMPS, rule=energy_tracking_rule
     )
 
-    m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
-    )
-
-    # Reserves
-    m.Stor_Max_Headroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_power_rule
-    )
-
-    m.Stor_Max_Footroom_Power_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_power_rule
-    )
-
-    m.Stor_Max_Headroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
-    )
-
-    m.Stor_Max_Footroom_Energy_Constraint = Constraint(
-        m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
-    )
+    # m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
+    #     m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
+    # )
+    #
+    # # Reserves
+    # m.Stor_Max_Headroom_Power_Constraint = Constraint(
+    #     m.STOR_OPR_TMPS, rule=max_headroom_power_rule
+    # )
+    #
+    # m.Stor_Max_Footroom_Power_Constraint = Constraint(
+    #     m.STOR_OPR_TMPS, rule=max_footroom_power_rule
+    # )
+    #
+    # m.Stor_Max_Headroom_Energy_Constraint = Constraint(
+    #     m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
+    # )
+    #
+    # m.Stor_Max_Footroom_Energy_Constraint = Constraint(
+    #     m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
+    # )
 
 
 # Constraint Formulation Rules
@@ -438,6 +438,19 @@ def energy_tracking_rule(mod, s, tmp):
             )
             prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
             prev_tmp_charge = mod.stor_linked_charge[s, 0]
+
+            return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == max(
+                (
+                    prev_tmp_starting_energy_in_storage
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                ),
+                0,
+            )
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[s]]
@@ -454,14 +467,16 @@ def energy_tracking_rule(mod, s, tmp):
                 s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
             ]
 
-        return (
-            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-            == prev_tmp_starting_energy_in_storage
-            + prev_tmp_charge * prev_tmp_hrs_in_tmp * mod.stor_charging_efficiency[s]
-            - prev_tmp_discharge
-            * prev_tmp_hrs_in_tmp
-            / mod.stor_discharging_efficiency[s]
-        )
+            return (
+                mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                == prev_tmp_starting_energy_in_storage
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.stor_charging_efficiency[s]
+                - prev_tmp_discharge
+                * prev_tmp_hrs_in_tmp
+                / mod.stor_discharging_efficiency[s]
+            )
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
