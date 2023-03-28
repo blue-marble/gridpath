@@ -18,6 +18,7 @@ of_performance_standard,
 of_fuel_burn_limit,
 of_subsidies,
 of_prm,
+of_capacity_transfers,
 of_deliverability,
 of_elcc_surface,
 of_local_capacity,
@@ -57,6 +58,9 @@ project_carbon_tax_allowance_scenario_id,NULL
 project_performance_standard_zone_scenario_id,NULL
 project_fuel_burn_limit_ba_scenario_id,NULL
 project_prm_zone_scenario_id,NULL
+prm_capacity_transfer_scenario_id,NULL
+prm_capacity_transfer_limits_scenario_id,NULL
+transmission_prm_zone_scenario_id,NULL
 project_elcc_chars_scenario_id,NULL
 prm_deliverability_cost_scenario_id,NULL
 prm_deliverability_existing_scenario_id,NULL

@@ -192,6 +192,12 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         )
     )
 
+    # TODO: allow Tx lines with no load zones from and to specified, that are only
+    #  used for say, reliability capacity exchanges; they would need a different
+    #  operational type (no power transfer); the decisions also won't be made at the
+    #  transmission line level, but the capacity will limit the aggregate transfer
+    #  between PRM zones, so there won't be flow variables
+
     return transmission_lines
 
 

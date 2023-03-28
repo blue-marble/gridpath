@@ -106,7 +106,7 @@ class TestSubsidies(unittest.TestCase):
             ),
         }
         actual_prj_v_fin_in_prd = {
-            p: sorted(list(instance.PRJ_VNTS_FIN_IN_PERIOD[p].value))
+            p: sorted(list(instance.PRJ_VNTS_FIN_IN_PERIOD[p].data()))
             for p in instance.PERIODS
         }
         self.assertDictEqual(expected_prj_v_fin_in_prd, actual_prj_v_fin_in_prd)
@@ -162,15 +162,12 @@ class TestSubsidies(unittest.TestCase):
             )
         )
         # Exclude projects with empty set
-        actual_prg_v_by_prj = OrderedDict(
-            sorted(
-                {
-                    prj: next(iter(instance.PROGRAM_VINTAGES_BY_PROJECT[prj].value))
-                    for prj in instance.PROJECTS
-                    if instance.PROGRAM_VINTAGES_BY_PROJECT[prj].value != set()
-                }.items()
-            )
-        )
+        actual_prg_v_by_prj = {}
+        for prj in instance.PROJECTS:
+            if instance.PROGRAM_VINTAGES_BY_PROJECT[prj].data() != ():
+                actual_prg_v_by_prj[prj] = instance.PROGRAM_VINTAGES_BY_PROJECT[
+                    prj
+                ].data()[0]
         self.assertDictEqual(expected_prg_v_by_prj, actual_prg_v_by_prj)
 
         # Set:PROJECT_VINTAGES_BY_PROGRAM
@@ -182,14 +179,11 @@ class TestSubsidies(unittest.TestCase):
             )
         )
         # Exclude projects with empty set
-        actual_prj_v_by_prg = OrderedDict(
-            sorted(
-                {
-                    prg: next(iter(instance.PROJECT_VINTAGES_BY_PROGRAM[prg].value))
-                    for prg in instance.PROGRAMS
-                }.items()
-            )
-        )
+        actual_prj_v_by_prg = {}
+        for prg in instance.PROGRAMS:
+            actual_prj_v_by_prg[prg] = instance.PROJECT_VINTAGES_BY_PROGRAM[prg].data()[
+                0
+            ]
         self.assertDictEqual(expected_prj_v_by_prg, actual_prj_v_by_prg)
 
         # Param: annual_payment_subsidy
