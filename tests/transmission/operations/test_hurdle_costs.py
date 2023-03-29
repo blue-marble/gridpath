@@ -58,7 +58,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxAggregateCosts(unittest.TestCase):
+class TestTxHurdleCosts(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -113,6 +113,8 @@ class TestTxAggregateCosts(unittest.TestCase):
                     (("Tx3", 2030), 0),
                     (("Tx_New", 2020), 0.0),
                     (("Tx_New", 2030), 0.0),
+                    (("Tx_binary_1", 2020), 0),
+                    (("Tx_binary_1", 2030), 0),
                 ]
             )
         )
@@ -139,6 +141,8 @@ class TestTxAggregateCosts(unittest.TestCase):
                     (("Tx3", 2030), 0),
                     (("Tx_New", 2020), 0.0),
                     (("Tx_New", 2030), 0.0),
+                    (("Tx_binary_1", 2020), 0),
+                    (("Tx_binary_1", 2030), 0),
                 ]
             )
         )

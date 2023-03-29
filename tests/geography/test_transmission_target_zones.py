@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,33 +14,18 @@
 
 from __future__ import print_function
 
-from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
-import sys
 import unittest
 
 from tests.common_functions import create_abstract_model, add_components_and_load_data
 
 TEST_DATA_DIRECTORY = os.path.join(os.path.dirname(__file__), "..", "test_data")
 
-# Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints",
-    "temporal.investment.periods",
-    "geography.load_zones",
-    "transmission",
-]
-NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
-IMPORTED_PREREQ_MODULES = list()
-for mdl in PREREQUISITE_MODULE_NAMES:
-    try:
-        imported_module = import_module("." + str(mdl), package="gridpath")
-        IMPORTED_PREREQ_MODULES.append(imported_module)
-    except ImportError:
-        print("ERROR! Module " + str(mdl) + " not found.")
-        sys.exit(1)
-# Import the module we'll test
+# No prerequisite modules
+NAME_OF_MODULE_BEING_TESTED = "geography.transmission_target_zones"
+
 try:
     MODULE_BEING_TESTED = import_module(
         "." + NAME_OF_MODULE_BEING_TESTED, package="gridpath"
@@ -49,7 +34,7 @@ except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED + " to test.")
 
 
-class TestTxCapacity(unittest.TestCase):
+class TestLoadZones(unittest.TestCase):
     """ """
 
     def test_add_model_components(self):
@@ -58,7 +43,7 @@ class TestTxCapacity(unittest.TestCase):
         :return:
         """
         create_abstract_model(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
+            prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
@@ -71,42 +56,61 @@ class TestTxCapacity(unittest.TestCase):
         :return:
         """
         add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
+            prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
             stage="",
         )
 
-    def test_derived_data(self):
+    def test_load_zone_data_loads_correctly(self):
         """
-        Test that calculations/derivations worked
+        Create LOAD_ZONES set and load data; check resulting set is as expected
         :return:
         """
         m, data = add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
+            prereq_modules=[],
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
             subproblem="",
             stage="",
         )
         instance = m.create_instance(data)
-
-        # Set: TX_OPR_PRDS
-        expected_tx_periods = sorted(
-            [
-                ("Tx1", 2020),
-                ("Tx1", 2030),
-                ("Tx_New", 2020),
-                ("Tx_New", 2030),
-                ("Tx2", 2020),
-                ("Tx2", 2030),
-                ("Tx3", 2020),
-                ("Tx3", 2030),
-            ]
+        expected = sorted(["Tx_Target_Zone1", "Tx_Target_Zone2"])
+        actual = sorted([z for z in instance.TRANSMISSION_TARGET_ZONES])
+        self.assertListEqual(
+            expected,
+            actual,
+            msg="TRANSMISSION_TARGET_ZONES set data does not load correctly.",
         )
-        actual_tx_periods = sorted([(tx, p) for (tx, p) in instance.TX_OPR_PRDS])
-        self.assertListEqual(expected_tx_periods, actual_tx_periods)
+
+        # Param: transmission_target_allow_violation
+        expected_allow_viol = OrderedDict(
+            sorted({"Tx_Target_Zone1": 0, "Tx_Target_Zone2": 1}.items())
+        )
+        actual_allow_viol = OrderedDict(
+            sorted(
+                {
+                    z: instance.transmission_target_allow_violation[z]
+                    for z in instance.TRANSMISSION_TARGET_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_viol, actual_allow_viol)
+
+        # Param: transmission_target_violation_penalty_per_mwh
+        expected_penalty = OrderedDict(
+            sorted({"Tx_Target_Zone1": 0, "Tx_Target_Zone2": 100}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {
+                    z: instance.transmission_target_violation_penalty_per_mwh[z]
+                    for z in instance.TRANSMISSION_TARGET_ZONES
+                }.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty, actual_penalty)
 
 
 if __name__ == "__main__":
