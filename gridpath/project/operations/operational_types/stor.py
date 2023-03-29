@@ -439,18 +439,35 @@ def energy_tracking_rule(mod, s, tmp):
             prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
             prev_tmp_charge = mod.stor_linked_charge[s, 0]
 
-            return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == max(
-                (
-                    prev_tmp_starting_energy_in_storage
-                    + prev_tmp_charge
-                    * prev_tmp_hrs_in_tmp
-                    * mod.stor_charging_efficiency[s]
-                    - prev_tmp_discharge
-                    * prev_tmp_hrs_in_tmp
-                    / mod.stor_discharging_efficiency[s]
-                ),
-                0,
+            calculated_starting_energy_in_storage = (
+                prev_tmp_starting_energy_in_storage
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.stor_charging_efficiency[s]
+                - prev_tmp_discharge
+                * prev_tmp_hrs_in_tmp
+                / mod.stor_discharging_efficiency[s]
             )
+
+            if calculated_starting_energy_in_storage < 0:
+                return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
+            # TODO: this could create problems if the outages starts in the first timepoint,
+            #  as we won't get the energy back
+            elif calculated_starting_energy_in_storage > (
+                mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
+                * mod.avl_exog_cap_derate[s, tmp]
+            ):
+                return (
+                    mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                    == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+                    * mod.Availability_Derate[s, tmp]
+                )
+            else:
+                return (
+                    mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                    == calculated_starting_energy_in_storage
+                )
+
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[s]]
