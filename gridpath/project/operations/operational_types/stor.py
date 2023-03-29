@@ -346,26 +346,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.STOR_OPR_TMPS, rule=energy_tracking_rule
     )
 
-    # m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
-    #     m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
-    # )
-    #
-    # # Reserves
-    # m.Stor_Max_Headroom_Power_Constraint = Constraint(
-    #     m.STOR_OPR_TMPS, rule=max_headroom_power_rule
-    # )
-    #
-    # m.Stor_Max_Footroom_Power_Constraint = Constraint(
-    #     m.STOR_OPR_TMPS, rule=max_footroom_power_rule
-    # )
-    #
-    # m.Stor_Max_Headroom_Energy_Constraint = Constraint(
-    #     m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
-    # )
-    #
-    # m.Stor_Max_Footroom_Energy_Constraint = Constraint(
-    #     m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
-    # )
+    m.Stor_Max_Energy_in_Storage_Constraint = Constraint(
+        m.STOR_OPR_TMPS, rule=max_energy_in_storage_rule
+    )
+
+    # Reserves
+    m.Stor_Max_Headroom_Power_Constraint = Constraint(
+        m.STOR_OPR_TMPS, rule=max_headroom_power_rule
+    )
+
+    m.Stor_Max_Footroom_Power_Constraint = Constraint(
+        m.STOR_OPR_TMPS, rule=max_footroom_power_rule
+    )
+
+    m.Stor_Max_Headroom_Energy_Constraint = Constraint(
+        m.STOR_OPR_TMPS, rule=max_headroom_energy_rule
+    )
+
+    m.Stor_Max_Footroom_Energy_Constraint = Constraint(
+        m.STOR_OPR_TMPS, rule=max_footroom_energy_rule
+    )
 
 
 # Constraint Formulation Rules
