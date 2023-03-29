@@ -486,6 +486,18 @@ class TestExamples(unittest.TestCase):
             {1: -1265436373826.0408, 2: -1265436373826.0408, 3: -1265436373826.0408},
         )
 
+    def test_example_single_stage_prod_cost_linked_subproblems_w_hydro(self):
+        """
+        Check objective function values of
+        "single_stage_prod_cost_linked_subproblems" example
+        :return:
+        """
+        self.check_validation("single_stage_prod_cost_linked_subproblems_w_hydro")
+        self.run_and_check_objective(
+            "single_stage_prod_cost_linked_subproblems_w_hydro",
+            {1: -71637941.12254025, 2: -71637941.12254025, 3: -71637941.12254025},
+        )
+
     def test_example_multi_stage_prod_cost(self):
         """
         Check validation and objective function values of
@@ -1275,6 +1287,54 @@ class TestExamples(unittest.TestCase):
         self.check_validation("test_w_storage_w_soc_penalty")
         self.run_and_check_objective(
             "test_w_storage_w_soc_penalty", -245736137.55082923
+        )
+
+    def test_example_test_new_solar_itc(self):
+        """
+        Check validation and objective function value of
+        "test_new_solar_itc" example
+        :return:
+        """
+
+        self.check_validation("test_new_solar_itc")
+        self.run_and_check_objective("test_new_solar_itc", -3796301348804.993)
+
+    def test_example_test_new_build_storage_itc(self):
+        """
+        Check validation and objective function value of
+        "test_new_build_storage" example
+        :return:
+        """
+
+        self.check_validation("test_new_build_storage_itc")
+        self.run_and_check_objective("test_new_build_storage_itc", -4484590199.92)
+
+    def test_example_2periods_new_build_simple_prm_2loadzones(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_2loadzones"
+        example
+        :return:
+        """
+        objective = -613211671721885.6
+        self.check_validation("2periods_new_build_simple_prm_2loadzones")
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones", objective
+        )
+
+    def test_example_2periods_new_build_simple_prm_2loadzones_newtx_w_transfers(self):
+        """
+        Check validation and objective function value of
+        "2periods_new_build_simple_prm_w_transfers"
+        example
+        :return:
+        """
+        objective = -17323444870.099785
+        self.check_validation(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers"
+        )
+        self.run_and_check_objective(
+            "2periods_new_build_simple_prm_2loadzones_newtx_w_transfers", objective
         )
 
     def test_example_test_period_tx_targets(self):

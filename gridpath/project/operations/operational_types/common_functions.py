@@ -115,8 +115,8 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             if linked_tmp == mod.furthest_linked_tmp:
                 break
             else:
-                hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
                 linked_tmp += -1
+                hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
     # If we haven't reached the first timepoint of a linear or linked
     # horizon, we'll look for the previous timepoint
     else:
@@ -181,8 +181,8 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                     if linked_tmp == mod.furthest_linked_tmp:
                         break
                     else:
-                        hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
                         linked_tmp += -1
+                        hours_from_tmp += mod.hrs_in_linked_tmp[linked_tmp]
                 # Break out from the outer while loop when done with the
                 # linked timepoints
                 break

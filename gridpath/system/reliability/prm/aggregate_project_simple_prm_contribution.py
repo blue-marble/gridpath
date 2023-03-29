@@ -55,7 +55,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=total_prm_provision_rule
     )
 
-    # Add to emission imports to carbon balance
+    # Add to balance constraint
     getattr(d, prm_balance_provision_components).append(
         "Total_PRM_Simple_Contribution_MW"
     )
