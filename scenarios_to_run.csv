@@ -1,0 +1,3 @@
+﻿scenario,test,test_w_hydro
+log,,
+scenario_location,./examples,./examples
