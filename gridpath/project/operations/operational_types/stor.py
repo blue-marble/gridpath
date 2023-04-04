@@ -319,6 +319,21 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Expressions
     ###########################################################################
+    def ending_energy_in_storage_expression_rule(mod, prj, tmp):
+        return (
+            mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
+            + mod.Stor_Charge_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.stor_charging_efficiency[prj]
+            - mod.Stor_Discharge_MW[prj, tmp]
+            * mod.hrs_in_tmp[tmp]
+            / mod.stor_discharging_efficiency[prj]
+        )
+
+    m.Stor_Ending_Energy_in_Storage_MWh = Expression(
+        m.STOR_OPR_TMPS,
+        initialize=ending_energy_in_storage_expression_rule,
+    )
 
     def upward_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in getattr(d, headroom_variables)[g])
@@ -833,5 +848,5 @@ def soc_penalty_cost_rule(mod, prj, tmp):
     return mod.soc_penalty_cost_per_energyunit[prj] * (
         mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
         * mod.Availability_Derate[prj, tmp]
-        - mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]
+        - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
     )
