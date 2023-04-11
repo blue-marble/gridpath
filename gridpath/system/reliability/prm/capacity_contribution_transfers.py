@@ -503,7 +503,9 @@ def import_results_into_database(
 
     results = []
     with open(
-        os.path.join(results_directory, "capacity_contribution_transfers_by_prm_zone.csv"),
+        os.path.join(
+            results_directory, "capacity_contribution_transfers_by_prm_zone.csv"
+        ),
         "r",
     ) as surface_file:
         reader = csv.reader(surface_file)
