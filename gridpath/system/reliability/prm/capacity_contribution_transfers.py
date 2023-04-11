@@ -183,7 +183,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             sum(
                 mod.Transfer_Capacity_Contribution[prm_z_from, prm_z_to, prd]
                 for (prm_z_from, prm_z_to) in mod.PRM_ZONES_CAPACITY_TRANSFER_ZONES
-                for prd in mod.PERIODS
                 if prm_z_from == prm_z
             )
             <= mod.Total_PRM_Simple_Contribution_MW[prm_z, prd]
@@ -411,7 +410,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             str(subproblem),
             str(stage),
             "results",
-            "capacity_contribution_transfers.csv",
+            "capacity_contribution_transfers_by_prm_zone.csv",
         ),
         "w",
         newline="",
@@ -432,6 +431,36 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     p,
                     value(m.Total_Transfers_from_PRM_Zone[z, p]),
                     value(m.Total_Transfers_to_PRM_Zone[z, p]),
+                ]
+            )
+
+    with open(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "capacity_contribution_transfers.csv",
+        ),
+        "w",
+        newline="",
+    ) as results_file:
+        writer = csv.writer(results_file)
+        writer.writerow(
+            [
+                "prm_zone",
+                "prm_capacity_transfer_zone",
+                "period",
+                "capacity_contribution_transferred_mw",
+            ]
+        )
+        for z, t_z, p in m.Transfer_Capacity_Contribution:
+            writer.writerow(
+                [
+                    z,
+                    t_z,
+                    p,
+                    value(m.Transfer_Capacity_Contribution[z, t_z, p]),
                 ]
             )
 
@@ -474,7 +503,7 @@ def import_results_into_database(
 
     results = []
     with open(
-        os.path.join(results_directory, "capacity_contribution_transfers.csv"),
+        os.path.join(results_directory, "capacity_contribution_transfers_by_prm_zone.csv"),
         "r",
     ) as surface_file:
         reader = csv.reader(surface_file)
