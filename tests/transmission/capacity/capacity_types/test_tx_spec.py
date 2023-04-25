@@ -103,6 +103,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
             ("Tx2", 2030),
             ("Tx3", 2020),
             ("Tx3", 2030),
+            ("Tx_binary_1", 2020),
+            ("Tx_binary_1", 2030),
         ]
         actual_periods = sorted([(tx, p) for (tx, p) in instance.TX_SPEC_OPR_PRDS])
         self.assertListEqual(expected_periods, actual_periods)
@@ -117,6 +119,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
                     ("Tx2", 2030): -10,
                     ("Tx3", 2020): -10,
                     ("Tx3", 2030): -10,
+                    ("Tx_binary_1", 2020): -10,
+                    ("Tx_binary_1", 2030): -10,
                 }.items()
             )
         )
@@ -140,6 +144,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
                     ("Tx2", 2030): 10,
                     ("Tx3", 2020): 10,
                     ("Tx3", 2030): 10,
+                    ("Tx_binary_1", 2020): 10,
+                    ("Tx_binary_1", 2030): 10,
                 }.items()
             )
         )

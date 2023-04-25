@@ -537,6 +537,27 @@ FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
 subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id)
 );
 
+-- Transmission target
+-- This is the unit at which transmission target requirements are met in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_transmission_target_zones;
+CREATE TABLE subscenarios_geography_transmission_target_zones (
+transmission_target_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_transmission_target_zones;
+CREATE TABLE inputs_geography_transmission_target_zones (
+transmission_target_zone_scenario_id INTEGER,
+transmission_target_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mwh FLOAT DEFAULT 0,
+PRIMARY KEY (transmission_target_zone_scenario_id, transmission_target_zone),
+FOREIGN KEY (transmission_target_zone_scenario_id) REFERENCES
+subscenarios_geography_transmission_target_zones (transmission_target_zone_scenario_id)
+);
+
 -- Carbon cap
 -- This is the unit at which the carbon cap is applied in the model; it can be
 -- different from the load zones
@@ -1003,6 +1024,7 @@ discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 soc_penalty_cost_per_energyunit FLOAT,
+soc_last_tmp_penalty_cost_per_energyunit FLOAT,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,
@@ -1501,6 +1523,28 @@ FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
  subscenarios_project_energy_target_zones (project_energy_target_zone_scenario_id)
 );
 
+-- Tx line transmission target zones
+-- Which tx lines can contribute to transmission target requirements
+-- Depends on how transmission target zones are specified
+-- This table can include all tx line with NULLs for tx lines not
+-- contributing or just the contributing tx lines
+DROP TABLE IF EXISTS subscenarios_tx_line_transmission_target_zones;
+CREATE TABLE subscenarios_tx_line_transmission_target_zones (
+tx_line_transmission_target_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_tx_line_transmission_target_zones;
+CREATE TABLE inputs_tx_line_transmission_target_zones (
+tx_line_transmission_target_zone_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+transmission_target_zone VARCHAR(32),
+PRIMARY KEY (tx_line_transmission_target_zone_scenario_id, transmission_line),
+FOREIGN KEY (tx_line_transmission_target_zone_scenario_id) REFERENCES
+ subscenarios_tx_line_transmission_target_zones (tx_line_transmission_target_zone_scenario_id)
+);
+
 -- Project carbon cap zones
 -- Which projects count toward the carbon cap
 -- Depends on carbon cap zone geography
@@ -1631,6 +1675,69 @@ prm_zone VARCHAR(32),
 PRIMARY KEY (project_prm_zone_scenario_id, project),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
  subscenarios_project_prm_zones (project_prm_zone_scenario_id)
+);
+
+-- Transmission PRM zones capacity transfer links
+-- Also, which transmission lines can are part of those links
+
+DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfers;
+CREATE TABLE subscenarios_transmission_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfers;
+CREATE TABLE inputs_transmission_prm_capacity_transfers (
+prm_capacity_transfer_scenario_id INTEGER,
+prm_zone VARCHAR(32),  -- "from" zone
+prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
+allow_elcc_surface_transfers INTEGER, -- defaults to 0, only enable this if you know
+-- what you are doing
+PRIMARY KEY (prm_capacity_transfer_scenario_id, prm_zone, prm_capacity_transfer_zone),
+FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id)
+);
+
+-- Param limits
+DROP TABLE IF EXISTS subscenarios_transmission_prm_capacity_transfer_limits;
+CREATE TABLE subscenarios_transmission_prm_capacity_transfer_limits (
+prm_capacity_transfer_limits_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_capacity_transfer_limits;
+CREATE TABLE inputs_transmission_prm_capacity_transfer_limits (
+prm_capacity_transfer_limits_scenario_id INTEGER,
+prm_zone VARCHAR(32),  -- "from" zone
+prm_capacity_transfer_zone VARCHAR(32),  -- "to" zone,
+period INTEGER,
+min_transfer_powerunit FLOAT,
+max_transfer_powerunit FLOAT,
+PRIMARY KEY (prm_capacity_transfer_limits_scenario_id, prm_zone,
+             prm_capacity_transfer_zone, period),
+FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_limits (prm_capacity_transfer_limits_scenario_id)
+);
+
+-- Transmission line aggregations for limits
+DROP TABLE IF EXISTS subscenarios_transmission_prm_zones;
+CREATE TABLE subscenarios_transmission_prm_zones (
+transmission_prm_zone_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_prm_zones;
+CREATE TABLE inputs_transmission_prm_zones (
+transmission_prm_zone_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+prm_zone_from VARCHAR(32),
+prm_zone_to VARCHAR(32),
+PRIMARY KEY (transmission_prm_zone_scenario_id, transmission_line),
+FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
+ subscenarios_transmission_prm_zones (transmission_prm_zone_scenario_id)
 );
 
 -- Project capacity contribution characteristics (simple ELCC treatment or
@@ -2762,6 +2869,31 @@ PRIMARY KEY (horizon_energy_target_scenario_id, energy_target_zone, load_zone)
 );
 
 
+-- Transmission target requirements
+-- By period
+DROP TABLE IF EXISTS subscenarios_system_period_transmission_targets;
+CREATE TABLE subscenarios_system_period_transmission_targets (
+period_transmission_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on temporal_scenario_id and
+-- transmission_target_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_period_transmission_targets;
+CREATE TABLE inputs_system_period_transmission_targets (
+period_transmission_target_scenario_id INTEGER,
+transmission_target_zone VARCHAR(32),
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+transmission_target_positive_direction_mwh FLOAT,
+transmission_target_negative_direction_mwh FLOAT,
+PRIMARY KEY (period_transmission_target_scenario_id, transmission_target_zone,
+             subproblem_id, stage_id, period)
+);
+
 -- Carbon cap
 DROP TABLE IF EXISTS subscenarios_system_carbon_cap_targets;
 CREATE TABLE subscenarios_system_carbon_cap_targets (
@@ -2909,6 +3041,36 @@ PRIMARY KEY (fuel_burn_limit_scenario_id, fuel, fuel_burn_limit_ba,
              subproblem_id, stage_id, balancing_type_horizon, horizon)
 );
 
+-- Subsidies (e.g., ITC)
+DROP TABLE IF EXISTS subscenarios_system_subsidies;
+CREATE TABLE subscenarios_system_subsidies (
+subsidy_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_system_system_subsides;
+CREATE TABLE inputs_system_subsidies (
+subsidy_scenario_id INTEGER,
+program VARCHAR(32),
+period INTEGER,
+program_budget FLOAT,
+PRIMARY KEY (subsidy_scenario_id, program, period),
+FOREIGN KEY (subsidy_scenario_id) REFERENCES
+subscenarios_system_subsidies (subsidy_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_system_subsidies_projects;
+CREATE TABLE inputs_system_subsidies_projects (
+subsidy_scenario_id INTEGER,
+program VARCHAR(32),
+project VARCHAR(64),
+vintage INTEGER,
+annual_payment_subsidy FLOAT,
+PRIMARY KEY (subsidy_scenario_id, program, project, vintage),
+FOREIGN KEY (subsidy_scenario_id) REFERENCES
+subscenarios_system_subsidies (subsidy_scenario_id)
+);
 
 -- Case tuning
 -- We can apply additional costs in the model to prevent degeneracy
@@ -2965,12 +3127,15 @@ of_frequency_response INTEGER,
 of_spinning_reserves INTEGER,
 of_period_energy_target INTEGER,
 of_horizon_energy_target INTEGER,
+of_period_transmission_target INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_carbon_tax INTEGER,
 of_performance_standard INTEGER,
 of_fuel_burn_limit INTEGER,
+of_subsidies INTEGER,
 of_prm INTEGER,
+of_capacity_transfers INTEGER,
 of_deliverability INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
@@ -2985,6 +3150,7 @@ regulation_down_ba_scenario_id INTEGER,
 frequency_response_ba_scenario_id INTEGER,
 spinning_reserves_ba_scenario_id INTEGER,
 energy_target_zone_scenario_id INTEGER,
+transmission_target_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 carbon_tax_zone_scenario_id INTEGER,
 performance_standard_zone_scenario_id INTEGER,
@@ -3004,12 +3170,16 @@ project_regulation_down_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
 project_spinning_reserves_ba_scenario_id INTEGER,
 project_energy_target_zone_scenario_id INTEGER,
+tx_line_transmission_target_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_carbon_tax_zone_scenario_id INTEGER,
 project_carbon_tax_allowance_scenario_id INTEGER,
 project_performance_standard_zone_scenario_id INTEGER,
 project_fuel_burn_limit_ba_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
+prm_capacity_transfer_scenario_id INTEGER,
+prm_capacity_transfer_limits_scenario_id INTEGER,
+transmission_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_deliverability_cost_scenario_id INTEGER,
 prm_deliverability_existing_scenario_id INTEGER,
@@ -3049,10 +3219,12 @@ frequency_response_scenario_id INTEGER,
 spinning_reserves_scenario_id INTEGER,
 period_energy_target_scenario_id INTEGER,
 horizon_energy_target_scenario_id INTEGER,
+period_transmission_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 carbon_tax_scenario_id INTEGER,
 performance_standard_scenario_id INTEGER,
 fuel_burn_limit_scenario_id INTEGER,
+subsidy_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
@@ -3082,6 +3254,8 @@ FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
     subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
 FOREIGN KEY (energy_target_zone_scenario_id) REFERENCES
     subscenarios_geography_energy_target_zones (energy_target_zone_scenario_id),
+FOREIGN KEY (transmission_target_zone_scenario_id) REFERENCES
+    subscenarios_geography_transmission_target_zones (transmission_target_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_tax_zone_scenario_id) REFERENCES
@@ -3130,6 +3304,9 @@ FOREIGN KEY (project_spinning_reserves_ba_scenario_id) REFERENCES
 FOREIGN KEY (project_energy_target_zone_scenario_id) REFERENCES
     subscenarios_project_energy_target_zones
         (project_energy_target_zone_scenario_id),
+FOREIGN KEY (tx_line_transmission_target_zone_scenario_id) REFERENCES
+    subscenarios_tx_line_transmission_target_zones
+        (tx_line_transmission_target_zone_scenario_id),
 FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
     subscenarios_project_carbon_cap_zones
         (project_carbon_cap_zone_scenario_id),
@@ -3147,6 +3324,8 @@ FOREIGN KEY (project_fuel_burn_limit_ba_scenario_id) REFERENCES
         (project_fuel_burn_limit_ba_scenario_id),
 FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
     subscenarios_project_prm_zones (project_prm_zone_scenario_id),
+FOREIGN KEY (transmission_prm_zone_scenario_id) REFERENCES
+    subscenarios_transmission_prm_zones (transmission_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_deliverability_cost_scenario_id) REFERENCES
@@ -3246,6 +3425,9 @@ FOREIGN KEY (period_energy_target_scenario_id) REFERENCES
 FOREIGN KEY (horizon_energy_target_scenario_id) REFERENCES
     subscenarios_system_horizon_energy_targets
         (horizon_energy_target_scenario_id),
+FOREIGN KEY (period_transmission_target_scenario_id) REFERENCES
+    subscenarios_system_period_transmission_targets
+        (period_transmission_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (carbon_tax_scenario_id) REFERENCES
@@ -3256,6 +3438,11 @@ FOREIGN KEY (fuel_burn_limit_scenario_id) REFERENCES
     subscenarios_system_fuel_burn_limits (fuel_burn_limit_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
+FOREIGN KEY (prm_capacity_transfer_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfers (prm_capacity_transfer_scenario_id),
+FOREIGN KEY (prm_capacity_transfer_limits_scenario_id) REFERENCES
+    subscenarios_transmission_prm_capacity_transfer_limits
+        (prm_capacity_transfer_limits_scenario_id),
 FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
     subscenarios_system_prm_zone_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
@@ -3895,6 +4082,21 @@ subhourly_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
+CREATE TABLE results_tx_line_period_transmission_target (
+scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+transmission_target_zone VARCHAR(32),
+transmission_target_energy_positive_direction_mw FLOAT,
+transmission_target_energy_negative_direction_mw FLOAT,
+PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_transmission_capacity;
 CREATE TABLE results_transmission_capacity (
 scenario_id INTEGER,
@@ -4363,6 +4565,27 @@ PRIMARY KEY (scenario_id, energy_target_zone, subproblem_id, stage_id,
              balancing_type_horizon, horizon)
 );
 
+-- Transmission target balance
+DROP TABLE IF EXISTS results_system_period_transmission_target;
+CREATE TABLE  results_system_period_transmission_target (
+scenario_id INTEGER,
+transmission_target_zone VARCHAR(64),
+subproblem_id INTEGER,
+stage_id INTEGER,
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+transmission_target_positive_direction_mwh FLOAT,
+total_transmission_target_energy_positive_direction_mwh FLOAT,
+fraction_of_transmission_target_positive_direction_met FLOAT,
+transmission_target_shortage_positive_direction_mwh FLOAT,
+transmission_target_negative_direction_mwh FLOAT,
+total_transmission_target_energy_negative_direction_mwh FLOAT,
+fraction_of_transmission_target_negative_direction_met FLOAT,
+transmission_target_shortage_negative_direction_mwh FLOAT,
+PRIMARY KEY (scenario_id, transmission_target_zone, period, subproblem_id, stage_id)
+);
+
 -- Fuel burn limits
 DROP TABLE IF EXISTS results_system_fuel_burn_limits;
 CREATE TABLE  results_system_fuel_burn_limits (
@@ -4406,6 +4629,8 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
+capacity_contribution_transferred_from_mw FLOAT,
+capacity_contribution_transferred_to_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
 prm_shortage_mw FLOAT,
@@ -4425,6 +4650,16 @@ stage_id INTEGER,
 elcc_surface_mw FLOAT,
 dual FLOAT,
 PRIMARY KEY (scenario_id, elcc_surface_name, prm_zone, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_system_capacity_transfers;
+CREATE TABLE  results_system_capacity_transfers (
+scenario_id INTEGER,
+prm_zone_from VARCHAR(64),
+prm_zone_to VARCHAR(64),
+period INTEGER,
+capacity_transfer_mw FLOAT,
+PRIMARY KEY (scenario_id, prm_zone_to, prm_zone_from, period)
 );
 
 -- Local capacity balance
@@ -4479,6 +4714,7 @@ Total_Carbon_Tax_Cost FLOAT,
 Total_Performance_Standard_Balance_Penalty_Costs Float,
 Total_Period_Energy_Target_Balance_Penalty_Costs FLOAT,
 Total_Horizon_Energy_Target_Balance_Penalty_Costs FLOAT,
+Total_Period_Transmission_Target_Balance_Penalty_Costs FLOAT,
 Total_Dynamic_ELCC_Tuning_Cost Float,
 Total_Import_Carbon_Tuning_Cost Float,
 Total_Market_Net_Cost FLOAT,
@@ -4487,6 +4723,8 @@ Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 Total_SOC_Penalty_Cost FLOAT,
+Total_SOC_Penalty_Last_Tmp_Cost FLOAT,
+Total_Subsidies FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );
 

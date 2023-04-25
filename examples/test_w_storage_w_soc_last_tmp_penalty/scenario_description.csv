@@ -1,5 +1,5 @@
-scenario_id,85
-scenario_name,test_w_storage_w_soc_penalty
+scenario_id,86
+scenario_name,test_w_storage_w_soc_last_tmp_penalty
 of_transmission,
 of_transmission_hurdle_rates,
 of_simultaneous_flow_limits,
@@ -43,7 +43,7 @@ prm_zone_scenario_id,NULL
 local_capacity_zone_scenario_id,NULL
 market_scenario_id,NULL
 project_portfolio_scenario_id,2
-project_operational_chars_scenario_id,22
+project_operational_chars_scenario_id,23
 project_availability_scenario_id,1
 fuel_scenario_id,1
 project_load_zone_scenario_id,1

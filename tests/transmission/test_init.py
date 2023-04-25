@@ -90,7 +90,7 @@ class TestTransmissionInit(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: TX_LINES
-        expected_tx_lines = sorted(["Tx1", "Tx2", "Tx3", "Tx_New"])
+        expected_tx_lines = sorted(["Tx1", "Tx2", "Tx3", "Tx_New", "Tx_binary_1"])
         actual_tx_lines = sorted([tx for tx in instance.TX_LINES])
         self.assertListEqual(expected_tx_lines, actual_tx_lines)
 
@@ -102,6 +102,7 @@ class TestTransmissionInit(unittest.TestCase):
                     "Tx_New": "tx_new_lin",
                     "Tx2": "tx_spec",
                     "Tx3": "tx_spec",
+                    "Tx_binary_1": "tx_spec",
                 }.items()
             )
         )
@@ -120,6 +121,7 @@ class TestTransmissionInit(unittest.TestCase):
                     "Tx_New": "exogenous",
                     "Tx2": "exogenous_monthly",
                     "Tx3": "exogenous",
+                    "Tx_binary_1": "exogenous",
                 }.items()
             )
         )
@@ -140,6 +142,7 @@ class TestTransmissionInit(unittest.TestCase):
                     "Tx_New": "Zone1",
                     "Tx2": "Zone1",
                     "Tx3": "Zone2",
+                    "Tx_binary_1": "Zone1",
                 }.items()
             )
         )
@@ -158,6 +161,7 @@ class TestTransmissionInit(unittest.TestCase):
                     "Tx_New": "Zone2",
                     "Tx2": "Zone3",
                     "Tx3": "Zone3",
+                    "Tx_binary_1": "Zone2",
                 }.items()
             )
         )

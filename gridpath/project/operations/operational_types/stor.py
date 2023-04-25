@@ -885,7 +885,7 @@ def soc_penalty_cost_rule(mod, prj, tmp):
     )
 
 
-def soc_penalty_cost_last_tmp_rule(mod, prj, tmp):
+def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
     """ """
     if check_if_last_timepoint(
         mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]

@@ -270,13 +270,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         ],
     )
 
-    m.SOC_PENALTY_COST_LAST_TMP_PRJ_OPR_TMPS = Set(
+    m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS = Set(
         dimen=2,
         within=m.PRJ_OPR_TMPS,
         initialize=lambda mod: [
             (p, tmp)
             for (p, tmp) in mod.PRJ_OPR_TMPS
-            if p in mod.SOC_PENALTY_COST_LAST_TMP_PRJS
+            if p in mod.SOC_LAST_TMP_PENALTY_COST_PRJS
         ],
     )
 
@@ -486,7 +486,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.SOC_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_penalty_cost_rule
     )
 
-    def soc_penalty_cost_last_tmp_rule(mod, prj, tmp):
+    def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
         """
         State of charge penalty costs are defined for some operational types while
         they are zero for others. Get the appropriate expression for each project
@@ -494,16 +494,16 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         """
         op_type = mod.operational_type[prj]
         if hasattr(
-            imported_operational_modules[op_type], "soc_penalty_cost_last_tmp_rule"
+            imported_operational_modules[op_type], "soc_last_tmp_penalty_cost_rule"
         ):
-            return imported_operational_modules[op_type].soc_penalty_cost_last_tmp_rule(
+            return imported_operational_modules[op_type].soc_last_tmp_penalty_cost_rule(
                 mod, prj, tmp
             )
         else:
-            return op_type_init.soc_penalty_cost_last_tmp_rule(mod, prj, tmp)
+            return op_type_init.soc_last_tmp_penalty_cost_rule(mod, prj, tmp)
 
     m.SOC_Penalty_Last_Tmp_Cost = Expression(
-        m.SOC_PENALTY_COST_LAST_TMP_PRJ_OPR_TMPS, rule=soc_penalty_cost_last_tmp_rule
+        m.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS, rule=soc_last_tmp_penalty_cost_rule
     )
 
 
@@ -586,7 +586,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     if p in m.SOC_PENALTY_COST_PRJS
                     else None,
                     value(m.SOC_Penalty_Last_Tmp_Cost[p, tmp])
-                    if p in m.SOC_PENALTY_COST_LAST_TMP_PRJS
+                    if p in m.SOC_LAST_TMP_PENALTY_COST_PRJS
                     else None,
                 ]
             )

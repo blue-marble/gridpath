@@ -169,7 +169,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.Total_SOC_Penalty_Cost = Expression(rule=total_soc_penalty_cost_rule)
 
-    def total_soc_penalty_cost_last_tmp_rule(mod):
+    def total_soc_last_tmp_penalty_cost_rule(mod):
         """
         Sum last tmp penalty costs for the objective function term.
         :param mod:
@@ -181,10 +181,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
             * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (g, tmp) in mod.SOC_PENALTY_COST_LAST_TMP_PRJ_OPR_TMPS
+            for (g, tmp) in mod.SOC_LAST_TMP_PENALTY_COST_PRJ_OPR_TMPS
         )
 
-    m.Total_SOC_Penalty_Last_Tmp_Cost = Expression(rule=total_soc_penalty_cost_last_tmp_rule)
+    m.Total_SOC_Penalty_Last_Tmp_Cost = Expression(
+        rule=total_soc_last_tmp_penalty_cost_rule
+    )
 
     record_dynamic_components(dynamic_components=d)
 
@@ -205,4 +207,6 @@ def record_dynamic_components(dynamic_components):
     )
     getattr(dynamic_components, cost_components).append("Total_Curtailment_Cost")
     getattr(dynamic_components, cost_components).append("Total_SOC_Penalty_Cost")
-    getattr(dynamic_components, cost_components).append("Total_SOC_Penalty_Last_Tmp_Cost")
+    getattr(dynamic_components, cost_components).append(
+        "Total_SOC_Penalty_Last_Tmp_Cost"
+    )
