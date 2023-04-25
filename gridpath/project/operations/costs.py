@@ -554,7 +554,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 "shutdown_cost",
                 "operational_violation_cost",
                 "curtailment_cost",
-                "soc_penalty_cost"
+                "soc_penalty_cost",
+                "soc_last_tmp_penalty_cost",
             ]
         )
         for p, tmp in m.PRJ_OPR_TMPS:
