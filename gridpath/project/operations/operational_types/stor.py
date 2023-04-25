@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ from pyomo.environ import (
     PercentFraction,
     value,
 )
+import warnings
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
@@ -465,14 +466,25 @@ def energy_tracking_rule(mod, s, tmp):
                 / mod.stor_discharging_efficiency[s]
             )
 
+            # Deal with possible precision-related infeasibilities, e.g. if
+            # the calculated energy in storage is just below or just above
+            # its boundaries of 0 and the energy capacity x availability
             if calculated_starting_energy_in_storage < 0:
+                warnings.warn(f"Starting energy in storage was "
+                              f"{calculated_starting_energy_in_storage}, "
+                              f"which would have resulted in infeasibility. "
+                              f"Changed to 0.")
                 return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
-            # TODO: this could create problems if the outages starts in the first timepoint,
-            #  as we won't get the energy back
             elif calculated_starting_energy_in_storage > (
                 mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
                 * mod.avl_exog_cap_derate[s, tmp]
             ):
+                warnings.warn(f"Starting energy in storage was "
+                              f"{calculated_starting_energy_in_storage}, "
+                              f"which would have resulted in infeasibility. "
+                              f"Changed to "
+                              f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
+                              f"* mod.Availability_Derate[s, tmp].")
                 return (
                     mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
                     == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
