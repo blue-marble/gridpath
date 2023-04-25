@@ -470,21 +470,25 @@ def energy_tracking_rule(mod, s, tmp):
             # the calculated energy in storage is just below or just above
             # its boundaries of 0 and the energy capacity x availability
             if calculated_starting_energy_in_storage < 0:
-                warnings.warn(f"Starting energy in storage was "
-                              f"{calculated_starting_energy_in_storage}, "
-                              f"which would have resulted in infeasibility. "
-                              f"Changed to 0.")
+                warnings.warn(
+                    f"Starting energy in storage was "
+                    f"{calculated_starting_energy_in_storage}, "
+                    f"which would have resulted in infeasibility. "
+                    f"Changed to 0."
+                )
                 return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
             elif calculated_starting_energy_in_storage > (
                 mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
                 * mod.avl_exog_cap_derate[s, tmp]
             ):
-                warnings.warn(f"Starting energy in storage was "
-                              f"{calculated_starting_energy_in_storage}, "
-                              f"which would have resulted in infeasibility. "
-                              f"Changed to "
-                              f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
-                              f"* mod.Availability_Derate[s, tmp].")
+                warnings.warn(
+                    f"Starting energy in storage was "
+                    f"{calculated_starting_energy_in_storage}, "
+                    f"which would have resulted in infeasibility. "
+                    f"Changed to "
+                    f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
+                    f"* mod.Availability_Derate[s, tmp]."
+                )
                 return (
                     mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
                     == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
