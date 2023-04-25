@@ -56,6 +56,7 @@ from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.common_functions import (
     check_if_first_timepoint,
+    check_if_last_timepoint,
     check_boundary_type,
 )
 from gridpath.project.operations.operational_types.common_functions import (
@@ -850,3 +851,17 @@ def soc_penalty_cost_rule(mod, prj, tmp):
         * mod.Availability_Derate[prj, tmp]
         - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
     )
+
+
+def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
+    """ """
+    if check_if_last_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[prj]
+    ):
+        return mod.soc_last_tmp_penalty_cost_per_energyunit[prj] * (
+            mod.Energy_Capacity_MWh[prj, mod.period[tmp]]
+            * mod.Availability_Derate[prj, tmp]
+            - mod.Stor_Ending_Energy_in_Storage_MWh[prj, tmp]
+        )
+    else:
+        return 0
