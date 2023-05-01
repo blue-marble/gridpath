@@ -294,6 +294,25 @@ def add_model_components(
     | minimum down time. If the unit is fast-start without a minimum down     |
     | time, the user should input zero (rather than NULL)                     |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_partial_availability_threshold`                 |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0.01`                                               |
+    |                                                                         |
+    | | :code:`gen_commit_lin_partial_availability_threshold`                 |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0.01`                                               |
+    |                                                                         |
+    | The project's availability threshold below which it cannot be           |
+    | committed/synced. Defaults to 0.01, i.e., the commit and sync variables |
+    | will be set to zero any time availability is 0.01 or less (for          |
+    | gen_commit_bin; the gen_commit_lin variables are still continuous), but |
+    | can be 1 otherwise. Make sure to set this to a positive fraction to     |
+    | ensure you approximate partial availability but avoid the issue where   |
+    | the optimization can set the sync variables to 1 even when the project  |
+    | is unavailable, thus avoiding startup costs.                            |
+    +-------------------------------------------------------------------------+
 
     |
 
