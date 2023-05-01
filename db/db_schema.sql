@@ -1047,6 +1047,7 @@ frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
 powerunithour_per_fuelunit FLOAT,
 cap_factor_limits_scenario_id INTEGER,
+partial_availability_threshold FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),

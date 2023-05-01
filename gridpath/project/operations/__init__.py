@@ -749,7 +749,8 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh,
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
-        soc_last_tmp_penalty_cost_per_energyunit
+        soc_last_tmp_penalty_cost_per_energyunit,
+        partial_availability_threshold
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
         FROM
@@ -1007,6 +1008,7 @@ def write_model_inputs(
         "powerunithour_per_fuelunit",
         "soc_penalty_cost_per_energyunit",
         "soc_last_tmp_penalty_cost_per_energyunit",
+        "partial_availability_threshold",
     ]
     append_to_input_file(
         inputs_directory=inputs_directory,
@@ -1308,6 +1310,7 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         "maximum_duration_hours",
         "aux_consumption_frac_capacity",
         "aux_consumption_frac_power",
+        "partial_availability_threshold",
     ]
 
     sql = """SELECT {}
