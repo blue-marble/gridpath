@@ -1192,6 +1192,16 @@ def add_model_components(
         ),
     )
 
+    setattr(
+        m,
+        "gen_commit_{}_partial_availability_threshold".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=0.01,
+        ),
+    )
+
     # Derived Params
     ###########################################################################
 
@@ -1758,21 +1768,34 @@ def add_model_components(
         **Constraint Name**: GenCommitBin_No_Sync_When_Unavailable_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
-        A unit cannot be synced when (fully) unavailable. When the availability
-        derate is <0.01, this will force commitment, power, and startup/shutdown
+        A unit cannot be synced when (fully-ish) unavailable. When the
+        availability derate is < a user-specified number (defaults to 0.01),
+        this will force commitment, power, and startup/shutdown
         power to 0 for gen_commit_bin.
 
         This constraint is needed to prevent the model from committing a
-        unit while unavailable, thus avoiding startup costs, which are
-        based on available capacity started up.
+        unit while unavailable, thus avoiding startup costs when the unit
+        comes back from unavailability, as startup costs are based on
+        available capacity started up.
 
-        Pyomo disallows strict inequalities, so 1% is picked as it is unlikely to
-        have availabilities lower than this and the number is scaled appropriately
-        to avoid numerical issues.
+        If Availability_Derate is 1, GenCommitB/Lin_Synced can be set to 1.
+        If Availability_Derate is 0, GenCommitB/Lin_Synced must be set to 0.
+        If Availability_Derate >= partial_availability_threshold,
+        GenCommitBin_Synced can be set to 1.
+        If Availability_Derate < partial_availability_threshold,
+        GenCommitBin_Synced must be set to 0.
+
+        Pyomo disallows strict inequalities, so 1% is set as default as it is
+        unlikely to have availabilities lower than this and the number is scaled
+        appropriately to avoid numerical issues.
         """
-        return (
-            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
-            <= mod.Availability_Derate[g, tmp] + 0.99
+        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
+            g, tmp
+        ] <= mod.Availability_Derate[g, tmp] + (
+            1
+            - getattr(
+                mod, "gen_commit_{}_partial_availability_threshold".format(bin_or_lin)
+            )[g]
         )
 
     setattr(
@@ -1794,14 +1817,18 @@ def add_model_components(
 
         Redundant with the no_sync_when_unavailable_constraint_rule.
 
-        Pyomo disallows strict inequalities, so 1% is picked as it is unlikely to
-        have availabilities lower than this and the number is scaled appropriately
-        to avoid numerical issues.
+        Pyomo disallows strict inequalities, so 1% is set as default as it is
+        unlikely to have availabilities lower than this and the number is scaled
+        appropriately to avoid numerical issues.
         """
 
-        return (
-            getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
-            <= mod.Availability_Derate[g, tmp] + 0.99
+        return getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
+            g, tmp
+        ] <= mod.Availability_Derate[g, tmp] + (
+            1
+            - getattr(
+                mod, "gen_commit_{}_partial_availability_threshold".format(bin_or_lin)
+            )[g]
         )
 
     setattr(
