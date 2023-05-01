@@ -472,7 +472,7 @@ def energy_tracking_rule(mod, s, tmp):
             if calculated_starting_energy_in_storage < 0:
                 warnings.warn(
                     f"Starting energy in storage was "
-                    f"{calculated_starting_energy_in_storage}, "
+                    f"{calculated_starting_energy_in_storage} for project {s}, "
                     f"which would have resulted in infeasibility. "
                     f"Changed to 0."
                 )
@@ -483,7 +483,7 @@ def energy_tracking_rule(mod, s, tmp):
             ):
                 warnings.warn(
                     f"Starting energy in storage was "
-                    f"{calculated_starting_energy_in_storage}, "
+                    f"{calculated_starting_energy_in_storage} for project {s}, "
                     f"which would have resulted in infeasibility. "
                     f"Changed to "
                     f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
