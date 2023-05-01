@@ -1289,6 +1289,18 @@ class TestExamples(unittest.TestCase):
             "test_w_storage_w_soc_penalty", -245736137.55082923
         )
 
+    def test_example_test_w_storage_w_soc_last_tmp_penalty(self):
+        """
+        Check validation and objective function value of "test_w_storage_w_soc_penalty"
+        example
+        :return:
+        """
+
+        self.check_validation("test_w_storage_w_soc_last_tmp_penalty")
+        self.run_and_check_objective(
+            "test_w_storage_w_soc_last_tmp_penalty", -248229549.889146
+        )
+
     def test_example_test_new_solar_itc(self):
         """
         Check validation and objective function value of

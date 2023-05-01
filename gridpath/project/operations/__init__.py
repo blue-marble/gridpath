@@ -180,6 +180,12 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The set of projects that incur cost if their state of charge is below   |
     | the maximum possible state of charge.                                   |
     +-------------------------------------------------------------------------+
+    | | :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                                |
+    | | *Within*: :code:`PROJECTS`                                            |
+    |                                                                         |
+    | The set of projects that incur cost if their state of charge is below   |
+    | the maximum possible state of charge in the last tmp.                   |
+    +-------------------------------------------------------------------------+
 
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
@@ -292,6 +298,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |                                                                         |
     | The project's cost per unit of energy below the maximum state of charge.|
     +-------------------------------------------------------------------------+
+    | | :code:`soc_last_tmp_penalty_cost_per_energyunit`                      |
+    | | *Defined over*: :code:`SOC_LAST_TMP_PENALTY_COST_PRJS`                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost per unit of energy below the maximum state of charge |
+    | in the last timepoint of the horizon.                                   |
+    +-------------------------------------------------------------------------+
     """
 
     # Sets
@@ -397,6 +410,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     # Projects with cost based on the state of charge
     m.SOC_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
+    m.SOC_LAST_TMP_PENALTY_COST_PRJS = Set(within=m.PROJECTS)
 
     # Optional Params
     ###########################################################################
@@ -448,6 +462,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.soc_penalty_cost_per_energyunit = Param(
         m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
+    )
+
+    m.soc_last_tmp_penalty_cost_per_energyunit = Param(
+        m.SOC_LAST_TMP_PENALTY_COST_PRJS, within=NonNegativeReals
     )
 
     # Start list of headroom and footroom variables by project
@@ -522,6 +540,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             "min_down_time_violation_penalty",
             "curtailment_cost_per_pwh",
             "soc_penalty_cost_per_energyunit",
+            "soc_last_tmp_penalty_cost_per_energyunit",
         ),
         param=(
             m.variable_om_cost_per_mwh,
@@ -534,6 +553,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             m.min_down_time_violation_penalty,
             m.curtailment_cost_per_pwh,
             m.soc_penalty_cost_per_energyunit,
+            m.soc_last_tmp_penalty_cost_per_energyunit,
         ),
     )
 
@@ -586,6 +606,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()["SOC_PENALTY_COST_PRJS"] = {
         None: list(data_portal.data()["soc_penalty_cost_per_energyunit"].keys())
+    }
+
+    data_portal.data()["SOC_LAST_TMP_PENALTY_COST_PRJS"] = {
+        None: list(
+            data_portal.data()["soc_last_tmp_penalty_cost_per_energyunit"].keys()
+        )
     }
 
     # VOM curves
@@ -723,6 +749,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
         aux_consumption_frac_capacity, aux_consumption_frac_power,
         last_commitment_stage, curtailment_cost_per_pwh,
         powerunithour_per_fuelunit, soc_penalty_cost_per_energyunit,
+        soc_last_tmp_penalty_cost_per_energyunit,
         partial_availability_threshold
         -- Get only the subset of projects in the portfolio with their 
         -- capacity types based on the project_portfolio_scenario_id 
@@ -980,6 +1007,7 @@ def write_model_inputs(
         "curtailment_cost_per_pwh",
         "powerunithour_per_fuelunit",
         "soc_penalty_cost_per_energyunit",
+        "soc_last_tmp_penalty_cost_per_energyunit",
         "partial_availability_threshold",
     ]
     append_to_input_file(
