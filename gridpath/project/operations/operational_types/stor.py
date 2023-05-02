@@ -140,6 +140,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | The storage project's discharging capacity multiplier to be used if the |
     | discharging capacity is different from the nameplate capacity.          |
     +-------------------------------------------------------------------------+
+    | | :code:`stor_exogenous_starting_state_of_charge`                       |
+    | | *Defined over*: :code:`STOR_EXOG_SOC_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's exogenously specified starting state of charge.   |
+    | If not specified, the state of charge is endogenously determined by the |
+    | optimization subject to the rest of the constraints.                    |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -251,8 +259,6 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | than available capacity to store energy in that timepoint.              |
     +-------------------------------------------------------------------------+
 
-
-
     """
 
     # Sets
@@ -275,6 +281,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.STOR_LINKED_TMPS = Set(dimen=2)
 
+    m.STOR_EXOG_SOC_TMPS = Set(within=m.STOR_OPR_TMPS)
+
     # Required Params
     ###########################################################################
 
@@ -295,6 +303,10 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
 
     m.stor_discharging_capacity_multiplier = Param(
         m.STOR, within=NonNegativeReals, default=1.0
+    )
+
+    m.stor_exogenous_starting_state_of_charge = Param(
+        m.STOR_EXOG_SOC_TMPS, within=NonNegativeReals
     )
 
     # Linked Params
@@ -431,15 +443,11 @@ def energy_tracking_rule(mod, s, tmp):
     efficiency and timepoint duration) plus any charged power (adjusted for
     charging efficiency and timepoint duration).
     """
-    if check_if_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
-    ) and check_boundary_type(
-        mod=mod,
-        tmp=tmp,
-        balancing_type=mod.balancing_type_project[s],
-        boundary_type="linear",
-    ):
-        return Constraint.Skip
+    if (s, tmp) in mod.STOR_EXOG_SOC_TMPS:
+        return (
+            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+            == mod.stor_exogenous_starting_state_of_charge[s, tmp]
+        )
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
@@ -447,85 +455,95 @@ def energy_tracking_rule(mod, s, tmp):
             mod=mod,
             tmp=tmp,
             balancing_type=mod.balancing_type_project[s],
-            boundary_type="linked",
+            boundary_type="linear",
         ):
-            prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
-            prev_tmp_starting_energy_in_storage = (
-                mod.stor_linked_starting_energy_in_storage[s, 0]
-            )
-            prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
-            prev_tmp_charge = mod.stor_linked_charge[s, 0]
-
-            calculated_starting_energy_in_storage = (
-                prev_tmp_starting_energy_in_storage
-                + prev_tmp_charge
-                * prev_tmp_hrs_in_tmp
-                * mod.stor_charging_efficiency[s]
-                - prev_tmp_discharge
-                * prev_tmp_hrs_in_tmp
-                / mod.stor_discharging_efficiency[s]
-            )
-
-            # Deal with possible precision-related infeasibilities, e.g. if
-            # the calculated energy in storage is just below or just above
-            # its boundaries of 0 and the energy capacity x availability
-            if calculated_starting_energy_in_storage < 0:
-                warnings.warn(
-                    f"Starting energy in storage was "
-                    f"{calculated_starting_energy_in_storage} for project {s}, "
-                    f"which would have resulted in infeasibility. "
-                    f"Changed to 0."
-                )
-                return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
-            elif calculated_starting_energy_in_storage > (
-                mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
-                * mod.avl_exog_cap_derate[s, tmp]
-            ):
-                warnings.warn(
-                    f"Starting energy in storage was "
-                    f"{calculated_starting_energy_in_storage} for project {s}, "
-                    f"which would have resulted in infeasibility. "
-                    f"Changed to "
-                    f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
-                    f"* mod.Availability_Derate[s, tmp]."
-                )
-                return (
-                    mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                    == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
-                    * mod.Availability_Derate[s, tmp]
-                )
-            else:
-                return (
-                    mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                    == calculated_starting_energy_in_storage
-                )
-
+            return Constraint.Skip
         else:
-            prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
-                mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
-            prev_tmp_starting_energy_in_storage = (
-                mod.Stor_Starting_Energy_in_Storage_MWh[
+            if check_if_first_timepoint(
+                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+            ) and check_boundary_type(
+                mod=mod,
+                tmp=tmp,
+                balancing_type=mod.balancing_type_project[s],
+                boundary_type="linked",
+            ):
+                prev_tmp_hrs_in_tmp = mod.hrs_in_linked_tmp[0]
+                prev_tmp_starting_energy_in_storage = (
+                    mod.stor_linked_starting_energy_in_storage[s, 0]
+                )
+                prev_tmp_discharge = mod.stor_linked_discharge[s, 0]
+                prev_tmp_charge = mod.stor_linked_charge[s, 0]
+
+                calculated_starting_energy_in_storage = (
+                    prev_tmp_starting_energy_in_storage
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
+
+                # Deal with possible precision-related infeasibilities, e.g. if
+                # the calculated energy in storage is just below or just above
+                # its boundaries of 0 and the energy capacity x availability
+                if calculated_starting_energy_in_storage < 0:
+                    warnings.warn(
+                        f"Starting energy in storage was "
+                        f"{calculated_starting_energy_in_storage} for project {s}, "
+                        f"which would have resulted in infeasibility. "
+                        f"Changed to 0."
+                    )
+                    return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
+                elif calculated_starting_energy_in_storage > (
+                    mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
+                    * mod.avl_exog_cap_derate[s, tmp]
+                ):
+                    warnings.warn(
+                        f"Starting energy in storage was "
+                        f"{calculated_starting_energy_in_storage} for project {s}, "
+                        f"which would have resulted in infeasibility. "
+                        f"Changed to "
+                        f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
+                        f"* mod.Availability_Derate[s, tmp]."
+                    )
+                    return (
+                        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                        == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+                        * mod.Availability_Derate[s, tmp]
+                    )
+                else:
+                    return (
+                        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                        == calculated_starting_energy_in_storage
+                    )
+
+            else:
+                prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
+                    mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
+                prev_tmp_starting_energy_in_storage = (
+                    mod.Stor_Starting_Energy_in_Storage_MWh[
+                        s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                    ]
+                )
+                prev_tmp_discharge = mod.Stor_Discharge_MW[
                     s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
                 ]
-            )
-            prev_tmp_discharge = mod.Stor_Discharge_MW[
-                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
-            prev_tmp_charge = mod.Stor_Charge_MW[
-                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
-            ]
+                prev_tmp_charge = mod.Stor_Charge_MW[
+                    s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]
+                ]
 
-            return (
-                mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                == prev_tmp_starting_energy_in_storage
-                + prev_tmp_charge
-                * prev_tmp_hrs_in_tmp
-                * mod.stor_charging_efficiency[s]
-                - prev_tmp_discharge
-                * prev_tmp_hrs_in_tmp
-                / mod.stor_discharging_efficiency[s]
-            )
+                return (
+                    mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+                    == prev_tmp_starting_energy_in_storage
+                    + prev_tmp_charge
+                    * prev_tmp_hrs_in_tmp
+                    * mod.stor_charging_efficiency[s]
+                    - prev_tmp_discharge
+                    * prev_tmp_hrs_in_tmp
+                    / mod.stor_discharging_efficiency[s]
+                )
 
 
 def max_energy_in_storage_rule(mod, s, tmp):
@@ -749,6 +767,23 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
                 mod.stor_linked_discharge,
                 mod.stor_linked_charge,
             ),
+        )
+    else:
+        pass
+
+    # Exogenously specified SOC
+    exog_soc_filename = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "stor_exogenous_state_of_charge.tab",
+    )
+    if os.path.exists(exog_soc_filename):
+        data_portal.load(
+            filename=exog_soc_filename,
+            index=mod.STOR_EXOG_SOC_TMPS,
+            param=mod.stor_exogenous_starting_state_of_charge,
         )
     else:
         pass
