@@ -444,9 +444,11 @@ def energy_tracking_rule(mod, s, tmp):
     charging efficiency and timepoint duration).
     """
     if (s, tmp) in mod.STOR_EXOG_SOC_TMPS:
-        return (
-            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-            == mod.stor_exogenous_starting_state_of_charge[s, tmp]
+        check_for_soc_infeasibilities(
+            mod=mod,
+            s=s,
+            tmp=tmp,
+            starting_soc=mod.stor_exogenous_starting_state_of_charge[s, tmp],
         )
     else:
         if check_if_first_timepoint(
@@ -487,37 +489,13 @@ def energy_tracking_rule(mod, s, tmp):
                 # Deal with possible precision-related infeasibilities, e.g. if
                 # the calculated energy in storage is just below or just above
                 # its boundaries of 0 and the energy capacity x availability
-                if calculated_starting_energy_in_storage < 0:
-                    warnings.warn(
-                        f"Starting energy in storage was "
-                        f"{calculated_starting_energy_in_storage} for project {s}, "
-                        f"which would have resulted in infeasibility. "
-                        f"Changed to 0."
-                    )
-                    return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
-                elif calculated_starting_energy_in_storage > (
-                    mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
-                    * mod.avl_exog_cap_derate[s, tmp]
-                ):
-                    warnings.warn(
-                        f"Starting energy in storage was "
-                        f"{calculated_starting_energy_in_storage} for project {s}, "
-                        f"which would have resulted in infeasibility. "
-                        f"Changed to "
-                        f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
-                        f"* mod.Availability_Derate[s, tmp]."
-                    )
-                    return (
-                        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                        == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
-                        * mod.Availability_Derate[s, tmp]
-                    )
-                else:
-                    return (
-                        mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                        == calculated_starting_energy_in_storage
-                    )
-
+                # If no infeasibilities found, just return the calculated value
+                check_for_soc_infeasibilities(
+                    mod=mod,
+                    s=s,
+                    tmp=tmp,
+                    starting_soc=calculated_starting_energy_in_storage,
+                )
             else:
                 prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                     mod.prev_tmp[tmp, mod.balancing_type_project[s]]
@@ -948,3 +926,38 @@ def soc_last_tmp_penalty_cost_rule(mod, prj, tmp):
         )
     else:
         return 0
+
+
+# ### OTHER ### #
+def check_for_soc_infeasibilities(mod, s, tmp, starting_soc):
+    if starting_soc < 0:
+        warnings.warn(
+            f"Starting energy in storage was "
+            f"{starting_soc} for project {s}, "
+            f"which would have resulted in infeasibility. "
+            f"Changed to 0. This can happen due to solver tolerances and "
+            f"precision of results. If you didn't expect this, check the "
+            f"inputs and results."
+        )
+        return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == 0
+    elif starting_soc > (
+        mod.stor_spec_energy_capacity_mwh[s, mod.period[tmp]]
+        * mod.avl_exog_cap_derate[s, tmp]
+    ):
+        warnings.warn(
+            f"Starting energy in storage was "
+            f"{starting_soc} for project {s}, "
+            f"which would have resulted in infeasibility. "
+            f"Changed to "
+            f"mod.Energy_Capacity_MWh[s,mod.period[tmp]] "
+            f"* mod.Availability_Derate[s, tmp]. This can happen due to "
+            f"solver tolerances and precision of results. If you didn't expect "
+            f"this, check the inputs and results."
+        )
+        return (
+            mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
+            == mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+            * mod.Availability_Derate[s, tmp]
+        )
+    else:
+        return mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] == starting_soc
