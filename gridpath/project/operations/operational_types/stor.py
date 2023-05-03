@@ -444,12 +444,13 @@ def energy_tracking_rule(mod, s, tmp):
     charging efficiency and timepoint duration).
     """
     if (s, tmp) in mod.STOR_EXOG_SOC_TMPS:
-        check_for_soc_infeasibilities(
+        starting_soc = check_for_soc_infeasibilities(
             mod=mod,
             s=s,
             tmp=tmp,
             starting_soc=mod.stor_exogenous_starting_state_of_charge[s, tmp],
         )
+        return starting_soc
     else:
         if check_if_first_timepoint(
             mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
@@ -490,12 +491,13 @@ def energy_tracking_rule(mod, s, tmp):
                 # the calculated energy in storage is just below or just above
                 # its boundaries of 0 and the energy capacity x availability
                 # If no infeasibilities found, just return the calculated value
-                check_for_soc_infeasibilities(
+                starting_soc = check_for_soc_infeasibilities(
                     mod=mod,
                     s=s,
                     tmp=tmp,
                     starting_soc=calculated_starting_energy_in_storage,
                 )
+                return starting_soc
             else:
                 prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                     mod.prev_tmp[tmp, mod.balancing_type_project[s]]
