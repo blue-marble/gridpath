@@ -1024,6 +1024,7 @@ discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 soc_penalty_cost_per_energyunit FLOAT,
+soc_last_tmp_penalty_cost_per_energyunit FLOAT,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,
@@ -1046,6 +1047,7 @@ frequency_response_ramp_rate FLOAT,
 spinning_reserves_ramp_rate FLOAT,
 powerunithour_per_fuelunit FLOAT,
 cap_factor_limits_scenario_id INTEGER,
+partial_availability_threshold FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -4722,6 +4724,7 @@ Total_Horizon_Fuel_Burn_Min_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Abs_Penalty_Costs FLOAT,
 Total_Horizon_Fuel_Burn_Max_Rel_Penalty_Costs FLOAT,
 Total_SOC_Penalty_Cost FLOAT,
+Total_SOC_Penalty_Last_Tmp_Cost FLOAT,
 Total_Subsidies FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id)
 );

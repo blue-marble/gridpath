@@ -311,6 +311,14 @@ class TestGenCommitBin(unittest.TestCase):
             expected_down_time_cutoff_hours, actual_down_time_cutoff_hours
         )
 
+        # Param: gen_commit_bin_partial_availability_threshold
+        expected_threshold = {"Disp_Binary_Commit": 0.01}
+        actual_threshold = {
+            prj: instance.gen_commit_bin_partial_availability_threshold[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+        self.assertDictEqual(expected_threshold, actual_threshold)
+
 
 if __name__ == "__main__":
     unittest.main()
