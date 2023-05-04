@@ -1026,6 +1026,7 @@ charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 soc_penalty_cost_per_energyunit FLOAT,
 soc_last_tmp_penalty_cost_per_energyunit FLOAT,
+flex_load_static_profile_scenario_id INTEGER,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,
@@ -1068,6 +1069,9 @@ subscenarios_project_cycle_selection
 FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
 subscenarios_project_supplemental_firing
 (project, supplemental_firing_scenario_id),
+FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
+subscenarios_project_flex_load_static_profiles
+(project, flex_load_static_profile_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1216,6 +1220,31 @@ FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
 subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
 );
 
+-- Flex load static profiles
+-- The profiles by end use before shifting
+DROP TABLE IF EXISTS subscenarios_project_flex_load_static_profiles;
+CREATE TABLE subscenarios_project_flex_load_static_profiles (
+project VARCHAR(64),
+flex_load_static_profile_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, flex_load_static_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_flex_load_static_profiles;
+CREATE TABLE inputs_project_flex_load_static_profiles (
+project VARCHAR(64),
+flex_load_static_profile_scenario_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+static_load_mw FLOAT,
+maximum_stored_energy_mwh FLOAT,
+PRIMARY KEY (project, flex_load_static_profile_scenario_id, stage_id,
+             timepoint),
+FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
+subscenarios_project_flex_load_static_profiles
+(project, flex_load_static_profile_scenario_id)
+);
 
 
 -- Variable generator profiles
