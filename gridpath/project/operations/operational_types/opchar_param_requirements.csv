@@ -8,9 +8,9 @@ ramp_down_when_on_rate,float,,optional,optional,optional,optional,optional,optio
 min_up_time_hours,float,,,optional,optional,optional,,,,,,,,,,,
 min_down_time_hours,float,,,optional,optional,optional,,,,,,,,,,,
 allow_startup_shutdown_power,float,,,optional,,optional,,,,,,,,,,,
+storage_efficiency,float,,,,,,,,,,,,,,,,optional
 charging_efficiency,float,,,,,,,,,,,,required,required,,,optional
 discharging_efficiency,float,,,,,,,,,,,,required,required,,,optional
-storage_efficiency,float,,,,,,,,,,,,,,,,optional
 charging_capacity_multiplier,float,,,,,,,,,,,,optional,,,,
 discharging_capacity_multiplier,float,,,,,,,,,,,,optional,,,,
 aux_consumption_frac_capacity,float,,optional,optional,optional,optional,optional,optional,optional,,,,,,,,

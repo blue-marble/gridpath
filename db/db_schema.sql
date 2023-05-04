@@ -1019,6 +1019,7 @@ min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 cycle_selection_scenario_id INTEGER,
 supplemental_firing_scenario_id INTEGER,
 allow_startup_shutdown_power INTEGER, -- defaults to 0 in the model if not specified
+storage_efficiency FLOAT, -- hourly losses from storage; default 1 (no losses)
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified

@@ -1025,6 +1025,7 @@ def get_optype_inputs_from_db(scenario_id, subscenarios, conn, op_type):
         "ramp_down_when_on_rate",
         "min_up_time_hours, min_down_time_hours",
         "allow_startup_shutdown_power",
+        "storage_efficiency",
         "charging_efficiency",
         "discharging_efficiency",
         "charging_capacity_multiplier",
