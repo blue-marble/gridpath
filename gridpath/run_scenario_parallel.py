@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """
-
-
+Parallel gridpath_run. Note that parallel gridpath_run_e2e is not yet
+supported. You can get the scenario inputs, solve the scenarios in parallel
+with gridpath_run_parallel, the import the results to the database in sequence.
 """
 from argparse import ArgumentParser
 import csv
@@ -77,13 +78,13 @@ def main(args=None):
             for value in values:
                 args_for_run_scenario[id].append(f"--{argument}")
                 args_for_run_scenario[id].append(value)
+
                 id += 1
 
     # Create pool
     pool = get_context("spawn").Pool(n_parallel_scenarios)
 
     pool_data = tuple(args_for_run_scenario)
-
     pool.map(run_scenario_pool, pool_data)
     pool.close()
 
