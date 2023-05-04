@@ -106,9 +106,12 @@ class TestTxCapacity(unittest.TestCase):
                 ("Tx2", 2030),
                 ("Tx3", 2020),
                 ("Tx3", 2030),
+                ("Tx_binary_1", 2020),
+                ("Tx_binary_1", 2030),
             ]
         )
         actual_tx_op_p = sorted([(tx, p) for (tx, p) in instance.TX_OPR_PRDS])
+
         self.assertListEqual(expected_tx_op_p, actual_tx_op_p)
 
 

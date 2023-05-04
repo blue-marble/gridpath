@@ -97,7 +97,9 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.tx_availability_type = Param(
         m.TX_LINES, within=["exogenous", "exogenous_monthly"]
     )
-    m.tx_operational_type = Param(m.TX_LINES, within=["tx_dcopf", "tx_simple"])
+    m.tx_operational_type = Param(
+        m.TX_LINES, within=["tx_dcopf", "tx_simple", "tx_simple_binary"]
+    )
     m.load_zone_from = Param(m.TX_LINES, within=m.LOAD_ZONES)
     m.load_zone_to = Param(m.TX_LINES, within=m.LOAD_ZONES)
 
@@ -191,6 +193,12 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
             portfolio=subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
         )
     )
+
+    # TODO: allow Tx lines with no load zones from and to specified, that are only
+    #  used for say, reliability capacity exchanges; they would need a different
+    #  operational type (no power transfer); the decisions also won't be made at the
+    #  transmission line level, but the capacity will limit the aggregate transfer
+    #  between PRM zones, so there won't be flow variables
 
     return transmission_lines
 

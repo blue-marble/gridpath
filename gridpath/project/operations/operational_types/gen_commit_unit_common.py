@@ -294,6 +294,25 @@ def add_model_components(
     | minimum down time. If the unit is fast-start without a minimum down     |
     | time, the user should input zero (rather than NULL)                     |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_partial_availability_threshold`                 |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0.01`                                               |
+    |                                                                         |
+    | | :code:`gen_commit_lin_partial_availability_threshold`                 |
+    | | *Defined over*: :code:`GEN_COMMIT_LIN`                                |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0.01`                                               |
+    |                                                                         |
+    | The project's availability threshold below which it cannot be           |
+    | committed/synced. Defaults to 0.01, i.e., the commit and sync variables |
+    | will be set to zero any time availability is 0.01 or less (for          |
+    | gen_commit_bin; the gen_commit_lin variables are still continuous), but |
+    | can be 1 otherwise. Make sure to set this to a positive fraction to     |
+    | ensure you approximate partial availability but avoid the issue where   |
+    | the optimization can set the sync variables to 1 even when the project  |
+    | is unavailable, thus avoiding startup costs.                            |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -934,19 +953,13 @@ def add_model_components(
     | | *Defined over*: :code:`GEN_COMMIT_LIN_OPR_TMPS`                       |
     |                                                                         |
     | A project cannot be synced (committed or providing startup/shutdown     |
-    | power) when unavailable.                                                |
+    | power) when unavailable (<1% available).                                |
     +-------------------------------------------------------------------------+
-    | Other                                                                   |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Commit_When_Unavailable_Constraint`               |
+    | | :code:`GenCommitBin_No_Commit_When_Unavailable_Constraint`            |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | Forces the binary commitment to 0 when the project is unavailable       |
-    +-------------------------------------------------------------------------+
-    | | :code:`GenCommitBin_Synced_When_Unavailable_Constraint`               |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
-    |                                                                         |
-    | Forces the synced to 0 when the project is unavailable                  |
+    | (<1% available).                                                        |
     +-------------------------------------------------------------------------+
 
     """
@@ -1195,6 +1208,16 @@ def add_model_components(
         Param(
             getattr(m, "GEN_COMMIT_{}_STARTUP_BY_ST_PRJS_TYPES".format(BIN_OR_LIN)),
             within=NonNegativeReals,
+        ),
+    )
+
+    setattr(
+        m,
+        "gen_commit_{}_partial_availability_threshold".format(bin_or_lin),
+        Param(
+            getattr(m, "GEN_COMMIT_{}".format(BIN_OR_LIN)),
+            within=PercentFraction,
+            default=0.01,
         ),
     )
 
@@ -1764,19 +1787,34 @@ def add_model_components(
         **Constraint Name**: GenCommitBin_No_Sync_When_Unavailable_Constraint
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
-        A unit cannot be synced when unavailable. When the availability
-        derate is <0, this will force commitment, power, and startup/shutdown
-        power to 0 for gen_commit_bin. For gen_commit_lin, partial
-        availability is allowed and the unit can still sync but power
-        provision will be limited based on the availability derate.
+        A unit cannot be synced when (fully-ish) unavailable. When the
+        availability derate is < a user-specified number (defaults to 0.01),
+        this will force commitment, power, and startup/shutdown
+        power to 0 for gen_commit_bin.
 
         This constraint is needed to prevent the model from committing a
-        unit while still unavailable, thus avoiding startup costs, which are
-        based on available capacity started up.
+        unit while unavailable, thus avoiding startup costs when the unit
+        comes back from unavailability, as startup costs are based on
+        available capacity started up.
+
+        If Availability_Derate is 1, GenCommitB/Lin_Synced can be set to 1.
+        If Availability_Derate is 0, GenCommitB/Lin_Synced must be set to 0.
+        If Availability_Derate >= partial_availability_threshold,
+        GenCommitBin_Synced can be set to 1.
+        If Availability_Derate < partial_availability_threshold,
+        GenCommitBin_Synced must be set to 0.
+
+        Pyomo disallows strict inequalities, so 1% is set as default as it is
+        unlikely to have availabilities lower than this and the number is scaled
+        appropriately to avoid numerical issues.
         """
-        return (
-            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
-            <= mod.Availability_Derate[g, tmp]
+        return getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[
+            g, tmp
+        ] <= mod.Availability_Derate[g, tmp] + (
+            1
+            - getattr(
+                mod, "gen_commit_{}_partial_availability_threshold".format(bin_or_lin)
+            )[g]
         )
 
     setattr(
@@ -1785,6 +1823,39 @@ def add_model_components(
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             rule=no_sync_when_unavailable_constraint_rule,
+        ),
+    )
+
+    def no_commit_when_unavailable_constraint_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenCommitBin_No_Commit_When_Unavailable_Constraint
+        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+        Ensure that the commitment flag remains zero while the project is
+        unavailable (< 1% available).
+        Commit[t] = 0 when Availability_Derate[t] < 0.01
+
+        Redundant with the no_sync_when_unavailable_constraint_rule.
+
+        Pyomo disallows strict inequalities, so 1% is set as default as it is
+        unlikely to have availabilities lower than this and the number is scaled
+        appropriately to avoid numerical issues.
+        """
+
+        return getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[
+            g, tmp
+        ] <= mod.Availability_Derate[g, tmp] + (
+            1
+            - getattr(
+                mod, "gen_commit_{}_partial_availability_threshold".format(bin_or_lin)
+            )[g]
+        )
+
+    setattr(
+        m,
+        "GenCommit{}_Commit_When_Unavailable_Constraint".format(Bin_or_Lin),
+        Constraint(
+            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
+            rule=no_commit_when_unavailable_constraint_rule,
         ),
     )
 
@@ -1911,13 +1982,6 @@ def add_model_components(
         **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
 
         Power provision plus upward reserves shall not exceed maximum power.
-
-        Note: this constraint allows a unit to be "partially" available
-        (availability > 0, <1) and still provide power. "Partial"
-        availability is only possible for the gen_commit_lin. For
-        gen_commit_bin, when availability is < 1, synced units are set to 0,
-        so commitment and therefore power provision is 0 (see
-        no_sync_when_unavailable_constraint_rule()).
         """
         return (
             getattr(mod, "GenCommit{}_Provide_Power_Above_Pmin_MW".format(Bin_or_Lin))[
@@ -2983,52 +3047,6 @@ def add_model_components(
         Constraint(
             getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
             rule=power_during_shutdown_constraint_rule,
-        ),
-    )
-
-    def commit_when_unavailable_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: GenCommitBin_Commit_When_Unavailable_Constraint
-        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-        Ensure that the commitment flag remains zero while the project is
-        unavailable
-        Commit[t] <= Availability_Derate[t]
-        """
-
-        return (
-            getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[g, tmp]
-            <= mod.Availability_Derate[g, tmp]
-        )
-
-    setattr(
-        m,
-        "GenCommit{}_Commit_When_Unavailable_Constraint".format(Bin_or_Lin),
-        Constraint(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=commit_when_unavailable_constraint_rule,
-        ),
-    )
-
-    def synced_when_unavailable_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: GenCommitBin_Synced_When_Unavailable_Constraint
-        **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
-        Ensure that the synced flag remains zero while the project is
-        unavailable
-        Synced[t] <= Availability_Derate[t]
-        """
-
-        return (
-            getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[g, tmp]
-            <= mod.Availability_Derate[g, tmp]
-        )
-
-    setattr(
-        m,
-        "GenCommit{}_Synced_When_Unavailable_Constraint".format(Bin_or_Lin),
-        Constraint(
-            getattr(m, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)),
-            rule=synced_when_unavailable_constraint_rule,
         ),
     )
 

@@ -1,1 +1,4 @@
-operational_type,descriptiontx_simple,tx_dcopf,
+operational_type,description
+tx_simple,
+tx_dcopf,
+tx_simple_binary,

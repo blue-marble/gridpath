@@ -53,6 +53,7 @@ def all_modules_list():
         "geography.frequency_response_balancing_areas",
         "geography.spinning_reserves_balancing_areas",
         "geography.energy_target_zones",
+        "geography.transmission_target_zones",
         "geography.carbon_cap_zones",
         "geography.carbon_tax_zones",
         "geography.performance_standard_zones",
@@ -63,6 +64,7 @@ def all_modules_list():
         "system.load_balance.static_load_requirement",
         "system.policy.energy_targets.period_energy_target",
         "system.policy.energy_targets.horizon_energy_target",
+        "system.policy.transmission_targets.period_transmission_target",
         "system.policy.carbon_cap.carbon_cap",
         "system.policy.carbon_tax.carbon_tax",
         "system.policy.performance_standard.performance_standard",
@@ -120,9 +122,12 @@ def all_modules_list():
         "transmission.availability.availability",
         "transmission.operations.operational_types",
         "transmission.operations.operations",
+        "transmission.operations.transmission_flow_limits",
         "transmission.operations.hurdle_costs",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.carbon_emissions",
+        "transmission.reliability.capacity_transfer_links",
+        "transmission.operations.transmission_target_contributions",
         "system.reserves.requirement.lf_reserves_up",
         "system.reserves.requirement.lf_reserves_down",
         "system.reserves.requirement.regulation_up",
@@ -151,16 +156,21 @@ def all_modules_list():
         "system.policy.energy_targets" ".aggregate_horizon_energy_target_contributions",
         "system.policy.energy_targets.period_energy_target_balance",
         "system.policy.energy_targets.horizon_energy_target_balance",
+        "system.policy.transmission_targets"
+        ".aggregate_period_transmission_target_contributions",
+        "system.policy.transmission_targets.period_transmission_target_balance",
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
         "system.policy.carbon_tax.aggregate_project_carbon_emissions",
         "system.policy.carbon_tax.carbon_tax_costs",
+        "system.policy.subsidies",
         "system.policy.performance_standard.aggregate_project_performance_standard",
         "system.policy.performance_standard.performance_standard_balance",
         "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
         "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
+        "system.reliability.prm.capacity_contribution_transfers",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
         "system.reliability.local_capacity.aggregate_local_capacity_contribution",
@@ -184,10 +194,12 @@ def all_modules_list():
         "objective.system.policy.aggregate_period_energy_target_violation_penalties",
         "objective.system.policy"
         ".aggregate_horizon_energy_target_violation_penalties",
+        "objective.system.policy.aggregate_period_transmission_target_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.policy.aggregate_carbon_tax_costs",
         "objective.system.policy.aggregate_performance_standard_violation_penalties",
         "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        "objective.system.policy.aggregate_subsidies",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.prm.aggregate_prm_violation_penalties",
         "objective.system.reliability.local_capacity"
@@ -215,6 +227,7 @@ def optional_modules_list():
             "transmission.availability.availability",
             "transmission.operations.operational_types",
             "transmission.operations.operations",
+            "transmission.operations.transmission_flow_limits",
             "system.load_balance.aggregate_transmission_power",
             "transmission.operations.export_penalty_costs",
             "objective.transmission.aggregate_capacity_costs",
@@ -290,6 +303,14 @@ def optional_modules_list():
             "objective.system.policy"
             ".aggregate_horizon_energy_target_violation_penalties",
         ],
+        "period_transmission_target": [
+            "system.policy.transmission_targets.period_transmission_target",
+            "system.policy.transmission_targets"
+            ".aggregate_period_transmission_target_contributions",
+            "system.policy.transmission_targets.period_transmission_target_balance",
+            "objective.system.policy"
+            ".aggregate_period_transmission_target_violation_penalties",
+        ],
         "carbon_cap": [
             "geography.carbon_cap_zones",
             "system.policy.carbon_cap.carbon_cap",
@@ -320,6 +341,10 @@ def optional_modules_list():
             "system.policy.fuel_burn_limits.aggregate_project_fuel_burn",
             "system.policy.fuel_burn_limits.fuel_burn_limit_balance",
             "objective.system.policy.aggregate_fuel_burn_limit_violation_penalties",
+        ],
+        "subsidies": [
+            "system.policy.subsidies",
+            "objective.system.policy.aggregate_subsidies",
         ],
         "prm": [
             "geography.prm_zones",
@@ -381,6 +406,10 @@ def cross_feature_modules_list():
         ("transmission", "simultaneous_flow_limits"): [
             "transmission.operations.simultaneous_flow_limits"
         ],
+        ("transmission", "prm", "capacity_transfers"): [
+            "transmission.reliability.capacity_transfer_links",
+            "system.reliability.prm.capacity_contribution_transfers",
+        ],
         ("prm", "elcc_surface"): [
             "project.reliability.prm.elcc_surface",
             "system.reliability.prm.elcc_surface",
@@ -419,9 +448,24 @@ def feature_shared_modules_list():
             "geography.energy_target_zones",
             "project.operations.energy_target_contributions",
         ],
+        ("period_transmission_target", "horizon_transmission_target"): [
+            "geography.transmission_target_zones",
+            "transmission.operations.transmission_target_contributions",
+        ],
     }
 
     return shared_modules
+
+
+def feature_remove_modules_list():
+    """
+    :return: dictionary with the feature name as keys and a list of modules to be
+    excluded if the feature is selected
+    """
+
+    feature_remove_modules = {}
+
+    return feature_remove_modules
 
 
 def determine_modules(
@@ -555,6 +599,12 @@ def determine_modules(
     for feature in stage_feature_modules:
         if feature not in requested_features and not remove_fix_variable_modules:
             for m in stage_feature_modules[feature]:
+                modules_to_use.remove(m)
+
+    # Remove modules features explicitly ask to remove
+    for feature in feature_remove_modules_list().keys():
+        if feature in requested_features:
+            for m in feature_remove_modules_list()[feature]:
                 modules_to_use.remove(m)
 
     return modules_to_use

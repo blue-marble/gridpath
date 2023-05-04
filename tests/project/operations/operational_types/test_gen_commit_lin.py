@@ -362,6 +362,18 @@ class TestGenCommitLin(unittest.TestCase):
             expected_down_time_cutoff_hours, actual_down_time_cutoff_hours
         )
 
+        # Param: gen_commit_lin_partial_availability_threshold
+        expected_threshold = {
+            "Disp_Cont_Commit": 0.01,
+            "Clunky_Old_Gen": 0.05,
+            "Clunky_Old_Gen2": 0.5,
+        }
+        actual_threshold = {
+            prj: instance.gen_commit_lin_partial_availability_threshold[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_threshold, actual_threshold)
+
 
 if __name__ == "__main__":
     unittest.main()

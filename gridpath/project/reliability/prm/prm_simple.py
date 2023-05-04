@@ -14,7 +14,9 @@
 
 """
 Simplest PRM contribution where each PRM project contributes a fraction of 
-its installed capacity.
+its installed capacity. Note that projects contributing through the ELCC surface can
+also simultaneous contribute a simple fraction of their capacity (the fraction
+defaults to 0 if not specified).
 """
 from __future__ import print_function
 

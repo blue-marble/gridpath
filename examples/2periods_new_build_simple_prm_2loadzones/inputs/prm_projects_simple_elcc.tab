@@ -1,0 +1,15 @@
+project	period	elcc_simple_fraction
+Coal	2020.0	0.8
+Coal	2030.0	0.8
+Gas_CCGT	2020.0	0.8
+Gas_CCGT	2030.0	0.8
+Gas_CCGT_new	2020.0	0.8
+Gas_CCGT_new	2030.0	0.8
+Gas_CT	2020.0	0.8
+Gas_CT	2030.0	0.8
+Gas_CT_new	2020.0	0.8
+Gas_CT_new	2030.0	0.8
+Nuclear	2020.0	0.8
+Nuclear	2030.0	0.8
+Wind	2020.0	0.8
+Wind	2030.0	0.8
