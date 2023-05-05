@@ -134,6 +134,8 @@ class TestGenSpec(unittest.TestCase):
                 ("Nuclear_Flexible", 2030),
                 ("DAC", 2020),
                 ("DAC", 2030),
+                ("Flex_Load", 2020),
+                ("Flex_Load", 2030),
             ]
         )
         actual_proj_period_set = sorted(
@@ -180,6 +182,8 @@ class TestGenSpec(unittest.TestCase):
                     ("Nuclear_Flexible", 2030): 1000,
                     ("DAC", 2020): 1000,
                     ("DAC", 2030): 1000,
+                    ("Flex_Load", 2020): 10,
+                    ("Flex_Load", 2030): 20,
                 }.items()
             )
         )
@@ -232,6 +236,8 @@ class TestGenSpec(unittest.TestCase):
                     ("Nuclear_Flexible", 2030): 1.0,
                     ("DAC", 2020): 10.0,
                     ("DAC", 2030): 10.0,
+                    ("Flex_Load", 2020): 0.0,
+                    ("Flex_Load", 2030): 0.0,
                 }.items()
             )
         )

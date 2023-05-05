@@ -42,3 +42,5 @@ Wind_Battery_Hybrid	2030	6	5	1	4				1	0.5	0.3	0.2
 Fuel_Prod	2030					100	1000	10000					10	100	1000
 DAC	2020	1000							10						
 DAC	2030	1000							10						
+Flex_Load	2020	10							0						
+Flex_Load	2030	20							0						

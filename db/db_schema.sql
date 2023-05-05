@@ -1019,12 +1019,14 @@ min_down_time_violation_penalty FLOAT, -- leave NULL for hard constraint
 cycle_selection_scenario_id INTEGER,
 supplemental_firing_scenario_id INTEGER,
 allow_startup_shutdown_power INTEGER, -- defaults to 0 in the model if not specified
+storage_efficiency FLOAT, -- hourly losses from storage; default 1 (no losses)
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 charging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 discharging_capacity_multiplier FLOAT,  -- default 1 in model if not specified
 soc_penalty_cost_per_energyunit FLOAT,
 soc_last_tmp_penalty_cost_per_energyunit FLOAT,
+flex_load_static_profile_scenario_id INTEGER,
 minimum_duration_hours FLOAT,
 maximum_duration_hours FLOAT,
 aux_consumption_frac_capacity FLOAT,
@@ -1067,6 +1069,9 @@ subscenarios_project_cycle_selection
 FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
 subscenarios_project_supplemental_firing
 (project, supplemental_firing_scenario_id),
+FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
+subscenarios_project_flex_load_static_profiles
+(project, flex_load_static_profile_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -1215,6 +1220,31 @@ FOREIGN KEY (project, supplemental_firing_scenario_id) REFERENCES
 subscenarios_project_supplemental_firing (project, supplemental_firing_scenario_id)
 );
 
+-- Flex load static profiles
+-- The profiles by end use before shifting
+DROP TABLE IF EXISTS subscenarios_project_flex_load_static_profiles;
+CREATE TABLE subscenarios_project_flex_load_static_profiles (
+project VARCHAR(64),
+flex_load_static_profile_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, flex_load_static_profile_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_flex_load_static_profiles;
+CREATE TABLE inputs_project_flex_load_static_profiles (
+project VARCHAR(64),
+flex_load_static_profile_scenario_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+static_load_mw FLOAT,
+maximum_stored_energy_mwh FLOAT,
+PRIMARY KEY (project, flex_load_static_profile_scenario_id, stage_id,
+             timepoint),
+FOREIGN KEY (project, flex_load_static_profile_scenario_id) REFERENCES
+subscenarios_project_flex_load_static_profiles
+(project, flex_load_static_profile_scenario_id)
+);
 
 
 -- Variable generator profiles
@@ -3592,6 +3622,11 @@ min_up_time_violation FLOAT,
 min_up_time_dual FLOAT,
 min_down_time_violation FLOAT,
 min_down_time_dual FLOAT,
+starting_energy_mwh FLOAT,
+charge_mw FLOAT,
+discharge_mw FLOAT,
+static_load_mw FLOAT,
+flex_load_mw FLOAT,
 hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
@@ -5154,6 +5189,7 @@ CREATE VIEW project_operational_timepoints AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
 project_specified_capacity_scenario_id, project_new_cost_scenario_id,
 temporal_scenario_id, operational_type, variable_generator_profile_scenario_id,
+flex_load_static_profile_scenario_id,
 subproblem_id, stage_id, project, timepoint
 -- Get all projects in the portfolio (with their opchars)
 FROM project_portfolio_opchars
