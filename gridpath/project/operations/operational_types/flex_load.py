@@ -39,6 +39,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     write_tab_file_model_inputs,
+    update_dispatch_results_table,
 )
 
 
@@ -642,7 +643,34 @@ def write_model_inputs(
 
     write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
+def import_model_results_to_database(
+    scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
 
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("project dispatch flex load")
+
+    update_dispatch_results_table(
+        db=db,
+        c=c,
+        results_directory=results_directory,
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+        results_file="dispatch_flex_load.csv",
+    )
+
+# ### VALIDATION ### #
 def validate_inputs(scenario_id, subscenarioprj, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
