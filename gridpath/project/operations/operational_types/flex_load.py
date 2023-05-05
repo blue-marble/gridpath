@@ -497,26 +497,26 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         ),
     )
 
-    # # Linked timepoint params
-    # linked_inputs_filename = os.path.join(
-    #     scenario_directory,
-    #     str(subproblem),
-    #     str(stage),
-    #     "inputs",
-    #     "flex_load_linked_timepoint_params.tab",
-    # )
-    # if os.path.exists(linked_inputs_filename):
-    #     data_portal.load(
-    #         filename=linked_inputs_filename,
-    #         index=mod.FLEX_LOAD_LINKED_TMPS,
-    #         param=(
-    #             mod.flex_load_linked_starting_energy_in_storage,
-    #             mod.flex_load_linked_discharge,
-    #             mod.flex_load_linked_charge,
-    #         ),
-    #     )
-    # else:
-    #     pass
+    # Linked timepoint params
+    linked_inputs_filename = os.path.join(
+        scenario_directory,
+        str(subproblem),
+        str(stage),
+        "inputs",
+        "flex_load_linked_timepoint_params.tab",
+    )
+    if os.path.exists(linked_inputs_filename):
+        data_portal.load(
+            filename=linked_inputs_filename,
+            index=mod.FLEX_LOAD_LINKED_TMPS,
+            param=(
+                mod.flex_load_linked_starting_energy_in_storage,
+                mod.flex_load_linked_discharge,
+                mod.flex_load_linked_charge,
+            ),
+        )
+    else:
+        pass
 
 
 def export_results(mod, d, scenario_directory, subproblem, stage):
