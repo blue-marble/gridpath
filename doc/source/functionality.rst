@@ -409,9 +409,11 @@ Curtailable Variable Generation-Storage Hybrid (*gen_var_stor_hyb*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_var_stor_hyb
 
-Shiftable Load (*dr*)
-^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.dr
+Flexible Load (*flex_load*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.flex_load
+
+Note that a previous module (*dr*) for flexible loads is now deprecated.
 
 Fuel Production (*fuel_prod*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

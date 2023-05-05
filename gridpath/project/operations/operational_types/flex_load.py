@@ -14,7 +14,7 @@
 
 """
 This operational type describes a battery-based model for a flexible load 
-resource.
+resource. Please use gen_spec as the 'capacity type' for flexible loads.
 
 """
 import csv
@@ -456,6 +456,34 @@ def power_provision_rule(mod, prj, tmp):
     Negative of the shifted load.
     """
     return mod.flex_load_static_profile_mw[prj, tmp] - mod.Flex_Load_Grid_MW[prj, tmp]
+
+
+def power_delta_rule(mod, g, tmp):
+    """
+    This rule is only used in tuning costs, so fine to skip for linked
+    horizon's first timepoint.
+    """
+    if check_if_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ) and (
+        check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linear",
+        )
+        or check_boundary_type(
+            mod=mod,
+            tmp=tmp,
+            balancing_type=mod.balancing_type_project[g],
+            boundary_type="linked",
+        )
+    ):
+        pass
+    else:
+        return power_provision_rule(mod, g, tmp) - power_provision_rule(
+            mod, g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
+        )
 
 
 # Input-Output
