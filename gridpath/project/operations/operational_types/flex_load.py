@@ -28,6 +28,7 @@ from pyomo.environ import (
     PercentFraction,
     value,
 )
+import warnings
 
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.project.common_functions import (
@@ -358,6 +359,51 @@ def energy_tracking_rule(mod, prj, tmp):
             )
             prev_tmp_discharge = mod.flex_load_linked_discharge[prj, 0]
             prev_tmp_charge = mod.flex_load_linked_charge[prj, 0]
+
+            calculated_starting_energy_in_storage = (
+                prev_tmp_starting_energy_in_storage
+                * mod.flex_load_storage_efficiency[prj]
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.flex_load_charging_efficiency[prj]
+                - prev_tmp_discharge
+                * prev_tmp_hrs_in_tmp
+                / mod.flex_load_discharging_efficiency[prj]
+            )
+
+            # Deal with possible precision-related infeasibilities, e.g. if
+            # the calculated energy in storage is just below or just above
+            # its boundaries of 0 and the energy capacity x availability
+            if calculated_starting_energy_in_storage < 0:
+                warnings.warn(
+                    f"Starting energy in storage was "
+                    f"{calculated_starting_energy_in_storage} for project "
+                    f"{prj}, "
+                    f"which would have resulted in infeasibility. "
+                    f"Changed to 0."
+                )
+                return mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp] == 0
+            elif calculated_starting_energy_in_storage > (
+                mod.flex_load_maximum_stored_energy_mwh[prj, tmp]
+            ):
+                warnings.warn(
+                    f"Starting energy in storage was "
+                    f"{calculated_starting_energy_in_storage} for project "
+                    f"{prj}, "
+                    f"which would have resulted in infeasibility. "
+                    f"Changed to "
+                    f"mod.flex_load_maximum_stored_energy_mwh[prj, tmp]."
+                )
+                return (
+                    mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp]
+                    == mod.flex_load_maximum_stored_energy_mwh[prj, tmp]
+                )
+            else:
+                return (
+                    mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp]
+                    == calculated_starting_energy_in_storage
+                )
+
         else:
             prev_tmp_hrs_in_tmp = mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
@@ -374,17 +420,17 @@ def energy_tracking_rule(mod, prj, tmp):
                 prj, mod.prev_tmp[tmp, mod.balancing_type_project[prj]]
             ]
 
-        return (
-            mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp]
-            == prev_tmp_starting_energy_in_storage
-            * mod.flex_load_storage_efficiency[prj]
-            + prev_tmp_charge
-            * prev_tmp_hrs_in_tmp
-            * mod.flex_load_charging_efficiency[prj]
-            - prev_tmp_discharge
-            * prev_tmp_hrs_in_tmp
-            / mod.flex_load_discharging_efficiency[prj]
-        )
+            return (
+                mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp]
+                == prev_tmp_starting_energy_in_storage
+                * mod.flex_load_storage_efficiency[prj]
+                + prev_tmp_charge
+                * prev_tmp_hrs_in_tmp
+                * mod.flex_load_charging_efficiency[prj]
+                - prev_tmp_discharge
+                * prev_tmp_hrs_in_tmp
+                / mod.flex_load_discharging_efficiency[prj]
+            )
 
 
 def max_energy_in_storage_constraint_rule(mod, prj, tmp):
@@ -483,7 +529,6 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    print("flex load dispatch")
     with open(
         os.path.join(
             scenario_directory,
@@ -534,57 +579,57 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                 ]
             )
 
-    # # If there's a linked_subproblems_map CSV file, check which of the
-    # # current subproblem TMPS we should export results for to link to the
-    # # next subproblem
-    # tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
-    #     scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
-    # )
-    #
-    # # If the list of timepoints to link is not empty, write the linked
-    # # timepoint results for this module in the next subproblem's input
-    # # directory
-    # if tmps_to_link:
-    #     next_subproblem = str(int(subproblem) + 1)
-    #
-    #     # Export params by project and timepoint
-    #     with open(
-    #         os.path.join(
-    #             scenario_directory,
-    #             next_subproblem,
-    #             stage,
-    #             "inputs",
-    #             "flex_load_linked_timepoint_params.tab",
-    #         ),
-    #         "w",
-    #         newline="",
-    #     ) as f:
-    #         writer = csv.writer(f, delimiter="\t", lineterminator="\n")
-    #         writer.writerow(
-    #             [
-    #                 "project",
-    #                 "linked_timepoint",
-    #                 "linked_starting_energy_in_storage",
-    #                 "linked_discharge",
-    #                 "linked_charge",
-    #             ]
-    #         )
-    #         for p, tmp in sorted(mod.FLEX_LOAD_OPR_TMPS):
-    #             if tmp in tmps_to_link:
-    #                 writer.writerow(
-    #                     [
-    #                         p,
-    #                         tmp_linked_tmp_dict[tmp],
-    #                         max(
-    #                             value(
-    #                                 mod.Flex_Load_Starting_Energy_in_Storage_MWh[p, tmp]
-    #                             ),
-    #                             0,
-    #                         ),
-    #                         max(value(mod.Flex_Load_Discharge_MW[p, tmp]), 0),
-    #                         max(value(mod.Flex_Load_Charge_MW[p, tmp]), 0),
-    #                     ]
-    #                 )
+    # If there's a linked_subproblems_map CSV file, check which of the
+    # current subproblem TMPS we should export results for to link to the
+    # next subproblem
+    tmps_to_link, tmp_linked_tmp_dict = check_for_tmps_to_link(
+        scenario_directory=scenario_directory, subproblem=subproblem, stage=stage
+    )
+
+    # If the list of timepoints to link is not empty, write the linked
+    # timepoint results for this module in the next subproblem's input
+    # directory
+    if tmps_to_link:
+        next_subproblem = str(int(subproblem) + 1)
+
+        # Export params by project and timepoint
+        with open(
+            os.path.join(
+                scenario_directory,
+                next_subproblem,
+                stage,
+                "inputs",
+                "flex_load_linked_timepoint_params.tab",
+            ),
+            "w",
+            newline="",
+        ) as f:
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
+            writer.writerow(
+                [
+                    "project",
+                    "linked_timepoint",
+                    "linked_starting_energy_in_storage",
+                    "linked_discharge",
+                    "linked_charge",
+                ]
+            )
+            for p, tmp in sorted(mod.FLEX_LOAD_OPR_TMPS):
+                if tmp in tmps_to_link:
+                    writer.writerow(
+                        [
+                            p,
+                            tmp_linked_tmp_dict[tmp],
+                            max(
+                                value(
+                                    mod.Flex_Load_Starting_Energy_in_Storage_MWh[p, tmp]
+                                ),
+                                0,
+                            ),
+                            max(value(mod.Flex_Load_Discharge_MW[p, tmp]), 0),
+                            max(value(mod.Flex_Load_Charge_MW[p, tmp]), 0),
+                        ]
+                    )
 
 
 # ### Database ### #
@@ -643,6 +688,7 @@ def write_model_inputs(
 
     write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
+
 def import_model_results_to_database(
     scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
@@ -669,6 +715,7 @@ def import_model_results_to_database(
         stage=stage,
         results_file="dispatch_flex_load.csv",
     )
+
 
 # ### VALIDATION ### #
 def validate_inputs(scenario_id, subscenarioprj, subproblem, stage, conn):
