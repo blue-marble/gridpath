@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-This operational type describes a battery-based model for a flexible load resource.
+This operational type describes a battery-based model for a flexible load 
+resource.
 
 """
 import csv
@@ -37,6 +38,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    write_tab_file_model_inputs,
 )
 
 
@@ -67,35 +69,26 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
+    | | :code:`flex_load_storage_efficiency`                                  |
+    | | *Defined over*: :code:`FLEX_LOAD`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The flex load project's storage efficiency (1 = 100% efficient).        |
+    +-------------------------------------------------------------------------+
     | | :code:`flex_load_charging_efficiency`                                 |
     | | *Defined over*: :code:`FLEX_LOAD`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The storage project's charging efficiency (1 = 100% efficient).         |
+    | The flex load project's charging efficiency (1 = 100% efficient).       |
     +-------------------------------------------------------------------------+
     | | :code:`flex_load_discharging_efficiency`                              |
     | | *Defined over*: :code:`FLEX_LOAD`                                     |
     | | *Within*: :code:`PercentFraction`                                     |
-    |                                                                         |
-    | The storage project's discharging efficiency (1 = 100% efficient).      |
-    +-------------------------------------------------------------------------+
-
-    |
-
-    +-------------------------------------------------------------------------+
-    | Optional Input Params                                                   |
-    +=========================================================================+
-    | | :code:`flex_load_losses_factor_in_energy_target`                      |
-    | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The fraction of storage losses that count against the energy target.    |
-    +-------------------------------------------------------------------------+
-    | | :code:`flex_load_losses_factor_curtailment`                           |
-    | | *Within*: :code:`PercentFraction`                                     |
-    | | *Default*: :code:`1`                                                  |
-    |                                                                         |
-    | The fraction of storage losses that count against curtailment.          |
+    | The flex load project's discharging efficiency (1 = 100% efficient).    |
     +-------------------------------------------------------------------------+
 
     |
@@ -145,7 +138,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     | | *Defined over*: :code:`FLEX_LOAD_OPR_TMPS`                            |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The state of charge of the storage project at the start of each         |
+    | The state of charge of the flex load project at the start of each         |
     | timepoint, in MWh of energy stored.                                     |
     +-------------------------------------------------------------------------+
 
@@ -234,7 +227,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Required Params
     ###########################################################################
 
-    m.flex_load_static_load_mw = Param(m.FLEX_LOAD_OPR_TMPS, within=NonNegativeReals)
+    m.flex_load_static_profile_mw = Param(m.FLEX_LOAD_OPR_TMPS, within=NonNegativeReals)
 
     m.flex_load_maximum_stored_energy_mwh = Param(
         m.FLEX_LOAD_OPR_TMPS, within=NonNegativeReals
@@ -326,7 +319,7 @@ def level_of_service_constraint_rule(mod, prj, tmp):
         mod.Flex_Load_Grid_MW[prj, tmp]
         - mod.Flex_Load_Charge_MW[prj, tmp]
         + mod.Flex_Load_Discharge_MW[prj, tmp]
-        == mod.flex_load_static_load_mw[prj, tmp]
+        == mod.flex_load_static_profile_mw[prj, tmp]
     )
 
 
@@ -415,7 +408,7 @@ def power_provision_rule(mod, prj, tmp):
     """
     Negative of the shifted load.
     """
-    return mod.flex_load_static_load_mw[prj, tmp]-mod.Flex_Load_Grid_MW[prj, tmp]
+    return mod.flex_load_static_profile_mw[prj, tmp] - mod.Flex_Load_Grid_MW[prj, tmp]
 
 
 # Input-Output
@@ -451,7 +444,10 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(
         filename=flex_load_profiles_file,
-        param=(mod.flex_load_static_load_mw, mod.flex_load_maximum_stored_energy_mwh),
+        param=(
+            mod.flex_load_static_profile_mw,
+            mod.flex_load_maximum_stored_energy_mwh,
+        ),
     )
 
     # # Linked timepoint params
@@ -529,7 +525,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                     mod.hrs_in_tmp[tmp],
                     mod.technology[p],
                     mod.load_zone[p],
-                    mod.flex_load_static_load_mw[p, tmp],
+                    mod.flex_load_static_profile_mw[p, tmp],
                     value(mod.Flex_Load_Grid_MW[p, tmp]),
                     value(mod.Flex_Load_Starting_Energy_in_Storage_MWh[p, tmp]),
                     value(mod.Flex_Load_Charge_MW[p, tmp]),
@@ -588,6 +584,63 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     #                         max(value(mod.Flex_Load_Charge_MW[p, tmp]), 0),
     #                     ]
     #                 )
+
+
+# ### Database ### #
+def write_model_inputs(
+    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param scenario_directory: string, the scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    subproblem_for_db = 1 if subproblem == "" else subproblem
+    stage_for_db = 1 if stage == "" else stage
+
+    c = conn.cursor()
+    # NOTE: There can be cases where a resource is both in specified capacity
+    # table and in new build table, but depending on capacity type you'd only
+    # use one of them, so filtering with OR is not 100% correct.
+
+    sql = f"""
+        SELECT project, timepoint, static_load_mw, maximum_stored_energy_mwh
+        -- Select only projects, periods, horizons from the relevant portfolio, 
+        -- relevant opchar scenario id, operational type, 
+        -- and temporal scenario id
+        FROM 
+            (SELECT project, stage_id, timepoint, 
+            flex_load_static_profile_scenario_id
+            FROM project_operational_timepoints
+            WHERE project_portfolio_scenario_id = {subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID}
+            AND project_operational_chars_scenario_id = {subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID}
+            AND operational_type = 'flex_load'
+            AND temporal_scenario_id = {subscenarios.TEMPORAL_SCENARIO_ID}
+            AND (project_specified_capacity_scenario_id = {subscenarios.PROJECT_SPECIFIED_CAPACITY_SCENARIO_ID}
+                 OR project_new_cost_scenario_id = {subscenarios.PROJECT_NEW_COST_SCENARIO_ID})
+            AND subproblem_id = {subproblem_for_db}
+            AND stage_id = {stage_for_db}
+            ) as projects_periods_timepoints_tbl
+        -- Now that we have the relevant projects and timepoints, get the 
+        -- respective cap factors (and no others) from 
+        -- inputs_project_flex_load_static_profiles
+        LEFT OUTER JOIN
+            inputs_project_flex_load_static_profiles
+        USING (flex_load_static_profile_scenario_id, project, 
+        stage_id, timepoint)
+        ;
+        """
+
+    data = c.execute(sql)
+
+    fname = "flex_load_profiles.tab"
+
+    write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
 
 
 def validate_inputs(scenario_id, subscenarioprj, subproblem, stage, conn):

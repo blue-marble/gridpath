@@ -5184,6 +5184,7 @@ CREATE VIEW project_operational_timepoints AS
 SELECT project_portfolio_scenario_id, project_operational_chars_scenario_id,
 project_specified_capacity_scenario_id, project_new_cost_scenario_id,
 temporal_scenario_id, operational_type, variable_generator_profile_scenario_id,
+flex_load_static_profile_scenario_id,
 subproblem_id, stage_id, project, timepoint
 -- Get all projects in the portfolio (with their opchars)
 FROM project_portfolio_opchars
