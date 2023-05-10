@@ -112,6 +112,13 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     +-------------------------------------------------------------------------+
     | Optional Input Params                                                   |
     +=========================================================================+
+    | | :code:`stor_storage_efficiency`                                       |
+    | | *Defined over*: :code:`STOR`                                          |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The storage project's storage efficiency (1 = 100% efficient).          |
+    +-------------------------------------------------------------------------+
     | | :code:`stor_losses_factor_in_energy_target`                           |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
@@ -285,6 +292,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Optional Params
     ###########################################################################
 
+    m.stor_storage_efficiency = Param(m.STOR, within=PercentFraction, default=1)
+
     m.stor_losses_factor_in_energy_target = Param(default=1)
 
     m.stor_losses_factor_curtailment = Param(default=1)
@@ -457,7 +466,7 @@ def energy_tracking_rule(mod, s, tmp):
             prev_tmp_charge = mod.stor_linked_charge[s, 0]
 
             calculated_starting_energy_in_storage = (
-                prev_tmp_starting_energy_in_storage
+                prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
                 + prev_tmp_charge
                 * prev_tmp_hrs_in_tmp
                 * mod.stor_charging_efficiency[s]
@@ -518,7 +527,7 @@ def energy_tracking_rule(mod, s, tmp):
 
             return (
                 mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp]
-                == prev_tmp_starting_energy_in_storage
+                == prev_tmp_starting_energy_in_storage * mod.stor_storage_efficiency[s]
                 + prev_tmp_charge
                 * prev_tmp_hrs_in_tmp
                 * mod.stor_charging_efficiency[s]
