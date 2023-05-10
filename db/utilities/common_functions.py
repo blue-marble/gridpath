@@ -521,17 +521,17 @@ def generic_insert_subscenario(
         )
 
 
-def determine_tables_to_delete_from(csv_data_master, subscenario):
+def determine_tables_to_delete_from(csv_structure, subscenario):
     """
-    :param csv_data_master: Pandas DataFrame
+    :param csv_structure: Pandas DataFrame
     :param subscenario: str;
     :return: subscenario_table, input_tables, project_flag, project_is_tx,
         base_table, base_subscenario
 
     Determine the relevant tables from which to delete prior data.
     """
-    # Get the sub-dataframe for this subscenario from the master CSV
-    subscenario_df = csv_data_master.loc[csv_data_master["subscenario"] == subscenario]
+    # Get the sub-dataframe for this subscenario from the CSV structure file
+    subscenario_df = csv_structure.loc[csv_structure["subscenario"] == subscenario]
 
     # Determine the relevant tables for this subscenario
     subscenario_table = None
