@@ -40,7 +40,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     write_tab_file_model_inputs,
-    update_dispatch_results_table,
+    create_dispatch_results_optype_df,
 )
 
 
@@ -69,7 +69,7 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     |
 
     +-------------------------------------------------------------------------+
-    | Required Input Params                                                   |
+    | Optional Input Params                                                   |
     +=========================================================================+
     | | :code:`flex_load_storage_efficiency`                                  |
     | | *Defined over*: :code:`FLEX_LOAD`                                     |
@@ -547,6 +547,34 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
+def add_to_dispatch_results(mod):
+    results_columns = [
+        "static_load_mw",
+        "flex_load_mw",
+        "starting_energy_mwh",
+        "charge_mw",
+        "discharge_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            mod.flex_load_static_profile_mw[prj, tmp],
+            value(mod.Flex_Load_Grid_MW[prj, tmp]),
+            value(mod.Flex_Load_Starting_Energy_in_Storage_MWh[prj, tmp]),
+            value(mod.Flex_Load_Charge_MW[prj, tmp]),
+            value(mod.Flex_Load_Discharge_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.FLEX_LOAD_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
@@ -557,55 +585,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_flex_load.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "static_load_mw",
-                "flex_load_mw",
-                "starting_energy_mwh",
-                "charge_mw",
-                "discharge_mw",
-            ]
-        )
-        for p, tmp in mod.FLEX_LOAD_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    mod.flex_load_static_profile_mw[p, tmp],
-                    value(mod.Flex_Load_Grid_MW[p, tmp]),
-                    value(mod.Flex_Load_Starting_Energy_in_Storage_MWh[p, tmp]),
-                    value(mod.Flex_Load_Charge_MW[p, tmp]),
-                    value(mod.Flex_Load_Discharge_MW[p, tmp]),
-                ]
-            )
+
+    # Dispatch results added to dispatch_all.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -715,34 +696,6 @@ def write_model_inputs(
     fname = "flex_load_profiles.tab"
 
     write_tab_file_model_inputs(scenario_directory, subproblem, stage, fname, data)
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch flex load")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_flex_load.csv",
-    )
 
 
 # ### VALIDATION ### #

@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value
+import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
@@ -111,8 +112,72 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
-    # First power
-    with open(
+    # First create the dataframe with just power provision
+    main_df = pd.DataFrame(
+        columns=[
+            "project",
+            "timepoint",
+            "period",
+            "horizon",
+            "operational_type",
+            "balancing_type",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "load_zone",
+            "technology",
+            "power_mw",
+        ],
+        data=[
+            [
+                prj,
+                tmp,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[prj]],
+                m.operational_type[prj],
+                m.balancing_type_project[prj],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.load_zone[prj],
+                m.technology[prj],
+                value(m.Power_Provision_MW[prj, tmp]),
+            ]
+            for (prj, tmp) in m.PRJ_OPR_TMPS
+        ],
+    ).set_index(["project", "timepoint"])
+
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    for optype_module in imported_operational_modules:
+        if hasattr(
+            imported_operational_modules[optype_module], "add_to_dispatch_results"
+        ):
+            # TODO: make sure the order of export results is the same between
+            #  this module and the optype modules
+            results_columns, optype_df = imported_operational_modules[
+                optype_module
+            ].add_to_dispatch_results(mod=m)
+            for column in results_columns:
+                if column not in main_df:
+                    main_df[column] = None
+            main_df.update(optype_df)
+
+    main_df.sort_index(inplace=True)
+
+    # TODO: eventually figure out how to skip to_csv and just get the DF from
+    #  here when importing to database
+    # conn = sqlite3.connect(database="/Users/ana/dev/gridpath_v0.15+dev/db/io.db")
+    # main_df.to_sql(name="results_project_dispatch_test", con=conn, if_exists='append')
+
+    main_df.to_csv(
         os.path.join(
             scenario_directory,
             str(subproblem),
@@ -120,41 +185,54 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             "results",
             "dispatch_all.csv",
         ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "operational_type",
-                "balancing_type",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "power_mw",
-            ]
-        )
-        for p, tmp in m.PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.operational_type[p],
-                    m.balancing_type_project[p],
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.Power_Provision_MW[p, tmp]),
-                ]
-            )
+        sep=",",
+        index=True,
+    )
+
+    # # First power
+    # with open(
+    #     os.path.join(
+    #         scenario_directory,
+    #         str(subproblem),
+    #         str(stage),
+    #         "results",
+    #         "dispatch_all.csv",
+    #     ),
+    #     "w",
+    #     newline="",
+    # ) as f:
+    #     writer = csv.writer(f)
+    #     writer.writerow(
+    #         [
+    #             "project",
+    #             "period",
+    #             "horizon",
+    #             "timepoint",
+    #             "operational_type",
+    #             "balancing_type",
+    #             "timepoint_weight",
+    #             "number_of_hours_in_timepoint",
+    #             "load_zone",
+    #             "technology",
+    #             "power_mw",
+    #         ]
+    #     )
+    #     for p, tmp in m.PRJ_OPR_TMPS:
+    #         writer.writerow(
+    #             [
+    #                 p,
+    #                 m.period[tmp],
+    #                 m.horizon[tmp, m.balancing_type_project[p]],
+    #                 tmp,
+    #                 m.operational_type[p],
+    #                 m.balancing_type_project[p],
+    #                 m.tmp_weight[tmp],
+    #                 m.hrs_in_tmp[tmp],
+    #                 m.load_zone[p],
+    #                 m.technology[p],
+    #                 value(m.Power_Provision_MW[p, tmp]),
+    #             ]
+    #         )
 
 
 def summarize_results(scenario_directory, subproblem, stage):

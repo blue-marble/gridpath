@@ -64,6 +64,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    create_dispatch_results_optype_df,
 )
 
 
@@ -763,6 +764,30 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
+def add_to_dispatch_results(mod):
+    results_columns = [
+        "starting_energy_mwh",
+        "charge_mw",
+        "discharge_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.Stor_Starting_Energy_in_Storage_MWh[prj, tmp]),
+            value(mod.Stor_Charge_MW[prj, tmp]),
+            value(mod.Stor_Discharge_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.STOR_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
@@ -773,51 +798,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_stor.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "starting_energy_mwh",
-                "charge_mw",
-                "discharge_mw",
-            ]
-        )
-        for p, tmp in mod.STOR_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),
-                    value(mod.Stor_Charge_MW[p, tmp]),
-                    value(mod.Stor_Discharge_MW[p, tmp]),
-                ]
-            )
+
+    # Dispatch results added to dispatch_all.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
