@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ from __future__ import print_function
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import (
     Var,
     Set,
@@ -1442,6 +1443,9 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
+
+    # print(gen_commit_cap_df)
+
     with open(
         os.path.join(
             scenario_directory,
@@ -1552,6 +1556,36 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                         ]
                     )
 
+
+def add_to_dispatch_results(mod):
+    results_columns = ["gross_power_mw",
+                "auxiliary_consumption_mw",
+                "net_power_mw",
+                "committed_mw",
+                "committed_units",]
+    gen_commit_cap_df = pd.DataFrame(
+        columns=[
+                "project",
+                "timepoint",
+
+        ] + results_columns,
+        data=[
+            [
+                prj,
+                tmp,
+                value(mod.GenCommitCap_Provide_Power_MW[prj, tmp]),
+                value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+                value(mod.GenCommitCap_Provide_Power_MW[prj, tmp])
+                - value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+                value(mod.Commit_Capacity_MW[prj, tmp]),
+                value(mod.Commit_Capacity_MW[prj, tmp])
+                / mod.gen_commit_cap_unit_size_mw[prj],
+            ]
+            for (prj, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
+        ],
+    ).set_index(["project", "timepoint"])
+
+    return results_columns, gen_commit_cap_df
 
 # Database
 ###############################################################################

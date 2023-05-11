@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -145,6 +145,38 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     ).set_index(["project", "timepoint"])
 
     print(main_df)
+
+    required_operational_modules = get_required_subtype_modules_from_projects_file(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem,
+        stage=stage,
+        which_type="operational_type",
+    )
+
+    imported_operational_modules = load_operational_type_modules(
+        required_operational_modules
+    )
+
+    for optype_module in imported_operational_modules:
+        print(optype_module)
+        if hasattr(imported_operational_modules[optype_module],
+                   "add_to_dispatch_results"):
+            print("found")
+            # TODO: make sure the order of export results is the same between
+            #  this module and the optype modules
+            results_columns, optype_df = imported_operational_modules[
+                optype_module].add_to_dispatch_results(mod=m)
+            print(optype_df)
+            for column in results_columns:
+                if column not in main_df:
+                    main_df[column] = None
+
+            print(main_df)
+
+            main_df.update(optype_df)
+
+    print(main_df)
+
 
     # First power
     with open(
