@@ -56,6 +56,7 @@ from gridpath.project.operations.operational_types.common_functions import (
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    create_dispatch_results_optype_df,
 )
 
 
@@ -638,6 +639,28 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
+def add_to_dispatch_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenAlwaysOn_Gross_Power_MW[prj, tmp]),
+            value(mod.GenAlwaysOn_Auxiliary_Consumption_MW[prj, tmp]),
+        ]
+        for (prj, tmp) in mod.GEN_ALWAYS_ON_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
     :param scenario_directory:
@@ -647,52 +670,8 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_gen_always_on.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-            ]
-        )
 
-        for p, tmp in mod.GEN_ALWAYS_ON_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.GenAlwaysOn_Gross_Power_MW[p, tmp]),
-                    value(mod.GenAlwaysOn_Auxiliary_Consumption_MW[p, tmp]),
-                ]
-            )
+    # Dispatch results added to dispatch_all.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the

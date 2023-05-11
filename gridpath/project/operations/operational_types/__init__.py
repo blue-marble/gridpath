@@ -331,9 +331,9 @@ def import_results_into_database(
         header = next(reader)  # skip header
         for row in reader:
             project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
+            timepoint = row[1]
+            period = row[2]
+            horizon = row[3]
             operational_type = row[4]
             balancing_type = row[5]
             timepoint_weight = row[6]
@@ -362,7 +362,7 @@ def import_results_into_database(
             )
     insert_temp_sql = """
         INSERT INTO temp_results_project_dispatch{}
-        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        (scenario_id, project, timepoint, period, subproblem_id, stage_id, 
         operational_type, balancing_type,
         horizon, timepoint_weight,
         number_of_hours_in_timepoint,
@@ -376,12 +376,12 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     insert_sql = """
         INSERT INTO results_project_dispatch
-        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        (scenario_id, project, timepoint, period, subproblem_id, stage_id,
         operational_type, balancing_type,
         horizon, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
-        scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        scenario_id, project, timepoint, period, subproblem_id, stage_id,
         operational_type, balancing_type,
         horizon, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw

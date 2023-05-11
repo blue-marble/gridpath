@@ -23,8 +23,8 @@ more information on the formulation.
 """
 
 from gridpath.project.operations.operational_types.common_functions import (
-    update_dispatch_results_table,
     validate_opchars,
+    create_dispatch_results_optype_df,
 )
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common
 
@@ -211,6 +211,21 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
+def add_to_dispatch_results(mod):
+    results_columns, data = gen_commit_unit_common.add_to_dispatch_results(
+        mod=mod,
+        BIN_OR_LIN="LIN",
+        Bin_or_Lin="Lin",
+        bin_or_lin="lin",
+    )
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
     :param scenario_directory:
@@ -220,7 +235,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :param d:
     :return:
     """
-    gen_commit_unit_common.export_results(
+    gen_commit_unit_common.export_linked_subproblem_inputs(
         mod=mod,
         d=d,
         scenario_directory=scenario_directory,
@@ -229,7 +244,6 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
         BIN_OR_LIN="LIN",
         Bin_or_Lin="Lin",
         bin_or_lin="lin",
-        results_filename="dispatch_continuous_commit.csv",
     )
 
 
@@ -256,16 +270,6 @@ def import_model_results_to_database(
     """
     if not quiet:
         print("project dispatch continuous commit")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_continuous_commit.csv",
-    )
 
     # Update duals
     gen_commit_unit_common.generic_update_duals_in_db(

@@ -68,10 +68,10 @@ from gridpath.auxiliary.auxiliary import subset_init_by_param_value
 from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
 from gridpath.project.operations.operational_types.common_functions import (
     determine_relevant_timepoints,
-    update_dispatch_results_table,
     load_optype_model_data,
     check_for_tmps_to_link,
     validate_opchars,
+    create_dispatch_results_optype_df,
 )
 from gridpath.project.common_functions import check_if_boundary_type_and_first_timepoint
 
@@ -1433,6 +1433,36 @@ def load_model_data(mod, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
+def add_to_dispatch_results(mod):
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+        "net_power_mw",
+        "committed_mw",
+        "committed_units",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(mod.GenCommitCap_Provide_Power_MW[prj, tmp]),
+            value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+            value(mod.GenCommitCap_Provide_Power_MW[prj, tmp])
+            - value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
+            value(mod.Commit_Capacity_MW[prj, tmp]),
+            value(mod.Commit_Capacity_MW[prj, tmp])
+            / mod.gen_commit_cap_unit_size_mw[prj],
+        ]
+        for (prj, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
+    ]
+
+    optype_dispatch_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    return results_columns, optype_dispatch_df
+
+
 def export_results(mod, d, scenario_directory, subproblem, stage):
     """
 
@@ -1444,62 +1474,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # print(gen_commit_cap_df)
-
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_capacity_commit.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-                "net_power_mw",
-                "committed_mw",
-                "committed_units",
-            ]
-        )
-
-        for p, tmp in mod.GEN_COMMIT_CAP_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
-                    value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                    value(mod.GenCommitCap_Provide_Power_MW[p, tmp])
-                    - value(mod.GenCommitCap_Auxiliary_Consumption_MW[p, tmp]),
-                    value(mod.Commit_Capacity_MW[p, tmp]),
-                    value(mod.Commit_Capacity_MW[p, tmp])
-                    / mod.gen_commit_cap_unit_size_mw[p],
-                ]
-            )
+    # Dispatch results added to dispatch_all.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the
@@ -1555,70 +1530,6 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
                             max(value(mod.GenCommitCap_Shutdown_MW[p, tmp]), 0),
                         ]
                     )
-
-
-def add_to_dispatch_results(mod):
-    results_columns = [
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-                "net_power_mw",
-                "committed_mw",
-                "committed_units",
-    ]
-    gen_commit_cap_df = pd.DataFrame(
-        columns=[
-                "project",
-                "timepoint",
-
-        ] + results_columns,
-        data=[
-            [
-                prj,
-                tmp,
-                value(mod.GenCommitCap_Provide_Power_MW[prj, tmp]),
-                value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
-                value(mod.GenCommitCap_Provide_Power_MW[prj, tmp])
-                - value(mod.GenCommitCap_Auxiliary_Consumption_MW[prj, tmp]),
-                value(mod.Commit_Capacity_MW[prj, tmp]),
-                value(mod.Commit_Capacity_MW[prj, tmp])
-                / mod.gen_commit_cap_unit_size_mw[prj],
-            ]
-            for (prj, tmp) in mod.GEN_COMMIT_CAP_OPR_TMPS
-        ],
-    ).set_index(["project", "timepoint"])
-
-    return results_columns, gen_commit_cap_df
-
-# Database
-###############################################################################
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch capacity commit")
-
-    update_dispatch_results_table(
-        db=db,
-        c=c,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        results_file="dispatch_capacity_commit.csv",
-    )
 
 
 # Validation

@@ -3431,154 +3431,93 @@ def load_model_data(
         pass
 
 
-def export_results(
+def add_to_dispatch_results(
     mod,
-    d,
-    scenario_directory,
-    subproblem,
-    stage,
     BIN_OR_LIN,
     Bin_or_Lin,
     bin_or_lin,
-    results_filename,
 ):
-    """
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(
-        os.path.join(
-            scenario_directory, str(subproblem), str(stage), "results", results_filename
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "balancing_type_project",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "technology",
-                "load_zone",
-                "power_mw",
-                "gross_power_mw",
-                "auxiliary_consumption_mw",
-                "net_power_mw",
-                "committed_mw",
-                "committed_units",
-                "started_units",
-                "stopped_units",
-                "synced_units",
-                "active_startup_type",
-                "ramp_up_violation",
-                "ramp_down_violation",
-                "min_up_time_violation",
-                "min_down_time_violation",
-            ]
-        )
+    """ """
 
-        for p, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
-            writer.writerow(
-                [
-                    p,
-                    mod.period[tmp],
-                    mod.balancing_type_project[p],
-                    mod.horizon[tmp, mod.balancing_type_project[p]],
-                    tmp,
-                    mod.tmp_weight[tmp],
-                    mod.hrs_in_tmp[tmp],
-                    mod.technology[p],
-                    mod.load_zone[p],
-                    value(mod.Power_Provision_MW[p, tmp]),
-                    value(
-                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
-                            p, tmp
-                        ]
-                    ),
-                    value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
-                            p, tmp
-                        ]
-                    )
-                    - value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[p, tmp]
-                    )
-                    * value(
-                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin)
-                        )[p, tmp]
-                    ),
-                    value(
-                        getattr(
-                            mod,
-                            "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
-                        )[p, tmp]
-                    ),
+    results_columns = [
+        "gross_power_mw",
+        "auxiliary_consumption_mw",
+        "net_power_mw",
+        "committed_mw",
+        "committed_units",
+        "started_units",
+        "stopped_units",
+        "synced_units",
+        "active_startup_type",
+        "ramp_up_violation",
+        "ramp_down_violation",
+        "min_up_time_violation",
+        "min_down_time_violation",
+    ]
+
+    data = [
+        [
+            prj,
+            tmp,
+            value(
+                getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Provide_Power_MW".format(Bin_or_Lin))[
+                    prj, tmp
                 ]
             )
+            - value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Auxiliary_Consumption_MW".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+            value(getattr(mod, "GenCommit{}_Pmax_MW".format(Bin_or_Lin))[prj, tmp])
+            * value(getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Commit".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Startup".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Shutdown".format(Bin_or_Lin))[prj, tmp]),
+            value(getattr(mod, "GenCommit{}_Synced".format(Bin_or_Lin))[prj, tmp]),
+            value(
+                getattr(mod, "GenCommit{}_Active_Startup_Type".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Ramp_Up_Violation_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Ramp_Down_Violation_MW".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(mod, "GenCommit{}_Min_Up_Time_Violation".format(Bin_or_Lin))[
+                    prj, tmp
+                ]
+            ),
+            value(
+                getattr(
+                    mod,
+                    "GenCommit{}_Min_Down_Time_Violation".format(Bin_or_Lin),
+                )[prj, tmp]
+            ),
+        ]
+        for (prj, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
+    ]
 
-    # Export any results that will be become inputs to a linked subproblem
-    export_linked_subproblem_inputs(
-        mod=mod,
-        d=d,
-        scenario_directory=scenario_directory,
-        subproblem=subproblem,
-        stage=stage,
-        Bin_or_Lin=Bin_or_Lin,
-        BIN_OR_LIN=BIN_OR_LIN,
-        bin_or_lin=bin_or_lin,
-    )
+    return results_columns, data
 
 
 def export_linked_subproblem_inputs(
