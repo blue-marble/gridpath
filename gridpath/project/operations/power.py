@@ -111,6 +111,41 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
 
+    # First create the dataframe with just power provision
+    main_df = pd.DataFrame(
+        columns=[
+            "project",
+            "timepoint",
+            "period",
+            "horizon",
+            "operational_type",
+            "balancing_type",
+            "timepoint_weight",
+            "number_of_hours_in_timepoint",
+            "load_zone",
+            "technology",
+            "power_mw",
+        ],
+        data=[
+            [
+                prj,
+                tmp,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[prj]],
+                m.operational_type[prj],
+                m.balancing_type_project[prj],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
+                m.load_zone[prj],
+                m.technology[prj],
+                value(m.Power_Provision_MW[prj, tmp]),
+            ]
+            for (prj, tmp) in m.PRJ_OPR_TMPS
+        ],
+    ).set_index(["project", "timepoint"])
+
+    print(main_df)
+
     # First power
     with open(
         os.path.join(
