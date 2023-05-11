@@ -3587,10 +3587,10 @@ DROP TABLE IF EXISTS results_project_dispatch;
 CREATE TABLE results_project_dispatch (
 scenario_id INTEGER,
 project VARCHAR(64),
+timepoint INTEGER,
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-timepoint INTEGER,
 operational_type VARCHAR(64),
 balancing_type VARCHAR(64),
 horizon INTEGER,
@@ -3629,6 +3629,31 @@ static_load_mw FLOAT,
 flex_load_mw FLOAT,
 hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_dispatch_test;
+CREATE TABLE results_project_dispatch_test (
+scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+project VARCHAR(64),
+timepoint INTEGER,
+period INTEGER,
+horizon INTEGER,
+operational_type VARCHAR(64),
+balancing_type VARCHAR(64),
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+--spinup_or_lookahead INTEGER,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,  -- grid net power in case there's curtailment and/or aux cons
+committed_mw FLOAT,
+committed_units FLOAT,
+auxiliary_consumption_mw FLOAT,
+gross_power_mw FLOAT,
+net_power_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

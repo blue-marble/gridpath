@@ -328,7 +328,7 @@ def import_results_into_database(
     ) as dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        next(reader)  # skip header
+        header = next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]
@@ -346,10 +346,10 @@ def import_results_into_database(
                 (
                     scenario_id,
                     project,
+                    timepoint,
                     period,
                     subproblem,
                     stage,
-                    timepoint,
                     operational_type,
                     balancing_type,
                     horizon,

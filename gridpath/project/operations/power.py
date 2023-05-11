@@ -27,6 +27,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Expression, value
+import sqlite3
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
@@ -159,13 +160,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     for optype_module in imported_operational_modules:
         print(optype_module)
-        if hasattr(imported_operational_modules[optype_module],
-                   "add_to_dispatch_results"):
+        if hasattr(
+            imported_operational_modules[optype_module], "add_to_dispatch_results"
+        ):
             print("found")
             # TODO: make sure the order of export results is the same between
             #  this module and the optype modules
             results_columns, optype_df = imported_operational_modules[
-                optype_module].add_to_dispatch_results(mod=m)
+                optype_module
+            ].add_to_dispatch_results(mod=m)
             print(optype_df)
             for column in results_columns:
                 if column not in main_df:
@@ -177,6 +180,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     print(main_df)
 
+    main_df.sort_index(inplace=True)
+
+    print(main_df)
+
+    conn = sqlite3.connect(database="/Users/ana/dev/gridpath_v0.15+dev/db/io.db")
+    main_df.to_sql(name="results_project_dispatch_test", con=conn, if_exists='append')
 
     # First power
     with open(

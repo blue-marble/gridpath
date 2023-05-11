@@ -1558,11 +1558,13 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
 
 
 def add_to_dispatch_results(mod):
-    results_columns = ["gross_power_mw",
+    results_columns = [
+                "gross_power_mw",
                 "auxiliary_consumption_mw",
                 "net_power_mw",
                 "committed_mw",
-                "committed_units",]
+                "committed_units",
+    ]
     gen_commit_cap_df = pd.DataFrame(
         columns=[
                 "project",
