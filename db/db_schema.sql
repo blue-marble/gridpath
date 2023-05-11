@@ -3614,6 +3614,7 @@ synced_units FLOAT,
 active_startup_type FLOAT,
 auxiliary_consumption_mw FLOAT,
 gross_power_mw FLOAT,
+net_power_mw FLOAT,
 ramp_up_violation FLOAT,
 ramp_up_dual FLOAT,
 ramp_down_violation FLOAT,
@@ -3629,6 +3630,10 @@ static_load_mw FLOAT,
 flex_load_mw FLOAT,
 hyb_storage_charge_mw FLOAT,
 hyb_storage_discharge_mw FLOAT,
+fuel_in_storage_fuelunit FLOAT,
+produce_fuel_fuelunitperhour FLOAT,
+release_fuel_fuelunitperhour FLOAT,
+fuel_prod_power_consumption_powerunit FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

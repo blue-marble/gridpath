@@ -24,6 +24,8 @@ module, these defaults are used.
 
 import csv
 import os.path
+
+import pandas as pd
 from pyomo.environ import Set
 
 from db.common_functions import spin_on_database_lock
@@ -321,76 +323,11 @@ def import_results_into_database(
         stage=stage,
     )
 
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "dispatch_all.csv"), "r"
-    ) as dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        header = next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            timepoint = row[1]
-            period = row[2]
-            horizon = row[3]
-            operational_type = row[4]
-            balancing_type = row[5]
-            timepoint_weight = row[6]
-            number_of_hours_in_timepoint = row[7]
-            load_zone = row[8]
-            technology = row[9]
-            power_mw = row[10]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    timepoint,
-                    period,
-                    subproblem,
-                    stage,
-                    operational_type,
-                    balancing_type,
-                    horizon,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    power_mw,
-                )
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_dispatch{}
-        (scenario_id, project, timepoint, period, subproblem_id, stage_id, 
-        operational_type, balancing_type,
-        horizon, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch
-        (scenario_id, project, timepoint, period, subproblem_id, stage_id,
-        operational_type, balancing_type,
-        horizon, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        SELECT
-        scenario_id, project, timepoint, period, subproblem_id, stage_id,
-        operational_type, balancing_type,
-        horizon, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw
-        FROM temp_results_project_dispatch{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
+    df = pd.read_csv(os.path.join(results_directory, "dispatch_all.csv"))
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
+    df.to_sql(name="results_project_dispatch", con=db, if_exists="append", index=False)
 
     # Load in the required operational modules
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
