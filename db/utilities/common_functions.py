@@ -1187,7 +1187,7 @@ def load_single_subscenario_id_from_dir_to_subscenario_table(
         subscenario_directories = [
             d
             for d in sorted(next(os.walk(inputs_dir))[1])
-            if d.startswith(str(subscenario_id_to_load))
+            if d.startswith("{}_".format(subscenario_id_to_load))
         ]
         if len(subscenario_directories) == 1:
             subscenario_directory = subscenario_directories[0]
