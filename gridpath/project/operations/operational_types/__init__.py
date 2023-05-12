@@ -329,23 +329,6 @@ def import_results_into_database(
     df["stage_id"] = stage
     df.to_sql(name="results_project_dispatch", con=db, if_exists="append", index=False)
 
-    # Load in the required operational modules
-    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
-    imported_operational_modules = load_operational_type_modules(
-        required_opchar_modules
-    )
-
-    # Import module-specific results
-    for op_m in required_opchar_modules:
-        if hasattr(
-            imported_operational_modules[op_m], "import_model_results_to_database"
-        ):
-            imported_operational_modules[op_m].import_model_results_to_database(
-                scenario_id, subproblem, stage, c, db, results_directory, quiet
-            )
-        else:
-            pass
-
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
