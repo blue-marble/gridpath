@@ -28,7 +28,10 @@ from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, va
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import load_operational_type_modules
+from gridpath.project.operations.common_functions import (
+    load_operational_type_modules,
+    create_dispatch_results_optype_df,
+)
 from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.operations.operational_types as op_type_init
 
@@ -526,6 +529,61 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
+    prj_opr_df = getattr(d, "project_operations_df")
+    results_columns = [
+        "variable_om_cost",
+        "fuel_cost",
+        "startup_cost",
+        "shutdown_cost",
+        "operational_violation_cost",
+        "curtailment_cost",
+        "soc_penalty_cost",
+        "soc_last_tmp_penalty_cost",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Variable_OM_Cost[prj, tmp])
+            if prj in m.VAR_OM_COST_ALL_PRJS
+            else None,
+            value(m.Fuel_Cost[prj, tmp]) if prj in m.FUEL_PRJS else None,
+            value(m.Startup_Cost[prj, tmp]) if prj in m.STARTUP_COST_PRJS else None,
+            value(m.Shutdown_Cost[prj, tmp]) if prj in m.SHUTDOWN_COST_PRJS else None,
+            value(m.Operational_Violation_Cost[prj, tmp])
+            if prj in m.VIOL_ALL_PRJ_OPR_TMPS
+            else None,
+            value(m.Curtailment_Cost[prj, tmp])
+            if prj in m.CURTAILMENT_COST_PRJS
+            else None,
+            value(m.SOC_Penalty_Cost[prj, tmp])
+            if prj in m.SOC_PENALTY_COST_PRJS
+            else None,
+            value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
+            if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
+            else None,
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    cost_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    for c in results_columns:
+        prj_opr_df[c] = None
+    prj_opr_df.update(cost_df)
+
+    prj_opr_df.to_csv(
+        os.path.join(
+            scenario_directory,
+            str(subproblem),
+            str(stage),
+            "results",
+            "project_operations.csv",
+        ),
+        sep=",",
+        index=True,
+    )
     with open(
         os.path.join(
             scenario_directory,

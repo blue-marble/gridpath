@@ -56,8 +56,9 @@ from gridpath.project.operations.operational_types.common_functions import (
     check_for_tmps_to_link,
     validate_opchars,
     validate_hydro_opchars,
-    create_dispatch_results_optype_df,
 )
+from gridpath.project.operations.common_functions import \
+    create_dispatch_results_optype_df
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -784,7 +785,7 @@ def export_results(mod, d, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # Dispatch results added to dispatch_all.csv via add_to_dispatch_results()
+    # Dispatch results added to project_operations.csv via add_to_dispatch_results()
 
     # If there's a linked_subproblems_map CSV file, check which of the
     # current subproblem TMPS we should export results for to link to the

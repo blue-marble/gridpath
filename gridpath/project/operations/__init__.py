@@ -39,10 +39,13 @@ throw a warning (but not an error) at runtime.
 import numpy as np
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, PositiveReals
+from pyomo.environ import Set, Param, Any, NonNegativeReals, Reals, \
+    PositiveReals
 
 from gridpath.auxiliary.auxiliary import cursor_to_df
-from gridpath.auxiliary.dynamic_components import headroom_variables, footroom_variables
+from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 from gridpath.auxiliary.validations import (
     write_validation_to_database,
     validate_values,
@@ -334,7 +337,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     # Startup cost by startup type projects
     m.STARTUP_BY_ST_PRJS_TYPES = Set(dimen=2, ordered=True)
     m.STARTUP_BY_ST_PRJS = Set(
-        initialize=lambda mod: list(set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
+        initialize=lambda mod: list(
+            set([p for (p, t) in mod.STARTUP_BY_ST_PRJS_TYPES]))
     )
 
     # All startup cost projects
@@ -355,12 +359,14 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
     m.FUEL_PRJ_FUELS = Set(within=m.PROJECTS * m.FUELS)
     m.FUEL_PRJS = Set(
         within=m.PROJECTS,
-        initialize=lambda mod: list(set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
+        initialize=lambda mod: list(
+            set([prj for (prj, f) in mod.FUEL_PRJ_FUELS])),
     )
     m.FUELS_BY_PRJ = Set(
         m.FUEL_PRJS,
         within=m.FUELS,
-        initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if p == prj],
+        initialize=lambda mod, prj: [f for (p, f) in mod.FUEL_PRJ_FUELS if
+                                     p == prj],
     )
 
     m.FUEL_PRJ_FUELS_FUEL_GROUP = Set(
@@ -426,13 +432,15 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.VAR_OM_COST_CURVE_PRJS_PRDS_SGMS, within=Reals
     )
 
-    m.startup_cost_per_mw = Param(m.STARTUP_COST_SIMPLE_PRJS, within=NonNegativeReals)
+    m.startup_cost_per_mw = Param(m.STARTUP_COST_SIMPLE_PRJS,
+                                  within=NonNegativeReals)
 
     m.startup_cost_by_st_per_mw = Param(
         m.STARTUP_BY_ST_PRJS_TYPES, within=NonNegativeReals
     )
 
-    m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PRJS, within=NonNegativeReals)
+    m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PRJS,
+                                   within=NonNegativeReals)
 
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
         m.HR_CURVE_PRJS_PRDS_SGMS, within=PositiveReals
@@ -442,9 +450,11 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.HR_CURVE_PRJS_PRDS_SGMS, within=Reals
     )
 
-    m.startup_fuel_mmbtu_per_mw = Param(m.STARTUP_FUEL_PRJS, within=NonNegativeReals)
+    m.startup_fuel_mmbtu_per_mw = Param(m.STARTUP_FUEL_PRJS,
+                                        within=NonNegativeReals)
 
-    m.ramp_up_violation_penalty = Param(m.RAMP_UP_VIOL_PRJS, within=NonNegativeReals)
+    m.ramp_up_violation_penalty = Param(m.RAMP_UP_VIOL_PRJS,
+                                        within=NonNegativeReals)
 
     m.ramp_down_violation_penalty = Param(
         m.RAMP_DOWN_VIOL_PRJS, within=NonNegativeReals
@@ -458,7 +468,8 @@ def add_model_components(m, d, scenario_directory, subproblem, stage):
         m.MIN_DOWN_TIME_VIOL_PRJS, within=NonNegativeReals
     )
 
-    m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS, within=NonNegativeReals)
+    m.curtailment_cost_per_pwh = Param(m.CURTAILMENT_COST_PRJS,
+                                       within=NonNegativeReals)
 
     m.soc_penalty_cost_per_energyunit = Param(
         m.SOC_PENALTY_COST_PRJS, within=NonNegativeReals
@@ -494,7 +505,8 @@ def record_dynamic_components(d, scenario_directory, subproblem, stage):
 
     project_df = pd.read_csv(
         os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "projects.tab"
         ),
         sep="\t",
     )
@@ -526,7 +538,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(
         filename=os.path.join(
-            scenario_directory, str(subproblem), str(stage), "inputs", "projects.tab"
+            scenario_directory, str(subproblem), str(stage), "inputs",
+            "projects.tab"
         ),
         select=(
             "project",
@@ -558,7 +571,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory, str(subproblem), str(stage), "inputs",
+        "project_fuels.tab"
     )
     if os.path.exists(project_fuels_file):
         data_portal.load(
@@ -610,7 +624,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.data()["SOC_LAST_TMP_PENALTY_COST_PRJS"] = {
         None: list(
-            data_portal.data()["soc_last_tmp_penalty_cost_per_energyunit"].keys()
+            data_portal.data()[
+                "soc_last_tmp_penalty_cost_per_energyunit"].keys()
         )
     }
 
@@ -646,7 +661,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     # Startup chars
     startup_chars_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "startup_chars.tab"
+        scenario_directory, str(subproblem), str(stage), "inputs",
+        "startup_chars.tab"
     )
 
     if os.path.exists(startup_chars_file):
@@ -686,7 +702,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         scenario_directory, str(subproblem), str(stage), "inputs", "periods.tab"
     )
     project_fuels_file = os.path.join(
-        scenario_directory, str(subproblem), str(stage), "inputs", "project_fuels.tab"
+        scenario_directory, str(subproblem), str(stage), "inputs",
+        "project_fuels.tab"
     )
 
     # Get column names as a few columns will be optional;
@@ -696,8 +713,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         projects = set(hr_df["project"].unique())
 
         periods_df = pd.read_csv(periods_file, sep="\t")
-        pr_df = pd.read_csv(project_fuels_file, sep="\t", usecols=["project", "fuel"])
-        pr_df = pr_df[(pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
+        pr_df = pd.read_csv(project_fuels_file, sep="\t",
+                            usecols=["project", "fuel"])
+        pr_df = pr_df[
+            (pr_df["fuel"] != ".") & (pr_df["project"].isin(projects))]
 
         periods = set(periods_df["period"])
         fuel_projects = pr_df["project"].unique()
@@ -708,16 +727,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
         fuel_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["HR_CURVE_PRJS_PRDS_SGMS"] = {None: fuel_project_segments}
+        data_portal.data()["HR_CURVE_PRJS_PRDS_SGMS"] = {
+            None: fuel_project_segments}
         data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
-        data_portal.data()["fuel_burn_intercept_mmbtu_per_mw_hr"] = intercept_dict
+        data_portal.data()[
+            "fuel_burn_intercept_mmbtu_per_mw_hr"] = intercept_dict
 
 
 # Database
 ###############################################################################
 
 
-def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn):
+def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
+                             conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -950,7 +972,7 @@ def get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(
-    scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
+        scenario_directory, scenario_id, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model inputs
@@ -970,7 +992,8 @@ def write_model_inputs(
         cycle_selection,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
+                                 conn)
 
     inputs_directory = os.path.join(
         scenario_directory, str(subproblem), str(stage), "inputs"
@@ -1046,7 +1069,8 @@ def write_model_inputs(
     # Write startup chars file
     su_df = cursor_to_df(startup_chars)
     write_additional_opchar_file(
-        opchar_df=su_df, inputs_directory=inputs_directory, filename="startup_chars.tab"
+        opchar_df=su_df, inputs_directory=inputs_directory,
+        filename="startup_chars.tab"
     )
 
     # Write the cycle selection file
@@ -1074,6 +1098,39 @@ def write_model_inputs(
     )
 
 
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :param quiet:
+    :return:
+    """
+    if not quiet:
+        print("project operations")
+    # project_operations.csv
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db,
+        cursor=c,
+        table="results_project_dispatch",
+        scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
+    )
+
+    df = pd.read_csv(os.path.join(results_directory, "project_operations.csv"))
+    df["scenario_id"] = scenario_id
+    df["subproblem_id"] = subproblem
+    df["stage_id"] = stage
+    df.to_sql(name="results_project_dispatch", con=db, if_exists="append",
+              index=False)
+
+
 # Validation
 ###############################################################################
 
@@ -1098,13 +1155,15 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
         cycle_select,
         cap_factor_limits,
         supplemental_firing,
-    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage, conn)
+    ) = get_inputs_from_database(scenario_id, subscenarios, subproblem, stage,
+                                 conn)
 
     # Convert input data into DataFrame
     prj_df = cursor_to_df(proj_opchar)
 
     # Check data types operational chars:
-    expected_dtypes = get_expected_dtypes(conn, ["inputs_project_operational_chars"])
+    expected_dtypes = get_expected_dtypes(conn,
+                                          ["inputs_project_operational_chars"])
 
     dtype_errors, error_columns = validate_dtypes(prj_df, expected_dtypes)
     write_validation_to_database(
@@ -1119,7 +1178,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [c for c in prj_df.columns if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in prj_df.columns if
+                       expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -1143,7 +1203,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
             db_table="inputs_project_operational_chars",
             severity="Mid",
             errors=validate_values(
-                prj_df, ["min_stable_level_fraction"], min=0, max=1, strict_min=True
+                prj_df, ["min_stable_level_fraction"], min=0, max=1,
+                strict_min=True
             ),
         )
 
@@ -1151,7 +1212,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     hr_df = cursor_to_df(heat_rates)
 
     # Check data types heat_rates:
-    expected_dtypes = get_expected_dtypes(conn, ["inputs_project_heat_rate_curves"])
+    expected_dtypes = get_expected_dtypes(conn,
+                                          ["inputs_project_heat_rate_curves"])
     dtype_errors, error_columns = validate_dtypes(hr_df, expected_dtypes)
     write_validation_to_database(
         conn=conn,
@@ -1165,7 +1227,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check valid numeric columns in heat rates are non-negative
-    numeric_columns = [c for c in hr_df.columns if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in hr_df.columns if
+                       expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -1225,7 +1288,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     vom_df = cursor_to_df(vom_curves)
 
     # Check data types
-    expected_dtypes = get_expected_dtypes(conn, ["inputs_project_variable_om_curves"])
+    expected_dtypes = get_expected_dtypes(conn,
+                                          ["inputs_project_variable_om_curves"])
 
     dtype_errors, error_columns = validate_dtypes(vom_df, expected_dtypes)
     write_validation_to_database(
@@ -1240,7 +1304,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     )
 
     # Check valid numeric columns in variable OM are non-negative
-    numeric_columns = [c for c in vom_df.columns if expected_dtypes[c] == "numeric"]
+    numeric_columns = [c for c in vom_df.columns if
+                       expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     write_validation_to_database(
         conn=conn,
@@ -1330,7 +1395,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
 
     opchar_df = pd.read_sql(sql, conn)
 
-    su_errors = validate_startup_shutdown_rate_inputs(opchar_df, su_df, hrs_in_tmp)
+    su_errors = validate_startup_shutdown_rate_inputs(opchar_df, su_df,
+                                                      hrs_in_tmp)
     write_validation_to_database(
         conn=conn,
         scenario_id=scenario_id,
@@ -1352,7 +1418,8 @@ def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     #  startup cost
 
 
-def get_slopes_intercept_by_project_period_segment(df, input_col, projects, periods):
+def get_slopes_intercept_by_project_period_segment(df, input_col, projects,
+                                                   periods):
     """
     Given a DataFrame with the average heat rates or variable O&M curves by
     load point fraction for each project in each period, calculate the slope

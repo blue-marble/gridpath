@@ -3634,6 +3634,14 @@ fuel_in_storage_fuelunit FLOAT,
 produce_fuel_fuelunitperhour FLOAT,
 release_fuel_fuelunitperhour FLOAT,
 fuel_prod_power_consumption_powerunit FLOAT,
+variable_om_cost FLOAT,
+fuel_cost FLOAT,
+startup_cost FLOAT,
+shutdown_cost FLOAT,
+operational_violation_cost FLOAT,
+curtailment_cost FLOAT,
+soc_penalty_cost FLOAT,
+soc_last_tmp_penalty_cost FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

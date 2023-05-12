@@ -172,22 +172,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     main_df.sort_index(inplace=True)
 
-    # TODO: eventually figure out how to skip to_csv and just get the DF from
-    #  here when importing to database
-    # conn = sqlite3.connect(database="/Users/ana/dev/gridpath_v0.15+dev/db/io.db")
-    # main_df.to_sql(name="results_project_dispatch_test", con=conn, if_exists='append')
-
-    main_df.to_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "dispatch_all.csv",
-        ),
-        sep=",",
-        index=True,
-    )
+    # Add the dataframe to the dynamic components to pass to costs.py
+    # We'll print it after we pass it to costs.py
+    # TODO: do the printing in a more obvious place
+    setattr(d, "project_operations_df", main_df)
 
     # # First power
     # with open(
@@ -196,7 +184,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     #         str(subproblem),
     #         str(stage),
     #         "results",
-    #         "dispatch_all.csv",
+    #         "project_operations.csv",
     #     ),
     #     "w",
     #     newline="",
@@ -265,7 +253,7 @@ def summarize_results(scenario_directory, subproblem, stage):
             str(subproblem),
             str(stage),
             "results",
-            "dispatch_all.csv",
+            "project_operations.csv",
         )
     )
 
