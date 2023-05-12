@@ -297,6 +297,7 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
 # Validation
 ###############################################################################
 
+
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs

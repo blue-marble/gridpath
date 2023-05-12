@@ -3796,8 +3796,9 @@ def generic_constraint_column_dict(Bin_or_Lin):
 
 def add_duals_to_dispatch_results(mod, Bin_or_Lin, BIN_OR_LIN):
     constraint_column_dict = generic_constraint_column_dict(Bin_or_Lin)
-    results_columns = [constraint_column_dict[c] for c in
-                       sorted(constraint_column_dict.keys())]
+    results_columns = [
+        constraint_column_dict[c] for c in sorted(constraint_column_dict.keys())
+    ]
 
     data = []
     for prj, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
