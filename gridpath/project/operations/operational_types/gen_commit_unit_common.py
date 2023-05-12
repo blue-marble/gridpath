@@ -44,7 +44,6 @@ Morales-Espana et al. (2013).
 
 """
 
-
 from __future__ import division
 
 import csv
@@ -61,6 +60,7 @@ from pyomo.environ import (
     Expression,
     value,
 )
+import warnings
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import subset_init_by_param_value
@@ -3783,15 +3783,61 @@ def save_duals(m, bin_or_lin):
     ]
 
 
-def generic_constraint_column_dict(bin_or_lin):
+def generic_constraint_column_dict(Bin_or_Lin):
     constraint_column_dict = {
-        "GenCommit{}_Ramp_Up_Constraint".format(bin_or_lin): "ramp_up_dual",
-        "GenCommit{}_Ramp_Down_Constraint".format(bin_or_lin): "ramp_down_dual",
-        "GenCommit{}_Min_Up_Time_Constraint".format(bin_or_lin): "min_up_time_dual",
-        "GenCommit{}_Min_Down_Time_Constraint".format(bin_or_lin): "min_down_time_dual",
+        "GenCommit{}_Ramp_Up_Constraint".format(Bin_or_Lin): "ramp_up_dual",
+        "GenCommit{}_Ramp_Down_Constraint".format(Bin_or_Lin): "ramp_down_dual",
+        "GenCommit{}_Min_Up_Time_Constraint".format(Bin_or_Lin): "min_up_time_dual",
+        "GenCommit{}_Min_Down_Time_Constraint".format(Bin_or_Lin): "min_down_time_dual",
     }
 
     return constraint_column_dict
+
+
+def add_duals_to_dispatch_results(mod, Bin_or_Lin, BIN_OR_LIN):
+    constraint_column_dict = generic_constraint_column_dict(Bin_or_Lin)
+    results_columns = [constraint_column_dict[c] for c in
+                       sorted(constraint_column_dict.keys())]
+
+    data = []
+    for prj, tmp in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN)):
+        duals = []
+        for c in sorted(constraint_column_dict.keys()):
+            constraint_object = getattr(mod, c)
+            if (prj, tmp) in constraint_object:
+                duals.append(mod.dual[constraint_object[prj, tmp]])
+            else:
+                duals.append(None)
+
+        data.append([prj, tmp] + duals)
+
+    # data = [
+    #     [prj, tmp]
+    #     + [mod.dual[getattr(mod, c)[prj, tmp]] for c in constraint_column_dict.keys()]
+    #     for (prj, tmp) in getattr(mod, "GEN_COMMIT_{}_OPR_TMPS".format(BIN_OR_LIN))
+    #     if (prj, tmp) in [tuple(index) for index in constraint_column_dict[c]]
+    # ]
+
+    return results_columns, data
+    # for c in constraint_column_dict.keys():
+    #     constraint_object = getattr(mod, c)
+    #     results_columns = constraint_column_dict[c]
+    #
+    #     for index in constraint_object:
+    #         try:
+    #             data.append(list(index) + [mod.dual[constraint_object[index]]])
+    #         # We get an error when trying to export duals with CPLEX
+    #         # when solving MIPs, so catch it here and ignore to avoid
+    #         # breaking the script, but throw a warning
+    #         except KeyError:
+    #             warnings.warn(
+    #                 """
+    #             KeyError caught when saving duals. Duals were not exported.
+    #             This is expected if solving a MIP with CPLEX,
+    #             not otherwise.
+    #             """
+    #             )
+    #             pass
 
 
 def generic_duals_sql(column):
@@ -3821,25 +3867,3 @@ def generic_load_duals_from_csv(constraint_filepath):
         row_list = [row for row in reader]
 
     return row_list
-
-
-def generic_update_duals_in_db(
-    conn, results_directory, scenario_id, subproblem, stage, bin_or_lin
-):
-    constraint_column_dict = generic_constraint_column_dict(bin_or_lin=bin_or_lin)
-    for constraint in constraint_column_dict.keys():
-        c = conn.cursor()
-        constraint_path = os.path.join(results_directory, constraint + ".csv")
-        row_list = generic_load_duals_from_csv(constraint_path)
-        duals_results = [
-            (row[2], scenario_id, subproblem, stage, row[0], row[1]) for row in row_list
-        ]
-
-        sql = generic_duals_sql(constraint_column_dict[constraint])
-
-        spin_on_database_lock(
-            conn=conn,
-            cursor=c,
-            sql=sql,
-            data=duals_results,
-        )

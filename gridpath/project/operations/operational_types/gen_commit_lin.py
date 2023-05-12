@@ -219,9 +219,30 @@ def add_to_dispatch_results(mod):
         bin_or_lin="lin",
     )
 
+    (
+        duals_results_columns,
+        duals_data,
+    ) = gen_commit_unit_common.add_duals_to_dispatch_results(
+        mod=mod,
+        BIN_OR_LIN="LIN",
+        Bin_or_Lin="Lin",
+    )
+
+    # Create DF
     optype_dispatch_df = create_dispatch_results_optype_df(
         results_columns=results_columns, data=data
     )
+
+    # Get the duals
+    optype_duals_df = create_dispatch_results_optype_df(
+        results_columns=duals_results_columns, data=duals_data
+    )
+
+    # Add duals to dispatch DF
+    results_columns += duals_results_columns
+    for column in duals_results_columns:
+        optype_dispatch_df[column] = None
+    optype_dispatch_df.update(optype_duals_df)
 
     return results_columns, optype_dispatch_df
 
@@ -251,40 +272,8 @@ def save_duals(scenario_directory, subproblem, stage, instance, dynamic_componen
     gen_commit_unit_common.save_duals(instance, "Lin")
 
 
-# Database
-###############################################################################
-
-
-def import_model_results_to_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch continuous commit")
-
-    # Update duals
-    gen_commit_unit_common.generic_update_duals_in_db(
-        conn=db,
-        results_directory=results_directory,
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-        bin_or_lin="Lin",
-    )
-
-
 # Validation
 ###############################################################################
-
 
 def validate_inputs(scenario_id, subscenarios, subproblem, stage, conn):
     """
