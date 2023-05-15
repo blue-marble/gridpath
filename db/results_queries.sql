@@ -156,7 +156,7 @@ daily_startup_cost
 from (
 select scenario_id, project, period, horizon, timepoint_weight, technology,
 sum(startup_cost) as daily_startup_cost
-from results_project_costs_operations
+from results_project_dispatch
 -- where load_zone = 'CAISO'
 group by scenario_id, project, period, horizon
 ) as all_daily_startup_cost_tbl
@@ -214,7 +214,7 @@ sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS
 variable_om_cost,
 sum(startup_cost * timepoint_weight) AS startup_cost,
 sum(shutdown_cost * timepoint_weight) AS shutdown_cost
-FROM results_project_costs_operations
+FROM results_project_dispatch
 GROUP BY scenario_id, period) AS operational_costs
 USING (scenario_id, period)
 JOIN

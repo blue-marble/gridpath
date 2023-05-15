@@ -26,7 +26,6 @@ import os.path
 import pandas as pd
 import sys
 
-import gridpath.project.operations
 from gridpath.auxiliary.db_interface import get_scenario_id_and_name
 from gridpath.auxiliary.import_export_rules import import_export_rules
 from gridpath.common_functions import (
@@ -223,7 +222,7 @@ def import_subproblem_stage_results_into_database(
         c = db.cursor()
         for m in loaded_modules:
             if hasattr(m, "import_results_into_database"):
-                gridpath.project.operations.import_results_into_database(
+                m.import_results_into_database(
                     scenario_id=scenario_id,
                     subproblem=subproblem,
                     stage=stage,

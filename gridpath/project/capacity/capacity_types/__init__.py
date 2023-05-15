@@ -18,7 +18,7 @@ describe the various ways in which project capacity can be treated in the
 optimization problem, e.g. as specified, available to be built, available to
 be retired, etc.
 """
-import gridpath.project.operations
+
 from gridpath.project.capacity.common_functions import (
     load_project_capacity_type_modules,
 )
@@ -112,7 +112,7 @@ def import_results_into_database(
         if hasattr(
             imported_capacity_type_modules[op_m], "import_results_into_database"
         ):
-            gridpath.project.operations.import_results_into_database(
+            imported_capacity_type_modules[op_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:

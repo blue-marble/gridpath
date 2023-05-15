@@ -4004,32 +4004,8 @@ capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
-
-DROP TABLE IF EXISTS results_project_costs_operations;
-CREATE TABLE results_project_costs_operations (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-spinup_or_lookahead INTEGER,
-load_zone VARCHAR(32),
-energy_target_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-variable_om_cost FLOAT,
-fuel_cost FLOAT,
-startup_cost FLOAT,
-shutdown_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
 -- Operational Costs - Aggregated
+-- By timepoint costs are in the results_project_dispatch table
 DROP TABLE IF EXISTS results_project_costs_operations_agg;
 CREATE TABLE results_project_costs_operations_agg (
 scenario_id INTEGER,
