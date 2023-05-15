@@ -20,7 +20,6 @@ import os.path
 import pandas as pd
 from pyomo.environ import Expression
 
-import gridpath.project.operations
 from gridpath.project.reliability.prm.common_functions import load_prm_type_modules
 
 
@@ -292,7 +291,7 @@ def import_results_into_database(
 
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m], "import_results_into_database"):
-            gridpath.project.operations.import_results_into_database(
+            imported_prm_modules[prm_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:

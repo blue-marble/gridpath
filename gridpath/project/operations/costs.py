@@ -589,6 +589,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
+
 def process_results(db, c, scenario_id, subscenarios, quiet):
     """
     Aggregate costs by zone and period

@@ -14,7 +14,6 @@
 
 from pyomo.environ import Expression
 
-import gridpath.project.operations
 from gridpath.auxiliary.auxiliary import (
     get_required_subtype_modules_from_projects_file,
     load_subtype_modules,
@@ -192,7 +191,7 @@ def import_results_into_database(
     # Import module-specific results
     for op_m in required_availability_type_modules:
         if hasattr(imported_availability_modules[op_m], "import_results_into_database"):
-            gridpath.project.operations.import_results_into_database(
+            imported_availability_modules[op_m].import_results_into_database(
                 scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:

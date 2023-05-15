@@ -51,8 +51,9 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     validate_hydro_opchars,
 )
-from gridpath.project.operations.common_functions import \
-    create_dispatch_results_optype_df
+from gridpath.project.operations.common_functions import (
+    create_dispatch_results_optype_df,
+)
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
