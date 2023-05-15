@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ For the purpose, this module calls the respective method from the
 operational type modules.
 """
 
-import csv
-import os.path
 from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
@@ -32,8 +30,8 @@ from gridpath.project.operations.common_functions import (
     load_operational_type_modules,
     create_dispatch_results_optype_df,
 )
-from gridpath.auxiliary.db_interface import setup_results_import
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -529,7 +527,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    prj_opr_df = getattr(d, "project_operations_df")
+    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
     results_columns = [
         "variable_om_cost",
         "fuel_cost",
@@ -573,17 +571,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         prj_opr_df[c] = None
     prj_opr_df.update(cost_df)
 
-    prj_opr_df.to_csv(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "project_operations.csv",
-        ),
-        sep=",",
-        index=True,
-    )
+    setattr(d, "project_operations_df", prj_opr_df)
 
 
 # Database

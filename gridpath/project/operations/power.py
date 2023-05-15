@@ -33,6 +33,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import load_operational_type_modules
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -173,54 +174,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     main_df.sort_index(inplace=True)
 
     # Add the dataframe to the dynamic components to pass to costs.py
-    # We'll print it after we pass it to costs.py
-    # TODO: do the printing in a more obvious place
-    setattr(d, "project_operations_df", main_df)
-
-    # # First power
-    # with open(
-    #     os.path.join(
-    #         scenario_directory,
-    #         str(subproblem),
-    #         str(stage),
-    #         "results",
-    #         "project_operations.csv",
-    #     ),
-    #     "w",
-    #     newline="",
-    # ) as f:
-    #     writer = csv.writer(f)
-    #     writer.writerow(
-    #         [
-    #             "project",
-    #             "period",
-    #             "horizon",
-    #             "timepoint",
-    #             "operational_type",
-    #             "balancing_type",
-    #             "timepoint_weight",
-    #             "number_of_hours_in_timepoint",
-    #             "load_zone",
-    #             "technology",
-    #             "power_mw",
-    #         ]
-    #     )
-    #     for p, tmp in m.PRJ_OPR_TMPS:
-    #         writer.writerow(
-    #             [
-    #                 p,
-    #                 m.period[tmp],
-    #                 m.horizon[tmp, m.balancing_type_project[p]],
-    #                 tmp,
-    #                 m.operational_type[p],
-    #                 m.balancing_type_project[p],
-    #                 m.tmp_weight[tmp],
-    #                 m.hrs_in_tmp[tmp],
-    #                 m.load_zone[p],
-    #                 m.technology[p],
-    #                 value(m.Power_Provision_MW[p, tmp]),
-    #             ]
-    #         )
+    # We'll print it after we pass it to costs.py and other modules
+    # This is the first module that adds to the dataframe
+    setattr(d, PROJECT_OPERATIONS_DF, main_df)
 
 
 def summarize_results(scenario_directory, subproblem, stage):
