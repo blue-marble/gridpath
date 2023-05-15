@@ -3583,8 +3583,8 @@ availability_derate FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch;
-CREATE TABLE results_project_dispatch (
+DROP TABLE IF EXISTS results_project_operations;
+CREATE TABLE results_project_operations (
 scenario_id INTEGER,
 project VARCHAR(64),
 timepoint INTEGER,
@@ -4005,7 +4005,7 @@ PRIMARY KEY (scenario_id, load_zone, period, subproblem_id, stage_id,
 spinup_or_lookahead));
 
 -- Operational Costs - Aggregated
--- By timepoint costs are in the results_project_dispatch table
+-- By timepoint costs are in the results_project_operations table
 DROP TABLE IF EXISTS results_project_costs_operations_agg;
 CREATE TABLE results_project_costs_operations_agg (
 scenario_id INTEGER,

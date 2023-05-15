@@ -329,7 +329,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, spinup_or_lookahead,
         load_zone, technology, sum(power_mw) AS power_mw
-        FROM results_project_dispatch
+        FROM results_project_operations
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, timepoint, 
         load_zone, technology

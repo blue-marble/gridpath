@@ -614,7 +614,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         AS variable_om_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_dispatch
+        FROM results_project_operations
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

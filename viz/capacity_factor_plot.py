@@ -105,7 +105,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
             AS period_mwh,
             sum(timepoint_weight * number_of_hours_in_timepoint) 
             AS period_weight
-            FROM results_project_dispatch
+            FROM results_project_operations
 
             -- add temporal scenario id so we can join timepoints table
             INNER JOIN

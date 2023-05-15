@@ -1094,7 +1094,7 @@ def import_results_into_database(
     setup_results_import(
         conn=db,
         cursor=c,
-        table="results_project_dispatch",
+        table="results_project_operations",
         scenario_id=scenario_id,
         subproblem=subproblem,
         stage=stage,
@@ -1104,7 +1104,9 @@ def import_results_into_database(
     df["scenario_id"] = scenario_id
     df["subproblem_id"] = subproblem
     df["stage_id"] = stage
-    df.to_sql(name="results_project_dispatch", con=db, if_exists="append", index=False)
+    df.to_sql(
+        name="results_project_operations", con=db, if_exists="append", index=False
+    )
 
 
 # Validation
