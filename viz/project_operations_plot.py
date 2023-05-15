@@ -163,7 +163,7 @@ def get_plotting_data(
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint, 
         number_of_hours_in_timepoint,
         committed_mw, power_mw
-        FROM results_project_dispatch
+        FROM results_project_operations
         WHERE operational_type = '{}'
         AND scenario_id = ?
         {} 

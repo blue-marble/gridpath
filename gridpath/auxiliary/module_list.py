@@ -108,6 +108,7 @@ def all_modules_list():
         "project.operations.carbon_cap",
         "project.operations.carbon_tax",
         "project.operations.performance_standard",
+        "project.operations.consolidate_results",
         "project.reliability.prm",
         "project.reliability.prm.prm_types",
         "project.reliability.prm.prm_simple",

@@ -24,6 +24,8 @@ more information on the formulation.
 
 from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
+)
+from gridpath.project.operations.common_functions import (
     create_dispatch_results_optype_df,
 )
 import gridpath.project.operations.operational_types.gen_commit_unit_common as gen_commit_unit_common

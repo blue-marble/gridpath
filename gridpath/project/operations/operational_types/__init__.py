@@ -22,16 +22,10 @@ If an operational type module method is not specified in an operational type
 module, these defaults are used.
 """
 
-import csv
-import os.path
-
-import pandas as pd
 from pyomo.environ import Set
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
 from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -127,7 +121,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-
     # Export module-specific results
     # Operational type modules
     required_operational_modules = get_required_subtype_modules_from_projects_file(
@@ -296,38 +289,6 @@ def write_model_inputs(
             )
         else:
             pass
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project dispatch all")
-    # dispatch_all.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_dispatch",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    df = pd.read_csv(os.path.join(results_directory, "dispatch_all.csv"))
-    df["scenario_id"] = scenario_id
-    df["subproblem_id"] = subproblem
-    df["stage_id"] = stage
-    df.to_sql(name="results_project_dispatch", con=db, if_exists="append", index=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):

@@ -34,7 +34,7 @@ LEFT JOIN scenarios USING (scenario_id)
 -- Annual generation by scenario, project, and period
 SELECT scenario_id, scenario_name, project, technology, period,
 sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
-FROM results_project_dispatch
+FROM results_project_operations
 WHERE operational_type = 'gen_commit_cap'
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
@@ -50,7 +50,7 @@ capacity_mw, annual_mwh/(8760*capacity_mw) as cap_factor
 FROM
 (SELECT scenario_id, scenario_name, project, technology, period,
 sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
-FROM results_project_dispatch
+FROM results_project_operations
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 --AND (technology = 'Peaker' OR technology = 'CCGT' OR technology = 'CHP' OR
@@ -76,12 +76,12 @@ commitment, power_mw, spin_mw, reg_up_mw, reg_down_mw, lf_up_mw, lf_down_mw,
  frq_resp_mw
 from
 (select scenario_id, project, period, horizon, timepoint, timepoint_weight, project, power_mw
-from results_project_dispatch
+from results_project_operations
 -- where project in ()
 ) as disp_tbl
 left join
 (select scenario_id, project, period, horizon, timepoint, committed_units as commitment
-from results_project_dispatch
+from results_project_operations
 where operational_type = 'gen_commit_cap'
 -- UNION ALL
 -- select scenario_id, project, period, horizon, timepoint, committed_units as commitment
@@ -156,7 +156,7 @@ daily_startup_cost
 from (
 select scenario_id, project, period, horizon, timepoint_weight, technology,
 sum(startup_cost) as daily_startup_cost
-from results_project_costs_operations
+from results_project_operations
 -- where load_zone = 'CAISO'
 group by scenario_id, project, period, horizon
 ) as all_daily_startup_cost_tbl
@@ -179,7 +179,7 @@ join scenarios using (scenario_id)
 -- Generation by scenario, load_zone, period, and technology
 SELECT scenario_id, scenario_name, load_zone, period, technology,
 sum(timepoint_weight*power_mw) as mwh
-FROM results_project_dispatch
+FROM results_project_operations
 LEFT JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, load_zone, period, technology
 ORDER BY scenario_id, load_zone, period, technology
@@ -214,7 +214,7 @@ sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS
 variable_om_cost,
 sum(startup_cost * timepoint_weight) AS startup_cost,
 sum(shutdown_cost * timepoint_weight) AS shutdown_cost
-FROM results_project_costs_operations
+FROM results_project_operations
 GROUP BY scenario_id, period) AS operational_costs
 USING (scenario_id, period)
 JOIN

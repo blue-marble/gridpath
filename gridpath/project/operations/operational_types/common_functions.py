@@ -14,14 +14,11 @@
 
 import csv
 import os.path
-import numpy as np
 import pandas as pd
 import warnings
 
-from db.common_functions import spin_on_database_lock
 from gridpath.project.common_functions import (
     check_if_boundary_type_and_first_timepoint,
-    get_column_row_value,
     check_boundary_type,
 )
 from gridpath.auxiliary.auxiliary import cursor_to_df
@@ -995,17 +992,4 @@ def validate_opchars(scenario_id, subscenarios, subproblem, stage, conn, op_type
     #  in project.init?
 
     # Return the opchar df (sometimes used for further validations)
-    return df
-
-
-def create_dispatch_results_optype_df(results_columns, data):
-    df = pd.DataFrame(
-        columns=[
-            "project",
-            "timepoint",
-        ]
-        + results_columns,
-        data=data,
-    ).set_index(["project", "timepoint"])
-
     return df

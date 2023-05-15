@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Blue Marble Analytics LLC.
+# Copyright 2016-2023 Blue Marble Analytics LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,15 +22,16 @@ For the purpose, this module calls the respective method from the
 operational type modules.
 """
 
-import csv
-import os.path
 from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_required_subtype_modules_from_projects_file
-from gridpath.project.operations.common_functions import load_operational_type_modules
-from gridpath.auxiliary.db_interface import setup_results_import
+from gridpath.project.operations.common_functions import (
+    load_operational_type_modules,
+    create_dispatch_results_optype_df,
+)
 import gridpath.project.operations.operational_types as op_type_init
+from gridpath.project.operations.consolidate_results import PROJECT_OPERATIONS_DF
 
 
 def add_model_components(m, d, scenario_directory, subproblem, stage):
@@ -526,176 +527,55 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     Nothing
     """
-    with open(
-        os.path.join(
-            scenario_directory,
-            str(subproblem),
-            str(stage),
-            "results",
-            "costs_operations.csv",
-        ),
-        "w",
-        newline="",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "project",
-                "period",
-                "horizon",
-                "timepoint",
-                "timepoint_weight",
-                "number_of_hours_in_timepoint",
-                "load_zone",
-                "technology",
-                "variable_om_cost",
-                "fuel_cost",
-                "startup_cost",
-                "shutdown_cost",
-                "operational_violation_cost",
-                "curtailment_cost",
-                "soc_penalty_cost",
-                "soc_last_tmp_penalty_cost",
-            ]
-        )
-        for p, tmp in m.PRJ_OPR_TMPS:
-            writer.writerow(
-                [
-                    p,
-                    m.period[tmp],
-                    m.horizon[tmp, m.balancing_type_project[p]],
-                    tmp,
-                    m.tmp_weight[tmp],
-                    m.hrs_in_tmp[tmp],
-                    m.load_zone[p],
-                    m.technology[p],
-                    value(m.Variable_OM_Cost[p, tmp])
-                    if p in m.VAR_OM_COST_ALL_PRJS
-                    else None,
-                    value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else None,
-                    value(m.Startup_Cost[p, tmp]) if p in m.STARTUP_COST_PRJS else None,
-                    value(m.Shutdown_Cost[p, tmp])
-                    if p in m.SHUTDOWN_COST_PRJS
-                    else None,
-                    value(m.Operational_Violation_Cost[p, tmp])
-                    if p in m.VIOL_ALL_PRJ_OPR_TMPS
-                    else None,
-                    value(m.Curtailment_Cost[p, tmp])
-                    if p in m.CURTAILMENT_COST_PRJS
-                    else None,
-                    value(m.SOC_Penalty_Cost[p, tmp])
-                    if p in m.SOC_PENALTY_COST_PRJS
-                    else None,
-                    value(m.SOC_Penalty_Last_Tmp_Cost[p, tmp])
-                    if p in m.SOC_LAST_TMP_PENALTY_COST_PRJS
-                    else None,
-                ]
-            )
+    prj_opr_df = getattr(d, PROJECT_OPERATIONS_DF)
+    results_columns = [
+        "variable_om_cost",
+        "fuel_cost",
+        "startup_cost",
+        "shutdown_cost",
+        "operational_violation_cost",
+        "curtailment_cost",
+        "soc_penalty_cost",
+        "soc_last_tmp_penalty_cost",
+    ]
+    data = [
+        [
+            prj,
+            tmp,
+            value(m.Variable_OM_Cost[prj, tmp])
+            if prj in m.VAR_OM_COST_ALL_PRJS
+            else None,
+            value(m.Fuel_Cost[prj, tmp]) if prj in m.FUEL_PRJS else None,
+            value(m.Startup_Cost[prj, tmp]) if prj in m.STARTUP_COST_PRJS else None,
+            value(m.Shutdown_Cost[prj, tmp]) if prj in m.SHUTDOWN_COST_PRJS else None,
+            value(m.Operational_Violation_Cost[prj, tmp])
+            if prj in m.VIOL_ALL_PRJ_OPR_TMPS
+            else None,
+            value(m.Curtailment_Cost[prj, tmp])
+            if prj in m.CURTAILMENT_COST_PRJS
+            else None,
+            value(m.SOC_Penalty_Cost[prj, tmp])
+            if prj in m.SOC_PENALTY_COST_PRJS
+            else None,
+            value(m.SOC_Penalty_Last_Tmp_Cost[prj, tmp])
+            if prj in m.SOC_LAST_TMP_PENALTY_COST_PRJS
+            else None,
+        ]
+        for (prj, tmp) in m.PRJ_OPR_TMPS
+    ]
+    cost_df = create_dispatch_results_optype_df(
+        results_columns=results_columns, data=data
+    )
+
+    for c in results_columns:
+        prj_opr_df[c] = None
+    prj_opr_df.update(cost_df)
+
+    setattr(d, "project_operations_df", prj_opr_df)
 
 
 # Database
 ###############################################################################
-
-
-def import_results_into_database(
-    scenario_id, subproblem, stage, c, db, results_directory, quiet
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :param quiet:
-    :return:
-    """
-    if not quiet:
-        print("project costs operations")
-
-    # costs_operations.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db,
-        cursor=c,
-        table="results_project_costs_operations",
-        scenario_id=scenario_id,
-        subproblem=subproblem,
-        stage=stage,
-    )
-
-    # Load results into the temporary table
-    results = []
-    with open(
-        os.path.join(results_directory, "costs_operations.csv"), "r"
-    ) as dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            variable_om_cost = row[8]
-            fuel_cost = row[9]
-            startup_cost = row[10]
-            shutdown_cost = row[11]
-
-            results.append(
-                (
-                    scenario_id,
-                    project,
-                    period,
-                    subproblem,
-                    stage,
-                    horizon,
-                    timepoint,
-                    timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone,
-                    technology,
-                    variable_om_cost,
-                    fuel_cost,
-                    startup_cost,
-                    shutdown_cost,
-                )
-            )
-
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_costs_operations{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO 
-        results_project_costs_operations
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, 
-        variable_om_cost, fuel_cost, startup_cost, shutdown_cost
-        FROM temp_results_project_costs_operations{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(
-        scenario_id
-    )
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(), many=False)
 
 
 def process_results(db, c, scenario_id, subscenarios, quiet):
@@ -734,7 +614,7 @@ def process_results(db, c, scenario_id, subscenarios, quiet):
         AS variable_om_cost,
         SUM(startup_cost * timepoint_weight) AS startup_cost,
         SUM(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_costs_operations
+        FROM results_project_operations
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead
         ORDER BY subproblem_id, stage_id, period, load_zone, spinup_or_lookahead

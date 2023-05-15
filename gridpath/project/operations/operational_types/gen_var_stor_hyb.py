@@ -72,6 +72,8 @@ from gridpath.project.operations.operational_types.common_functions import (
     validate_opchars,
     validate_var_profiles,
     load_optype_model_data,
+)
+from gridpath.project.operations.common_functions import (
     create_dispatch_results_optype_df,
 )
 
@@ -899,7 +901,7 @@ def process_model_results(db, c, scenario_id, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch
+            FROM results_project_operations
             WHERE operational_type = 'gen_var_stor_hyb'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl
